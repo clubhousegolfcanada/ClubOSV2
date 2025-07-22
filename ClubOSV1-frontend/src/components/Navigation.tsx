@@ -11,11 +11,11 @@ const Navigation: React.FC = () => {
   const { user, logout } = useAuthState();
 
   const navItems = [
-    { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as const },
-    { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as const },
-    { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as const },
-    { href: '/tickets', label: 'Ticket Center', roles: ['admin', 'operator'] as const },
-  ].filter(item => hasAnyRole(user?.role, item.roles));
+  { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
+{ href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
+{ href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
+{ href: '/tickets', label: 'Ticket Center', roles: ['admin', 'operator'] as UserRole[] },
+].filter(item => hasAnyRole(user?.role, item.roles));
 
   return (
     <nav className="bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
