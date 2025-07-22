@@ -336,9 +336,6 @@ const RequestForm: React.FC = () => {
 
           {/* Task Description */}
           <div className="form-group">
-            <label className="form-label" htmlFor="taskInput">
-              {isTicketMode ? 'Ticket Description' : 'Request Description'}
-            </label>
             <textarea
               id="taskInput"
               {...register('requestDescription', {
