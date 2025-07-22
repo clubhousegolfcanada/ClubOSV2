@@ -5,6 +5,17 @@ import type { RequestRoute } from '@/types/request';
 // Export UserRole type
 export type UserRole = 'admin' | 'operator' | 'support';
 
+// User type for user management
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  phone?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // Define the missing types locally
 type ProcessedRequest = {
   id: string;
@@ -70,6 +81,15 @@ interface SettingsState {
   resetSettings: () => void;
 }
 
+interface AppState {
+  users: User[];
+  setUsers: (users: User[]) => void;
+  requests: ProcessedRequest[];
+  addRequest: (request: ProcessedRequest) => void;
+  updateRequest: (id: string, updates: Partial<ProcessedRequest>) => void;
+  clearRequests: () => void;
+}
+
 // Default values
 const defaultConfig: SystemConfig = {
   llmProvider: 'openai',
@@ -119,6 +139,22 @@ export const useAuthState = create<AuthState>()(
     }
   )
 );
+
+// App Store
+export const useStore = create<AppState>((set) => ({
+  users: [],
+  setUsers: (users) => set({ users }),
+  requests: [],
+  addRequest: (request) => set((state) => ({ 
+    requests: [...state.requests, request] 
+  })),
+  updateRequest: (id, updates) => set((state) => ({
+    requests: state.requests.map((req) => 
+      req.id === id ? { ...req, ...updates } : req
+    )
+  })),
+  clearRequests: () => set({ requests: [] })
+}));
 
 // Settings Store
 export const useSettingsState = create<SettingsState>()(

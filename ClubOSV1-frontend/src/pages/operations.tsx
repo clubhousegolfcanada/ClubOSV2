@@ -1,220 +1,395 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { useAuthState } from '@/state/useStore';
-// Remove the non-existent useAnalytics import
-import { 
-  Activity, 
-  Users, 
-  Clock, 
-  AlertCircle,
-  TrendingUp,
-  Calendar,
-  DollarSign,
-  Target
-} from 'lucide-react';
+import { useAuthState, useStore } from '@/state/useStore';
+import toast from 'react-hot-toast';
+import axios from 'axios';
 
-type TimeRange = '24h' | '7d' | '30d' | '90d';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-type MetricCard = {
-  title: string;
-  value: string | number;
-  change: string;
-  trend: 'up' | 'down' | 'neutral';
-  icon: React.ElementType;
+type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'operator' | 'support';
+  phone?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export default function Operations() {
   const { user } = useAuthState();
-  const [timeRange, setTimeRange] = useState<TimeRange>('7d');
-  const [selectedMetric, setSelectedMetric] = useState<string>('revenue');
+  const { users, setUsers } = useStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: '',
+    role: 'operator' as const,
+    phone: ''
+  });
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'operator' as const
+  });
 
-  // Mock data - replace with real API calls
-  const metrics: MetricCard[] = [
-    {
-      title: 'Total Revenue',
-      value: '$24,580',
-      change: '+12.5%',
-      trend: 'up',
-      icon: DollarSign
-    },
-    {
-      title: 'Active Sessions',
-      value: '156',
-      change: '+8.2%',
-      trend: 'up',
-      icon: Activity
-    },
-    {
-      title: 'Member Count',
-      value: '342',
-      change: '+3.1%',
-      trend: 'up',
-      icon: Users
-    },
-    {
-      title: 'Avg Session Time',
-      value: '1.8 hrs',
-      change: '-5.4%',
-      trend: 'down',
-      icon: Clock
+  // Fetch users on mount
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchUsers();
     }
-  ];
+  }, [user]);
 
-  const recentIssues = [
-    { id: 1, bay: 'Bay 3', issue: 'Projector alignment needed', status: 'pending', priority: 'medium' },
-    { id: 2, bay: 'Bay 7', issue: 'Sound system intermittent', status: 'resolved', priority: 'high' },
-    { id: 3, bay: 'Bay 2', issue: 'Mat wear visible', status: 'pending', priority: 'low' },
-  ];
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/auth/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setUsers(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const upcomingBookings = [
-    { id: 1, time: '2:00 PM', customer: 'John Smith', bay: 'Bay 4', duration: '2 hrs' },
-    { id: 2, time: '4:00 PM', customer: 'Corporate Event', bay: 'Bay 1-3', duration: '3 hrs' },
-    { id: 3, time: '7:00 PM', customer: 'League Night', bay: 'All Bays', duration: '4 hrs' },
-  ];
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.post(`${API_URL}/auth/register`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        toast.success('User created successfully');
+        setShowCreateForm(false);
+        setFormData({ email: '', password: '', name: '', role: 'operator', phone: '' });
+        fetchUsers();
+      }
+    } catch (error: any) {
+      console.error('Failed to create user:', error);
+      toast.error(error.response?.data?.message || 'Failed to create user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateUser = async (userId: string) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.put(`${API_URL}/auth/users/${userId}`, editFormData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        toast.success('User updated successfully');
+        setEditingUser(null);
+        fetchUsers();
+      }
+    } catch (error: any) {
+      console.error('Failed to update user:', error);
+      toast.error(error.response?.data?.message || 'Failed to update user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      await axios.delete(`${API_URL}/auth/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('User deleted successfully');
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Failed to delete user:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startEditUser = (user: User) => {
+    setEditingUser(user.id);
+    setEditFormData({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role
+    });
+  };
+
+  const roleColors = {
+    admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    operator: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    support: 'bg-green-500/20 text-green-400 border-green-500/30'
+  };
 
   return (
     <>
       <Head>
-        <title>ClubOS - Operations Dashboard</title>
-        <meta name="description" content="Operations overview and analytics" />
+        <title>ClubOS - Operations</title>
+        <meta name="description" content="Manage users and operations" />
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <div className="container mx-auto px-4 py-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-              Operations Dashboard
+              Operations Center
             </h1>
             <p className="text-[var(--text-secondary)]">
-              Real-time facility performance and analytics
+              Manage system users and access controls
             </p>
           </div>
 
-          {/* Time Range Selector */}
-          <div className="flex gap-2 mb-6">
-            {(['24h', '7d', '30d', '90d'] as TimeRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  timeRange === range
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {range === '24h' ? 'Last 24 Hours' : `Last ${range}`}
-              </button>
-            ))}
-          </div>
-
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {metrics.map((metric) => {
-              const Icon = metric.icon;
-              return (
-                <div 
-                  key={metric.title} 
-                  className="card hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => setSelectedMetric(metric.title.toLowerCase().replace(' ', '-'))}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 rounded-lg bg-[var(--bg-tertiary)]">
-                      <Icon className="w-6 h-6 text-[var(--accent)]" />
-                    </div>
-                    <span className={`text-sm font-medium ${
-                      metric.trend === 'up' ? 'text-green-400' : 
-                      metric.trend === 'down' ? 'text-red-400' : 
-                      'text-gray-400'
-                    }`}>
-                      {metric.change}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)] mb-1">{metric.title}</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)]">{metric.value}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chart Area - 2 columns */}
-            <div className="lg:col-span-2 card">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Performance Trends</h2>
-                <Target className="w-5 h-5 text-[var(--text-secondary)]" />
-              </div>
-              <div className="h-64 flex items-center justify-center bg-[var(--bg-tertiary)] rounded-lg">
-                <p className="text-[var(--text-secondary)]">
-                  Chart visualization would go here
-                </p>
-              </div>
-            </div>
-
-            {/* Recent Issues - 1 column */}
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Recent Issues</h2>
-                <AlertCircle className="w-5 h-5 text-[var(--status-warning)]" />
-              </div>
-              <div className="space-y-3">
-                {recentIssues.map((issue) => (
-                  <div 
-                    key={issue.id}
-                    className="p-3 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]"
+          {user?.role === 'admin' ? (
+            <>
+              {/* User Management Section */}
+              <div className="card">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">User Management</h2>
+                  <button
+                    onClick={() => setShowCreateForm(!showCreateForm)}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">{issue.bay}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        issue.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                        issue.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {issue.priority}
-                      </span>
-                    </div>
-                    <p className="text-sm text-[var(--text-secondary)]">{issue.issue}</p>
-                    <p className={`text-xs mt-1 ${
-                      issue.status === 'resolved' ? 'text-green-400' : 'text-yellow-400'
-                    }`}>
-                      {issue.status}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+                    {showCreateForm ? 'Cancel' : 'Add User'}
+                  </button>
+                </div>
 
-          {/* Upcoming Bookings */}
-          <div className="card mt-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Upcoming Bookings</h2>
-              <Calendar className="w-5 h-5 text-[var(--text-secondary)]" />
+                {/* Create User Form */}
+                {showCreateForm && (
+                  <form onSubmit={handleCreateUser} className="mb-6 p-4 bg-[var(--bg-secondary)] rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Name</label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Email</label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Password</label>
+                        <input
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                          required
+                          minLength={8}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Phone</label>
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Role</label>
+                        <select
+                          value={formData.role}
+                          onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                        >
+                          <option value="operator">Operator</option>
+                          <option value="support">Support</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                      >
+                        {isLoading ? 'Creating...' : 'Create User'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Users List */}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[var(--border-secondary)]">
+                        <th className="text-left py-3 px-4">Name</th>
+                        <th className="text-left py-3 px-4">Email</th>
+                        <th className="text-left py-3 px-4">Role</th>
+                        <th className="text-left py-3 px-4">Phone</th>
+                        <th className="text-left py-3 px-4">Created</th>
+                        <th className="text-right py-3 px-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((u) => (
+                        <tr key={u.id} className="border-b border-[var(--border-secondary)]">
+                          <td className="py-3 px-4">
+                            {editingUser === u.id ? (
+                              <input
+                                type="text"
+                                value={editFormData.name}
+                                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                className="px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded"
+                              />
+                            ) : (
+                              u.name
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            {editingUser === u.id ? (
+                              <input
+                                type="email"
+                                value={editFormData.email}
+                                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                                className="px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded"
+                              />
+                            ) : (
+                              u.email
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 text-xs rounded-full border ${roleColors[u.role]}`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {editingUser === u.id ? (
+                              <input
+                                type="tel"
+                                value={editFormData.phone}
+                                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                className="px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded"
+                              />
+                            ) : (
+                              u.phone || '-'
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                            {new Date(u.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {editingUser === u.id ? (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateUser(u.id)}
+                                  className="text-green-400 hover:text-green-300 mr-2"
+                                  disabled={isLoading}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingUser(null)}
+                                  className="text-gray-400 hover:text-gray-300"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEditUser(u)}
+                                  className="text-blue-400 hover:text-blue-300 mr-3"
+                                  disabled={u.id === user?.id}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(u.id)}
+                                  className="text-red-400 hover:text-red-300"
+                                  disabled={u.id === user?.id}
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* System Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="card">
+                  <h3 className="text-lg font-semibold mb-4">System Status</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">API Status</span>
+                      <span className="text-green-400">Operational</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Database</span>
+                      <span className="text-green-400">Connected</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">LLM Service</span>
+                      <span className="text-green-400">Active</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Total Users</span>
+                      <span className="font-medium">{users.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Active Sessions</span>
+                      <span className="font-medium">0</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Requests Today</span>
+                      <span className="font-medium">0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="card">
+              <p className="text-[var(--text-secondary)]">
+                You don't have permission to access operations management.
+              </p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[var(--border-secondary)]">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Time</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Customer</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Bay</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {upcomingBookings.map((booking) => (
-                    <tr key={booking.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-secondary)]">
-                      <td className="py-3 px-4 text-sm">{booking.time}</td>
-                      <td className="py-3 px-4 text-sm font-medium">{booking.customer}</td>
-                      <td className="py-3 px-4 text-sm">{booking.bay}</td>
-                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{booking.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </>
