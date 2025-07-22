@@ -31,6 +31,18 @@ router.post('/message',
       }
 
       // Create user request object with user info
+      // Fetch complete user data if authenticated
+      let completeUser = null;
+      if (req.user) {
+        const users = await readJsonFile<any[]>('users.json');
+        completeUser = users.find(u => u.id === req.user!.id);
+        // Remove password from user data
+        if (completeUser) {
+          const { password, ...userWithoutPassword } = completeUser;
+          completeUser = userWithoutPassword;
+        }
+      }
+      
       const userRequest: UserRequest & { user?: any } = {
         id: requestId,
         requestDescription: req.body.requestDescription,
@@ -39,7 +51,7 @@ router.post('/message',
         timestamp: new Date().toISOString(),
         status: 'pending',
         sessionId,
-        user: req.user // Include authenticated user info
+        user: completeUser || req.user // Use complete user data if available
       };
 
       // Log the request
