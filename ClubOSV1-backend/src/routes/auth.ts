@@ -85,6 +85,46 @@ router.post('/login',
   }
 );
 
+// Initialize admin endpoint (only works if no users exist)
+router.post('/init-admin',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Check if any users exist
+      const users = await readJsonFile<User[]>('users.json');
+      
+      if (users.length > 0) {
+        throw new AppError('USERS_EXIST', 'Admin already initialized', 403);
+      }
+      
+      // Create default admin
+      const hashedPassword = await bcryptjs.hash('admin123', 10);
+      const adminUser: User = {
+        id: 'admin-001',
+        email: 'admin@clubhouse247golf.com',
+        password: hashedPassword,
+        name: 'Admin User',
+        role: 'admin',
+        phone: '+1234567890',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      users.push(adminUser);
+      await writeJsonFile('users.json', users);
+      
+      logger.info('Admin user initialized');
+      
+      res.json({
+        success: true,
+        message: 'Admin user created successfully',
+        email: 'admin@clubhouse247golf.com'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Register endpoint (admin only)
 router.post('/register',
   authenticate,
