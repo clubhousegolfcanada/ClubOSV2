@@ -122,6 +122,7 @@ export default function Operations() {
       const token = localStorage.getItem('clubos_token');
       console.log('Creating user with token:', token ? 'Token exists' : 'No token');
       console.log('Token value:', token ? token.substring(0, 20) + '...' : 'None');
+      console.log('Form data being sent:', formData);
       
       const response = await axios.post(`${API_URL}/auth/register`, formData, {
         headers: { Authorization: `Bearer ${token}` }
@@ -145,6 +146,11 @@ export default function Operations() {
         }, 2000);
       } else if (error.response?.status === 403) {
         toast.error('You do not have permission to create users');
+      } else if (error.response?.status === 400) {
+        // Validation error - show specific message
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Validation failed';
+        console.log('Validation error details:', error.response?.data);
+        toast.error(`Validation error: ${errorMessage}`);
       } else {
         toast.error(error.response?.data?.message || 'Failed to create user');
       }
