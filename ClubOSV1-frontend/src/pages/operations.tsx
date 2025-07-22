@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -112,6 +112,65 @@ export default function Operations() {
     } catch (error) {
       console.error('Failed to export feedback:', error);
       toast.error('Failed to export feedback');
+    }
+  };
+
+  const createBackup = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/backup`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        const backup = response.data.data;
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `clubos_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        
+        toast.success('Backup created successfully');
+      }
+    } catch (error) {
+      console.error('Failed to create backup:', error);
+      toast.error('Failed to create backup');
+    }
+  };
+
+  const restoreBackup = async (file: File) => {
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.post(`${API_URL}/backup/restore`, backup, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        toast.success('Backup restored successfully');
+        // Reload data
+        fetchUsers();
+        if (showFeedback) {
+          fetchFeedback();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore backup:', error);
+      toast.error('Failed to restore backup');
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (confirm('Are you sure you want to restore from this backup? This will overwrite existing data.')) {
+        restoreBackup(file);
+      }
     }
   };
 
@@ -236,33 +295,58 @@ export default function Operations() {
           {user?.role === 'admin' ? (
             <>
               {/* Tab Navigation */}
-              <div className="flex gap-4 mb-6">
-                <button
-                  onClick={() => setShowFeedback(false)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    !showFeedback
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  User Management
-                </button>
-                <button
-                  onClick={() => setShowFeedback(true)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                    showFeedback
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  Feedback Log
-                  {feedback.length > 0 && !showFeedback && (
-                    <span className="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
-                      {feedback.length}
-                    </span>
-                  )}
-                </button>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowFeedback(false)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      !showFeedback
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    User Management
+                  </button>
+                  <button
+                    onClick={() => setShowFeedback(true)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                      showFeedback
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    Feedback Log
+                    {feedback.length > 0 && !showFeedback && (
+                      <span className="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                        {feedback.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
+                {/* Backup/Restore buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={createBackup}
+                    className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                    title="Create backup of all data"
+                  >
+                    <Save className="w-4 h-4" />
+                    Backup
+                  </button>
+                  <label className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2 cursor-pointer"
+                     title="Restore from backup file">
+                    <Upload className="w-4 h-4" />
+                    Restore
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
               {!showFeedback ? (
@@ -313,14 +397,18 @@ export default function Operations() {
                               required
                               minLength={8}
                             />
+                            <p className="text-xs text-[var(--text-muted)] mt-1">
+                              Min 8 chars, must include uppercase, lowercase, and numbers
+                            </p>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">Phone</label>
+                            <label className="block text-sm font-medium mb-2">Phone (optional)</label>
                             <input
                               type="tel"
                               value={formData.phone}
                               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                               className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                              placeholder="+1234567890"
                             />
                           </div>
                           <div>

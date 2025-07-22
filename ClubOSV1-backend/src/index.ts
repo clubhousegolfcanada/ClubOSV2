@@ -16,6 +16,7 @@ import authRoutes from './routes/auth';
 import feedbackRoutes from './routes/feedback';
 import ticketRoutes from './routes/tickets';
 import debugRoutes from './routes/debug';
+import backupRoutes from './routes/backup';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { trackUsage, checkRateLimit } from './middleware/usageTracking';
@@ -103,6 +104,7 @@ app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/tone', toneRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/backup', backupRoutes);
 
 // Static file serving for Google Drive sync (protected)
 app.use('/sync', express.static(path.join(__dirname, 'data', 'sync')));
