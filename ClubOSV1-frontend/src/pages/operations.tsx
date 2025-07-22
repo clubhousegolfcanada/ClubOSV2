@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -112,6 +112,25 @@ export default function Operations() {
     } catch (error) {
       console.error('Failed to export feedback:', error);
       toast.error('Failed to export feedback');
+    }
+  };
+
+  const clearFeedback = async () => {
+    if (!confirm('Are you sure you want to clear all feedback? This action cannot be undone.')) return;
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.delete(`${API_URL}/feedback/clear`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        toast.success('Feedback cleared successfully');
+        setFeedback([]);
+      }
+    } catch (error) {
+      console.error('Failed to clear feedback:', error);
+      toast.error('Failed to clear feedback');
     }
   };
 
@@ -566,6 +585,15 @@ export default function Operations() {
                         >
                           <Download className="w-4 h-4" />
                           Export for Claude
+                        </button>
+                        <button
+                          onClick={clearFeedback}
+                          disabled={feedback.length === 0}
+                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          title="Clear all feedback"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Clear All
                         </button>
                       </div>
                     </div>

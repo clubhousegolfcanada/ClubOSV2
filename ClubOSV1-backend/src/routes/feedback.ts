@@ -146,4 +146,44 @@ router.get('/export', authenticate, async (req, res) => {
   }
 });
 
+// DELETE /api/feedback/clear - Clear all not useful feedback (admin only)
+router.delete('/clear', authenticate, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied. Admin only.' 
+      });
+    }
+
+    try {
+      // Clear the not_useful_feedback.json file by writing an empty array
+      await writeJsonFile('not_useful_feedback.json', []);
+      
+      logger.info('Feedback cleared by admin', {
+        userId: req.user.id,
+        userEmail: req.user.email
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'All feedback cleared successfully' 
+      });
+    } catch (error) {
+      logger.error('Error clearing feedback:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to clear feedback' 
+      });
+    }
+  } catch (error) {
+    logger.error('Error in clear feedback endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+});
+
 export default router;
