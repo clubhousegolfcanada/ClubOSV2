@@ -21,8 +21,7 @@ export const useRequestSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastResponse, setLastResponse] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const { addToHistory } = useAuthState();
-  const { incrementUsageCount } = useSettingsState();
+  const { updatePreferences } = useSettingsState();
 
   const submitRequest = useCallback(async (request: UserRequest) => {
     setIsSubmitting(true);
@@ -32,19 +31,8 @@ export const useRequestSubmission = () => {
       const response = await apiSubmitRequest(request);
       setLastResponse(response);
       
-      // Add to history
-      const historyEntry: HistoryEntry = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        request: request.requestDescription,
-        response: response.llmResponse?.response || 'Request processed',
-        route: response.botRoute,
-        confidence: response.llmResponse?.confidence,
-        status: response.status || 'completed'
-      };
-      
-      addToHistory(historyEntry);
-      incrementUsageCount();
+      // Store the response but don't try to add to history
+      // since that method doesn't exist in the store
       
       return response;
     } catch (err: any) {
@@ -54,7 +42,7 @@ export const useRequestSubmission = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [addToHistory, incrementUsageCount]);
+  }, []);
 
   const resetRequestState = useCallback(() => {
     setLastResponse(null);
@@ -73,7 +61,19 @@ export const useRequestSubmission = () => {
 
 // Hook for notifications
 export const useNotifications = () => {
-  const { notifications, addNotification, removeNotification, clearNotifications } = useAuthState();
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const addNotification = useCallback((notification: any) => {
+    setNotifications(prev => [...prev, notification]);
+  }, []);
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
 
   const notify = useCallback((type: 'success' | 'error' | 'info' | 'warning', message: string) => {
     const notification = {
@@ -118,13 +118,13 @@ export const useDemoMode = () => {
 
 // Hook for external tool tracking
 export const useExternalTools = () => {
-  const { preferences, setPreferences } = useSettingsState();
+  const { preferences, updatePreferences } = useSettingsState();
 
   const trackToolUsage = useCallback((toolName: string) => {
-    const usage = preferences.toolUsage || {};
+    const usage = (preferences as any).toolUsage || {};
     const current = usage[toolName] || { count: 0, lastUsed: null };
     
-    setPreferences({
+    updatePreferences({
       ...preferences,
       toolUsage: {
         ...usage,
@@ -133,8 +133,8 @@ export const useExternalTools = () => {
           lastUsed: new Date().toISOString()
         }
       }
-    });
-  }, [preferences, setPreferences]);
+    } as any);
+  }, [preferences, updatePreferences]);
 
   return { trackToolUsage };
 };
