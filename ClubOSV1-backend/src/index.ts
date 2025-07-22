@@ -22,6 +22,7 @@ import { applySecurityMiddleware } from './middleware/security';
 import { initializeDataFiles } from './utils/fileUtils';
 import { logger } from './utils/logger';
 import { envValidator, config } from './utils/envValidator';
+import { ensureAdminUser } from './utils/ensureAdmin';
 
 // Validate environment variables before starting
 envValidator.validate();
@@ -35,6 +36,9 @@ const initializeApp = async () => {
   try {
     await initializeDataFiles();
     logger.info('Data files initialized successfully');
+    
+    // Ensure admin user exists
+    await ensureAdminUser();
   } catch (error) {
     logger.error('Failed to initialize data files:', error);
     process.exit(1);
