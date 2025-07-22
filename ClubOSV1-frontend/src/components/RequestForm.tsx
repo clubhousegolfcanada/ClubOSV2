@@ -234,8 +234,11 @@ const RequestForm: React.FC = () => {
         feedbackType: feedbackType
       };
       
-      // Send feedback to API
-      await axios.post(`${API_URL}/feedback`, feedbackData);
+      // Send feedback to API with authentication
+      const token = localStorage.getItem('clubos_token');
+      await axios.post(`${API_URL}/feedback`, feedbackData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
       setFeedbackGiven(feedbackType);
       notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');
