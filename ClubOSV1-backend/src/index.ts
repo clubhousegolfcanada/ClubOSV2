@@ -15,6 +15,7 @@ import toneRoutes from './routes/tone';
 import authRoutes from './routes/auth';
 import feedbackRoutes from './routes/feedback';
 import ticketRoutes from './routes/tickets';
+import debugRoutes from './routes/debug';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { trackUsage, checkRateLimit } from './middleware/usageTracking';
@@ -84,6 +85,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/debug', debugRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/llm', llmRoutes);
