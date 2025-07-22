@@ -1,50 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
 import ExternalTools from '@/components/ExternalTools';
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { useAuthState, useSettingsState } from '@/state/useStore';
-import { Shield, Users, Zap, Brain } from 'lucide-react';
-
-type StatCard = {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  color: string;
-};
 
 export default function Dashboard() {
   const { user } = useAuthState();
   const { preferences } = useSettingsState();
-  // Use a default value for usage count since it doesn't exist in the store
-  const usageCount = 0;
-
-  const stats: StatCard[] = [
-    {
-      title: 'Requests Today',
-      value: usageCount,
-      icon: Zap,
-      color: 'var(--status-success)'
-    },
-    {
-      title: 'Active Users',
-      value: '12',
-      icon: Users,
-      color: 'var(--status-info)'
-    },
-    {
-      title: 'System Status',
-      value: 'Online',
-      icon: Shield,
-      color: 'var(--status-success)'
-    },
-    {
-      title: 'AI Confidence',
-      value: '94%',
-      icon: Brain,
-      color: 'var(--status-warning)'
-    }
-  ];
 
   return (
     <>
@@ -66,26 +29,6 @@ export default function Dashboard() {
             <p className="text-[var(--text-secondary)]">
               AI-powered assistant for facility management
             </p>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.title} className="card hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--text-secondary)] mb-1">{stat.title}</p>
-                      <p className="text-2xl font-bold text-[var(--text-primary)]">{stat.value}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-[var(--bg-tertiary)]" style={{ color: stat.color }}>
-                      <Icon className="w-6 h-6" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
 
           {/* Main Content Grid */}
