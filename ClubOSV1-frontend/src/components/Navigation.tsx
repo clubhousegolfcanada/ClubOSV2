@@ -4,6 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
+import type { UserRole } from '@/types';
 
 const Navigation: React.FC = () => {
   const router = useRouter();
