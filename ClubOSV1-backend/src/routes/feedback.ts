@@ -1,21 +1,9 @@
 import { Router } from 'express';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { authenticate } from '../middleware/auth';
+import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
+import { logger } from '../utils/logger';
 
 const router = Router();
-
-// Directory for feedback logs
-const FEEDBACK_DIR = path.join(process.cwd(), 'feedback_logs');
-
-// Ensure feedback directory exists
-const ensureFeedbackDir = async () => {
-  try {
-    await fs.access(FEEDBACK_DIR);
-  } catch {
-    await fs.mkdir(FEEDBACK_DIR, { recursive: true });
-  }
-};
 
 // POST /api/feedback - Submit feedback for a response
 router.post('/', authenticate, async (req, res) => {
@@ -47,38 +35,21 @@ router.post('/', authenticate, async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    // Ensure directory exists
-    await ensureFeedbackDir();
+    // Log feedback
+    logger.info('Feedback received', {
+      feedbackType,
+      isUseful,
+      route,
+      userId: req.user?.id
+    });
 
     // If not useful, append to the "not_useful_feedback.json" file
     if (!isUseful) {
-      const notUsefulFile = path.join(FEEDBACK_DIR, 'not_useful_feedback.json');
-      
-      try {
-        // Read existing data
-        const existingData = await fs.readFile(notUsefulFile, 'utf-8');
-        const feedbackArray = JSON.parse(existingData);
-        feedbackArray.push(feedbackEntry);
-        
-        // Write updated data
-        await fs.writeFile(notUsefulFile, JSON.stringify(feedbackArray, null, 2));
-      } catch {
-        // If file doesn't exist, create it with the first entry
-        await fs.writeFile(notUsefulFile, JSON.stringify([feedbackEntry], null, 2));
-      }
+      await appendToJsonArray('not_useful_feedback.json', feedbackEntry);
     }
 
     // Also log all feedback to a general log file
-    const allFeedbackFile = path.join(FEEDBACK_DIR, 'all_feedback.json');
-    
-    try {
-      const existingData = await fs.readFile(allFeedbackFile, 'utf-8');
-      const feedbackArray = JSON.parse(existingData);
-      feedbackArray.push(feedbackEntry);
-      await fs.writeFile(allFeedbackFile, JSON.stringify(feedbackArray, null, 2));
-    } catch {
-      await fs.writeFile(allFeedbackFile, JSON.stringify([feedbackEntry], null, 2));
-    }
+    await appendToJsonArray('all_feedback.json', feedbackEntry);
 
     res.json({ 
       success: true, 
@@ -86,7 +57,7 @@ router.post('/', authenticate, async (req, res) => {
       feedbackId: feedbackEntry.id 
     });
   } catch (error) {
-    console.error('Error recording feedback:', error);
+    logger.error('Error recording feedback:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to record feedback' 
@@ -105,19 +76,16 @@ router.get('/not-useful', authenticate, async (req, res) => {
       });
     }
 
-    await ensureFeedbackDir();
-    const notUsefulFile = path.join(FEEDBACK_DIR, 'not_useful_feedback.json');
-    
     try {
-      const data = await fs.readFile(notUsefulFile, 'utf-8');
-      const feedbackArray = JSON.parse(data);
+      const feedbackArray = await readJsonFile<any[]>('not_useful_feedback.json');
       
       res.json({ 
         success: true, 
         data: feedbackArray,
         count: feedbackArray.length 
       });
-    } catch {
+    } catch (error) {
+      // If file doesn't exist, return empty array
       res.json({ 
         success: true, 
         data: [],
@@ -126,7 +94,7 @@ router.get('/not-useful', authenticate, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error retrieving feedback:', error);
+    logger.error('Error retrieving feedback:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to retrieve feedback' 
@@ -145,12 +113,8 @@ router.get('/export', authenticate, async (req, res) => {
       });
     }
 
-    await ensureFeedbackDir();
-    const notUsefulFile = path.join(FEEDBACK_DIR, 'not_useful_feedback.json');
-    
     try {
-      const data = await fs.readFile(notUsefulFile, 'utf-8');
-      const feedbackArray = JSON.parse(data);
+      const feedbackArray = await readJsonFile<any[]>('not_useful_feedback.json');
       
       // Format for Claude
       const formattedFeedback = feedbackArray.map((item: any) => ({
@@ -174,7 +138,7 @@ router.get('/export', authenticate, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error exporting feedback:', error);
+    logger.error('Error exporting feedback:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to export feedback' 

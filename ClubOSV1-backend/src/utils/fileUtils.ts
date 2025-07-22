@@ -74,7 +74,9 @@ export const initializeDataFiles = async (): Promise<void> => {
       maxRetries: 3,
       requestTimeout: 30000,
       dataRetentionDays: 90
-    }, null, 2) }
+    }, null, 2) },
+    { name: 'not_useful_feedback.json', content: '[]' },
+    { name: 'all_feedback.json', content: '[]' }
   ];
 
   for (const file of dataFiles) {
