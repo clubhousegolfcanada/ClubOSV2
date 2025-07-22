@@ -1,0 +1,12 @@
+[
+  {
+    "id": "admin-1",
+    "email": "admin@clubhouse247golf.com",
+    "password": "$2b$10$ZqJz8V.qXxR7YO5EINWT0.NJ4CW2Jw3YKFpgLp5kL6QfKDp6DmAGS",
+    "name": "Admin User",
+    "role": "admin",
+    "phone": "+1234567890",
+    "createdAt": "2024-01-20T12:00:00.000Z",
+    "updatedAt": "2024-01-20T12:00:00.000Z"
+  }
+]
