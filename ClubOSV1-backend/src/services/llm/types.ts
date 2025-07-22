@@ -15,12 +15,14 @@ export interface LLMConfig {
 }
 
 export interface LLMResponse {
-  route: 'booking' | 'access' | 'emergency' | 'tech' | 'brand' | 'general';
+  route: 'booking' | 'access' | 'emergency' | 'tech' | 'brand' | 'general' | 'Booking & Access' | 'Emergency' | 'TechSupport' | 'BrandTone' | string;
   reasoning: string;
   confidence: number;
+  response?: string | null;
   extractedInfo?: Record<string, any>;
   requestId: string;
   timestamp: string;
+  provider?: string;
 }
 
 export interface LLMProvider {

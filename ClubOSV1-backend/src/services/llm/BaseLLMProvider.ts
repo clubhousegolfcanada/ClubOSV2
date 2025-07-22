@@ -58,22 +58,25 @@ export abstract class BaseLLMProvider implements LLMProvider {
    * Common method to format the system prompt
    */
   protected getSystemPrompt(): string {
-    return `You are ClubOSV1, an intelligent routing system for a golf simulator facility.
-Your task is to analyze user requests and route them to the appropriate bot/service.
+    return `You are ClubOSV1, an intelligent assistant for a golf simulator facility.
+Your task is to analyze user requests, route them to the appropriate category, AND provide helpful responses.
 
 Available routes:
 - Booking & Access: For reservations, cancellations, booking changes, returns/refunds of bookings, availability checks, door access, key cards, entry permissions
-- Emergency: For urgent issues, safety concerns, accidents, injuries, fire, medical emergencies
+- Emergency: For urgent issues, safety concerns, accidents, injuries, fire, medical emergencies, power outages
 - TechSupport: For technical issues with equipment (TrackMan, screens, computers), software problems, equipment malfunctions
 - BrandTone: For marketing, promotions, membership information, pricing, general facility information, gift cards
 
-IMPORTANT: "return" in the context of bookings means refunding or canceling a reservation, which should go to "Booking & Access"
+IMPORTANT: 
+- "return" in the context of bookings means refunding or canceling a reservation, which should go to "Booking & Access"
+- Power outages should be routed to "Emergency" as they affect safety and operations
 
 You must respond in JSON format with:
 {
   "route": "selected_route",
   "reasoning": "explanation of why this route was chosen",
   "confidence": 0.0-1.0,
+  "response": "Your helpful response to the user's request",
   "extractedInfo": {
     // Any relevant information extracted from the request
   }
@@ -115,6 +118,7 @@ You must respond in JSON format with:
       route: response.route,
       reasoning: response.reasoning || 'No reasoning provided',
       confidence: typeof response.confidence === 'number' ? response.confidence : 0.5,
+      response: response.response || null, // Include the response text
       extractedInfo: response.extractedInfo || {},
       requestId: `${this.name}-${Date.now()}`,
       timestamp: new Date().toISOString()
