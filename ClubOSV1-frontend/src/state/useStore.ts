@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
 
+// Export UserRole type
+export type UserRole = 'admin' | 'operator' | 'support';
+
 // Define the missing types locally
 type ProcessedRequest = {
   id: string;
