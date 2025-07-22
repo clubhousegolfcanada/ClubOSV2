@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { validate, requestValidation } from '../middleware/validation';
+import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { slackFallback } from '../services/slackFallback';
 import { appendToJsonArray, readJsonFile } from '../utils/fileUtils';
@@ -16,6 +17,7 @@ const router = Router();
 
 // Send message directly to Slack (internal API)
 router.post('/message', 
+  authenticate,
   validate(requestValidation.slackMessage),
   async (req: Request, res: Response, next: NextFunction) => {
     const requestId = uuidv4();

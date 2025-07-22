@@ -11,19 +11,19 @@ const apiClient = axios.create({
   },
 });
 
-// Add auth token to requests (commented out for demo)
-// apiClient.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem('clubos_token');
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => {
-//     return Promise.reject(error);
-//   }
-// );
+// Add auth token to requests
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('clubos_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const submitRequest = async (request: UserRequest): Promise<ApiResponse> => {
   const clientStartTime = Date.now(); // Track when request starts on client
