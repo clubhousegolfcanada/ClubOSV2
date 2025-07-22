@@ -13,7 +13,8 @@ const getFileMutex = (filename: string): Mutex => {
   return fileMutexes.get(filename)!;
 };
 
-const DATA_DIR = path.join(process.cwd(), 'src', 'data');
+// Use environment variable if available, otherwise use default
+const DATA_DIR = process.env.DATA_PATH || path.join(process.cwd(), 'src', 'data');
 const SYNC_DIR = path.join(DATA_DIR, 'sync');
 
 export const ensureFileExists = async (filePath: string, defaultContent: any = ''): Promise<void> => {
@@ -41,6 +42,9 @@ export const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
 };
 
 export const initializeDataFiles = async (): Promise<void> => {
+  // Log the data directory being used
+  logger.info(`Using data directory: ${DATA_DIR}`);
+  
   // Create necessary directories
   await ensureDirectoryExists(DATA_DIR);
   await ensureDirectoryExists(SYNC_DIR);
@@ -52,7 +56,16 @@ export const initializeDataFiles = async (): Promise<void> => {
     { name: 'userLogs.json', content: '[]' },
     { name: 'bookings.json', content: '[]' },
     { name: 'accessLogs.json', content: '[]' },
-    { name: 'users.json', content: '[]' },
+    { name: 'users.json', content: JSON.stringify([{
+      "id": "admin-001",
+      "email": "admin@clubhouse247golf.com",
+      "password": "$2b$10$YVn3nQ8Q2vM5FPqg3SZQT.GjGK9AVkGH8J8mUqaJHUEiDCVxDkwKe",
+      "name": "Admin User",
+      "role": "admin",
+      "phone": "+1234567890",
+      "createdAt": "2024-01-20T12:00:00.000Z",
+      "updatedAt": "2024-01-20T12:00:00.000Z"
+    }], null, 2) },
     { name: 'authLogs.json', content: '[]' },
     { name: 'logs/requests.json', content: '[]' },
     { name: 'systemConfig.json', content: JSON.stringify({
@@ -85,7 +98,7 @@ export const readJsonFile = async <T>(filename: string): Promise<T> => {
       const data = await fs.readFile(filePath, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
-      logger.error(`Failed to read ${filename}:`, error);
+      logger.error(`Failed to read ${filename} from ${filePath}:`, error);
       throw error;
     }
   });
