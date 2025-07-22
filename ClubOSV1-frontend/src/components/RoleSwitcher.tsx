@@ -1,17 +1,19 @@
 import React from 'react';
 import { useAuthState } from '@/state/useStore';
-import { UserRole } from '@/state/useStore';
 import { User, Shield, HeadphonesIcon } from 'lucide-react';
+
+// Define UserRole type locally
+type UserRole = 'admin' | 'operator' | 'support';
 
 const RoleSwitcher: React.FC = () => {
   const { user, setUser } = useAuthState();
-
+  
   const roles: { value: UserRole; label: string; icon: React.ReactNode; color: string }[] = [
     { value: 'admin', label: 'Admin', icon: <Shield className="w-4 h-4" />, color: 'text-red-600' },
     { value: 'operator', label: 'Operator', icon: <User className="w-4 h-4" />, color: 'text-blue-600' },
     { value: 'support', label: 'Support', icon: <HeadphonesIcon className="w-4 h-4" />, color: 'text-green-600' }
   ];
-
+  
   const switchRole = (newRole: UserRole) => {
     if (!user) return;
     
@@ -25,9 +27,9 @@ const RoleSwitcher: React.FC = () => {
     setUser(updatedUser);
     localStorage.setItem('clubos_token', 'stub-jwt-token'); // In production, get new token from backend
   };
-
+  
   if (!user) return null;
-
+  
   return (
     <div className="fixed bottom-4 right-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 shadow-lg">
       <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
