@@ -4,7 +4,6 @@ import RequestForm from '@/components/RequestForm';
 import ExternalTools from '@/components/ExternalTools';
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { useAuthState, useSettingsState } from '@/state/useStore';
-// Remove the useAnalytics import - it doesn't exist
 import { Shield, Users, Zap, Brain } from 'lucide-react';
 
 type StatCard = {
@@ -16,7 +15,9 @@ type StatCard = {
 
 export default function Dashboard() {
   const { user } = useAuthState();
-  const { usageCount } = useSettingsState();
+  const { preferences } = useSettingsState();
+  // Use a default value for usage count since it doesn't exist in the store
+  const usageCount = 0;
 
   const stats: StatCard[] = [
     {
