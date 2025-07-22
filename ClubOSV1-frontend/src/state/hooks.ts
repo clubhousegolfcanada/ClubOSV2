@@ -29,7 +29,7 @@ export const useRequestSubmission = () => {
     
     try {
       const response = await apiSubmitRequest(request);
-      setLastResponse(response);
+      setLastResponse(response.data);
       
       // Store the response but don't try to add to history
       // since that method doesn't exist in the store
