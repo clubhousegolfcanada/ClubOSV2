@@ -9,23 +9,44 @@ const router = Router();
 // Backup all data
 router.get('/backup', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
+    logger.info('Backup requested by user:', req.user?.email);
+    
     const backup = {
-      users: await readJsonFile('users.json').catch(() => []),
-      userLogs: await readJsonFile('userLogs.json').catch(() => []),
-      authLogs: await readJsonFile('authLogs.json').catch(() => []),
-      systemConfig: await readJsonFile('systemConfig.json').catch(() => ({})),
-      timestamp: new Date().toISOString()
+      users: await readJsonFile('users.json').catch((err) => {
+        logger.warn('Failed to read users.json:', err.message);
+        return [];
+      }),
+      userLogs: await readJsonFile('userLogs.json').catch((err) => {
+        logger.warn('Failed to read userLogs.json:', err.message);
+        return [];
+      }),
+      authLogs: await readJsonFile('authLogs.json').catch((err) => {
+        logger.warn('Failed to read authLogs.json:', err.message);
+        return [];
+      }),
+      systemConfig: await readJsonFile('systemConfig.json').catch((err) => {
+        logger.warn('Failed to read systemConfig.json:', err.message);
+        return {};
+      }),
+      timestamp: new Date().toISOString(),
+      version: '1.0'
     };
+
+    logger.info('Backup created successfully with', {
+      userCount: backup.users.length,
+      logCount: backup.userLogs.length
+    });
 
     res.json({
       success: true,
       data: backup
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Backup failed:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create backup'
+      message: 'Failed to create backup',
+      error: error.message
     });
   }
 });
