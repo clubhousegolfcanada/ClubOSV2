@@ -29,11 +29,16 @@ export default function Operations() {
     phone: ''
   });
   const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editFormData, setEditFormData] = useState({
+  const [editFormData, setEditFormData] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    role: 'admin' | 'operator' | 'support';
+  }>({
     name: '',
     email: '',
     phone: '',
-    role: 'operator' as const
+    role: 'operator'
   });
 
   // Fetch users on mount
