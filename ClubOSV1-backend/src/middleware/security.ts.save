@@ -25,12 +25,10 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction) 
   const token = req.headers['x-csrf-token'];
   const sessionToken = req.headers['x-session-token'];
 
-return next(); // Temporarily disable CSRF
-
   // In production, implement proper CSRF validation
   if (config.NODE_ENV === 'production' && !token) {
     return res.status(403).json({
-      error: 'CSRF token missing',
+      error: CSRF token missing',
       message: 'Security validation failed'
     });
   }
