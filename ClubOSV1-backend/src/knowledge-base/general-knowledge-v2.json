@@ -1,0 +1,129 @@
+{
+  "route": "GeneralInfoLLM",
+  "description": "General facility information, FAQs, and miscellaneous support",
+  "version": "2.0",
+  "lastUpdated": "2024-01-15",
+  "knowledgeBase": {
+    "accessIssues": {
+      "forgotAccessCode": {
+        "symptoms": [
+          "Customer forgot door code",
+          "Deleted email",
+          "Didn't receive text",
+          "Can't enter"
+        ],
+        "solutions": [
+          "Verify identity and location",
+          "Remote unlock the door",
+          "Prioritize entry — booking cleanup can wait"
+        ],
+        "timeEstimate": "1–2 minutes",
+        "customerScript": "You're all set — just unlocked the door for you. Let us know if you need anything once you're inside.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "deliveryOrRepairAccess": {
+        "symptoms": [
+          "Delivery person or repair tech needs building access",
+          "Scheduled service can't enter"
+        ],
+        "solutions": [
+          "Confirm name and company",
+          "Remote unlock for them",
+          "Log visit if possible"
+        ],
+        "timeEstimate": "1–3 minutes",
+        "customerScript": "You're all set — door unlocked. Let us know when you're out.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      }
+    },
+    "generalInquiries": {
+      "locationInquiry": {
+        "symptoms": [
+          "Customer asks about opening a Clubhouse",
+          "Questions about building specs or rent"
+        ],
+        "solutions": [
+          "Refer them to clubhouse247golf.com",
+          "Advise them to email booking@clubhouse247golf.com for more details"
+        ],
+        "timeEstimate": "1 minute",
+        "customerScript": "Best next step is to check clubhouse247golf.com — or shoot us an email at booking@clubhouse247golf.com. We'll guide you from there.",
+        "escalation": "Send to Slack if it's a potential partner or high-priority inbound."
+      },
+      "askedIfStaffed": {
+        "symptoms": [
+          "Customer or visitor asks if anyone is on-site",
+          "Wants to know if staff are present"
+        ],
+        "solutions": [
+          "Let them know the facility is automated",
+          "Offer live support remotely if they need anything"
+        ],
+        "timeEstimate": "30 seconds",
+        "customerScript": "It's a fully automated space, so no one's on-site — but we've got full remote support if you need anything.",
+        "escalation": "Send to Slack if someone insists on in-person help"
+      },
+      "ladderRequest": {
+        "symptoms": [
+          "Customer or contractor asks if we have a ladder"
+        ],
+        "solutions": [
+          "Confirm that ladders are available at all locations",
+          "Direct them to where it's stored if needed"
+        ],
+        "timeEstimate": "30 seconds",
+        "customerScript": "Yes — every location has one. Let us know if you need help finding it.",
+        "escalation": "Send to Slack if access to storage area is blocked"
+      }
+    },
+    "customerService": {
+      "lostAndFound": {
+        "symptoms": [
+          "Customer says they left a club, jacket, headcover, etc.",
+          "Lost item inquiry"
+        ],
+        "solutions": [
+          "Direct them to email booking@clubhouse247golf.com with a description",
+          "Check lost & found log or camera footage if needed"
+        ],
+        "timeEstimate": "Varies — 2 to 10 minutes",
+        "customerScript": "Email us at booking@clubhouse247golf.com with what you lost — we'll help you get it back.",
+        "escalation": "Send to Slack if it's a high-value item or multiple customer claims"
+      },
+      "cardDeclinedDuringBooking": {
+        "symptoms": [
+          "Customer says booking didn't go through",
+          "Mention of error or failed payment"
+        ],
+        "solutions": [
+          "Confirm no booking exists in system",
+          "Suggest trying again or using a different card",
+          "Offer to hold slot temporarily if time-sensitive"
+        ],
+        "timeEstimate": "1–2 minutes",
+        "customerScript": "Looks like the card didn't go through — no charge on our end. Try again or use another card and let me know if you need help holding the spot.",
+        "escalation": "Send to Slack if repeat pattern or blocked transaction."
+      }
+    }
+  },
+  "facilityInfo": {
+    "automation": {
+      "staffing": "Fully automated facilities with remote support",
+      "support": "24/7 remote assistance available",
+      "equipment": "Ladders available at all locations"
+    },
+    "contact": {
+      "generalEmail": "booking@clubhouse247golf.com",
+      "website": "clubhouse247golf.com",
+      "pricing": "clubhouse247golf.com/info"
+    }
+  },
+  "quickReference": {
+    "commonResponses": [
+      "Door unlock: Verify identity, unlock remotely",
+      "Lost items: Email booking@clubhouse247golf.com",
+      "No staff on-site: Fully automated with remote support",
+      "Payment issues: Try again or different card"
+    ]
+  }
+}

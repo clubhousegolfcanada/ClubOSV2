@@ -1,0 +1,162 @@
+{
+  "route": "TrackManLLM",
+  "description": "TrackMan technical support and troubleshooting",
+  "version": "2.0",
+  "lastUpdated": "2024-01-15",
+  "knowledgeBase": {
+    "commonIssues": {
+      "wifiPassword": {
+        "symptoms": [
+          "Customer asks for Wi-Fi password",
+          "Cannot connect to Wi-Fi network"
+        ],
+        "solutions": [
+          "Provide network name and password: ClubGolf (capital C, capital G)"
+        ],
+        "timeEstimate": "Under 1 minute",
+        "customerScript": "The Wi-Fi network is ClubGolf — capital C, capital G. Let me know if it doesn't connect.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "frozenSystem": {
+        "symptoms": [
+          "Screen frozen",
+          "Unresponsive to clicks",
+          "Game won't launch or switch"
+        ],
+        "solutions": [
+          "Connect to bay PC via Splashtop",
+          "Press Windows key to reveal taskbar",
+          "Right-click TrackMan icon > Close",
+          "Launch TrackMan from desktop",
+          "Wait 30–45 seconds for system to initialize"
+        ],
+        "timeEstimate": "5–10 minutes",
+        "customerScript": "I'll reset the system for you. Give it a minute, then you can restart from the My Activities screen.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "cameraNotDetected": {
+        "symptoms": [
+          "No overhead replay",
+          "TrackMan error: Camera not detected"
+        ],
+        "solutions": [
+          "Connect to PC via Splashtop",
+          "Close and relaunch TrackMan using standard restart steps (see frozenSystem)",
+          "Confirm camera initializes on reboot"
+        ],
+        "timeEstimate": "5–10 minutes",
+        "customerScript": "Looks like the camera glitched — I'm doing a quick restart. It'll be back in about 2 minutes.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "windowsStartupScreen": {
+        "symptoms": [
+          "Customer sees Windows login or startup screen",
+          "TrackMan doesn't auto-launch"
+        ],
+        "solutions": [
+          "Connect via Splashtop",
+          "Investigate cause (often Windows Update)",
+          "Manually log in if needed",
+          "Launch TrackMan from desktop"
+        ],
+        "timeEstimate": "5 minutes",
+        "customerScript": "The bay just needs a quick manual reset — I'm launching the software now.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "ballNotRegistering": {
+        "symptoms": [
+          "Shots not detected",
+          "Ball isn't being picked up by radar"
+        ],
+        "solutions": [
+          "Ensure only one ball is near hitting mat",
+          "Check that TrackMan Game is not frozen",
+          "Restart TrackMan Game software if needed",
+          "Confirm radar connection in TrackMan settings"
+        ],
+        "timeEstimate": "5 minutes",
+        "customerScript": "Hang tight — I'm just making sure the system picks up your shots. Should be ready in a moment.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "partialDataGlitch": {
+        "symptoms": [
+          "Only some ball data showing",
+          "Data screen incomplete or missing numbers"
+        ],
+        "solutions": [
+          "Restart TrackMan software via Splashtop",
+          "Confirm radar is connected and green",
+          "Verify full shot data after reboot"
+        ],
+        "timeEstimate": "5–10 minutes",
+        "customerScript": "TrackMan glitched — doing a reset now. Everything will be back in under 2 minutes.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "systemUpdating": {
+        "symptoms": [
+          "Update message showing",
+          "Bay not launching TrackMan",
+          "Customer stuck at Windows screen"
+        ],
+        "solutions": [
+          "Reboot PC remotely via Splashtop",
+          "Launch TrackMan once update completes",
+          "Offer compensation if delay exceeds 10 minutes"
+        ],
+        "timeEstimate": "5–15 minutes",
+        "customerScript": "Windows forced an update — I'm getting things rebooted now. You'll be good to go shortly. I'll send you a free hour for the wait.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "projectorNoSignal": {
+        "symptoms": [
+          "Black screen or 'No Signal' message on projector",
+          "TrackMan shows running normally on PC"
+        ],
+        "solutions": [
+          "Confirm HDMI is securely connected to PC and projector",
+          "Restart projector using remote or power cycle at plug",
+          "Reboot bay PC if signal still doesn't restore"
+        ],
+        "timeEstimate": "5–10 minutes",
+        "customerScript": "Looks like the projector lost signal — give me a moment to reset things and bring the visuals back.",
+        "escalation": "Send to Slack — someone will respond momentarily."
+      },
+      "trackmanLoginIssue": {
+        "symptoms": [
+          "Customer says they can't log into TrackMan",
+          "Simulator stuck on login screen",
+          "TrackMan asking for email/password and they don't know it"
+        ],
+        "solutions": [
+          "Let customer know they can tap 'Guest' to bypass login",
+          "No need to enter an email unless they have a personal TrackMan account",
+          "Do not attempt to log in on their behalf"
+        ],
+        "timeEstimate": "30 seconds",
+        "customerScript": "You can just hit 'Guest' on the login screen — no account needed. Let me know if anything else pops up.",
+        "escalation": "Send to Slack if login screen glitches or 'Guest' option is missing"
+      }
+    },
+    "systemAccess": {
+      "splashtop": {
+        "description": "Remote access tool for all bay PCs",
+        "credentials": "Check Slack for current credentials",
+        "notes": "Always log off when done"
+      },
+      "physicalAccess": {
+        "bayPC": "Cabinet below hitting area",
+        "projector": "Mounted on ceiling, remote in drawer",
+        "radar": "Behind hitting area, green light indicates power"
+      }
+    }
+  },
+  "quickReference": {
+    "commonFixes": [
+      "Restart TrackMan: Close from taskbar, relaunch from desktop",
+      "Wi-Fi Password: ClubGolf (capital C, capital G)",
+      "Guest Login: No TrackMan account needed",
+      "Standard Reset: Takes 30-45 seconds to initialize"
+    ],
+    "escalationProtocol": "All issues default to: Send to Slack — someone will respond momentarily"
+  }
+}

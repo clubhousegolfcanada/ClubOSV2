@@ -1,0 +1,147 @@
+{
+  "route": "BookingLLM",
+  "description": "Booking management, reservations, and customer service",
+  "version": "2.0",
+  "lastUpdated": "2024-01-15",
+  "knowledgeBase": {
+    "commonRequests": {
+      "giftCardPurchase": {
+        "symptoms": [
+          "Customer asks if they can purchase a gift certificate online",
+          "Looking for gift card options"
+        ],
+        "solutions": [
+          "Send them to clubhouse247golf.com/gift-card/purchase",
+          "Direct link, no additional instructions needed"
+        ],
+        "timeEstimate": "30 seconds",
+        "customerScript": "You can purchase gift cards at clubhouse247golf.com/gift-card/purchase — direct link, no friction.",
+        "tags": ["booking", "purchase"]
+      },
+      "rescheduleBooking": {
+        "symptoms": [
+          "Customer has a booking and wants to change it",
+          "Needs different time or date"
+        ],
+        "solutions": [
+          "Offer to cancel and refund the booking",
+          "Let them rebook at their convenience"
+        ],
+        "timeEstimate": "2-3 minutes",
+        "customerScript": "I'll cancel and refund that booking so you can rebook at your convenience.",
+        "tags": ["booking", "modification"]
+      },
+      "cancellationPolicy": {
+        "symptoms": [
+          "Customer asks about cancellation policy",
+          "Wants to know about fees or penalties"
+        ],
+        "solutions": [
+          "Inform them we don't really have one",
+          "We'll take care of them unless it becomes a pattern"
+        ],
+        "timeEstimate": "30 seconds",
+        "customerScript": "We don't really have a strict policy — we'll take care of you unless it becomes a pattern.",
+        "tags": ["booking", "policy"]
+      },
+      "cancelDueToConflict": {
+        "symptoms": [
+          "Customer needs to cancel due to schedule conflict",
+          "Can't make their booking time"
+        ],
+        "solutions": [
+          "Cancel with no issue",
+          "Reassure them that life happens"
+        ],
+        "timeEstimate": "1-2 minutes",
+        "customerScript": "No problem at all — we understand life happens. I've got it cancelled and refunded.",
+        "tags": ["booking", "refund"]
+      },
+      "extendBooking": {
+        "symptoms": [
+          "Customer wants to add time to current booking",
+          "Asking for extra 30 minutes or hour"
+        ],
+        "solutions": [
+          "Just comp it",
+          "If pattern or repeat customer doing this often, flag and send to Slack"
+        ],
+        "timeEstimate": "1 minute",
+        "customerScript": "I've added that extra time for you — enjoy!",
+        "tags": ["booking", "extension"],
+        "escalation": "Flag if this becomes a pattern with same customer"
+      },
+      "bookingRefundDefault": {
+        "symptoms": [
+          "Any refund or cancellation request",
+          "Customer unhappy with booking"
+        ],
+        "solutions": [
+          "Default to: cancel, refund, no issue",
+          "Let them rebook when it works for them"
+        ],
+        "timeEstimate": "2 minutes",
+        "customerScript": "I've cancelled and refunded that for you. Feel free to rebook whenever works best.",
+        "tags": ["booking", "refund"],
+        "policy": "Default to customer satisfaction"
+      },
+      "missingConfirmation": {
+        "symptoms": [
+          "Didn't receive booking confirmation email",
+          "No text confirmation received"
+        ],
+        "solutions": [
+          "Ask if they didn't receive text either",
+          "If neither came through, manually cancel and rebook",
+          "Confirm purchase went through first"
+        ],
+        "timeEstimate": "3-5 minutes",
+        "customerScript": "Did you receive the text confirmation either? Let me check on that booking for you.",
+        "tags": ["booking", "technical"]
+      },
+      "lostPricing": {
+        "symptoms": [
+          "Lost track of pricing they were quoted",
+          "Can't find previously given prices"
+        ],
+        "solutions": [
+          "Send them to clubhouse247golf.com/info",
+          "All pricing is listed there"
+        ],
+        "timeEstimate": "30 seconds",
+        "customerScript": "All our current pricing is at clubhouse247golf.com/info — everything's listed there.",
+        "tags": ["booking", "information"]
+      },
+      "incorrectEmailUsed": {
+        "symptoms": [
+          "Booked with wrong email address",
+          "Confirmation went to wrong email"
+        ],
+        "solutions": [
+          "Ask for name used on booking",
+          "Verify time slot",
+          "Manually resend or rebook using correct email"
+        ],
+        "timeEstimate": "3-5 minutes",
+        "customerScript": "What name did you use for the booking? I'll find it and resend to the right email.",
+        "tags": ["booking", "support"]
+      }
+    },
+    "policies": {
+      "defaultPolicy": {
+        "cancellation": "No strict policy — customer satisfaction first",
+        "refunds": "Default to yes unless pattern emerges",
+        "extensions": "Comp small extensions, flag patterns",
+        "modifications": "Cancel and rebook is easiest"
+      }
+    }
+  },
+  "quickReference": {
+    "commonLinks": [
+      "Gift Cards: clubhouse247golf.com/gift-card/purchase",
+      "Pricing Info: clubhouse247golf.com/info",
+      "General Email: booking@clubhouse247golf.com"
+    ],
+    "servicePhilosophy": "Default to customer satisfaction — refund first, ask questions later"
+  }
+}

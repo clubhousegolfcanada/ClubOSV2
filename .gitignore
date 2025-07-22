@@ -1,0 +1,59 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+*.env.backup.*
+.env.*
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+Icon
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp.drivedownload/
+.tmp.driveupload/
+
+# Data files
+ClubOSV1-backend/data/*.json
+!ClubOSV1-backend/data/.gitkeep
+
+# Backup files
+*.backup
+*.bak
+
+# Certificates
+*.pem
+*.key
+*.crt
+
+# Archive folders
+_Archive/
+Archive/

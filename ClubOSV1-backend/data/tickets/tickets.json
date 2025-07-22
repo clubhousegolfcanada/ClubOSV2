@@ -1,0 +1,21 @@
+[
+  {
+    "id": "ddc6fbf1-e46b-4255-8438-77f05a3238aa",
+    "title": "screen broken",
+    "description": "screen broken",
+    "category": "facilities",
+    "status": "open",
+    "priority": "high",
+    "location": "bedford",
+    "createdBy": {
+      "id": "admin-001",
+      "name": "admin",
+      "email": "admin@clubhouse247golf.com"
+    },
+    "assignedTo": null,
+    "createdAt": "2025-07-22T03:24:13.974Z",
+    "updatedAt": "2025-07-22T03:24:13.974Z",
+    "resolvedAt": null,
+    "comments": []
+  }
+]
