@@ -12,7 +12,12 @@ import { useAuthState } from '@/state/useStore';
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
 
-function AppContent({ Component, pageProps }: AppProps) {
+interface AppContentProps {
+  Component: AppProps['Component'];
+  pageProps: AppProps['pageProps'];
+}
+
+function AppContent({ Component, pageProps }: AppContentProps) {
   const router = useRouter();
   const { setUser, isAuthenticated } = useAuthState();
   const isPublicRoute = publicRoutes.includes(router.pathname);
