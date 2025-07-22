@@ -51,7 +51,12 @@ applySecurityMiddleware(app);
 
 // CORS configuration (after helmet)
 app.use(cors({
-  origin: config.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    config.FRONTEND_URL || 'http://localhost:3000',
+    'https://club-osv-2-owqx.vercel.app',
+    'https://club-osv-2-owqx-*.vercel.app',
+    /^https:\/\/club-osv-2-.*\.vercel\.app$/
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Session-Token', 'X-API-Key'],
