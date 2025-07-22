@@ -1,0 +1,44 @@
+import bcrypt from 'bcrypt';
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+
+const createFirstAdmin = async () => {
+  const usersFile = join(__dirname, '../../data/users.json');
+  
+  // Create admin user
+  const hashedPassword = await bcrypt.hash('ChangeThis123!', 10);
+  const adminUser = {
+    id: Date.now().toString(),
+    email: 'admin@clubhousegolf.ca',
+    password: hashedPassword,
+    name: 'Admin User',
+    role: 'admin',
+    phone: '+1234567890',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // Read existing users or create new array
+  let users = [];
+  try {
+    const data = readFileSync(usersFile, 'utf8');
+    users = JSON.parse(data);
+  } catch (error) {
+    console.log('Creating new users file...');
+  }
+
+  // Add admin user
+  users.push(adminUser);
+
+  // Write back to file
+  writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  console.log('Admin user created successfully!');
+  console.log('Email: admin@clubhousegolf.ca');
+  console.log('Password: ChangeThis123!');
+};
+
+createFirstAdmin().catch(console.error);
+cd ClubOSV1-backend
+npx tsx src/scripts/createFirstAdmin.ts
+ls src/scripts/
+
