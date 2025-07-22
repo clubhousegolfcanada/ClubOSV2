@@ -59,10 +59,14 @@ app.use(cors({
     /^https:\/\/club-osv-2-.*\.vercel\.app$/
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Session-Token', 'X-API-Key'],
-  exposedHeaders: ['X-New-Token']
+  exposedHeaders: ['X-New-Token'],
+  maxAge: 86400 // 24 hours
 }));
+
+// Explicit preflight handler for all routes
+app.options('*', cors());
 
 // Raw body capture for webhook signature verification
 app.use('/api/slack/webhook', express.raw({ type: 'application/json' }));

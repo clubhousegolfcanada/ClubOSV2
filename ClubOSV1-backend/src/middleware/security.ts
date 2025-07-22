@@ -87,17 +87,8 @@ export const authLimiter = createRateLimiter(
 
 // Security headers configuration
 export const securityHeaders = helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.openai.com", "https://hooks.slack.com"],
-    },
-  },
-  crossOriginEmbedderPolicy: config.NODE_ENV === 'production',
+  contentSecurityPolicy: false, // Disable CSP to avoid conflicts with CORS
+  crossOriginEmbedderPolicy: false, // Disable COEP for CORS compatibility
 });
 
 // Request sanitization
