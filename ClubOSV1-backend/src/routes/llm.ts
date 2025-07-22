@@ -71,7 +71,7 @@ router.post('/request',
       let processedRequest: ProcessedRequest;
 
       try {
-        // Process with LLM for routing AND response
+        // Process with LLM for routing
         const llmResponse = await llmService.processRequest(
           userRequest.requestDescription,
           userRequest.userId,
@@ -82,9 +82,38 @@ router.post('/request',
           }
         );
         
-        // If user specified a route preference, use that instead
-        if (userRequest.routePreference && userRequest.routePreference !== 'Auto') {
-          llmResponse.route = userRequest.routePreference;
+        // Now get the actual response from the assistant
+        let assistantResponse;
+        try {
+          // If user specified a route preference, use that instead
+          const targetRoute = userRequest.routePreference && userRequest.routePreference !== 'Auto' 
+            ? userRequest.routePreference 
+            : llmResponse.route;
+          
+          logger.info('Calling assistant service', { targetRoute });
+          
+          assistantResponse = await assistantService.getAssistantResponse(
+            targetRoute,
+            userRequest.requestDescription,
+            {
+              location: userRequest.location,
+              sessionId: userRequest.sessionId
+            }
+          );
+          
+          // Merge the routing info with the actual assistant response
+          llmResponse.response = assistantResponse.response;
+          llmResponse.extractedInfo = {
+            ...llmResponse.extractedInfo,
+            assistantId: assistantResponse.assistantId,
+            threadId: assistantResponse.threadId
+          };
+        } catch (assistantError) {
+          logger.warn('Failed to get assistant response, using LLM response', {
+            error: assistantError,
+            route: llmResponse.route
+          });
+          // If assistant fails, we still have the LLM response
         }
         
         processedRequest = {
