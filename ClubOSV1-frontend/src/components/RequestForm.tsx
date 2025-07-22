@@ -221,6 +221,16 @@ const RequestForm: React.FC = () => {
   const handleFeedback = async (isUseful: boolean) => {
     if (!lastResponse || feedbackGiven) return;
     
+    // Check if user is authenticated before attempting feedback
+    const token = localStorage.getItem('clubos_token');
+    if (!token || !user) {
+      notify('error', 'Please log in to submit feedback');
+      // Store current location and redirect to login
+      sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+      router.push('/login');
+      return;
+    }
+    
     setFeedbackLoading(true);
     const feedbackType = isUseful ? 'useful' : 'not_useful';
     
@@ -238,11 +248,14 @@ const RequestForm: React.FC = () => {
       };
       
       console.log('Sending feedback:', feedbackData);
+      console.log('Auth token present:', !!token);
       
       // Send feedback to API with authentication
-      const token = localStorage.getItem('clubos_token');
       await axios.post(`${API_URL}/feedback`, feedbackData, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       setFeedbackGiven(feedbackType);
@@ -254,8 +267,22 @@ const RequestForm: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to submit feedback:', error);
-      console.error('Error details:', error.response?.data);
-      notify('error', `Failed to record feedback: ${error.response?.data?.message || error.message}`);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      
+      // Handle 401 specifically
+      if (error.response?.status === 401) {
+        notify('error', 'Your session has expired. Please log in again.');
+        // Store current location and redirect to login
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        router.push('/login');
+      } else {
+        notify('error', `Failed to record feedback: ${error.response?.data?.message || error.message}`);
+      }
     } finally {
       setFeedbackLoading(false);
     }
