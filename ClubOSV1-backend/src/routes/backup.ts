@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { authenticate, roleGuard } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import { roleGuard } from '../middleware/roleGuard';
 import { readJsonFile, writeJsonFile } from '../utils/fileUtils';
 import { logger } from '../utils/logger';
 

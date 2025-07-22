@@ -47,6 +47,33 @@ const initializeApp = async () => {
   }
 };
 
+// Manual CORS headers middleware - place before other middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Set CORS headers manually
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://club-osv-2-owqx.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ];
+  
+  if (origin && (allowedOrigins.includes(origin) || origin.match(/^https:\/\/club-osv-2-.*\.vercel\.app$/))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Session-Token, X-API-Key');
+    res.setHeader('Access-Control-Expose-Headers', 'X-New-Token');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Apply security middleware first
 applySecurityMiddleware(app);
 
@@ -90,6 +117,16 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: config.NODE_ENV
+  });
+});
+
+// CORS test endpoint
+app.get('/api/cors-test', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'CORS is working!',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
   });
 });
 
