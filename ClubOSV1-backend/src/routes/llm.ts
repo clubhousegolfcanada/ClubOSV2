@@ -312,4 +312,51 @@ router.post('/test',
   }
 );
 
+// Debug endpoint to check what's happening
+router.post('/debug-request',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { requestDescription } = req.body;
+      
+      // Check LLM service
+      const llmEnabled = llmService.isEnabled();
+      const llmStatus = await llmService.getRouterStatus();
+      
+      // Try to process with LLM
+      let llmResponse = null;
+      let llmError = null;
+      try {
+        llmResponse = await llmService.processRequest(requestDescription, 'debug-user');
+      } catch (err: any) {
+        llmError = err.message;
+      }
+      
+      // Check system config
+      const config = await readJsonFile<SystemConfig>('systemConfig.json');
+      
+      res.json({
+        success: true,
+        debug: {
+          llmEnabled,
+          llmStatus,
+          llmResponse,
+          llmError,
+          systemConfig: {
+            llmEnabled: config.llmEnabled,
+            provider: process.env.OPENAI_API_KEY ? 'OpenAI configured' : 'No API key'
+          },
+          assistantIds: {
+            booking: process.env.BOOKING_ACCESS_GPT_ID || 'Not configured',
+            emergency: process.env.EMERGENCY_GPT_ID || 'Not configured',
+            tech: process.env.TECH_SUPPORT_GPT_ID || 'Not configured',
+            brand: process.env.BRAND_MARKETING_GPT_ID || 'Not configured'
+          }
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
