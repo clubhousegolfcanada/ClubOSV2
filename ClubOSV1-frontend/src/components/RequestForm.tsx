@@ -8,8 +8,15 @@ import { Lock, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-console.log('API_URL:', API_URL);
+// Ensure API URL is properly formatted
+const getApiUrl = () => {
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  // Remove any trailing slashes
+  return url.replace(/\/$/, '');
+};
+
+const API_URL = getApiUrl();
+console.log('API_URL configured:', API_URL);
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -249,14 +256,18 @@ const RequestForm: React.FC = () => {
       
       console.log('Sending feedback:', feedbackData);
       console.log('Auth token present:', !!token);
+      console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
+      console.log('Full API URL:', `${API_URL}/feedback`);
       
       // Send feedback to API with authentication
-      await axios.post(`${API_URL}/feedback`, feedbackData, {
+      const response = await axios.post(`${API_URL}/feedback`, feedbackData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+      
+      console.log('Feedback response:', response.data);
       
       setFeedbackGiven(feedbackType);
       notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');
