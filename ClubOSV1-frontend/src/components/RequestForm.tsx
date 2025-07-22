@@ -259,15 +259,23 @@ const RequestForm: React.FC = () => {
       console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
       console.log('Full API URL:', `${API_URL}/feedback`);
       
-      // Send feedback to API with authentication
-      const response = await axios.post(`${API_URL}/feedback`, feedbackData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      // Try using fetch instead of axios to avoid potential issues
+      const response = await fetch(`${API_URL}/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(feedbackData)
       });
       
-      console.log('Feedback response:', response.data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Feedback response:', data);
       
       setFeedbackGiven(feedbackType);
       notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');
@@ -286,13 +294,13 @@ const RequestForm: React.FC = () => {
       });
       
       // Handle 401 specifically
-      if (error.response?.status === 401) {
+      if (error.message?.includes('401')) {
         notify('error', 'Your session has expired. Please log in again.');
         // Store current location and redirect to login
         sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
         router.push('/login');
       } else {
-        notify('error', `Failed to record feedback: ${error.response?.data?.message || error.message}`);
+        notify('error', `Failed to record feedback: ${error.message}`);
       }
     } finally {
       setFeedbackLoading(false);
