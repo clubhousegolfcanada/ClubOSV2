@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+console.log('API_URL:', API_URL);
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -67,6 +68,7 @@ const RequestForm: React.FC = () => {
   const [isTicketMode, setIsTicketMode] = useState(false);
   const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [ticketCategory, setTicketCategory] = useState<'facilities' | 'tech'>('facilities');
+  const [lastRequestData, setLastRequestData] = useState<FormData | null>(null);
   const router = useRouter();
 
   const {
@@ -185,6 +187,7 @@ const RequestForm: React.FC = () => {
     setLoadingStartTime(Date.now()); // Start loading timer
     setIsProcessing(true); // Start loading state
     setFeedbackGiven(null); // Clear previous feedback
+    setLastRequestData(data); // Store the request data for feedback
 
     const request: UserRequest = {
       requestDescription: data.requestDescription,
@@ -225,14 +228,16 @@ const RequestForm: React.FC = () => {
       // Log feedback data
       const feedbackData = {
         timestamp: new Date().toISOString(),
-        requestDescription: requestDescription,
-        location: watch('location'),
-        route: lastResponse.botRoute,
+        requestDescription: lastRequestData?.requestDescription || requestDescription || 'No description',
+        location: lastRequestData?.location || watch('location') || '',
+        route: lastResponse.botRoute || 'Unknown',
         response: lastResponse.llmResponse?.response || 'No response',
         confidence: lastResponse.llmResponse?.confidence || 0,
         isUseful: isUseful,
         feedbackType: feedbackType
       };
+      
+      console.log('Sending feedback:', feedbackData);
       
       // Send feedback to API with authentication
       const token = localStorage.getItem('clubos_token');
@@ -243,14 +248,14 @@ const RequestForm: React.FC = () => {
       setFeedbackGiven(feedbackType);
       notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');
       
-      // If not useful, also log to a local file (when enabled)
+      // If not useful, also log to console for debugging
       if (!isUseful) {
         console.log('Not useful response logged:', feedbackData);
-        // TODO: When file writing is enabled, append to feedback_log.json
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to submit feedback:', error);
-      notify('error', 'Failed to record feedback');
+      console.error('Error details:', error.response?.data);
+      notify('error', `Failed to record feedback: ${error.response?.data?.message || error.message}`);
     } finally {
       setFeedbackLoading(false);
     }
