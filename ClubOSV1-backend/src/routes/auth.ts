@@ -125,6 +125,57 @@ router.post('/init-admin',
   }
 );
 
+// Reset admin password (emergency use only)
+router.post('/reset-admin',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const users = await readJsonFile<User[]>('users.json');
+      
+      // Find admin user
+      const adminIndex = users.findIndex(u => u.email === 'admin@clubhouse247golf.com');
+      
+      if (adminIndex === -1) {
+        // Create new admin if doesn't exist
+        const hashedPassword = await bcryptjs.hash('admin123', 10);
+        const adminUser: User = {
+          id: 'admin-001',
+          email: 'admin@clubhouse247golf.com',
+          password: hashedPassword,
+          name: 'Admin User',
+          role: 'admin',
+          phone: '+1234567890',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        users.push(adminUser);
+        await writeJsonFile('users.json', users);
+        
+        res.json({
+          success: true,
+          message: 'Admin user created',
+          email: 'admin@clubhouse247golf.com'
+        });
+      } else {
+        // Reset existing admin password
+        const hashedPassword = await bcryptjs.hash('admin123', 10);
+        users[adminIndex].password = hashedPassword;
+        users[adminIndex].updatedAt = new Date().toISOString();
+        await writeJsonFile('users.json', users);
+        
+        res.json({
+          success: true,
+          message: 'Admin password reset',
+          email: 'admin@clubhouse247golf.com'
+        });
+      }
+      
+      logger.info('Admin password reset');
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Register endpoint (admin only)
 router.post('/register',
   authenticate,
