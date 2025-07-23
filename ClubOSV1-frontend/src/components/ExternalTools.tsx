@@ -19,49 +19,49 @@ const ExternalTools: React.FC = () => {
       subtitle: 'Splashtop',
       url: EXTERNAL_TOOLS.REMOTE_DESKTOP,
       icon: Monitor,
-      color: 'var(--text-primary)' // Changed to white/primary text color
+      color: '#FFFFFF' // White
     },
     {
       name: 'Booking Site',
       subtitle: 'Skedda',
       url: EXTERNAL_TOOLS.BOOKING_SITE,
       icon: Calendar,
-      color: 'var(--status-info)'
+      color: '#FFFFFF' // White
     },
     {
       name: 'Customer Info',
       subtitle: 'HubSpot',
       url: EXTERNAL_TOOLS.CUSTOMER_INFO,
       icon: Users,
-      color: 'var(--status-success)'
+      color: '#FFFFFF' // White
     },
     {
       name: 'Access & Cameras',
       subtitle: 'UniFi',
       url: EXTERNAL_TOOLS.ACCESS_CAMERAS,
       icon: Shield,
-      color: 'var(--status-warning)'
+      color: '#FFFFFF' // White
     },
     {
       name: 'Returns',
       subtitle: 'Stripe',
       url: EXTERNAL_TOOLS.STRIPE_RETURNS,
       icon: CreditCard,
-      color: 'var(--status-error)'
+      color: '#FFFFFF' // White
     },
     {
       name: 'Simulator Portal',
       subtitle: 'Trackman',
       url: EXTERNAL_TOOLS.TRACKMAN_PORTAL,
       icon: Activity,
-      color: 'var(--text-primary)' // Changed to white/primary text color
+      color: '#FF9800' // Orange
     },
     {
       name: 'File Search',
       subtitle: 'Google Drive',
       url: EXTERNAL_TOOLS.GOOGLE_DRIVE,
       icon: HardDrive,
-      color: 'var(--status-info)'
+      color: '#FFFFFF' // White
     }
   ];
 
