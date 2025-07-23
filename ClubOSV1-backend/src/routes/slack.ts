@@ -17,7 +17,7 @@ const router = Router();
 
 // Send message directly to Slack (internal API)
 router.post('/message', 
-  // authenticate, // TEMPORARILY DISABLED - Frontend auth issue
+  authenticate, // Re-enabled - Frontend auth fixed
   validate(requestValidation.slackMessage),
   async (req: Request, res: Response, next: NextFunction) => {
     const requestId = uuidv4();
@@ -33,17 +33,7 @@ router.post('/message',
       // Create user request object with user info
       // Fetch complete user data if authenticated
       let completeUser = null;
-      // TEMPORARY: Create a default user for unauthenticated requests
-      if (!req.user) {
-        req.user = {
-          id: "temp-user",
-          email: "dashboard@clubhouse247golf.com",
-          name: "Dashboard User",
-          phone: "",
-          role: "operator" as any,
-          sessionId: "temp-session"
-        };
-      }      if (req.user) {
+      if (req.user) {
         const users = await readJsonFile<any[]>('users.json');
         completeUser = users.find(u => u.id === req.user!.id);
         // Remove password from user data

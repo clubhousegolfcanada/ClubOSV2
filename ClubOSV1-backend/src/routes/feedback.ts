@@ -7,17 +7,7 @@ import { slackFallback } from '../services/slackFallback';
 const router = Router();
 
 // POST /api/feedback - Submit feedback for a response
-router.post('/', /* authenticate */ async (req, res) => {
-  // TEMPORARILY DISABLED AUTH - Frontend issue
-  // Create temporary user
-  if (!req.user) {
-    req.user = {
-      id: 'temp-user',
-      email: 'feedback@clubhouse247golf.com',
-      role: 'operator' as any,
-      sessionId: 'temp-session'
-    };
-  }
+router.post('/', authenticate, async (req, res) => {
   try {
     const { 
       timestamp, 
