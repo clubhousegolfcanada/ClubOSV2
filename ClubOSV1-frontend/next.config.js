@@ -22,13 +22,11 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN' // Allows embedding on same origin
-          },
+          // Removed X-Frame-Options to allow embedding
+          // Using CSP frame-ancestors instead
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://*.hubspot.com https://*.hs-sites.com https://*.hubspotpagebuilder.com;"
+            value: "frame-ancestors 'self' https://*.hubspot.com https://*.hs-sites.com https://*.hubspotpagebuilder.com http://localhost:* https://app.hubspot.com;"
           },
           {
             key: 'X-Content-Type-Options',
