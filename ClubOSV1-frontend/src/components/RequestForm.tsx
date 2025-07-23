@@ -259,23 +259,14 @@ const RequestForm: React.FC = () => {
       console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
       console.log('Full API URL:', `${API_URL}/feedback`);
       
-      // Try using fetch instead of axios to avoid potential issues
-      const response = await fetch(`${API_URL}/feedback`, {
-        method: 'POST',
+      // Use apiClient to ensure auth header is properly attached
+      const response = await axios.post(`${API_URL}/feedback`, feedbackData, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(feedbackData)
+        }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Feedback response:', data);
+      console.log('Feedback response:', response.data);
       
       setFeedbackGiven(feedbackType);
       notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');

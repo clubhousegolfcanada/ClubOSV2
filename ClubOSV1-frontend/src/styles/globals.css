@@ -453,6 +453,46 @@
   }
 }
 
+/* Embedded mode styles */
+.embedded-mode {
+  overflow-x: hidden;
+}
+
+.embedded-dashboard {
+  min-height: auto !important;
+}
+
+.embedded-mode .container {
+  max-width: 100%;
+  padding: 1rem;
+}
+
+.embedded-mode .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.embedded-mode .card:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide scrollbars in embedded mode */
+.embedded-mode::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Responsive adjustments for embedded mode */
+@media (max-width: 768px) {
+  .embedded-mode .grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .embedded-mode .lg\:col-span-2 {
+    grid-column: span 1 !important;
+  }
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .card {
