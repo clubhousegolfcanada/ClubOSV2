@@ -15,12 +15,17 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('clubos_token');
+    console.log('[Axios Interceptor] Token found:', !!token);
     if (token) {
+      // Ensure headers object exists
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('[Axios Interceptor] Added auth header to request:', config.url);
     }
     return config;
   },
   (error) => {
+    console.error('[Axios Interceptor] Request error:', error);
     return Promise.reject(error);
   }
 );
