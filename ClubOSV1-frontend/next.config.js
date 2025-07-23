@@ -22,11 +22,14 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          // Removed X-Frame-Options to allow embedding
-          // Using CSP frame-ancestors instead
+          // Allow embedding from anywhere
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOWALL'
+          },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://*.hubspot.com https://*.hs-sites.com https://*.hubspotpagebuilder.com http://localhost:* https://app.hubspot.com;"
+            value: "frame-ancestors *;"
           },
           {
             key: 'X-Content-Type-Options',
@@ -35,6 +38,10 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'accelerometer=*, camera=*, geolocation=*, gyroscope=*, magnetometer=*, microphone=*, payment=*, usb=*'
           }
         ]
       }
