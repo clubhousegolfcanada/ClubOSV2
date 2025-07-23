@@ -50,7 +50,7 @@ export default function TicketCenter() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [filterStatus, setFilterStatus] = useState<TicketStatus | 'all'>('all');
+  const [filterStatus, setFilterStatus] = useState<TicketStatus | 'all'>('open');
   const [newComment, setNewComment] = useState('');
   const { notify } = useNotifications();
   const { user } = useAuthState();
