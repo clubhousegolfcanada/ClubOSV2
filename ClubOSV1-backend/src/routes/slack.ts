@@ -33,7 +33,17 @@ router.post('/message',
       // Create user request object with user info
       // Fetch complete user data if authenticated
       let completeUser = null;
-      if (req.user) {
+      // TEMPORARY: Create a default user for unauthenticated requests
+      if (!req.user) {
+        req.user = {
+          id: "temp-user",
+          email: "dashboard@clubhouse247golf.com",
+          name: "Dashboard User",
+          phone: "",
+          role: "operator" as any,
+          sessionId: "temp-session"
+        };
+      }      if (req.user) {
         const users = await readJsonFile<any[]>('users.json');
         completeUser = users.find(u => u.id === req.user!.id);
         // Remove password from user data
