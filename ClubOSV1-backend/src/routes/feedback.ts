@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
 import { logger } from '../utils/logger';
+import { slackFallback } from '../services/slackFallback';
 
 const router = Router();
 
@@ -45,8 +46,19 @@ router.post('/', authenticate, async (req, res) => {
 
     // If not useful, append to the "not_useful_feedback.json" file
     if (!isUseful) {
-      await appendToJsonArray('not_useful_feedback.json', feedbackEntry);
+    await appendToJsonArray('not_useful_feedback.json', feedbackEntry);
+      
+    // Send Slack notification for unhelpful responses
+    try {
+      if (slackFallback.isEnabled()) {
+        await slackFallback.sendUnhelpfulFeedbackNotification(feedbackEntry);
+        logger.info('Slack notification sent for unhelpful feedback', { feedbackId: feedbackEntry.id });
+      }
+    } catch (slackError) {
+      logger.error('Failed to send Slack notification for feedback:', slackError);
+      // Don't fail the feedback submission if Slack fails
     }
+  }
 
     // Also log all feedback to a general log file
     await appendToJsonArray('all_feedback.json', feedbackEntry);

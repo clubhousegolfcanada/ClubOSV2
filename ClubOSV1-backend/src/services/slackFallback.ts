@@ -41,14 +41,13 @@ export class SlackFallbackService {
         userInfo += ` (${request.user.email})`;
       }
       if (request.user.phone) {
-        userInfo += ` | 📱 ${request.user.phone}`;
+        userInfo += ` | Phone: ${request.user.phone}`;
       }
     }
 
     const message: SlackMessage = {
       channel: process.env.SLACK_CHANNEL || '#clubos-requests',
       username: 'ClubOSV1 Bot',
-      icon_emoji: ':warning:',
       text: 'LLM Processing Failed - Manual Review Required',
       attachments: [
         {
@@ -95,14 +94,13 @@ export class SlackFallbackService {
         userInfo += ` (${request.user.email})`;
       }
       if (request.user.phone) {
-        userInfo += ` | 📱 ${request.user.phone}`;
+        userInfo += ` | Phone: ${request.user.phone}`;
       }
     }
 
     const message: SlackMessage = {
       channel: process.env.SLACK_CHANNEL || '#clubos-requests',
       username: 'ClubOSV1 Bot',
-      icon_emoji: ':golf:',
       text: 'New Request (Direct to Slack)',
       attachments: [
         {
@@ -149,7 +147,6 @@ export class SlackFallbackService {
     const message: SlackMessage = {
       channel: process.env.SLACK_CHANNEL || '#clubos-requests',
       username: 'ClubOSV1 Bot',
-      icon_emoji: ':white_check_mark:',
       text: 'Request Processed Successfully',
       attachments: [
         {
@@ -188,41 +185,28 @@ export class SlackFallbackService {
   }
 
   async sendTicketNotification(ticket: any): Promise<void> {
-    const priorityEmoji = {
-      urgent: '🚨',
-      high: '⚠️',
-      medium: '📋',
-      low: '📌'
-    };
-
-    const categoryEmoji = {
-      facilities: '🏢',
-      tech: '🔧'
-    };
-
     // Build creator information string
     let creatorInfo = ticket.createdBy.name || ticket.createdBy.email;
     if (ticket.createdBy.email && ticket.createdBy.name) {
       creatorInfo = `${ticket.createdBy.name} (${ticket.createdBy.email})`;
     }
     if (ticket.createdBy.phone) {
-      creatorInfo += ` | 📱 ${ticket.createdBy.phone}`;
+      creatorInfo += ` | Phone: ${ticket.createdBy.phone}`;
     }
 
     const message: SlackMessage = {
       channel: process.env.SLACK_CHANNEL || '#clubos-requests',
       username: 'ClubOSV1 Bot',
-      icon_emoji: ':ticket:',
       text: `New ${ticket.priority.toUpperCase()} Priority Ticket Created`,
       attachments: [
         {
           color: ticket.priority === 'urgent' ? 'danger' : ticket.priority === 'high' ? 'warning' : 'good',
-          title: `${priorityEmoji[ticket.priority]} ${ticket.title}`,
+          title: `${ticket.title}`,
           text: ticket.description,
           fields: [
             {
               title: 'Category',
-              value: `${categoryEmoji[ticket.category]} ${ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1)}`,
+              value: `${ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1)}`,
               short: true
             },
             {
@@ -252,6 +236,65 @@ export class SlackFallbackService {
             }
           ],
           footer: 'ClubOSV1 Ticket System',
+          ts: Date.now() / 1000
+        }
+      ]
+    };
+
+    await this.sendMessage(message);
+  }
+
+  async sendUnhelpfulFeedbackNotification(feedback: any): Promise<void> {
+    // Build user information string
+    let userInfo = feedback.userEmail || 'Unknown User';
+    
+    const message: SlackMessage = {
+      channel: process.env.SLACK_CHANNEL || '#clubos-requests',
+      username: 'ClubOSV1 Bot',
+      text: 'UNHELPFUL RESPONSE ALERT',
+      attachments: [
+        {
+          color: 'danger', // Red color for unhelpful feedback
+          title: 'User Marked Response as Not Helpful',
+          text: `Request: "${feedback.requestDescription}"`,
+          fields: [
+            {
+              title: 'AI Response Given',
+              value: feedback.response,
+              short: false
+            },
+            {
+              title: 'Route Used',
+              value: feedback.route,
+              short: true
+            },
+            {
+              title: 'Confidence',
+              value: `${Math.round((feedback.confidence || 0) * 100)}%`,
+              short: true
+            },
+            {
+              title: 'Location',
+              value: feedback.location || 'Not specified',
+              short: true
+            },
+            {
+              title: 'Reported By',
+              value: userInfo,
+              short: true
+            },
+            {
+              title: 'Timestamp',
+              value: new Date(feedback.timestamp).toLocaleString(),
+              short: true
+            },
+            {
+              title: 'Feedback ID',
+              value: feedback.id,
+              short: true
+            }
+          ],
+          footer: 'ClubOSV1 Feedback System - Action Required',
           ts: Date.now() / 1000
         }
       ]
