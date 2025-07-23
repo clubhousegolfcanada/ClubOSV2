@@ -65,19 +65,21 @@ export default function Dashboard() {
       </Head>
 
       <div className={`min-h-screen bg-[var(--bg-primary)] ${isEmbedded ? 'embedded-dashboard' : ''}`}>
-        <div className={isEmbedded ? "w-full px-4 py-8" : "container mx-auto px-4 py-8"}>
-          {/* Header - Hide role switcher in embedded mode */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-                Welcome back, {user?.name || 'User'}
-              </h1>
-              {!isEmbedded && <RoleSwitcher />}
+        <div className={isEmbedded ? "w-full px-2 sm:px-4 py-4 sm:py-8" : "container mx-auto px-4 py-8"}>
+          {/* Header - Hide in embedded mode on mobile, show on desktop */}
+          {(!isEmbedded || (isEmbedded && typeof window !== 'undefined' && window.innerWidth > 768)) && (
+            <div className="mb-4 sm:mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="text-xl sm:text-3xl font-bold text-[var(--text-primary)]">
+                  Welcome back, {user?.name || 'User'}
+                </h1>
+                {!isEmbedded && <RoleSwitcher />}
+              </div>
+              <p className="text-sm sm:text-base text-[var(--text-secondary)]">
+                AI-powered assistant for facility management
+              </p>
             </div>
-            <p className="text-[var(--text-secondary)]">
-              AI-powered assistant for facility management
-            </p>
-          </div>
+          )}
 
           {/* Main Content Grid */}
           {isEmbedded ? (

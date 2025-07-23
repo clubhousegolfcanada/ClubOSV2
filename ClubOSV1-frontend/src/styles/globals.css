@@ -570,7 +570,15 @@
 /* Responsive */
 @media (max-width: 640px) {
   .card {
-    @apply p-6;
+    @apply p-4 mb-4;
+  }
+  
+  .form-group {
+    @apply mb-4;
+  }
+  
+  .form-textarea {
+    @apply min-h-[100px];
   }
   
   .route-selector {
@@ -578,7 +586,19 @@
   }
   
   .route-option {
-    @apply px-3 py-1.5 text-xs;
+    @apply px-2 py-1.5 text-xs;
+  }
+  
+  .button-group {
+    @apply flex-col gap-2;
+  }
+  
+  .btn {
+    @apply w-full py-3 px-4;
+  }
+  
+  .btn-secondary {
+    @apply w-full;
   }
   
   .response-header {
@@ -587,5 +607,28 @@
   
   .shortcuts-hint {
     @apply hidden;
+  }
+  
+  /* Mobile embedded mode specific */
+  .embedded-mode {
+    padding: 0 !important;
+  }
+  
+  .embedded-mode .card {
+    @apply rounded-none border-x-0;
+  }
+  
+  .embedded-mode h1 {
+    @apply text-xl;
+  }
+  
+  .embedded-mode p {
+    @apply text-sm;
+  }
+  
+  /* Ensure content is visible on mobile */
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 }
