@@ -194,10 +194,21 @@ export class SlackFallbackService {
       creatorInfo += ` | Phone: ${ticket.createdBy.phone}`;
     }
 
+    // Add @mention for facilities tickets
+    let notificationText = `New ${ticket.priority.toUpperCase()} Priority Ticket Created`;
+    if (ticket.category === 'facilities' && process.env.FACILITIES_SLACK_USER) {
+      notificationText = `<@${process.env.FACILITIES_SLACK_USER}> - ${notificationText} (Facilities)`;
+    }
+
+    // Use facilities channel if specified and ticket is facilities
+    const channel = (ticket.category === 'facilities' && process.env.FACILITIES_SLACK_CHANNEL) 
+      ? process.env.FACILITIES_SLACK_CHANNEL 
+      : (process.env.SLACK_CHANNEL || '#clubos-requests');
+
     const message: SlackMessage = {
-      channel: process.env.SLACK_CHANNEL || '#clubos-requests',
+      channel,
       username: 'ClubOSV1 Bot',
-      text: `New ${ticket.priority.toUpperCase()} Priority Ticket Created`,
+      text: notificationText,
       attachments: [
         {
           color: ticket.priority === 'urgent' ? 'danger' : ticket.priority === 'high' ? 'warning' : 'good',
