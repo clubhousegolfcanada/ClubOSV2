@@ -12,6 +12,8 @@ declare global {
       user?: {
         id: string;
         email: string;
+        name?: string;
+        phone?: string;
         role: UserRole;
         sessionId: string;
       };
@@ -22,6 +24,8 @@ declare global {
 // Extended JWT payload for internal use
 interface JWTPayload extends IJWTPayload {
   sessionId: string;
+  name?: string;
+  phone?: string;
 }
 
 // Generate JWT token
@@ -68,7 +72,9 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
         userId: decoded.userId,
         email: decoded.email,
         role: decoded.role,
-        sessionId: decoded.sessionId
+        sessionId: decoded.sessionId,
+        name: decoded.name,
+        phone: decoded.phone
       });
       res.setHeader('X-New-Token', newToken);
     }
@@ -85,6 +91,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     req.user = {
       id: decoded.userId,
       email: decoded.email,
+      name: decoded.name,
+      phone: decoded.phone,
       role: decoded.role as UserRole,
       sessionId: decoded.sessionId
     };
