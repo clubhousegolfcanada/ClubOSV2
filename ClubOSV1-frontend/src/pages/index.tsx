@@ -65,7 +65,7 @@ export default function Dashboard() {
       </Head>
 
       <div className={`min-h-screen bg-[var(--bg-primary)] ${isEmbedded ? 'embedded-dashboard' : ''}`}>
-        <div className="container mx-auto px-4 py-8">
+        <div className={isEmbedded ? "w-full px-4 py-8" : "container mx-auto px-4 py-8"}>
           {/* Header - Hide role switcher in embedded mode */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -80,17 +80,25 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Request Form - Takes up 2 columns on large screens */}
-            <div className="lg:col-span-2">
+          {isEmbedded ? (
+            // Full width in embedded mode
+            <div className="w-full">
               <RequestForm />
             </div>
-            
-            {/* External Tools - Takes up 1 column on large screens */}
-            <div className="lg:col-span-1">
-              <ExternalTools />
+          ) : (
+            // Grid layout in normal mode
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Request Form - Takes up 2 columns on large screens */}
+              <div className="lg:col-span-2">
+                <RequestForm />
+              </div>
+              
+              {/* External Tools - Takes up 1 column on large screens */}
+              <div className="lg:col-span-1">
+                <ExternalTools />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quick Tips - Hide in embedded mode for space */}
           {!isEmbedded && (

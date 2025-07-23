@@ -458,7 +458,7 @@
   }
 }
 
-/* Embedded mode styles */
+/* Embedded mode styles - AGGRESSIVE FULL WIDTH */
 .embedded-mode {
   overflow-x: hidden;
 }
@@ -467,23 +467,64 @@
   min-height: auto !important;
 }
 
-.embedded-mode .container {
+/* Force ALL containers and width constraints to 100% */
+.embedded-mode .container,
+.embedded-mode [class*="max-w-"],
+.embedded-mode .mx-auto {
   max-width: 100% !important;
   width: 100% !important;
-  padding: 1rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
-.embedded-mode .max-w-3xl {
+/* Specific overrides for common constraints */
+.embedded-mode .max-w-sm,
+.embedded-mode .max-w-md,
+.embedded-mode .max-w-lg,
+.embedded-mode .max-w-xl,
+.embedded-mode .max-w-2xl,
+.embedded-mode .max-w-3xl,
+.embedded-mode .max-w-4xl,
+.embedded-mode .max-w-5xl,
+.embedded-mode .max-w-6xl,
+.embedded-mode .max-w-7xl,
+.embedded-mode .max-w-full,
+.embedded-mode .max-w-screen-sm,
+.embedded-mode .max-w-screen-md,
+.embedded-mode .max-w-screen-lg,
+.embedded-mode .max-w-screen-xl,
+.embedded-mode .max-w-screen-2xl {
   max-width: 100% !important;
+  width: 100% !important;
 }
 
-.embedded-mode .max-w-7xl {
+/* Force all divs to take full width */
+.embedded-mode > div,
+.embedded-mode > div > div,
+.embedded-mode > div > div > div {
   max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Ensure form elements take full width */
+.embedded-mode .card,
+.embedded-mode form,
+.embedded-mode .form-group,
+.embedded-mode .form-input,
+.embedded-mode .form-textarea,
+.embedded-mode .route-selector,
+.embedded-mode .button-group,
+.embedded-mode .response-area {
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
 .embedded-mode .card {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  max-width: 100% !important;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .embedded-mode .card:hover {
@@ -491,22 +532,28 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Force full width for main form container */
-.embedded-mode .mx-auto {
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 100% !important;
+/* Remove grid constraints */
+.embedded-mode .grid {
+  display: block !important;
+  width: 100% !important;
 }
 
-/* Ensure grid takes full width */
-.embedded-mode .grid {
-  width: 100%;
+.embedded-mode .grid > div {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Hide scrollbars in embedded mode */
 .embedded-mode::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Remove any padding that might constrain */
+.embedded-mode body,
+.embedded-mode #__next {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* Responsive adjustments for embedded mode */
