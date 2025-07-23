@@ -451,6 +451,11 @@
   .container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+  
+  /* Make container full width when embedded */
+  .embedded-mode .container {
+    @apply max-w-full w-full px-4;
+  }
 }
 
 /* Embedded mode styles */
@@ -463,17 +468,39 @@
 }
 
 .embedded-mode .container {
-  max-width: 100%;
+  max-width: 100% !important;
+  width: 100% !important;
   padding: 1rem;
+}
+
+.embedded-mode .max-w-3xl {
+  max-width: 100% !important;
+}
+
+.embedded-mode .max-w-7xl {
+  max-width: 100% !important;
 }
 
 .embedded-mode .card {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 100% !important;
 }
 
 .embedded-mode .card:hover {
   transform: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Force full width for main form container */
+.embedded-mode .mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100% !important;
+}
+
+/* Ensure grid takes full width */
+.embedded-mode .grid {
+  width: 100%;
 }
 
 /* Hide scrollbars in embedded mode */
