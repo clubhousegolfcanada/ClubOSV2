@@ -10,15 +10,23 @@ interface AssistantResponse {
 }
 
 export class AssistantService {
-  private openai: OpenAI;
+  private openai: OpenAI | null;
   private assistantMap: Record<string, string>;
+  private isEnabled: boolean;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: config.OPENAI_API_KEY,
-      organization: process.env.OPENAI_ORGANIZATION,
-      project: process.env.OPENAI_PROJECT_ID
-    });
+    this.isEnabled = !!config.OPENAI_API_KEY;
+    
+    if (this.isEnabled) {
+      this.openai = new OpenAI({
+        apiKey: config.OPENAI_API_KEY,
+        organization: process.env.OPENAI_ORGANIZATION,
+        project: process.env.OPENAI_PROJECT_ID
+      });
+    } else {
+      this.openai = null;
+      logger.warn('AssistantService: OpenAI API key not configured, assistant features disabled');
+    }
 
     // Map routes to assistant IDs - handle both old and new route names
     this.assistantMap = {
@@ -40,6 +48,16 @@ export class AssistantService {
     userMessage: string,
     context?: Record<string, any>
   ): Promise<AssistantResponse> {
+    if (!this.isEnabled || !this.openai) {
+      logger.warn('Assistant service is disabled - returning fallback response');
+      return {
+        response: this.getFallbackResponse(route, userMessage),
+        assistantId: 'fallback',
+        threadId: 'fallback',
+        confidence: 0.3
+      };
+    }
+    
     try {
       const assistantId = this.assistantMap[route];
       
@@ -164,4 +182,13 @@ export class AssistantService {
   }
 }
 
-export const assistantService = new AssistantService();
+// Only create instance if we have an API key
+let assistantServiceInstance: AssistantService | null = null;
+
+try {
+  assistantServiceInstance = new AssistantService();
+} catch (error) {
+  logger.error('Failed to initialize AssistantService:', error);
+}
+
+export const assistantService = assistantServiceInstance;

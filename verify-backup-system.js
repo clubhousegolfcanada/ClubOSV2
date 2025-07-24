@@ -24,11 +24,18 @@ async function verifyBackupSystem() {
     
     if (operationsPage.includes('createBackup') && operationsPage.includes('restoreBackup')) {
       console.log('   ✅ Frontend backup/restore functions found');
-      if (operationsPage.includes('/api/backup')) {
+      
+      // Check for the exact API endpoints
+      const hasBackupEndpoint = operationsPage.includes('`${API_URL}/backup`');
+      const hasRestoreEndpoint = operationsPage.includes('`${API_URL}/backup/restore`');
+      
+      if (hasBackupEndpoint && hasRestoreEndpoint) {
         console.log('   ✅ Correct API endpoints in frontend');
         checks.frontend = true;
       } else {
-        console.log('   ❌ Incorrect API endpoints in frontend');
+        console.log('   ❌ API endpoints check:');
+        console.log(`      - Backup endpoint (${hasBackupEndpoint ? '✓' : '✗'}): \${API_URL}/backup`);
+        console.log(`      - Restore endpoint (${hasRestoreEndpoint ? '✓' : '✗'}): \${API_URL}/backup/restore`);
       }
     } else {
       console.log('   ❌ Missing backup/restore functions in frontend');
