@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // Backup all data
-router.get('/backup', authenticate, roleGuard(['admin']), async (req, res) => {
+router.get('/', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     logger.info('Backup requested by user:', req.user?.email);
     
@@ -28,8 +28,16 @@ router.get('/backup', authenticate, roleGuard(['admin']), async (req, res) => {
         logger.warn('Failed to read systemConfig.json:', err.message);
         return {};
       }),
+      notUsefulFeedback: await readJsonFile('not_useful_feedback.json').catch((err) => {
+        logger.warn('Failed to read not_useful_feedback.json:', err.message);
+        return [];
+      }),
+      allFeedback: await readJsonFile('all_feedback.json').catch((err) => {
+        logger.warn('Failed to read all_feedback.json:', err.message);
+        return [];
+      }),
       timestamp: new Date().toISOString(),
-      version: '1.0'
+      version: '1.1'
     };
 
     logger.info('Backup created successfully with', {
@@ -54,12 +62,14 @@ router.get('/backup', authenticate, roleGuard(['admin']), async (req, res) => {
 // Restore from backup
 router.post('/restore', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
-    const { users, userLogs, authLogs, systemConfig } = req.body;
+    const { users, userLogs, authLogs, systemConfig, notUsefulFeedback, allFeedback } = req.body;
 
     if (users) await writeJsonFile('users.json', users);
     if (userLogs) await writeJsonFile('userLogs.json', userLogs);
     if (authLogs) await writeJsonFile('authLogs.json', authLogs);
     if (systemConfig) await writeJsonFile('systemConfig.json', systemConfig);
+    if (notUsefulFeedback) await writeJsonFile('not_useful_feedback.json', notUsefulFeedback);
+    if (allFeedback) await writeJsonFile('all_feedback.json', allFeedback);
 
     res.json({
       success: true,
