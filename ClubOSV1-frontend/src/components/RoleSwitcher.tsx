@@ -31,7 +31,7 @@ const RoleSwitcher: React.FC = () => {
   if (!user) return null;
   
   return (
-    <div className="fixed bottom-4 right-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 shadow-lg">
+    <div className="hidden md:block fixed bottom-4 right-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 shadow-lg">
       <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
         Test Role Switcher
       </h3>
