@@ -149,12 +149,39 @@ const Navigation: React.FC = () => {
           display: block;
         }
         
-        @media (max-width: 767px) {
+        /* Force mobile styles with !important */
+        @media screen and (max-width: 767px) {
           .mobile-nav {
             display: block !important;
           }
           
           .desktop-nav {
+            display: none !important;
+          }
+          
+          /* Ensure container doesn't overflow */
+          .container {
+            max-width: 100% !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+          }
+        }
+        
+        /* Even more specific for embedded mode */
+        .embedded-mode .mobile-nav {
+          display: none;
+        }
+        
+        .embedded-mode .desktop-nav {
+          display: block;
+        }
+        
+        @media screen and (max-width: 767px) {
+          .embedded-mode .mobile-nav {
+            display: block !important;
+          }
+          
+          .embedded-mode .desktop-nav {
             display: none !important;
           }
         }
