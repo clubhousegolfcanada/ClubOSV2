@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
 import ExternalTools from '@/components/ExternalTools';
-import RoleSwitcher from '@/components/RoleSwitcher';
 import { useAuthState, useSettingsState } from '@/state/useStore';
 
 export default function Dashboard() {
@@ -73,7 +72,6 @@ export default function Dashboard() {
                 <h1 className="text-xl sm:text-3xl font-bold text-[var(--text-primary)]">
                   Welcome back, {user?.name || 'User'}
                 </h1>
-                {!isEmbedded && <RoleSwitcher />}
               </div>
               <p className="text-sm sm:text-base text-[var(--text-secondary)]">
                 AI-powered assistant for facility management
