@@ -33,6 +33,15 @@ router.post('/message',
       // Create user request object with user info
       // Fetch complete user data if authenticated
       let completeUser = null;
+      
+      // Debug logging
+      logger.info('Slack message - User from request:', {
+        userId: req.user?.id,
+        userEmail: req.user?.email,
+        userName: req.user?.name,
+        userRole: req.user?.role
+      });
+      
       if (req.user) {
         const users = await readJsonFile<any[]>('users.json');
         completeUser = users.find(u => u.id === req.user!.id);

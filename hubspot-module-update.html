@@ -1,0 +1,64 @@
+<!-- ClubOS Full Width Embed - Force Mobile View -->
+<style>
+  /* Reset HubSpot container constraints */
+  .body-container,
+  .body-container .row-fluid-wrapper,
+  .body-container .row-fluid,
+  .body-container .span12,
+  .body-container .widget-span {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .clubos-full-width-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    overflow-x: hidden;
+  }
+  
+  .clubos-iframe {
+    width: 100%;
+    height: 800px;
+    border: none;
+    display: block;
+  }
+  
+  /* Mobile specific */
+  @media (max-width: 768px) {
+    .clubos-iframe {
+      height: 100vh;
+      min-height: 600px;
+    }
+  }
+</style>
+
+<div class="clubos-full-width-container">
+  <!-- Force mobile viewport with iframe attributes -->
+  <iframe
+    class="clubos-iframe"
+    src="https://club-osv-2-owqx.vercel.app"
+    frameborder="0"
+    allowfullscreen
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    style="width: 100%; border: none;">
+  </iframe>
+</div>
+
+<script>
+// Log viewport info for debugging
+window.addEventListener('load', function() {
+  console.log('HubSpot viewport width:', window.innerWidth);
+  console.log('Iframe element:', document.querySelector('.clubos-iframe'));
+  
+  // Try to detect mobile and add parameter to iframe URL
+  const iframe = document.querySelector('.clubos-iframe');
+  if (iframe && window.innerWidth <= 768) {
+    console.log('Mobile detected, forcing mobile view');
+    // You could add a query parameter here if needed
+    // iframe.src = iframe.src + '?mobile=true';
+  }
+});
+</script>
