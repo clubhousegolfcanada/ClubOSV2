@@ -5,7 +5,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
-import { Menu, X } from 'lucide-react';
 
 type UserRole = 'admin' | 'operator' | 'support';
 
@@ -14,18 +13,6 @@ const Navigation: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuthState();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const navItems = [
     { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
@@ -35,17 +22,75 @@ const Navigation: React.FC = () => {
   ].filter(item => hasAnyRole(user?.role, item.roles));
 
   return (
-    <nav className="bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+    <>
+      {/* Mobile Navigation */}
+      <nav className="mobile-nav bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
             <Link href="/" className="logo text-xl font-semibold">
               ClubOS
             </Link>
-            
-            {/* Desktop Navigation */}
-            {!isMobile && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="hamburger-btn p-2 rounded-md text-[var(--text-secondary)]"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
+          
+          {mobileMenuOpen && (
+            <div className="mobile-menu pb-4">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`
+                    block px-4 py-2 text-base font-medium
+                    ${router.pathname === item.href
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'text-[var(--text-secondary)]'
+                    }
+                  `}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <div className="border-t border-[var(--border-secondary)] mt-2 pt-2">
+                <button
+                  onClick={toggleTheme}
+                  className="block w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)]"
+                >
+                  Theme: {theme.toUpperCase()}
+                </button>
+                {user && (
+                  <button
+                    onClick={logout}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600"
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Desktop Navigation */}
+      <nav className="desktop-nav bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <Link href="/" className="logo text-xl font-semibold">
+                ClubOS
+              </Link>
               <div className="ml-10 flex items-baseline space-x-4">
                 {navItems.map((item) => (
                   <Link
@@ -63,11 +108,7 @@ const Navigation: React.FC = () => {
                   </Link>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Desktop Right Side */}
-          {!isMobile && (
+            </div>
             <div className="flex items-center space-x-4">
               {user && <RoleTag showLabel={false} />}
               <span className="text-sm text-[var(--text-muted)]">Golf Simulator Management</span>
@@ -87,74 +128,9 @@ const Navigation: React.FC = () => {
                 </button>
               )}
             </div>
-          )}
-
-          {/* Mobile menu button */}
-          {isMobile && (
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] focus:outline-none"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          )}
-        </div>
-
-        {/* Mobile menu */}
-        {isMobile && mobileMenuOpen && (
-          <div className="pb-3">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`
-                    block px-3 py-2 rounded-md text-base font-medium transition-all duration-200
-                    ${router.pathname === item.href
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
-                    }
-                  `}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <div className="border-t border-[var(--border-secondary)] pt-3 mt-3">
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="text-xs text-[var(--text-muted)]">Theme</span>
-                  <button
-                    onClick={toggleTheme}
-                    className="px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs font-medium uppercase text-[var(--text-secondary)]"
-                  >
-                    {theme}
-                  </button>
-                </div>
-                {user && (
-                  <>
-                    <div className="px-3 py-2">
-                      <RoleTag showLabel={true} />
-                    </div>
-                    <button
-                      onClick={() => {
-                        logout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full mt-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors text-center"
-                    >
-                      Logout
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
-        )}
-      </div>
+        </div>
+      </nav>
 
       <style jsx>{`
         .logo {
@@ -163,8 +139,46 @@ const Navigation: React.FC = () => {
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
+        
+        /* Mobile navigation styles */
+        .mobile-nav {
+          display: none;
+        }
+        
+        .desktop-nav {
+          display: block;
+        }
+        
+        @media (max-width: 767px) {
+          .mobile-nav {
+            display: block !important;
+          }
+          
+          .desktop-nav {
+            display: none !important;
+          }
+        }
+        
+        .hamburger-btn:hover {
+          background-color: var(--bg-tertiary);
+        }
+        
+        .mobile-menu {
+          animation: slideDown 0.2s ease-out;
+        }
+        
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
-    </nav>
+    </>
   );
 };
 

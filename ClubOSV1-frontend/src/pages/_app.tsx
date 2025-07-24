@@ -39,8 +39,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     }
   }, [setUser, isAuthenticated]);
 
-  // Show navigation only on non-public routes
-  const showNavigation = !isPublicRoute && isAuthenticated;
+  // Check if we're embedded
+  const isEmbedded = typeof window !== 'undefined' && window !== window.parent;
+  
+  // Show navigation only on non-public routes (but always show in embedded mode)
+  const showNavigation = isEmbedded || (!isPublicRoute && isAuthenticated);
 
   return (
     <>
