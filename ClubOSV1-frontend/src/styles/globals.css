@@ -479,6 +479,20 @@
   padding-right: 1rem !important;
 }
 
+/* Mobile specific embedded mode fixes */
+@media (max-width: 768px) {
+  .embedded-mode .container {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  
+  /* Force navigation to be mobile-friendly */
+  .embedded-mode nav .container {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}
+
 /* Specific overrides for common constraints */
 .embedded-mode .max-w-sm,
 .embedded-mode .max-w-md,
