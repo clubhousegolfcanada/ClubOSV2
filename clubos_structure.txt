@@ -1,0 +1,431 @@
+.
+├── .gitattributes
+├── .gitignore
+├── archive
+│   ├── deployment-scripts
+│   │   ├── commit-clear-feedback.sh
+│   │   ├── commit-feedback-auth-fix.sh
+│   │   ├── commit-feedback-debug.sh
+│   │   ├── commit-feedback-fix-v2.sh
+│   │   ├── commit-feedback-fix.sh
+│   │   ├── commit-fetch-fix.sh
+│   │   ├── commit-frontend-auth-fix.sh
+│   │   ├── commit-slack-complete-fix.sh
+│   │   ├── commit-slack-fix.sh
+│   │   ├── deploy-aggressive-fullwidth.sh
+│   │   ├── deploy-backend-auth-fix.sh
+│   │   ├── deploy-clubos.sh
+│   │   ├── deploy-comprehensive-mobile-fix.sh
+│   │   ├── deploy-css-mobile-nav.sh
+│   │   ├── deploy-debug-logging.sh
+│   │   ├── deploy-facilities-notifications.sh
+│   │   ├── deploy-feedback-slack.sh
+│   │   ├── deploy-frontend-railway.sh
+│   │   ├── deploy-frontend-vercel.sh
+│   │   ├── deploy-fullwidth-fix.sh
+│   │   ├── deploy-hubspot-ready.sh
+│   │   ├── deploy-icon-colors.sh
+│   │   ├── deploy-js-conditional-nav.sh
+│   │   ├── deploy-js-mobile-nav.sh
+│   │   ├── deploy-middleware-fix.sh
+│   │   ├── deploy-mobile-fixes.sh
+│   │   ├── deploy-mobile-nav-fix.sh
+│   │   ├── deploy-nick-notifications.sh
+│   │   ├── deploy-slack-fixes.sh
+│   │   ├── deploy-ticket-filter.sh
+│   │   ├── deploy-viewport-fix.sh
+│   │   ├── setup-admin.js
+│   │   ├── setup-env.sh
+│   │   ├── setup-shell-config.sh
+│   │   └── setup-slack-webhook.sh
+│   ├── docs
+│   │   ├── BRANDING_UPDATE.md
+│   │   ├── FACILITIES_NOTIFICATION_SETUP.md
+│   │   ├── FRONTEND_DEPLOY_GUIDE.md
+│   │   ├── HUBSPOT_IMPLEMENTATION_GUIDE.md
+│   │   ├── HUBSPOT_INTEGRATION_GUIDE.md
+│   │   ├── PHONE_NUMBER_UPDATE.md
+│   │   └── SLACK_SETUP_GUIDE.md
+│   ├── fix-scripts
+│   │   ├── complete-fix.sh
+│   │   ├── complete-iframe-fix.sh
+│   │   ├── direct-fix.js
+│   │   ├── emergency-disable-auth.sh
+│   │   ├── fix-admin-login.js
+│   │   ├── fix-backend-modules.sh
+│   │   ├── fix-iframe-security.sh
+│   │   ├── fix-json-files.sh
+│   │   ├── fix-login.sh
+│   │   ├── fix-technical-debt.sh
+│   │   ├── fix-user-creation.sh
+│   │   ├── minimal-auth-fix.sh
+│   │   ├── quick-fix.js
+│   │   ├── revert-auth-fix.sh
+│   │   ├── run-feedback-fix.sh
+│   │   └── temp-disable-auth-slack.sh
+│   └── test-scripts
+│       ├── check-auth-status.js
+│       ├── check-backend-health.sh
+│       ├── check-current-users.js
+│       ├── check-error-log.sh
+│       ├── check-jwt-config.sh
+│       ├── check-services.sh
+│       ├── check-slack-config.sh
+│       ├── check-status.sh
+│       ├── check-system.js
+│       ├── check-users.js
+│       ├── debug-auth.js
+│       ├── debug-backend.js
+│       ├── test-api-response.sh
+│       ├── test-api.sh
+│       ├── test-auth-flow.js
+│       ├── test-backend-login.js
+│       ├── test-bcrypt.js
+│       ├── test-create-user.js
+│       ├── test-detailed.sh
+│       ├── test-embed-fullwidth.html
+│       ├── test-features-v2.sh
+│       ├── test-features.sh
+│       ├── test-feedback-api.sh
+│       ├── test-knowledge.sh
+│       ├── test-llm-request.sh
+│       ├── test-login.js
+│       ├── test-password.js
+│       ├── test-rbac.sh
+│       ├── test-user-creation.sh
+│       ├── test-users-endpoint.js
+│       └── test-with-curl.sh
+├── AUTH_FIX_SUMMARY.md
+├── BACKUP_RESTORE_GUIDE.md
+├── CLEANUP_PLAN.md
+├── ClubOS Agents
+│   ├── Booking & AccessBot
+│   │   ├── Access_Control_Troubleshooting.md
+│   │   ├── Booking_SOPs.md
+│   │   ├── Membership_Guidelines.md
+│   │   └── Refund_Credit_Policies.md
+│   ├── BrandTone & MarketingBot
+│   │   ├── Brand_Guidelines.md
+│   │   ├── Customer_Tone_Standards.md
+│   │   └── Marketing_Content_Archive.md
+│   ├── EmergencyBot
+│   │   ├── Emergency_Procedures_Binder.md
+│   │   └── Escalation_Contacts.md
+│   └── TechSupportBot
+│       ├── Hardware_Reset_SOPs.md
+│       ├── Simulator_Troubleshooting.md
+│       └── Technical_FAQs.md
+├── clubos_structure.txt
+├── clubos-structure.txt
+├── ClubOSV1-backend
+│   ├── .env
+│   ├── .gitignore
+│   ├── data
+│   │   ├── README.md
+│   │   └── tickets
+│   │       └── tickets.json
+│   ├── docs
+│   │   ├── api
+│   │   │   ├── GPT_FUNCTIONS_README.md
+│   │   │   └── RBAC_DOCUMENTATION.md
+│   │   ├── API_USAGE_TRACKING.md
+│   │   ├── deployment
+│   │   ├── LLM_ROUTER.md
+│   │   ├── setup
+│   │   │   ├── ENVIRONMENT_SETUP.md
+│   │   │   ├── GPT_ENV_CHECKLIST.md
+│   │   │   └── STEP_4_WEBHOOK_SETUP.md
+│   │   ├── SLACK_SIGNATURE_VERIFICATION.md
+│   │   └── TESTING.md
+│   ├── feedback_logs
+│   │   ├── all_feedback.json
+│   │   └── not_useful_feedback.json
+│   ├── jest.config.json
+│   ├── logs
+│   │   ├── combined.log
+│   │   └── error.log
+│   ├── migrations
+│   │   └── 001_initial_schema.sql
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── railway.json
+│   ├── README.md
+│   ├── scripts
+│   │   ├── check-config.js
+│   │   └── migrate-data.js
+│   ├── src
+│   │   ├── __tests__
+│   │   │   ├── helpers
+│   │   │   │   └── testUtils.ts
+│   │   │   ├── integration
+│   │   │   │   ├── bookings.test.ts
+│   │   │   │   └── llm.test.ts
+│   │   │   ├── setup.ts
+│   │   │   └── unit
+│   │   │       ├── middleware
+│   │   │       │   ├── roleGuard.test.ts
+│   │   │       │   └── slackSignature.test.ts
+│   │   │       └── services
+│   │   │           └── llmService.test.ts
+│   │   ├── data
+│   │   │   ├── .gitkeep
+│   │   │   ├── accessLogs.json
+│   │   │   ├── all_feedback.json
+│   │   │   ├── authLogs.json
+│   │   │   ├── backups
+│   │   │   ├── bookings.json
+│   │   │   ├── logs
+│   │   │   │   └── requests.json
+│   │   │   ├── migration-report.json
+│   │   │   ├── not_useful_feedback.json
+│   │   │   ├── sync
+│   │   │   │   ├── authLogs.json
+│   │   │   │   ├── logs
+│   │   │   │   │   └── requests.json
+│   │   │   │   ├── userLogs.json
+│   │   │   │   └── users.json
+│   │   │   ├── systemConfig.json
+│   │   │   ├── usage_logs.json
+│   │   │   ├── usage_stats.json
+│   │   │   ├── userLogs.json
+│   │   │   └── users.json
+│   │   ├── index.ts
+│   │   ├── knowledge-base
+│   │   │   ├── booking-knowledge-v2.json
+│   │   │   ├── emergency-knowledge-v2.json
+│   │   │   ├── general-knowledge-v2.json
+│   │   │   ├── knowledgeLoader.ts
+│   │   │   ├── tone-knowledge-v2.json
+│   │   │   └── trackman-knowledge-v2.json
+│   │   ├── middleware
+│   │   │   ├── auth.ts
+│   │   │   ├── errorHandler.ts
+│   │   │   ├── requestLogger.ts
+│   │   │   ├── roleGuard.ts
+│   │   │   ├── security.ts
+│   │   │   ├── security.ts.save
+│   │   │   ├── slackSecurity.ts
+│   │   │   ├── usageTracking.ts
+│   │   │   └── validation.ts
+│   │   ├── routes
+│   │   │   ├── access.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── backup.ts
+│   │   │   ├── bookings.ts
+│   │   │   ├── debug.ts
+│   │   │   ├── feedback.ts
+│   │   │   ├── gptWebhook.ts
+│   │   │   ├── health.ts
+│   │   │   ├── history.ts
+│   │   │   ├── knowledge.ts
+│   │   │   ├── llm.ts
+│   │   │   ├── llmProviders.ts
+│   │   │   ├── passwordReset.ts
+│   │   │   ├── slack.ts
+│   │   │   ├── tickets.ts
+│   │   │   ├── tone.ts
+│   │   │   └── usage.ts
+│   │   ├── scripts
+│   │   │   ├── createAdmin.ts
+│   │   │   ├── createFirstAdmin.ts.save
+│   │   │   ├── freshAdmin.ts
+│   │   │   ├── resetAdmin.ts
+│   │   │   └── testPassword.ts
+│   │   ├── services
+│   │   │   ├── assistantService.ts
+│   │   │   ├── gpt
+│   │   │   │   └── secureGPTFunctionHandler.ts
+│   │   │   ├── llm
+│   │   │   │   ├── AnthropicProvider.ts
+│   │   │   │   ├── BaseLLMProvider.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── LLMRouter.ts
+│   │   │   │   ├── LocalProvider.ts
+│   │   │   │   ├── OpenAIProvider.ts
+│   │   │   │   └── types.ts
+│   │   │   ├── llmService.ts
+│   │   │   ├── slackFallback.ts
+│   │   │   └── usage
+│   │   │       ├── index.ts
+│   │   │       ├── types.ts
+│   │   │       └── UsageTracker.ts
+│   │   ├── types
+│   │   │   └── index.ts
+│   │   └── utils
+│   │       ├── ensureAdmin.ts
+│   │       ├── envValidator.ts
+│   │       ├── fileUtils.ts
+│   │       └── logger.ts
+│   └── tsconfig.json
+├── ClubOSV1-frontend
+│   ├── .env.production
+│   ├── .gitignore
+│   ├── .next
+│   │   ├── build-manifest.json
+│   │   ├── cache
+│   │   │   └── swc
+│   │   │       └── plugins
+│   │   │           └── v7_macos_aarch64_0.104.30
+│   │   ├── fallback-build-manifest.json
+│   │   ├── package.json
+│   │   ├── react-loadable-manifest.json
+│   │   ├── server
+│   │   │   ├── _error.js
+│   │   │   ├── edge-runtime-webpack.js
+│   │   │   ├── middleware-build-manifest.js
+│   │   │   ├── middleware-manifest.json
+│   │   │   ├── middleware-react-loadable-manifest.js
+│   │   │   ├── next-font-manifest.js
+│   │   │   ├── next-font-manifest.json
+│   │   │   ├── pages
+│   │   │   │   ├── _app.js
+│   │   │   │   ├── _document.js
+│   │   │   │   ├── _error.js
+│   │   │   │   └── operations.js
+│   │   │   ├── pages-manifest.json
+│   │   │   ├── src
+│   │   │   │   └── middleware.js
+│   │   │   ├── static
+│   │   │   │   └── webpack
+│   │   │   │       └── 633457081244afec._.hot-update.json
+│   │   │   ├── vendor-chunks
+│   │   │   │   ├── @swc.js
+│   │   │   │   ├── lucide-react.js
+│   │   │   │   └── next.js
+│   │   │   └── webpack-runtime.js
+│   │   ├── static
+│   │   │   ├── chunks
+│   │   │   │   ├── fallback
+│   │   │   │   │   ├── amp.js
+│   │   │   │   │   ├── main.js
+│   │   │   │   │   ├── pages
+│   │   │   │   │   │   ├── _app.js
+│   │   │   │   │   │   └── _error.js
+│   │   │   │   │   ├── react-refresh.js
+│   │   │   │   │   └── webpack.js
+│   │   │   │   └── polyfills.js
+│   │   │   └── development
+│   │   │       ├── _buildManifest.js
+│   │   │       └── _ssgManifest.js
+│   │   └── trace
+│   ├── clean-cache.sh
+│   ├── next-env.d.ts
+│   ├── next.config.js
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── README.md
+│   ├── src
+│   │   ├── api
+│   │   │   └── apiClient.ts
+│   │   ├── components
+│   │   │   ├── auth
+│   │   │   │   └── AuthGuard.tsx
+│   │   │   ├── Button.tsx
+│   │   │   ├── ExternalTools.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Navigation.tsx
+│   │   │   ├── Notifications.tsx
+│   │   │   ├── RequestForm.tsx
+│   │   │   ├── RoleTag.tsx
+│   │   │   └── Toggle.tsx
+│   │   ├── contexts
+│   │   │   └── ThemeContext.tsx
+│   │   ├── middleware.ts
+│   │   ├── pages
+│   │   │   ├── _app.tsx
+│   │   │   ├── _document.tsx
+│   │   │   ├── commands.tsx
+│   │   │   ├── index.tsx
+│   │   │   ├── login.tsx
+│   │   │   ├── operations.tsx
+│   │   │   └── tickets.tsx
+│   │   ├── state
+│   │   │   ├── hooks.ts
+│   │   │   └── useStore.ts
+│   │   ├── styles
+│   │   │   └── globals.css
+│   │   ├── types
+│   │   │   └── request.ts
+│   │   └── utils
+│   │       ├── roleUtils.ts
+│   │       └── routeUtils.ts
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   └── vercel.json
+├── DEPLOYMENT_CHECKLIST.md
+├── DEPLOYMENT_NOTES.md
+├── FEATURE-REVIEW.md
+├── LOGIN_IMPLEMENTATION.md
+├── Notes
+│   ├── _bootstrap.md
+│   ├── _chat_continuity.md
+│   └── update-bootstrap-with-context.sh
+├── OPTIMIZATION_PLAN.md
+├── package.json
+├── RBAC_COMPLETE.md
+├── README.md
+├── scripts
+│   ├── auth
+│   │   ├── create-admin.sh
+│   │   ├── create-auth-test.sh
+│   │   ├── diagnose-auth.sh
+│   │   ├── final-fix-admin.js
+│   │   ├── reenable-backend-auth.sh
+│   │   ├── reset-admin-password.js
+│   │   └── set-working-password.js
+│   ├── backup
+│   │   ├── make-backup-scripts-executable.sh
+│   │   └── test-backup-instructions.sh
+│   ├── deployment
+│   │   ├── deploy.sh
+│   │   ├── make-deploy-executable.sh
+│   │   ├── make-deploy-script-executable.sh
+│   │   ├── make-executable.sh
+│   │   ├── make-login-fix-executable.sh
+│   │   └── make-scripts-executable.sh
+│   ├── run-deploy.sh
+│   ├── tests
+│   │   ├── simple-login-test.js
+│   │   ├── test-backup-restore.js
+│   │   └── verify-backup-system.js
+│   └── utilities
+│       ├── add-phone-numbers.js
+│       ├── clean-logs.sh
+│       ├── cleanup-root.sh
+│       ├── clear-rate-limits.js
+│       ├── deep-clean.sh
+│       ├── fix-phone-validation.sh
+│       ├── generate-hash.js
+│       ├── generate-secrets.sh
+│       ├── git-commit-cleanup.sh
+│       ├── install-deps.sh
+│       ├── install-frontend-deps.sh
+│       ├── quick-fix-json.js
+│       ├── quick-start.sh
+│       ├── remove-role-switcher.sh
+│       ├── restart-backend.sh
+│       ├── restart-no-ratelimit.sh
+│       ├── restart.sh
+│       ├── rollback-to-stable.sh
+│       ├── setup.bat
+│       ├── setup.sh
+│       ├── start-all.sh
+│       ├── start-backend.sh
+│       ├── start-clubos.sh
+│       └── start-dev.sh
+├── TECHNICAL_DEBT.md
+├── test-html
+│   ├── hubspot-embed-full.html
+│   ├── hubspot-module-update.html
+│   ├── hubspot-widget.html
+│   └── slack-sender.html
+├── test-scripts
+│   ├── test-auth-simple.js
+│   └── test-user-creation.js
+├── TICKET_DELETE_FEATURE.md
+├── tsconfig.json
+├── UI-TESTING-GUIDE.md
+└── USER_MANAGEMENT_FIX.md
+
+80 directories, 349 files
