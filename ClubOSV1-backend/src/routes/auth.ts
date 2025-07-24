@@ -199,7 +199,7 @@ router.post('/register',
       .isIn(['admin', 'operator', 'support'])
       .withMessage('Invalid role'),
     body('phone')
-      .optional()
+      .optional({ nullable: true, checkFalsy: true })
       .trim()
       .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/)
       .withMessage('Invalid phone number format')
@@ -392,7 +392,7 @@ router.put('/users/:userId',
       .notEmpty()
       .withMessage('Name cannot be empty'),
     body('phone')
-      .optional()
+      .optional({ nullable: true, checkFalsy: true })
       .trim()
       .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/)
       .withMessage('Invalid phone number format'),
