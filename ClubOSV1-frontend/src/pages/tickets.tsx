@@ -103,6 +103,34 @@ export default function TicketCenter() {
     }
   };
 
+  const deleteTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.delete(
+        `${API_URL}/tickets/${ticketId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        notify('success', 'Ticket deleted successfully');
+        loadTickets();
+        if (selectedTicket?.id === ticketId) {
+          setSelectedTicket(null);
+        }
+      }
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        notify('error', 'You do not have permission to delete tickets');
+      } else {
+        notify('error', 'Failed to delete ticket');
+      }
+    }
+  };
+
   const addComment = async (ticketId: string) => {
     if (!newComment.trim()) return;
     
@@ -338,10 +366,10 @@ export default function TicketCenter() {
                     </div>
                   </div>
 
-                  {/* Status Update */}
+                  {/* Actions */}
                   <div className="mb-6">
-                    <h3 className="font-medium text-sm text-[var(--text-secondary)] mb-2">Update Status</h3>
-                    <div className="flex gap-2">
+                    <h3 className="font-medium text-sm text-[var(--text-secondary)] mb-2">Actions</h3>
+                    <div className="flex gap-2 mb-3">
                       {(['open', 'in-progress', 'resolved', 'closed'] as TicketStatus[]).map((status) => (
                         <button
                           key={status}

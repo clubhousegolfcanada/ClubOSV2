@@ -342,6 +342,46 @@ router.patch('/:id/assign', authenticate, authorize(['admin', 'operator']), asyn
   }
 });
 
+// DELETE /api/tickets/:id - Delete a ticket
+router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const tickets = await readTickets();
+    const ticketIndex = tickets.findIndex((t: any) => t.id === id);
+    
+    if (ticketIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+    
+    // Remove the ticket
+    const deletedTicket = tickets[ticketIndex];
+    tickets.splice(ticketIndex, 1);
+    
+    await writeTickets(tickets);
+    
+    logger.info('Ticket deleted', {
+      ticketId: id,
+      deletedBy: req.user!.email
+    });
+    
+    res.json({
+      success: true,
+      message: 'Ticket deleted successfully',
+      data: deletedTicket
+    });
+  } catch (error) {
+    logger.error('Failed to delete ticket:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete ticket'
+    });
+  }
+});
+
 // GET /api/tickets/stats - Get ticket statistics
 router.get('/stats', authenticate, async (req, res) => {
   try {
