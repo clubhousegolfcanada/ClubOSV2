@@ -24,14 +24,32 @@ async function setupUserSettings() {
   console.log('   1. Go to railway.app and login');
   console.log('   2. Click on your project');
   console.log('   3. Click on the PostgreSQL database');
-  console.log('   4. Go to the "Variables" tab');
-  console.log('   5. Copy the DATABASE_URL value\n');
+  console.log('   4. Go to the "Connect" tab (NOT Variables)');
+  console.log('   5. Copy the PUBLIC DATABASE_URL (not the private one)');
+  console.log('   ⚠️  Make sure it contains "railway.app" NOT "railway.internal"\n');
+  console.log('   Example format:');
+  console.log('   postgresql://postgres:password@containers-us-west-123.railway.app:5432/railway\n');
   
   // Prompt for DATABASE_URL
   const DATABASE_URL = await prompt('📌 Paste your DATABASE_URL here: ');
   
   if (!DATABASE_URL || !DATABASE_URL.startsWith('postgresql://')) {
     console.error('\n❌ Invalid DATABASE_URL. It should start with postgresql://');
+    rl.close();
+    process.exit(1);
+  }
+  
+  // Check for internal URL
+  if (DATABASE_URL.includes('railway.internal')) {
+    console.error('\n❌ You provided the INTERNAL Railway URL.');
+    console.error('   This only works from within Railway\'s network.');
+    console.error('\n📌 Please use the PUBLIC URL instead:');
+    console.error('   1. Go back to Railway');
+    console.error('   2. Click on your PostgreSQL database');
+    console.error('   3. Go to the "Connect" tab');
+    console.error('   4. Look for "Public Network"');
+    console.error('   5. Copy the DATABASE_PUBLIC_URL');
+    console.error('\n   It should contain "railway.app" not "railway.internal"');
     rl.close();
     process.exit(1);
   }
