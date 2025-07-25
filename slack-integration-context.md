@@ -11,8 +11,8 @@ I'm working on ClubOS, a golf simulator management system that currently:
 Current stack:
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - Backend: Node.js, Express, TypeScript
-- Data: JSON file storage (users.json, feedback.json, userLogs.json)
-- No SQL database - using file-based storage
+- Database: PostgreSQL (hosted on Railway)
+- Deployment: Railway for both frontend and backend
 - Currently no WebSocket implementation
 - No Slack webhook integration yet
 
@@ -48,7 +48,7 @@ Relevant files:
 
 ## Constraints
 Important constraints:
-- No SQL database (must use JSON files)
+- PostgreSQL database on Railway
 - No existing WebSocket setup
 - No Slack webhook receiver implemented
 - Must maintain backward compatibility
@@ -115,7 +115,7 @@ I'm implementing Slack reply tracking for ClubOS, a golf simulator management sy
 
 Current setup:
 - React/Next.js frontend with TypeScript
-- Express backend storing data in JSON files (no SQL database)
+- Express backend with PostgreSQL database (on Railway)
 - Existing feedback system where users mark AI responses as helpful/not helpful
 - Slack integration that sends messages but doesn't track replies
 
@@ -124,7 +124,7 @@ Goal: When someone replies to a ClubOS message in Slack, I want to:
 2. Show it in the Operations page alongside user feedback
 3. Notify the original requester in real-time
 
-I have a detailed plan (which I'll share) but need help implementing it within our constraints of JSON file storage and no current WebSocket setup.
+I have a detailed plan (which I'll share) but need help implementing it with our PostgreSQL database and no current WebSocket setup.
 
 My preferences:
 - Provide complete file contents when making changes (no truncation)
@@ -142,43 +142,32 @@ Should I start with extending the feedback system to support Slack replies, or w
 
 ## Technical Implementation Details
 
-### Database Schema Changes (JSON Structure)
-```javascript
-// Extended feedback.json structure
-{
-  "id": "uuid",
-  "userId": "user-id",
-  "requestDescription": "original request",
-  "response": "AI or Slack response",
-  "feedbackType": "useful" | "not_useful" | "slack_reply",
-  "feedbackSource": "user" | "slack",
-  "isUseful": boolean,
-  "slackThreadTs": "slack thread timestamp",
-  "slackUserName": "Slack responder name",
-  "originalRequestId": "request-id",
-  "metadata": {
-    "slackUserId": "U123456",
-    "slackMessageTs": "timestamp",
-    "slackChannel": "#channel",
-    "responseTime": 12345
-  },
-  "timestamp": "ISO date",
-  "createdAt": "ISO date"
-}
-```
+### Database Schema Changes (PostgreSQL)
+```sql
+-- Add columns to existing feedback table
+ALTER TABLE feedback 
+ADD COLUMN feedback_source VARCHAR(50) DEFAULT 'user',
+ADD COLUMN slack_thread_ts VARCHAR(255),
+ADD COLUMN slack_user_name VARCHAR(255),
+ADD COLUMN original_request_id UUID REFERENCES requests(id);
 
-### Slack Message Tracking Structure
-```javascript
-// New slackMessages.json structure
-{
-  "id": "uuid",
-  "userId": "clubos-user-id",
-  "requestId": "original-request-id",
-  "slackThreadTs": "1234567890.123456",
-  "slackChannel": "#clubos-requests",
-  "originalMessage": "user's request text",
-  "createdAt": "ISO date"
-}
+-- Add indexes
+CREATE INDEX idx_feedback_source ON feedback(feedback_source);
+CREATE INDEX idx_feedback_slack_thread ON feedback(slack_thread_ts);
+
+-- Create new table for tracking Slack messages
+CREATE TABLE slack_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id),
+  request_id UUID REFERENCES requests(id),
+  slack_thread_ts VARCHAR(255) UNIQUE,
+  slack_channel VARCHAR(255),
+  original_message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_slack_messages_user_id ON slack_messages(user_id);
+CREATE INDEX idx_slack_messages_thread_ts ON slack_messages(slack_thread_ts);
 ```
 
 ### API Endpoints to Implement

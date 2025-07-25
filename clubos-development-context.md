@@ -44,16 +44,12 @@ ClubOS is a comprehensive golf simulator management system designed for ClubHous
 ### Backend
 - **Runtime**: Node.js with Express
 - **Language**: TypeScript
-- **Database**: JSON file storage (no SQL database)
+- **Database**: PostgreSQL (hosted on Railway)
+- **ORM/Query Builder**: [Specify if using Prisma, TypeORM, Knex, etc.]
 - **Authentication**: JWT with bcrypt
 - **API Integration**: OpenAI GPT-4
 - **External Services**: Slack Webhooks
-- **File Structure**: 
-  - users.json - User accounts and roles
-  - feedback.json - User feedback and ratings
-  - userLogs.json - Request history
-  - tickets.json - Support tickets
-  - systemConfig.json - System configuration
+- **Deployment**: Railway
 
 ## Project Structure
 ```
@@ -141,11 +137,10 @@ git push origin main
 - Secure password hashing with bcrypt
 
 ## Current Limitations & Constraints
-1. **No SQL Database**: All data stored in JSON files
-2. **No WebSockets**: Currently no real-time communication
-3. **File-based Storage**: Potential scalability concerns
-4. **No Email Service**: No automated email notifications
-5. **Single Instance**: Not designed for horizontal scaling
+1. **No WebSockets**: Currently no real-time communication
+2. **No Email Service**: No automated email notifications
+3. **Single Region**: Railway deployment in one region
+4. **Rate Limiting**: Need to implement for public endpoints
 
 ## Common Development Tasks
 
@@ -179,9 +174,12 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api
 # Backend (.env)
 PORT=3001
 NODE_ENV=development
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
 JWT_SECRET=your-secret-key
 OPENAI_API_KEY=sk-...
 SLACK_WEBHOOK_URL=https://hooks.slack.com/...
+
+# Railway automatically provides DATABASE_URL
 ```
 
 ## Testing Approach
@@ -192,11 +190,12 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/...
 - Mobile responsiveness
 
 ## Deployment Considerations
-- Frontend: Vercel or similar JAMstack platform
-- Backend: Heroku, Railway, or VPS
-- Environment variables must be set
-- CORS configuration for production
-- SSL/TLS required for production
+- Platform: Railway for both frontend and backend
+- Database: PostgreSQL on Railway
+- Environment variables set in Railway dashboard
+- Automatic deployments from GitHub
+- SSL/TLS handled by Railway
+- Custom domains supported
 
 ## Sample Opening Message for New Development
 
@@ -205,13 +204,13 @@ I'm working on ClubOS, a golf simulator management system with the following set
 
 Tech Stack:
 - Frontend: Next.js, TypeScript, Tailwind CSS, Zustand
-- Backend: Express, TypeScript, JSON file storage (no SQL DB)
+- Backend: Express, TypeScript, PostgreSQL on Railway
 - Auth: JWT with role-based access (admin, operator, support, kiosk)
 
 Current Task: [Describe what you want to build]
 
 Key Constraints:
-- No database (using JSON files)
+- Using PostgreSQL (not JSON files)
 - No WebSockets currently
 - Must maintain backward compatibility
 - Clean, minimalist UI (no unnecessary icons)
@@ -244,16 +243,23 @@ File paths:
 - **TechSupport**: Equipment and technical issues
 - **BrandTone**: Marketing and communication
 
-### File Storage Patterns
-```javascript
-// Reading data
-const data = await readJsonFile<Type[]>('filename.json');
+### File Storage Patterns (PostgreSQL)
+```typescript
+// Example using raw SQL
+const result = await pool.query(
+  'SELECT * FROM users WHERE email = $1',
+  [email]
+);
 
-// Writing data
-await writeJsonFile('filename.json', data);
+// Example using query builder (if using Knex)
+const users = await db('users')
+  .where('role', 'admin')
+  .orderBy('created_at', 'desc');
 
-// Appending to array
-await appendToJsonArray('filename.json', newItem);
+// Example using ORM (if using Prisma)
+const user = await prisma.user.findUnique({
+  where: { email }
+});
 ```
 
 ### Common API Patterns
