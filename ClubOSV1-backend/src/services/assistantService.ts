@@ -157,6 +157,11 @@ export class AssistantService {
         .map(content => (content as any).text.value)
         .join('\n');
 
+      logger.info('Raw assistant response:', { 
+        length: textContent.length,
+        preview: textContent.substring(0, 200) + '...'
+      });
+
       // Clean up the response - remove markdown code blocks and citations
       let cleanedContent = textContent;
       
@@ -179,57 +184,65 @@ export class AssistantService {
       let escalation = undefined;
       
       try {
-        // Check if response is JSON by looking for { at the start
-        if (cleanedContent.trim().startsWith('{')) {
-          const parsed = JSON.parse(cleanedContent);
-          
-          // Validate it has the expected structure
-          if (parsed.response) {
-            structuredResponse = parsed;
-            responseText = parsed.response; // Use the response field for display
-            category = parsed.category;
-            priority = parsed.priority;
-            actions = parsed.actions;
-            metadata = parsed.metadata;
-            escalation = parsed.escalation;
-            
-            logger.info('Assistant returned structured JSON response', {
-              route,
-              category,
-              priority,
-              hasActions: !!actions?.length
-            });
-          }
-        } else {
-          // Check if there's JSON embedded in the text
-          const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);  
-          if (jsonMatch) {
-            try {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (parsed.response) {
-                structuredResponse = parsed;
-                responseText = parsed.response;
-                category = parsed.category;
-                priority = parsed.priority;
-                actions = parsed.actions;
-                metadata = parsed.metadata;
-                escalation = parsed.escalation;
-                
-                // If there's text before the JSON, include it
-                const beforeJson = cleanedContent.substring(0, jsonMatch.index).trim();
-                if (beforeJson) {
-                  responseText = beforeJson + '\n\n' + responseText;
-                }
+        // Look for JSON anywhere in the response
+        const jsonMatch = cleanedContent.match(/\{[\s\S]*?\}(?=\s*(?:In case|$))/);  
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.response) {
+              structuredResponse = parsed;
+              responseText = parsed.response;
+              category = parsed.category;
+              priority = parsed.priority;
+              actions = parsed.actions;
+              metadata = parsed.metadata;
+              escalation = parsed.escalation;
+              
+              // Get any text after the JSON
+              const afterJsonIndex = jsonMatch.index! + jsonMatch[0].length;
+              const afterJson = cleanedContent.substring(afterJsonIndex).trim();
+              
+              // If there's meaningful text after JSON, append it
+              if (afterJson && afterJson.length > 10) {
+                responseText = responseText + '\n\n' + afterJson;
               }
-            } catch (e) {
-              // JSON parsing failed, use the whole text
+              
+              logger.info('Successfully parsed JSON from assistant response', {
+                route,
+                category,
+                priority,
+                hasActions: !!actions?.length,
+                hasAfterText: !!afterJson
+              });
+            } else {
+              // JSON doesn't have response field, use the whole text
               responseText = cleanedContent;
             }
+          } catch (e) {
+            logger.warn('Failed to parse JSON from response', { error: e });
+            responseText = cleanedContent;
+          }
+        } else if (cleanedContent.trim().startsWith('{')) {
+          // Try to parse the whole thing as JSON
+          try {
+            const parsed = JSON.parse(cleanedContent);
+            if (parsed.response) {
+              structuredResponse = parsed;
+              responseText = parsed.response;
+              category = parsed.category;
+              priority = parsed.priority;
+              actions = parsed.actions;
+              metadata = parsed.metadata;
+              escalation = parsed.escalation;
+            }
+          } catch (e) {
+            // Not valid JSON
+            responseText = cleanedContent;
           }
         }
       } catch (e) {
-        // Not JSON or invalid JSON, use as plain text
-        logger.debug('Assistant returned text response, not JSON', { error: e });
+        // Error in parsing, use as plain text
+        logger.error('Error parsing assistant response', { error: e });
         responseText = cleanedContent;
       }
 

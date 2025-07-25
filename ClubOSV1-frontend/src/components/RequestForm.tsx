@@ -16,7 +16,6 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
-console.log('API_URL configured:', API_URL);
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -48,6 +47,7 @@ interface FormData {
 
 const RequestForm: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const { preferences } = useSettingsState();
   const { user } = useAuthState();
@@ -63,7 +63,7 @@ const RequestForm: React.FC = () => {
   const { demoMode, runDemo } = useDemoMode();
   
   const [smartAssistEnabled, setSmartAssistEnabled] = useState(true);
-  const [routePreference, setRoutePreference] = useState<RequestRoute>(preferences.defaultRoute);
+  const [routePreference, setRoutePreference] = useState<RequestRoute>('Auto');
   const [showResponse, setShowResponse] = useState(false);
   const [isNewSubmission, setIsNewSubmission] = useState(false);
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
@@ -100,6 +100,15 @@ const RequestForm: React.FC = () => {
     'TechSupport': 'tech_support',
     'BrandTone': 'brand_tone'
   };
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true);
+    // Set route preference from settings after mount
+    if (preferences.defaultRoute) {
+      setRoutePreference(preferences.defaultRoute);
+    }
+  }, [preferences.defaultRoute]);
 
   // Check for ticket query parameter on mount
   useEffect(() => {
@@ -143,7 +152,9 @@ const RequestForm: React.FC = () => {
   // Handle response display
   useEffect(() => {
     if (lastResponse && isNewSubmission) {
-      console.log('Full lastResponse object:', JSON.stringify(lastResponse, null, 2));
+      if (isMounted) {
+        console.log('Full lastResponse object:', JSON.stringify(lastResponse, null, 2));
+      }
       
       setShowResponse(true);
       setIsNewSubmission(false); // Reset the flag
@@ -159,16 +170,18 @@ const RequestForm: React.FC = () => {
         });
       }, 100);
     }
-  }, [lastResponse, isNewSubmission, smartAssistEnabled, notify]);
+  }, [lastResponse, isNewSubmission, smartAssistEnabled, notify, isMounted]);
 
   const onSubmit = async (data: FormData) => {
-    console.log('Form submitted!', data);
+    if (isMounted) {
+      console.log('Form submitted!', data);
+    }
     
     // If in ticket mode, create a ticket instead
     if (isTicketMode) {
       setIsProcessing(true);
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = isMounted ? localStorage.getItem('clubos_token') : null;
         const response = await axios.post(
           `${API_URL}/tickets`,
           {
@@ -213,8 +226,10 @@ const RequestForm: React.FC = () => {
       smartAssistEnabled,
     } as any;
 
-    console.log('About to submit request:', request);
-    console.log('isSubmitting before:', isSubmitting);
+    if (isMounted) {
+      console.log('About to submit request:', request);
+      console.log('isSubmitting before:', isSubmitting);
+    }
 
     try {
       await submitRequest(request);
@@ -254,11 +269,13 @@ const RequestForm: React.FC = () => {
     if (!lastResponse || feedbackGiven) return;
     
     // Check if user is authenticated before attempting feedback
-    const token = localStorage.getItem('clubos_token');
+    const token = isMounted ? localStorage.getItem('clubos_token') : null;
     if (!token || !user) {
       notify('error', 'Please log in to submit feedback');
       // Store current location and redirect to login
-      sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+      if (isMounted) {
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+      }
       router.push('/login');
       return;
     }
@@ -279,10 +296,12 @@ const RequestForm: React.FC = () => {
         feedbackType: feedbackType
       };
       
-      console.log('Sending feedback:', feedbackData);
-      console.log('Auth token present:', !!token);
-      console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
-      console.log('Full API URL:', `${API_URL}/feedback`);
+      if (isMounted) {
+        console.log('Sending feedback:', feedbackData);
+        console.log('Auth token present:', !!token);
+        console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'no token');
+        console.log('Full API URL:', `${API_URL}/feedback`);
+      }
       
       // Use apiClient to ensure auth header is properly attached
       const response = await axios.post(`${API_URL}/feedback`, feedbackData, {
@@ -291,13 +310,15 @@ const RequestForm: React.FC = () => {
         }
       });
       
-      console.log('Feedback response:', response.data);
+      if (isMounted) {
+        console.log('Feedback response:', response.data);
+      }
       
       setFeedbackGiven(feedbackType);
       notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');
       
       // If not useful, also log to console for debugging
-      if (!isUseful) {
+      if (!isUseful && isMounted) {
         console.log('Not useful response logged:', feedbackData);
       }
     } catch (error: any) {
@@ -313,7 +334,9 @@ const RequestForm: React.FC = () => {
       if (error.message?.includes('401')) {
         notify('error', 'Your session has expired. Please log in again.');
         // Store current location and redirect to login
-        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        if (isMounted) {
+          sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        }
         router.push('/login');
       } else {
         notify('error', `Failed to record feedback: ${error.message}`);
@@ -620,7 +643,7 @@ const RequestForm: React.FC = () => {
               type="submit"
               className={`btn btn-primary ${!smartAssistEnabled ? 'slack-mode' : ''}`}
               disabled={isProcessing || demoMode}
-              onClick={() => console.log('Button clicked!', isProcessing)}
+              onClick={() => isMounted && console.log('Button clicked!', isProcessing)}
               style={{
                 ...(isProcessing ? {
                   background: 'linear-gradient(90deg, #152f2f 0%, #1a3939 50%, #152f2f 100%)',

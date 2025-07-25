@@ -91,7 +91,7 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
         <div className="space-y-2">
           <strong>Required Actions:</strong>
           <div className="space-y-2 mt-2">
-            {structured.actions.map((action, index) => (
+            {structured.actions.map((action: any, index: number) => (
               <div key={index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
                 <div className="flex items-start gap-2">
                   <span className="text-[var(--accent)] mt-0.5">
@@ -115,7 +115,7 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
           <strong className="text-red-400">Emergency Contacts:</strong>
           <ul className="mt-1 space-y-1">
-            {structured.metadata.emergencyContacts.map((contact, index) => (
+            {structured.metadata.emergencyContacts.map((contact: string, index: number) => (
               <li key={index} className="text-sm text-red-300">{contact}</li>
             ))}
           </ul>
