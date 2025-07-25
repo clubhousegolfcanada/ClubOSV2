@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { pool, query } from '../utils/db';
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
@@ -46,15 +49,26 @@ async function runMigration(filepath: string, filename: string): Promise<void> {
       .filter(stmt => stmt.trim().length > 0)
       .map(stmt => stmt.trim() + ';');
     
-    // Run each statement in a transaction
+    logger.info(`Total statements found: ${statements.length}`);
+    statements.forEach((stmt, idx) => {
+      logger.info(`Statement ${idx + 1}: ${stmt.substring(0, 100)}...`);
+    });
+    
+    // Run each statement WITHOUT a transaction to ensure tables are created before indexes
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-      
-      for (const statement of statements) {
+      // Don't use a transaction - execute each statement individually
+      for (let i = 0; i < statements.length; i++) {
+        const statement = statements[i];
         if (statement.trim() && !statement.match(/^\s*--/)) {
-          logger.debug(`Executing: ${statement.substring(0, 50)}...`);
-          await client.query(statement);
+          logger.info(`Executing statement ${i + 1}/${statements.length}: ${statement.substring(0, 80)}...`);
+          try {
+            await client.query(statement);
+            logger.info(`✓ Statement ${i + 1} executed successfully`);
+          } catch (stmtError) {
+            logger.error(`✗ Statement ${i + 1} failed:`, statement);
+            throw stmtError;
+          }
         }
       }
       
@@ -64,10 +78,8 @@ async function runMigration(filepath: string, filename: string): Promise<void> {
         [filename]
       );
       
-      await client.query('COMMIT');
       logger.info(`✅ Migration ${filename} completed successfully`);
     } catch (error) {
-      await client.query('ROLLBACK');
       throw error;
     } finally {
       client.release();
@@ -90,7 +102,7 @@ export async function runMigrations(): Promise<void> {
     logger.info(`Found ${executedMigrations.length} executed migrations`);
     
     // Get all migration files
-    const migrationsDir = join(__dirname, '../../database/migrations');
+    const migrationsDir = join(__dirname, '../database/migrations');
     const files = await readdir(migrationsDir);
     const sqlFiles = files
       .filter(f => f.endsWith('.sql'))
@@ -122,6 +134,10 @@ export async function runMigrations(): Promise<void> {
 
 // Run migrations if this file is executed directly
 if (require.main === module) {
+  // Debug: Check if DATABASE_URL is loaded
+  console.log('DATABASE_URL loaded:', process.env.DATABASE_URL ? 'Yes' : 'No');
+  console.log('Current directory:', process.cwd());
+  
   runMigrations()
     .then(() => {
       logger.info('All migrations completed');
