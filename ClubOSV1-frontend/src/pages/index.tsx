@@ -299,3 +299,46 @@ export default function Commands() {
     </div>
   );
 }
+
+        {/* External Tools Section */}
+        <div className="card mt-6">
+          <h3 className="text-lg font-semibold mb-4">External Tools</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            
+              href="https://app.skedda.com/register?i=277234"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center"
+            >
+              <div className="text-2xl mb-1">Skedda</div>
+              <div className="text-sm">Skedda</div>
+            </a>
+            
+              href="https://my.splashtop.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center"
+            >
+              <div className="text-2xl mb-1">Remote</div>
+              <div className="text-sm">Splashtop</div>
+            </a>
+            
+              href="https://app.hubspot.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center"
+            >
+              <div className="text-2xl mb-1">CRM</div>
+              <div className="text-sm">HubSpot</div>
+            </a>
+            
+              href="https://dashboard.stripe.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center"
+            >
+              <div className="text-2xl mb-1">Pay</div>
+              <div className="text-sm">Stripe</div>
+            </a>
+          </div>
+        </div>
