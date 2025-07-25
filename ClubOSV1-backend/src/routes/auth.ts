@@ -526,6 +526,69 @@ router.put('/users/:userId/role',
   }
 );
 
+// Reset user password (admin only)
+router.post('/users/:userId/reset-password',
+  authenticate,
+  roleGuard(['admin']),
+  validate([
+    body('newPassword')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage('Password must contain uppercase, lowercase and numbers')
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
+      const { newPassword } = req.body;
+      
+      // Prevent resetting own password through this endpoint
+      if (userId === req.user!.id) {
+        throw new AppError('SELF_RESET', 'Use the change-password endpoint to change your own password', 400);
+      }
+      
+      const users = await readJsonFile<User[]>('users.json');
+      const userIndex = users.findIndex(u => u.id === userId);
+      
+      if (userIndex === -1) {
+        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcryptjs.hash(newPassword, 10);
+      
+      // Update user password
+      users[userIndex] = {
+        ...users[userIndex],
+        password: hashedPassword,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await writeJsonFile('users.json', users);
+      
+      // Log password reset
+      await appendToJsonArray('authLogs.json', {
+        id: uuidv4(),
+        userId: req.user!.id,
+        action: 'reset_password',
+        targetUserId: userId,
+        timestamp: new Date().toISOString(),
+        ip: req.ip
+      });
+      
+      logger.info('User password reset:', { userId, resetBy: req.user!.id });
+      
+      res.json({
+        success: true,
+        message: 'Password reset successfully'
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Delete user (admin only)
 router.delete('/users/:userId',
   authenticate,

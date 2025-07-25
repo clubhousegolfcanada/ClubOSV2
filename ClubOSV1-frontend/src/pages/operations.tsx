@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2 } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -15,6 +15,13 @@ type User = {
   phone?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+type PasswordValidation = {
+  minLength: boolean;
+  hasUppercase: boolean;
+  hasLowercase: boolean;
+  hasNumber: boolean;
 };
 
 export default function Operations() {
@@ -44,6 +51,26 @@ export default function Operations() {
   const [feedback, setFeedback] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  
+  // Password change modal states
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordUserId, setPasswordUserId] = useState<string | null>(null);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Password validation state
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false
+  });
 
   // Fetch users and feedback on mount
   useEffect(() => {
@@ -54,6 +81,17 @@ export default function Operations() {
       }
     }
   }, [user, showFeedback]);
+
+  // Validate password whenever it changes
+  useEffect(() => {
+    const password = formData.password || passwordData.newPassword;
+    setPasswordValidation({
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /\d/.test(password)
+    });
+  }, [formData.password, passwordData.newPassword]);
 
   const fetchUsers = async () => {
     try {
@@ -195,6 +233,14 @@ export default function Operations() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password requirements
+    if (!passwordValidation.minLength || !passwordValidation.hasUppercase || 
+        !passwordValidation.hasLowercase || !passwordValidation.hasNumber) {
+      toast.error('Password does not meet all requirements');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       const token = localStorage.getItem('clubos_token');
@@ -224,11 +270,20 @@ export default function Operations() {
         }, 2000);
       } else if (error.response?.status === 403) {
         toast.error('You do not have permission to create users');
+      } else if (error.response?.status === 409) {
+        toast.error('A user with this email already exists');
       } else if (error.response?.status === 400) {
         // Validation error - show specific message
         const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Validation failed';
         console.log('Validation error details:', error.response?.data);
-        toast.error(`Validation error: ${errorMessage}`);
+        
+        // Parse validation errors if they exist
+        if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+          const errors = error.response.data.errors.map((err: any) => err.msg).join(', ');
+          toast.error(`Validation errors: ${errors}`);
+        } else {
+          toast.error(`Validation error: ${errorMessage}`);
+        }
       } else {
         toast.error(error.response?.data?.message || 'Failed to create user');
       }
@@ -287,10 +342,128 @@ export default function Operations() {
     });
   };
 
+  const openPasswordModal = (userId: string) => {
+    setPasswordUserId(userId);
+    setShowPasswordModal(true);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordUserId(null);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    // Validate password requirements
+    if (!passwordValidation.minLength || !passwordValidation.hasUppercase || 
+        !passwordValidation.hasLowercase || !passwordValidation.hasNumber) {
+      toast.error('New password does not meet all requirements');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      // If changing own password
+      if (passwordUserId === user?.id) {
+        const response = await axios.post(`${API_URL}/auth/change-password`, {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          toast.success('Password changed successfully');
+          closePasswordModal();
+        }
+      } else {
+        // Admin resetting another user's password
+        const response = await axios.post(`${API_URL}/auth/users/${passwordUserId}/reset-password`, {
+          newPassword: passwordData.newPassword
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          toast.success('User password reset successfully');
+          closePasswordModal();
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to change password:', error);
+      if (error.response?.status === 401) {
+        toast.error('Current password is incorrect');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to change password');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const roleColors = {
     admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     operator: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
     support: 'bg-green-500/20 text-green-400 border-green-500/30'
+  };
+
+  const PasswordStrengthIndicator = ({ validation, showRequirements = false }: { validation: PasswordValidation, showRequirements?: boolean }) => {
+    const requirements = [
+      { met: validation.minLength, text: 'At least 8 characters' },
+      { met: validation.hasUppercase, text: 'One uppercase letter' },
+      { met: validation.hasLowercase, text: 'One lowercase letter' },
+      { met: validation.hasNumber, text: 'One number' }
+    ];
+    
+    const strength = requirements.filter(r => r.met).length;
+    const strengthLabel = strength === 0 ? 'Weak' : strength <= 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong';
+    const strengthColor = strength === 0 ? 'bg-red-500' : strength <= 2 ? 'bg-yellow-500' : strength === 3 ? 'bg-blue-500' : 'bg-green-500';
+    
+    return (
+      <div className="mt-2">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="flex-1 h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-300 ${strengthColor}`}
+              style={{ width: `${(strength / 4) * 100}%` }}
+            />
+          </div>
+          <span className="text-xs text-[var(--text-secondary)]">{strengthLabel}</span>
+        </div>
+        {showRequirements && (
+          <ul className="text-xs space-y-1 mt-2">
+            {requirements.map((req, idx) => (
+              <li key={idx} className={`flex items-center gap-1 ${req.met ? 'text-green-400' : 'text-[var(--text-muted)]'}`}>
+                <span>{req.met ? '✓' : '○'}</span>
+                {req.text}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -406,7 +579,7 @@ export default function Operations() {
                               required
                             />
                           </div>
-                          <div>
+                          <div className="md:col-span-2">
                             <label className="block text-sm font-medium mb-2">Password</label>
                             <input
                               type="password"
@@ -414,11 +587,8 @@ export default function Operations() {
                               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                               className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
                               required
-                              minLength={8}
                             />
-                            <p className="text-xs text-[var(--text-muted)] mt-1">
-                              Min 8 chars, must include uppercase, lowercase, and numbers
-                            </p>
+                            <PasswordStrengthIndicator validation={passwordValidation} showRequirements={true} />
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2">Phone (optional)</label>
@@ -538,13 +708,22 @@ export default function Operations() {
                                       onClick={() => startEditUser(u)}
                                       className="text-blue-400 hover:text-blue-300 mr-3"
                                       disabled={u.id === user?.id}
+                                      title="Edit user"
                                     >
                                       Edit
+                                    </button>
+                                    <button
+                                      onClick={() => openPasswordModal(u.id)}
+                                      className="text-yellow-400 hover:text-yellow-300 mr-3"
+                                      title={u.id === user?.id ? "Change password" : "Reset password"}
+                                    >
+                                      <Key className="w-4 h-4 inline" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteUser(u.id)}
                                       className="text-red-400 hover:text-red-300"
                                       disabled={u.id === user?.id}
+                                      title="Delete user"
                                     >
                                       Delete
                                     </button>
@@ -713,6 +892,108 @@ export default function Operations() {
           )}
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4">
+              {passwordUserId === user?.id ? 'Change Password' : 'Reset User Password'}
+            </h3>
+            {passwordUserId !== user?.id && (
+              <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-sm text-yellow-400">
+                  You are resetting the password for user: <strong>{users.find(u => u.id === passwordUserId)?.name}</strong>
+                </p>
+              </div>
+            )}
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              {passwordUserId === user?.id && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    >
+                      {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    className="w-full px-3 py-2 pr-10 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <PasswordStrengthIndicator validation={passwordValidation} showRequirements={true} />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    className="w-full px-3 py-2 pr-10 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                  <p className="text-red-400 text-xs mt-1">Passwords do not match</p>
+                )}
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={closePasswordModal}
+                  className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                >
+                  {isLoading ? 'Processing...' : (passwordUserId === user?.id ? 'Change Password' : 'Reset Password')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
