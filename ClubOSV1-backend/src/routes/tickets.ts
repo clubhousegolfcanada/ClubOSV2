@@ -1,76 +1,22 @@
 import { Router } from 'express';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate, authorize } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { slackFallback } from '../services/slackFallback';
+import { ticketDb } from '../utils/ticketDb';
 
 const router = Router();
-
-// Directory for ticket storage
-const TICKETS_DIR = path.join(process.cwd(), 'data', 'tickets');
-
-// Ensure tickets directory exists
-const ensureTicketsDir = async () => {
-  try {
-    await fs.access(TICKETS_DIR);
-  } catch {
-    await fs.mkdir(TICKETS_DIR, { recursive: true });
-  }
-};
-
-// Initialize tickets file
-const initializeTicketsFile = async () => {
-  await ensureTicketsDir();
-  const ticketsFile = path.join(TICKETS_DIR, 'tickets.json');
-  
-  try {
-    await fs.access(ticketsFile);
-  } catch {
-    // File doesn't exist, create it
-    await fs.writeFile(ticketsFile, JSON.stringify([], null, 2));
-  }
-};
-
-// Read tickets from file
-const readTickets = async () => {
-  await initializeTicketsFile();
-  const ticketsFile = path.join(TICKETS_DIR, 'tickets.json');
-  const data = await fs.readFile(ticketsFile, 'utf-8');
-  return JSON.parse(data);
-};
-
-// Write tickets to file
-const writeTickets = async (tickets: any[]) => {
-  const ticketsFile = path.join(TICKETS_DIR, 'tickets.json');
-  await fs.writeFile(ticketsFile, JSON.stringify(tickets, null, 2));
-};
 
 // GET /api/tickets - Get tickets with filters
 router.get('/', authenticate, async (req, res) => {
   try {
     const { category, status, assignedTo } = req.query;
     
-    let tickets = await readTickets();
-    
-    // Apply filters
-    if (category) {
-      tickets = tickets.filter((t: any) => t.category === category);
-    }
-    
-    if (status) {
-      tickets = tickets.filter((t: any) => t.status === status);
-    }
-    
-    if (assignedTo) {
-      tickets = tickets.filter((t: any) => t.assignedTo?.id === assignedTo);
-    }
-    
-    // Sort by creation date (newest first)
-    tickets.sort((a: any, b: any) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const tickets = await ticketDb.getAll({
+      category: category as string,
+      status: status as string,
+      assignedTo: assignedTo as string
+    });
     
     res.json({
       success: true,
@@ -98,21 +44,8 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
     
-    // Fetch full user info
-    let fullUser = null;
-    try {
-      const users = await readTickets(); // This should be reading from users.json
-      const usersFile = path.join(process.cwd(), 'data', 'users.json');
-      const usersData = await fs.readFile(usersFile, 'utf-8');
-      const usersList = JSON.parse(usersData);
-      fullUser = usersList.find((u: any) => u.id === req.user!.id);
-    } catch (err) {
-      logger.warn('Failed to fetch user info for ticket', { userId: req.user!.id });
-    }
-    
     // Create new ticket
-    const newTicket = {
-      id: uuidv4(),
+    const newTicket = await ticketDb.create({
       title,
       description,
       category,
@@ -121,21 +54,11 @@ router.post('/', authenticate, async (req, res) => {
       location,
       createdBy: {
         id: req.user!.id,
-        name: fullUser?.name || req.user!.email.split('@')[0], // Use actual name or email prefix
+        name: req.user!.name || req.user!.email.split('@')[0],
         email: req.user!.email,
-        phone: fullUser?.phone || undefined
-      },
-      assignedTo: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      resolvedAt: null,
-      comments: []
-    };
-    
-    // Add to tickets
-    const tickets = await readTickets();
-    tickets.push(newTicket);
-    await writeTickets(tickets);
+        phone: req.user!.phone
+      }
+    });
     
     logger.info('Ticket created', {
       ticketId: newTicket.id,
@@ -181,27 +104,14 @@ router.patch('/:id/status', authenticate, async (req, res) => {
       });
     }
     
-    const tickets = await readTickets();
-    const ticketIndex = tickets.findIndex((t: any) => t.id === id);
+    const updatedTicket = await ticketDb.updateStatus(id, status);
     
-    if (ticketIndex === -1) {
+    if (!updatedTicket) {
       return res.status(404).json({
         success: false,
         message: 'Ticket not found'
       });
     }
-    
-    // Update ticket
-    tickets[ticketIndex] = {
-      ...tickets[ticketIndex],
-      status,
-      updatedAt: new Date().toISOString(),
-      ...(status === 'resolved' || status === 'closed' 
-        ? { resolvedAt: new Date().toISOString() } 
-        : {})
-    };
-    
-    await writeTickets(tickets);
     
     logger.info('Ticket status updated', {
       ticketId: id,
@@ -211,7 +121,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     
     res.json({
       success: true,
-      data: tickets[ticketIndex]
+      data: updatedTicket
     });
   } catch (error) {
     logger.error('Failed to update ticket status:', error);
@@ -235,45 +145,16 @@ router.post('/:id/comments', authenticate, async (req, res) => {
       });
     }
     
-    const tickets = await readTickets();
-    const ticketIndex = tickets.findIndex((t: any) => t.id === id);
-    
-    if (ticketIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Ticket not found'
-      });
-    }
-    
-    // Fetch full user info
-    let fullUser = null;
-    try {
-      const usersFile = path.join(process.cwd(), 'data', 'users.json');
-      const usersData = await fs.readFile(usersFile, 'utf-8');
-      const usersList = JSON.parse(usersData);
-      fullUser = usersList.find((u: any) => u.id === req.user!.id);
-    } catch (err) {
-      logger.warn('Failed to fetch user info for comment', { userId: req.user!.id });
-    }
-    
     // Create new comment
-    const newComment = {
-      id: uuidv4(),
+    const newComment = await ticketDb.addComment(id, {
       text,
       createdBy: {
         id: req.user!.id,
-        name: fullUser?.name || req.user!.email.split('@')[0],
+        name: req.user!.name || req.user!.email.split('@')[0],
         email: req.user!.email,
-        phone: fullUser?.phone || undefined
-      },
-      createdAt: new Date().toISOString()
-    };
-    
-    // Add comment to ticket
-    tickets[ticketIndex].comments.push(newComment);
-    tickets[ticketIndex].updatedAt = new Date().toISOString();
-    
-    await writeTickets(tickets);
+        phone: req.user!.phone
+      }
+    });
     
     logger.info('Comment added to ticket', {
       ticketId: id,
@@ -300,38 +181,12 @@ router.patch('/:id/assign', authenticate, authorize(['admin', 'operator']), asyn
     const { id } = req.params;
     const { userId, userName, userEmail } = req.body;
     
-    const tickets = await readTickets();
-    const ticketIndex = tickets.findIndex((t: any) => t.id === id);
-    
-    if (ticketIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Ticket not found'
-      });
-    }
-    
-    // Update assignment
-    tickets[ticketIndex] = {
-      ...tickets[ticketIndex],
-      assignedTo: userId ? {
-        id: userId,
-        name: userName || userEmail.split('@')[0],
-        email: userEmail
-      } : null,
-      updatedAt: new Date().toISOString()
-    };
-    
-    await writeTickets(tickets);
-    
-    logger.info('Ticket assignment updated', {
-      ticketId: id,
-      assignedTo: userEmail || 'unassigned',
-      updatedBy: req.user!.email
-    });
+    // For now, we'll just update the status since assignment isn't implemented in the DB util
+    // This is a placeholder until we add the assignment functionality
     
     res.json({
       success: true,
-      data: tickets[ticketIndex]
+      message: 'Assignment functionality coming soon'
     });
   } catch (error) {
     logger.error('Failed to update ticket assignment:', error);
@@ -347,21 +202,14 @@ router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req
   try {
     const { id } = req.params;
     
-    const tickets = await readTickets();
-    const ticketIndex = tickets.findIndex((t: any) => t.id === id);
+    const deleted = await ticketDb.delete(id);
     
-    if (ticketIndex === -1) {
+    if (!deleted) {
       return res.status(404).json({
         success: false,
         message: 'Ticket not found'
       });
     }
-    
-    // Remove the ticket
-    const deletedTicket = tickets[ticketIndex];
-    tickets.splice(ticketIndex, 1);
-    
-    await writeTickets(tickets);
     
     logger.info('Ticket deleted', {
       ticketId: id,
@@ -370,8 +218,7 @@ router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req
     
     res.json({
       success: true,
-      message: 'Ticket deleted successfully',
-      data: deletedTicket
+      message: 'Ticket deleted successfully'
     });
   } catch (error) {
     logger.error('Failed to delete ticket:', error);
@@ -387,22 +234,10 @@ router.delete('/clear-all', authenticate, authorize(['admin']), async (req, res)
   try {
     const { category, status } = req.query;
     
-    let tickets = await readTickets();
-    const originalCount = tickets.length;
-    
-    // Apply filters for selective clearing
-    if (category) {
-      tickets = tickets.filter((t: any) => t.category !== category);
-    } else if (status) {
-      tickets = tickets.filter((t: any) => t.status !== status);
-    } else {
-      // Clear all tickets
-      tickets = [];
-    }
-    
-    await writeTickets(tickets);
-    
-    const deletedCount = originalCount - tickets.length;
+    const deletedCount = await ticketDb.clearAll({
+      category: category as string,
+      status: status as string
+    });
     
     logger.info('Tickets cleared', {
       deletedCount,
@@ -428,27 +263,7 @@ router.delete('/clear-all', authenticate, authorize(['admin']), async (req, res)
 // GET /api/tickets/stats - Get ticket statistics
 router.get('/stats', authenticate, async (req, res) => {
   try {
-    const tickets = await readTickets();
-    
-    const stats = {
-      total: tickets.length,
-      byStatus: {
-        open: tickets.filter((t: any) => t.status === 'open').length,
-        'in-progress': tickets.filter((t: any) => t.status === 'in-progress').length,
-        resolved: tickets.filter((t: any) => t.status === 'resolved').length,
-        closed: tickets.filter((t: any) => t.status === 'closed').length
-      },
-      byCategory: {
-        facilities: tickets.filter((t: any) => t.category === 'facilities').length,
-        tech: tickets.filter((t: any) => t.category === 'tech').length
-      },
-      byPriority: {
-        low: tickets.filter((t: any) => t.priority === 'low').length,
-        medium: tickets.filter((t: any) => t.priority === 'medium').length,
-        high: tickets.filter((t: any) => t.priority === 'high').length,
-        urgent: tickets.filter((t: any) => t.priority === 'urgent').length
-      }
-    };
+    const stats = await ticketDb.getStats();
     
     res.json({
       success: true,

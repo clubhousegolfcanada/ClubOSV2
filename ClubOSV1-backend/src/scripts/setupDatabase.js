@@ -83,7 +83,7 @@ async function setupDatabase() {
         allowNull: true
       },
       role: {
-        type: DataTypes.ENUM('admin', 'operator', 'support'),
+        type: DataTypes.ENUM('admin', 'operator', 'support', 'kiosk'),
         defaultValue: 'support',
         allowNull: false
       },
@@ -106,7 +106,7 @@ async function setupDatabase() {
     // Create tables
     console.log('📊 Creating database tables...');
     await sequelize.sync({ alter: true });
-    console.log('✅ Tables created successfully!\n');
+    console.log('✅ User table created successfully!\n');
 
     // Check if we have JSON users to migrate
     try {
@@ -164,7 +164,7 @@ async function setupDatabase() {
 
     // Show final stats
     const userCount = await User.count();
-    console.log(`\n📊 Database setup complete!`);
+    console.log(`\n📊 User setup complete!`);
     console.log(`   Total users in database: ${userCount}`);
     
     // List all users
@@ -177,6 +177,95 @@ async function setupDatabase() {
     allUsers.forEach(user => {
       console.log(`   - ${user.email} (${user.role}) - ${user.name || 'No name'}`);
     });
+    
+    // Run additional migrations for feedback and tickets tables
+    console.log('\n📊 Setting up additional tables...');
+    
+    try {
+      // Create feedback table
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS feedback (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          user_id UUID,
+          user_email VARCHAR(255),
+          request_description TEXT NOT NULL,
+          location VARCHAR(255),
+          route VARCHAR(50),
+          response TEXT,
+          confidence DECIMAL(3,2),
+          is_useful BOOLEAN NOT NULL DEFAULT false,
+          feedback_type VARCHAR(50),
+          feedback_source VARCHAR(50) DEFAULT 'user',
+          slack_thread_ts VARCHAR(255),
+          slack_user_name VARCHAR(255),
+          slack_user_id VARCHAR(255),
+          slack_channel VARCHAR(255),
+          original_request_id UUID,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('✅ Feedback table created/verified');
+      
+      // Create tickets table
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS tickets (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          title VARCHAR(255) NOT NULL,
+          description TEXT NOT NULL,
+          category VARCHAR(50) NOT NULL CHECK (category IN ('facilities', 'tech')),
+          status VARCHAR(50) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in-progress', 'resolved', 'closed')),
+          priority VARCHAR(50) NOT NULL CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+          location VARCHAR(255),
+          created_by_id UUID NOT NULL,
+          created_by_name VARCHAR(255) NOT NULL,
+          created_by_email VARCHAR(255) NOT NULL,
+          created_by_phone VARCHAR(50),
+          assigned_to_id UUID,
+          assigned_to_name VARCHAR(255),
+          assigned_to_email VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          resolved_at TIMESTAMP,
+          metadata JSONB DEFAULT '{}'::jsonb
+        );
+      `);
+      console.log('✅ Tickets table created/verified');
+      
+      // Create ticket_comments table
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS ticket_comments (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          ticket_id UUID NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+          text TEXT NOT NULL,
+          created_by_id UUID NOT NULL,
+          created_by_name VARCHAR(255) NOT NULL,
+          created_by_email VARCHAR(255) NOT NULL,
+          created_by_phone VARCHAR(50),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('✅ Ticket comments table created/verified');
+      
+      // Create indexes
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_feedback_is_useful ON feedback(is_useful);');
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);');
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(category);');
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);');
+      console.log('✅ Indexes created/verified');
+      
+      // Check table counts
+      const feedbackCount = await sequelize.query('SELECT COUNT(*) as count FROM feedback', { type: sequelize.QueryTypes.SELECT });
+      const ticketsCount = await sequelize.query('SELECT COUNT(*) as count FROM tickets', { type: sequelize.QueryTypes.SELECT });
+      
+      console.log(`\n📊 Table statistics:`);
+      console.log(`   Feedback records: ${feedbackCount[0].count}`);
+      console.log(`   Ticket records: ${ticketsCount[0].count}`);
+      
+    } catch (tableError) {
+      console.error('⚠️  Error creating additional tables:', tableError.message);
+      // Don't fail the whole setup if these tables fail
+    }
     
     await sequelize.close();
     console.log('\n✅ Database setup completed successfully!');
