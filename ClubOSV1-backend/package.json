@@ -19,7 +19,9 @@
     "typecheck": "tsc --noEmit",
     "check": "node scripts/check-config.js",
     "check:env": "node scripts/check-config.js",
-    "generate:secrets": "cd .. && ./generate-secrets.sh"
+    "generate:secrets": "cd .. && ./generate-secrets.sh",
+    "setup:db": "node src/scripts/setupDatabase.js",
+    "db:setup": "node dist/scripts/setupDatabase.js"
   },
   "keywords": [
     "clubos",
