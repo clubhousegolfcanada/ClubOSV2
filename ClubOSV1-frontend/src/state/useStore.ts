@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
 
 // Export UserRole type
-export type UserRole = 'admin' | 'operator' | 'support';
+export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
 // User type for user management
 export type User = {
@@ -53,7 +53,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'operator' | 'support';
+  role: 'admin' | 'operator' | 'support' | 'kiosk';
   phone?: string;
   token?: string;
 }

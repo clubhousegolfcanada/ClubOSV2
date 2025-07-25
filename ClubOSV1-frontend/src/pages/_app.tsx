@@ -8,6 +8,7 @@ import Notifications from '@/components/Notifications';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
+import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -21,6 +22,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   const router = useRouter();
   const { setUser, isAuthenticated } = useAuthState();
   const isPublicRoute = publicRoutes.includes(router.pathname);
+  
+  // Use kiosk redirect hook
+  useKioskRedirect();
 
   useEffect(() => {
     // Initialize auth state from localStorage

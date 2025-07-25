@@ -14,6 +14,7 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "create:admin": "tsx src/scripts/createAdmin.ts",
+    "create:kiosk": "tsx src/scripts/createKioskUser.ts",
     "reset:admin": "tsx src/scripts/freshAdmin.ts",
     "clean": "rimraf dist",
     "typecheck": "tsc --noEmit",

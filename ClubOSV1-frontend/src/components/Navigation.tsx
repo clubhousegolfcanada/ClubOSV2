@@ -7,7 +7,7 @@ import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
 import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
 
-type UserRole = 'admin' | 'operator' | 'support';
+type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
 const Navigation: React.FC = () => {
   const router = useRouter();
@@ -47,13 +47,19 @@ const Navigation: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const navItems = [
-    { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
-    { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
-    { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
-    { href: '/tickets', label: 'Ticket Center', roles: ['admin', 'operator'] as UserRole[] },
-    { href: '/clubosboy', label: 'ClubOS Boy', roles: ['admin', 'operator', 'support'] as UserRole[], icon: '🤖' },
-  ].filter(item => hasAnyRole(user?.role, item.roles));
+  const navItems = user?.role === 'kiosk' 
+    ? [
+        // Kiosk users only see ClubOS Boy
+        { href: '/clubosboy', label: 'ClubOS Boy', roles: ['kiosk'] as UserRole[], icon: '🤖' },
+      ]
+    : [
+        // All other roles see the full navigation
+        { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
+        { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
+        { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
+        { href: '/tickets', label: 'Ticket Center', roles: ['admin', 'operator'] as UserRole[] },
+        { href: '/clubosboy', label: 'ClubOS Boy', roles: ['admin', 'operator', 'support'] as UserRole[], icon: '🤖' },
+      ].filter(item => hasAnyRole(user?.role, item.roles));
 
   return (
     <nav className={`bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] ${isEmbedded ? 'embedded-nav' : ''}`}>
