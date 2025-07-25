@@ -127,7 +127,7 @@ export default function ClubOSBoy() {
                       },
                     })}
                     className="form-textarea"
-                    placeholder="e.g., The trackman is frozen what do I do? How do I book a bay? What are your hours?"
+                    placeholder="e.g., The trackman is frozen what do I do? What is the wifi password? When is the next tournament?"
                     rows={4}
                     disabled={isProcessing}
                     autoFocus
