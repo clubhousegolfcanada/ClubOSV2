@@ -123,8 +123,8 @@ export default function Home() {
             </button>
           </header>
 
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          {/* Quick Stats Grid - Hidden on mobile */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4 mb-12">
             {quickStats.map((stat, index) => (
               <div key={index} className="card group hover:border-[var(--accent)]">
                 <div className="flex items-center justify-between">
