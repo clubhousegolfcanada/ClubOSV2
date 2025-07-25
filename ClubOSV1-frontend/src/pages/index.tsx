@@ -106,23 +106,6 @@ export default function Home() {
       
       <main className="min-h-screen bg-[var(--bg-primary)]">
         <div className="container mx-auto px-4 py-8">
-          {/* Header Section */}
-          <header className="flex justify-between items-center mb-12">
-            <div>
-              <h1 className="logo text-4xl font-semibold mb-2">ClubOS</h1>
-              <p className="text-[var(--text-secondary)]">
-                Intelligent request routing for golf simulator operations
-              </p>
-            </div>
-            <button
-              onClick={runDemo}
-              className="btn-demo"
-              title="See a live example of equipment troubleshooting"
-            >
-              Demo
-            </button>
-          </header>
-
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
             {/* Request Form - Takes up 2 columns on large screens */}
@@ -162,34 +145,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      <style jsx>{`
-        .logo {
-          background: linear-gradient(135deg, var(--accent) 0%, #20a0a0 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .btn-demo {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-secondary);
-          color: var(--text-secondary);
-          border-radius: 8px;
-          padding: 0.5rem 0.75rem;
-          cursor: pointer;
-          font-size: 0.75rem;
-          font-weight: 500;
-          transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .btn-demo:hover {
-          border-color: var(--accent);
-          color: var(--text-primary);
-        }
-      `}</style>
     </>
   );
 }
