@@ -454,7 +454,6 @@
   
   /* Make container full width when embedded */
   .embedded-mode .container {
-    @apply max-w-full w-full px-4;
   }
 }
 
