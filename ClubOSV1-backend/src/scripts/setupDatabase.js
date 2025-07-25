@@ -267,6 +267,27 @@ async function setupDatabase() {
       // Don't fail the whole setup if these tables fail
     }
     
+    // Run SQL migrations
+    console.log('\n📊 Running SQL migrations...');
+    try {
+      const migrationFiles = [
+        '../database/migrations/001_add_slack_reply_tracking.sql',
+        '../database/migrations/002_create_tickets_table.sql'
+      ];
+      
+      for (const file of migrationFiles) {
+        try {
+          const sql = await fs.readFile(path.join(__dirname, file), 'utf8');
+          await sequelize.query(sql);
+          console.log(`✅ Migration ${path.basename(file)} completed`);
+        } catch (e) {
+          console.log(`⚠️  Migration ${path.basename(file)} failed:`, e.message);
+        }
+      }
+    } catch (e) {
+      console.log('⚠️  Migrations failed:', e.message);
+    }
+    
     await sequelize.close();
     console.log('\n✅ Database setup completed successfully!');
     
