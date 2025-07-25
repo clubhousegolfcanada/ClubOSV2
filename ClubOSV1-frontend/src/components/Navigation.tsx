@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
+import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
 
 type UserRole = 'admin' | 'operator' | 'support';
 
@@ -14,6 +15,8 @@ const Navigation: React.FC = () => {
   const { user, logout } = useAuthState();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEmbedded, setIsEmbedded] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Check if embedded
   useEffect(() => {
@@ -32,6 +35,18 @@ const Navigation: React.FC = () => {
     setMobileMenuOpen(false);
   }, [router.pathname]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const navItems = [
     { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
     { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
@@ -43,11 +58,16 @@ const Navigation: React.FC = () => {
     <nav className={`bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] ${isEmbedded ? 'embedded-nav' : ''}`}>
       <div className={`${isEmbedded ? 'px-4' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}`}>
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Logo with tagline */}
           <div className="flex items-center">
-            <Link href="/" className="logo text-xl font-semibold" aria-label="ClubOS Home">
-              ClubOS
-            </Link>
+            <div className="flex flex-col">
+              <Link href="/" className="logo text-xl font-semibold" aria-label="ClubOS Home">
+                ClubOS
+              </Link>
+              <span className="text-[10px] text-[var(--text-muted)] -mt-1 hidden md:block">
+                Golf Simulator Management
+              </span>
+            </div>
             
             {/* Desktop Navigation */}
             <div className="hidden md:block ml-10">
@@ -72,24 +92,91 @@ const Navigation: React.FC = () => {
           </div>
 
           {/* Desktop Right Side */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user && <RoleTag showLabel={false} />}
-            <span className="text-sm text-[var(--text-muted)]">Golf Simulator Management</span>
+          <div className="hidden md:flex items-center space-x-3">
             <div className="w-2 h-2 bg-[var(--status-success)] rounded-full animate-pulse" title="System Active"></div>
-            <button
-              onClick={toggleTheme}
-              className="theme-toggle px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-md text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-all duration-200"
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-            >
-              {theme.toUpperCase()}
-            </button>
+            
+            {/* User Dropdown */}
             {user && (
-              <button
-                onClick={logout}
-                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-medium transition-colors"
-              >
-                Logout
-              </button>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                >
+                  <RoleTag showLabel={false} />
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {user.name || user.email?.split('@')[0]}
+                  </span>
+                  <ChevronDown 
+                    className={`w-4 h-4 text-[var(--text-secondary)] transition-transform ${
+                      userDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* Dropdown Menu */}
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg shadow-lg z-50">
+                    <div className="px-4 py-3 border-b border-[var(--border-secondary)]">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
+                        {user.name || 'User'}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                        {user.email}
+                      </p>
+                    </div>
+                    
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          // Navigate to profile
+                          router.push('/profile');
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        Profile
+                      </button>
+                      
+                      {user.role === 'admin' && (
+                        <button
+                          onClick={() => {
+                            router.push('/settings');
+                            setUserDropdownOpen(false);
+                          }}
+                          className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 transition-colors"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Settings
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={toggleTheme}
+                        className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] flex items-center justify-between transition-colors"
+                      >
+                        <span>Theme</span>
+                        <span className="text-xs bg-[var(--bg-tertiary)] px-2 py-1 rounded">
+                          {theme.toUpperCase()}
+                        </span>
+                      </button>
+                    </div>
+                    
+                    <div className="border-t border-[var(--border-secondary)] py-1">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -147,9 +234,11 @@ const Navigation: React.FC = () => {
         <div className="pt-4 pb-3 border-t border-[var(--border-secondary)]">
           <div className="px-4 space-y-3">
             {user && (
-              <div className="flex items-center">
-                <RoleTag showLabel={true} />
-                <span className="ml-3 text-sm text-[var(--text-secondary)]">{user.email}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <RoleTag showLabel={true} />
+                  <span className="ml-3 text-sm text-[var(--text-secondary)]">{user.email}</span>
+                </div>
               </div>
             )}
             <button
@@ -159,12 +248,28 @@ const Navigation: React.FC = () => {
               Theme: {theme.toUpperCase()}
             </button>
             {user && (
-              <button
-                onClick={logout}
-                className="block w-full text-left px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation"
-              >
-                Logout
-              </button>
+              <>
+                <Link
+                  href="/profile"
+                  className="block px-4 py-3 rounded-md text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 touch-manipulation"
+                >
+                  Profile
+                </Link>
+                {user.role === 'admin' && (
+                  <Link
+                    href="/settings"
+                    className="block px-4 py-3 rounded-md text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 touch-manipulation"
+                  >
+                    Settings
+                  </Link>
+                )}
+                <button
+                  onClick={logout}
+                  className="block w-full text-left px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation"
+                >
+                  Logout
+                </button>
+              </>
             )}
           </div>
         </div>
