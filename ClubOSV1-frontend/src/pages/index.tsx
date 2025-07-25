@@ -1,134 +1,232 @@
 import Head from 'next/head';
+import RequestForm from '@/components/RequestForm';
+import RoleSwitcher from '@/components/RoleSwitcher';
+import ExternalTools from '@/components/ExternalTools';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useDemoMode, useAnalytics } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
+import { hasMinimumRole } from '@/utils/roleUtils';
+import axios from 'axios';
 
-export default function Dashboard() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+export default function Home() {
+  const { runDemo } = useDemoMode();
+  const { stats, period } = useAnalytics();
   const { user } = useAuthState();
+  const [previousStats, setPreviousStats] = useState<any>(null);
+  
+  // Fetch previous period stats for comparison
+  useEffect(() => {
+    const fetchPreviousPeriod = async () => {
+      try {
+        // For 24h period, get yesterday's data
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const response = await axios.get(`${API_URL}/history/stats/overview`, {
+          params: { 
+            period: '24h',
+            endDate: yesterday.toISOString()
+          }
+        });
+        
+        if (response.data.success) {
+          setPreviousStats(response.data.data.stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch previous stats:', error);
+      }
+    };
+    
+    fetchPreviousPeriod();
+  }, []);
+  
+  // Auto-refresh stats every 30 seconds - DISABLED
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     window.location.reload();
+  //   }, 30000);
+  //   
+  //   return () => clearInterval(interval);
+  // }, []);
+
+  // Calculate today's requests
+  const todayRequests = stats.totalRequests || 0;
+  
+  // Calculate change from previous period
+  const previousRequests = previousStats?.totalRequests || 0;
+  const requestDiff = todayRequests - previousRequests;
+  const requestChange = requestDiff > 0 ? `+${requestDiff}` : requestDiff < 0 ? `${requestDiff}` : '0';
+  const requestTrend = requestDiff > 0 ? 'up' : requestDiff < 0 ? 'down' : 'neutral';
+  
+  // Format average response time
+  const avgResponseSeconds = stats.avgResponseTime ? (stats.avgResponseTime / 1000).toFixed(1) : '0.0';
+  const prevAvgResponseSeconds = previousStats?.avgResponseTime ? (previousStats.avgResponseTime / 1000).toFixed(1) : '0.0';
+  
+  // Calculate response time change
+  const responseDiff = stats.avgResponseTime && previousStats?.avgResponseTime 
+    ? ((stats.avgResponseTime - previousStats.avgResponseTime) / 1000).toFixed(1)
+    : '0.0';
+  const responseChange = parseFloat(responseDiff) > 0 ? `+${responseDiff}s` : `${responseDiff}s`;
+  const responseTrend = parseFloat(responseDiff) < 0 ? 'down' : parseFloat(responseDiff) > 0 ? 'up' : 'neutral';
+
+  const quickStats = [
+    { 
+      label: 'Active Bookings', 
+      value: 'N/A', 
+      change: '', 
+      trend: 'neutral' as const 
+    },
+    { 
+      label: 'Requests Today', 
+      value: todayRequests.toString(), 
+      change: requestChange, 
+      trend: requestTrend as any
+    },
+    { 
+      label: 'Avg Response Time', 
+      value: `${avgResponseSeconds}s`, 
+      change: responseChange, 
+      trend: responseTrend as any
+    },
+    { 
+      label: 'System Status', 
+      value: 'Operational', 
+      trend: 'neutral' as const 
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <>
       <Head>
-        <title>ClubOS - Dashboard</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>ClubOS - Golf Simulator Management</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
       </Head>
       
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-            Welcome back, {user?.name?.split(' ')[0] || 'User'}
-          </h1>
-          <p className="text-[var(--text-secondary)]">
-            AI-powered assistant for facility management
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Link href="/commands" className="card hover:border-[var(--accent)] transition-all cursor-pointer">
-            <h3 className="text-lg font-semibold mb-2">AI Command Center</h3>
-            <p className="text-[var(--text-secondary)] text-sm">
-              Process requests with AI-powered routing and responses
-            </p>
-          </Link>
-
-          <Link href="/tickets" className="card hover:border-[var(--accent)] transition-all cursor-pointer">
-            <h3 className="text-lg font-semibold mb-2">Ticket Center</h3>
-            <p className="text-[var(--text-secondary)] text-sm">
-              Manage facilities and technical support tickets
-            </p>
-          </Link>
-
-          <Link href="/operations" className="card hover:border-[var(--accent)] transition-all cursor-pointer">
-            <h3 className="text-lg font-semibold mb-2">Operations</h3>
-            <p className="text-[var(--text-secondary)] text-sm">
-              User management and system administration
-            </p>
-          </Link>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">External Tools</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <a
-              href="https://app.skedda.com/register?i=277234"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
+      <main className="min-h-screen bg-[var(--bg-primary)]">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header Section */}
+          <header className="flex justify-between items-center mb-12">
+            <div>
+              <h1 className="logo text-4xl font-semibold mb-2">ClubOS</h1>
+              <p className="text-[var(--text-secondary)]">
+                Intelligent request routing for golf simulator operations
+              </p>
+            </div>
+            <button
+              onClick={runDemo}
+              className="btn-demo"
+              title="See a live example of equipment troubleshooting"
             >
-              <div className="text-2xl mb-2 font-bold">CAL</div>
-              <div className="text-sm font-medium">Skedda</div>
-              <div className="text-xs text-[var(--text-muted)] mt-1">Booking System</div>
-            </a>
-            <a
-              href="https://my.splashtop.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
-            >
-              <div className="text-2xl mb-2 font-bold">RDP</div>
-              <div className="text-sm font-medium">Splashtop</div>
-              <div className="text-xs text-[var(--text-muted)] mt-1">Remote Access</div>
-            </a>
-            <a
-              href="https://app.hubspot.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
-            >
-              <div className="text-2xl mb-2 font-bold">CRM</div>
-              <div className="text-sm font-medium">HubSpot</div>
-              <div className="text-xs text-[var(--text-muted)] mt-1">CRM System</div>
-            </a>
-            <a
-              href="https://dashboard.stripe.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
-            >
-              <div className="text-2xl mb-2 font-bold">PAY</div>
-              <div className="text-sm font-medium">Stripe</div>
-              <div className="text-xs text-[var(--text-muted)] mt-1">Payments</div>
-            </a>
+              Demo
+            </button>
+          </header>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+            {quickStats.map((stat, index) => (
+              <div key={index} className="card group hover:border-[var(--accent)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                      {stat.label}
+                    </p>
+                    <p className="text-2xl font-semibold mt-1">{stat.value}</p>
+                  </div>
+                  {stat.change && (
+                    <div className={`text-sm font-medium ${
+                      stat.trend === 'up' ? 'text-[var(--status-success)]' : 
+                      stat.trend === 'down' ? 'text-[var(--status-error)]' : 
+                      'text-[var(--text-secondary)]'
+                    }`}>
+                      {stat.change}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">System Status</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)]">AI Service</span>
-                <span className="text-green-500">Operational</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)]">Database</span>
-                <span className="text-green-500">Connected</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)]">API</span>
-                <span className="text-green-500">Online</span>
-              </div>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Request Form - Takes up 2 columns on large screens */}
+            <div className="lg:col-span-2">
+              <RequestForm />
+            </div>
+            
+            {/* External Tools - Takes up 1 column on large screens */}
+            <div className="lg:col-span-1">
+              <ExternalTools />
             </div>
           </div>
 
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">Quick Info</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)]">Your Role</span>
-                <span className="text-[var(--text-primary)] capitalize">{user?.role || 'User'}</span>
+          {/* Quick Links */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <Link href="/commands" className="block">
+              <div className="card group cursor-pointer">
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <span className="mr-2">📋</span> Command Reference
+                </h3>
+                <p className="text-[var(--text-secondary)] text-sm">
+                  Browse all available commands and learn how to use them effectively
+                </p>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)]">Environment</span>
-                <span className="text-[var(--text-primary)]">Production</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)]">Version</span>
-                <span className="text-[var(--text-primary)]">1.0.0</span>
-              </div>
+            </Link>
+            
+            {hasMinimumRole(user?.role, 'operator') && (
+              <Link href="/operations" className="block">
+                <div className="card group cursor-pointer">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center">
+                    <span className="mr-2">⚙️</span> Operations Center
+                  </h3>
+                  <p className="text-[var(--text-secondary)] text-sm">
+                    Monitor system health, view analytics, and manage settings
+                  </p>
+                </div>
+              </Link>
+            )}
+            
+            <div className="card group cursor-pointer bg-[var(--accent)] text-white">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <span className="mr-2">💡</span> Pro Tips
+              </h3>
+              <p className="text-white/90 text-sm">
+                Use natural language • Include location details • Enable Smart Assist for AI routing
+              </p>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+
+      <style jsx>{`
+        .logo {
+          background: linear-gradient(135deg, var(--accent) 0%, #20a0a0 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .btn-demo {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-secondary);
+          color: var(--text-secondary);
+          border-radius: 8px;
+          padding: 0.5rem 0.75rem;
+          cursor: pointer;
+          font-size: 0.75rem;
+          font-weight: 500;
+          transition: all 0.2s;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .btn-demo:hover {
+          border-color: var(--accent);
+          color: var(--text-primary);
+        }
+      `}</style>
+    </>
   );
 }
