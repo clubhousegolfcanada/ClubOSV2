@@ -44,10 +44,12 @@ const initializeApp = async () => {
     await ensureAdminUser();
     
     // Setup database if DATABASE_URL exists
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && process.env.RUN_DB_SETUP !== 'false') {
       try {
+        logger.info('Database URL detected, attempting database setup...');
         const { setupDatabase } = require('./scripts/setupDatabase');
         await setupDatabase();
+        logger.info('Database setup completed successfully');
       } catch (error) {
         logger.error('Database setup failed:', error);
         // Don't exit, just log the error

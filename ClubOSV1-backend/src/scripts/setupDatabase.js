@@ -8,15 +8,29 @@ async function setupDatabase() {
   console.log('🚀 Starting ClubOS Database Setup...\n');
   
   try {
-    // Connect to database
-    const sequelize = new Sequelize(process.env.DATABASE_URL, {
+    // Get DATABASE_URL
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL environment variable is not set');
+    }
+    
+    console.log('📊 Connecting to database...');
+    
+    // Connect to database with proper config
+    const sequelize = new Sequelize(databaseUrl, {
       dialect: 'postgres',
-      logging: console.log,
+      logging: false, // Set to console.log for debugging
       dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false
         }
+      },
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
       }
     });
 
