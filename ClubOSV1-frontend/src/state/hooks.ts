@@ -161,6 +161,43 @@ export const useKeyboardShortcuts = () => {
   }, []);
 };
 
+// Hook for analytics
+export const useAnalytics = () => {
+  const [stats, setStats] = useState({
+    totalRequests: 0,
+    avgResponseTime: 0,
+    activeBookings: 0,
+    systemStatus: 'operational'
+  });
+  const [period, setPeriod] = useState('24h');
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/history/stats/overview`, {
+          params: { period },
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`
+          }
+        });
+        
+        if (response.data.success) {
+          setStats(response.data.data.stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [period]);
+
+  return { stats, period, setPeriod };
+};
+
 // Hook for theme persistence
 export const useTheme = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
