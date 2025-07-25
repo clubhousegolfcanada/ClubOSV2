@@ -216,12 +216,27 @@ const RequestForm: React.FC = () => {
   };
 
   const handleReset = () => {
+    // Reset form fields
     reset();
-    setRoutePreference(preferences.defaultRoute);
+    
+    // Reset all state to defaults
+    setRoutePreference('Auto'); // Reset to Auto route
+    setSmartAssistEnabled(true); // Enable Smart Assist by default
     setShowResponse(false);
     resetRequestState();
-    setConvertedTone(''); // Clear converted tone
-    setFeedbackGiven(null); // Clear feedback state
+    setConvertedTone('');
+    setFeedbackGiven(null);
+    setIsTicketMode(false); // Reset to request mode
+    setTicketPriority('medium'); // Reset ticket priority
+    setTicketCategory('facilities'); // Reset ticket category
+    setLastRequestData(null);
+    setIsProcessing(false);
+    setLoadingStartTime(null);
+    setElapsedTime(0);
+    setIsNewSubmission(false);
+    
+    // Clear any notifications
+    notify('info', 'Form reset to defaults');
   };
 
   // Handle feedback submission
