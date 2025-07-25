@@ -16,9 +16,37 @@ import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
 const router = Router();
 
 // Process request with LLM - temporarily remove auth for demo
+// Add a test endpoint without validation to isolate the issue
+router.post('/test-direct', async (req: Request, res: Response) => {
+  res.json({
+    received: req.body,
+    smartAssistEnabled: {
+      value: req.body.smartAssistEnabled,
+      type: typeof req.body.smartAssistEnabled,
+      truthyCheck: !!req.body.smartAssistEnabled,
+      strictEqualsTrue: req.body.smartAssistEnabled === true,
+      strictEqualsFalse: req.body.smartAssistEnabled === false,
+      equalsStringTrue: req.body.smartAssistEnabled === 'true',
+      equalsStringFalse: req.body.smartAssistEnabled === 'false'
+    }
+  });
+});
+
+// Debug middleware to log request before validation
+const debugMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  logger.info('PRE-VALIDATION Request body:', {
+    body: req.body,
+    smartAssistEnabled: req.body.smartAssistEnabled,
+    smartAssistType: typeof req.body.smartAssistEnabled,
+    headers: req.headers['content-type']
+  });
+  next();
+};
+
 router.post('/request', 
   // authenticate,  // Commented out for demo
   // adminOrOperator,  // Commented out for demo
+  debugMiddleware, // Log before validation
   strictLimiter, // Apply strict rate limiting
   validate(requestValidation.llmRequest), // Apply validation
   async (req: Request, res: Response, next: NextFunction) => {

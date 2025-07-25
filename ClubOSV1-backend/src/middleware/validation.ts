@@ -88,7 +88,11 @@ export const requestValidation = {
       .optional()
       .isBoolean()
       .withMessage('Smart assist enabled must be a boolean')
-      .toBoolean() // Convert to boolean
+      .toBoolean(), // Convert to boolean
+    body('clientStartTime')
+      .optional()
+      .isInt()
+      .withMessage('Client start time must be an integer')
   ],
   
   // Slack message validation
