@@ -47,7 +47,7 @@ interface Comment {
 }
 
 export default function TicketCenter() {
-  const [activeTab, setActiveTab] = useState<'facilities' | 'tech'>('facilities');
+  const [activeTab, setActiveTab] = useState<'all' | 'facilities' | 'tech'>('all');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -64,10 +64,16 @@ export default function TicketCenter() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const params = new URLSearchParams({
-        category: activeTab,
-        ...(filterStatus !== 'all' && { status: filterStatus })
-      });
+      const params = new URLSearchParams();
+      
+      // Only add category filter if not 'all'
+      if (activeTab !== 'all') {
+        params.append('category', activeTab);
+      }
+      
+      if (filterStatus !== 'all') {
+        params.append('status', filterStatus);
+      }
       
       const response = await axios.get(`${API_URL}/tickets?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -164,18 +170,24 @@ export default function TicketCenter() {
   };
 
   const clearAllTickets = async () => {
+    const categoryText = activeTab === 'all' ? '' : ` ${activeTab}`;
     const message = filterStatus === 'all' 
-      ? `Are you sure you want to clear ALL ${activeTab} tickets? This action cannot be undone.`
-      : `Are you sure you want to clear all ${filterStatus} ${activeTab} tickets? This action cannot be undone.`;
+      ? `Are you sure you want to clear ALL${categoryText} tickets? This action cannot be undone.`
+      : `Are you sure you want to clear all ${filterStatus}${categoryText} tickets? This action cannot be undone.`;
       
     if (!confirm(message)) return;
     
     try {
       const token = localStorage.getItem('clubos_token');
-      const params = new URLSearchParams({
-        category: activeTab,
-        ...(filterStatus !== 'all' && { status: filterStatus })
-      });
+      const params = new URLSearchParams();
+      
+      if (activeTab !== 'all') {
+        params.append('category', activeTab);
+      }
+      
+      if (filterStatus !== 'all') {
+        params.append('status', filterStatus);
+      }
       
       const response = await axios.delete(
         `${API_URL}/tickets/clear-all?${params}`,
@@ -235,7 +247,7 @@ export default function TicketCenter() {
             Ticket Center
           </h1>
           <p className="text-[var(--text-secondary)]">
-            Manage facilities and technical support tickets
+            View and manage all facilities and technical support tickets
           </p>
         </div>
 
@@ -243,6 +255,18 @@ export default function TicketCenter() {
         <div className="card mb-6">
           <div className="border-b border-[var(--border-secondary)] -mx-8 -mt-8 px-8">
             <nav className="flex -mb-px">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`
+                  py-4 px-6 font-medium text-sm transition-all duration-200 flex items-center gap-2
+                  ${activeTab === 'all'
+                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }
+                `}
+              >
+                📊 All Tickets
+              </button>
               <button
                 onClick={() => setActiveTab('facilities')}
                 className={`
@@ -326,9 +350,16 @@ export default function TicketCenter() {
                     `}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-medium text-[var(--text-primary)] flex-1 pr-2">
-                        {ticket.title}
-                      </h3>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-[var(--text-primary)] pr-2">
+                          {ticket.title}
+                        </h3>
+                        {activeTab === 'all' && (
+                          <span className="text-xs text-[var(--text-muted)] uppercase">
+                            {ticket.category === 'facilities' ? '🏢 Facilities' : '🔧 Tech'}
+                          </span>
+                        )}
+                      </div>
                       <span className={`text-sm ${getPriorityColor(ticket.priority)} font-medium`}>
                         {ticket.priority.toUpperCase()}
                       </span>
