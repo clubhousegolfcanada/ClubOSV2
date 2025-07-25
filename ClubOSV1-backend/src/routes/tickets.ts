@@ -382,6 +382,49 @@ router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req
   }
 });
 
+// DELETE /api/tickets/clear-all - Clear all tickets (admin only)
+router.delete('/clear-all', authenticate, authorize(['admin']), async (req, res) => {
+  try {
+    const { category, status } = req.query;
+    
+    let tickets = await readTickets();
+    const originalCount = tickets.length;
+    
+    // Apply filters for selective clearing
+    if (category) {
+      tickets = tickets.filter((t: any) => t.category !== category);
+    } else if (status) {
+      tickets = tickets.filter((t: any) => t.status !== status);
+    } else {
+      // Clear all tickets
+      tickets = [];
+    }
+    
+    await writeTickets(tickets);
+    
+    const deletedCount = originalCount - tickets.length;
+    
+    logger.info('Tickets cleared', {
+      deletedCount,
+      category,
+      status,
+      clearedBy: req.user!.email
+    });
+    
+    res.json({
+      success: true,
+      message: `${deletedCount} ticket(s) cleared successfully`,
+      data: { deletedCount }
+    });
+  } catch (error) {
+    logger.error('Failed to clear tickets:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear tickets'
+    });
+  }
+});
+
 // GET /api/tickets/stats - Get ticket statistics
 router.get('/stats', authenticate, async (req, res) => {
   try {

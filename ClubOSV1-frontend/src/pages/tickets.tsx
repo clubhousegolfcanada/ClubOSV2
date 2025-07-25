@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import axios from 'axios';
+import { Trash2, AlertTriangle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -162,6 +163,39 @@ export default function TicketCenter() {
     }
   };
 
+  const clearAllTickets = async () => {
+    const message = filterStatus === 'all' 
+      ? `Are you sure you want to clear ALL ${activeTab} tickets? This action cannot be undone.`
+      : `Are you sure you want to clear all ${filterStatus} ${activeTab} tickets? This action cannot be undone.`;
+      
+    if (!confirm(message)) return;
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const params = new URLSearchParams({
+        category: activeTab,
+        ...(filterStatus !== 'all' && { status: filterStatus })
+      });
+      
+      const response = await axios.delete(
+        `${API_URL}/tickets/clear-all?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        notify('success', response.data.message);
+        loadTickets();
+        setSelectedTicket(null);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        notify('error', 'Only administrators can clear tickets');
+      } else {
+        notify('error', 'Failed to clear tickets');
+      }
+    }
+  };
+
   const getStatusColor = (status: TicketStatus) => {
     switch (status) {
       case 'open':
@@ -255,8 +289,20 @@ export default function TicketCenter() {
                 </button>
               ))}
             </div>
-            <div className="text-sm text-[var(--text-secondary)]">
-              {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-[var(--text-secondary)]">
+                {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
+              </div>
+              {user?.role === 'admin' && tickets.length > 0 && (
+                <button
+                  onClick={clearAllTickets}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-all"
+                  title="Clear tickets"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Clear {filterStatus !== 'all' ? filterStatus : 'All'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -369,23 +415,34 @@ export default function TicketCenter() {
                   {/* Actions */}
                   <div className="mb-6">
                     <h3 className="font-medium text-sm text-[var(--text-secondary)] mb-2">Actions</h3>
-                    <div className="flex gap-2 mb-3">
-                      {(['open', 'in-progress', 'resolved', 'closed'] as TicketStatus[]).map((status) => (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2">
+                        {(['open', 'in-progress', 'resolved', 'closed'] as TicketStatus[]).map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => updateTicketStatus(selectedTicket.id, status)}
+                            disabled={selectedTicket.status === status}
+                            className={`
+                              px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                              ${selectedTicket.status === status
+                                ? 'bg-[var(--accent)] text-white cursor-not-allowed'
+                                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                              }
+                            `}
+                          >
+                            {status.replace('-', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                      {(user?.role === 'admin' || user?.role === 'operator') && (
                         <button
-                          key={status}
-                          onClick={() => updateTicketStatus(selectedTicket.id, status)}
-                          disabled={selectedTicket.status === status}
-                          className={`
-                            px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                            ${selectedTicket.status === status
-                              ? 'bg-[var(--accent)] text-white cursor-not-allowed'
-                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }
-                          `}
+                          onClick={() => deleteTicket(selectedTicket.id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-all self-start"
                         >
-                          {status.replace('-', ' ')}
+                          <Trash2 className="w-4 h-4" />
+                          Delete Ticket
                         </button>
-                      ))}
+                      )}
                     </div>
                   </div>
 
