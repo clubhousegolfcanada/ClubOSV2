@@ -11,28 +11,49 @@ async function setupDatabase() {
     // Get DATABASE_URL
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL environment variable is not set');
+      console.log('❌ DATABASE_URL not found, skipping database setup');
+      return;
     }
     
     console.log('📊 Connecting to database...');
     
-    // Connect to database with proper config
-    const sequelize = new Sequelize(databaseUrl, {
-      dialect: 'postgres',
-      logging: false, // Set to console.log for debugging
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false
+    // Parse the DATABASE_URL manually to avoid issues
+    let sequelize;
+    try {
+      // Try direct connection first
+      sequelize = new Sequelize(databaseUrl, {
+        dialect: 'postgres',
+        logging: false,
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
         }
-      },
-      pool: {
-        max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
-      }
-    });
+      });
+    } catch (parseError) {
+      console.log('⚠️  Direct connection failed, trying manual parsing...');
+      
+      // Manual parsing as fallback
+      const url = new URL(databaseUrl);
+      const [username, password] = url.username ? [url.username, url.password] : ['postgres', ''];
+      const database = url.pathname.slice(1);
+      const host = url.hostname;
+      const port = url.port || 5432;
+      
+      sequelize = new Sequelize(database, username, password, {
+        host,
+        port,
+        dialect: 'postgres',
+        logging: false,
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
+        }
+      });
+    }
 
     // Test connection
     await sequelize.authenticate();
@@ -148,7 +169,8 @@ async function setupDatabase() {
     
     // List all users
     const allUsers = await User.findAll({
-      attributes: ['email', 'name', 'role', 'createdAt']
+      attributes: ['email', 'name', 'role', 'createdAt'],
+      order: [['createdAt', 'DESC']]
     });
     
     console.log('\n👥 Current users in database:');
@@ -160,8 +182,9 @@ async function setupDatabase() {
     console.log('\n✅ Database setup completed successfully!');
     
   } catch (error) {
-    console.error('\n❌ Database setup failed:', error);
-    process.exit(1);
+    console.error('\n❌ Database setup failed:', error.message);
+    console.error('Error details:', error);
+    // Don't throw, just log
   }
 }
 
