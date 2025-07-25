@@ -573,7 +573,7 @@ const RequestForm: React.FC = () => {
 
           {/* Toggle Options */}
           {!isTicketMode && (
-            <>
+            <div className="form-group">
               <div className="toggle-group">
                 <div className="toggle-item">
                   <label className="toggle-switch">
@@ -597,11 +597,11 @@ const RequestForm: React.FC = () => {
                     <span className="slack-indicator">→ Slack</span>
                   )}
                 </div>
-                <div className="form-helper mt-2 mb-6">
-                  <span className="text-gray-500">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
-                </div>
               </div>
-            </>
+              <div className="form-helper mt-3">
+                <span className="text-gray-500">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
+              </div>
+            </div>
           )}
 
           {/* Submit Buttons */}
