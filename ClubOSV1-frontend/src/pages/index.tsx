@@ -53,7 +53,7 @@ export default function Dashboard() {
               target="_blank"
               rel="noopener noreferrer"
               className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
-            >
+
               <div className="text-2xl mb-2 font-bold">CAL</div>
               <div className="text-sm font-medium">Skedda</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">Booking System</div>
