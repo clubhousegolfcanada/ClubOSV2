@@ -569,9 +569,7 @@ const RequestForm: React.FC = () => {
                 })}
               </div>
               <div className="form-helper">
-                <span className="text-gray-400">Each route has specialized access to facility resources</span> 
-                (emergency protocols, booking systems, equipment guides, service scripts).<br />
-                <span className="text-accent">Select "Auto" for smart routing or manually choose for specific expertise.</span>
+                <span className="text-gray-400">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
               </div>
             </div>
           )}
