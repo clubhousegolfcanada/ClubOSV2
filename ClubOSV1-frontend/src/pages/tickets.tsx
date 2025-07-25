@@ -1,9 +1,10 @@
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
+import { useRouter } from 'next/router';
 import axios from 'axios';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle, Plus } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -47,18 +48,36 @@ interface Comment {
 }
 
 export default function TicketCenter() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'facilities' | 'tech'>('all');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [filterStatus, setFilterStatus] = useState<TicketStatus | 'all'>('open');
+  const [filterStatus, setFilterStatus] = useState<TicketStatus | 'all'>('all');
   const [newComment, setNewComment] = useState('');
   const { notify } = useNotifications();
   const { user } = useAuthState();
 
+  // Calculate ticket counts for badges
+  const ticketCounts = useMemo(() => {
+    const counts = {
+      all: tickets.length,
+      open: 0,
+      'in-progress': 0,
+      resolved: 0,
+      closed: 0
+    };
+    
+    tickets.forEach(ticket => {
+      counts[ticket.status]++;
+    });
+    
+    return counts;
+  }, [tickets]);
+
   useEffect(() => {
     loadTickets();
-  }, [activeTab, filterStatus]);
+  }, [activeTab]);
 
   const loadTickets = async () => {
     setLoading(true);
@@ -71,10 +90,7 @@ export default function TicketCenter() {
         params.append('category', activeTab);
       }
       
-      if (filterStatus !== 'all') {
-        params.append('status', filterStatus);
-      }
-      
+      // Load all tickets to calculate counts, then filter in UI
       const response = await axios.get(`${API_URL}/tickets?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -88,6 +104,12 @@ export default function TicketCenter() {
       setLoading(false);
     }
   };
+
+  // Filter tickets based on status selection
+  const filteredTickets = useMemo(() => {
+    if (filterStatus === 'all') return tickets;
+    return tickets.filter(ticket => ticket.status === filterStatus);
+  }, [tickets, filterStatus]);
 
   const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus) => {
     try {
@@ -234,6 +256,22 @@ export default function TicketCenter() {
     }
   };
 
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = now.getTime() - then.getTime();
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hr ago`;
+    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+    return then.toLocaleDateString();
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <Head>
@@ -242,13 +280,23 @@ export default function TicketCenter() {
       </Head>
       
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-            Ticket Center
-          </h1>
-          <p className="text-[var(--text-secondary)]">
-            View and manage all facilities and technical support tickets
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+              Ticket Center
+            </h1>
+            <p className="text-[var(--text-secondary)]">
+              View and manage all facilities and technical support tickets
+            </p>
+          </div>
+          {/* Sticky New Ticket Button */}
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            New Ticket
+          </button>
         </div>
 
         {/* Tab Navigation */}
@@ -258,76 +306,150 @@ export default function TicketCenter() {
               <button
                 onClick={() => setActiveTab('all')}
                 className={`
-                  py-4 px-6 font-medium text-sm transition-all duration-200 flex items-center gap-2
+                  py-4 px-6 font-medium text-sm transition-all duration-200
                   ${activeTab === 'all'
-                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)]'
+                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] bg-[var(--bg-tertiary)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }
                 `}
               >
-                📊 All Tickets
+                All Tickets
               </button>
               <button
                 onClick={() => setActiveTab('facilities')}
                 className={`
-                  py-4 px-6 font-medium text-sm transition-all duration-200 flex items-center gap-2
+                  py-4 px-6 font-medium text-sm transition-all duration-200
                   ${activeTab === 'facilities'
-                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)]'
+                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] bg-[var(--bg-tertiary)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }
                 `}
               >
-                🏢 Facilities
+                Facilities
               </button>
               <button
                 onClick={() => setActiveTab('tech')}
                 className={`
-                  py-4 px-6 font-medium text-sm transition-all duration-200 flex items-center gap-2
+                  py-4 px-6 font-medium text-sm transition-all duration-200
                   ${activeTab === 'tech'
-                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)]'
+                    ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] bg-[var(--bg-tertiary)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }
                 `}
               >
-                🔧 Tech Support
+                Tech Support
               </button>
             </nav>
           </div>
 
-          {/* Filter Bar */}
+          {/* Filter Bar with Count Badges */}
           <div className="mt-6 mb-4 flex items-center justify-between">
             <div className="flex gap-2">
-              {(['all', 'open', 'in-progress', 'resolved', 'closed'] as const).map((status) => (
+              {/* Active Status Group */}
+              <div className="flex gap-2">
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
+                  onClick={() => setFilterStatus('all')}
                   className={`
-                    px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                    ${filterStatus === status
+                    px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                    ${filterStatus === 'all'
                       ? 'bg-[var(--accent)] text-white'
                       : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }
                   `}
                 >
-                  {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
+                  All
+                  <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                    {ticketCounts.all}
+                  </span>
                 </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-[var(--text-secondary)]">
-                {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
-              </div>
-              {user?.role === 'admin' && tickets.length > 0 && (
                 <button
-                  onClick={clearAllTickets}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-all"
-                  title="Clear tickets"
+                  onClick={() => setFilterStatus('open')}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                    ${filterStatus === 'open'
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }
+                  `}
                 >
-                  <AlertTriangle className="w-4 h-4" />
-                  Clear {filterStatus !== 'all' ? filterStatus : 'All'}
+                  Open
+                  {ticketCounts.open > 0 && (
+                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                      {ticketCounts.open}
+                    </span>
+                  )}
                 </button>
-              )}
+                <button
+                  onClick={() => setFilterStatus('in-progress')}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                    ${filterStatus === 'in-progress'
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }
+                  `}
+                >
+                  In Progress
+                  {ticketCounts['in-progress'] > 0 && (
+                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                      {ticketCounts['in-progress']}
+                    </span>
+                  )}
+                </button>
+              </div>
+              
+              {/* Divider */}
+              <div className="w-px h-8 bg-[var(--border-secondary)] self-center" />
+              
+              {/* Historical Status Group */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFilterStatus('resolved')}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                    ${filterStatus === 'resolved'
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }
+                  `}
+                >
+                  Resolved
+                  {ticketCounts.resolved > 0 && (
+                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                      {ticketCounts.resolved}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setFilterStatus('closed')}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                    ${filterStatus === 'closed'
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }
+                  `}
+                >
+                  Closed
+                  {ticketCounts.closed > 0 && (
+                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                      {ticketCounts.closed}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
+            
+            {user?.role === 'admin' && filteredTickets.length > 0 && (
+              <button
+                onClick={clearAllTickets}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-all"
+                title="Clear tickets"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Clear {filterStatus !== 'all' ? filterStatus : 'All'}
+              </button>
+            )}
           </div>
 
           {/* Tickets Grid */}
@@ -338,8 +460,8 @@ export default function TicketCenter() {
                 <div className="text-center py-8">
                   <p className="text-[var(--text-secondary)]">Loading tickets...</p>
                 </div>
-              ) : tickets.length > 0 ? (
-                tickets.map((ticket) => (
+              ) : filteredTickets.length > 0 ? (
+                filteredTickets.map((ticket) => (
                   <div
                     key={ticket.id}
                     onClick={() => setSelectedTicket(ticket)}
@@ -349,46 +471,57 @@ export default function TicketCenter() {
                       hover:bg-[var(--bg-secondary)]
                     `}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-[var(--text-primary)] pr-2">
-                          {ticket.title}
-                        </h3>
-                        {activeTab === 'all' && (
-                          <span className="text-xs text-[var(--text-muted)] uppercase">
-                            {ticket.category === 'facilities' ? '🏢 Facilities' : '🔧 Tech'}
-                          </span>
-                        )}
-                      </div>
-                      <span className={`text-sm ${getPriorityColor(ticket.priority)} font-medium`}>
-                        {ticket.priority.toUpperCase()}
+                    {/* Ticket Preview Line */}
+                    <div className="flex items-center gap-3 text-sm mb-2">
+                      <span className="text-[var(--text-muted)] font-mono">
+                        #{ticket.id.slice(0, 8)}
+                      </span>
+                      <span className="text-[var(--text-muted)]">|</span>
+                      <span className="font-semibold text-[var(--text-primary)] flex-1 truncate">
+                        {ticket.title}
+                      </span>
+                      <span className={`${getStatusColor(ticket.status)} px-2 py-0.5 rounded-full text-xs font-medium`}>
+                        {ticket.status === 'in-progress' ? 'In Progress' : ticket.status}
+                      </span>
+                      <span className="text-[var(--text-muted)] text-xs">
+                        {formatTimeAgo(ticket.createdAt)}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-[var(--text-secondary)] mb-3 overflow-hidden" style={{ maxHeight: '3rem' }}>
+                    <p className="text-sm text-[var(--text-secondary)] mb-3 line-clamp-2">
                       {ticket.description}
                     </p>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                          {ticket.status.replace('-', ' ')}
-                        </span>
+                        {activeTab === 'all' && (
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {ticket.category === 'facilities' ? 'Facilities' : 'Tech'}
+                          </span>
+                        )}
                         {ticket.location && (
                           <span className="text-xs text-[var(--text-muted)]">
                             {ticket.location}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-[var(--text-muted)]">
-                        {new Date(ticket.createdAt).toLocaleDateString()}
+                      <span className={`text-xs ${getPriorityColor(ticket.priority)} font-medium`}>
+                        {ticket.priority.toUpperCase()}
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-[var(--text-secondary)]">No tickets found</p>
+                <div className="text-center py-12">
+                  <p className="text-[var(--text-secondary)] text-lg mb-2">
+                    No open tickets. Everything's running smooth.
+                  </p>
+                  <button
+                    onClick={() => router.push('/')}
+                    className="text-[var(--accent)] hover:underline text-sm"
+                  >
+                    Create a ticket if you need help
+                  </button>
                 </div>
               )}
             </div>
@@ -410,7 +543,7 @@ export default function TicketCenter() {
                       </span>
                       {selectedTicket.location && (
                         <span className="text-sm text-[var(--text-muted)]">
-                          📍 {selectedTicket.location}
+                          {selectedTicket.location}
                         </span>
                       )}
                     </div>
@@ -528,4 +661,3 @@ export default function TicketCenter() {
     </div>
   );
 }
-// Force redeploy Thu 24 Jul 2025 22:01:56 ADT
