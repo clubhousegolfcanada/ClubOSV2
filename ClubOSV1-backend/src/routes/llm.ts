@@ -45,7 +45,48 @@ router.post('/request',
         }
       }
 
-      // Create user request object with user info
+      // Check if this is a customer kiosk request
+      const isCustomerKiosk = req.body.requestDescription?.startsWith('[CUSTOMER KIOSK]') || 
+                            req.body.metadata?.source === 'customer_kiosk';
+      
+      // For customer kiosk requests, always send to Slack
+      if (isCustomerKiosk || !req.body.smartAssistEnabled) {
+        // Send directly to Slack
+        const userRequest: UserRequest & { user?: any } = {
+          id: requestId,
+          requestDescription: req.body.requestDescription,
+          location: req.body.location,
+          smartAssistEnabled: false,
+          timestamp: new Date().toISOString(),
+          status: 'sent_to_slack',
+          sessionId,
+          userId: req.user?.id || 'customer-kiosk',
+          user: fullUser ? {
+            id: fullUser.id,
+            name: fullUser.name,
+            email: fullUser.email,
+            phone: fullUser.phone,
+            role: fullUser.role
+          } : isCustomerKiosk ? { name: 'Customer Kiosk', role: 'customer' } : undefined
+        };
+        
+        // Log the request
+        await appendToJsonArray('userLogs.json', userRequest);
+        
+        // Send to Slack
+        await slackFallback.sendDirectMessage(userRequest);
+        
+        return res.json({
+          success: true,
+          data: {
+            requestId: userRequest.id,
+            status: 'sent_to_slack',
+            message: 'Your request has been sent to our support team'
+          }
+        });
+      }
+
+      // Create user request for LLM processing
       const userRequest: UserRequest & { user?: any } = {
         id: requestId,
         requestDescription: req.body.requestDescription,
@@ -55,7 +96,7 @@ router.post('/request',
         timestamp: new Date().toISOString(),
         status: 'processing',
         sessionId,
-        userId: req.user?.id || 'demo-user', // Add user ID if authenticated
+        userId: req.user?.id || 'demo-user',
         user: fullUser ? {
           id: fullUser.id,
           name: fullUser.name,
@@ -64,9 +105,6 @@ router.post('/request',
           role: fullUser.role
         } : undefined
       };
-
-      // Log the request
-      await appendToJsonArray('userLogs.json', userRequest);
 
       let processedRequest: ProcessedRequest;
 

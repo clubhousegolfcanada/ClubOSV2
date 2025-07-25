@@ -2,19 +2,20 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
-import { Loader, Send, HelpCircle, CheckCircle } from 'lucide-react';
+import { Loader } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface FormData {
   question: string;
+  location: string;
 }
 
 export default function ClubOSBoy() {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [response, setResponse] = useState<string | null>(null);
   const [showResponse, setShowResponse] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [responseMessage, setResponseMessage] = useState('');
+  const [resetTimer, setResetTimer] = useState<NodeJS.Timeout | null>(null);
 
   const {
     register,
@@ -23,176 +24,206 @@ export default function ClubOSBoy() {
     formState: { errors },
   } = useForm<FormData>();
 
-  // Auto-reset after successful submission
+  // Clear any existing timer on unmount
   useEffect(() => {
-    if (isSuccess) {
-      const timer = setTimeout(() => {
-        reset();
-        setShowResponse(false);
-        setResponse(null);
-        setIsSuccess(false);
-      }, 30000); // Reset after 30 seconds
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isSuccess, reset]);
+    return () => {
+      if (resetTimer) {
+        clearTimeout(resetTimer);
+      }
+    };
+  }, [resetTimer]);
 
   const onSubmit = async (data: FormData) => {
     setIsProcessing(true);
     setShowResponse(false);
-    setResponse(null);
+    
+    // Clear any existing timer
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+    }
     
     try {
-      const response = await axios.post(`${API_URL}/customer/ask`, {
-        question: data.question,
-        location: 'Customer Kiosk',
-        kioskId: 'main-lobby'
-      });
+      // Send directly to Slack with customer tag
+      const request = {
+        requestDescription: `[CUSTOMER KIOSK] ${data.question}`,
+        location: data.location || 'Customer Kiosk',
+        smartAssistEnabled: false, // Send directly to Slack
+        routePreference: 'Auto',
+        metadata: {
+          source: 'customer_kiosk',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      const response = await axios.post(`${API_URL}/requests`, request);
       
       if (response.data.success) {
-        const aiResponse = response.data.data.response || 
-                          "I'll help you with that. A staff member will assist you shortly.";
-        setResponse(aiResponse);
+        setResponseMessage("Thanks! Your question has been sent to our staff. Someone will help you shortly.");
         setShowResponse(true);
-        setIsSuccess(true);
+        
+        // Set timer to reset after 30 seconds
+        const timer = setTimeout(() => {
+          reset();
+          setShowResponse(false);
+          setResponseMessage('');
+        }, 30000);
+        
+        setResetTimer(timer);
       }
     } catch (error) {
       console.error('Request failed:', error);
-      setResponse("I'm having trouble right now. Please ask a staff member for help.");
+      setResponseMessage("Sorry, something went wrong. Please ask a staff member for help.");
       setShowResponse(true);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleNewQuestion = () => {
+  const handleReset = () => {
     reset();
     setShowResponse(false);
-    setResponse(null);
-    setIsSuccess(false);
+    setResponseMessage('');
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+    }
   };
 
   return (
     <>
       <Head>
-        <title>ClubOS Boy - How can I help?</title>
+        <title>ClubOS Boy - Ask a Question</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="robots" content="noindex, nofollow" />
       </Head>
       
-      <main className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#0f1f1f] to-[#0a0a0a] flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          {/* Logo and Title */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="w-16 h-16 bg-[var(--accent)] rounded-full flex items-center justify-center">
-                <HelpCircle className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-4xl font-bold text-white">ClubOS Boy</h1>
-            </div>
-            <p className="text-lg text-gray-400">
-              Hi! I'm here to help. Ask me anything about ClubHouse247 Golf.
+      <main className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
+        <div className="w-full max-w-3xl">
+          {/* Title */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+              ClubOS Boy
+            </h1>
+            <p className="text-[var(--text-secondary)]">
+              Ask any question about ClubHouse247 Golf
             </p>
           </div>
 
-          {/* Main Card */}
-          <div className="bg-[var(--bg-secondary)] rounded-2xl shadow-2xl p-8 border border-gray-800">
+          {/* Main Card - matching RequestForm style */}
+          <div className="card">
             {!showResponse ? (
               <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="question" className="block text-sm font-medium text-gray-400 mb-2">
-                      What can I help you with today?
-                    </label>
-                    <textarea
-                      id="question"
-                      {...register('question', {
-                        required: 'Please ask a question',
-                        minLength: {
-                          value: 5,
-                          message: 'Please provide more details',
-                        },
-                      })}
-                      className="w-full px-4 py-3 bg-[var(--bg-primary)] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all text-lg"
-                      placeholder="e.g., What are your hours? Do you have lessons? How do I book a bay?"
-                      rows={4}
-                      disabled={isProcessing}
-                      autoFocus
-                    />
-                    {errors.question && (
-                      <p className="mt-2 text-sm text-red-500">{errors.question.message}</p>
-                    )}
-                  </div>
+                {/* Question Input */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="questionInput">
+                    What can I help you with?
+                  </label>
+                  <textarea
+                    id="questionInput"
+                    {...register('question', {
+                      required: 'Please enter your question',
+                      minLength: {
+                        value: 10,
+                        message: 'Please provide more details',
+                      },
+                    })}
+                    className="form-textarea"
+                    placeholder="e.g., The trackman is frozen what do I do? How do I book a bay? What are your hours?"
+                    rows={4}
+                    disabled={isProcessing}
+                    autoFocus
+                  />
+                  {errors.question && (
+                    <p className="error-message">{errors.question.message}</p>
+                  )}
+                </div>
 
+                {/* Location Input */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="locationInput">
+                    Location (optional)
+                  </label>
+                  <input
+                    id="locationInput"
+                    {...register('location')}
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g., Bay 3, Main Floor, Pro Shop"
+                    disabled={isProcessing}
+                  />
+                  <div className="form-helper">
+                    Let us know where you are if it helps with your question
+                  </div>
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="button-group">
                   <button
                     type="submit"
+                    className="btn btn-primary"
                     disabled={isProcessing}
-                    className="w-full py-4 bg-[var(--accent)] text-white font-semibold rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 text-lg"
                   >
                     {isProcessing ? (
                       <>
-                        <Loader className="w-5 h-5 animate-spin" />
-                        Getting answer...
+                        <Loader className="inline-block w-4 h-4 mr-2 animate-spin" />
+                        Sending to Staff...
                       </>
                     ) : (
-                      <>
-                        <Send className="w-5 h-5" />
-                        Ask ClubOS Boy
-                      </>
+                      'Ask Question'
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleReset}
+                    disabled={isProcessing}
+                  >
+                    Clear
                   </button>
                 </div>
               </form>
             ) : (
-              <div className="space-y-6">
-                <div className="bg-[var(--bg-primary)] rounded-lg p-6 border border-gray-700">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-6 h-6 text-green-500" />
+              /* Response Display */
+              <div className="response-area">
+                <div className="response-content">
+                  <div className="text-center py-8">
+                    <div className="mb-4">
+                      <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
+                        <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">Here's what I found:</h3>
-                      <p className="text-gray-300 whitespace-pre-wrap">{response}</p>
-                    </div>
+                    <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+                      Question Sent!
+                    </h3>
+                    <p className="text-[var(--text-secondary)] mb-6">
+                      {responseMessage}
+                    </p>
+                    <button
+                      onClick={handleReset}
+                      className="btn btn-primary"
+                    >
+                      Ask Another Question
+                    </button>
+                    <p className="text-sm text-[var(--text-muted)] mt-4">
+                      This screen will reset automatically in 30 seconds
+                    </p>
                   </div>
                 </div>
-
-                <button
-                  onClick={handleNewQuestion}
-                  className="w-full py-4 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all flex items-center justify-center gap-3 text-lg"
-                >
-                  Ask Another Question
-                </button>
-
-                <p className="text-center text-sm text-gray-500">
-                  This screen will reset in 30 seconds
-                </p>
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">
-              Need more help? Ask our friendly staff!
+          {/* Footer Help Text */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-[var(--text-muted)]">
+              Need immediate help? Find a staff member wearing a ClubHouse247 shirt!
             </p>
           </div>
         </div>
       </main>
 
       <style jsx>{`
-        /* Custom styles for customer interface */
-        :global(body) {
-          overflow: hidden;
-        }
-        
-        /* Larger text for better readability */
-        @media (min-width: 768px) {
-          textarea {
-            font-size: 1.125rem !important;
-          }
-        }
-        
         /* Prevent text selection for kiosk mode */
         main {
           -webkit-user-select: none;
@@ -202,11 +233,19 @@ export default function ClubOSBoy() {
         }
         
         /* Allow text selection only in input areas */
-        textarea, p {
+        textarea, input, p {
           -webkit-user-select: text;
           -moz-user-select: text;
           -ms-user-select: text;
           user-select: text;
+        }
+        
+        /* Larger touch targets for kiosk */
+        @media (min-width: 768px) {
+          .btn {
+            min-height: 3.5rem;
+            font-size: 1.125rem;
+          }
         }
       `}</style>
     </>
