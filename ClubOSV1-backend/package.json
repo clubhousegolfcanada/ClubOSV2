@@ -21,7 +21,9 @@
     "check:env": "node scripts/check-config.js",
     "generate:secrets": "cd .. && ./generate-secrets.sh",
     "setup:db": "node src/scripts/setupDatabase.js",
-    "db:setup": "node dist/scripts/setupDatabase.js"
+    "db:setup": "node dist/scripts/setupDatabase.js",
+    "setup:user-settings": "tsx scripts/setup-user-settings.ts",
+    "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts"
   },
   "keywords": [
     "clubos",

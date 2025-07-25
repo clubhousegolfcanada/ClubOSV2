@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
-import ExternalTools from '@/components/ExternalTools';
+import DatabaseExternalTools from '@/components/DatabaseExternalTools';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useDemoMode, useAnalytics } from '@/state/hooks';
@@ -115,7 +115,7 @@ export default function Home() {
             
             {/* External Tools - Takes up 1 column on large screens */}
             <div className="lg:col-span-1">
-              <ExternalTools />
+              <DatabaseExternalTools />
             </div>
           </div>
 
