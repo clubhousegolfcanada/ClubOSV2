@@ -15,7 +15,20 @@ import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
 
 const router = Router();
 
-// Process request with LLM - temporarily remove auth for demo
+// Cache system config to avoid reading file on every request
+let cachedConfig: SystemConfig | null = null;
+let configLastLoaded = 0;
+const CONFIG_CACHE_TTL = 60000; // 1 minute
+
+async function getSystemConfig(): Promise<SystemConfig> {
+  const now = Date.now();
+  if (!cachedConfig || now - configLastLoaded > CONFIG_CACHE_TTL) {
+    cachedConfig = await readJsonFile<SystemConfig>('systemConfig.json');
+    configLastLoaded = now;
+  }
+  return cachedConfig;
+}
+
 // Add a test endpoint without validation to isolate the issue
 router.post('/test-direct', async (req: Request, res: Response) => {
   res.json({
@@ -43,6 +56,7 @@ const debugMiddleware = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+// Optimized request processing with single API call
 router.post('/request', 
   // authenticate,  // Commented out for demo
   // adminOrOperator,  // Commented out for demo
@@ -55,8 +69,8 @@ router.post('/request',
     const sessionId = (req as any).requestId || uuidv4();
 
     try {
-      // Load system config
-      const config = await readJsonFile<SystemConfig>('systemConfig.json');
+      // Use cached config
+      const config = await getSystemConfig();
       
       if (!config.llmEnabled) {
         throw new AppError('LLM_DISABLED', 'LLM processing is currently disabled', 503);
@@ -114,8 +128,10 @@ router.post('/request',
           } : isCustomerKiosk ? { name: 'Customer Kiosk', role: 'customer' } : undefined
         };
         
-        // Log the request
-        await appendToJsonArray('userLogs.json', userRequest);
+        // Log the request asynchronously (don't wait)
+        appendToJsonArray('userLogs.json', userRequest).catch(err => 
+          logger.error('Failed to log request', err)
+        );
         
         // Send to Slack and capture thread ID
         const slackThreadTs = await slackFallback.sendDirectMessage(userRequest);
@@ -129,8 +145,10 @@ router.post('/request',
           processingTime: Date.now() - startTime
         };
         
-        // Update log with thread ID
-        await appendToJsonArray('userLogs.json', processedRequest);
+        // Log asynchronously
+        appendToJsonArray('userLogs.json', processedRequest).catch(err => 
+          logger.error('Failed to log processed request', err)
+        );
         
         return res.json({
           success: true,
@@ -167,25 +185,34 @@ router.post('/request',
       let slackThreadTs: string | undefined;
 
       try {
-        // Process with LLM for routing
-        const llmResponse = await llmService.processRequest(
-          userRequest.requestDescription,
-          userRequest.userId,
-          {
-            location: userRequest.location,
-            routePreference: userRequest.routePreference,
-            sessionId: userRequest.sessionId
-          }
-        );
+        // OPTIMIZATION: Skip the routing LLM call if user specified a route
+        let targetRoute = userRequest.routePreference;
+        let llmResponse: any = null;
+        
+        if (!targetRoute || targetRoute === 'Auto') {
+          // Only call LLM router if we need to determine the route
+          llmResponse = await llmService.processRequest(
+            userRequest.requestDescription,
+            userRequest.userId,
+            {
+              location: userRequest.location,
+              sessionId: userRequest.sessionId
+            }
+          );
+          targetRoute = llmResponse.route;
+        } else {
+          // Create a minimal response for logging
+          llmResponse = {
+            route: targetRoute,
+            confidence: 1.0,
+            reasoning: 'User specified route',
+            extractedInfo: {}
+          };
+        }
         
         // Now get the actual response from the assistant
         let assistantResponse;
         try {
-          // If user specified a route preference, use that instead
-          const targetRoute = userRequest.routePreference && userRequest.routePreference !== 'Auto' 
-            ? userRequest.routePreference 
-            : llmResponse.route;
-          
           logger.info('Calling assistant service', { targetRoute });
           
           assistantResponse = await assistantService.getAssistantResponse(
@@ -197,7 +224,7 @@ router.post('/request',
             }
           );
           
-          // Merge the routing info with the actual assistant response
+          // Use the assistant's response
           llmResponse.response = assistantResponse.response;
           llmResponse.extractedInfo = {
             ...llmResponse.extractedInfo,
@@ -215,26 +242,32 @@ router.post('/request',
             llmResponse.escalation = assistantResponse.escalation;
           }
         } catch (assistantError) {
-          logger.warn('Failed to get assistant response, using LLM response', {
+          logger.warn('Failed to get assistant response, using fallback', {
             error: assistantError,
-            route: llmResponse.route
+            route: targetRoute
           });
-          // If assistant fails, we still have the LLM response
+          // Provide a helpful fallback response
+          llmResponse.response = `I'll help you with your ${targetRoute} request. ${getQuickResponse(targetRoute, userRequest.requestDescription)}`;
         }
         
         processedRequest = {
           ...userRequest,
-          botRoute: llmResponse.route,
+          botRoute: targetRoute,
           llmResponse,
           status: 'completed',
           processingTime: Date.now() - startTime,
           slackThreadTs
         };
 
-        // Send success notification to Slack if configured
+        // Send success notification to Slack if configured (async)
         if (config.slackFallbackEnabled) {
-          slackThreadTs = await slackFallback.sendProcessedNotification(processedRequest);
-          processedRequest.slackThreadTs = slackThreadTs;
+          slackFallback.sendProcessedNotification(processedRequest)
+            .then(threadTs => {
+              processedRequest.slackThreadTs = threadTs;
+              // Update log with thread ID
+              appendToJsonArray('userLogs.json', processedRequest).catch(() => {});
+            })
+            .catch(err => logger.error('Failed to send Slack notification', err));
         }
 
       } catch (llmError) {
@@ -267,12 +300,12 @@ router.post('/request',
         ? Date.now() - req.body.clientStartTime 
         : processedRequest.processingTime;
 
-      // Update the log with processing result
-      await appendToJsonArray('userLogs.json', {
+      // Log asynchronously - don't wait
+      appendToJsonArray('userLogs.json', {
         ...processedRequest,
-        processingTime: totalProcessingTime, // Use total time for logs
-        serverProcessingTime: processedRequest.processingTime // Keep server time separately
-      });
+        processingTime: totalProcessingTime,
+        serverProcessingTime: processedRequest.processingTime
+      }).catch(err => logger.error('Failed to log', err));
 
       res.json({
         success: true,
@@ -295,7 +328,7 @@ router.post('/request',
             metadata: processedRequest.llmResponse?.metadata,
             escalation: processedRequest.llmResponse?.escalation
           },
-          processingTime: processedRequest.processingTime, // Return server processing time
+          processingTime: processedRequest.processingTime,
           status: processedRequest.status,
           slackThreadTs: processedRequest.slackThreadTs
         }
@@ -304,7 +337,7 @@ router.post('/request',
     } catch (error) {
       logger.error('Request processing failed:', error);
       
-      // Log failed request
+      // Log failed request asynchronously
       const failedRequest: ProcessedRequest = {
         id: requestId,
         requestDescription: req.body.requestDescription || '',
@@ -317,17 +350,28 @@ router.post('/request',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
       
-      await appendToJsonArray('userLogs.json', failedRequest);
+      appendToJsonArray('userLogs.json', failedRequest).catch(() => {});
       
       next(error);
     }
   }
 );
 
+// Helper function for quick responses
+function getQuickResponse(route: string, description: string): string {
+  const responses: Record<string, string> = {
+    'Emergency': 'For immediate assistance, please call 911 or contact facility management.',
+    'Booking&Access': 'I can help with booking changes, access issues, or reservations.',
+    'TechSupport': 'I\'ll help troubleshoot your technical issue.',
+    'BrandTone': 'I\'d be happy to provide information about our services and offerings.'
+  };
+  return responses[route] || 'Let me help you with that request.';
+}
+
 // Get LLM status - temporarily remove auth for demo
 router.get('/status', /* authenticate, */ async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const config = await readJsonFile<SystemConfig>('systemConfig.json');
+    const config = await getSystemConfig();
     const logs = await readJsonFile<ProcessedRequest[]>('userLogs.json');
     
     // Calculate stats from last 24 hours
@@ -447,7 +491,7 @@ router.post('/debug-request',
       }
       
       // Check system config
-      const config = await readJsonFile<SystemConfig>('systemConfig.json');
+      const config = await getSystemConfig();
       
       res.json({
         success: true,

@@ -100,16 +100,16 @@ export class AssistantService {
 
       // Wait for the run to complete with timeout
       const startTime = Date.now();
-      const timeout = 25000; // 25 second timeout
+      const timeout = 15000; // Reduced to 15 seconds
       let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
       
       while (runStatus.status !== 'completed' && runStatus.status !== 'failed') {
         if (Date.now() - startTime > timeout) {
-          await this.openai.beta.threads.runs.cancel(thread.id, run.id);
+          await this.openai.beta.threads.runs.cancel(thread.id, run.id).catch(() => {});
           throw new Error('Assistant response timeout');
         }
         
-        await new Promise(resolve => setTimeout(resolve, 500)); // Check twice per second instead of once
+        await new Promise(resolve => setTimeout(resolve, 250)); // Check 4 times per second
         runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
         
         // Handle function calls if needed
