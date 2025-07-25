@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset ClubOS Admin</title>
+</head>
+<body>
+    <h1>Reset ClubOS Admin Password</h1>
+    <button onclick="resetAdmin()">Click to Reset Admin Password</button>
+    <div id="result"></div>
+
+    <script>
+        async function resetAdmin() {
+            try {
+                const response = await fetch('https://clubosv2-production.up.railway.app/api/auth/reset-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <h2>Result:</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <p>If successful, login with:</p>
+                    <ul>
+                        <li>Email: admin@clubhouse247golf.com</li>
+                        <li>Password: admin123</li>
+                    </ul>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
