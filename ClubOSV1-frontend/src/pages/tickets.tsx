@@ -291,7 +291,7 @@ export default function TicketCenter() {
           </div>
           {/* Sticky New Ticket Button */}
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/?ticket=true')}
             className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
           >
             <Plus className="w-5 h-5" />
@@ -517,7 +517,7 @@ export default function TicketCenter() {
                     No open tickets. Everything's running smooth.
                   </p>
                   <button
-                    onClick={() => router.push('/')}
+                    onClick={() => router.push('/?ticket=true')}
                     className="text-[var(--accent)] hover:underline text-sm"
                   >
                     Create a ticket if you need help

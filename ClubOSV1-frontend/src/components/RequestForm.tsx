@@ -101,6 +101,16 @@ const RequestForm: React.FC = () => {
     'BrandTone': 'brand_tone'
   };
 
+  // Check for ticket query parameter on mount
+  useEffect(() => {
+    if (router.query.ticket === 'true') {
+      setIsTicketMode(true);
+      setSmartAssistEnabled(false);
+      // Remove the query parameter from URL without reload
+      router.replace('/', undefined, { shallow: true });
+    }
+  }, [router.query.ticket, router]);
+
   // Handle demo mode
   useEffect(() => {
     if (demoMode) {
