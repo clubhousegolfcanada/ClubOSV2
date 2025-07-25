@@ -1,6 +1,7 @@
-import { IncomingWebhook } from '@slack/webhook';
+import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook';
 import { logger } from '../utils/logger';
-import { SlackMessage, UserRequest, ProcessedRequest } from '../types';
+import { SlackMessage, UserRequest, ProcessedRequest, SlackMessageRecord } from '../types';
+import { query } from '../utils/db';
 
 export class SlackFallbackService {
   private webhook: IncomingWebhook;
@@ -18,21 +19,64 @@ export class SlackFallbackService {
     }
   }
 
-  async sendMessage(message: SlackMessage): Promise<void> {
+  async sendMessage(message: SlackMessage): Promise<IncomingWebhookResult> {
     if (!this.enabled) {
       throw new Error('Slack fallback is not configured');
     }
 
     try {
-      await this.webhook.send(message);
+      const result = await this.webhook.send(message);
       logger.info('Slack message sent successfully');
+      return result;
     } catch (error) {
       logger.error('Failed to send Slack message:', error);
       throw error;
     }
   }
 
-  async sendFallbackNotification(request: UserRequest & { user?: any }, error: string): Promise<void> {
+  // Helper to extract thread timestamp from Slack webhook response
+  private extractThreadTs(response: any): string | undefined {
+    // Slack webhook response doesn't directly provide thread_ts
+    // We'll generate a unique identifier that can be used for tracking
+    // In a real implementation with Slack API, we'd get the actual thread_ts
+    return `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Save Slack message record to database
+  private async saveSlackMessage(
+    userId: string | undefined,
+    requestId: string | undefined,
+    message: SlackMessage,
+    threadTs: string,
+    requestDescription?: string,
+    location?: string,
+    route?: string
+  ): Promise<void> {
+    try {
+      await query(
+        `INSERT INTO slack_messages 
+        (user_id, request_id, slack_thread_ts, slack_channel, original_message, 
+         request_description, location, route)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          userId,
+          requestId,
+          threadTs,
+          message.channel || process.env.SLACK_CHANNEL || '#clubos-requests',
+          JSON.stringify(message),
+          requestDescription,
+          location,
+          route
+        ]
+      );
+      logger.info('Slack message record saved', { threadTs, requestId });
+    } catch (error) {
+      logger.error('Failed to save Slack message record:', error);
+      // Don't throw - we don't want to fail the entire operation
+    }
+  }
+
+  async sendFallbackNotification(request: UserRequest & { user?: any }, error: string): Promise<string | undefined> {
     // Build user information string
     let userInfo = 'Unknown User';
     if (request.user) {
@@ -82,10 +126,26 @@ export class SlackFallbackService {
       ]
     };
 
-    await this.sendMessage(message);
+    const result = await this.sendMessage(message);
+    const threadTs = this.extractThreadTs(result);
+    
+    // Save to database
+    if (threadTs) {
+      await this.saveSlackMessage(
+        request.userId,
+        request.id,
+        message,
+        threadTs,
+        request.requestDescription,
+        request.location,
+        request.routePreference
+      );
+    }
+    
+    return threadTs;
   }
 
-  async sendDirectMessage(request: UserRequest & { user?: any }): Promise<void> {
+  async sendDirectMessage(request: UserRequest & { user?: any }): Promise<string | undefined> {
     // Build user information string
     let userInfo = 'Unknown User';
     if (request.user) {
@@ -140,10 +200,26 @@ export class SlackFallbackService {
       ]
     };
 
-    await this.sendMessage(message);
+    const result = await this.sendMessage(message);
+    const threadTs = this.extractThreadTs(result);
+    
+    // Save to database
+    if (threadTs) {
+      await this.saveSlackMessage(
+        request.userId,
+        request.id,
+        message,
+        threadTs,
+        request.requestDescription,
+        request.location,
+        request.routePreference
+      );
+    }
+    
+    return threadTs;
   }
 
-  async sendProcessedNotification(processed: ProcessedRequest): Promise<void> {
+  async sendProcessedNotification(processed: ProcessedRequest): Promise<string | undefined> {
     const message: SlackMessage = {
       channel: process.env.SLACK_CHANNEL || '#clubos-requests',
       username: 'ClubOSV1 Bot',
@@ -181,10 +257,26 @@ export class SlackFallbackService {
       ]
     };
 
-    await this.sendMessage(message);
+    const result = await this.sendMessage(message);
+    const threadTs = this.extractThreadTs(result);
+    
+    // Save to database if this is related to a specific request
+    if (threadTs && processed.id) {
+      await this.saveSlackMessage(
+        processed.userId,
+        processed.id,
+        message,
+        threadTs,
+        processed.requestDescription,
+        processed.location,
+        processed.botRoute
+      );
+    }
+    
+    return threadTs;
   }
 
-  async sendTicketNotification(ticket: any): Promise<void> {
+  async sendTicketNotification(ticket: any): Promise<string | undefined> {
     // Build creator information string
     let creatorInfo = ticket.createdBy.name || ticket.createdBy.email;
     if (ticket.createdBy.email && ticket.createdBy.name) {
@@ -252,10 +344,26 @@ export class SlackFallbackService {
       ]
     };
 
-    await this.sendMessage(message);
+    const result = await this.sendMessage(message);
+    const threadTs = this.extractThreadTs(result);
+    
+    // Save to database
+    if (threadTs) {
+      await this.saveSlackMessage(
+        ticket.createdBy.id,
+        ticket.id,
+        message,
+        threadTs,
+        ticket.description,
+        ticket.location,
+        'Ticket'
+      );
+    }
+    
+    return threadTs;
   }
 
-  async sendUnhelpfulFeedbackNotification(feedback: any): Promise<void> {
+  async sendUnhelpfulFeedbackNotification(feedback: any): Promise<string | undefined> {
     // Build user information string
     let userInfo = feedback.userEmail || 'Unknown User';
     
@@ -311,11 +419,41 @@ export class SlackFallbackService {
       ]
     };
 
-    await this.sendMessage(message);
+    const result = await this.sendMessage(message);
+    const threadTs = this.extractThreadTs(result);
+    
+    // Save to database
+    if (threadTs) {
+      await this.saveSlackMessage(
+        feedback.userId,
+        feedback.id,
+        message,
+        threadTs,
+        feedback.requestDescription,
+        feedback.location,
+        feedback.route
+      );
+    }
+    
+    return threadTs;
   }
 
   isEnabled(): boolean {
     return this.enabled;
+  }
+
+  // Get Slack message by thread timestamp
+  async getSlackMessage(threadTs: string): Promise<SlackMessageRecord | null> {
+    try {
+      const result = await query(
+        'SELECT * FROM slack_messages WHERE slack_thread_ts = $1',
+        [threadTs]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      logger.error('Failed to get Slack message:', error);
+      return null;
+    }
   }
 }
 

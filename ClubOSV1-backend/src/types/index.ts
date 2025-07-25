@@ -14,6 +14,7 @@ export interface ProcessedRequest extends UserRequest {
   botRoute: BotRoute;
   llmResponse?: LLMResponse;
   slackMessageId?: string;
+  slackThreadTs?: string; // New field for Slack thread tracking
   processingTime: number;
   serverProcessingTime?: number; // Server-only processing time
   error?: string;
@@ -33,6 +34,7 @@ export interface SlackMessage {
   username: string;
   icon_emoji?: string;
   attachments?: SlackAttachment[];
+  thread_ts?: string; // For threading messages
 }
 
 export interface SlackAttachment {
@@ -49,6 +51,55 @@ export interface SlackField {
   value: string;
   short: boolean;
 }
+
+// New interfaces for Slack reply tracking
+export interface SlackMessageRecord {
+  id: string;
+  userId?: string;
+  requestId?: string;
+  slackThreadTs: string;
+  slackChannel: string;
+  slackMessageTs?: string;
+  originalMessage: string;
+  requestDescription?: string;
+  location?: string;
+  route?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SlackReply {
+  id: string;
+  slackThreadTs: string;
+  slackUserId: string;
+  slackUserName: string;
+  message: string;
+  timestamp: string;
+}
+
+// Updated Feedback interface
+export interface Feedback {
+  id: string;
+  timestamp: string;
+  userId?: string;
+  userEmail?: string;
+  requestDescription: string;
+  location?: string;
+  route?: string;
+  response: string;
+  confidence?: number;
+  isUseful?: boolean;
+  feedbackType?: string;
+  feedbackSource: FeedbackSource; // New field
+  slackThreadTs?: string; // New field
+  slackUserName?: string; // New field
+  slackUserId?: string; // New field
+  slackChannel?: string; // New field
+  originalRequestId?: string; // New field
+  createdAt: string;
+}
+
+export type FeedbackSource = 'user' | 'slack_reply' | 'system';
 
 export interface HistoryEntry {
   id: string;
@@ -110,4 +161,32 @@ export interface SystemConfig {
   maxRetries: number;
   requestTimeout: number;
   dataRetentionDays: number;
+}
+
+// Slack Events API types
+export interface SlackEventWrapper {
+  token: string;
+  team_id: string;
+  api_app_id: string;
+  event: SlackEvent;
+  type: 'event_callback' | 'url_verification';
+  event_id: string;
+  event_time: number;
+  challenge?: string; // For URL verification
+}
+
+export interface SlackEvent {
+  type: string;
+  event_ts: string;
+  user: string;
+  text: string;
+  ts: string;
+  channel: string;
+  thread_ts?: string;
+}
+
+export interface SlackEventMessage extends SlackEvent {
+  type: 'message';
+  subtype?: string;
+  bot_id?: string;
 }

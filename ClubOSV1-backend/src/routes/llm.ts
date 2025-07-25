@@ -73,15 +73,28 @@ router.post('/request',
         // Log the request
         await appendToJsonArray('userLogs.json', userRequest);
         
-        // Send to Slack
-        await slackFallback.sendDirectMessage(userRequest);
+        // Send to Slack and capture thread ID
+        const slackThreadTs = await slackFallback.sendDirectMessage(userRequest);
+        
+        // Update the processed request with Slack thread ID
+        const processedRequest: ProcessedRequest = {
+          ...userRequest,
+          botRoute: 'Slack',
+          slackThreadTs,
+          status: 'sent_to_slack' as any,
+          processingTime: Date.now() - startTime
+        };
+        
+        // Update log with thread ID
+        await appendToJsonArray('userLogs.json', processedRequest);
         
         return res.json({
           success: true,
           data: {
             requestId: userRequest.id,
             status: 'sent_to_slack',
-            message: 'Your request has been sent to our support team'
+            message: 'Your request has been sent to our support team',
+            slackThreadTs
           }
         });
       }
@@ -107,6 +120,7 @@ router.post('/request',
       };
 
       let processedRequest: ProcessedRequest;
+      let slackThreadTs: string | undefined;
 
       try {
         // Process with LLM for routing
@@ -169,14 +183,14 @@ router.post('/request',
           botRoute: llmResponse.route,
           llmResponse,
           status: 'completed',
-          processingTime: Date.now() - startTime
+          processingTime: Date.now() - startTime,
+          slackThreadTs
         };
 
         // Send success notification to Slack if configured
         if (config.slackFallbackEnabled) {
-          slackFallback.sendProcessedNotification(processedRequest).catch(err => {
-            logger.error('Failed to send Slack notification:', err);
-          });
+          slackThreadTs = await slackFallback.sendProcessedNotification(processedRequest);
+          processedRequest.slackThreadTs = slackThreadTs;
         }
 
       } catch (llmError) {
@@ -184,7 +198,7 @@ router.post('/request',
         
         // Fallback to local routing or Slack
         if (config.slackFallbackEnabled) {
-          await slackFallback.sendFallbackNotification(
+          slackThreadTs = await slackFallback.sendFallbackNotification(
             userRequest as UserRequest & { user?: any },
             llmError instanceof Error ? llmError.message : 'Unknown error'
           );
@@ -199,7 +213,8 @@ router.post('/request',
           botRoute: fallbackRoute,
           status: 'fallback',
           processingTime: Date.now() - startTime,
-          error: 'LLM processing failed, used fallback routing'
+          error: 'LLM processing failed, used fallback routing',
+          slackThreadTs
         };
       }
 
@@ -237,7 +252,8 @@ router.post('/request',
             escalation: processedRequest.llmResponse?.escalation
           },
           processingTime: processedRequest.processingTime, // Return server processing time
-          status: processedRequest.status
+          status: processedRequest.status,
+          slackThreadTs: processedRequest.slackThreadTs
         }
       });
 
