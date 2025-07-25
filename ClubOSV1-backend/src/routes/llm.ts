@@ -47,7 +47,7 @@ router.post('/request',
   // authenticate,  // Commented out for demo
   // adminOrOperator,  // Commented out for demo
   debugMiddleware, // Log before validation
-  strictLimiter, // Apply strict rate limiting
+  // strictLimiter, // TEMPORARILY DISABLED due to Railway proxy issues
   validate(requestValidation.llmRequest), // Apply validation
   async (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();

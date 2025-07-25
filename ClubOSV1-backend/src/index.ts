@@ -36,6 +36,9 @@ const app: Express = express();
 const PORT = config.PORT;
 const server = createServer(app);
 
+// Trust proxy for Railway deployment
+app.set('trust proxy', true);
+
 // Initialize data directory and files
 const initializeApp = async () => {
   try {

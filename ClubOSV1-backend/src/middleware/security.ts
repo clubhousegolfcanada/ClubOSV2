@@ -51,6 +51,23 @@ export const createRateLimiter = (windowMs: number, max: number, message: string
     message,
     standardHeaders: true,
     legacyHeaders: false,
+    // Fix for Railway proxy
+    trustProxy: true,
+    // Skip problematic headers
+    skip: (req) => {
+      // Skip rate limiting in development
+      if (config.NODE_ENV === 'development') return true;
+      return false;
+    },
+    keyGenerator: (req) => {
+      // Use the rightmost IP in X-Forwarded-For or fall back to req.ip
+      const forwarded = req.headers['x-forwarded-for'] as string;
+      if (forwarded) {
+        const ips = forwarded.split(',').map(ip => ip.trim());
+        return ips[ips.length - 1]; // Use the rightmost IP
+      }
+      return req.ip || 'unknown';
+    },
     handler: (req, res) => {
       logger.warn('Rate limit exceeded', {
         ip: req.ip,
