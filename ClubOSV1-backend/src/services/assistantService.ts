@@ -167,9 +167,17 @@ export class AssistantService {
       let escalation = undefined;
       
       try {
+        // Remove markdown code blocks if present
+        let jsonContent = textContent;
+        if (textContent.includes('```json')) {
+          jsonContent = textContent.replace(/```json\n/g, '').replace(/```/g, '').trim();
+        } else if (textContent.includes('```')) {
+          jsonContent = textContent.replace(/```\n/g, '').replace(/```/g, '').trim();
+        }
+        
         // Check if response is JSON by looking for { at the start
-        if (textContent.trim().startsWith('{')) {
-          const parsed = JSON.parse(textContent);
+        if (jsonContent.trim().startsWith('{')) {
+          const parsed = JSON.parse(jsonContent);
           
           // Validate it has the expected structure
           if (parsed.response && parsed.category) {
@@ -191,7 +199,7 @@ export class AssistantService {
         }
       } catch (e) {
         // Not JSON or invalid JSON, use as plain text
-        logger.debug('Assistant returned text response, not JSON');
+        logger.debug('Assistant returned text response, not JSON', { error: e });
       }
 
       return {
