@@ -52,7 +52,7 @@ export default function Dashboard() {
               href="https://app.skedda.com/register?i=277234"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
+              className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group">
 
               <div className="text-2xl mb-2 font-bold">CAL</div>
               <div className="text-sm font-medium">Skedda</div>
