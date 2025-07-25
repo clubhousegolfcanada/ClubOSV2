@@ -4,6 +4,7 @@ import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff } from 'lucide-react';
+import { FeedbackResponse } from '@/components/FeedbackResponse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -830,9 +831,7 @@ export default function Operations() {
                             </div>
                             <div className="mb-3">
                               <span className="text-xs text-[var(--text-muted)]">Response:</span>
-                              <p className="text-sm bg-[var(--bg-primary)] p-3 rounded mt-1">
-                                {item.response}
-                              </p>
+                              <FeedbackResponse responseData={item.response} />
                             </div>
                             <div className="flex justify-between items-center text-xs text-[var(--text-muted)]">
                               <span>{new Date(item.timestamp).toLocaleString()}</span>

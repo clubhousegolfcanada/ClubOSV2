@@ -285,13 +285,21 @@ const RequestForm: React.FC = () => {
     const feedbackType = isUseful ? 'useful' : 'not_useful';
     
     try {
-      // Log feedback data
+      // Log feedback data - include full structured response
       const feedbackData = {
         timestamp: new Date().toISOString(),
         requestDescription: lastRequestData?.requestDescription || requestDescription || 'No description',
         location: lastRequestData?.location || watch('location') || '',
         route: lastResponse.botRoute || 'Unknown',
-        response: lastResponse.llmResponse?.response || 'No response',
+        response: JSON.stringify({
+          text: lastResponse.llmResponse?.response || 'No response',
+          structured: lastResponse.llmResponse?.structured,
+          category: lastResponse.llmResponse?.category,
+          priority: lastResponse.llmResponse?.priority,
+          actions: lastResponse.llmResponse?.actions,
+          metadata: lastResponse.llmResponse?.metadata,
+          escalation: lastResponse.llmResponse?.escalation
+        }),
         confidence: lastResponse.llmResponse?.confidence || 0,
         isUseful: isUseful,
         feedbackType: feedbackType
