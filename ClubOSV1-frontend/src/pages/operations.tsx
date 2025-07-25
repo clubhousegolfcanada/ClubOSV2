@@ -11,7 +11,7 @@ type User = {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'operator' | 'support';
+  role: 'admin' | 'operator' | 'support' | 'kiosk';
   phone?: string;
   createdAt: string;
   updatedAt: string;
@@ -33,7 +33,7 @@ export default function Operations() {
     email: '',
     password: '',
     name: '',
-    role: 'operator' as const,
+    role: 'operator' as 'admin' | 'operator' | 'support' | 'kiosk',
     phone: ''
   });
   const [editingUser, setEditingUser] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export default function Operations() {
     name: string;
     email: string;
     phone: string;
-    role: 'admin' | 'operator' | 'support';
+    role: 'admin' | 'operator' | 'support' | 'kiosk';
   }>({
     name: '',
     email: '',
@@ -426,7 +426,8 @@ export default function Operations() {
   const roleColors = {
     admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     operator: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    support: 'bg-green-500/20 text-green-400 border-green-500/30'
+    support: 'bg-green-500/20 text-green-400 border-green-500/30',
+    kiosk: 'bg-orange-500/20 text-orange-400 border-orange-500/30'
   };
 
   const PasswordStrengthIndicator = ({ validation, showRequirements = false }: { validation: PasswordValidation, showRequirements?: boolean }) => {
@@ -610,6 +611,7 @@ export default function Operations() {
                               <option value="operator">Operator</option>
                               <option value="support">Support</option>
                               <option value="admin">Admin</option>
+                              <option value="kiosk">Kiosk (ClubOS Boy Only)</option>
                             </select>
                           </div>
                         </div>

@@ -76,7 +76,7 @@ export interface AccessRequest {
 
 export type BotRoute = 'Auto' | 'Booking&Access' | 'Emergency' | 'TechSupport' | 'BrandTone';
 export type RequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'fallback';
-export type UserRole = 'admin' | 'operator' | 'support';
+export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
 export interface User {
   id: string;
