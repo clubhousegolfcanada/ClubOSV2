@@ -3,12 +3,12 @@ import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, H
 
 // External tool links - can be moved to environment variables
 const EXTERNAL_TOOLS = {
-  REMOTE_DESKTOP: process.env.NEXT_PUBLIC_SPLASHTOP_URL || 'https://my.splashtop.com',
-  BOOKING_SITE: process.env.NEXT_PUBLIC_SKEDDA_URL || 'https://yourlocation.skedda.com',
+  REMOTE_DESKTOP: process.env.NEXT_PUBLIC_SPLASHTOP_URL || 'https://my.splashtop.com/computers',
+  BOOKING_SITE: process.env.NEXT_PUBLIC_SKEDDA_URL || 'https://clubhouse247golf.skedda.com/booking',
   CUSTOMER_INFO: process.env.NEXT_PUBLIC_HUBSPOT_URL || 'https://app.hubspot.com',
   ACCESS_CAMERAS: process.env.NEXT_PUBLIC_UNIFI_URL || 'https://unifi.ui.com',
   STRIPE_RETURNS: process.env.NEXT_PUBLIC_STRIPE_URL || 'https://dashboard.stripe.com',
-  TRACKMAN_PORTAL: process.env.NEXT_PUBLIC_TRACKMAN_URL || 'https://portal.trackman.com',
+  TRACKMAN_PORTAL: process.env.NEXT_PUBLIC_TRACKMAN_URL || 'https://login.trackmangolf.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Ddr-web.4633fada-3b16-490f-8de7-2aa67158a1d6%26scope%3Dopenid%2520profile%2520email%2520offline_access%2520https%253A%252F%252Fauth.trackman.com%252Fdr%252Fcloud%2520https%253A%252F%252Fauth.trackman.com%252Fauthorization%2520https%253A%252F%252Fauth.trackman.com%252Fproamevent%26response_type%3Dcode%26redirect_uri%3Dhttps%253A%252F%252Fportal.trackmangolf.com%252Faccount%252Fcallback%26nonce%3D08fBNss-AVg9eR2T8pu2JKKfZGk8sWH9vzCqjPrG8z8%26state%3DeyJyZXR1cm5UbyI6Ii8ifQ%26code_challenge_method%3DS256%26code_challenge%3D06sJEm0-gkB1i-I4J_FdgtLpWCeNkX4OWn2CmMmEmcY',
   GOOGLE_DRIVE: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_URL || 'https://drive.google.com'
 };
 
