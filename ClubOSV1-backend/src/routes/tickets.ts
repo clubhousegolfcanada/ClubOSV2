@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import { authenticate, authorize } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { db } from '../utils/database';
 import { slackFallback } from '../services/slackFallback';
-import { ticketDb } from '../utils/ticketDb';
 
 const router = Router();
 
@@ -12,10 +11,10 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const { category, status, assignedTo } = req.query;
     
-    const tickets = await ticketDb.getAll({
+    const tickets = await db.getTickets({
       category: category as string,
       status: status as string,
-      assignedTo: assignedTo as string
+      assigned_to_id: assignedTo as string
     });
     
     res.json({
@@ -45,19 +44,17 @@ router.post('/', authenticate, async (req, res) => {
     }
     
     // Create new ticket
-    const newTicket = await ticketDb.create({
+    const newTicket = await db.createTicket({
       title,
       description,
       category,
       status: 'open',
       priority,
       location,
-      createdBy: {
-        id: req.user!.id,
-        name: req.user!.name || req.user!.email.split('@')[0],
-        email: req.user!.email,
-        phone: req.user!.phone
-      }
+      created_by_id: req.user!.id,
+      created_by_name: req.user!.name || req.user!.email.split('@')[0],
+      created_by_email: req.user!.email,
+      created_by_phone: req.user!.phone
     });
     
     logger.info('Ticket created', {
@@ -70,12 +67,28 @@ router.post('/', authenticate, async (req, res) => {
     // Send Slack notification if enabled
     try {
       if (slackFallback.isEnabled()) {
-        await slackFallback.sendTicketNotification(newTicket);
+        await slackFallback.sendTicketNotification({
+          id: newTicket.id,
+          title: newTicket.title,
+          description: newTicket.description,
+          category: newTicket.category,
+          status: newTicket.status,
+          priority: newTicket.priority,
+          location: newTicket.location,
+          createdBy: {
+            id: newTicket.created_by_id,
+            name: newTicket.created_by_name,
+            email: newTicket.created_by_email,
+            phone: newTicket.created_by_phone
+          },
+          createdAt: newTicket.created_at.toISOString(),
+          updatedAt: newTicket.updated_at.toISOString(),
+          comments: []
+        });
         logger.info('Slack notification sent for ticket', { ticketId: newTicket.id });
       }
     } catch (slackError) {
       logger.error('Failed to send Slack notification for ticket:', slackError);
-      // Don't fail the ticket creation if Slack notification fails
     }
     
     res.json({
@@ -104,7 +117,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
       });
     }
     
-    const updatedTicket = await ticketDb.updateStatus(id, status);
+    const updatedTicket = await db.updateTicketStatus(id, status);
     
     if (!updatedTicket) {
       return res.status(404).json({
@@ -132,77 +145,12 @@ router.patch('/:id/status', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/tickets/:id/comments - Add comment to ticket
-router.post('/:id/comments', authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { text } = req.body;
-    
-    if (!text) {
-      return res.status(400).json({
-        success: false,
-        message: 'Comment text is required'
-      });
-    }
-    
-    // Create new comment
-    const newComment = await ticketDb.addComment(id, {
-      text,
-      createdBy: {
-        id: req.user!.id,
-        name: req.user!.name || req.user!.email.split('@')[0],
-        email: req.user!.email,
-        phone: req.user!.phone
-      }
-    });
-    
-    logger.info('Comment added to ticket', {
-      ticketId: id,
-      commentId: newComment.id,
-      createdBy: req.user!.email
-    });
-    
-    res.json({
-      success: true,
-      data: newComment
-    });
-  } catch (error) {
-    logger.error('Failed to add comment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add comment'
-    });
-  }
-});
-
-// PATCH /api/tickets/:id/assign - Assign ticket to user
-router.patch('/:id/assign', authenticate, authorize(['admin', 'operator']), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userId, userName, userEmail } = req.body;
-    
-    // For now, we'll just update the status since assignment isn't implemented in the DB util
-    // This is a placeholder until we add the assignment functionality
-    
-    res.json({
-      success: true,
-      message: 'Assignment functionality coming soon'
-    });
-  } catch (error) {
-    logger.error('Failed to update ticket assignment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update ticket assignment'
-    });
-  }
-});
-
 // DELETE /api/tickets/:id - Delete a ticket
 router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req, res) => {
   try {
     const { id } = req.params;
     
-    const deleted = await ticketDb.delete(id);
+    const deleted = await db.deleteTicket(id);
     
     if (!deleted) {
       return res.status(404).json({
@@ -229,41 +177,30 @@ router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req
   }
 });
 
-// DELETE /api/tickets/clear-all - Clear all tickets (admin only)
-router.delete('/clear-all', authenticate, authorize(['admin']), async (req, res) => {
-  try {
-    const { category, status } = req.query;
-    
-    const deletedCount = await ticketDb.clearAll({
-      category: category as string,
-      status: status as string
-    });
-    
-    logger.info('Tickets cleared', {
-      deletedCount,
-      category,
-      status,
-      clearedBy: req.user!.email
-    });
-    
-    res.json({
-      success: true,
-      message: `${deletedCount} ticket(s) cleared successfully`,
-      data: { deletedCount }
-    });
-  } catch (error) {
-    logger.error('Failed to clear tickets:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to clear tickets'
-    });
-  }
-});
-
 // GET /api/tickets/stats - Get ticket statistics
 router.get('/stats', authenticate, async (req, res) => {
   try {
-    const stats = await ticketDb.getStats();
+    const tickets = await db.getTickets();
+    
+    const stats = {
+      total: tickets.length,
+      byStatus: {
+        open: tickets.filter(t => t.status === 'open').length,
+        'in-progress': tickets.filter(t => t.status === 'in-progress').length,
+        resolved: tickets.filter(t => t.status === 'resolved').length,
+        closed: tickets.filter(t => t.status === 'closed').length
+      },
+      byCategory: {
+        facilities: tickets.filter(t => t.category === 'facilities').length,
+        tech: tickets.filter(t => t.category === 'tech').length
+      },
+      byPriority: {
+        low: tickets.filter(t => t.priority === 'low').length,
+        medium: tickets.filter(t => t.priority === 'medium').length,
+        high: tickets.filter(t => t.priority === 'high').length,
+        urgent: tickets.filter(t => t.priority === 'urgent').length
+      }
+    };
     
     res.json({
       success: true,

@@ -1,10 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcryptjs from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
-import { User, JWTPayload } from '../types';
+import { db } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';
 import { body } from 'express-validator';
@@ -31,11 +29,8 @@ router.post('/login',
       
       logger.info('Login attempt:', { email });
       
-      // Load users
-      const users = await readJsonFile<User[]>('users.json');
-      
-      // Find user by email
-      const user = users.find(u => u.email === email);
+      // Find user in database
+      const user = await db.findUserByEmail(email);
       
       if (!user) {
         throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
@@ -48,22 +43,16 @@ router.post('/login',
         throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
       }
       
-      // Generate JWT token using the proper function
+      // Update last login
+      await db.updateLastLogin(user.id);
+      
+      // Generate JWT token
       const sessionId = uuidv4();
       const token = generateToken({
         userId: user.id,
         email: user.email,
         role: user.role,
         sessionId: sessionId
-      });
-      
-      // Log successful login
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: user.id,
-        action: 'login',
-        timestamp: new Date().toISOString(),
-        ip: req.ip
       });
       
       // Remove password from response
@@ -90,27 +79,14 @@ router.post('/init-admin',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Check if any users exist
-      const users = await readJsonFile<User[]>('users.json');
+      const users = await db.getAllUsers();
       
       if (users.length > 0) {
         throw new AppError('USERS_EXIST', 'Admin already initialized', 403);
       }
       
       // Create default admin
-      const hashedPassword = await bcryptjs.hash('admin123', 10);
-      const adminUser: User = {
-        id: 'admin-001',
-        email: 'admin@clubhouse247golf.com',
-        password: hashedPassword,
-        name: 'Admin User',
-        role: 'admin',
-        phone: '+1234567890',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      users.push(adminUser);
-      await writeJsonFile('users.json', users);
+      await db.ensureDefaultAdmin();
       
       logger.info('Admin user initialized');
       
@@ -119,57 +95,6 @@ router.post('/init-admin',
         message: 'Admin user created successfully',
         email: 'admin@clubhouse247golf.com'
       });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// Reset admin password (emergency use only)
-router.post('/reset-admin',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const users = await readJsonFile<User[]>('users.json');
-      
-      // Find admin user
-      const adminIndex = users.findIndex(u => u.email === 'admin@clubhouse247golf.com');
-      
-      if (adminIndex === -1) {
-        // Create new admin if doesn't exist
-        const hashedPassword = await bcryptjs.hash('admin123', 10);
-        const adminUser: User = {
-          id: 'admin-001',
-          email: 'admin@clubhouse247golf.com',
-          password: hashedPassword,
-          name: 'Admin User',
-          role: 'admin',
-          phone: '+1234567890',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        users.push(adminUser);
-        await writeJsonFile('users.json', users);
-        
-        res.json({
-          success: true,
-          message: 'Admin user created',
-          email: 'admin@clubhouse247golf.com'
-        });
-      } else {
-        // Reset existing admin password
-        const hashedPassword = await bcryptjs.hash('admin123', 10);
-        users[adminIndex].password = hashedPassword;
-        users[adminIndex].updatedAt = new Date().toISOString();
-        await writeJsonFile('users.json', users);
-        
-        res.json({
-          success: true,
-          message: 'Admin password reset',
-          email: 'admin@clubhouse247golf.com'
-        });
-      }
-      
-      logger.info('Admin password reset');
     } catch (error) {
       next(error);
     }
@@ -206,49 +131,21 @@ router.post('/register',
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      logger.info('Register endpoint called', {
-        user: req.user,
-        body: { ...req.body, password: '***' },
-        headers: req.headers
-      });
-      
       const { email, password, name, role, phone } = req.body;
       
-      // Load existing users
-      const users = await readJsonFile<User[]>('users.json');
-      
       // Check if user already exists
-      if (users.find(u => u.email === email)) {
+      const existingUser = await db.findUserByEmail(email);
+      if (existingUser) {
         throw new AppError('USER_EXISTS', 'User with this email already exists', 409);
       }
       
-      // Hash password
-      const hashedPassword = await bcryptjs.hash(password, 10);
-      
       // Create new user
-      const newUser: User = {
-        id: uuidv4(),
+      const newUser = await db.createUser({
         email,
-        password: hashedPassword,
+        password,
         name,
-        phone,
         role,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Add user to database
-      users.push(newUser);
-      await writeJsonFile('users.json', users);
-      
-      // Log user creation
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: req.user!.id,
-        action: 'create_user',
-        targetUserId: newUser.id,
-        timestamp: new Date().toISOString(),
-        ip: req.ip
+        phone
       });
       
       // Remove password from response
@@ -272,8 +169,7 @@ router.get('/me',
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const users = await readJsonFile<User[]>('users.json');
-      const user = users.find(u => u.id === req.user!.id);
+      const user = await db.findUserById(req.user!.id);
       
       if (!user) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
@@ -310,14 +206,11 @@ router.post('/change-password',
     try {
       const { currentPassword, newPassword } = req.body;
       
-      const users = await readJsonFile<User[]>('users.json');
-      const userIndex = users.findIndex(u => u.id === req.user!.id);
+      const user = await db.findUserById(req.user!.id);
       
-      if (userIndex === -1) {
+      if (!user) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
       }
-      
-      const user = users[userIndex];
       
       // Verify current password
       const isValidPassword = await bcryptjs.compare(currentPassword, user.password);
@@ -326,26 +219,8 @@ router.post('/change-password',
         throw new AppError('INVALID_PASSWORD', 'Current password is incorrect', 401);
       }
       
-      // Hash new password
-      const hashedPassword = await bcryptjs.hash(newPassword, 10);
-      
-      // Update user password
-      users[userIndex] = {
-        ...user,
-        password: hashedPassword,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await writeJsonFile('users.json', users);
-      
-      // Log password change
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: user.id,
-        action: 'change_password',
-        timestamp: new Date().toISOString(),
-        ip: req.ip
-      });
+      // Update password
+      await db.updateUserPassword(user.id, newPassword);
       
       logger.info('Password changed:', { userId: user.id });
       
@@ -366,7 +241,7 @@ router.get('/users',
   roleGuard(['admin']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const users = await readJsonFile<User[]>('users.json');
+      const users = await db.getAllUsers();
       
       // Remove passwords from response
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
@@ -413,42 +288,20 @@ router.put('/users/:userId',
         throw new AppError('UNAUTHORIZED', 'You can only update your own profile', 403);
       }
       
-      const users = await readJsonFile<User[]>('users.json');
-      const userIndex = users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
-      }
-      
       // Check if email is being changed and if it's already taken
-      if (email && email !== users[userIndex].email) {
-        if (users.find(u => u.email === email && u.id !== userId)) {
+      if (email) {
+        const existingUser = await db.findUserByEmail(email);
+        if (existingUser && existingUser.id !== userId) {
           throw new AppError('EMAIL_EXISTS', 'Email already in use', 409);
         }
       }
       
-      // Update user data
-      const updatedUser = {
-        ...users[userIndex],
-        ...(name && { name }),
-        ...(phone !== undefined && { phone }),
-        ...(email && { email }),
-        updatedAt: new Date().toISOString()
-      };
+      // Update user
+      const updatedUser = await db.updateUser(userId, { name, phone, email });
       
-      users[userIndex] = updatedUser;
-      await writeJsonFile('users.json', users);
-      
-      // Log update
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: req.user!.id,
-        action: 'update_profile',
-        targetUserId: userId,
-        changes: { name, phone, email },
-        timestamp: new Date().toISOString(),
-        ip: req.ip
-      });
+      if (!updatedUser) {
+        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+      }
       
       logger.info('User profile updated:', { userId, updatedBy: req.user!.id });
       
@@ -458,66 +311,6 @@ router.put('/users/:userId',
       res.json({
         success: true,
         data: userWithoutPassword
-      });
-      
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// Update user role (admin only)
-router.put('/users/:userId/role',
-  authenticate,
-  roleGuard(['admin']),
-  validate([
-    body('role')
-      .isIn(['admin', 'operator', 'support', 'kiosk'])
-      .withMessage('Invalid role')
-  ]),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { userId } = req.params;
-      const { role } = req.body;
-      
-      // Prevent self role change
-      if (userId === req.user!.id) {
-        throw new AppError('SELF_UPDATE', 'Cannot change your own role', 400);
-      }
-      
-      const users = await readJsonFile<User[]>('users.json');
-      const userIndex = users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
-      }
-      
-      // Update user role
-      users[userIndex] = {
-        ...users[userIndex],
-        role,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await writeJsonFile('users.json', users);
-      
-      // Log role change
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: req.user!.id,
-        action: 'update_role',
-        targetUserId: userId,
-        oldRole: users[userIndex].role,
-        newRole: role,
-        timestamp: new Date().toISOString(),
-        ip: req.ip
-      });
-      
-      logger.info('User role updated:', { userId, newRole: role, updatedBy: req.user!.id });
-      
-      res.json({
-        success: true,
-        message: 'User role updated successfully'
       });
       
     } catch (error) {
@@ -547,34 +340,13 @@ router.post('/users/:userId/reset-password',
         throw new AppError('SELF_RESET', 'Use the change-password endpoint to change your own password', 400);
       }
       
-      const users = await readJsonFile<User[]>('users.json');
-      const userIndex = users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) {
+      const user = await db.findUserById(userId);
+      if (!user) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
       }
       
-      // Hash new password
-      const hashedPassword = await bcryptjs.hash(newPassword, 10);
-      
-      // Update user password
-      users[userIndex] = {
-        ...users[userIndex],
-        password: hashedPassword,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await writeJsonFile('users.json', users);
-      
-      // Log password reset
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: req.user!.id,
-        action: 'reset_password',
-        targetUserId: userId,
-        timestamp: new Date().toISOString(),
-        ip: req.ip
-      });
+      // Update password
+      await db.updateUserPassword(userId, newPassword);
       
       logger.info('User password reset:', { userId, resetBy: req.user!.id });
       
@@ -602,26 +374,11 @@ router.delete('/users/:userId',
         throw new AppError('SELF_DELETE', 'Cannot delete your own account', 400);
       }
       
-      const users = await readJsonFile<User[]>('users.json');
-      const userIndex = users.findIndex(u => u.id === userId);
+      const deleted = await db.deleteUser(userId);
       
-      if (userIndex === -1) {
+      if (!deleted) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
       }
-      
-      // Remove user
-      const deletedUser = users.splice(userIndex, 1)[0];
-      await writeJsonFile('users.json', users);
-      
-      // Log deletion
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: req.user!.id,
-        action: 'delete_user',
-        targetUserId: userId,
-        timestamp: new Date().toISOString(),
-        ip: req.ip
-      });
       
       logger.info('User deleted:', { userId, deletedBy: req.user!.id });
       

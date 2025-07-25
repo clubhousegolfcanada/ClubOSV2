@@ -27,7 +27,7 @@ import { applySecurityMiddleware } from './middleware/security';
 import { initializeDataFiles } from './utils/fileUtils';
 import { logger } from './utils/logger';
 import { envValidator, config } from './utils/envValidator';
-import { ensureAdminUser } from './utils/ensureAdmin';
+import { db } from './utils/database';
 
 // Validate environment variables before starting
 envValidator.validate();
@@ -45,23 +45,22 @@ const initializeApp = async () => {
     await initializeDataFiles();
     logger.info('Data files initialized successfully');
     
-    // Ensure admin user exists
-    await ensureAdminUser();
-    
-    // Setup database if DATABASE_URL exists
-    if (process.env.DATABASE_URL && process.env.RUN_DB_SETUP !== 'false') {
+    // Initialize database if DATABASE_URL exists
+    if (process.env.DATABASE_URL) {
       try {
-        logger.info('Database URL detected, attempting database setup...');
-        const { setupDatabase } = require('./scripts/setupDatabase');
-        await setupDatabase();
-        logger.info('Database setup completed successfully');
+        logger.info('Initializing database...');
+        await db.initialize();
+        await db.ensureDefaultAdmin();
+        logger.info('Database initialized successfully');
       } catch (error) {
-        logger.error('Database setup failed:', error);
-        // Don't exit, just log the error
+        logger.error('Database initialization failed:', error);
+        // Continue running with JSON fallback
       }
+    } else {
+      logger.warn('DATABASE_URL not set, using JSON file storage');
     }
   } catch (error) {
-    logger.error('Failed to initialize data files:', error);
+    logger.error('Failed to initialize application:', error);
     process.exit(1);
   }
 };
