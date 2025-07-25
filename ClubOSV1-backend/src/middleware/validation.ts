@@ -83,7 +83,12 @@ export const requestValidation = {
     body('routePreference')
       .optional()
       .isIn(['Auto', 'Booking&Access', 'Emergency', 'TechSupport', 'BrandTone'])
-      .withMessage('Invalid route preference')
+      .withMessage('Invalid route preference'),
+    body('smartAssistEnabled')
+      .optional()
+      .isBoolean()
+      .withMessage('Smart assist enabled must be a boolean')
+      .toBoolean() // Convert to boolean
   ],
   
   // Slack message validation

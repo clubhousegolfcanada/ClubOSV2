@@ -45,16 +45,24 @@ router.post('/request',
         }
       }
 
+      // Log raw request body first
+      logger.info('Raw request body received:', {
+        body: JSON.stringify(req.body),
+        headers: req.headers['content-type']
+      });
+      
       // Check if this is a customer kiosk request
       const isCustomerKiosk = req.body.requestDescription?.startsWith('[CUSTOMER KIOSK]') || 
                             req.body.metadata?.source === 'customer_kiosk';
       
       // Debug logging
       logger.info('Request processing debug', {
+        fullBody: req.body,
         smartAssistEnabled: req.body.smartAssistEnabled,
         smartAssistType: typeof req.body.smartAssistEnabled,
         isCustomerKiosk,
-        willSendToSlack: isCustomerKiosk || !req.body.smartAssistEnabled
+        willSendToSlack: isCustomerKiosk || !req.body.smartAssistEnabled,
+        requestDescription: req.body.requestDescription?.substring(0, 50)
       });
       
       // For customer kiosk requests, always send to Slack
