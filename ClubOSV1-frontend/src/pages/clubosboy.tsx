@@ -147,7 +147,7 @@ export default function ClubOSBoy() {
                     {...register('location')}
                     type="text"
                     className="form-input"
-                    placeholder="e.g., Bay 3, Main Floor, Pro Shop"
+                    placeholder="e.g., Bedford Box 2, Dartmouth Box 4"
                     disabled={isProcessing}
                   />
                   <div className="form-helper">
