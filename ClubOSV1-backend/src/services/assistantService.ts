@@ -166,7 +166,7 @@ export class AssistantService {
       let cleanedContent = textContent;
       
       // Remove markdown code blocks
-      cleanedContent = cleanedContent.replace(/```json\n/g, '').replace(/```\n/g, '').replace(/```/g, '');
+      cleanedContent = cleanedContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/```/g, '');
       
       // Remove citations like 【4:0†source】
       cleanedContent = cleanedContent.replace(/【[^】]+】/g, '');
@@ -184,11 +184,16 @@ export class AssistantService {
       let escalation = undefined;
       
       try {
-        // Look for JSON anywhere in the response
-        const jsonMatch = cleanedContent.match(/\{[\s\S]*?\}(?=\s*(?:In case|$))/);  
-        if (jsonMatch) {
+        // First, check if the entire response is valid JSON
+        if (cleanedContent.trim().startsWith('{') && cleanedContent.trim().endsWith('}')) {
           try {
-            const parsed = JSON.parse(jsonMatch[0]);
+            const parsed = JSON.parse(cleanedContent);
+            logger.info('Successfully parsed complete JSON response', {
+              route,
+              hasResponse: !!parsed.response,
+              keys: Object.keys(parsed)
+            });
+            
             if (parsed.response) {
               structuredResponse = parsed;
               responseText = parsed.response;
@@ -197,46 +202,77 @@ export class AssistantService {
               actions = parsed.actions;
               metadata = parsed.metadata;
               escalation = parsed.escalation;
-              
-              // Get any text after the JSON
-              const afterJsonIndex = jsonMatch.index! + jsonMatch[0].length;
-              const afterJson = cleanedContent.substring(afterJsonIndex).trim();
-              
-              // If there's meaningful text after JSON, append it
-              if (afterJson && afterJson.length > 10) {
-                responseText = responseText + '\n\n' + afterJson;
-              }
-              
-              logger.info('Successfully parsed JSON from assistant response', {
-                route,
-                category,
-                priority,
-                hasActions: !!actions?.length,
-                hasAfterText: !!afterJson
-              });
             } else {
-              // JSON doesn't have response field, use the whole text
+              // JSON doesn't have response field, treat as plain text
               responseText = cleanedContent;
             }
           } catch (e) {
-            logger.warn('Failed to parse JSON from response', { error: e });
-            responseText = cleanedContent;
-          }
-        } else if (cleanedContent.trim().startsWith('{')) {
-          // Try to parse the whole thing as JSON
-          try {
-            const parsed = JSON.parse(cleanedContent);
-            if (parsed.response) {
-              structuredResponse = parsed;
-              responseText = parsed.response;
-              category = parsed.category;
-              priority = parsed.priority;
-              actions = parsed.actions;
-              metadata = parsed.metadata;
-              escalation = parsed.escalation;
+            logger.warn('Failed to parse JSON response, trying alternative patterns', { error: e });
+            
+            // Try to find JSON within the text
+            const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.response) {
+                  structuredResponse = parsed;
+                  responseText = parsed.response;
+                  category = parsed.category;
+                  priority = parsed.priority;
+                  actions = parsed.actions;
+                  metadata = parsed.metadata;
+                  escalation = parsed.escalation;
+                  
+                  logger.info('Successfully parsed JSON from within text', {
+                    route,
+                    category,
+                    priority,
+                    hasActions: !!actions?.length
+                  });
+                }
+              } catch (innerError) {
+                logger.warn('Failed to parse extracted JSON', { error: innerError });
+                responseText = cleanedContent;
+              }
+            } else {
+              responseText = cleanedContent;
             }
-          } catch (e) {
-            // Not valid JSON
+          }
+        } else {
+          // Look for JSON embedded in the text
+          const jsonMatches = cleanedContent.match(/\{[\s\S]*?\}/g);
+          if (jsonMatches) {
+            // Try each JSON match
+            for (const match of jsonMatches) {
+              try {
+                const parsed = JSON.parse(match);
+                if (parsed.response) {
+                  structuredResponse = parsed;
+                  responseText = parsed.response;
+                  category = parsed.category;
+                  priority = parsed.priority;
+                  actions = parsed.actions;
+                  metadata = parsed.metadata;
+                  escalation = parsed.escalation;
+                  
+                  logger.info('Found and parsed JSON structure', {
+                    route,
+                    category,
+                    priority,
+                    hasActions: !!actions?.length
+                  });
+                  break;
+                }
+              } catch (e) {
+                // Continue to next match
+              }
+            }
+            
+            // If no valid JSON found, use the whole content
+            if (!structuredResponse) {
+              responseText = cleanedContent;
+            }
+          } else {
             responseText = cleanedContent;
           }
         }
@@ -244,6 +280,18 @@ export class AssistantService {
         // Error in parsing, use as plain text
         logger.error('Error parsing assistant response', { error: e });
         responseText = cleanedContent;
+      }
+
+      // Final cleanup of the response text
+      // Remove any remaining JSON if it wasn't parsed
+      if (!structuredResponse && responseText.includes('{') && responseText.includes('}')) {
+        // Remove unparsed JSON from the text
+        responseText = responseText.replace(/\{[\s\S]*?\}/g, '').trim();
+        
+        // If that removed everything, restore the original
+        if (!responseText) {
+          responseText = cleanedContent;
+        }
       }
 
       return {

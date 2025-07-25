@@ -29,21 +29,52 @@ interface Props {
 }
 
 export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
+  // Log the response for debugging
+  console.log('ResponseDisplay received:', { response, route });
+  
+  // Handle null/undefined response
+  if (!response) {
+    return (
+      <div className="response-text">
+        <p>Request processed successfully</p>
+      </div>
+    );
+  }
+  
   // Check if we have structured data either as a 'structured' property or directly in the response
   const structured = response?.structured || 
     (response?.category && response?.actions ? response : null);
   
   // Get the display text - could be in response.response or just response if it's a string
-  const displayText = typeof response === 'string' ? response : 
-    (response?.response || 'Request processed successfully');
+  let displayText = '';
+  
+  if (typeof response === 'string') {
+    displayText = response;
+  } else if (response?.response) {
+    displayText = response.response;
+  } else if (response?.message) {
+    displayText = response.message;
+  } else {
+    // If we can't find a text response, show a default message
+    displayText = 'Request processed successfully';
+  }
+  
+  // Clean up any JSON artifacts that might still be in the display text
+  if (displayText.includes('{') && displayText.includes('}')) {
+    // Try to remove JSON blocks if they're still in the text
+    const cleanedText = displayText.replace(/\{[\s\S]*?\}/g, '').trim();
+    if (cleanedText) {
+      displayText = cleanedText;
+    }
+  }
   
   if (!structured) {
     // Simple text response
     return (
-      <>
-        <strong>Recommendation:</strong>
-        <p className="response-text">{displayText}</p>
-      </>
+      <div className="space-y-2">
+        <strong>Response:</strong>
+        <div className="response-text whitespace-pre-wrap">{displayText}</div>
+      </div>
     );
   }
 
@@ -88,7 +119,9 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
       {/* Main response */}
       <div>
         <strong>Response:</strong>
-        <p className="response-text mt-1">{structured.response || response?.response}</p>
+        <div className="response-text whitespace-pre-wrap mt-1">
+          {structured.response || displayText}
+        </div>
       </div>
 
       {/* Actions */}
