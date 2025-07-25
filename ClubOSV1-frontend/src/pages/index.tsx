@@ -123,8 +123,21 @@ export default function Home() {
             </button>
           </header>
 
-          {/* Quick Stats Grid - Hidden on mobile */}
-          <div className="hidden md:grid md:grid-cols-4 gap-4 mb-12">
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+            {/* Request Form - Takes up 2 columns on large screens */}
+            <div className="lg:col-span-2">
+              <RequestForm />
+            </div>
+            
+            {/* External Tools - Takes up 1 column on large screens */}
+            <div className="lg:col-span-1">
+              <ExternalTools />
+            </div>
+          </div>
+
+          {/* Quick Stats Grid - Hidden on mobile, shown at bottom on desktop */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4">
             {quickStats.map((stat, index) => (
               <div key={index} className="card group hover:border-[var(--accent)]">
                 <div className="flex items-center justify-between">
@@ -146,55 +159,6 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Request Form - Takes up 2 columns on large screens */}
-            <div className="lg:col-span-2">
-              <RequestForm />
-            </div>
-            
-            {/* External Tools - Takes up 1 column on large screens */}
-            <div className="lg:col-span-1">
-              <ExternalTools />
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <Link href="/commands" className="block">
-              <div className="card group cursor-pointer">
-                <h3 className="text-lg font-semibold mb-2 flex items-center">
-                  <span className="mr-2">📋</span> Command Reference
-                </h3>
-                <p className="text-[var(--text-secondary)] text-sm">
-                  Browse all available commands and learn how to use them effectively
-                </p>
-              </div>
-            </Link>
-            
-            {hasMinimumRole(user?.role, 'operator') && (
-              <Link href="/operations" className="block">
-                <div className="card group cursor-pointer">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <span className="mr-2">⚙️</span> Operations Center
-                  </h3>
-                  <p className="text-[var(--text-secondary)] text-sm">
-                    Monitor system health, view analytics, and manage settings
-                  </p>
-                </div>
-              </Link>
-            )}
-            
-            <div className="card group cursor-pointer bg-[var(--accent)] text-white">
-              <h3 className="text-lg font-semibold mb-2 flex items-center">
-                <span className="mr-2">💡</span> Pro Tips
-              </h3>
-              <p className="text-white/90 text-sm">
-                Use natural language • Include location details • Enable Smart Assist for AI routing
-              </p>
-            </div>
           </div>
         </div>
       </main>
