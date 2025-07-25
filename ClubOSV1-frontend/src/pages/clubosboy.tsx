@@ -217,7 +217,7 @@ export default function ClubOSBoy() {
           {/* Footer Help Text */}
           <div className="mt-6 text-center">
             <p className="text-sm text-[var(--text-muted)]">
-              Need immediate help? Find a staff member wearing a ClubHouse247 shirt!
+              Need immediate help? Call us at (902)707-3748
             </p>
           </div>
         </div>
