@@ -47,6 +47,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
           requestDescription: request.requestDescription,
           location: request.location,
           routePreference: request.routePreference || "Auto",
+          smartAssistEnabled: request.smartAssistEnabled, // Add this field
           clientStartTime // Include client start time
         }
       : {
@@ -57,6 +58,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
     
     console.log('Submitting request to:', `${API_URL}${endpoint}`);
     console.log('Payload:', payload);
+    console.log('SmartAssist enabled:', request.smartAssistEnabled);
     
     const response = await apiClient.post(endpoint, payload);
     
