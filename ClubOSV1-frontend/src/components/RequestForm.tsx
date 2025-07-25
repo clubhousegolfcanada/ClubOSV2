@@ -527,6 +527,50 @@ const RequestForm: React.FC = () => {
             </>
           )}
 
+          {/* Route Selector */}
+          {!isTicketMode && (
+            <div className="form-group">
+              <label className="form-label">
+                Force Bot Route (optional)
+              </label>
+              <div className="route-selector">
+                {routes.map((route) => {
+                  const isDisabled = !canAccessRoute(user?.role, routeAccessMap[route]);
+                  const tooltip = isDisabled ? getRestrictedTooltip(routeAccessMap[route]) : '';
+                  
+                  return (
+                    <React.Fragment key={route}>
+                      <input
+                        type="radio"
+                        id={`route-${route.toLowerCase()}`}
+                        name="route"
+                        value={route}
+                        checked={routePreference === route}
+                        onChange={() => {
+                          setRoutePreference(route);
+                          // Clear response when changing routes
+                          if (showResponse) {
+                            setShowResponse(false);
+                            resetRequestState();
+                          }
+                        }}
+                        disabled={isSubmitting || demoMode || isDisabled || !smartAssistEnabled}
+                      />
+                      <label
+                        htmlFor={`route-${route.toLowerCase()}`}
+                        className={`route-option ${route === 'Auto' ? 'route-auto' : ''} ${isDisabled ? 'route-disabled' : ''} ${!smartAssistEnabled ? 'opacity-50' : ''}`}
+                        title={tooltip}
+                      >
+                        {route.replace('&', ' & ')}
+                        {isDisabled && <Lock className="inline-block w-3 h-3 ml-1" />}
+                      </label>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Toggle Options */}
           {!isTicketMode && (
             <>
@@ -554,66 +598,10 @@ const RequestForm: React.FC = () => {
                   )}
                 </div>
               </div>
-              {!smartAssistEnabled && (
-                <div className="llm-toggle-helper">
-                  When disabled, your request will be sent to Slack as a general question
-                </div>
-              )}
+              <div className="form-helper">
+                <span className="text-gray-400">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
+              </div>
             </>
-          )}
-
-          {/* Route Selector or Spacer */}
-          {!isTicketMode && (
-            <div className="form-group">
-              {smartAssistEnabled ? (
-                <>
-                  <label className="form-label">
-                    Force Bot Route (optional)
-                  </label>
-                  <div className="route-selector">
-                    {routes.map((route) => {
-                      const isDisabled = !canAccessRoute(user?.role, routeAccessMap[route]);
-                      const tooltip = isDisabled ? getRestrictedTooltip(routeAccessMap[route]) : '';
-                      
-                      return (
-                        <React.Fragment key={route}>
-                          <input
-                            type="radio"
-                            id={`route-${route.toLowerCase()}`}
-                            name="route"
-                            value={route}
-                            checked={routePreference === route}
-                            onChange={() => {
-                              setRoutePreference(route);
-                              // Clear response when changing routes
-                              if (showResponse) {
-                                setShowResponse(false);
-                                resetRequestState();
-                              }
-                            }}
-                            disabled={isSubmitting || demoMode || isDisabled}
-                          />
-                          <label
-                            htmlFor={`route-${route.toLowerCase()}`}
-                            className={`route-option ${route === 'Auto' ? 'route-auto' : ''} ${isDisabled ? 'route-disabled' : ''}`}
-                            title={tooltip}
-                          >
-                            {route.replace('&', ' & ')}
-                            {isDisabled && <Lock className="inline-block w-3 h-3 ml-1" />}
-                          </label>
-                        </React.Fragment>
-                      );
-                    })}
-                  </div>
-                  <div className="form-helper">
-                    <span className="text-gray-400">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
-                  </div>
-                </>
-              ) : (
-                /* Spacer to maintain consistent card height */
-                <div style={{ minHeight: '120px' }} />
-              )}
-            </div>
           )}
 
           {/* Submit Buttons */}
