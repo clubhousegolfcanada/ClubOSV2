@@ -29,15 +29,20 @@ interface Props {
 }
 
 export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
+  // Check if we have structured data either as a 'structured' property or directly in the response
   const structured = response?.structured || 
-    (response?.category ? response : null);
+    (response?.category && response?.actions ? response : null);
+  
+  // Get the display text - could be in response.response or just response if it's a string
+  const displayText = typeof response === 'string' ? response : 
+    (response?.response || 'Request processed successfully');
   
   if (!structured) {
     // Simple text response
     return (
       <>
         <strong>Recommendation:</strong>
-        <p className="response-text">{response?.response || 'Request processed successfully'}</p>
+        <p className="response-text">{displayText}</p>
       </>
     );
   }

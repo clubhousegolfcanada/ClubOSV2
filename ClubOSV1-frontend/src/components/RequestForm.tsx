@@ -7,6 +7,7 @@ import type { UserRequest, RequestRoute } from '@/types/request';
 import { Lock, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { ResponseDisplay } from './ResponseDisplay';
 
 // Ensure API URL is properly formatted
 const getApiUrl = () => {
@@ -746,34 +747,10 @@ const RequestForm: React.FC = () => {
               </>
             ) : (
               <>
-                <strong>Recommendation:</strong>
-                <p className="response-text">{lastResponse.llmResponse?.response || 'Request processed successfully'}</p>
-                
-                {lastResponse.llmResponse?.suggestedActions && lastResponse.llmResponse.suggestedActions.length > 0 && (
-                  <div className="response-actions">
-                    <strong>Actions:</strong>
-                    <ul className="response-list">
-                      {lastResponse.llmResponse.suggestedActions.map((action: string, index: number) => (
-                        <li key={index}>{action}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {lastResponse.llmResponse?.extractedInfo && (
-                  <div className="response-info">
-                    {lastResponse.llmResponse.extractedInfo.timeEstimate && (
-                      <div className="info-item">
-                        <strong>Time Estimate:</strong> <span>{lastResponse.llmResponse.extractedInfo.timeEstimate}</span>
-                      </div>
-                    )}
-                    {lastResponse.llmResponse.extractedInfo.escalation && (
-                      <div className="info-item">
-                        <strong>Escalation:</strong> <span>{lastResponse.llmResponse.extractedInfo.escalation}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <ResponseDisplay 
+                  response={lastResponse.llmResponse} 
+                  route={lastResponse.botRoute}
+                />
                 
                 {(lastResponse.botRoute || lastResponse.processingTime) && (
                   <div className="response-metadata">
