@@ -49,6 +49,14 @@ router.post('/request',
       const isCustomerKiosk = req.body.requestDescription?.startsWith('[CUSTOMER KIOSK]') || 
                             req.body.metadata?.source === 'customer_kiosk';
       
+      // Debug logging
+      logger.info('Request processing debug', {
+        smartAssistEnabled: req.body.smartAssistEnabled,
+        smartAssistType: typeof req.body.smartAssistEnabled,
+        isCustomerKiosk,
+        willSendToSlack: isCustomerKiosk || !req.body.smartAssistEnabled
+      });
+      
       // For customer kiosk requests, always send to Slack
       if (isCustomerKiosk || !req.body.smartAssistEnabled) {
         // Send directly to Slack
