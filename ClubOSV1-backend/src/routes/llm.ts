@@ -108,6 +108,16 @@ router.post('/request',
             assistantId: assistantResponse.assistantId,
             threadId: assistantResponse.threadId
           };
+          
+          // Add structured response data if available
+          if (assistantResponse.structured) {
+            llmResponse.structuredResponse = assistantResponse.structured;
+            llmResponse.category = assistantResponse.category;
+            llmResponse.priority = assistantResponse.priority;
+            llmResponse.actions = assistantResponse.actions;
+            llmResponse.metadata = assistantResponse.metadata;
+            llmResponse.escalation = assistantResponse.escalation;
+          }
         } catch (assistantError) {
           logger.warn('Failed to get assistant response, using LLM response', {
             error: assistantError,
@@ -179,7 +189,14 @@ router.post('/request',
             suggestedActions: processedRequest.llmResponse?.extractedInfo?.solutions || processedRequest.llmResponse?.suggestedActions || [],
             reasoning: processedRequest.llmResponse?.reasoning,
             extractedInfo: processedRequest.llmResponse?.extractedInfo,
-            isAssistantResponse: !!processedRequest.llmResponse?.response
+            isAssistantResponse: !!processedRequest.llmResponse?.response,
+            // Include structured response data if available
+            structured: processedRequest.llmResponse?.structuredResponse,
+            category: processedRequest.llmResponse?.category,
+            priority: processedRequest.llmResponse?.priority,
+            actions: processedRequest.llmResponse?.actions,
+            metadata: processedRequest.llmResponse?.metadata,
+            escalation: processedRequest.llmResponse?.escalation
           },
           processingTime: processedRequest.processingTime, // Return server processing time
           status: processedRequest.status

@@ -7,6 +7,17 @@ interface AssistantResponse {
   assistantId: string;
   threadId: string;
   confidence?: number;
+  // New fields for structured JSON responses
+  structured?: any;
+  category?: string;
+  priority?: string;
+  actions?: Array<{
+    type: string;
+    description: string;
+    details?: any;
+  }>;
+  metadata?: any;
+  escalation?: any;
 }
 
 export class AssistantService {
@@ -146,11 +157,54 @@ export class AssistantService {
         .map(content => (content as any).text.value)
         .join('\n');
 
+      // Try to parse as JSON if the response looks like JSON
+      let structuredResponse = null;
+      let responseText = textContent;
+      let category = undefined;
+      let priority = undefined;
+      let actions = undefined;
+      let metadata = undefined;
+      let escalation = undefined;
+      
+      try {
+        // Check if response is JSON by looking for { at the start
+        if (textContent.trim().startsWith('{')) {
+          const parsed = JSON.parse(textContent);
+          
+          // Validate it has the expected structure
+          if (parsed.response && parsed.category) {
+            structuredResponse = parsed;
+            responseText = parsed.response; // Use the response field for backward compatibility
+            category = parsed.category;
+            priority = parsed.priority;
+            actions = parsed.actions;
+            metadata = parsed.metadata;
+            escalation = parsed.escalation;
+            
+            logger.info('Assistant returned structured JSON response', {
+              route,
+              category,
+              priority,
+              hasActions: !!actions?.length
+            });
+          }
+        }
+      } catch (e) {
+        // Not JSON or invalid JSON, use as plain text
+        logger.debug('Assistant returned text response, not JSON');
+      }
+
       return {
-        response: textContent,
+        response: responseText,
         assistantId,
         threadId: thread.id,
-        confidence: 0.9 // High confidence since it's from the actual assistant
+        confidence: 0.9, // High confidence since it's from the actual assistant
+        structured: structuredResponse,
+        category,
+        priority,
+        actions,
+        metadata,
+        escalation
       };
 
     } catch (error: any) {
