@@ -48,7 +48,7 @@ export default function Dashboard() {
         <div className="card">
           <h3 className="text-lg font-semibold mb-4">External Tools</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            
+            <a
               href="https://app.skedda.com/register?i=277234"
               target="_blank"
               rel="noopener noreferrer"
@@ -58,7 +58,7 @@ export default function Dashboard() {
               <div className="text-sm font-medium">Skedda</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">Booking System</div>
             </a>
-            
+            <a
               href="https://my.splashtop.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -68,7 +68,7 @@ export default function Dashboard() {
               <div className="text-sm font-medium">Splashtop</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">Remote Access</div>
             </a>
-            
+            <a
               href="https://app.hubspot.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -78,7 +78,7 @@ export default function Dashboard() {
               <div className="text-sm font-medium">HubSpot</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">CRM System</div>
             </a>
-            
+            <a
               href="https://dashboard.stripe.com"
               target="_blank"
               rel="noopener noreferrer"
