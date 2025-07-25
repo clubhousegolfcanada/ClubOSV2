@@ -597,9 +597,9 @@ const RequestForm: React.FC = () => {
                     <span className="slack-indicator">→ Slack</span>
                   )}
                 </div>
-              </div>
-              <div className="form-helper">
-                <span className="text-gray-400">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
+                <div className="form-helper mt-2 mb-6">
+                  <span className="text-gray-400">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
+                </div>
               </div>
             </>
           )}
