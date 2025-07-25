@@ -33,6 +33,39 @@ export default function ClubOSBoy() {
     };
   }, [resetTimer]);
 
+  // Heartbeat to keep session alive and prevent any timeouts
+  useEffect(() => {
+    // Ping the server every 5 minutes to keep connection alive
+    const heartbeat = setInterval(() => {
+      axios.get(`${API_URL}/health`)
+        .catch(() => {
+          // Silently ignore errors - this is just a keepalive
+        });
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(heartbeat);
+  }, []);
+
+  // Prevent page from being cached or timing out
+  useEffect(() => {
+    // Disable bfcache to ensure fresh page load
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+
+    // Keep the page active
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // Page is visible again, ensure form is reset if needed
+        if (!showResponse && !isProcessing) {
+          reset();
+        }
+      }
+    });
+  }, [reset, showResponse, isProcessing]);
+
   const onSubmit = async (data: FormData) => {
     setIsProcessing(true);
     setShowResponse(false);
@@ -43,19 +76,14 @@ export default function ClubOSBoy() {
     }
     
     try {
-      // Send directly to Slack with customer tag
+      // Send directly to customer endpoint without authentication
       const request = {
-        requestDescription: `[CUSTOMER KIOSK] ${data.question}`,
+        question: data.question,
         location: data.location || 'Customer Kiosk',
-        smartAssistEnabled: false, // Send directly to Slack
-        routePreference: 'Auto',
-        metadata: {
-          source: 'customer_kiosk',
-          timestamp: new Date().toISOString()
-        }
+        kioskId: 'kiosk-1' // You can make this configurable if needed
       };
 
-      const response = await axios.post(`${API_URL}/requests`, request);
+      const response = await axios.post(`${API_URL}/customer/ask`, request);
       
       if (response.data.success) {
         setResponseMessage("Thanks! Your question has been sent to our staff. Someone will help you shortly.");
@@ -74,6 +102,15 @@ export default function ClubOSBoy() {
       console.error('Request failed:', error);
       setResponseMessage("Sorry, something went wrong. Please ask a staff member for help.");
       setShowResponse(true);
+      
+      // Also set timer for error state
+      const timer = setTimeout(() => {
+        reset();
+        setShowResponse(false);
+        setResponseMessage('');
+      }, 30000);
+      
+      setResetTimer(timer);
     } finally {
       setIsProcessing(false);
     }
@@ -94,6 +131,10 @@ export default function ClubOSBoy() {
         <title>ClubOS Boy - Ask a Question</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="robots" content="noindex, nofollow" />
+        {/* Prevent any caching */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
