@@ -717,7 +717,7 @@ export default function Operations() {
                                       className="text-yellow-400 hover:text-yellow-300 mr-3"
                                       title={u.id === user?.id ? "Change password" : "Reset password"}
                                     >
-                                      <Key className="w-4 h-4 inline" />
+                                      Password
                                     </button>
                                     <button
                                       onClick={() => handleDeleteUser(u.id)}
