@@ -157,9 +157,21 @@ export class AssistantService {
         .map(content => (content as any).text.value)
         .join('\n');
 
+      // Clean up the response - remove markdown code blocks and citations
+      let cleanedContent = textContent;
+      
+      // Remove markdown code blocks
+      cleanedContent = cleanedContent.replace(/```json\n/g, '').replace(/```\n/g, '').replace(/```/g, '');
+      
+      // Remove citations like 【4:0†source】
+      cleanedContent = cleanedContent.replace(/【[^】]+】/g, '');
+      
+      // Trim extra whitespace
+      cleanedContent = cleanedContent.trim();
+
       // Try to parse as JSON if the response looks like JSON
       let structuredResponse = null;
-      let responseText = textContent;
+      let responseText = cleanedContent;
       let category = undefined;
       let priority = undefined;
       let actions = undefined;
@@ -167,22 +179,14 @@ export class AssistantService {
       let escalation = undefined;
       
       try {
-        // Remove markdown code blocks if present
-        let jsonContent = textContent;
-        if (textContent.includes('```json')) {
-          jsonContent = textContent.replace(/```json\n/g, '').replace(/```/g, '').trim();
-        } else if (textContent.includes('```')) {
-          jsonContent = textContent.replace(/```\n/g, '').replace(/```/g, '').trim();
-        }
-        
         // Check if response is JSON by looking for { at the start
-        if (jsonContent.trim().startsWith('{')) {
-          const parsed = JSON.parse(jsonContent);
+        if (cleanedContent.trim().startsWith('{')) {
+          const parsed = JSON.parse(cleanedContent);
           
           // Validate it has the expected structure
-          if (parsed.response && parsed.category) {
+          if (parsed.response) {
             structuredResponse = parsed;
-            responseText = parsed.response; // Use the response field for backward compatibility
+            responseText = parsed.response; // Use the response field for display
             category = parsed.category;
             priority = parsed.priority;
             actions = parsed.actions;
@@ -196,10 +200,37 @@ export class AssistantService {
               hasActions: !!actions?.length
             });
           }
+        } else {
+          // Check if there's JSON embedded in the text
+          const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);  
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (parsed.response) {
+                structuredResponse = parsed;
+                responseText = parsed.response;
+                category = parsed.category;
+                priority = parsed.priority;
+                actions = parsed.actions;
+                metadata = parsed.metadata;
+                escalation = parsed.escalation;
+                
+                // If there's text before the JSON, include it
+                const beforeJson = cleanedContent.substring(0, jsonMatch.index).trim();
+                if (beforeJson) {
+                  responseText = beforeJson + '\n\n' + responseText;
+                }
+              }
+            } catch (e) {
+              // JSON parsing failed, use the whole text
+              responseText = cleanedContent;
+            }
+          }
         }
       } catch (e) {
         // Not JSON or invalid JSON, use as plain text
         logger.debug('Assistant returned text response, not JSON', { error: e });
+        responseText = cleanedContent;
       }
 
       return {

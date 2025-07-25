@@ -191,6 +191,7 @@ router.post('/request',
         
         if (!targetRoute || targetRoute === 'Auto') {
           // Only call LLM router if we need to determine the route
+          const routingStart = Date.now();
           llmResponse = await llmService.processRequest(
             userRequest.requestDescription,
             userRequest.userId,
@@ -200,6 +201,7 @@ router.post('/request',
             }
           );
           targetRoute = llmResponse.route;
+          logger.info('LLM routing took:', { duration: Date.now() - routingStart, route: targetRoute });
         } else {
           // Create a minimal response for logging
           llmResponse = {
@@ -214,6 +216,7 @@ router.post('/request',
         let assistantResponse;
         try {
           logger.info('Calling assistant service', { targetRoute });
+          const assistantStart = Date.now();
           
           assistantResponse = await assistantService.getAssistantResponse(
             targetRoute,
@@ -223,6 +226,7 @@ router.post('/request',
               sessionId: userRequest.sessionId
             }
           );
+          logger.info('Assistant response took:', { duration: Date.now() - assistantStart, route: targetRoute });
           
           // Use the assistant's response
           llmResponse.response = assistantResponse.response;
