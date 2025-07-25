@@ -54,6 +54,101 @@ export class AssistantService {
     };
   }
 
+  private extractJsonFromText(text: string): { json: any | null; textAfter: string; fullText: string } {
+    // First, clean up markdown and citations
+    let cleanedText = text;
+    cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/```/g, '');
+    cleanedText = cleanedText.replace(/【[^】]+】/g, '');
+    cleanedText = cleanedText.trim();
+    
+    // If the text doesn't look like it contains JSON, return as-is
+    if (!cleanedText.includes('{') || !cleanedText.includes('}')) {
+      return { json: null, textAfter: '', fullText: cleanedText };
+    }
+    
+    // Try to find valid JSON in the text
+    if (cleanedText.trim().startsWith('{')) {
+      // Find the matching closing brace
+      let braceCount = 0;
+      let jsonEndIndex = -1;
+      let inString = false;
+      let escapeNext = false;
+      
+      for (let i = 0; i < cleanedText.length; i++) {
+        const char = cleanedText[i];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') braceCount++;
+          if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              jsonEndIndex = i;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (jsonEndIndex > -1) {
+        const jsonPart = cleanedText.substring(0, jsonEndIndex + 1);
+        const textAfter = cleanedText.substring(jsonEndIndex + 1).trim();
+        
+        try {
+          const parsed = JSON.parse(jsonPart);
+          return { json: parsed, textAfter, fullText: cleanedText };
+        } catch (e) {
+          logger.warn('Failed to parse extracted JSON', { 
+            error: e,
+            jsonPart: jsonPart.substring(0, 100) + '...'
+          });
+        }
+      }
+    }
+    
+    // Try to find JSON anywhere in the text
+    const jsonRegex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
+    const matches = cleanedText.match(jsonRegex);
+    
+    if (matches) {
+      for (const match of matches) {
+        try {
+          const parsed = JSON.parse(match);
+          if (parsed.response) {
+            // Remove the JSON from the text to get what's before and after
+            const jsonIndex = cleanedText.indexOf(match);
+            const textBefore = cleanedText.substring(0, jsonIndex).trim();
+            const textAfter = cleanedText.substring(jsonIndex + match.length).trim();
+            
+            return { 
+              json: parsed, 
+              textAfter: textBefore + (textBefore && textAfter ? ' ' : '') + textAfter,
+              fullText: cleanedText 
+            };
+          }
+        } catch (e) {
+          // Continue to next match
+        }
+      }
+    }
+    
+    return { json: null, textAfter: '', fullText: cleanedText };
+  }
+
   async getAssistantResponse(
     route: string,
     userMessage: string,
@@ -79,9 +174,7 @@ export class AssistantService {
       logger.info('Calling OpenAI Assistant', {
         route,
         assistantId,
-        message: userMessage.substring(0, 50) + '...',
-        hasAssistantId: !!assistantId,
-        assistantMapKeys: Object.keys(this.assistantMap)
+        message: userMessage.substring(0, 50) + '...'
       });
 
       // Create a thread
@@ -100,7 +193,7 @@ export class AssistantService {
 
       // Wait for the run to complete with timeout
       const startTime = Date.now();
-      const timeout = 15000; // Reduced to 15 seconds
+      const timeout = 15000; // 15 seconds
       let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
       
       while (runStatus.status !== 'completed' && runStatus.status !== 'failed') {
@@ -109,7 +202,7 @@ export class AssistantService {
           throw new Error('Assistant response timeout');
         }
         
-        await new Promise(resolve => setTimeout(resolve, 250)); // Check 4 times per second
+        await new Promise(resolve => setTimeout(resolve, 250));
         runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
         
         // Handle function calls if needed
@@ -119,7 +212,6 @@ export class AssistantService {
             requiredAction: runStatus.required_action
           });
           
-          // Submit empty outputs to continue without executing functions
           const toolCalls = runStatus.required_action?.submit_tool_outputs?.tool_calls || [];
           const emptyOutputs = toolCalls.map((call: any) => ({
             tool_call_id: call.id,
@@ -134,7 +226,6 @@ export class AssistantService {
             { tool_outputs: emptyOutputs }
           );
           
-          // Continue waiting for completion
           continue;
         }
       }
@@ -162,143 +253,51 @@ export class AssistantService {
         preview: textContent.substring(0, 200) + '...'
       });
 
-      // Clean up the response - remove markdown code blocks and citations
-      let cleanedContent = textContent;
+      // Parse the response
+      const { json, textAfter, fullText } = this.extractJsonFromText(textContent);
       
-      // Remove markdown code blocks
-      cleanedContent = cleanedContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/```/g, '');
-      
-      // Remove citations like 【4:0†source】
-      cleanedContent = cleanedContent.replace(/【[^】]+】/g, '');
-      
-      // Trim extra whitespace
-      cleanedContent = cleanedContent.trim();
-
-      // Try to parse as JSON if the response looks like JSON
+      let responseText = fullText;
       let structuredResponse = null;
-      let responseText = cleanedContent;
       let category = undefined;
       let priority = undefined;
       let actions = undefined;
       let metadata = undefined;
       let escalation = undefined;
       
-      try {
-        // First, check if the entire response is valid JSON
-        if (cleanedContent.trim().startsWith('{') && cleanedContent.trim().endsWith('}')) {
-          try {
-            const parsed = JSON.parse(cleanedContent);
-            logger.info('Successfully parsed complete JSON response', {
-              route,
-              hasResponse: !!parsed.response,
-              keys: Object.keys(parsed)
-            });
-            
-            if (parsed.response) {
-              structuredResponse = parsed;
-              responseText = parsed.response;
-              category = parsed.category;
-              priority = parsed.priority;
-              actions = parsed.actions;
-              metadata = parsed.metadata;
-              escalation = parsed.escalation;
-            } else {
-              // JSON doesn't have response field, treat as plain text
-              responseText = cleanedContent;
-            }
-          } catch (e) {
-            logger.warn('Failed to parse JSON response, trying alternative patterns', { error: e });
-            
-            // Try to find JSON within the text
-            const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              try {
-                const parsed = JSON.parse(jsonMatch[0]);
-                if (parsed.response) {
-                  structuredResponse = parsed;
-                  responseText = parsed.response;
-                  category = parsed.category;
-                  priority = parsed.priority;
-                  actions = parsed.actions;
-                  metadata = parsed.metadata;
-                  escalation = parsed.escalation;
-                  
-                  logger.info('Successfully parsed JSON from within text', {
-                    route,
-                    category,
-                    priority,
-                    hasActions: !!actions?.length
-                  });
-                }
-              } catch (innerError) {
-                logger.warn('Failed to parse extracted JSON', { error: innerError });
-                responseText = cleanedContent;
-              }
-            } else {
-              responseText = cleanedContent;
-            }
-          }
-        } else {
-          // Look for JSON embedded in the text
-          const jsonMatches = cleanedContent.match(/\{[\s\S]*?\}/g);
-          if (jsonMatches) {
-            // Try each JSON match
-            for (const match of jsonMatches) {
-              try {
-                const parsed = JSON.parse(match);
-                if (parsed.response) {
-                  structuredResponse = parsed;
-                  responseText = parsed.response;
-                  category = parsed.category;
-                  priority = parsed.priority;
-                  actions = parsed.actions;
-                  metadata = parsed.metadata;
-                  escalation = parsed.escalation;
-                  
-                  logger.info('Found and parsed JSON structure', {
-                    route,
-                    category,
-                    priority,
-                    hasActions: !!actions?.length
-                  });
-                  break;
-                }
-              } catch (e) {
-                // Continue to next match
-              }
-            }
-            
-            // If no valid JSON found, use the whole content
-            if (!structuredResponse) {
-              responseText = cleanedContent;
-            }
-          } else {
-            responseText = cleanedContent;
-          }
-        }
-      } catch (e) {
-        // Error in parsing, use as plain text
-        logger.error('Error parsing assistant response', { error: e });
-        responseText = cleanedContent;
-      }
-
-      // Final cleanup of the response text
-      // Remove any remaining JSON if it wasn't parsed
-      if (!structuredResponse && responseText.includes('{') && responseText.includes('}')) {
-        // Remove unparsed JSON from the text
-        responseText = responseText.replace(/\{[\s\S]*?\}/g, '').trim();
+      if (json && json.response) {
+        structuredResponse = json;
+        responseText = json.response;
+        category = json.category;
+        priority = json.priority;
+        actions = json.actions;
+        metadata = json.metadata;
+        escalation = json.escalation;
         
-        // If that removed everything, restore the original
-        if (!responseText) {
-          responseText = cleanedContent;
+        // If there's text after the JSON, append it
+        if (textAfter) {
+          responseText = responseText + '\n\n' + textAfter;
         }
+        
+        logger.info('Successfully parsed structured response', {
+          route,
+          category,
+          priority,
+          hasActions: !!actions?.length,
+          hasTextAfter: !!textAfter
+        });
+      } else {
+        // No valid JSON found, use the cleaned text
+        logger.info('No structured JSON found, using plain text response', {
+          route,
+          textLength: responseText.length
+        });
       }
 
       return {
         response: responseText,
         assistantId,
         threadId: thread.id,
-        confidence: 0.9, // High confidence since it's from the actual assistant
+        confidence: 0.9,
         structured: structuredResponse,
         category,
         priority,

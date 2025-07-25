@@ -522,4 +522,71 @@ router.post('/debug-request',
   }
 );
 
+// Debug assistant response parsing
+router.post('/debug-assistant',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { route, message } = req.body;
+      
+      if (!route || !message) {
+        return res.status(400).json({
+          success: false,
+          error: 'Route and message are required'
+        });
+      }
+      
+      // Test the assistant service directly
+      let assistantResponse = null;
+      let parseError = null;
+      let rawResponse = null;
+      
+      try {
+        // Get the raw response first
+        assistantResponse = await assistantService.getAssistantResponse(
+          route,
+          message,
+          {}
+        );
+        
+        // Store the raw response for debugging
+        rawResponse = assistantResponse;
+        
+        logger.info('Debug assistant raw response:', {
+          response: assistantResponse.response?.substring(0, 200) + '...',
+          hasStructured: !!assistantResponse.structured,
+          category: assistantResponse.category,
+          priority: assistantResponse.priority,
+          actionsCount: assistantResponse.actions?.length || 0
+        });
+      } catch (err: any) {
+        parseError = err.message;
+        logger.error('Debug assistant error:', err);
+      }
+      
+      res.json({
+        success: true,
+        debug: {
+          route,
+          message,
+          assistantResponse: rawResponse,
+          parseError,
+          responsePreview: rawResponse?.response?.substring(0, 500),
+          hasStructuredData: !!rawResponse?.structured,
+          structuredKeys: rawResponse?.structured ? Object.keys(rawResponse.structured) : [],
+          responseSummary: {
+            length: rawResponse?.response?.length || 0,
+            hasJson: rawResponse?.response?.includes('{') && rawResponse?.response?.includes('}'),
+            startsWithJson: rawResponse?.response?.trim().startsWith('{'),
+            category: rawResponse?.category,
+            priority: rawResponse?.priority,
+            actionsCount: rawResponse?.actions?.length || 0
+          }
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
