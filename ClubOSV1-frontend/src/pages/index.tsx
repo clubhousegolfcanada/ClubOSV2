@@ -22,37 +22,29 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Link href="/commands">
-            <div className="card hover:border-[var(--accent)] transition-all cursor-pointer">
-              <h3 className="text-lg font-semibold mb-2">AI Command Center</h3>
-              <p className="text-[var(--text-secondary)] text-sm">
-                Process requests with AI-powered routing and responses
-              </p>
-            </div>
+          <Link href="/commands" className="card hover:border-[var(--accent)] transition-all cursor-pointer">
+            <h3 className="text-lg font-semibold mb-2">AI Command Center</h3>
+            <p className="text-[var(--text-secondary)] text-sm">
+              Process requests with AI-powered routing and responses
+            </p>
           </Link>
 
-          <Link href="/tickets">
-            <div className="card hover:border-[var(--accent)] transition-all cursor-pointer">
-              <h3 className="text-lg font-semibold mb-2">Ticket Center</h3>
-              <p className="text-[var(--text-secondary)] text-sm">
-                Manage facilities and technical support tickets
-              </p>
-            </div>
+          <Link href="/tickets" className="card hover:border-[var(--accent)] transition-all cursor-pointer">
+            <h3 className="text-lg font-semibold mb-2">Ticket Center</h3>
+            <p className="text-[var(--text-secondary)] text-sm">
+              Manage facilities and technical support tickets
+            </p>
           </Link>
 
-          <Link href="/operations">
-            <div className="card hover:border-[var(--accent)] transition-all cursor-pointer">
-              <h3 className="text-lg font-semibold mb-2">Operations</h3>
-              <p className="text-[var(--text-secondary)] text-sm">
-                User management and system administration
-              </p>
-            </div>
+          <Link href="/operations" className="card hover:border-[var(--accent)] transition-all cursor-pointer">
+            <h3 className="text-lg font-semibold mb-2">Operations</h3>
+            <p className="text-[var(--text-secondary)] text-sm">
+              User management and system administration
+            </p>
           </Link>
         </div>
 
-        {/* External Tools Section */}
         <div className="card">
           <h3 className="text-lg font-semibold mb-4">External Tools</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -61,8 +53,8 @@ export default function Dashboard() {
               target="_blank"
               rel="noopener noreferrer"
               className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
-            
-              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">CAL</div>
+            >
+              <div className="text-2xl mb-2 font-bold">CAL</div>
               <div className="text-sm font-medium">Skedda</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">Booking System</div>
             </a>
@@ -72,7 +64,7 @@ export default function Dashboard() {
               rel="noopener noreferrer"
               className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
             >
-              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">RDP</div>
+              <div className="text-2xl mb-2 font-bold">RDP</div>
               <div className="text-sm font-medium">Splashtop</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">Remote Access</div>
             </a>
@@ -82,7 +74,7 @@ export default function Dashboard() {
               rel="noopener noreferrer"
               className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
             >
-              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">CRM</div>
+              <div className="text-2xl mb-2 font-bold">CRM</div>
               <div className="text-sm font-medium">HubSpot</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">CRM System</div>
             </a>
@@ -92,14 +84,13 @@ export default function Dashboard() {
               rel="noopener noreferrer"
               className="p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-center group"
             >
-              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">PAY</div>
+              <div className="text-2xl mb-2 font-bold">PAY</div>
               <div className="text-sm font-medium">Stripe</div>
               <div className="text-xs text-[var(--text-muted)] mt-1">Payments</div>
             </a>
           </div>
         </div>
 
-        {/* System Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <div className="card">
             <h3 className="text-lg font-semibold mb-4">System Status</h3>
