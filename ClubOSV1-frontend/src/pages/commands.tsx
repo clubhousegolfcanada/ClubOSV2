@@ -296,7 +296,7 @@ export default function Commands() {
   return (
     <>
       <Head>
-        <title>ClubOSV1 - Commands Reference</title>
+        <title>ClubOS - Commands & Queries</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       
@@ -306,7 +306,7 @@ export default function Commands() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-                Command Reference
+                Commands & Queries
               </h1>
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -318,7 +318,7 @@ export default function Commands() {
               </button>
             </div>
             <p className="text-[var(--text-secondary)]">
-              Common queries and status reports for ClubOSV1
+              Common commands and queries that ClubOS can help with. Responses are dynamic and always current.
             </p>
           </div>
 
@@ -510,7 +510,7 @@ export default function Commands() {
             <ul className="space-y-1.5 text-sm text-[var(--text-secondary)]">
               <li className="flex items-start">
                 <span className="text-[#0B4E43] mr-2">•</span>
-                These are common queries and status reports that the system can help with
+                These are common commands and queries - responses adapt based on current data and context
               </li>
               <li className="flex items-start">
                 <span className="text-[#0B4E43] mr-2">•</span>
