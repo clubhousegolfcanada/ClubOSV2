@@ -85,6 +85,13 @@ export const authLimiter = createRateLimiter(
   'Too many authentication attempts, please try again later'
 );
 
+// Public rate limiter for customer-facing endpoints
+export const publicLimiter = createRateLimiter(
+  60 * 1000, // 1 minute
+  20, // 20 requests per minute
+  'Please wait a moment before asking another question'
+);
+
 // Security headers configuration
 export const securityHeaders = helmet({
   contentSecurityPolicy: false, // Disable CSP to avoid conflicts with CORS
