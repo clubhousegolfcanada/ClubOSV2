@@ -42,6 +42,17 @@ const initializeApp = async () => {
     
     // Ensure admin user exists
     await ensureAdminUser();
+    
+    // Setup database if DATABASE_URL exists
+    if (process.env.DATABASE_URL) {
+      try {
+        const { setupDatabase } = require('./scripts/setupDatabase');
+        await setupDatabase();
+      } catch (error) {
+        logger.error('Database setup failed:', error);
+        // Don't exit, just log the error
+      }
+    }
   } catch (error) {
     logger.error('Failed to initialize data files:', error);
     process.exit(1);
