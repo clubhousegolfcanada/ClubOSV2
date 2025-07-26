@@ -419,3 +419,37 @@ export const db = new DatabaseService();
 
 // Also export pool for direct access if needed
 export { pool };
+
+// Import table definitions
+import { createTablesSQL, createIndexesSQL } from './database-tables';
+
+// Add method to create all tables
+async function createAllTables(): Promise<void> {
+  logger.info('Creating/verifying all database tables...');
+  
+  // Create tables
+  for (const [tableName, sql] of Object.entries(createTablesSQL)) {
+    try {
+      await query(sql);
+      logger.info(`✅ Table ${tableName} ready`);
+    } catch (error) {
+      logger.error(`❌ Failed to create table ${tableName}:`, error);
+      throw error;
+    }
+  }
+  
+  // Create indexes
+  for (const indexSQL of createIndexesSQL) {
+    try {
+      await query(indexSQL);
+    } catch (error) {
+      logger.error(`Failed to create index:`, error);
+      // Don't throw on index errors
+    }
+  }
+  
+  logger.info('✅ All database tables created/verified');
+}
+
+// Update the initialize method to use createAllTables
+// (You'll need to modify the existing initialize method to call createAllTables)
