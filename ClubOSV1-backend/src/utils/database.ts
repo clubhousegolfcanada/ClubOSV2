@@ -160,7 +160,7 @@ class DatabaseService {
       `);
 
       // Create indexes
-      await query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);');
+      await query('CREATE INDEX IF NOT EXISTS idx_users_email ON "Users"(email);');
       await query('CREATE INDEX IF NOT EXISTS idx_feedback_is_useful ON feedback(is_useful);');
       await query('CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);');
       await query('CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(category);');
@@ -195,7 +195,7 @@ class DatabaseService {
     const hashedPassword = await bcrypt.hash(user.password, 10);
     
     const result = await query(
-      `INSERT INTO users (id, email, password, name, role, phone) 
+      `INSERT INTO "Users" (id, email, password, name, role, phone) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
       [id, user.email, hashedPassword, user.name, user.role, user.phone]
@@ -226,7 +226,7 @@ class DatabaseService {
     values.push(id);
 
     const result = await query(
-      `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      `UPDATE "Users" SET ${updateFields.join(', ')} WHERE id = ${paramCount} RETURNING *`,
       values
     );
 
@@ -236,24 +236,24 @@ class DatabaseService {
   async updateUserPassword(id: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const result = await query(
-      'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE "Users" SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [hashedPassword, id]
     );
     return result.rowCount > 0;
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const result = await query('DELETE FROM users WHERE id = $1', [id]);
+    const result = await query('DELETE FROM "Users" WHERE id = $1', [id]);
     return result.rowCount > 0;
   }
 
   async getAllUsers(): Promise<DbUser[]> {
-    const result = await query('SELECT * FROM users ORDER BY created_at DESC');
+    const result = await query('SELECT * FROM "Users" ORDER BY created_at DESC');
     return result.rows;
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    await query('UPDATE "Users" SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [id]);
   }
 
   // Feedback operations
