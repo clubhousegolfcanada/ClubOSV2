@@ -31,11 +31,17 @@ export default function Home() {
           }
         });
         
-        if (response.data.success) {
-          setPreviousStats(response.data.data.stats);
+        if (response.data.success && response.data.data) {
+          setPreviousStats(response.data.data);
         }
       } catch (error) {
         console.error('Failed to fetch previous stats:', error);
+        // Set empty stats to prevent crash
+        setPreviousStats({
+          totalRequests: 0,
+          averageConfidence: 0,
+          totalBookings: 0
+        });
       }
     };
     
@@ -51,8 +57,8 @@ export default function Home() {
   //   return () => clearInterval(interval);
   // }, []);
 
-  // Calculate today's requests
-  const todayRequests = stats.totalRequests || 0;
+  // Calculate today's requests (with null safety)
+  const todayRequests = stats?.totalRequests || 0;
   
   // Calculate change from previous period
   const previousRequests = previousStats?.totalRequests || 0;
@@ -61,11 +67,11 @@ export default function Home() {
   const requestTrend = requestDiff > 0 ? 'up' : requestDiff < 0 ? 'down' : 'neutral';
   
   // Format average response time
-  const avgResponseSeconds = stats.avgResponseTime ? (stats.avgResponseTime / 1000).toFixed(1) : '0.0';
+  const avgResponseSeconds = stats?.avgResponseTime ? (stats.avgResponseTime / 1000).toFixed(1) : '0.0';
   const prevAvgResponseSeconds = previousStats?.avgResponseTime ? (previousStats.avgResponseTime / 1000).toFixed(1) : '0.0';
   
   // Calculate response time change
-  const responseDiff = stats.avgResponseTime && previousStats?.avgResponseTime 
+  const responseDiff = stats?.avgResponseTime && previousStats?.avgResponseTime 
     ? ((stats.avgResponseTime - previousStats.avgResponseTime) / 1000).toFixed(1)
     : '0.0';
   const responseChange = parseFloat(responseDiff) > 0 ? `+${responseDiff}s` : `${responseDiff}s`;

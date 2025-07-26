@@ -181,11 +181,17 @@ export const useAnalytics = () => {
           }
         });
         
-        if (response.data.success) {
-          setStats(response.data.data.stats);
+        if (response.data.success && response.data.data) {
+          setStats({
+            totalRequests: response.data.data.totalRequests || 0,
+            avgResponseTime: response.data.data.averageConfidence || 0,
+            activeBookings: response.data.data.totalBookings || 0,
+            systemStatus: 'operational'
+          });
         }
       } catch (error) {
         console.error('Failed to fetch analytics:', error);
+        // Keep default values on error
       }
     };
 
