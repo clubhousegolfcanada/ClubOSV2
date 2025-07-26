@@ -18,14 +18,6 @@ export async function runMigrations() {
       }
     }
     
-    // Future migrations can be added here
-    
-    logger.info('✅ All migrations completed');
-  } catch (error) {
-    logger.error('Migration failed:', error);
-    throw error;
-  }
-}
     // Migration 2: Rename Users table columns to camelCase
     try {
       // Check if columns need renaming by checking if created_at exists
@@ -69,3 +61,10 @@ export async function runMigrations() {
         logger.error('Failed to rename columns:', error);
       }
     }
+    
+    logger.info('✅ All migrations completed');
+  } catch (error) {
+    logger.error('Migration failed:', error);
+    throw error;
+  }
+}
