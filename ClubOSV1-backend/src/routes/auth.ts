@@ -2,8 +2,6 @@ import { Router, Request, Response, NextFunction } from 'express';
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
-import { User } from '../types';
 import { db } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';
@@ -12,80 +10,6 @@ import { authenticate, generateToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 
 const router = Router();
-
-// Helper to get user data (database first, then JSON)
-async function getUsers(): Promise<User[]> {
-  if (db.isEnabled()) {
-    try {
-      const dbUsers = await db.getAllUsers();
-      return dbUsers.map(u => ({
-        id: u.id,
-        email: u.email,
-        password: u.password,
-        name: u.name,
-        role: u.role,
-        phone: u.phone,
-        createdAt: u.created_at.toISOString(),
-        updatedAt: u.updated_at.toISOString()
-      }));
-    } catch (error) {
-      logger.error('Database error, falling back to JSON:', error);
-    }
-  }
-  return await readJsonFile<User[]>('users.json');
-}
-
-// Helper to find user
-async function findUser(email: string): Promise<User | null> {
-  if (db.isEnabled()) {
-    try {
-      const dbUser = await db.findUserByEmail(email);
-      if (dbUser) {
-        return {
-          id: dbUser.id,
-          email: dbUser.email,
-          password: dbUser.password,
-          name: dbUser.name,
-          role: dbUser.role,
-          phone: dbUser.phone,
-          createdAt: dbUser.created_at.toISOString(),
-          updatedAt: dbUser.updated_at.toISOString()
-        };
-      }
-    } catch (error) {
-      logger.error('Database error, falling back to JSON:', error);
-    }
-  }
-  
-  const users = await readJsonFile<User[]>('users.json');
-  return users.find(u => u.email === email) || null;
-}
-
-// Helper to find user by ID
-async function findUserById(id: string): Promise<User | null> {
-  if (db.isEnabled()) {
-    try {
-      const dbUser = await db.findUserById(id);
-      if (dbUser) {
-        return {
-          id: dbUser.id,
-          email: dbUser.email,
-          password: dbUser.password,
-          name: dbUser.name,
-          role: dbUser.role,
-          phone: dbUser.phone,
-          createdAt: dbUser.created_at.toISOString(),
-          updatedAt: dbUser.updated_at.toISOString()
-        };
-      }
-    } catch (error) {
-      logger.error('Database error, falling back to JSON:', error);
-    }
-  }
-  
-  const users = await readJsonFile<User[]>('users.json');
-  return users.find(u => u.id === id) || null;
-}
 
 // Login endpoint
 router.post('/login',
@@ -105,10 +29,18 @@ router.post('/login',
       
       logger.info('Login attempt:', { email });
       
-      // Find user
-      const user = await findUser(email);
+      // Find user in database
+      const user = await db.findUserByEmail(email);
       
       if (!user) {
+        // Log failed attempt
+        await db.createAuthLog({
+          action: 'login',
+          ip_address: req.ip,
+          user_agent: req.get('user-agent'),
+          success: false,
+          error_message: 'User not found'
+        });
         throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
       }
       
@@ -116,17 +48,29 @@ router.post('/login',
       const isValidPassword = await bcryptjs.compare(password, user.password);
       
       if (!isValidPassword) {
+        // Log failed attempt
+        await db.createAuthLog({
+          user_id: user.id,
+          action: 'login',
+          ip_address: req.ip,
+          user_agent: req.get('user-agent'),
+          success: false,
+          error_message: 'Invalid password'
+        });
         throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
       }
       
-      // Update last login if using database
-      if (db.isEnabled()) {
-        try {
-          await db.updateLastLogin(user.id);
-        } catch (error) {
-          logger.error('Failed to update last login:', error);
-        }
-      }
+      // Update last login
+      await db.updateLastLogin(user.id);
+      
+      // Log successful login
+      await db.createAuthLog({
+        user_id: user.id,
+        action: 'login',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
       
       // Generate JWT token
       const sessionId = uuidv4();
@@ -135,15 +79,6 @@ router.post('/login',
         email: user.email,
         role: user.role,
         sessionId: sessionId
-      });
-      
-      // Log successful login
-      await appendToJsonArray('authLogs.json', {
-        id: uuidv4(),
-        userId: user.id,
-        action: 'login',
-        timestamp: new Date().toISOString(),
-        ip: req.ip
       });
       
       // Remove password from response
@@ -198,61 +133,28 @@ router.post('/register',
       const { email, password, name, role, phone } = req.body;
       
       // Check if user already exists
-      const existingUser = await findUser(email);
+      const existingUser = await db.findUserByEmail(email);
       if (existingUser) {
         throw new AppError('USER_EXISTS', 'User with this email already exists', 409);
       }
       
-      let newUser: User;
+      // Create new user
+      const newUser = await db.createUser({
+        email,
+        password,
+        name,
+        role,
+        phone
+      });
       
-      // Try to create in database first
-      if (db.isEnabled()) {
-        try {
-          const dbUser = await db.createUser({
-            email,
-            password,
-            name,
-            role,
-            phone
-          });
-          
-          newUser = {
-            id: dbUser.id,
-            email: dbUser.email,
-            password: dbUser.password,
-            name: dbUser.name,
-            role: dbUser.role,
-            phone: dbUser.phone,
-            createdAt: dbUser.created_at.toISOString(),
-            updatedAt: dbUser.updated_at.toISOString()
-          };
-          
-          // Also save to JSON for backup
-          const users = await readJsonFile<User[]>('users.json');
-          users.push(newUser);
-          await writeJsonFile('users.json', users);
-        } catch (error) {
-          logger.error('Database error, using JSON only:', error);
-          throw error;
-        }
-      } else {
-        // JSON only
-        const hashedPassword = await bcryptjs.hash(password, 10);
-        newUser = {
-          id: uuidv4(),
-          email,
-          password: hashedPassword,
-          name,
-          phone,
-          role,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        const users = await readJsonFile<User[]>('users.json');
-        users.push(newUser);
-        await writeJsonFile('users.json', users);
-      }
+      // Log user creation
+      await db.createAuthLog({
+        user_id: req.user!.id,
+        action: 'create_user',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
       
       // Remove password from response
       const { password: _, ...userWithoutPassword } = newUser;
@@ -275,7 +177,7 @@ router.get('/me',
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const user = await findUserById(req.user!.id);
+      const user = await db.findUserById(req.user!.id);
       
       if (!user) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
@@ -301,15 +203,14 @@ router.get('/users',
   roleGuard(['admin']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const users = await getUsers();
+      const users = await db.getAllUsers();
       
       // Remove passwords from response
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
       
       res.json({
         success: true,
-        data: usersWithoutPasswords,
-        source: db.isEnabled() ? 'database' : 'json'
+        data: usersWithoutPasswords
       });
       
     } catch (error) {
@@ -335,7 +236,7 @@ router.post('/change-password',
     try {
       const { currentPassword, newPassword } = req.body;
       
-      const user = await findUserById(req.user!.id);
+      const user = await db.findUserById(req.user!.id);
       
       if (!user) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
@@ -349,34 +250,16 @@ router.post('/change-password',
       }
       
       // Update password
-      if (db.isEnabled()) {
-        try {
-          await db.updateUserPassword(user.id, newPassword);
-          
-          // Also update in JSON
-          const users = await readJsonFile<User[]>('users.json');
-          const userIndex = users.findIndex(u => u.id === user.id);
-          if (userIndex !== -1) {
-            const hashedPassword = await bcryptjs.hash(newPassword, 10);
-            users[userIndex].password = hashedPassword;
-            users[userIndex].updatedAt = new Date().toISOString();
-            await writeJsonFile('users.json', users);
-          }
-        } catch (error) {
-          logger.error('Database error:', error);
-          throw error;
-        }
-      } else {
-        // JSON only
-        const users = await readJsonFile<User[]>('users.json');
-        const userIndex = users.findIndex(u => u.id === user.id);
-        if (userIndex !== -1) {
-          const hashedPassword = await bcryptjs.hash(newPassword, 10);
-          users[userIndex].password = hashedPassword;
-          users[userIndex].updatedAt = new Date().toISOString();
-          await writeJsonFile('users.json', users);
-        }
-      }
+      await db.updateUserPassword(user.id, newPassword);
+      
+      // Log password change
+      await db.createAuthLog({
+        user_id: user.id,
+        action: 'change_password',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
       
       logger.info('Password changed:', { userId: user.id });
       
@@ -424,62 +307,14 @@ router.put('/users/:userId',
       
       // Check if email is being changed and if it's already taken
       if (email) {
-        const existingUser = await findUser(email);
+        const existingUser = await db.findUserByEmail(email);
         if (existingUser && existingUser.id !== userId) {
           throw new AppError('EMAIL_EXISTS', 'Email already in use', 409);
         }
       }
       
-      let updatedUser: User | null = null;
-      
-      // Update in database first
-      if (db.isEnabled()) {
-        try {
-          const dbUser = await db.updateUser(userId, { name, phone, email });
-          if (dbUser) {
-            updatedUser = {
-              id: dbUser.id,
-              email: dbUser.email,
-              password: dbUser.password,
-              name: dbUser.name,
-              role: dbUser.role,
-              phone: dbUser.phone,
-              createdAt: dbUser.created_at.toISOString(),
-              updatedAt: dbUser.updated_at.toISOString()
-            };
-            
-            // Also update in JSON
-            const users = await readJsonFile<User[]>('users.json');
-            const userIndex = users.findIndex(u => u.id === userId);
-            if (userIndex !== -1) {
-              users[userIndex] = { ...users[userIndex], ...updatedUser };
-              await writeJsonFile('users.json', users);
-            }
-          }
-        } catch (error) {
-          logger.error('Database error:', error);
-          throw error;
-        }
-      } else {
-        // JSON only
-        const users = await readJsonFile<User[]>('users.json');
-        const userIndex = users.findIndex(u => u.id === userId);
-        
-        if (userIndex === -1) {
-          throw new AppError('USER_NOT_FOUND', 'User not found', 404);
-        }
-        
-        users[userIndex] = {
-          ...users[userIndex],
-          ...(name && { name }),
-          ...(phone !== undefined && { phone }),
-          ...(email && { email }),
-          updatedAt: new Date().toISOString()
-        };
-        
-        await writeJsonFile('users.json', users);
-        updatedUser = users[userIndex];
-      }
+      // Update user
+      const updatedUser = await db.updateUser(userId, { name, phone, email });
       
       if (!updatedUser) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
@@ -522,40 +357,22 @@ router.post('/users/:userId/reset-password',
         throw new AppError('SELF_RESET', 'Use the change-password endpoint to change your own password', 400);
       }
       
-      const user = await findUserById(userId);
+      const user = await db.findUserById(userId);
       if (!user) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
       }
       
       // Update password
-      if (db.isEnabled()) {
-        try {
-          await db.updateUserPassword(userId, newPassword);
-          
-          // Also update in JSON
-          const users = await readJsonFile<User[]>('users.json');
-          const userIndex = users.findIndex(u => u.id === userId);
-          if (userIndex !== -1) {
-            const hashedPassword = await bcryptjs.hash(newPassword, 10);
-            users[userIndex].password = hashedPassword;
-            users[userIndex].updatedAt = new Date().toISOString();
-            await writeJsonFile('users.json', users);
-          }
-        } catch (error) {
-          logger.error('Database error:', error);
-          throw error;
-        }
-      } else {
-        // JSON only
-        const users = await readJsonFile<User[]>('users.json');
-        const userIndex = users.findIndex(u => u.id === userId);
-        if (userIndex !== -1) {
-          const hashedPassword = await bcryptjs.hash(newPassword, 10);
-          users[userIndex].password = hashedPassword;
-          users[userIndex].updatedAt = new Date().toISOString();
-          await writeJsonFile('users.json', users);
-        }
-      }
+      await db.updateUserPassword(userId, newPassword);
+      
+      // Log password reset
+      await db.createAuthLog({
+        user_id: req.user!.id,
+        action: 'reset_password',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
       
       logger.info('User password reset:', { userId, resetBy: req.user!.id });
       
@@ -583,38 +400,20 @@ router.delete('/users/:userId',
         throw new AppError('SELF_DELETE', 'Cannot delete your own account', 400);
       }
       
-      let deleted = false;
-      
-      // Delete from database first
-      if (db.isEnabled()) {
-        try {
-          deleted = await db.deleteUser(userId);
-          
-          // Also delete from JSON
-          const users = await readJsonFile<User[]>('users.json');
-          const userIndex = users.findIndex(u => u.id === userId);
-          if (userIndex !== -1) {
-            users.splice(userIndex, 1);
-            await writeJsonFile('users.json', users);
-          }
-        } catch (error) {
-          logger.error('Database error:', error);
-          throw error;
-        }
-      } else {
-        // JSON only
-        const users = await readJsonFile<User[]>('users.json');
-        const userIndex = users.findIndex(u => u.id === userId);
-        if (userIndex !== -1) {
-          users.splice(userIndex, 1);
-          await writeJsonFile('users.json', users);
-          deleted = true;
-        }
-      }
+      const deleted = await db.deleteUser(userId);
       
       if (!deleted) {
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
       }
+      
+      // Log user deletion
+      await db.createAuthLog({
+        user_id: req.user!.id,
+        action: 'delete_user',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
       
       logger.info('User deleted:', { userId, deletedBy: req.user!.id });
       
