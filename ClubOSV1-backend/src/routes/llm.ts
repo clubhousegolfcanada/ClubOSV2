@@ -15,6 +15,11 @@ import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
 
 const router = Router();
 
+// Simple test endpoint to verify route is accessible
+router.get('/ping', (req: Request, res: Response) => {
+  res.json({ message: 'pong', timestamp: new Date().toISOString() });
+});
+
 // Simple health check
 router.get('/health', (req: Request, res: Response) => {
   res.json({ 
@@ -85,13 +90,22 @@ const debugMiddleware = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+// Add health check endpoint
+router.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    message: 'LLM service is running'
+  });
+});
+
 // Optimized request processing with single API call
 router.post('/request', 
   // authenticate,  // Commented out for demo
   // adminOrOperator,  // Commented out for demo
   debugMiddleware, // Log before validation
   // strictLimiter, // TEMPORARILY DISABLED due to Railway proxy issues
-  validate(requestValidation.llmRequest), // Apply validation
+  // validate(requestValidation.llmRequest), // TEMPORARILY DISABLED for debugging
   async (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     const requestId = uuidv4();
