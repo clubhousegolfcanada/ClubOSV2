@@ -236,3 +236,50 @@ export interface Ticket {
   resolvedAt?: string;
   comments: any[];
 }
+
+// Add missing types for feedback and tickets
+export interface FeedbackEntry {
+  id: string;
+  timestamp: string;
+  userId?: string;
+  userEmail?: string;
+  requestDescription: string;
+  location?: string;
+  route?: string;
+  response?: string;
+  confidence?: number;
+  isUseful: boolean;
+  feedbackType?: string;
+  feedbackSource?: string;
+  slackThreadTs?: string;
+  slackUserName?: string;
+  slackUserId?: string;
+  slackChannel?: string;
+  originalRequestId?: string;
+  createdAt: string;
+}
+
+export interface Ticket {
+  id: string;
+  title: string;
+  description: string;
+  category: 'facilities' | 'tech';
+  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location?: string;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
+  assignedTo?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  comments: any[];
+}
