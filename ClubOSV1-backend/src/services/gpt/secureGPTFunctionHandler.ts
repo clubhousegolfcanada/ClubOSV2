@@ -853,9 +853,8 @@ export class SecureGPTFunctionHandler {
   }
 
   private async checkBookingConflict(bayId: string, startTime: string, duration: number, excludeBookingId?: string): Promise<boolean> {
-    const bookings = await readJsonFile<any[]>('bookings.json');
-    const bayBookings = bookings.filter(b => 
-      b.simulatorId === bayId && 
+    const bookings = await db.getBookings({ simulatorId: bayId });
+    const bayBookings = bookings.filter((b: any) => 
       b.status !== 'cancelled' &&
       b.id !== excludeBookingId
     );

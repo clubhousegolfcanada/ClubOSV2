@@ -260,7 +260,7 @@ export const ticketDb = {
   async delete(id: string): Promise<boolean> {
     try {
       const result = await query('DELETE FROM tickets WHERE id = $1', [id]);
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       logger.error('Failed to delete ticket:', error);
       throw error;
@@ -292,7 +292,7 @@ export const ticketDb = {
       }
 
       const result = await query(queryText, values);
-      return result.rowCount;
+      return result.rowCount ?? 0;
     } catch (error) {
       logger.error('Failed to clear tickets:', error);
       throw error;

@@ -1,4 +1,3 @@
-import { Pool } from 'pg';
 import { logger } from './logger';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -746,7 +745,7 @@ class DatabaseService {
          WHERE id = $1`,
         [id]
       );
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       logger.error('Failed to cancel booking:', error);
       return false;

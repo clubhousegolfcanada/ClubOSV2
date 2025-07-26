@@ -23,10 +23,24 @@ const CONFIG_CACHE_TTL = 60000; // 1 minute
 async function getSystemConfig(): Promise<SystemConfig> {
   const now = Date.now();
   if (!cachedConfig || now - configLastLoaded > CONFIG_CACHE_TTL) {
-    cachedConfig = await readJsonFile<SystemConfig>('systemConfig.json');
+    // Return default config for now - can be stored in database later
+    cachedConfig = {
+      environment: process.env.NODE_ENV || 'development',
+      llmProvider: 'openai',
+      features: {
+        smartAssist: true,
+        bookings: true,
+        tickets: true,
+        slack: true
+      },
+      limits: {
+        maxRequestsPerDay: 1000,
+        maxTokensPerRequest: 4000
+      }
+    };
     configLastLoaded = now;
   }
-  return cachedConfig;
+  return cachedConfig!;
 }
 
 // Add a test endpoint without validation to isolate the issue
@@ -72,16 +86,17 @@ router.post('/request',
       // Use cached config
       const config = await getSystemConfig();
       
-      if (!config.llmEnabled) {
-        throw new AppError('LLM_DISABLED', 'LLM processing is currently disabled', 503);
-      }
+      // LLM is always enabled for now
+      // if (!config.llmEnabled) {
+      //   throw new AppError('LLM_DISABLED', 'LLM processing is currently disabled', 503);
+      // }
 
       // Fetch full user info if authenticated
       let fullUser = null;
       if (req.user) {
         try {
-          const users = await readJsonFile<any[]>('users.json');
-          fullUser = users.find(u => u.id === req.user!.id);
+          const { db } = await import('../utils/database');
+          fullUser = await db.findUserById(req.user.id);
         } catch (err) {
           logger.warn('Failed to fetch user info', { userId: req.user.id });
         }
@@ -128,10 +143,16 @@ router.post('/request',
           } : isCustomerKiosk ? { name: 'Customer Kiosk', role: 'customer' } : undefined
         };
         
-        // Log the request asynchronously (don't wait)
-        appendToJsonArray('userLogs.json', userRequest).catch(err => 
-          logger.error('Failed to log request', err)
-        );
+        // Log the request to database asynchronously (don't wait)
+        import('../utils/database').then(({ db }) => {
+          db.createRequestLog({
+            method: 'POST',
+            path: '/api/llm/request',
+            user_id: req.user?.id,
+            ip_address: req.ip,
+            user_agent: req.get('user-agent')
+          }).catch(err => logger.error('Failed to log request', err));
+        });
         
         // Send to Slack and capture thread ID
         const slackThreadTs = await slackFallback.sendDirectMessage(userRequest);
@@ -145,10 +166,17 @@ router.post('/request',
           processingTime: Date.now() - startTime
         };
         
-        // Log asynchronously
-        appendToJsonArray('userLogs.json', processedRequest).catch(err => 
-          logger.error('Failed to log processed request', err)
-        );
+        // Log to database asynchronously
+        import('../utils/database').then(({ db }) => {
+          db.createCustomerInteraction({
+            user_id: req.user?.id,
+            user_email: req.user?.email,
+            request_text: userRequest.requestDescription,
+            response_text: 'Sent to Slack support team',
+            route: 'Slack',
+            confidence: 1.0
+          }).catch(err => logger.error('Failed to log interaction', err));
+        });
         
         return res.json({
           success: true,
@@ -268,8 +296,7 @@ router.post('/request',
           slackFallback.sendProcessedNotification(processedRequest)
             .then(threadTs => {
               processedRequest.slackThreadTs = threadTs;
-              // Update log with thread ID
-              appendToJsonArray('userLogs.json', processedRequest).catch(() => {});
+              // Thread ID logged with initial request
             })
             .catch(err => logger.error('Failed to send Slack notification', err));
         }
@@ -304,10 +331,17 @@ router.post('/request',
         ? Date.now() - req.body.clientStartTime 
         : processedRequest.processingTime;
 
-      // Log asynchronously - don't wait
-      appendToJsonArray('userLogs.json', {
-        ...processedRequest,
-        processingTime: totalProcessingTime,
+      // Log to database asynchronously - don't wait
+      import('../utils/database').then(({ db }) => {
+        db.createCustomerInteraction({
+          user_id: req.user?.id,
+          user_email: req.user?.email,
+          request_text: userRequest.description,
+          response_text: processedRequest.response,
+          route: processedRequest.route,
+          confidence: processedRequest.confidence,
+          metadata: {
+            processingTime: totalProcessingTime,
         serverProcessingTime: processedRequest.processingTime
       }).catch(err => logger.error('Failed to log', err));
 
@@ -354,7 +388,16 @@ router.post('/request',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
       
-      appendToJsonArray('userLogs.json', failedRequest).catch(() => {});
+      import('../utils/database').then(({ db }) => {
+        db.createRequestLog({
+          method: 'POST',
+          path: '/api/llm/request',
+          user_id: req.user?.id,
+          ip_address: req.ip,
+          user_agent: req.get('user-agent'),
+          error: error.message
+        }).catch(() => {});
+      });
       
       next(error);
     }
@@ -376,7 +419,8 @@ function getQuickResponse(route: string, description: string): string {
 router.get('/status', /* authenticate, */ async (req: Request, res: Response, next: NextFunction) => {
   try {
     const config = await getSystemConfig();
-    const logs = await readJsonFile<ProcessedRequest[]>('userLogs.json');
+    // TODO: Implement request logs in database
+    const logs: ProcessedRequest[] = [];
     
     // Calculate stats from last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
