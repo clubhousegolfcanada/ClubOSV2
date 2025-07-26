@@ -36,8 +36,8 @@ export interface DbTicket {
   assigned_to_id?: string;
   assigned_to_name?: string;
   assigned_to_email?: string;
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
   resolved_at?: Date;
   metadata?: any;
 }
@@ -60,7 +60,7 @@ export interface DbFeedback {
   slack_user_id?: string;
   slack_channel?: string;
   original_request_id?: string;
-  created_at: Date;
+  createdAt: Date;
 }
 
 export interface DbBooking {
@@ -72,8 +72,8 @@ export interface DbBooking {
   type: 'single' | 'recurring';
   recurring_days?: number[];
   status: string;
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
   cancelled_at?: Date;
   metadata?: any;
 }
@@ -266,7 +266,7 @@ class DatabaseService {
 
   async getNotUsefulFeedback(): Promise<DbFeedback[]> {
     const result = await query(
-      'SELECT * FROM feedback WHERE is_useful = false ORDER BY created_at DESC'
+      'SELECT * FROM feedback WHERE is_useful = false ORDER BY "createdAt" DESC'
     );
     return result.rows;
   }
@@ -311,6 +311,7 @@ class DatabaseService {
     status?: string;
     category?: string;
     assigned_to_id?: string;
+    created_by_id?: string;
   }): Promise<DbTicket[]> {
     let queryText = 'SELECT * FROM tickets';
     const conditions: string[] = [];
@@ -335,11 +336,17 @@ class DatabaseService {
       values.push(filters.assigned_to_id);
     }
 
+    if (filters?.created_by_id) {
+      paramCount++;
+      conditions.push(`created_by_id = $${paramCount}`);
+      values.push(filters.created_by_id);
+    }
+
     if (conditions.length > 0) {
       queryText += ` WHERE ${conditions.join(' AND ')}`;
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
 
     const result = await query(queryText, values);
     return result.rows;
@@ -644,7 +651,7 @@ class DatabaseService {
       params.push(filters.success);
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
     
     if (filters?.limit) {
       queryText += ` LIMIT $${++paramCount}`;
@@ -684,7 +691,7 @@ class DatabaseService {
       params.push(filters.success);
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
     
     if (filters?.limit) {
       queryText += ` LIMIT $${++paramCount}`;
@@ -719,7 +726,7 @@ class DatabaseService {
       params.push(filters.status_code);
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
     
     if (filters?.limit) {
       queryText += ` LIMIT $${++paramCount}`;

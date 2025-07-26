@@ -36,7 +36,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...feedback.rows.map(f => ({
         type: 'feedback',
         id: f.id,
-        timestamp: f.createdAt || f.created_at,
+        timestamp: f.createdAt,
         request: f.request_description,
         response: f.response,
         route: f.route,
@@ -50,7 +50,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...interactions.rows.map(i => ({
         type: 'interaction',
         id: i.id,
-        timestamp: i.createdAt || i.created_at,
+        timestamp: i.createdAt,
         request: i.request_text,
         response: i.response_text,
         route: i.route,
@@ -104,7 +104,7 @@ router.get('/bookings', authenticate, async (req, res) => {
         type: b.type,
         recurringDays: b.recurring_days,
         status: b.status,
-        createdAt: b.created_at.toISOString(),
+        createdAt: b.createdAt.toISOString(),
         cancelledAt: b.cancelled_at?.toISOString()
       })),
       pagination: {
@@ -133,7 +133,7 @@ router.get('/tickets', authenticate, async (req, res) => {
     
     // Sort by created date descending
     const sorted = tickets.sort((a, b) => 
-      b.created_at.getTime() - a.created_at.getTime()
+      b.createdAt.getTime() - a.createdAt.getTime()
     );
     
     // Apply pagination
@@ -149,8 +149,8 @@ router.get('/tickets', authenticate, async (req, res) => {
         status: t.status,
         priority: t.priority,
         location: t.location,
-        createdAt: t.created_at.toISOString(),
-        updatedAt: t.updated_at.toISOString(),
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
         resolvedAt: t.resolved_at?.toISOString()
       })),
       pagination: {
@@ -208,7 +208,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
       
       // Unique users
       db.query(
-        `SELECT COUNT(DISTINCT COALESCE(user_id, user_email)) as count 
+        `SELECT COUNT(DISTINCT COALESCE(user_id::text, user_email)) as count 
          FROM customer_interactions 
          WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]

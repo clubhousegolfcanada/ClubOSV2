@@ -156,7 +156,7 @@ export const createIndexesSQL = [
   
   // Feedback indexes
   'CREATE INDEX IF NOT EXISTS idx_feedback_is_useful ON feedback(is_useful);',
-  'CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);',
+  'CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback("createdAt");',
   
   // Ticket indexes
   'CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);',
@@ -171,18 +171,18 @@ export const createIndexesSQL = [
   
   // Access log indexes
   'CREATE INDEX IF NOT EXISTS idx_access_logs_user_id ON access_logs(user_id);',
-  'CREATE INDEX IF NOT EXISTS idx_access_logs_created_at ON access_logs(created_at);',
+  'CREATE INDEX IF NOT EXISTS idx_access_logs_created_at ON access_logs("createdAt");',
   
   // Auth log indexes
   'CREATE INDEX IF NOT EXISTS idx_auth_logs_user_id ON auth_logs(user_id);',
   'CREATE INDEX IF NOT EXISTS idx_auth_logs_action ON auth_logs(action);',
-  'CREATE INDEX IF NOT EXISTS idx_auth_logs_created_at ON auth_logs(created_at);',
+  'CREATE INDEX IF NOT EXISTS idx_auth_logs_created_at ON auth_logs("createdAt");',
   
   // Request log indexes
   'CREATE INDEX IF NOT EXISTS idx_request_logs_path ON request_logs(path);',
-  'CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at);',
+  'CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs("createdAt");',
   
   // Customer interaction indexes
   'CREATE INDEX IF NOT EXISTS idx_customer_interactions_user_id ON customer_interactions(user_id);',
-  'CREATE INDEX IF NOT EXISTS idx_customer_interactions_created_at ON customer_interactions(created_at);'
+  'CREATE INDEX IF NOT EXISTS idx_customer_interactions_created_at ON customer_interactions("createdAt");'
 ];

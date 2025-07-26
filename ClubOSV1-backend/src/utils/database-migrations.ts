@@ -62,6 +62,64 @@ export async function runMigrations() {
       }
     }
     
+    // Migration 3: Rename created_at columns in other tables
+    const tablesToMigrate = [
+      'feedback',
+      'tickets', 
+      'bookings',
+      'access_logs',
+      'auth_logs',
+      'request_logs',
+      'system_config',
+      'customer_interactions'
+    ];
+
+    for (const tableName of tablesToMigrate) {
+      try {
+        // Check if created_at column exists (snake_case)
+        const checkResult = await query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = '${tableName}' 
+          AND column_name = 'created_at'
+        `);
+        
+        if (checkResult.rows.length > 0) {
+          logger.info(`Renaming ${tableName}.created_at to "createdAt"...`);
+          
+          await query(`
+            ALTER TABLE ${tableName} 
+            RENAME COLUMN created_at TO "createdAt"
+          `);
+          
+          logger.info(`✅ Migration: ${tableName}.created_at renamed to "createdAt"`);
+        }
+        
+        // Also check for updated_at column
+        const checkUpdatedResult = await query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = '${tableName}' 
+          AND column_name = 'updated_at'
+        `);
+        
+        if (checkUpdatedResult.rows.length > 0) {
+          logger.info(`Renaming ${tableName}.updated_at to "updatedAt"...`);
+          
+          await query(`
+            ALTER TABLE ${tableName} 
+            RENAME COLUMN updated_at TO "updatedAt"
+          `);
+          
+          logger.info(`✅ Migration: ${tableName}.updated_at renamed to "updatedAt"`);
+        }
+      } catch (error: any) {
+        if (!error.message.includes('does not exist') && !error.message.includes('already exists')) {
+          logger.error(`Failed to migrate ${tableName} columns:`, error);
+        }
+      }
+    }
+    
     logger.info('✅ All migrations completed');
   } catch (error) {
     logger.error('Migration failed:', error);

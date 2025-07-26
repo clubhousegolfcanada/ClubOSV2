@@ -246,32 +246,36 @@ router.post('/request',
           logger.info('Calling assistant service', { targetRoute });
           const assistantStart = Date.now();
           
-          assistantResponse = await assistantService.getAssistantResponse(
+          assistantResponse = assistantService ? await assistantService.getAssistantResponse(
             targetRoute,
             userRequest.requestDescription,
             {
               location: userRequest.location,
               sessionId: userRequest.sessionId
             }
-          );
+          ) : null;
           logger.info('Assistant response took:', { duration: Date.now() - assistantStart, route: targetRoute });
           
-          // Use the assistant's response
-          llmResponse.response = assistantResponse.response;
-          llmResponse.extractedInfo = {
-            ...llmResponse.extractedInfo,
-            assistantId: assistantResponse.assistantId,
-            threadId: assistantResponse.threadId
-          };
-          
-          // Add structured response data if available
-          if (assistantResponse.structured) {
-            llmResponse.structuredResponse = assistantResponse.structured;
-            llmResponse.category = assistantResponse.category;
-            llmResponse.priority = assistantResponse.priority;
-            llmResponse.actions = assistantResponse.actions;
-            llmResponse.metadata = assistantResponse.metadata;
-            llmResponse.escalation = assistantResponse.escalation;
+          if (assistantResponse) {
+            // Use the assistant's response
+            llmResponse.response = assistantResponse.response;
+            llmResponse.extractedInfo = {
+              ...llmResponse.extractedInfo,
+              assistantId: assistantResponse.assistantId,
+              threadId: assistantResponse.threadId
+            };
+            
+            // Add structured response data if available
+            if (assistantResponse.structured) {
+              llmResponse.structuredResponse = assistantResponse.structured;
+              llmResponse.category = assistantResponse.category;
+              llmResponse.priority = assistantResponse.priority;
+              llmResponse.actions = assistantResponse.actions;
+              llmResponse.metadata = assistantResponse.metadata;
+              llmResponse.escalation = assistantResponse.escalation;
+            }
+          } else {
+            throw new Error('Assistant service not available');
           }
         } catch (assistantError) {
           logger.warn('Failed to get assistant response, using fallback', {
@@ -292,7 +296,7 @@ router.post('/request',
         };
 
         // Send success notification to Slack if configured (async)
-        if (config.slackFallbackEnabled) {
+        if (config.features?.slack) {
           slackFallback.sendProcessedNotification(processedRequest)
             .then(threadTs => {
               processedRequest.slackThreadTs = threadTs;
@@ -305,7 +309,7 @@ router.post('/request',
         logger.error('LLM processing failed:', llmError);
         
         // Fallback to local routing or Slack
-        if (config.slackFallbackEnabled) {
+        if (config.features?.slack) {
           slackThreadTs = await slackFallback.sendFallbackNotification(
             userRequest as UserRequest & { user?: any },
             llmError instanceof Error ? llmError.message : 'Unknown error'
@@ -336,14 +340,15 @@ router.post('/request',
         db.createCustomerInteraction({
           user_id: req.user?.id,
           user_email: req.user?.email,
-          request_text: userRequest.description,
-          response_text: processedRequest.response,
-          route: processedRequest.route,
-          confidence: processedRequest.confidence,
+          request_text: userRequest.requestDescription,
+          response_text: processedRequest.llmResponse?.response || 'Processing...',
+          route: processedRequest.botRoute || 'unknown',
+          confidence: processedRequest.llmResponse?.confidence || 0,
           metadata: {
             processingTime: totalProcessingTime,
-        serverProcessingTime: processedRequest.processingTime
-      }).catch(err => logger.error('Failed to log', err));
+            serverProcessingTime: processedRequest.processingTime
+          }
+        }).catch(err => logger.error('Failed to log', err));
 
       res.json({
         success: true,
@@ -395,7 +400,7 @@ router.post('/request',
           user_id: req.user?.id,
           ip_address: req.ip,
           user_agent: req.get('user-agent'),
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         }).catch(() => {});
       });
       
