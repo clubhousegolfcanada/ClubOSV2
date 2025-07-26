@@ -1,250 +1,113 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
-import path from 'path';
-import { createServer } from 'http';
-import bookingRoutes from './routes/bookings';
-import accessRoutes from './routes/access';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { join } from 'path';
+import { logger } from './utils/logger';
+import { db } from './utils/database';
+import authRoutes from './routes/auth';
+import bookingsRoutes from './routes/bookings';
+import ticketsRoutes from './routes/tickets';
+import feedbackRoutes from './routes/feedback';
 import llmRoutes from './routes/llm';
 import slackRoutes from './routes/slack';
-import historyRoutes from './routes/history';
-import llmProviderRoutes from './routes/llmProviders';
-import usageRoutes from './routes/usage';
-import gptWebhookRoutes from './routes/gptWebhook';
-import knowledgeRoutes from './routes/knowledge';
-import toneRoutes from './routes/tone';
-import authRoutes from './routes/auth';
-import feedbackRoutes from './routes/feedback';
-import ticketRoutes from './routes/tickets';
-import debugRoutes from './routes/debug';
-import backupRoutes from './routes/backup';
-import setupRoutes from './routes/setup';
-import userSettingsRoutes from './routes/userSettings';
 import customerRoutes from './routes/customer';
-import { errorHandler } from './middleware/errorHandler';
+import userSettingsRoutes from './routes/userSettings';
+import backupRoutes from './routes/backup';
+import accessRoutes from './routes/access';
+import historyRoutes from './routes/history';
 import { requestLogger } from './middleware/requestLogger';
-import { trackUsage, checkRateLimit } from './middleware/usageTracking';
-import { applySecurityMiddleware } from './middleware/security';
-import { initializeDataFiles } from './utils/fileUtils';
-import { logger } from './utils/logger';
-import { envValidator, config } from './utils/envValidator';
-import { db } from './utils/database';
-import { ensureAdminUser } from './utils/ensureAdmin';
+import { errorHandler } from './middleware/errorHandler';
+import { rateLimiter } from './middleware/rateLimiter';
+import { trackUsage } from './middleware/usageTracking';
+import { authLimiter } from './middleware/authLimiter';
 
-// Validate environment variables before starting
-envValidator.validate();
+// Load environment variables
+dotenv.config();
 
-const app: Express = express();
-const PORT = config.PORT;
-const server = createServer(app);
+const app = express();
+const PORT = process.env.PORT || 3001;
 
-// Trust proxy for Railway deployment
+// Trust proxy - required for proper IP detection on Railway
 app.set('trust proxy', true);
 
-// Initialize data directory and files
-const initializeApp = async () => {
-  try {
-    await initializeDataFiles();
-    logger.info('Data files initialized successfully');
-    
-    // Ensure admin user exists (works with JSON)
-    await ensureAdminUser();
-    
-    // Try to initialize database if DATABASE_URL exists
-    if (process.env.DATABASE_URL) {
-      try {
-        logger.info('Initializing database connection...');
-        await db.initialize();
-        logger.info('✅ Database initialized successfully');
-        logger.info('📊 Data will be stored in PostgreSQL with JSON backup');
-      } catch (error) {
-        logger.error('⚠️  Database initialization failed, using JSON only:', error);
-        logger.info('📁 Data will be stored in JSON files only');
-      }
-    } else {
-      logger.info('📁 No DATABASE_URL found, using JSON file storage');
-    }
-    
-    // Setup database if DATABASE_URL exists
-    if (process.env.DATABASE_URL && process.env.RUN_DB_SETUP !== 'false') {
-      try {
-        logger.info('Database URL detected, attempting database setup...');
-        const { setupDatabase } = require('./scripts/setupDatabase');
-        await setupDatabase();
-        logger.info('Database setup completed successfully');
-      } catch (error) {
-        logger.error('Database setup failed:', error);
-        // Don't exit, just log the error
-      }
-    }
-  } catch (error) {
-    logger.error('Failed to initialize data files:', error);
-    process.exit(1);
-  }
-};
-
-// Manual CORS headers middleware - place before other middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  // Set CORS headers manually
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://club-osv-2-owqx.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001'
-  ];
-  
-  if (origin && (allowedOrigins.includes(origin) || origin.match(/^https:\/\/club-osv-2-.*\.vercel\.app$/))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Session-Token, X-API-Key');
-    res.setHeader('Access-Control-Expose-Headers', 'X-New-Token');
-    res.setHeader('Access-Control-Max-Age', '86400');
-  }
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
-
-// Apply security middleware first
-applySecurityMiddleware(app);
-
-// CORS configuration (after helmet)
-app.use(cors({
-  origin: [
-    config.FRONTEND_URL || 'http://localhost:3000',
-    'https://club-osv-2-owqx.vercel.app',
-    'https://club-osv-2-owqx-*.vercel.app',
-    /^https:\/\/club-osv-2-.*\.vercel\.app$/
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Session-Token', 'X-API-Key'],
-  exposedHeaders: ['X-New-Token'],
-  maxAge: 86400 // 24 hours
+// Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-
-// Explicit preflight handler for all routes
-app.options('*', cors());
-
-// Raw body capture for webhook signature verification
-app.use('/api/slack/webhook', express.raw({ type: 'application/json' }));
-app.use('/api/gpt-webhook', express.raw({ type: 'application/json' }));
-
-// Body parsing middleware for other routes (after security headers)
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Request logging (after body parsing)
 app.use(requestLogger);
 
-// Health check endpoint (public)
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.NODE_ENV
-  });
-});
-
-// CORS test endpoint
-app.get('/api/cors-test', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: 'CORS is working!',
-    origin: req.headers.origin,
-    timestamp: new Date().toISOString()
-  });
-});
+// Rate limiting
+app.use('/api/', rateLimiter);
+app.use('/api/auth', authLimiter);
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/debug', debugRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/access', accessRoutes);
-app.use('/api/llm', llmRoutes);
-app.use('/api/llm', llmProviderRoutes);
-app.use('/api/slack', slackRoutes);
-app.use('/api/history', historyRoutes);
-app.use('/api/usage', usageRoutes);
-app.use('/api/gpt-webhook', gptWebhookRoutes);
-app.use('/api/knowledge', knowledgeRoutes);
-app.use('/api/tone', toneRoutes);
+app.use('/api/bookings', bookingsRoutes);
+app.use('/api/tickets', ticketsRoutes);
 app.use('/api/feedback', feedbackRoutes);
-app.use('/api/tickets', ticketRoutes);
-app.use('/api/backup', backupRoutes);
-app.use('/api/setup', setupRoutes);
-app.use('/api/user', userSettingsRoutes);
+app.use('/api/llm', trackUsage, llmRoutes);
+app.use('/api/slack', slackRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/access', accessRoutes);
+app.use('/api/history', historyRoutes);
 
-// Static file serving for Google Drive sync (protected)
-app.use('/sync', express.static(path.join(__dirname, 'data', 'sync')));
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    database: 'postgresql',
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
 
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Cannot ${req.method} ${req.path}`,
-    timestamp: new Date().toISOString()
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'ClubOS API',
+    version: process.env.npm_package_version || '1.0.0',
+    status: 'running',
+    database: 'postgresql'
   });
 });
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Graceful shutdown
-const gracefulShutdown = async () => {
-  logger.info('Received shutdown signal, closing server gracefully...');
-  
-  server.close(() => {
-    logger.info('HTTP server closed');
-    process.exit(0);
-  });
-
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
-    logger.error('Could not close connections in time, forcefully shutting down');
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Initialize database
+    await db.initialize();
+    logger.info('✅ Database initialized successfully');
+    
+    // Start server
+    app.listen(PORT, () => {
+      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`📊 Database: PostgreSQL`);
+      logger.info(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    logger.error('❌ Failed to start server:', error);
     process.exit(1);
-  }, 10000);
-};
+  }
+}
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
-// Uncaught exception handler
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-  gracefulShutdown();
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM received, shutting down gracefully...');
+  process.exit(0);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection:', { 
-    reason: reason instanceof Error ? reason.message : String(reason),
-    stack: reason instanceof Error ? reason.stack : undefined,
-    promise: String(promise)
-  });
-  gracefulShutdown();
+process.on('SIGINT', async () => {
+  logger.info('SIGINT received, shutting down gracefully...');
+  process.exit(0);
 });
 
-// Start server
-const startServer = async () => {
-  await initializeApp();
-  
-  server.listen(PORT, () => {
-    logger.info(`⚡️ ClubOSV1 Backend is running on http://localhost:${PORT}`);
-    logger.info(`📁 Data directory: ${path.join(__dirname, 'data')}`);
-    logger.info(`🔄 Environment: ${config.NODE_ENV}`);
-    logger.info(`🔒 Security: Enhanced security middleware active`);
-  });
-};
-
-startServer().catch((error) => {
-  logger.error('Failed to start server:', error);
-  process.exit(1);
-});
-
-export default app;
+// Start the server
+startServer();
