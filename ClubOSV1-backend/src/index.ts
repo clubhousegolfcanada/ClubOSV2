@@ -27,7 +27,7 @@ import { applySecurityMiddleware } from './middleware/security';
 import { initializeDataFiles } from './utils/fileUtils';
 import { logger } from './utils/logger';
 import { envValidator, config } from './utils/envValidator';
-import { db } from './utils/database';
+import { ensureAdminUser } from './utils/ensureAdmin';
 
 // Validate environment variables before starting
 envValidator.validate();
@@ -45,22 +45,23 @@ const initializeApp = async () => {
     await initializeDataFiles();
     logger.info('Data files initialized successfully');
     
-    // Initialize database if DATABASE_URL exists
-    if (process.env.DATABASE_URL) {
+    // Ensure admin user exists
+    await ensureAdminUser();
+    
+    // Setup database if DATABASE_URL exists
+    if (process.env.DATABASE_URL && process.env.RUN_DB_SETUP !== 'false') {
       try {
-        logger.info('Initializing database...');
-        await db.initialize();
-        await db.ensureDefaultAdmin();
-        logger.info('Database initialized successfully');
+        logger.info('Database URL detected, attempting database setup...');
+        const { setupDatabase } = require('./scripts/setupDatabase');
+        await setupDatabase();
+        logger.info('Database setup completed successfully');
       } catch (error) {
-        logger.error('Database initialization failed:', error);
-        // Continue running with JSON fallback
+        logger.error('Database setup failed:', error);
+        // Don't exit, just log the error
       }
-    } else {
-      logger.warn('DATABASE_URL not set, using JSON file storage');
     }
   } catch (error) {
-    logger.error('Failed to initialize application:', error);
+    logger.error('Failed to initialize data files:', error);
     process.exit(1);
   }
 };
@@ -123,10 +124,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging (after body parsing)
 app.use(requestLogger);
-
-// Usage tracking and rate limiting - TEMPORARILY DISABLED
-// app.use(trackUsage);
-// app.use('/api', checkRateLimit);
 
 // Health check endpoint (public)
 app.get('/health', (req: Request, res: Response) => {
