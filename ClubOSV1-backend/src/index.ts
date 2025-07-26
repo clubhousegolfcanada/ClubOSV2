@@ -27,6 +27,7 @@ import { applySecurityMiddleware } from './middleware/security';
 import { initializeDataFiles } from './utils/fileUtils';
 import { logger } from './utils/logger';
 import { envValidator, config } from './utils/envValidator';
+import { db } from './utils/database';
 import { ensureAdminUser } from './utils/ensureAdmin';
 
 // Validate environment variables before starting
@@ -45,8 +46,23 @@ const initializeApp = async () => {
     await initializeDataFiles();
     logger.info('Data files initialized successfully');
     
-    // Ensure admin user exists
+    // Ensure admin user exists (works with JSON)
     await ensureAdminUser();
+    
+    // Try to initialize database if DATABASE_URL exists
+    if (process.env.DATABASE_URL) {
+      try {
+        logger.info('Initializing database connection...');
+        await db.initialize();
+        logger.info('✅ Database initialized successfully');
+        logger.info('📊 Data will be stored in PostgreSQL with JSON backup');
+      } catch (error) {
+        logger.error('⚠️  Database initialization failed, using JSON only:', error);
+        logger.info('📁 Data will be stored in JSON files only');
+      }
+    } else {
+      logger.info('📁 No DATABASE_URL found, using JSON file storage');
+    }
     
     // Setup database if DATABASE_URL exists
     if (process.env.DATABASE_URL && process.env.RUN_DB_SETUP !== 'false') {

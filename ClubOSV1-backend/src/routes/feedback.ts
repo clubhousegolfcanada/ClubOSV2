@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
+import { FeedbackEntry } from '../types';
 import { db } from '../utils/database';
 import { slackFallback } from '../services/slackFallback';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
@@ -26,25 +29,55 @@ router.post('/', authenticate, async (req, res) => {
       originalRequestId
     } = req.body;
 
-    // Create feedback entry
-    const feedbackEntry = await db.createFeedback({
-      timestamp: timestamp ? new Date(timestamp) : new Date(),
-      user_id: req.user?.id,
-      user_email: req.user?.email,
-      request_description: requestDescription,
+    const feedbackEntry: FeedbackEntry = {
+      id: uuidv4(),
+      timestamp: timestamp || new Date().toISOString(),
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      requestDescription,
       location,
       route,
       response,
       confidence,
-      is_useful: isUseful,
-      feedback_type: feedbackType,
-      feedback_source: feedbackSource,
-      slack_thread_ts: slackThreadTs,
-      slack_user_name: slackUserName,
-      slack_user_id: slackUserId,
-      slack_channel: slackChannel,
-      original_request_id: originalRequestId
-    });
+      isUseful,
+      feedbackType,
+      feedbackSource,
+      slackThreadTs,
+      slackUserName,
+      slackUserId,
+      slackChannel,
+      originalRequestId,
+      createdAt: new Date().toISOString()
+    };
+
+    // Try to save to database first
+    if (db.isEnabled()) {
+      try {
+        await db.createFeedback({
+          timestamp: new Date(feedbackEntry.timestamp),
+          user_id: feedbackEntry.userId,
+          user_email: feedbackEntry.userEmail,
+          request_description: feedbackEntry.requestDescription,
+          location: feedbackEntry.location,
+          route: feedbackEntry.route,
+          response: feedbackEntry.response,
+          confidence: feedbackEntry.confidence,
+          is_useful: feedbackEntry.isUseful,
+          feedback_type: feedbackEntry.feedbackType,
+          feedback_source: feedbackEntry.feedbackSource,
+          slack_thread_ts: feedbackEntry.slackThreadTs,
+          slack_user_name: feedbackEntry.slackUserName,
+          slack_user_id: feedbackEntry.slackUserId,
+          slack_channel: feedbackEntry.slackChannel,
+          original_request_id: feedbackEntry.originalRequestId
+        });
+      } catch (error) {
+        logger.error('Database error, saving to JSON:', error);
+      }
+    }
+
+    // Always save to JSON as backup
+    await appendToJsonArray('feedback.json', feedbackEntry);
 
     // Log feedback
     logger.info('Feedback received', {
@@ -58,21 +91,7 @@ router.post('/', authenticate, async (req, res) => {
     // Send Slack notification for unhelpful responses
     if (!isUseful && slackFallback.isEnabled() && feedbackSource === 'user') {
       try {
-        await slackFallback.sendUnhelpfulFeedbackNotification({
-          id: feedbackEntry.id,
-          timestamp: feedbackEntry.timestamp.toISOString(),
-          userId: feedbackEntry.user_id,
-          userEmail: feedbackEntry.user_email,
-          requestDescription: feedbackEntry.request_description,
-          location: feedbackEntry.location,
-          route: feedbackEntry.route,
-          response: feedbackEntry.response,
-          confidence: feedbackEntry.confidence,
-          isUseful: feedbackEntry.is_useful,
-          feedbackType: feedbackEntry.feedback_type,
-          feedbackSource: feedbackEntry.feedback_source,
-          createdAt: feedbackEntry.created_at.toISOString()
-        });
+        await slackFallback.sendUnhelpfulFeedbackNotification(feedbackEntry);
         logger.info('Slack notification sent for unhelpful feedback', { feedbackId: feedbackEntry.id });
       } catch (slackError) {
         logger.error('Failed to send Slack notification for feedback:', slackError);
@@ -82,7 +101,8 @@ router.post('/', authenticate, async (req, res) => {
     res.json({ 
       success: true, 
       message: 'Feedback recorded successfully',
-      feedbackId: feedbackEntry.id 
+      feedbackId: feedbackEntry.id,
+      storage: db.isEnabled() ? 'database' : 'json'
     });
   } catch (error) {
     logger.error('Error recording feedback:', error);
@@ -104,13 +124,50 @@ router.get('/not-useful', authenticate, async (req, res) => {
       });
     }
 
-    const feedback = await db.getNotUsefulFeedback();
+    let feedback: FeedbackEntry[] = [];
+    let source = 'json';
+
+    // Try to get from database first
+    if (db.isEnabled()) {
+      try {
+        const dbFeedback = await db.getNotUsefulFeedback();
+        feedback = dbFeedback.map(f => ({
+          id: f.id,
+          timestamp: f.timestamp.toISOString(),
+          userId: f.user_id,
+          userEmail: f.user_email,
+          requestDescription: f.request_description,
+          location: f.location,
+          route: f.route,
+          response: f.response,
+          confidence: f.confidence,
+          isUseful: f.is_useful,
+          feedbackType: f.feedback_type,
+          feedbackSource: f.feedback_source,
+          slackThreadTs: f.slack_thread_ts,
+          slackUserName: f.slack_user_name,
+          slackUserId: f.slack_user_id,
+          slackChannel: f.slack_channel,
+          originalRequestId: f.original_request_id,
+          createdAt: f.created_at.toISOString()
+        }));
+        source = 'database';
+      } catch (error) {
+        logger.error('Database error, falling back to JSON:', error);
+      }
+    }
+
+    // Fall back to JSON if needed
+    if (feedback.length === 0 && source === 'json') {
+      const allFeedback = await readJsonFile<FeedbackEntry[]>('feedback.json');
+      feedback = allFeedback.filter(item => !item.isUseful);
+    }
     
     res.json({ 
       success: true, 
       data: feedback,
       count: feedback.length,
-      source: 'database'
+      source
     });
   } catch (error) {
     logger.error('Error retrieving feedback:', error);
@@ -132,10 +189,45 @@ router.get('/export', authenticate, async (req, res) => {
       });
     }
 
-    const feedback = await db.getNotUsefulFeedback();
+    let feedback: FeedbackEntry[] = [];
+
+    // Try to get from database first
+    if (db.isEnabled()) {
+      try {
+        const dbFeedback = await db.getNotUsefulFeedback();
+        feedback = dbFeedback.map(f => ({
+          id: f.id,
+          timestamp: f.timestamp.toISOString(),
+          userId: f.user_id,
+          userEmail: f.user_email,
+          requestDescription: f.request_description,
+          location: f.location,
+          route: f.route,
+          response: f.response,
+          confidence: f.confidence,
+          isUseful: f.is_useful,
+          feedbackType: f.feedback_type,
+          feedbackSource: f.feedback_source,
+          slackThreadTs: f.slack_thread_ts,
+          slackUserName: f.slack_user_name,
+          slackUserId: f.slack_user_id,
+          slackChannel: f.slack_channel,
+          originalRequestId: f.original_request_id,
+          createdAt: f.created_at.toISOString()
+        }));
+      } catch (error) {
+        logger.error('Database error, falling back to JSON:', error);
+      }
+    }
+
+    // Fall back to JSON if needed
+    if (feedback.length === 0) {
+      const allFeedback = await readJsonFile<FeedbackEntry[]>('feedback.json');
+      feedback = allFeedback.filter(item => !item.isUseful);
+    }
     
     const feedbackArray = feedback.map(item => ({
-      request: item.request_description,
+      request: item.requestDescription,
       location: item.location,
       route: item.route,
       response: item.response,
@@ -168,7 +260,26 @@ router.delete('/clear', authenticate, async (req, res) => {
       });
     }
 
-    const deletedCount = await db.clearNotUsefulFeedback();
+    let deletedCount = 0;
+
+    // Clear from database if enabled
+    if (db.isEnabled()) {
+      try {
+        deletedCount = await db.clearNotUsefulFeedback();
+      } catch (error) {
+        logger.error('Database error:', error);
+      }
+    }
+
+    // Also clear from JSON
+    const allFeedback = await readJsonFile<FeedbackEntry[]>('feedback.json');
+    const usefulFeedback = allFeedback.filter(item => item.isUseful);
+    const jsonDeletedCount = allFeedback.length - usefulFeedback.length;
+    
+    await writeJsonFile('feedback.json', usefulFeedback);
+    
+    // Use the larger count
+    deletedCount = Math.max(deletedCount, jsonDeletedCount);
     
     logger.info('Feedback cleared by admin', {
       userId: req.user.id,
