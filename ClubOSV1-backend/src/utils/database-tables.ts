@@ -13,7 +13,7 @@ export const createTablesSQL = {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       last_login TIMESTAMP,
       is_active BOOLEAN DEFAULT true,
-      CONSTRAINT valid_role CHECK (role IN ('admin', 'operator', 'support', 'kiosk'))
+      last_login TIMESTAMP,      CONSTRAINT valid_role CHECK (role IN ('admin', 'operator', 'support', 'kiosk'))
     );
   `,
   
