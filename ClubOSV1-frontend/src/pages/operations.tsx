@@ -176,23 +176,34 @@ export default function Operations() {
   const createBackup = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/backup`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`${API_URL}/backup/export`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob' // Important: handle binary response
       });
       
-      if (response.data.success) {
-        const backup = response.data.data;
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `clubos_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        
-        toast.success('Backup created successfully');
+      // Create a blob from the response
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from Content-Disposition header if available
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `clubos_backup_${new Date().toISOString().split('T')[0]}.sql`;
+      if (contentDisposition) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
       }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Backup created successfully');
     } catch (error) {
       console.error('Failed to create backup:', error);
       toast.error('Failed to create backup');
