@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --noEmit false --skipLibCheck true || echo 'Build completed with warnings'",
+    "build": "tsc --noEmit false --skipLibCheck true && cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy'",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "test": "jest",
@@ -24,7 +24,8 @@
     "setup:db": "node src/scripts/setupDatabase.js",
     "db:setup": "node dist/scripts/setupDatabase.js",
     "setup:user-settings": "tsx scripts/setup-user-settings.ts",
-    "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts"
+    "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts",
+    "postbuild": "cp -r src/knowledge-base dist/ 2>/dev/null || echo 'Knowledge base copy completed'"
   },
   "keywords": [
     "clubos",

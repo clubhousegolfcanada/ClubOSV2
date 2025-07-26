@@ -34,7 +34,7 @@ async function migrateJsonToPostgres() {
       for (const user of usersData) {
         try {
           // Check if user already exists
-          const existing = await db.getUserByEmail(user.email);
+          const existing = await db.findUserByEmail(user.email);
           if (!existing) {
             await db.createUser({
               email: user.email,
