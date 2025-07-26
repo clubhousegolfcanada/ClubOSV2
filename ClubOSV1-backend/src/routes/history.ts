@@ -17,7 +17,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     const feedback = await db.query(
       `SELECT * FROM feedback 
        WHERE user_id = $1 OR user_email = $2 
-       ORDER BY created_at DESC 
+       ORDER BY "createdAt" DESC 
        LIMIT $3 OFFSET $4`,
       [userId, userEmail, Number(limit), Number(offset)]
     );
@@ -26,7 +26,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     const interactions = await db.query(
       `SELECT * FROM customer_interactions 
        WHERE user_id = $1 OR user_email = $2 
-       ORDER BY created_at DESC 
+       ORDER BY "createdAt" DESC 
        LIMIT $3 OFFSET $4`,
       [userId, userEmail, Number(limit), Number(offset)]
     );
@@ -36,7 +36,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...feedback.rows.map(f => ({
         type: 'feedback',
         id: f.id,
-        timestamp: f.created_at,
+        timestamp: f.createdAt || f.created_at,
         request: f.request_description,
         response: f.response,
         route: f.route,
@@ -50,7 +50,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...interactions.rows.map(i => ({
         type: 'interaction',
         id: i.id,
-        timestamp: i.created_at,
+        timestamp: i.createdAt || i.created_at,
         request: i.request_text,
         response: i.response_text,
         route: i.route,
@@ -164,6 +164,118 @@ router.get('/tickets', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve ticket history'
+    });
+  }
+});
+
+// GET /api/history/stats/overview - Get statistics overview
+router.get('/stats/overview', authenticate, async (req, res) => {
+  try {
+    const { period = '24h', endDate } = req.query;
+    
+    // Calculate date range based on period
+    let startDate: Date;
+    const end = endDate ? new Date(endDate as string) : new Date();
+    
+    switch(period) {
+      case '24h':
+        startDate = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startDate = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        startDate = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+    }
+    
+    // Get statistics from various tables
+    const [
+      totalRequestsResult,
+      uniqueUsersResult,
+      feedbackStatsResult,
+      ticketStatsResult,
+      bookingStatsResult
+    ] = await Promise.all([
+      // Total requests
+      db.query(
+        `SELECT COUNT(*) as count FROM customer_interactions 
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+        [startDate, end]
+      ),
+      
+      // Unique users
+      db.query(
+        `SELECT COUNT(DISTINCT COALESCE(user_id, user_email)) as count 
+         FROM customer_interactions 
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+        [startDate, end]
+      ),
+      
+      // Feedback stats
+      db.query(
+        `SELECT 
+           COUNT(*) as total,
+           SUM(CASE WHEN is_useful THEN 1 ELSE 0 END) as useful,
+           AVG(confidence) as avg_confidence
+         FROM feedback 
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+        [startDate, end]
+      ),
+      
+      // Ticket stats
+      db.query(
+        `SELECT 
+           COUNT(*) as total,
+           SUM(CASE WHEN status = 'resolved' OR status = 'closed' THEN 1 ELSE 0 END) as resolved
+         FROM tickets 
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+        [startDate, end]
+      ),
+      
+      // Booking stats
+      db.query(
+        `SELECT 
+           COUNT(*) as total,
+           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+         FROM bookings 
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+        [startDate, end]
+      )
+    ]);
+    
+    const totalRequests = parseInt(totalRequestsResult.rows[0]?.count || '0');
+    const uniqueUsers = parseInt(uniqueUsersResult.rows[0]?.count || '0');
+    const feedbackStats = feedbackStatsResult.rows[0];
+    const ticketStats = ticketStatsResult.rows[0];
+    const bookingStats = bookingStatsResult.rows[0];
+    
+    res.json({
+      success: true,
+      data: {
+        totalRequests,
+        uniqueUsers,
+        averageConfidence: parseFloat(feedbackStats?.avg_confidence || '0'),
+        totalFeedback: parseInt(feedbackStats?.total || '0'),
+        usefulFeedback: parseInt(feedbackStats?.useful || '0'),
+        totalTickets: parseInt(ticketStats?.total || '0'),
+        resolvedTickets: parseInt(ticketStats?.resolved || '0'),
+        totalBookings: parseInt(bookingStats?.total || '0'),
+        cancelledBookings: parseInt(bookingStats?.cancelled || '0'),
+        period,
+        dateRange: {
+          start: startDate.toISOString(),
+          end: end.toISOString()
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get stats overview:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve statistics'
     });
   }
 });

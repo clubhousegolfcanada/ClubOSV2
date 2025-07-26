@@ -36,9 +36,28 @@ app.set('trust proxy', true);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(cors());
+
+// Configure CORS with explicit options
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all origins in production for now
+    // You can restrict this later to specific domains
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Disposition']
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(requestLogger);
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Rate limiting
 app.use('/api/', rateLimiter);
