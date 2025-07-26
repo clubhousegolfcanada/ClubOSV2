@@ -281,8 +281,25 @@ router.post('/request',
           logger.info('Calling assistant service', { targetRoute });
           const assistantStart = Date.now();
           
-          // Fix route name mapping for assistant service
-          const assistantRoute = targetRoute === 'Booking&Access' ? 'Booking & Access' : targetRoute;
+          // Normalize route names for consistency
+          const normalizeRoute = (route: string): string => {
+            const routeMap: Record<string, string> = {
+              'Booking&Access': 'Booking & Access',
+              'booking': 'Booking & Access',
+              'access': 'Booking & Access',
+              'emergency': 'Emergency',
+              'Emergency': 'Emergency',
+              'tech': 'TechSupport',
+              'TechSupport': 'TechSupport',
+              'brand': 'BrandTone',
+              'BrandTone': 'BrandTone',
+              'general': 'BrandTone',
+              'Auto': 'Auto'
+            };
+            return routeMap[route] || route;
+          };
+          
+          const assistantRoute = normalizeRoute(targetRoute);
           
           assistantResponse = assistantService ? await assistantService.getAssistantResponse(
             assistantRoute,
@@ -383,11 +400,32 @@ router.post('/request',
             response_text: processedRequest.llmResponse?.response || 'Processing...',
             route: processedRequest.botRoute || 'unknown',
             confidence: processedRequest.llmResponse?.confidence || 0,
+            suggested_priority: processedRequest.llmResponse?.extractedInfo?.suggestedPriority,
+            session_id: sessionId,
             metadata: {
               processingTime: totalProcessingTime,
-              serverProcessingTime: processedRequest.processingTime
+              serverProcessingTime: processedRequest.processingTime,
+              extractedInfo: processedRequest.llmResponse?.extractedInfo
             }
           }).catch(err => logger.error('Failed to log', err));
+          
+          // Update or create session
+          db.query(
+            `INSERT INTO conversation_sessions (session_id, user_id, last_activity, context)
+             VALUES ($1, $2, CURRENT_TIMESTAMP, $3)
+             ON CONFLICT (session_id) 
+             DO UPDATE SET last_activity = CURRENT_TIMESTAMP, 
+                          context = conversation_sessions.context || $3`,
+            [
+              sessionId,
+              req.user?.id,
+              JSON.stringify({
+                lastRequest: userRequest.requestDescription,
+                lastRoute: processedRequest.botRoute,
+                timestamp: new Date().toISOString()
+              })
+            ]
+          ).catch(err => logger.error('Failed to update session', err));
         }
       }).catch(err => logger.error('Failed to import database', err));
 

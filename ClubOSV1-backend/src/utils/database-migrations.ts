@@ -120,6 +120,82 @@ export async function runMigrations() {
       }
     }
     
+    // Migration 4: Add knowledge base table
+    try {
+      await query(`
+        CREATE TABLE IF NOT EXISTS knowledge_base (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          category VARCHAR(50) NOT NULL,
+          subcategory VARCHAR(50),
+          issue VARCHAR(255) NOT NULL,
+          symptoms TEXT[],
+          solutions TEXT[],
+          priority VARCHAR(20),
+          time_estimate VARCHAR(50),
+          customer_script TEXT,
+          escalation_path TEXT,
+          metadata JSONB,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await query(`CREATE INDEX IF NOT EXISTS idx_knowledge_symptoms ON knowledge_base USING GIN(symptoms)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_base(category)`);
+      
+      logger.info('✅ Migration: knowledge_base table created');
+    } catch (error: any) {
+      if (!error.message.includes('already exists')) {
+        logger.error('Failed to create knowledge_base table:', error);
+      }
+    }
+    
+    // Migration 5: Add conversation sessions table
+    try {
+      await query(`
+        CREATE TABLE IF NOT EXISTS conversation_sessions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          session_id VARCHAR(255) UNIQUE NOT NULL,
+          user_id UUID REFERENCES "Users"(id),
+          started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          context JSONB,
+          active BOOLEAN DEFAULT true
+        )
+      `);
+      
+      await query(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON conversation_sessions(user_id)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_sessions_active ON conversation_sessions(active)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON conversation_sessions(session_id)`);
+      
+      logger.info('✅ Migration: conversation_sessions table created');
+    } catch (error: any) {
+      if (!error.message.includes('already exists')) {
+        logger.error('Failed to create conversation_sessions table:', error);
+      }
+    }
+    
+    // Migration 6: Add columns to customer_interactions
+    try {
+      await query(`
+        ALTER TABLE customer_interactions 
+        ADD COLUMN IF NOT EXISTS suggested_priority VARCHAR(20)
+      `);
+      
+      await query(`
+        ALTER TABLE customer_interactions 
+        ADD COLUMN IF NOT EXISTS session_id VARCHAR(255)
+      `);
+      
+      await query(`CREATE INDEX IF NOT EXISTS idx_interactions_session ON customer_interactions(session_id)`);
+      
+      logger.info('✅ Migration: customer_interactions columns added');
+    } catch (error: any) {
+      if (!error.message.includes('already exists')) {
+        logger.error('Failed to add columns to customer_interactions:', error);
+      }
+    }
+    
     logger.info('✅ All migrations completed');
   } catch (error) {
     logger.error('Migration failed:', error);

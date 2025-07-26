@@ -51,8 +51,8 @@ export const createRateLimiter = (windowMs: number, max: number, message: string
     message,
     standardHeaders: true,
     legacyHeaders: false,
-    // Fix for Railway proxy
-    trustProxy: true,
+    // Fix for Railway proxy - trust only the first proxy
+    trustProxy: process.env.NODE_ENV === 'production' ? 1 : false,
     // Skip problematic headers
     skip: (req) => {
       // Skip rate limiting in development

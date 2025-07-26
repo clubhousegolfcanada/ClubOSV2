@@ -125,8 +125,8 @@ export interface AccessRequest {
   reason?: string;
 }
 
-export type BotRoute = 'Auto' | 'Booking&Access' | 'Emergency' | 'TechSupport' | 'BrandTone';
-export type RequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'fallback';
+export type BotRoute = 'Auto' | 'Booking&Access' | 'Booking & Access' | 'Emergency' | 'TechSupport' | 'BrandTone' | 'Slack' | 'general';
+export type RequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'fallback' | 'sent_to_slack';
 export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
 export interface User {
@@ -156,11 +156,23 @@ export interface ApiError {
 }
 
 export interface SystemConfig {
-  llmEnabled: boolean;
-  slackFallbackEnabled: boolean;
-  maxRetries: number;
-  requestTimeout: number;
-  dataRetentionDays: number;
+  llmEnabled?: boolean;
+  slackFallbackEnabled?: boolean;
+  maxRetries?: number;
+  requestTimeout?: number;
+  dataRetentionDays?: number;
+  environment?: string;
+  llmProvider?: string;
+  features?: {
+    smartAssist?: boolean;
+    bookings?: boolean;
+    tickets?: boolean;
+    slack?: boolean;
+  };
+  limits?: {
+    maxRequestsPerDay?: number;
+    maxTokensPerRequest?: number;
+  };
 }
 
 // Slack Events API types

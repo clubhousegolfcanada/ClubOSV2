@@ -7,6 +7,8 @@ export const rateLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Trust proxy is required for Railway, but we need to be specific
+  trustProxy: process.env.NODE_ENV === 'production' ? 1 : false,
   handler: (req, res) => {
     logger.warn('Rate limit exceeded', { 
       ip: req.ip,

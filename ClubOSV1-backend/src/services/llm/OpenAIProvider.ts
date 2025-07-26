@@ -77,15 +77,39 @@ export class OpenAIProvider extends BaseLLMProvider {
     this.resetStatsIfNeeded();
 
     try {
+      // Fetch user context if userId provided
+      let userContext = '';
+      if (userId) {
+        try {
+          const { db } = await import('../../utils/database');
+          const interactions = await db.query(
+            `SELECT request_text, response_text, route, confidence, "createdAt" 
+             FROM customer_interactions 
+             WHERE user_id = $1 
+             ORDER BY "createdAt" DESC 
+             LIMIT 5`,
+            [userId]
+          );
+          
+          if (interactions.rows.length > 0) {
+            userContext = interactions.rows.map((i: any) => 
+              `[${new Date(i.createdAt).toLocaleString()}] ${i.route}: "${i.request_text}" (confidence: ${i.confidence})`
+            ).join('\n');
+          }
+        } catch (err) {
+          logger.warn('Failed to fetch user context:', err);
+        }
+      }
+
       const messages: OpenAI.ChatCompletionMessageParam[] = [
-        { role: 'system', content: this.getSystemPrompt() }
+        { role: 'system', content: this.getSystemPrompt(userContext) }
       ];
 
-      // Add context if provided
+      // Add additional context if provided
       if (context && Object.keys(context).length > 0) {
         messages.push({
           role: 'system',
-          content: `Additional context: ${JSON.stringify(context)}`
+          content: `Current session context: ${JSON.stringify(context)}`
         });
       }
 

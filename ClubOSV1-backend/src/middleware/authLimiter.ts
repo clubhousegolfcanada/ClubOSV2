@@ -8,6 +8,8 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
+  // Trust proxy is required for Railway, but we need to be specific
+  trustProxy: process.env.NODE_ENV === 'production' ? 1 : false,
   handler: (req, res) => {
     logger.warn('Auth rate limit exceeded', { 
       ip: req.ip,

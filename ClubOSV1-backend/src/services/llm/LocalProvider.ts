@@ -67,7 +67,7 @@ export class LocalProvider extends BaseLLMProvider {
       ...description.split(' ').filter(word => word.length > 3)
     ];
     
-    const solutions = knowledgeLoader.findSolution(symptoms);
+    const solutions = await knowledgeLoader.findSolution(symptoms);
     
     // Also try searching the knowledge base directly
     const searchResults = knowledgeLoader.searchKnowledge(description);
@@ -263,7 +263,7 @@ export class LocalProvider extends BaseLLMProvider {
   /**
    * Get quick reference information
    */
-  getQuickReference(route: string): any {
-    return knowledgeLoader.getQuickReference(route);
+  async getQuickReference(route: string): Promise<any> {
+    return await knowledgeLoader.getQuickReference(route);
   }
 }

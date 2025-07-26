@@ -23,6 +23,17 @@ export interface LLMResponse {
   requestId: string;
   timestamp: string;
   provider?: string;
+  suggestedActions?: string[];
+  structuredResponse?: any;
+  category?: string;
+  priority?: string;
+  actions?: Array<{
+    type: string;
+    description: string;
+    details?: any;
+  }>;
+  metadata?: any;
+  escalation?: any;
 }
 
 export interface LLMProvider {

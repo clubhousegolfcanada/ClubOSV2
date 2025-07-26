@@ -79,7 +79,7 @@ export interface DbBooking {
 }
 
 class DatabaseService {
-  private initialized = false;
+  public initialized = false;
 
   // Create all tables
   private async createAllTables(): Promise<void> {
@@ -558,13 +558,15 @@ class DatabaseService {
     response_text?: string;
     route?: string;
     confidence?: number;
+    suggested_priority?: string;
+    session_id?: string;
     metadata?: any;
   }): Promise<void> {
     await query(
       `INSERT INTO customer_interactions (
         id, user_id, user_email, request_text, response_text, 
-        route, confidence, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        route, confidence, suggested_priority, session_id, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         uuidv4(),
         interaction.user_id,
@@ -573,6 +575,8 @@ class DatabaseService {
         interaction.response_text,
         interaction.route,
         interaction.confidence,
+        interaction.suggested_priority,
+        interaction.session_id,
         JSON.stringify(interaction.metadata || {})
       ]
     );
