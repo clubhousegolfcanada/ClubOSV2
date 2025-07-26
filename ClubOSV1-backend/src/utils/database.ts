@@ -586,13 +586,6 @@ class DatabaseService {
   isEnabled(): boolean {
     return this.initialized;
   }
-}
-
-// Export singleton instance
-export const db = new DatabaseService();
-
-// Also export pool for direct access if needed
-export { pool };
 
   // Direct query access
   async query(text: string, params?: any[]): Promise<any> {
@@ -803,3 +796,10 @@ export { pool };
       logger.error('Failed to log auth event:', error);
     }
   }
+}
+
+// Export singleton instance
+export const db = new DatabaseService();
+
+// Also export pool for direct access if needed
+export { pool };
