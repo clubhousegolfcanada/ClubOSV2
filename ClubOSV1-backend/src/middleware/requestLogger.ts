@@ -1,78 +1,59 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-// JSON logging removed - using PostgreSQL
+import { db } from '../utils/database';
 
-interface RequestLog {
-  id: string;
-  timestamp: string;
-  method: string;
-  path: string;
-  query: any;
-  body: any;
-  headers: any;
-  ip: string;
-  userAgent?: string;
-  duration?: number;
-  statusCode?: number;
-}
+export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  const originalSend = res.send;
+  const originalJson = res.json;
+  let responseBody: any;
 
-export const requestLogger = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  const requestId = uuidv4();
-  const startTime = Date.now();
-  
-  // Attach request ID to request object
-  (req as any).requestId = requestId;
-  
-  const requestLog: RequestLog = {
-    id: requestId,
-    timestamp: new Date().toISOString(),
-    method: req.method,
-    path: req.path,
-    query: req.query,
-    body: req.body,
-    headers: {
-      'content-type': req.headers['content-type'],
-      'user-agent': req.headers['user-agent'],
-      'x-forwarded-for': req.headers['x-forwarded-for']
-    },
-    ip: req.ip || req.socket.remoteAddress || '',
-    userAgent: req.headers['user-agent']
+  // Capture response body
+  res.send = function(data: any): Response {
+    responseBody = data;
+    res.send = originalSend;
+    return originalSend.call(this, data);
   };
 
-  // Log request
-  logger.info('Incoming request', {
-    requestId,
-    method: req.method,
-    path: req.path
-  });
+  res.json = function(data: any): Response {
+    responseBody = data;
+    res.json = originalJson;
+    return originalJson.call(this, data);
+  };
 
-  // Override res.end to capture response details
-  const originalEnd = res.end;
-  res.end = function(...args: any[]) {
-    const duration = Date.now() - startTime;
+  // Log when response finishes
+  res.on('finish', async () => {
+    const duration = Date.now() - start;
+    const user = (req as any).user;
     
-    requestLog.duration = duration;
-    requestLog.statusCode = res.statusCode;
-    
-    // Log response
-    logger.info('Request completed', {
-      requestId,
+    logger.info(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`, {
+      method: req.method,
+      path: req.path,
+      query: req.query,
+      statusCode: res.statusCode,
       duration,
-      statusCode: res.statusCode
+      userId: user?.id,
+      userEmail: user?.email,
+      ip: req.ip,
+      userAgent: req.get('user-agent')
     });
-    
-    // Save to request logs asynchronously
-    appendToJsonArray('logs/requests.json', requestLog).catch(err => {
-      logger.error('Failed to save request log:', err);
-    });
-    
-    originalEnd.apply(res, args);
-  };
+
+    // Log to database asynchronously
+    if (req.path !== '/health' && !req.path.startsWith('/api/access')) {
+      db.logRequest({
+        method: req.method,
+        path: req.path,
+        status_code: res.statusCode,
+        response_time: duration,
+        user_id: user?.id,
+        ip_address: req.ip || 'unknown',
+        user_agent: req.get('user-agent') || 'unknown',
+        error: res.statusCode >= 400 ? responseBody?.message || 'Error' : null
+      }).catch(err => {
+        logger.error('Failed to log request to database:', err);
+      });
+    }
+  });
 
   next();
 };
