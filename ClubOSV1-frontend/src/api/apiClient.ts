@@ -40,21 +40,16 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
   const clientStartTime = Date.now(); // Track when request starts on client
   
   try {
-    const endpoint = request.smartAssistEnabled ? '/llm/request' : '/slack/message';
+    // Always use the LLM endpoint - it handles both smart assist and Slack routing
+    const endpoint = '/llm/request';
     
-    const payload = request.smartAssistEnabled 
-      ? {
-          requestDescription: request.requestDescription,
-          location: request.location,
-          routePreference: request.routePreference || "Auto",
-          smartAssistEnabled: request.smartAssistEnabled, // Add this field
-          clientStartTime // Include client start time
-        }
-      : {
-          requestDescription: request.requestDescription,
-          location: request.location,
-          clientStartTime // Include client start time
-        };
+    const payload = {
+      requestDescription: request.requestDescription,
+      location: request.location,
+      routePreference: request.routePreference || "Auto",
+      smartAssistEnabled: request.smartAssistEnabled, // This determines if it goes to LLM or Slack
+      clientStartTime // Include client start time
+    };
     
     console.log('Submitting request to:', `${API_URL}${endpoint}`);
     console.log('Payload:', payload);
