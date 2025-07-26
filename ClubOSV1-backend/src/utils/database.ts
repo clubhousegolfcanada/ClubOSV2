@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { logger } from './logger';
-import bcrypt from 'bcryptjs';
+import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
 // Create pool with proper configuration
