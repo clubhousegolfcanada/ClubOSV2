@@ -135,5 +135,32 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  // Don't exit in production - try to recover
+  if (process.env.NODE_ENV === 'production') {
+    logger.warn('Attempting to continue despite uncaught exception...');
+  } else {
+    process.exit(1);
+  }
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit in production - try to recover
+  if (process.env.NODE_ENV === 'production') {
+    logger.warn('Attempting to continue despite unhandled rejection...');
+  } else {
+    process.exit(1);
+  }
+});
+
 // Start the server
-startServer();
+startServer().catch(error => {
+  logger.error('Failed to start server:', error);
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
