@@ -171,8 +171,8 @@ class DatabaseService {
     const hashedPassword = await bcrypt.hash(user.password, 10);
     
     const result = await query(
-      `INSERT INTO "Users" (id, email, password, name, role, phone) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO "Users" (id, email, password, name, role, phone, "createdAt", "updatedAt", "isActive") 
+       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true) 
        RETURNING *`,
       [id, user.email, hashedPassword, user.name, user.role, user.phone]
     );
@@ -792,7 +792,7 @@ class DatabaseService {
       await query(
         `INSERT INTO auth_logs 
          (user_id, action, ip_address, user_agent, success, error_message)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true)`,
         [log.user_id, log.action, log.ip_address, 
          log.user_agent, log.success ?? true, log.error_message]
       );
