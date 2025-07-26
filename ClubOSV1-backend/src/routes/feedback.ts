@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { slackFallback } from '../services/slackFallback';
 import { v4 as uuidv4 } from 'uuid';
+import { transformFeedback } from '../utils/transformers';
 
 const router = Router();
 
@@ -59,21 +60,7 @@ router.post('/', authenticate, async (req, res) => {
     // Send Slack notification for unhelpful responses
     if (!isUseful && slackFallback.isEnabled() && feedbackSource === 'user') {
       try {
-        await slackFallback.sendUnhelpfulFeedbackNotification({
-          id: feedbackEntry.id,
-          timestamp: feedbackEntry.timestamp.toISOString(),
-          userId: feedbackEntry.user_id,
-          userEmail: feedbackEntry.user_email,
-          requestDescription: feedbackEntry.request_description,
-          location: feedbackEntry.location,
-          route: feedbackEntry.route,
-          response: feedbackEntry.response,
-          confidence: feedbackEntry.confidence,
-          isUseful: feedbackEntry.is_useful,
-          feedbackType: feedbackEntry.feedback_type,
-          feedbackSource: feedbackEntry.feedback_source,
-          createdAt: feedbackEntry.created_at.toISOString()
-        });
+        await slackFallback.sendUnhelpfulFeedbackNotification(transformFeedback(feedbackEntry));
         logger.info('Slack notification sent for unhelpful feedback', { feedbackId: feedbackEntry.id });
       } catch (slackError) {
         logger.error('Failed to send Slack notification for feedback:', slackError);
@@ -109,21 +96,7 @@ router.get('/not-useful', authenticate, async (req, res) => {
     
     res.json({ 
       success: true, 
-      data: feedback.map(f => ({
-        id: f.id,
-        timestamp: f.timestamp.toISOString(),
-        userId: f.user_id,
-        userEmail: f.user_email,
-        requestDescription: f.request_description,
-        location: f.location,
-        route: f.route,
-        response: f.response,
-        confidence: f.confidence,
-        isUseful: f.is_useful,
-        feedbackType: f.feedback_type,
-        feedbackSource: f.feedback_source,
-        createdAt: f.created_at.toISOString()
-      })),
+      data: feedback.map(f => transformFeedback(f)),
       count: feedback.length
     });
   } catch (error) {

@@ -3,6 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { join } from 'path';
+
+// Load environment variables FIRST
+dotenv.config();
+
 import { logger } from './utils/logger';
 import { db } from './utils/database';
 import authRoutes from './routes/auth';
@@ -21,9 +25,6 @@ import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { trackUsage } from './middleware/usageTracking';
 import { authLimiter } from './middleware/authLimiter';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

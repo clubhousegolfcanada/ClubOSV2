@@ -9,10 +9,10 @@ export const createTablesSQL = {
       name VARCHAR(255),
       role VARCHAR(50) NOT NULL DEFAULT 'support',
       phone VARCHAR(50),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      last_login TIMESTAMP,
-      is_active BOOLEAN DEFAULT true,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "lastLogin" TIMESTAMP,
+      "isActive" BOOLEAN DEFAULT true,
       CONSTRAINT valid_role CHECK (role IN ('admin', 'operator', 'support', 'kiosk'))
     );
   `,
@@ -36,7 +36,7 @@ export const createTablesSQL = {
       slack_user_id VARCHAR(255),
       slack_channel VARCHAR(255),
       original_request_id UUID,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
   
@@ -56,8 +56,8 @@ export const createTablesSQL = {
       assigned_to_id UUID,
       assigned_to_name VARCHAR(255),
       assigned_to_email VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       resolved_at TIMESTAMP,
       metadata JSONB DEFAULT '{}'::jsonb
     );
@@ -74,8 +74,8 @@ export const createTablesSQL = {
       type VARCHAR(50) NOT NULL CHECK (type IN ('single', 'recurring')),
       recurring_days INTEGER[],
       status VARCHAR(50) NOT NULL DEFAULT 'confirmed',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       cancelled_at TIMESTAMP,
       metadata JSONB DEFAULT '{}'::jsonb
     );
@@ -93,7 +93,7 @@ export const createTablesSQL = {
       success BOOLEAN DEFAULT true,
       error_message TEXT,
       metadata JSONB DEFAULT '{}'::jsonb,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
   
@@ -106,7 +106,7 @@ export const createTablesSQL = {
       user_agent TEXT,
       success BOOLEAN DEFAULT true,
       error_message TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
   
@@ -121,7 +121,7 @@ export const createTablesSQL = {
       ip_address VARCHAR(45),
       user_agent TEXT,
       error TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
   
@@ -130,7 +130,7 @@ export const createTablesSQL = {
       key VARCHAR(255) PRIMARY KEY,
       value JSONB NOT NULL,
       description TEXT,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
   
@@ -144,7 +144,7 @@ export const createTablesSQL = {
       route VARCHAR(50),
       confidence DECIMAL(3,2),
       metadata JSONB DEFAULT '{}'::jsonb,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `
 };

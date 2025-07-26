@@ -16,10 +16,10 @@ export interface DbUser {
   name: string;
   role: 'admin' | 'operator' | 'support' | 'kiosk';
   phone?: string;
-  created_at: Date;
-  updated_at: Date;
-  last_login?: Date;
-  is_active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLogin?: Date;
+  isActive: boolean;
 }
 
 export interface DbTicket {
@@ -180,14 +180,14 @@ class DatabaseService {
   }
 
   async updateUser(id: string, updates: Partial<DbUser>): Promise<DbUser | null> {
-    const allowedFields = ['name', 'email', 'phone', 'role', 'is_active'];
+    const allowedFields = ['name', 'email', 'phone', 'role', 'isActive'];
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
     for (const [key, value] of Object.entries(updates)) {
       if (allowedFields.includes(key) && value !== undefined) {
-        updateFields.push(`${key} = $${paramCount}`);
+        updateFields.push(`"${key}" = $${paramCount}`);
         values.push(value);
         paramCount++;
       }
@@ -197,7 +197,7 @@ class DatabaseService {
       return this.findUserById(id);
     }
 
-    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    updateFields.push(`"updatedAt" = CURRENT_TIMESTAMP`);
     values.push(id);
 
     const result = await query(
@@ -211,7 +211,7 @@ class DatabaseService {
   async updateUserPassword(id: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const result = await query(
-      'UPDATE "Users" SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE "Users" SET password = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
       [hashedPassword, id]
     );
     return (result.rowCount || 0) > 0;
@@ -223,12 +223,12 @@ class DatabaseService {
   }
 
   async getAllUsers(): Promise<DbUser[]> {
-    const result = await query('SELECT * FROM "Users" ORDER BY created_at DESC');
+    const result = await query('SELECT * FROM "Users" ORDER BY "createdAt" DESC');
     return result.rows;
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    await query('UPDATE "Users" SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    await query('UPDATE "Users" SET "lastLogin" = CURRENT_TIMESTAMP WHERE id = $1', [id]);
   }
 
   // Feedback operations

@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { v4 as uuidv4 } from 'uuid';
+import { transformBooking } from '../utils/transformers';
 
 const router = Router();
 
@@ -25,20 +26,7 @@ router.get('/', authenticate, async (req, res) => {
     
     res.json({
       success: true,
-      data: bookings.map(b => ({
-        id: b.id,
-        userId: b.user_id,
-        simulatorId: b.simulator_id,
-        startTime: b.start_time.toISOString(),
-        duration: b.duration,
-        type: b.type,
-        recurringDays: b.recurring_days,
-        status: b.status,
-        createdAt: b.created_at.toISOString(),
-        updatedAt: b.updated_at.toISOString(),
-        cancelledAt: b.cancelled_at?.toISOString(),
-        metadata: b.metadata
-      }))
+      data: bookings.map(b => transformBooking(b))
     });
   } catch (error) {
     logger.error('Failed to get bookings:', error);

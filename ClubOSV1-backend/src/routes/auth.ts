@@ -8,6 +8,7 @@ import { validate } from '../middleware/validation';
 import { body } from 'express-validator';
 import { authenticate, generateToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
+import { transformUser } from '../utils/transformers';
 
 const router = Router();
 
@@ -81,15 +82,15 @@ router.post('/login',
         sessionId: sessionId
       });
       
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
+      // Transform user for response
+      const transformedUser = transformUser(user);
       
       logger.info('Login successful:', { userId: user.id, email: user.email });
       
       res.json({
         success: true,
         data: {
-          user: userWithoutPassword,
+          user: transformedUser,
           token
         }
       });
@@ -156,14 +157,14 @@ router.post('/register',
         success: true
       });
       
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = newUser;
+      // Transform user for response
+      const transformedUser = transformUser(newUser);
       
       logger.info('User created:', { userId: newUser.id, email: newUser.email, createdBy: req.user!.id });
       
       res.status(201).json({
         success: true,
-        data: userWithoutPassword
+        data: transformedUser
       });
       
     } catch (error) {
@@ -183,12 +184,12 @@ router.get('/me',
         throw new AppError('USER_NOT_FOUND', 'User not found', 404);
       }
       
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
+      // Transform user for response
+      const transformedUser = transformUser(user);
       
       res.json({
         success: true,
-        data: userWithoutPassword
+        data: transformedUser
       });
       
     } catch (error) {
@@ -205,12 +206,12 @@ router.get('/users',
     try {
       const users = await db.getAllUsers();
       
-      // Remove passwords from response
-      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      // Transform users for response
+      const transformedUsers = users.map(user => transformUser(user));
       
       res.json({
         success: true,
-        data: usersWithoutPasswords
+        data: transformedUsers
       });
       
     } catch (error) {
@@ -322,12 +323,12 @@ router.put('/users/:userId',
       
       logger.info('User profile updated:', { userId, updatedBy: req.user!.id });
       
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = updatedUser;
+      // Transform user for response
+      const transformedUser = transformUser(updatedUser);
       
       res.json({
         success: true,
-        data: userWithoutPassword
+        data: transformedUser
       });
       
     } catch (error) {

@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { slackFallback } from '../services/slackFallback';
 import { v4 as uuidv4 } from 'uuid';
+import { transformTicket } from '../utils/transformers';
 
 const router = Router();
 
@@ -21,27 +22,7 @@ router.get('/', authenticate, async (req, res) => {
     res.json({
       success: true,
       data: tickets.map(t => ({
-        id: t.id,
-        title: t.title,
-        description: t.description,
-        category: t.category,
-        status: t.status,
-        priority: t.priority,
-        location: t.location,
-        createdBy: {
-          id: t.created_by_id,
-          name: t.created_by_name,
-          email: t.created_by_email,
-          phone: t.created_by_phone
-        },
-        assignedTo: t.assigned_to_id ? {
-          id: t.assigned_to_id,
-          name: t.assigned_to_name!,
-          email: t.assigned_to_email!
-        } : undefined,
-        createdAt: t.created_at.toISOString(),
-        updatedAt: t.updated_at.toISOString(),
-        resolvedAt: t.resolved_at?.toISOString(),
+        ...transformTicket(t),
         comments: []
       }))
     });
@@ -92,21 +73,7 @@ router.post('/', authenticate, async (req, res) => {
     try {
       if (slackFallback.isEnabled()) {
         await slackFallback.sendTicketNotification({
-          id: newTicket.id,
-          title: newTicket.title,
-          description: newTicket.description,
-          category: newTicket.category,
-          status: newTicket.status,
-          priority: newTicket.priority,
-          location: newTicket.location,
-          createdBy: {
-            id: newTicket.created_by_id,
-            name: newTicket.created_by_name,
-            email: newTicket.created_by_email,
-            phone: newTicket.created_by_phone
-          },
-          createdAt: newTicket.created_at.toISOString(),
-          updatedAt: newTicket.updated_at.toISOString(),
+          ...transformTicket(newTicket),
           comments: []
         });
         logger.info('Slack notification sent for ticket', { ticketId: newTicket.id });
@@ -118,21 +85,7 @@ router.post('/', authenticate, async (req, res) => {
     res.json({
       success: true,
       data: {
-        id: newTicket.id,
-        title: newTicket.title,
-        description: newTicket.description,
-        category: newTicket.category,
-        status: newTicket.status,
-        priority: newTicket.priority,
-        location: newTicket.location,
-        createdBy: {
-          id: newTicket.created_by_id,
-          name: newTicket.created_by_name,
-          email: newTicket.created_by_email,
-          phone: newTicket.created_by_phone
-        },
-        createdAt: newTicket.created_at.toISOString(),
-        updatedAt: newTicket.updated_at.toISOString(),
+        ...transformTicket(newTicket),
         comments: []
       }
     });
@@ -176,27 +129,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     res.json({
       success: true,
       data: {
-        id: updatedTicket.id,
-        title: updatedTicket.title,
-        description: updatedTicket.description,
-        category: updatedTicket.category,
-        status: updatedTicket.status,
-        priority: updatedTicket.priority,
-        location: updatedTicket.location,
-        createdBy: {
-          id: updatedTicket.created_by_id,
-          name: updatedTicket.created_by_name,
-          email: updatedTicket.created_by_email,
-          phone: updatedTicket.created_by_phone
-        },
-        assignedTo: updatedTicket.assigned_to_id ? {
-          id: updatedTicket.assigned_to_id,
-          name: updatedTicket.assigned_to_name!,
-          email: updatedTicket.assigned_to_email!
-        } : undefined,
-        createdAt: updatedTicket.created_at.toISOString(),
-        updatedAt: updatedTicket.updated_at.toISOString(),
-        resolvedAt: updatedTicket.resolved_at?.toISOString(),
+        ...transformTicket(updatedTicket),
         comments: []
       }
     });
