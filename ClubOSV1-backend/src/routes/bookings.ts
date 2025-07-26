@@ -1,229 +1,266 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import Joi from 'joi';
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
-import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
-import { BookingRequest } from '../types';
-import { AppError } from '../middleware/errorHandler';
+import { db } from '../utils/database';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// Validation schema for booking requests
-const bookingSchema = Joi.object({
-  userId: Joi.string().required(),
-  simulatorId: Joi.string().required(),
-  startTime: Joi.date().iso().required(),
-  duration: Joi.number().min(30).max(240).required(),
-  type: Joi.string().valid('single', 'recurring').required(),
-  recurringDays: Joi.when('type', {
-    is: 'recurring',
-    then: Joi.array().items(Joi.number().min(0).max(6)).required(),
-    otherwise: Joi.forbidden()
-  })
-});
-
-// Get all bookings
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+// GET /api/bookings - Get bookings for user or all (admin/operator)
+router.get('/', authenticate, async (req, res) => {
   try {
-    const { userId, simulatorId, date } = req.query;
-    let bookings = await readJsonFile<any[]>('bookings.json');
-
-    // Apply filters
-    if (userId) {
-      bookings = bookings.filter(b => b.userId === userId);
-    }
-    if (simulatorId) {
-      bookings = bookings.filter(b => b.simulatorId === simulatorId);
-    }
-    if (date) {
-      const targetDate = new Date(date as string).toDateString();
-      bookings = bookings.filter(b => 
-        new Date(b.startTime).toDateString() === targetDate
-      );
-    }
-
+    const { simulator_id, date, status } = req.query;
+    
+    // Admin/operator can see all bookings
+    const userId = (req.user?.role === 'admin' || req.user?.role === 'operator') 
+      ? undefined 
+      : req.user?.id;
+    
+    const bookings = await db.getBookings({
+      user_id: userId,
+      simulator_id: simulator_id as string,
+      date: date ? new Date(date as string) : undefined,
+      status: status as string
+    });
+    
     res.json({
       success: true,
-      count: bookings.length,
-      data: bookings
+      data: bookings.map(b => ({
+        id: b.id,
+        userId: b.user_id,
+        simulatorId: b.simulator_id,
+        startTime: b.start_time.toISOString(),
+        duration: b.duration,
+        type: b.type,
+        recurringDays: b.recurring_days,
+        status: b.status,
+        createdAt: b.created_at.toISOString(),
+        updatedAt: b.updated_at.toISOString(),
+        cancelledAt: b.cancelled_at?.toISOString(),
+        metadata: b.metadata
+      }))
     });
   } catch (error) {
-    next(error);
+    logger.error('Failed to get bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve bookings'
+    });
   }
 });
 
-// Get booking by ID
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/bookings - Create a new booking
+router.post('/', authenticate, async (req, res) => {
   try {
-    const bookings = await readJsonFile<any[]>('bookings.json');
-    const booking = bookings.find(b => b.id === req.params.id);
-
-    if (!booking) {
-      throw new AppError('BOOKING_NOT_FOUND', 'Booking not found', 404);
+    const { 
+      simulatorId, 
+      startTime, 
+      duration, 
+      type = 'single', 
+      recurringDays 
+    } = req.body;
+    
+    // Validate required fields
+    if (!simulatorId || !startTime || !duration) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: simulatorId, startTime, duration'
+      });
     }
-
-    res.json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Create new booking
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // Validate request body
-    const { error, value } = bookingSchema.validate(req.body);
-    if (error) {
-      throw new AppError('VALIDATION_ERROR', error.details[0].message, 400);
+    
+    // Validate duration (30-240 minutes)
+    if (duration < 30 || duration > 240) {
+      return res.status(400).json({
+        success: false,
+        message: 'Duration must be between 30 and 240 minutes'
+      });
     }
-
-    const bookingRequest: BookingRequest = value;
-    const bookingId = uuidv4();
-
+    
     // Check for conflicts
-    const existingBookings = await readJsonFile<any[]>('bookings.json');
-    const hasConflict = checkBookingConflict(
-      existingBookings,
-      bookingRequest.simulatorId,
-      new Date(bookingRequest.startTime),
-      bookingRequest.duration
-    );
-
+    const existingBookings = await db.getBookings({
+      simulator_id: simulatorId,
+      date: new Date(startTime)
+    });
+    
+    const newStart = new Date(startTime);
+    const newEnd = new Date(newStart.getTime() + duration * 60000);
+    
+    const hasConflict = existingBookings.some(booking => {
+      if (booking.status === 'cancelled') return false;
+      
+      const bookingEnd = new Date(booking.start_time.getTime() + booking.duration * 60000);
+      return (newStart < bookingEnd && newEnd > booking.start_time);
+    });
+    
     if (hasConflict) {
-      throw new AppError('BOOKING_CONFLICT', 'Time slot is already booked', 409);
+      return res.status(409).json({
+        success: false,
+        message: 'Time slot is already booked'
+      });
     }
-
-    // Create booking record
-    const booking = {
-      id: bookingId,
-      ...bookingRequest,
-      status: 'confirmed',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Save booking
-    await appendToJsonArray('bookings.json', booking);
-
-    logger.info('Booking created', { bookingId, userId: bookingRequest.userId });
-
-    res.status(201).json({
+    
+    // Create booking
+    const newBooking = await db.createBooking({
+      user_id: req.user!.id,
+      simulator_id: simulatorId,
+      start_time: new Date(startTime),
+      duration,
+      type,
+      recurring_days: recurringDays,
+      status: 'confirmed'
+    });
+    
+    logger.info('Booking created', {
+      bookingId: newBooking.id,
+      userId: req.user!.id,
+      simulatorId,
+      startTime
+    });
+    
+    res.json({
       success: true,
-      data: booking
+      data: {
+        id: newBooking.id,
+        userId: newBooking.user_id,
+        simulatorId: newBooking.simulator_id,
+        startTime: newBooking.start_time.toISOString(),
+        duration: newBooking.duration,
+        type: newBooking.type,
+        recurringDays: newBooking.recurring_days,
+        status: newBooking.status,
+        createdAt: newBooking.created_at.toISOString(),
+        updatedAt: newBooking.updated_at.toISOString()
+      }
     });
   } catch (error) {
-    next(error);
+    logger.error('Failed to create booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create booking'
+    });
   }
 });
 
-// Update booking
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+// PATCH /api/bookings/:id/cancel - Cancel a booking
+router.patch('/:id/cancel', authenticate, async (req, res) => {
   try {
-    const bookings = await readJsonFile<any[]>('bookings.json');
-    const bookingIndex = bookings.findIndex(b => b.id === req.params.id);
-
-    if (bookingIndex === -1) {
-      throw new AppError('BOOKING_NOT_FOUND', 'Booking not found', 404);
-    }
-
-    // Validate update data
-    const updateSchema = bookingSchema.fork(['userId', 'simulatorId'], (schema) => schema.optional());
-    const { error, value } = updateSchema.validate(req.body);
-    if (error) {
-      throw new AppError('VALIDATION_ERROR', error.details[0].message, 400);
-    }
-
-    // Check for conflicts if time is being changed
-    if (value.startTime || value.duration) {
-      const hasConflict = checkBookingConflict(
-        bookings.filter((_, i) => i !== bookingIndex),
-        value.simulatorId || bookings[bookingIndex].simulatorId,
-        new Date(value.startTime || bookings[bookingIndex].startTime),
-        value.duration || bookings[bookingIndex].duration
-      );
-
-      if (hasConflict) {
-        throw new AppError('BOOKING_CONFLICT', 'Time slot is already booked', 409);
+    const { id } = req.params;
+    
+    // Get booking to check ownership
+    const bookings = await db.getBookings({ user_id: req.user!.id });
+    const booking = bookings.find(b => b.id === id);
+    
+    if (!booking) {
+      // Check if admin/operator
+      if (req.user?.role === 'admin' || req.user?.role === 'operator') {
+        // Admin/operator can cancel any booking
+        const allBookings = await db.getBookings({});
+        const adminBooking = allBookings.find(b => b.id === id);
+        
+        if (!adminBooking) {
+          return res.status(404).json({
+            success: false,
+            message: 'Booking not found'
+          });
+        }
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found or unauthorized'
+        });
       }
     }
-
-    // Update booking
-    bookings[bookingIndex] = {
-      ...bookings[bookingIndex],
-      ...value,
-      updatedAt: new Date().toISOString()
-    };
-
-    await writeJsonFile('bookings.json', bookings);
-
-    logger.info('Booking updated', { bookingId: req.params.id });
-
-    res.json({
-      success: true,
-      data: bookings[bookingIndex]
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Cancel booking
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const bookings = await readJsonFile<any[]>('bookings.json');
-    const bookingIndex = bookings.findIndex(b => b.id === req.params.id);
-
-    if (bookingIndex === -1) {
-      throw new AppError('BOOKING_NOT_FOUND', 'Booking not found', 404);
+    
+    // Cancel booking
+    const cancelled = await db.cancelBooking(id);
+    
+    if (!cancelled) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to cancel booking'
+      });
     }
-
-    // Update status instead of deleting
-    bookings[bookingIndex] = {
-      ...bookings[bookingIndex],
-      status: 'cancelled',
-      cancelledAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    await writeJsonFile('bookings.json', bookings);
-
-    logger.info('Booking cancelled', { bookingId: req.params.id });
-
+    
+    logger.info('Booking cancelled', {
+      bookingId: id,
+      cancelledBy: req.user!.email
+    });
+    
     res.json({
       success: true,
       message: 'Booking cancelled successfully'
     });
   } catch (error) {
-    next(error);
+    logger.error('Failed to cancel booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel booking'
+    });
   }
 });
 
-// Helper function to check booking conflicts
-function checkBookingConflict(
-  bookings: any[],
-  simulatorId: string,
-  startTime: Date,
-  duration: number
-): boolean {
-  const endTime = new Date(startTime.getTime() + duration * 60000);
-
-  return bookings.some(booking => {
-    if (booking.simulatorId !== simulatorId || booking.status === 'cancelled') {
-      return false;
+// GET /api/bookings/availability - Check availability for a time slot
+router.get('/availability', authenticate, async (req, res) => {
+  try {
+    const { simulatorId, date, duration = 60 } = req.query;
+    
+    if (!simulatorId || !date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: simulatorId, date'
+      });
     }
-
-    const bookingStart = new Date(booking.startTime);
-    const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
-
-    return (
-      (startTime >= bookingStart && startTime < bookingEnd) ||
-      (endTime > bookingStart && endTime <= bookingEnd) ||
-      (startTime <= bookingStart && endTime >= bookingEnd)
-    );
-  });
-}
+    
+    const bookings = await db.getBookings({
+      simulator_id: simulatorId as string,
+      date: new Date(date as string)
+    });
+    
+    // Generate available time slots (6 AM to 10 PM)
+    const slots = [];
+    const startDate = new Date(date as string);
+    startDate.setHours(6, 0, 0, 0);
+    
+    for (let hour = 6; hour < 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const slotStart = new Date(startDate);
+        slotStart.setHours(hour, minute, 0, 0);
+        const slotEnd = new Date(slotStart.getTime() + Number(duration) * 60000);
+        
+        // Check if slot conflicts with any booking
+        const isAvailable = !bookings.some(booking => {
+          if (booking.status === 'cancelled') return false;
+          
+          const bookingEnd = new Date(booking.start_time.getTime() + booking.duration * 60000);
+          return (slotStart < bookingEnd && slotEnd > booking.start_time);
+        });
+        
+        if (isAvailable && slotEnd.getHours() <= 22) {
+          slots.push({
+            startTime: slotStart.toISOString(),
+            endTime: slotEnd.toISOString(),
+            available: true
+          });
+        }
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        simulatorId,
+        date: date as string,
+        duration: Number(duration),
+        availableSlots: slots
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to check availability:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check availability'
+    });
+  }
+});
 
 export default router;
