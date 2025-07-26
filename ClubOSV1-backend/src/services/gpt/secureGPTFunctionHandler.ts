@@ -4,7 +4,7 @@ import { logger } from '../../utils/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { v4 as uuidv4 } from 'uuid';
-import { readJsonFile, writeJsonFile, appendToJsonArray } from '../../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { slackFallback } from '../slackFallback';
 
 interface GPTFunctionCall {

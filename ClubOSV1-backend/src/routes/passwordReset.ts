@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { readJsonFile, writeJsonFile, appendToJsonArray } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { User } from '../types';
 import { AppError } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { readJsonFile } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { logger } from '../utils/logger';
 import path from 'path';
 import fs from 'fs';

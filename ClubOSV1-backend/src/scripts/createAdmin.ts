@@ -1,5 +1,5 @@
 import bcryptjs from 'bcryptjs';
-import { writeJsonFile } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { User } from '../types';
 
 async function createAdminUser() {

@@ -1,5 +1,5 @@
 import { UsageRecord, UsageStats, UserUsage, ApiKeyUsage, UsageConfig } from './types';
-import { readJsonFile, writeJsonFile, ensureFileExists } from '../../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { logger } from '../../utils/logger';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';

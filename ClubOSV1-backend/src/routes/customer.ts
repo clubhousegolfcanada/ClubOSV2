@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 import { llmService } from '../services/llmService';
 import { assistantService } from '../services/assistantService';
-import { appendToJsonArray, readJsonFile } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { UserRequest, ProcessedRequest, SystemConfig } from '../types';
 import { validate } from '../middleware/validation';
 import { body } from 'express-validator';

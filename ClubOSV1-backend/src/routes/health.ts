@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs/promises';
 import { logger } from '../utils/logger';
-import { readJsonFile } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 
 const router = Router();
 

@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { llmService } from '../services/llmService';
 import { assistantService } from '../services/assistantService';
 import { slackFallback } from '../services/slackFallback';
-import { appendToJsonArray, readJsonFile } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { UserRequest, ProcessedRequest, SystemConfig } from '../types';
 import { AppError } from '../middleware/errorHandler';
 import { validate, requestValidation } from '../middleware/validation';

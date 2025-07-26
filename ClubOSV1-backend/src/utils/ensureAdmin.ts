@@ -1,5 +1,5 @@
 import bcryptjs from 'bcryptjs';
-import { readJsonFile, writeJsonFile } from '../utils/fileUtils';
+// JSON operations removed - using PostgreSQL
 import { logger } from '../utils/logger';
 
 export const ensureAdminUser = async () => {

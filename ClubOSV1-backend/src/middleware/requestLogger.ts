@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { appendToJsonArray } from '../utils/fileUtils';
+// JSON logging removed - using PostgreSQL
 
 interface RequestLog {
   id: string;
