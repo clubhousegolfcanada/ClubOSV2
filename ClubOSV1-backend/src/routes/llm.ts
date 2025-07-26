@@ -15,6 +15,16 @@ import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
 
 const router = Router();
 
+// Simple health check
+router.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    llmEnabled: llmService?.isEnabled() || false,
+    assistantEnabled: !!assistantService
+  });
+});
+
 // Cache system config to avoid reading file on every request
 let cachedConfig: SystemConfig | null = null;
 let configLastLoaded = 0;
@@ -45,18 +55,23 @@ async function getSystemConfig(): Promise<SystemConfig> {
 
 // Add a test endpoint without validation to isolate the issue
 router.post('/test-direct', async (req: Request, res: Response) => {
-  res.json({
-    received: req.body,
-    smartAssistEnabled: {
-      value: req.body.smartAssistEnabled,
-      type: typeof req.body.smartAssistEnabled,
-      truthyCheck: !!req.body.smartAssistEnabled,
-      strictEqualsTrue: req.body.smartAssistEnabled === true,
-      strictEqualsFalse: req.body.smartAssistEnabled === false,
-      equalsStringTrue: req.body.smartAssistEnabled === 'true',
-      equalsStringFalse: req.body.smartAssistEnabled === 'false'
-    }
-  });
+  try {
+    res.json({
+      received: req.body,
+      smartAssistEnabled: {
+        value: req.body.smartAssistEnabled,
+        type: typeof req.body.smartAssistEnabled,
+        truthyCheck: !!req.body.smartAssistEnabled,
+        strictEqualsTrue: req.body.smartAssistEnabled === true,
+        strictEqualsFalse: req.body.smartAssistEnabled === false,
+        equalsStringTrue: req.body.smartAssistEnabled === 'true',
+        equalsStringFalse: req.body.smartAssistEnabled === 'false'
+      }
+    });
+  } catch (error) {
+    logger.error('Error in test-direct:', error);
+    res.status(500).json({ error: 'Test endpoint failed' });
+  }
 });
 
 // Debug middleware to log request before validation
@@ -96,9 +111,11 @@ router.post('/request',
       if (req.user) {
         try {
           const { db } = await import('../utils/database');
-          fullUser = await db.findUserById(req.user.id);
+          if (db.isEnabled()) {
+            fullUser = await db.findUserById(req.user.id);
+          }
         } catch (err) {
-          logger.warn('Failed to fetch user info', { userId: req.user.id });
+          logger.warn('Failed to fetch user info', { userId: req.user.id, error: err });
         }
       }
 
@@ -145,14 +162,16 @@ router.post('/request',
         
         // Log the request to database asynchronously (don't wait)
         import('../utils/database').then(({ db }) => {
-          db.createRequestLog({
-            method: 'POST',
-            path: '/api/llm/request',
-            user_id: req.user?.id,
-            ip_address: req.ip,
-            user_agent: req.get('user-agent')
-          }).catch(err => logger.error('Failed to log request', err));
-        });
+          if (db.isEnabled()) {
+            db.createRequestLog({
+              method: 'POST',
+              path: '/api/llm/request',
+              user_id: req.user?.id,
+              ip_address: req.ip,
+              user_agent: req.get('user-agent')
+            }).catch(err => logger.error('Failed to log request', err));
+          }
+        }).catch(err => logger.error('Failed to import database', err));
         
         // Send to Slack and capture thread ID
         const slackThreadTs = await slackFallback.sendDirectMessage(userRequest);
@@ -168,15 +187,17 @@ router.post('/request',
         
         // Log to database asynchronously
         import('../utils/database').then(({ db }) => {
-          db.createCustomerInteraction({
-            user_id: req.user?.id,
-            user_email: req.user?.email,
-            request_text: userRequest.requestDescription,
-            response_text: 'Sent to Slack support team',
-            route: 'Slack',
-            confidence: 1.0
-          }).catch(err => logger.error('Failed to log interaction', err));
-        });
+          if (db.isEnabled()) {
+            db.createCustomerInteraction({
+              user_id: req.user?.id,
+              user_email: req.user?.email,
+              request_text: userRequest.requestDescription,
+              response_text: 'Sent to Slack support team',
+              route: 'Slack',
+              confidence: 1.0
+            }).catch(err => logger.error('Failed to log interaction', err));
+          }
+        }).catch(err => logger.error('Failed to import database', err));
         
         return res.json({
           success: true,
@@ -246,8 +267,11 @@ router.post('/request',
           logger.info('Calling assistant service', { targetRoute });
           const assistantStart = Date.now();
           
+          // Fix route name mapping for assistant service
+          const assistantRoute = targetRoute === 'Booking&Access' ? 'Booking & Access' : targetRoute;
+          
           assistantResponse = assistantService ? await assistantService.getAssistantResponse(
-            targetRoute,
+            assistantRoute,
             userRequest.requestDescription,
             {
               location: userRequest.location,
@@ -337,19 +361,21 @@ router.post('/request',
 
       // Log to database asynchronously - don't wait
       import('../utils/database').then(({ db }) => {
-        db.createCustomerInteraction({
-          user_id: req.user?.id,
-          user_email: req.user?.email,
-          request_text: userRequest.requestDescription,
-          response_text: processedRequest.llmResponse?.response || 'Processing...',
-          route: processedRequest.botRoute || 'unknown',
-          confidence: processedRequest.llmResponse?.confidence || 0,
-          metadata: {
-            processingTime: totalProcessingTime,
-            serverProcessingTime: processedRequest.processingTime
-          }
-        }).catch(err => logger.error('Failed to log', err));
-      });
+        if (db.isEnabled()) {
+          db.createCustomerInteraction({
+            user_id: req.user?.id,
+            user_email: req.user?.email,
+            request_text: userRequest.requestDescription,
+            response_text: processedRequest.llmResponse?.response || 'Processing...',
+            route: processedRequest.botRoute || 'unknown',
+            confidence: processedRequest.llmResponse?.confidence || 0,
+            metadata: {
+              processingTime: totalProcessingTime,
+              serverProcessingTime: processedRequest.processingTime
+            }
+          }).catch(err => logger.error('Failed to log', err));
+        }
+      }).catch(err => logger.error('Failed to import database', err));
 
       res.json({
         success: true,
@@ -395,17 +421,28 @@ router.post('/request',
       };
       
       import('../utils/database').then(({ db }) => {
-        db.createRequestLog({
-          method: 'POST',
-          path: '/api/llm/request',
-          user_id: req.user?.id,
-          ip_address: req.ip,
-          user_agent: req.get('user-agent'),
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }).catch(() => {});
-      });
+        if (db.isEnabled()) {
+          db.createRequestLog({
+            method: 'POST',
+            path: '/api/llm/request',
+            user_id: req.user?.id,
+            ip_address: req.ip,
+            user_agent: req.get('user-agent'),
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }).catch(() => {});
+        }
+      }).catch(() => {});
       
-      next(error);
+      // Return error response instead of passing to error handler
+      // This ensures CORS headers are set
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'PROCESSING_ERROR',  
+          message: error instanceof Error ? error.message : 'Failed to process request',
+          requestId
+        }
+      });
     }
   }
 );
