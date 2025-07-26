@@ -3,6 +3,7 @@ import { logger } from './logger';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { createTablesSQL, createIndexesSQL } from './database-tables';
+import { runMigrations } from './database-migrations';
 
 // Import the pool and query from db.ts
 import { pool, query } from './db';
@@ -124,6 +125,9 @@ class DatabaseService {
       
       // Create all tables
       await this.createAllTables();
+      
+      // Run migrations to update existing tables
+      await runMigrations();
       
       this.initialized = true;
       
