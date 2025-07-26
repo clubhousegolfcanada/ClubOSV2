@@ -349,6 +349,7 @@ router.post('/request',
             serverProcessingTime: processedRequest.processingTime
           }
         }).catch(err => logger.error('Failed to log', err));
+      });
 
       res.json({
         success: true,

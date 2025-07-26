@@ -105,17 +105,21 @@ async function startServer() {
     // Initialize database
     await db.initialize();
     logger.info('✅ Database initialized successfully');
-    
-    // Start server
-    app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
-      logger.info(`📊 Database: PostgreSQL`);
-      logger.info(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    logger.error('❌ Failed to start server:', error);
-    process.exit(1);
+    logger.error('❌ Database initialization failed:', error);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    } else {
+      logger.warn('⚠️  Running without database in development mode');
+    }
   }
+  
+  // Start server regardless in development
+  app.listen(PORT, () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📊 Database: ${db.initialized ? 'PostgreSQL' : 'Not connected'}`);
+    logger.info(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 }
 
 // Handle graceful shutdown
