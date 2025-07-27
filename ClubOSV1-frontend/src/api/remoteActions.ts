@@ -1,4 +1,4 @@
-import api from './index';
+import api from './apiClient';
 
 // Simplified API client for PC/software remote actions only
 

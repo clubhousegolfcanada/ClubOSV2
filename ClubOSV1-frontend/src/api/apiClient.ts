@@ -11,6 +11,9 @@ const apiClient = axios.create({
   },
 });
 
+// Export the axios instance for use in other API modules
+export default apiClient;
+
 // Add auth token to requests
 apiClient.interceptors.request.use(
   (config) => {
