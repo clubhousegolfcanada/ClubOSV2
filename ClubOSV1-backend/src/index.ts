@@ -24,7 +24,7 @@ import historyRoutes from './routes/history';
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
 import checklistsRoutes from './routes/checklists';
-import remoteActionsRoutes from './routes/remoteActions-safe'; // Temporary safe version
+import remoteActionsRoutes from './routes/remoteActions';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
