@@ -102,7 +102,7 @@ router.post('/submit',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { category, type, location, completedTasks, totalTasks } = req.body;
-      const userId = req.user!.id;
+      let userId = req.user!.id;
 
       logger.info('Checklist submission attempt', {
         userId,
@@ -113,6 +113,41 @@ router.post('/submit',
         completedTasksCount: completedTasks.length,
         totalTasks
       });
+
+      // First, verify the user exists in the database
+      const userCheck = await db.query(
+        'SELECT id, email, name FROM users WHERE id = $1',
+        [userId]
+      );
+      
+      if (userCheck.rows.length === 0) {
+        logger.error('User not found in database during submission', {
+          userId,
+          userEmail: req.user!.email
+        });
+        
+        // Try to find user by email instead
+        const userByEmail = await db.query(
+          'SELECT id, email, name FROM users WHERE email = $1',
+          [req.user!.email]
+        );
+        
+        if (userByEmail.rows.length > 0) {
+          logger.info('Found user by email, using correct user ID', {
+            tokenUserId: userId,
+            dbUserId: userByEmail.rows[0].id,
+            email: req.user!.email
+          });
+          // Use the correct user ID from database
+          userId = userByEmail.rows[0].id;
+        } else {
+          return res.status(400).json({
+            success: false,
+            error: 'User account not found in database. Please contact support.',
+            code: 'USER_NOT_FOUND'
+          });
+        }
+      }
 
       // Save the submission
       const submission = await db.query(
