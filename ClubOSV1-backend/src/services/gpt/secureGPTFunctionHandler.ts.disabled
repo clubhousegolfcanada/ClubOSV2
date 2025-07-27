@@ -6,6 +6,7 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { v4 as uuidv4 } from 'uuid';
 // JSON operations removed - using PostgreSQL
 import { slackFallback } from '../slackFallback';
+import { db } from '../../utils/database';
 
 interface GPTFunctionCall {
   name: string;
@@ -291,7 +292,9 @@ export class SecureGPTFunctionHandler {
     // Implement audit logging to database or file
     // This is critical for compliance and debugging
     try {
-      await appendToJsonArray('gpt-audit-log.json', entry);
+      // TODO: Implement audit logging to database
+      // await db.query('INSERT INTO gpt_audit_log ...');
+      logger.info('GPT function call audit:', entry);
     } catch (error) {
       logger.error('Failed to write audit log', error);
     }

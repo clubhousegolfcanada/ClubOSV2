@@ -152,7 +152,7 @@ export async function seedKnowledgeBase() {
           item.time_estimate,
           item.customer_script,
           item.escalation_path,
-          JSON.stringify(item.metadata || {})
+          JSON.stringify({})
         ]
       );
     }

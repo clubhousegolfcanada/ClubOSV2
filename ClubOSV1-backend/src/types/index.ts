@@ -43,7 +43,7 @@ export interface SlackAttachment {
   text: string;
   fields?: SlackField[];
   footer?: string;
-  ts?: number;
+  ts?: string;
 }
 
 export interface SlackField {

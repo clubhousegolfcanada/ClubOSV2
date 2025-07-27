@@ -37,8 +37,8 @@ export function transformTicket(dbTicket: DbTicket): any {
       name: dbTicket.assigned_to_name!,
       email: dbTicket.assigned_to_email!
     } : undefined,
-    createdAt: dbTicket.created_at.toISOString(),
-    updatedAt: dbTicket.updated_at.toISOString(),
+    createdAt: dbTicket.createdAt.toISOString(),
+    updatedAt: dbTicket.updatedAt.toISOString(),
     resolvedAt: dbTicket.resolved_at?.toISOString(),
     metadata: dbTicket.metadata
   };
@@ -64,7 +64,7 @@ export function transformFeedback(dbFeedback: DbFeedback): any {
     slackUserId: dbFeedback.slack_user_id,
     slackChannel: dbFeedback.slack_channel,
     originalRequestId: dbFeedback.original_request_id,
-    createdAt: dbFeedback.created_at.toISOString()
+    createdAt: dbFeedback.createdAt.toISOString()
   };
 }
 
@@ -79,8 +79,8 @@ export function transformBooking(dbBooking: DbBooking): any {
     type: dbBooking.type,
     recurringDays: dbBooking.recurring_days,
     status: dbBooking.status,
-    createdAt: dbBooking.created_at.toISOString(),
-    updatedAt: dbBooking.updated_at.toISOString(),
+    createdAt: dbBooking.createdAt.toISOString(),
+    updatedAt: dbBooking.updatedAt.toISOString(),
     cancelledAt: dbBooking.cancelled_at?.toISOString(),
     metadata: dbBooking.metadata
   };

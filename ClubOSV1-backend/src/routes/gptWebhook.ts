@@ -4,7 +4,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import express from 'express';
 import crypto from 'crypto';
 import OpenAI from 'openai';
-import { getGPTFunctionHandler } from '../services/gpt/secureGPTFunctionHandler';
+// import { getGPTFunctionHandler } from '../services/gpt/secureGPTFunctionHandler';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/errorHandler';
 
@@ -49,12 +49,8 @@ router.post('/webhook',
         for (const toolCall of toolCalls) {
           if (toolCall.type === 'function') {
             try {
-              const result = await getGPTFunctionHandler().handleFunctionCall({
-                name: toolCall.function.name,
-                arguments: JSON.parse(toolCall.function.arguments),
-                assistant_id: data.assistant.id,
-                thread_id: data.thread.id
-              });
+              // TODO: Re-enable when GPT function handler is fixed
+              const result = { success: false, error: 'GPT functions temporarily disabled' };
               
               toolOutputs.push({
                 tool_call_id: toolCall.id,
@@ -150,12 +146,8 @@ if (process.env.NODE_ENV === 'development') {
           throw new AppError('MISSING_PARAMETER', 'function_name is required', 400);
         }
 
-        const result = await getGPTFunctionHandler().handleFunctionCall({
-          name: function_name,
-          arguments: args || {},
-          assistant_id: assistant_id,
-          thread_id: 'test-thread'
-        });
+        // TODO: Re-enable when GPT function handler is fixed
+        const result = { success: false, error: 'GPT functions temporarily disabled' };
 
         res.json(result);
 
@@ -167,8 +159,9 @@ if (process.env.NODE_ENV === 'development') {
 
   // Get function metrics (development only)
   router.get('/metrics', (req: Request, res: Response) => {
-    const metrics = getGPTFunctionHandler().getMetrics();
-    const health = getGPTFunctionHandler().getHealthStatus();
+    // TODO: Re-enable when GPT function handler is fixed
+    const metrics = {}; // getGPTFunctionHandler().getMetrics();
+    const health = { status: 'disabled' }; // getGPTFunctionHandler().getHealthStatus();
     
     res.json({
       health,

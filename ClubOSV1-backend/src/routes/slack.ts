@@ -298,26 +298,36 @@ router.post('/interactive',
 // Get Slack integration status
 router.get('/status', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const config = await readJsonFile<SystemConfig>('systemConfig.json');
-    const logs = await readJsonFile<any[]>('userLogs.json');
+    // Get system config from database
+    const configResult = await db.query(
+      'SELECT value FROM system_config WHERE key = $1',
+      ['slack_notifications']
+    );
+    const slackConfig = configResult.rows[0]?.value || { enabled: true };
     
-    // Get stats for Slack messages
-    const slackLogs = logs.filter(log => !log.smartAssistEnabled);
+    // Get stats from customer interactions
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentLogs = slackLogs.filter(log => new Date(log.timestamp) > last24Hours);
+    const statsResult = await db.query(
+      `SELECT COUNT(*) as total,
+              COUNT(CASE WHEN created_at > $1 THEN 1 END) as recent,
+              COUNT(CASE WHEN created_at > $1 AND route = 'Slack' THEN 1 END) as slack_messages
+       FROM customer_interactions`,
+      [last24Hours]
+    );
+    const stats = statsResult.rows[0];
 
     res.json({
       success: true,
       data: {
-        enabled: config.slackFallbackEnabled,
+        enabled: slackConfig.enabled,
         webhookConfigured: Boolean(process.env.SLACK_WEBHOOK_URL),
         signingSecretConfigured: Boolean(process.env.SLACK_SIGNING_SECRET),
         channel: process.env.SLACK_CHANNEL || '#clubos-requests',
         stats: {
-          totalMessages: slackLogs.length,
-          last24Hours: recentLogs.length,
-          successfulMessages: recentLogs.filter(log => log.status === 'completed').length,
-          failedMessages: recentLogs.filter(log => log.status === 'failed').length
+          totalMessages: parseInt(stats.slack_messages) || 0,
+          last24Hours: parseInt(stats.recent) || 0,
+          successfulMessages: 0, // Would need additional tracking
+          failedMessages: 0 // Would need additional tracking
         }
       }
     });
@@ -329,9 +339,14 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
 // Test Slack connection
 router.post('/test', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const config = await readJsonFile<SystemConfig>('systemConfig.json');
+    // Get system config from database
+    const configResult = await db.query(
+      'SELECT value FROM system_config WHERE key = $1',
+      ['slack_notifications']
+    );
+    const slackConfig = configResult.rows[0]?.value || { enabled: true };
     
-    if (!config.slackFallbackEnabled) {
+    if (!slackConfig.enabled) {
       throw new AppError('SLACK_DISABLED', 'Slack integration is currently disabled', 503);
     }
 

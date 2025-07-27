@@ -277,7 +277,7 @@ class DatabaseService {
   }
 
   // Ticket operations
-  async createTicket(ticket: Omit<DbTicket, 'id' | 'created_at' | 'updated_at'>): Promise<DbTicket> {
+  async createTicket(ticket: Omit<DbTicket, 'id' | 'createdAt' | 'updatedAt'>): Promise<DbTicket> {
     const id = uuidv4();
     const result = await query(
       `INSERT INTO tickets (

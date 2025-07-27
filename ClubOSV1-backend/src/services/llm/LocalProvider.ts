@@ -79,7 +79,7 @@ export class LocalProvider extends BaseLLMProvider {
     });
     
     let bestMatch = {
-      route: 'general' as const,
+      route: 'brand' as const, // Changed from 'general' to 'brand'
       score: 0,
       matchedKeywords: [] as string[],
       solution: null as any
@@ -104,11 +104,11 @@ export class LocalProvider extends BaseLLMProvider {
         'BookingLLM': 'booking',
         'EmergencyLLM': 'emergency',
         'TrackManLLM': 'tech',
-        'GeneralInfoLLM': 'general',
-        'ResponseToneLLM': 'general'
+        'GeneralInfoLLM': 'brand',
+        'ResponseToneLLM': 'brand'
       };
       
-      bestMatch.route = (routeMap[solution.knowledgeBase] || 'general') as any;
+      bestMatch.route = (routeMap[solution.knowledgeBase] || 'brand') as any;
       bestMatch.score = 0.9; // High confidence when we have a direct match
     } else {
       // Fall back to keyword matching
@@ -211,7 +211,7 @@ export class LocalProvider extends BaseLLMProvider {
         ? `Found matching issue in knowledge base: ${bestMatch.solution.issue}`
         : bestMatch.matchedKeywords.length > 0
           ? `Matched keywords: ${bestMatch.matchedKeywords.join(', ')}`
-          : 'No specific keywords matched, using general route',
+          : 'No specific keywords matched, using brand route',
       confidence: confidence || 0.3,
       extractedInfo,
       requestId: `local-${Date.now()}`,
