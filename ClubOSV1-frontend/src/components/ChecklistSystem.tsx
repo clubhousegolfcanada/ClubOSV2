@@ -54,27 +54,45 @@ export const ChecklistSystem: React.FC = () => {
 
   const loadTemplate = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+      
+      console.log('Loading template for:', activeCategory, activeType);
       const response = await axios.get(
         `${API_URL}/checklists/template/${activeCategory}/${activeType}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
+      console.log('Template response:', response.data);
+      
       if (response.data.success) {
         setCurrentTemplate(response.data.data);
         // Reset completed tasks
         setCompletedTasks({});
+      } else {
+        // If success is false but we got a response
+        setCurrentTemplate(response.data.data || null);
+        setCompletedTasks({});
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load template:', error);
-      toast.error('Failed to load checklist template');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // Don't show error for expected cases
+      if (error.response?.data?.code !== 'INVALID_TYPE') {
+        toast.error(error.response?.data?.error || 'Failed to load checklist template');
+      }
     }
   };
 
   const loadSubmissions = async () => {
     setLoadingSubmissions(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = localStorage.getItem('token');
       const response = await axios.get(
         `${API_URL}/checklists/submissions?limit=50`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -108,7 +126,7 @@ export const ChecklistSystem: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = localStorage.getItem('token');
       const completedTaskIds = Object.keys(completedTasks).filter(id => completedTasks[id]);
       
       const response = await axios.post(
