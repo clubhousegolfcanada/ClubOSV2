@@ -54,7 +54,7 @@ export const ChecklistSystem: React.FC = () => {
 
   const loadTemplate = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       if (!token) {
         console.error('No auth token found');
         return;
@@ -92,7 +92,7 @@ export const ChecklistSystem: React.FC = () => {
   const loadSubmissions = async () => {
     setLoadingSubmissions(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       const response = await axios.get(
         `${API_URL}/checklists/submissions?limit=50`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -126,7 +126,7 @@ export const ChecklistSystem: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       const completedTaskIds = Object.keys(completedTasks).filter(id => completedTasks[id]);
       
       const response = await axios.post(
