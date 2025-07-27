@@ -584,10 +584,10 @@ export default function Operations() {
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-              Operations Center
+              Operations
             </h1>
             <p className="text-[var(--text-secondary)]">
-              Manage system users and access controls
+              Manage system users, configurations, and analytics
             </p>
           </div>
 
