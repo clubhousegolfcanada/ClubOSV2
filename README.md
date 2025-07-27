@@ -249,29 +249,55 @@ Key endpoints:
 
 ## 🚀 Deployment
 
-### Production Deployment (Railway)
+### Deployment Architecture
+- **Frontend**: Hosted on Vercel (auto-deploys from GitHub)
+- **Backend**: Hosted on Railway (auto-deploys from GitHub)
+- **Database**: PostgreSQL on Railway
+- **Version Control**: GitHub (main branch)
 
-1. **Prerequisites**
-   - Railway account with PostgreSQL add-on
-   - All environment variables configured
-   - GPT Assistant IDs configured in Railway ✅
+### Deployment Workflow
 
-2. **Deploy Backend**
+1. **Development & Testing**
    ```bash
-   cd ClubOSV1-backend
-   railway up
+   # Make changes locally
+   # Test thoroughly
+   # Commit changes
+   git add -A
+   git commit -m "Your commit message"
    ```
 
-3. **Deploy Frontend**
-   - Push to GitHub
-   - Railway auto-deploys from main branch
+2. **Deploy to Production**
+   ```bash
+   # Push to GitHub - this triggers automatic deployments
+   git push origin main
+   ```
 
-4. **Post-Deployment**
-   - Create initial admin user
-   - Configure system settings
-   - Test all integrations
+3. **Automatic Deployments**
+   - **GitHub** → **Vercel**: Frontend auto-deploys (usually within 1-2 minutes)
+   - **GitHub** → **Railway**: Backend auto-deploys (usually within 2-3 minutes)
+   - Both platforms monitor the main branch for changes
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+4. **Post-Deployment Verification**
+   - Check Vercel dashboard for frontend deployment status
+   - Check Railway dashboard for backend deployment status
+   - Test the live application
+   - Monitor logs for any errors
+
+### Manual Deployment (if needed)
+
+**Backend (Railway CLI)**
+```bash
+cd ClubOSV1-backend
+railway up
+```
+
+**Frontend (Vercel CLI)**
+```bash
+cd ClubOSV1-frontend
+vercel --prod
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed configuration and troubleshooting.
 
 ## 🧪 Testing
 
@@ -397,7 +423,7 @@ Proprietary software - All rights reserved by Clubhouse 24/7 Golf
 
 ---
 
-**Version**: 1.6.0  
-**Last Updated**: July 2025  
+**Version**: 1.6.1  
+**Last Updated**: July 27, 2025  
 **Status**: Production Ready  
 **Lead Developer**: Claude (AI) - Full read/write capabilities  
