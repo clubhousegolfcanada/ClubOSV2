@@ -2,49 +2,38 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  
-  // Disable webpack cache to avoid cache issues
-  webpack: (config, { dev }) => {
-    if (dev) {
-      config.cache = false;
-    }
-    return config;
+  images: {
+    domains: ['clubhouse247golf.com'],
+    formats: ['image/avif', 'image/webp'],
   },
-  
-  // Environment variables that should be available on the client
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@headlessui/react'],
   },
-  
-  // Security headers for iframe embedding
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  poweredByHeader: false,
+  compress: true,
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
-          // Allow embedding from anywhere
           {
-            key: 'X-Frame-Options',
-            value: 'ALLOWALL'
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
           },
           {
-            key: 'Content-Security-Policy',
-            value: "frame-ancestors *;"
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
           },
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'accelerometer=*, camera=*, geolocation=*, gyroscope=*, magnetometer=*, microphone=*, payment=*, usb=*'
           }
-        ]
-      }
+        ],
+      },
     ];
   },
 }
