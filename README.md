@@ -279,8 +279,12 @@ See TESTING_GUIDE.md for test scenarios
 - System configuration UI
 - ClubOS Boy kiosk mode
 
+✅ **Recently Completed**
+- Slack reply tracking (Phase 2) ✅
+- Real thread timestamp integration ✅
+- TypeScript compilation fixes ✅
+
 ⚠️ **In Progress**
-- Slack reply tracking (Phase 2)
 - Real-time notifications
 - Advanced analytics dashboard
 
@@ -292,7 +296,7 @@ See TESTING_GUIDE.md for test scenarios
 - WebSocket support
 
 ### Known Issues
-1. Slack replies require Events API setup (Phase 2)
+1. ⚠️ **Slack replies not showing in ClubOS UI** - Real thread timestamps implemented but polling needs debugging
 2. Mobile UI needs responsive improvements
 3. Some TypeScript build warnings (non-critical)
 
