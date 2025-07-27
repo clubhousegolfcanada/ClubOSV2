@@ -20,7 +20,9 @@ export class SlackFallbackService {
       this.webClient = botToken ? new WebClient(botToken) : null;
       logger.info('Slack fallback service initialized', { 
         hasWebhook: Boolean(webhookUrl),
-        hasWebClient: Boolean(this.webClient)
+        hasWebClient: Boolean(this.webClient),
+        botTokenPrefix: botToken ? botToken.substring(0, 10) + '...' : 'None',
+        willUseWebAPI: Boolean(this.webClient)
       });
     } else {
       this.webClient = null;
@@ -264,15 +266,20 @@ export class SlackFallbackService {
           throw new Error(`Channel '${channelName}' not found. Available channels: ${channelsResponse.channels?.map(ch => ch.name).join(', ')}`);
         }
       } catch (webApiError) {
-        logger.error('Web API failed, falling back to webhook', { 
+        logger.error('Web API failed, this should not happen since test endpoint works!', { 
           error: webApiError instanceof Error ? webApiError.message : webApiError,
           hasWebClient: !!this.webClient,
-          channelName: (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '')
+          channelName: (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', ''),
+          botTokenConfigured: !!process.env.SLACK_BOT_TOKEN
         });
+        
+        // TEMPORARILY DISABLE WEBHOOK FALLBACK TO FORCE DEBUGGING
+        throw new Error(`Web API failed but should work: ${webApiError instanceof Error ? webApiError.message : webApiError}`);
+        
         // Fall back to webhook
-        const result = await this.sendMessage(message);
-        threadTs = this.extractThreadTs(result);
-        logger.warn('Using fake thread timestamp from webhook fallback', { threadTs });
+        // const result = await this.sendMessage(message);
+        // threadTs = this.extractThreadTs(result);
+        // logger.warn('Using fake thread timestamp from webhook fallback', { threadTs });
       }
     } else {
       logger.warn('No Web API client available, using webhook');
