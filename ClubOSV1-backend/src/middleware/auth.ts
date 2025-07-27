@@ -80,7 +80,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Validate role exists
-    if (!decoded.role || !['admin', 'operator', 'support'].includes(decoded.role)) {
+    if (!decoded.role || !['admin', 'operator', 'support', 'kiosk'].includes(decoded.role)) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid token: missing or invalid role'

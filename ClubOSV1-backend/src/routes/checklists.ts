@@ -105,6 +105,16 @@ router.post('/submit',
       const { category, type, location, completedTasks, totalTasks } = req.body;
       const userId = req.user!.id;
 
+      logger.info('Checklist submission attempt', {
+        userId,
+        userEmail: req.user!.email,
+        category,
+        type,
+        location,
+        completedTasksCount: completedTasks.length,
+        totalTasks
+      });
+
       // Save the submission
       const submission = await db.query(
         `INSERT INTO checklist_submissions 
@@ -126,7 +136,28 @@ router.post('/submit',
         success: true,
         data: submission.rows[0]
       });
-    } catch (error) {
+    } catch (error: any) {
+      // Handle foreign key constraint violation
+      if (error.code === '23503' && error.constraint === 'checklist_submissions_user_id_fkey') {
+        logger.error('User not found in database', {
+          userId: req.user!.id,
+          userEmail: req.user!.email,
+          error: error.message
+        });
+        
+        return res.status(400).json({
+          success: false,
+          error: 'User account not found. Please log out and log in again.',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+      
+      logger.error('Failed to submit checklist', {
+        error: error.message,
+        code: error.code,
+        constraint: error.constraint
+      });
+      
       next(error);
     }
   }
