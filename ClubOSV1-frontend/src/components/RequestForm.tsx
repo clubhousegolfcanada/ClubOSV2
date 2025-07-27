@@ -78,6 +78,9 @@ const RequestForm: React.FC = () => {
   const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [ticketCategory, setTicketCategory] = useState<'facilities' | 'tech'>('facilities');
   const [lastRequestData, setLastRequestData] = useState<FormData | null>(null);
+  const [slackReplies, setSlackReplies] = useState<any[]>([]);
+  const [isWaitingForReply, setIsWaitingForReply] = useState(false);
+  const [lastSlackThreadTs, setLastSlackThreadTs] = useState<string | null>(null);
   const router = useRouter();
 
   const {
@@ -242,6 +245,56 @@ const RequestForm: React.FC = () => {
     }
   };
 
+  // Start polling for Slack replies when a message is sent to Slack
+  useEffect(() => {
+    if (showResponse && lastResponse && !smartAssistEnabled && !isWaitingForReply) {
+      setIsWaitingForReply(true);
+      // Try to find the thread_ts from the response
+      // For now, we'll poll the conversations endpoint to find the latest
+      pollForSlackReplies();
+    }
+  }, [showResponse, lastResponse, smartAssistEnabled]);
+
+  const pollForSlackReplies = async () => {
+    let pollCount = 0;
+    const maxPolls = 60; // Poll for 5 minutes (60 polls * 5 seconds)
+    
+    const poll = async () => {
+      try {
+        // Get recent conversations to find our thread
+        const conversationsResponse = await axios.get(`${API_URL}/slack/conversations?limit=5`);
+        if (conversationsResponse.data.success && conversationsResponse.data.data.conversations.length > 0) {
+          const latestConversation = conversationsResponse.data.data.conversations[0];
+          
+          // Check if this conversation has replies
+          if (latestConversation.reply_count > 0) {
+            const repliesResponse = await axios.get(`${API_URL}/slack/replies/${latestConversation.slack_thread_ts}`);
+            if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
+              setSlackReplies(repliesResponse.data.data.replies);
+              setLastSlackThreadTs(latestConversation.slack_thread_ts);
+              setIsWaitingForReply(false);
+              return; // Stop polling
+            }
+          }
+        }
+        
+        // Continue polling if no replies found and haven't exceeded max polls
+        pollCount++;
+        if (pollCount < maxPolls) {
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          setIsWaitingForReply(false); // Stop waiting after max time
+        }
+      } catch (error) {
+        console.error('Error polling for replies:', error);
+        setIsWaitingForReply(false);
+      }
+    };
+    
+    // Start polling after a short delay
+    setTimeout(poll, 2000);
+  };
+
   const handleReset = () => {
     // Reset form fields
     reset();
@@ -261,6 +314,9 @@ const RequestForm: React.FC = () => {
     setLoadingStartTime(null);
     setElapsedTime(0);
     setIsNewSubmission(false);
+    setSlackReplies([]);
+    setIsWaitingForReply(false);
+    setLastSlackThreadTs(null);
     
     // Clear any notifications
     notify('info', 'Form reset to defaults');
@@ -753,6 +809,64 @@ const RequestForm: React.FC = () => {
               <>
                 <strong>Sent to Slack</strong><br />
                 Your question has been posted to the general Slack channel.
+                
+                {/* Waiting for Reply State */}
+                {isWaitingForReply && (
+                  <div className="mt-4 p-4 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+                    <div className="flex items-center gap-3">
+                      {/* Loading animation */}
+                      <div className="flex gap-1">
+                        <div className="w-2 h-8 bg-[var(--accent)]" style={{
+                          animation: 'block-wave 1.2s ease-in-out infinite',
+                          animationDelay: '0s'
+                        }}></div>
+                        <div className="w-2 h-8 bg-[var(--accent)]" style={{
+                          animation: 'block-wave 1.2s ease-in-out infinite',
+                          animationDelay: '0.1s'
+                        }}></div>
+                        <div className="w-2 h-8 bg-[var(--accent)]" style={{
+                          animation: 'block-wave 1.2s ease-in-out infinite',
+                          animationDelay: '0.2s'
+                        }}></div>
+                        <div className="w-2 h-8 bg-[var(--accent)]" style={{
+                          animation: 'block-wave 1.2s ease-in-out infinite',
+                          animationDelay: '0.3s'
+                        }}></div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          Waiting for staff reply...
+                        </p>
+                        <p className="text-xs text-[var(--text-secondary)]">
+                          Please allow a few moments for a response
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Slack Replies */}
+                {slackReplies.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    <div className="border-t border-[var(--border-secondary)] pt-3">
+                      <strong className="text-[var(--accent)]">Staff Response:</strong>
+                    </div>
+                    {slackReplies.map((reply, index) => (
+                      <div key={reply.reply_id || index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+                        <div className="flex items-center gap-2 mb-2 text-sm text-[var(--text-secondary)]">
+                          <span className="font-medium text-[var(--text-primary)]">
+                            {reply.reply_user_name || 'Staff Member'}
+                          </span>
+                          <span>•</span>
+                          <span>{new Date(reply.reply_timestamp).toLocaleString()}</span>
+                        </div>
+                        <p className="text-[var(--text-primary)]">
+                          {reply.reply_text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -821,8 +935,8 @@ const RequestForm: React.FC = () => {
         </div>
       )}
 
-      {/* Slack Conversation Panel - Show when not using Smart Assist or after Slack submission */}
-      {(!smartAssistEnabled || (showResponse && lastResponse && !smartAssistEnabled)) && (
+      {/* Slack Conversation Panel - Show when Smart Assist is disabled but no active response */}
+      {!smartAssistEnabled && !showResponse && (
         <div className="mt-6">
           <SlackConversation className="w-full" />
         </div>
