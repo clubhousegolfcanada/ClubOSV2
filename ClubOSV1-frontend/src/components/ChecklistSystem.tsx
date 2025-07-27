@@ -211,8 +211,8 @@ export const ChecklistSystem: React.FC = () => {
                     onClick={() => setActiveCategory('cleaning')}
                     className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
                       activeCategory === 'cleaning'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Cleaning
@@ -227,8 +227,8 @@ export const ChecklistSystem: React.FC = () => {
                     }}
                     className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
                       activeCategory === 'tech'
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        ? 'bg-purple-500 text-white border-purple-500'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Tech
@@ -245,8 +245,8 @@ export const ChecklistSystem: React.FC = () => {
                       onClick={() => setActiveType('daily')}
                       className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
                         activeType === 'daily'
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                          ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                       }`}
                     >
                       Daily
@@ -256,8 +256,8 @@ export const ChecklistSystem: React.FC = () => {
                     onClick={() => setActiveType('weekly')}
                     className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
                       activeType === 'weekly'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Weekly
@@ -266,8 +266,8 @@ export const ChecklistSystem: React.FC = () => {
                     onClick={() => setActiveType('quarterly')}
                     className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
                       activeType === 'quarterly'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Quarterly
