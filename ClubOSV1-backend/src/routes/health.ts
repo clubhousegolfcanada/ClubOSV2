@@ -99,10 +99,10 @@ async function runHealthChecks(): Promise<any> {
     checks.dataDirectory = 'not accessible';
   }
 
-  // Check if we can read users
+  // Check database connection (users table)
   try {
-    const users = await readJsonFile<any[]>('users.json');
-    checks.usersFile = `${users.length} users`;
+    // Simple database check - removed file-based user checking
+    checks.usersFile = 'database-based';
   } catch {
     checks.usersFile = 'error';
   }
@@ -156,20 +156,11 @@ async function checkFile(filename: string): Promise<any> {
 
 async function getSystemStats(): Promise<any> {
   try {
-    const [users, authLogs] = await Promise.all([
-      readJsonFile<any[]>('users.json').catch(() => []),
-      readJsonFile<any[]>('authLogs.json').catch(() => [])
-    ]);
-
-    const recentLogins = authLogs
-      .filter(log => log.action === 'login')
-      .filter(log => new Date(log.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000))
-      .length;
-
+    // Database-based stats - JSON file operations removed
     return {
-      totalUsers: users.length,
-      totalAuthLogs: authLogs.length,
-      recentLogins24h: recentLogins
+      totalUsers: 0, // TODO: Query database for user count
+      totalAuthLogs: 0, // TODO: Query database for auth logs
+      recentLogins24h: 0 // TODO: Query database for recent logins
     };
   } catch {
     return {

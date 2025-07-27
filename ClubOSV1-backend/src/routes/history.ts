@@ -104,7 +104,7 @@ router.get('/bookings', authenticate, async (req, res) => {
         type: b.type,
         recurringDays: b.recurring_days,
         status: b.status,
-        createdAt: b.created_at.toISOString(),
+        createdAt: b.createdAt.toISOString(),
         cancelledAt: b.cancelled_at?.toISOString()
       })),
       pagination: {
@@ -133,7 +133,7 @@ router.get('/tickets', authenticate, async (req, res) => {
     
     // Sort by created date descending
     const sorted = tickets.sort((a, b) => 
-      b.created_at.getTime() - a.created_at.getTime()
+      b.createdAt.getTime() - a.createdAt.getTime()
     );
     
     // Apply pagination
@@ -149,8 +149,8 @@ router.get('/tickets', authenticate, async (req, res) => {
         status: t.status,
         priority: t.priority,
         location: t.location,
-        createdAt: t.created_at.toISOString(),
-        updatedAt: t.updated_at.toISOString(),
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
         resolvedAt: t.resolved_at?.toISOString()
       })),
       pagination: {

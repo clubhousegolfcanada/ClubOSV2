@@ -21,7 +21,7 @@ export interface ProcessedRequest extends UserRequest {
   isEmergency?: boolean; // Flag for emergency requests
   priority?: 'low' | 'medium' | 'high' | 'urgent' | 'normal'; // Request priority
   user?: any; // User info for notifications
-  requestDescription?: string; // Original request for notifications
+  // requestDescription inherited from UserRequest - don't redeclare
 }
 
 export interface LLMResponse {

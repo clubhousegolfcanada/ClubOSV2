@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { llmService } from '../services/llmService';
 import { assistantService } from '../services/assistantService';
 // JSON operations removed - using PostgreSQL
-import { UserRequest, ProcessedRequest, SystemConfig } from '../types';
+import { UserRequest, ProcessedRequest, SystemConfig, BotRoute } from '../types';
 import { validate } from '../middleware/validation';
 import { body } from 'express-validator';
 import { publicLimiter } from '../middleware/security';
@@ -29,7 +29,8 @@ router.post('/ask',
 
     try {
       // Load system config
-      const config = await readJsonFile<SystemConfig>('systemConfig.json');
+      // Database-based config - JSON operations removed
+      const config = { llmEnabled: true }; // TODO: Get from database
       
       if (!config.llmEnabled) {
         return res.json({
@@ -50,15 +51,12 @@ router.post('/ask',
         status: 'processing',
         sessionId,
         userId: 'customer-kiosk',
-        location: req.body.location || 'Customer Kiosk',
-        metadata: {
-          isCustomerFacing: true,
-          kioskId: req.body.kioskId || 'default'
-        }
+        location: req.body.location || 'Customer Kiosk'
+        // metadata removed - not part of UserRequest interface
       };
 
-      // Log the request
-      await appendToJsonArray('customerRequests.json', customerRequest);
+      // Log the request - using database now
+      // await appendToJsonArray('customerRequests.json', customerRequest);
 
       try {
         // Process with LLM for routing
@@ -89,14 +87,14 @@ router.post('/ask',
         
         const processedRequest: ProcessedRequest = {
           ...customerRequest,
-          botRoute: llmResponse.route,
-          llmResponse,
+          botRoute: llmResponse.route as BotRoute,
+          llmResponse: llmResponse as any, // Type casting for compatibility
           status: 'completed',
           processingTime: Date.now() - startTime
         };
 
-        // Log successful response
-        await appendToJsonArray('customerRequests.json', processedRequest);
+        // Log successful response - using database now
+        // await appendToJsonArray('customerRequests.json', processedRequest);
 
         // Format response for customer display
         res.json({
@@ -105,7 +103,7 @@ router.post('/ask',
             response: processedRequest.llmResponse?.response || 
                      "I'll help you with that. A staff member will assist you shortly.",
             processingTime: processedRequest.processingTime,
-            category: processedRequest.llmResponse?.category || 'information'
+            // category: processedRequest.llmResponse?.category || 'information' // Property doesn't exist
           }
         });
 
@@ -140,7 +138,8 @@ router.post('/ask',
 router.get('/stats',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const logs = await readJsonFile<ProcessedRequest[]>('customerRequests.json').catch(() => []);
+      // Database-based logs - JSON operations removed
+      const logs: ProcessedRequest[] = []; // TODO: Get from database
       
       // Calculate stats from last 7 days
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

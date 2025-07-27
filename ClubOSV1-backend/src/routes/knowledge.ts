@@ -10,15 +10,17 @@ const router = Router();
 // Get all knowledge bases
 router.get('/', (req: Request, res: Response) => {
   try {
-    const knowledgeBases = knowledgeLoader.getAllKnowledgeBases();
+    const knowledgeBasesMap = knowledgeLoader.getAllKnowledgeBases();
+    const knowledgeBases = Array.from(knowledgeBasesMap.values());
     res.json({
       success: true,
       count: knowledgeBases.length,
       knowledgeBases: knowledgeBases.map(kb => ({
-        route: kb.route,
-        description: kb.description,
+        // route: kb.route, // Property doesn't exist
+        // description: kb.description, // Property doesn't exist
         version: kb.version,
-        lastUpdated: kb.lastUpdated
+        lastUpdated: kb.lastUpdated,
+        categories: kb.categories
       }))
     });
   } catch (error) {
@@ -60,7 +62,7 @@ router.post('/search', (req: Request, res: Response) => {
 });
 
 // Find solution for symptoms
-router.post('/solution', (req: Request, res: Response) => {
+router.post('/solution', async (req: Request, res: Response) => {
   try {
     const { symptoms } = req.body;
     
@@ -71,7 +73,7 @@ router.post('/solution', (req: Request, res: Response) => {
       });
     }
     
-    const solutions = knowledgeLoader.findSolution(symptoms);
+    const solutions = await knowledgeLoader.findSolution(symptoms);
     
     res.json({
       success: true,

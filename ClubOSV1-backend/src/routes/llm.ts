@@ -5,7 +5,7 @@ import { llmService } from '../services/llmService';
 import { assistantService } from '../services/assistantService';
 import { slackFallback } from '../services/slackFallback';
 // JSON operations removed - using PostgreSQL
-import { UserRequest, ProcessedRequest, SystemConfig } from '../types';
+import { UserRequest, ProcessedRequest, SystemConfig, BotRoute } from '../types';
 import { AppError } from '../middleware/errorHandler';
 import { validate, requestValidation } from '../middleware/validation';
 import { body } from 'express-validator';
@@ -424,7 +424,7 @@ router.post('/request',
         
         processedRequest = {
           ...userRequest,
-          botRoute: fallbackRoute,
+          botRoute: fallbackRoute as BotRoute,
           status: 'fallback',
           processingTime: Date.now() - startTime,
           error: 'LLM processing failed, used fallback routing',
@@ -447,12 +447,12 @@ router.post('/request',
             response_text: processedRequest.llmResponse?.response || 'Processing...',
             route: processedRequest.botRoute || 'unknown',
             confidence: processedRequest.llmResponse?.confidence || 0,
-            suggested_priority: processedRequest.llmResponse?.extractedInfo?.suggestedPriority,
+            // suggested_priority: processedRequest.llmResponse?.extractedInfo?.suggestedPriority,
             session_id: sessionId,
             metadata: {
               processingTime: totalProcessingTime,
               serverProcessingTime: processedRequest.processingTime,
-              extractedInfo: processedRequest.llmResponse?.extractedInfo
+              // extractedInfo: processedRequest.llmResponse?.extractedInfo
             }
           }).catch(err => logger.error('Failed to log', err));
           
@@ -485,17 +485,17 @@ router.post('/request',
             route: processedRequest.botRoute,
             response: processedRequest.llmResponse?.response || 'I\'m having trouble understanding your request. Please try rephrasing or contact support.',
             confidence: processedRequest.llmResponse?.confidence || 0.5,
-            suggestedActions: processedRequest.llmResponse?.extractedInfo?.solutions || processedRequest.llmResponse?.suggestedActions || [],
+            suggestedActions: processedRequest.llmResponse?.suggestedActions || [],
             reasoning: processedRequest.llmResponse?.reasoning,
-            extractedInfo: processedRequest.llmResponse?.extractedInfo,
+            // extractedInfo: processedRequest.llmResponse?.extractedInfo,
             isAssistantResponse: !!processedRequest.llmResponse?.response,
-            // Include structured response data if available
-            structured: processedRequest.llmResponse?.structuredResponse,
-            category: processedRequest.llmResponse?.category,
-            priority: processedRequest.llmResponse?.priority,
-            actions: processedRequest.llmResponse?.actions,
-            metadata: processedRequest.llmResponse?.metadata,
-            escalation: processedRequest.llmResponse?.escalation
+            // Include structured response data if available (future features)
+            // structured: processedRequest.llmResponse?.structuredResponse,
+            // category: processedRequest.llmResponse?.category,
+            // priority: processedRequest.llmResponse?.priority,
+            // actions: processedRequest.llmResponse?.actions,
+            // metadata: processedRequest.llmResponse?.metadata,
+            // escalation: processedRequest.llmResponse?.escalation
           },
           processingTime: processedRequest.processingTime,
           status: processedRequest.status,

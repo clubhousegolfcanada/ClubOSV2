@@ -165,7 +165,7 @@ if (process.env.NODE_ENV === 'development') {
     
     res.json({
       health,
-      metrics: Object.fromEntries(metrics),
+      metrics: metrics, // Fixed: no need for Object.fromEntries on empty object
       timestamp: new Date().toISOString()
     });
   });

@@ -45,7 +45,8 @@ router.post('/', authenticate, async (req, res) => {
       slack_user_name: slackUserName,
       slack_user_id: slackUserId,
       slack_channel: slackChannel,
-      original_request_id: originalRequestId
+      original_request_id: originalRequestId,
+      createdAt: new Date() // Add required field
     });
 
     // Log feedback

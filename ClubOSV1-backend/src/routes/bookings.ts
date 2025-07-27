@@ -95,7 +95,9 @@ router.post('/', authenticate, async (req, res) => {
       duration,
       type,
       recurring_days: recurringDays,
-      status: 'confirmed'
+      status: 'confirmed',
+      createdAt: new Date(), // Add required fields temporarily
+      updatedAt: new Date()
     });
     
     logger.info('Booking created', {
@@ -116,8 +118,8 @@ router.post('/', authenticate, async (req, res) => {
         type: newBooking.type,
         recurringDays: newBooking.recurring_days,
         status: newBooking.status,
-        createdAt: newBooking.created_at.toISOString(),
-        updatedAt: newBooking.updated_at.toISOString()
+        createdAt: newBooking.createdAt.toISOString(),
+        updatedAt: newBooking.updatedAt.toISOString()
       }
     });
   } catch (error) {
