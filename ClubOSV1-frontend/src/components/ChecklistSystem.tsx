@@ -40,13 +40,6 @@ export const ChecklistSystem: React.FC = () => {
 
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
-  // Handle category change - tech doesn't have daily
-  useEffect(() => {
-    if (activeCategory === 'tech' && activeType === 'daily') {
-      setActiveType('weekly');
-    }
-  }, [activeCategory]);
-
   // Load checklist template
   useEffect(() => {
     loadTemplate();
@@ -207,7 +200,13 @@ export const ChecklistSystem: React.FC = () => {
                     Cleaning
                   </button>
                   <button
-                    onClick={() => setActiveCategory('tech')}
+                    onClick={() => {
+                      setActiveCategory('tech');
+                      // Tech doesn't have daily, so switch to weekly
+                      if (activeType === 'daily') {
+                        setActiveType('weekly');
+                      }
+                    }}
                     className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
                       activeCategory === 'tech'
                         ? 'bg-purple-500 text-white'
@@ -236,12 +235,7 @@ export const ChecklistSystem: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => {
-                      setActiveType('weekly');
-                      if (activeCategory === 'tech' && activeType === 'daily') {
-                        setActiveType('weekly'); // Force weekly for tech
-                      }
-                    }}
+                    onClick={() => setActiveType('weekly')}
                     className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
                       activeType === 'weekly'
                         ? 'bg-[var(--accent)] text-white'
