@@ -222,7 +222,7 @@ class DatabaseService {
   }
 
   async getAllUsers(): Promise<DbUser[]> {
-    const result = await query('SELECT * FROM "Users" ORDER BY created_at DESC');
+    const result = await query('SELECT * FROM "Users" ORDER BY "createdAt" DESC');
     return result.rows;
   }
 
@@ -266,7 +266,7 @@ class DatabaseService {
 
   async getNotUsefulFeedback(): Promise<DbFeedback[]> {
     const result = await query(
-      'SELECT * FROM feedback WHERE is_useful = false ORDER BY created_at DESC'
+      'SELECT * FROM feedback WHERE is_useful = false ORDER BY "createdAt" DESC'
     );
     return result.rows;
   }
@@ -346,7 +346,7 @@ class DatabaseService {
       queryText += ` WHERE ${conditions.join(' AND ')}`;
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
 
     const result = await query(queryText, values);
     return result.rows;
@@ -655,7 +655,7 @@ class DatabaseService {
       params.push(filters.success);
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
     
     if (filters?.limit) {
       queryText += ` LIMIT $${++paramCount}`;
@@ -695,7 +695,7 @@ class DatabaseService {
       params.push(filters.success);
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
     
     if (filters?.limit) {
       queryText += ` LIMIT $${++paramCount}`;
@@ -730,7 +730,7 @@ class DatabaseService {
       params.push(filters.status_code);
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY "createdAt" DESC';
     
     if (filters?.limit) {
       queryText += ` LIMIT $${++paramCount}`;

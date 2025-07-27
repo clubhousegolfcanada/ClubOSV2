@@ -17,7 +17,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     const feedback = await db.query(
       `SELECT * FROM feedback 
        WHERE user_id = $1 OR user_email = $2 
-       ORDER BY created_at DESC 
+       ORDER BY "createdAt" DESC 
        LIMIT $3 OFFSET $4`,
       [userId, userEmail, Number(limit), Number(offset)]
     );
@@ -26,7 +26,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     const interactions = await db.query(
       `SELECT * FROM customer_interactions 
        WHERE user_id = $1 OR user_email = $2 
-       ORDER BY created_at DESC 
+       ORDER BY "createdAt" DESC 
        LIMIT $3 OFFSET $4`,
       [userId, userEmail, Number(limit), Number(offset)]
     );
@@ -36,7 +36,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...feedback.rows.map(f => ({
         type: 'feedback',
         id: f.id,
-        timestamp: f.created_at,
+        timestamp: f.createdAt,
         request: f.request_description,
         response: f.response,
         route: f.route,
@@ -50,7 +50,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...interactions.rows.map(i => ({
         type: 'interaction',
         id: i.id,
-        timestamp: i.created_at,
+        timestamp: i.createdAt,
         request: i.request_text,
         response: i.response_text,
         route: i.route,
@@ -202,7 +202,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
       // Total requests
       db.query(
         `SELECT COUNT(*) as count FROM customer_interactions 
-         WHERE created_at >= $1 AND created_at <= $2`,
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
       
@@ -210,7 +210,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
       db.query(
         `SELECT COUNT(DISTINCT COALESCE(user_id::text, user_email)) as count 
          FROM customer_interactions 
-         WHERE created_at >= $1 AND created_at <= $2`,
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
       
@@ -221,7 +221,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
            SUM(CASE WHEN is_useful THEN 1 ELSE 0 END) as useful,
            AVG(confidence) as avg_confidence
          FROM feedback 
-         WHERE created_at >= $1 AND created_at <= $2`,
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
       
@@ -231,7 +231,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
            COUNT(*) as total,
            SUM(CASE WHEN status = 'resolved' OR status = 'closed' THEN 1 ELSE 0 END) as resolved
          FROM tickets 
-         WHERE created_at >= $1 AND created_at <= $2`,
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
       
@@ -241,7 +241,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
            COUNT(*) as total,
            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
          FROM bookings 
-         WHERE created_at >= $1 AND created_at <= $2`,
+         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       )
     ]);
