@@ -53,7 +53,7 @@ export default function Operations() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(true);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
@@ -593,14 +593,15 @@ export default function Operations() {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex gap-4">
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      !showFeedback && !showSystemConfig && !showAnalytics
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                      showAnalytics
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    User Management
+                    <BarChart3 className="w-4 h-4" />
+                    Analytics
                   </button>
                   <button
                     onClick={() => { setShowFeedback(true); setShowSystemConfig(false); setShowAnalytics(false); }}
@@ -630,15 +631,14 @@ export default function Operations() {
                     System Config
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                      showAnalytics
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      !showFeedback && !showSystemConfig && !showAnalytics
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    <BarChart3 className="w-4 h-4" />
-                    Analytics
+                    User Management
                   </button>
                 </div>
                 
