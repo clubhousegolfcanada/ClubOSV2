@@ -121,7 +121,7 @@ export class SlackFallbackService {
             }
           ],
           footer: 'ClubOSV1 Fallback System',
-          ts: Date.now() / 1000
+          ts: Math.floor(Date.now() / 1000).toString()
         }
       ]
     };
@@ -195,7 +195,7 @@ export class SlackFallbackService {
             }
           ],
           footer: 'ClubOSV1 Direct Message',
-          ts: Date.now() / 1000
+          ts: Math.floor(Date.now() / 1000).toString()
         }
       ]
     };
@@ -252,7 +252,7 @@ export class SlackFallbackService {
             }
           ],
           footer: 'ClubOSV1 LLM Processing',
-          ts: Date.now() / 1000
+          ts: Math.floor(Date.now() / 1000).toString()
         }
       ]
     };
@@ -339,7 +339,7 @@ export class SlackFallbackService {
             }
           ],
           footer: 'ClubOSV1 Ticket System',
-          ts: Date.now() / 1000
+          ts: Math.floor(Date.now() / 1000).toString()
         }
       ]
     };
@@ -414,7 +414,7 @@ export class SlackFallbackService {
             }
           ],
           footer: 'ClubOSV1 Feedback System - Action Required',
-          ts: Date.now() / 1000
+          ts: Math.floor(Date.now() / 1000).toString()
         }
       ]
     };

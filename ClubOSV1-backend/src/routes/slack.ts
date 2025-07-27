@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import { slackFallback } from '../services/slackFallback';
 // JSON operations removed - using PostgreSQL
 import { UserRequest, SystemConfig } from '../types';
+import { db } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { 
   handleSlackUrlVerification, 
@@ -24,9 +25,14 @@ router.post('/message',
     const sessionId = (req as any).requestId || uuidv4();
 
     try {
-      // Check if Slack is configured
-      const config = await readJsonFile<SystemConfig>('systemConfig.json');
-      if (!config.slackFallbackEnabled) {
+      // Check if Slack is configured from database
+      const configResult = await db.query(
+        'SELECT value FROM system_config WHERE key = $1',
+        ['slack_notifications']
+      );
+      const slackConfig = configResult.rows[0]?.value || { enabled: true };
+      
+      if (!slackConfig.enabled) {
         throw new AppError('SLACK_DISABLED', 'Slack integration is currently disabled', 503);
       }
 
@@ -43,8 +49,7 @@ router.post('/message',
       });
       
       if (req.user) {
-        const users = await readJsonFile<any[]>('users.json');
-        completeUser = users.find(u => u.id === req.user!.id);
+        completeUser = await db.findUserById(req.user.id);
         // Remove password from user data
         if (completeUser) {
           const { password, ...userWithoutPassword } = completeUser;
@@ -63,8 +68,16 @@ router.post('/message',
         user: completeUser || req.user // Use complete user data if available
       };
 
-      // Log the request
-      await appendToJsonArray('userLogs.json', userRequest);
+      // Log the request to database
+      await db.createCustomerInteraction({
+        user_id: req.user?.id,
+        user_email: req.user?.email,
+        request_text: userRequest.requestDescription,
+        response_text: 'Sent to Slack',
+        route: 'Slack',
+        confidence: 1.0,
+        session_id: sessionId
+      });
 
       try {
         // Send to Slack
@@ -135,14 +148,11 @@ router.post('/webhook',
 
       // Event callback
       if (type === 'event_callback') {
-        // Log the event
-        await appendToJsonArray('logs/slack-events.json', {
-          id: uuidv4(),
-          timestamp: new Date().toISOString(),
+        // Log Slack event for debugging
+        logger.info('Slack event received', {
           eventType: event?.type,
           event: event,
-          verified: true,
-          raw: req.body
+          verified: true
         });
 
         // Handle different event types
@@ -378,7 +388,7 @@ router.post('/test', async (req: Request, res: Response, next: NextFunction) => 
             }
           ],
           footer: 'ClubOSV1 Test',
-          ts: Date.now() / 1000
+          ts: Math.floor(Date.now() / 1000).toString()
         }
       ]
     };

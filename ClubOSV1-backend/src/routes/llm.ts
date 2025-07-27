@@ -606,7 +606,7 @@ router.post('/test',
             sessionId: 'test'
           };
           
-          llmResponse = await llmService.processRequest(testRequest);
+          llmResponse = await llmService.processRequest(description, 'test-user', { sessionId: 'test' });
           llmRoute = llmResponse.route;
         } catch (err) {
           logger.error('Test LLM processing failed:', err);

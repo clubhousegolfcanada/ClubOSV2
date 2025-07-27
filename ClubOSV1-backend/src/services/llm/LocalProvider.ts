@@ -79,7 +79,7 @@ export class LocalProvider extends BaseLLMProvider {
     });
     
     let bestMatch = {
-      route: 'brand' as const, // Changed from 'general' to 'brand'
+      route: 'brand' as any, // More flexible typing for route comparison
       score: 0,
       matchedKeywords: [] as string[],
       solution: null as any
