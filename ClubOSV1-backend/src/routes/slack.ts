@@ -617,6 +617,76 @@ router.get('/debug-channel', async (req: Request, res: Response, next: NextFunct
   }
 });
 
+// Test Slack Web API configuration
+router.get('/test-web-api', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const botToken = process.env.SLACK_BOT_TOKEN;
+    const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
+    
+    const result = {
+      hasBotToken: !!botToken,
+      botTokenPrefix: botToken ? botToken.substring(0, 10) + '...' : 'Not set',
+      channelName,
+      webApiTest: null,
+      channelsList: null,
+      targetChannel: null
+    };
+    
+    if (botToken) {
+      try {
+        // Test Web API connection
+        const { WebClient } = await import('@slack/web-api');
+        const webClient = new WebClient(botToken);
+        
+        // Test basic API call
+        const authTest = await webClient.auth.test();
+        result.webApiTest = {
+          ok: authTest.ok,
+          user: authTest.user,
+          team: authTest.team,
+          error: authTest.error
+        };
+        
+        if (authTest.ok) {
+          // Get channels list
+          const channelsResponse = await webClient.conversations.list();
+          result.channelsList = {
+            ok: channelsResponse.ok,
+            channelCount: channelsResponse.channels?.length,
+            channels: channelsResponse.channels?.map(ch => ({ name: ch.name, id: ch.id })),
+            error: channelsResponse.error
+          };
+          
+          // Find target channel
+          const targetChannel = channelsResponse.channels?.find((ch: any) => ch.name === channelName);
+          result.targetChannel = targetChannel ? {
+            found: true,
+            id: targetChannel.id,
+            name: targetChannel.name
+          } : {
+            found: false,
+            searchedFor: channelName,
+            availableChannels: channelsResponse.channels?.map(ch => ch.name)
+          };
+        }
+      } catch (webApiError) {
+        result.webApiTest = {
+          ok: false,
+          error: webApiError instanceof Error ? webApiError.message : webApiError
+        };
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    logger.error('Slack Web API test failed:', error);
+    next(error);
+  }
+});
+
 // Test Slack connection
 router.post('/test', async (req: Request, res: Response, next: NextFunction) => {
   try {
