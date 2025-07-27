@@ -243,26 +243,43 @@ export class SlackFallbackService {
     if (this.webClient) {
       try {
         // Get channel ID first
-        const channelName = (process.env.SLACK_CHANNEL || '#clubos-requests').replace('#', '');
+        const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
+        logger.info('Attempting to get channel ID for Web API', { channelName });
+        
         const channelsResponse = await this.webClient.conversations.list();
+        logger.info('Slack channels response', { 
+          ok: channelsResponse.ok, 
+          channelCount: channelsResponse.channels?.length,
+          channels: channelsResponse.channels?.map(ch => ch.name)
+        });
+        
         const channel = channelsResponse.channels?.find((ch: any) => ch.name === channelName);
         
         if (channel?.id) {
+          logger.info('Found channel, sending via Web API', { channelId: channel.id, channelName });
           const { ts } = await this.sendMessageWithWebAPI(message, channel.id);
+          logger.info('Web API message sent successfully', { threadTs: ts });
           threadTs = ts;
         } else {
-          throw new Error('Channel not found');
+          throw new Error(`Channel '${channelName}' not found. Available channels: ${channelsResponse.channels?.map(ch => ch.name).join(', ')}`);
         }
       } catch (webApiError) {
-        logger.warn('Web API failed, falling back to webhook', { error: webApiError });
+        logger.error('Web API failed, falling back to webhook', { 
+          error: webApiError instanceof Error ? webApiError.message : webApiError,
+          hasWebClient: !!this.webClient,
+          channelName: (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '')
+        });
         // Fall back to webhook
         const result = await this.sendMessage(message);
         threadTs = this.extractThreadTs(result);
+        logger.warn('Using fake thread timestamp from webhook fallback', { threadTs });
       }
     } else {
+      logger.warn('No Web API client available, using webhook');
       // Use webhook as fallback
       const result = await this.sendMessage(message);
       threadTs = this.extractThreadTs(result);
+      logger.warn('Using fake thread timestamp from webhook', { threadTs });
     }
     
     // Save to database
