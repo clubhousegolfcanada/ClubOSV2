@@ -216,7 +216,7 @@ const Navigation: React.FC = () => {
       {/* Mobile menu with smooth transition */}
       <div 
         className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-          mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
         }`}
         aria-label="Mobile navigation menu"
         role="navigation"
@@ -272,8 +272,9 @@ const Navigation: React.FC = () => {
                 )}
                 <button
                   onClick={logout}
-                  className="block w-full text-left px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation"
+                  className="block w-full text-left px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation flex items-center gap-2"
                 >
+                  <LogOut className="w-5 h-5" />
                   Logout
                 </button>
               </>
