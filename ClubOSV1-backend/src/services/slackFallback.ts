@@ -1,20 +1,29 @@
 import { IncomingWebhook, IncomingWebhookResult } from '@slack/webhook';
+import { WebClient } from '@slack/web-api';
 import { logger } from '../utils/logger';
 import { SlackMessage, UserRequest, ProcessedRequest, SlackMessageRecord } from '../types';
 import { query } from '../utils/db';
 
 export class SlackFallbackService {
   private webhook: IncomingWebhook;
+  private webClient: WebClient | null;
   private enabled: boolean;
 
   constructor() {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL || '';
+    const botToken = process.env.SLACK_BOT_TOKEN || '';
     this.enabled = Boolean(webhookUrl);
     
     if (this.enabled) {
       this.webhook = new IncomingWebhook(webhookUrl);
-      logger.info('Slack fallback service initialized');
+      // Initialize Web API client if bot token is available
+      this.webClient = botToken ? new WebClient(botToken) : null;
+      logger.info('Slack fallback service initialized', { 
+        hasWebhook: Boolean(webhookUrl),
+        hasWebClient: Boolean(this.webClient)
+      });
     } else {
+      this.webClient = null;
       logger.warn('Slack webhook URL not configured, fallback disabled');
     }
   }
@@ -30,6 +39,34 @@ export class SlackFallbackService {
       return result;
     } catch (error) {
       logger.error('Failed to send Slack message:', error);
+      throw error;
+    }
+  }
+
+  // Send message using Web API and get real thread timestamp
+  async sendMessageWithWebAPI(message: SlackMessage, channelId: string): Promise<{ ts: string; result: any }> {
+    if (!this.webClient) {
+      throw new Error('Slack Web API client not configured');
+    }
+
+    try {
+      // Convert webhook message format to Web API format
+      const result = await this.webClient.chat.postMessage({
+        channel: channelId,
+        text: message.text,
+        username: message.username,
+        icon_emoji: message.icon_emoji,
+        attachments: message.attachments
+      });
+
+      if (!result.ok || !result.ts) {
+        throw new Error(`Slack API error: ${result.error}`);
+      }
+
+      logger.info('Slack message sent via Web API', { ts: result.ts });
+      return { ts: result.ts, result };
+    } catch (error) {
+      logger.error('Failed to send Slack message via Web API:', error);
       throw error;
     }
   }
@@ -200,8 +237,33 @@ export class SlackFallbackService {
       ]
     };
 
-    const result = await this.sendMessage(message);
-    const threadTs = this.extractThreadTs(result);
+    let threadTs: string | undefined;
+
+    // Use Web API if available to get real thread timestamp
+    if (this.webClient) {
+      try {
+        // Get channel ID first
+        const channelName = (process.env.SLACK_CHANNEL || '#clubos-requests').replace('#', '');
+        const channelsResponse = await this.webClient.conversations.list();
+        const channel = channelsResponse.channels?.find((ch: any) => ch.name === channelName);
+        
+        if (channel?.id) {
+          const { ts } = await this.sendMessageWithWebAPI(message, channel.id);
+          threadTs = ts;
+        } else {
+          throw new Error('Channel not found');
+        }
+      } catch (webApiError) {
+        logger.warn('Web API failed, falling back to webhook', { error: webApiError });
+        // Fall back to webhook
+        const result = await this.sendMessage(message);
+        threadTs = this.extractThreadTs(result);
+      }
+    } else {
+      // Use webhook as fallback
+      const result = await this.sendMessage(message);
+      threadTs = this.extractThreadTs(result);
+    }
     
     // Save to database
     if (threadTs) {
