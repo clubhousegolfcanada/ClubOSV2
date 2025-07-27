@@ -336,8 +336,9 @@ export default function Commands() {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'commands' | 'triggers'>('commands');
   
-  const categories = ['all', 'techsupport', 'policies', 'brand', 'facilities', 'resets'];
+  const categories = ['all', 'techsupport', 'policies', 'brand', 'facilities'];
   
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
     // Initialize all categories as expanded
@@ -349,13 +350,16 @@ export default function Commands() {
   });
   
   const categoryIcons: Record<string, string> = {
-    all: '📋',
-    techsupport: '🔧',
-    policies: '📝',
-    brand: '🎨',
-    facilities: '🏢',
-    resets: '🔄'
+    all: 'All',
+    techsupport: 'Tech',
+    policies: 'Policies',
+    brand: 'Brand',
+    facilities: 'Facilities'
   };
+  
+  // Separate triggers (resets) from regular commands
+  const triggers = commands.filter(cmd => cmd.category === 'resets');
+  const regularCommands = commands.filter(cmd => cmd.category !== 'resets');
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
@@ -364,12 +368,17 @@ export default function Commands() {
     }));
   };
 
-  const filteredCommands = commands.filter(command => {
+  const filteredCommands = regularCommands.filter(command => {
     const matchesCategory = selectedCategory === 'all' || command.category === selectedCategory;
     const matchesSearch = command.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          command.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (command.example && command.example.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesCategory && matchesSearch;
+  });
+  
+  const filteredTriggers = triggers.filter(trigger => {
+    return trigger.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           trigger.description.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Get most used commands for the week (based on operations log data)
@@ -390,18 +399,43 @@ export default function Commands() {
   return (
     <>
       <Head>
-        <title>ClubOS - Commands & Queries</title>
+        <title>ClubOS - Commands</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)]">
         <div className="container mx-auto px-4 py-6">
-          {/* Header */}
+          {/* Header with Tabs */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-                Commands & Queries
-              </h1>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => setActiveTab('commands')}
+                  className={`text-2xl font-bold transition-colors relative pb-2 ${
+                    activeTab === 'commands' 
+                      ? 'text-[var(--text-primary)]' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Commands
+                  {activeTab === 'commands' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0B4E43]"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('triggers')}
+                  className={`text-2xl font-bold transition-colors relative pb-2 ${
+                    activeTab === 'triggers' 
+                      ? 'text-[var(--text-primary)]' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Triggers
+                  {activeTab === 'triggers' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0B4E43]"></div>
+                  )}
+                </button>
+              </div>
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="lg:hidden p-2 hover:bg-gray-800 rounded-md transition-colors"
@@ -412,55 +446,59 @@ export default function Commands() {
               </button>
             </div>
             <p className="text-[var(--text-secondary)]">
-              Common commands and queries that ClubOS can help with. Responses are dynamic and always current.
+              {activeTab === 'commands' 
+                ? 'Common commands that ClubOS can help with. Responses are dynamic and always current.'
+                : 'Remote triggers and automated actions for simulator and facility management.'}
             </p>
           </div>
 
-          {/* Stats Cards and Most Asked */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Quick Stats</h2>
-              <span className="text-xs text-[var(--text-muted)]">Most asked from operations log</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {/* Stats Cards */}
-              <div className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-gray-800">
-                <div className="text-2xl font-bold text-[var(--text-primary)]">{commands.filter(c => c.category === 'techsupport').length}</div>
-                <div className="text-xs text-[var(--text-muted)]">Tech Support</div>
+          {/* Stats Cards and Most Asked - Only show for Commands tab */}
+          {activeTab === 'commands' && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Quick Stats</h2>
+                <span className="text-xs text-[var(--text-muted)]">Most asked from operations log</span>
               </div>
-              <div className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-gray-800">
-                <div className="text-2xl font-bold text-[var(--text-primary)]">{commands.length}</div>
-                <div className="text-xs text-[var(--text-muted)]">Total Commands</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* Stats Cards */}
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-gray-800">
+                  <div className="text-2xl font-bold text-[var(--text-primary)]">{regularCommands.filter(c => c.category === 'techsupport').length}</div>
+                  <div className="text-xs text-[var(--text-muted)]">Tech Support</div>
+                </div>
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-gray-800">
+                  <div className="text-2xl font-bold text-[var(--text-primary)]">{regularCommands.length}</div>
+                  <div className="text-xs text-[var(--text-muted)]">Total Commands</div>
+                </div>
+                
+                {/* Most Asked Commands */}
+                {mostUsedCommands.map((command, index) => (
+                  <button
+                    key={command.id}
+                    onClick={() => copyCommand(command)}
+                    className="bg-[var(--bg-secondary)] border border-gray-800 rounded-lg p-4 hover:border-[#0B4E43] transition-all text-left group relative"
+                  >
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-[#0B4E43] bg-opacity-20 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-[#0B4E43]">#{index + 1}</span>
+                    </div>
+                    
+                    <h3 className="font-medium text-[var(--text-primary)] text-sm mb-1 pr-8">
+                      {command.name}
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {index === 0 ? '47 this week' : '31 this week'}
+                    </p>
+                    
+                    {/* Copy indicator on hover */}
+                    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-4 h-4 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
               </div>
-              
-              {/* Most Asked Commands */}
-              {mostUsedCommands.map((command, index) => (
-                <button
-                  key={command.id}
-                  onClick={() => copyCommand(command)}
-                  className="bg-[var(--bg-secondary)] border border-gray-800 rounded-lg p-4 hover:border-[#0B4E43] transition-all text-left group relative"
-                >
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-[#0B4E43] bg-opacity-20 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-[#0B4E43]">#{index + 1}</span>
-                  </div>
-                  
-                  <h3 className="font-medium text-[var(--text-primary)] text-sm mb-1 pr-8">
-                    {command.name}
-                  </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    {index === 0 ? '47 this week' : '31 this week'}
-                  </p>
-                  
-                  {/* Copy indicator on hover */}
-                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-4 h-4 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </button>
-              ))}
             </div>
-          </div>
+          )}
 
 
           {/* Main Layout with Sidebar */}
@@ -473,120 +511,236 @@ export default function Commands() {
               />
             )}
             
-            {/* Sidebar Navigation */}
-            <div className={`
-              fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
-              w-64 lg:w-48 flex-shrink-0 bg-[var(--bg-secondary)] lg:bg-transparent
-              transform transition-transform duration-300 ease-in-out
-              ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            `}>
-              <div className="h-full overflow-y-auto p-4 lg:p-0 lg:sticky lg:top-6">
-                <div className="flex items-center justify-between mb-4 lg:hidden">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">Categories</h3>
-                  <button
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="p-1 hover:bg-gray-800 rounded-md"
-                  >
-                    <svg className="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3 hidden lg:block">Categories</h3>
-                <nav className="space-y-1">
-                  {categories.map((category) => (
+            {/* Sidebar Navigation - Only show for Commands tab */}
+            {activeTab === 'commands' && (
+              <div className={`
+                fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
+                w-64 lg:w-48 flex-shrink-0 bg-[var(--bg-secondary)] lg:bg-transparent
+                transform transition-transform duration-300 ease-in-out
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+              `}>
+                <div className="h-full overflow-y-auto p-4 lg:p-0 lg:sticky lg:top-6">
+                  <div className="flex items-center justify-between mb-4 lg:hidden">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Categories</h3>
                     <button
-                      key={category}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setIsSidebarOpen(false);
-                      }}
-                      className={`
-                        w-full text-left px-3 py-2 rounded-md capitalize transition-all text-sm
-                        ${selectedCategory === category
-                          ? 'bg-[#0B4E43] text-white font-medium'
-                          : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                        }
-                      `}
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="p-1 hover:bg-gray-800 rounded-md"
                     >
-                      {category}
-                      {category !== 'all' && (
-                        <span className="float-right text-xs opacity-60">
-                          {commands.filter(c => c.category === category).length}
-                        </span>
-                      )}
+                      <svg className="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
-                  ))}
-                </nav>
-              </div>
-            </div>
-
-            {/* Commands Content */}
-            <div className="flex-1">
-              {selectedCategory === 'all' ? (
-                // Show all categories with collapsible sections
-                <div className="space-y-6">
-                  {categories.slice(1).map((category) => {
-                    const categoryCommands = filteredCommands.filter(c => c.category === category);
-                    if (categoryCommands.length === 0) return null;
-                    
-                    return (
-                      <div key={category} className="">
-                        <button
-                          onClick={() => toggleCategory(category)}
-                          className="w-full flex items-center justify-between p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-gray-800 transition-colors border border-gray-800"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-400 text-sm font-medium uppercase">
-                              {category}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {categoryCommands.length} commands
-                            </span>
-                          </div>
-                          <svg
-                            className={`w-5 h-5 text-gray-500 transition-transform ${
-                              expandedCategories[category] ? 'rotate-180' : ''
-                            }`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        
-                        {expandedCategories[category] && (
-                          <div className="grid gap-3 lg:grid-cols-2 mt-3">
-                            {categoryCommands.map((command) => (
-                              <CommandCard key={command.id} command={command} copiedCommand={copiedCommand} copyCommand={copyCommand} />
-                            ))}
-                          </div>
+                  </div>
+                  <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3 hidden lg:block">Categories</h3>
+                  <nav className="space-y-1">
+                    {categories.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => {
+                          setSelectedCategory(category);
+                          setIsSidebarOpen(false);
+                        }}
+                        className={`
+                          w-full text-left px-3 py-2 rounded-md capitalize transition-all text-sm
+                          ${selectedCategory === category
+                            ? 'bg-[#0B4E43] text-white font-medium'
+                            : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                          }
+                        `}
+                      >
+                        {category}
+                        {category !== 'all' && (
+                          <span className="float-right text-xs opacity-60">
+                            {regularCommands.filter(c => c.category === category).length}
+                          </span>
                         )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                // Show single category
-                <div>
-                  <div className="mb-4">
-                    <span className="text-gray-400 text-sm font-medium uppercase">
-                      {selectedCategory}
-                    </span>
-                    <span className="ml-3 text-sm text-gray-500">
-                      {filteredCommands.length} commands
-                    </span>
-                  </div>
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    {filteredCommands.map((command) => (
-                      <CommandCard key={command.id} command={command} copiedCommand={copiedCommand} copyCommand={copyCommand} />
+                      </button>
                     ))}
+                  </nav>
+                </div>
+              </div>
+            )}
+
+            {/* Main Content */}
+            <div className="flex-1">
+              {activeTab === 'commands' ? (
+                // Commands Tab Content
+                selectedCategory === 'all' ? (
+                  // Show all categories with collapsible sections
+                  <div className="space-y-6">
+                    {categories.slice(1).map((category) => {
+                      const categoryCommands = filteredCommands.filter(c => c.category === category);
+                      if (categoryCommands.length === 0) return null;
+                      
+                      return (
+                        <div key={category} className="">
+                          <button
+                            onClick={() => toggleCategory(category)}
+                            className="w-full flex items-center justify-between p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-gray-800 transition-colors border border-gray-800"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-gray-400 text-sm font-medium uppercase">
+                                {category}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {categoryCommands.length} commands
+                              </span>
+                            </div>
+                            <svg
+                              className={`w-5 h-5 text-gray-500 transition-transform ${
+                                expandedCategories[category] ? 'rotate-180' : ''
+                              }`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          
+                          {expandedCategories[category] && (
+                            <div className="grid gap-3 lg:grid-cols-2 mt-3">
+                              {categoryCommands.map((command) => (
+                                <CommandCard key={command.id} command={command} copiedCommand={copiedCommand} copyCommand={copyCommand} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
+                ) : (
+                  // Show single category
+                  <div>
+                    <div className="mb-4">
+                      <span className="text-gray-400 text-sm font-medium uppercase">
+                        {selectedCategory}
+                      </span>
+                      <span className="ml-3 text-sm text-gray-500">
+                        {filteredCommands.length} commands
+                      </span>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {filteredCommands.map((command) => (
+                        <CommandCard key={command.id} command={command} copiedCommand={copiedCommand} copyCommand={copyCommand} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              ) : (
+                // Triggers Tab Content
+                <div>
+                  <div className="grid gap-4">
+                    {/* TrackMan Resets Section */}
+                    <div className="bg-[var(--bg-secondary)] rounded-lg p-6 border border-gray-800">
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">TrackMan Simulator Resets</h3>
+                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredTriggers.filter(t => t.name.includes('TrackMan')).map((trigger) => (
+                          <div key={trigger.id} className="bg-[var(--bg-tertiary)] rounded-lg p-4 border border-gray-700">
+                            <h4 className="font-medium text-[var(--text-primary)] mb-2">{trigger.name}</h4>
+                            <p className="text-sm text-[var(--text-secondary)] mb-3">{trigger.description}</p>
+                            <button
+                              onClick={() => {
+                                toast.success(`Executing: ${trigger.name}`);
+                                // TODO: Implement NinjaOne API call
+                                console.log('Execute NinjaOne reset:', trigger.id);
+                              }}
+                              className="w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Execute Reset
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Other PC Resets Section */}
+                    <div className="bg-[var(--bg-secondary)] rounded-lg p-6 border border-gray-800">
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Other System Resets</h3>
+                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredTriggers.filter(t => !t.name.includes('TrackMan')).map((trigger) => (
+                          <div key={trigger.id} className="bg-[var(--bg-tertiary)] rounded-lg p-4 border border-gray-700">
+                            <h4 className="font-medium text-[var(--text-primary)] mb-2">{trigger.name}</h4>
+                            <p className="text-sm text-[var(--text-secondary)] mb-3">{trigger.description}</p>
+                            <button
+                              onClick={() => {
+                                toast.success(`Executing: ${trigger.name}`);
+                                // TODO: Implement NinjaOne API call
+                                console.log('Execute NinjaOne reset:', trigger.id);
+                              }}
+                              className="w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Execute Reset
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Add New System Triggers */}
+                    <div className="bg-[var(--bg-secondary)] rounded-lg p-6 border border-gray-800">
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Quick Add New Triggers</h3>
+                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        <button className="bg-[var(--bg-tertiary)] rounded-lg p-4 border border-gray-700 hover:border-[#0B4E43] transition-colors text-left">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-[#0B4E43] bg-opacity-20 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-[var(--text-primary)]">Music PC Reset</h4>
+                              <p className="text-xs text-[var(--text-muted)]">Add trigger for music system</p>
+                            </div>
+                          </div>
+                        </button>
+                        <button className="bg-[var(--bg-tertiary)] rounded-lg p-4 border border-gray-700 hover:border-[#0B4E43] transition-colors text-left">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-[#0B4E43] bg-opacity-20 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-[var(--text-primary)]">Scoreboard Display</h4>
+                              <p className="text-xs text-[var(--text-muted)]">Add scoreboard PC trigger</p>
+                            </div>
+                          </div>
+                        </button>
+                        <button className="bg-[var(--bg-tertiary)] rounded-lg p-4 border border-gray-700 hover:border-[#0B4E43] transition-colors text-left">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-[#0B4E43] bg-opacity-20 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-[var(--text-primary)]">Custom Trigger</h4>
+                              <p className="text-xs text-[var(--text-muted)]">Add any PC or system</p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {filteredTriggers.length === 0 && searchTerm && (
+                    <div className="text-center py-12">
+                      <p className="text-gray-400">
+                        No triggers found matching "{searchTerm}".
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {filteredCommands.length === 0 && (
+              {filteredCommands.length === 0 && activeTab === 'commands' && (
                 <div className="text-center py-12">
                   <p className="text-gray-400">
                     No commands found matching your criteria.
@@ -602,22 +756,45 @@ export default function Commands() {
               Quick Tips
             </h2>
             <ul className="space-y-1.5 text-sm text-[var(--text-secondary)]">
-              <li className="flex items-start">
-                <span className="text-[#0B4E43] mr-2">•</span>
-                These are common commands and queries - responses adapt based on current data and context
-              </li>
-              <li className="flex items-start">
-                <span className="text-[#0B4E43] mr-2">•</span>
-                When reporting issues, always include the bay number or location
-              </li>
-              <li className="flex items-start">
-                <span className="text-[#0B4E43] mr-2">•</span>
-                The AI understands natural language - you don't need to use exact phrases
-              </li>
-              <li className="flex items-start">
-                <span className="text-[#0B4E43] mr-2">•</span>
-                For urgent safety issues, contact staff directly at the front desk
-              </li>
+              {activeTab === 'commands' ? (
+                <>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    These are common commands - responses adapt based on current data and context
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    When reporting issues, always include the bay number or location
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    The AI understands natural language - you don't need to use exact phrases
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    For urgent safety issues, contact staff directly at the front desk
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    All triggers execute immediately when clicked - use with caution
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    TrackMan resets will close and restart the software on the specified bay
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    System reboots take 2-3 minutes - notify affected customers first
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#0B4E43] mr-2">•</span>
+                    Contact IT support if a trigger fails or for adding new systems
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </div>

@@ -57,3 +57,26 @@ ClubOSV1-backend/data/*.json
 # Archive folders
 _Archive/
 Archive/
+archive/
+
+# Temporary fix scripts (should be in archive)
+fix-*.sh
+fix-*.js
+deploy-*.sh
+postgres-*.sh
+quick-fix-*.sh
+test-*.sh
+
+# Misc files that shouldn't be in root
+any
+Headers
+Network
+*.sql
+reset-admin.html
+
+# Keep root clean - scripts should be in folders
+/*.sh
+/*.js
+/*.ts
+!tsconfig.json
+!package.json

@@ -131,7 +131,7 @@ User Request → LLM Router → Specialized Assistant → Structured Response
 - Export data for AI model improvement
 - Automatic Slack alerts for poor responses
 
-## 📁 Project Structure
+## 📁 Project Structure (Clean & Organized)
 
 ```
 CLUBOSV1/
@@ -141,6 +141,7 @@ CLUBOSV1/
 ├── TESTING_GUIDE.md            # Comprehensive testing documentation
 ├── DEVELOPMENT_GUIDE.md        # Developer guidelines
 ├── CHANGELOG.md                # Version history
+├── DOCUMENTATION_VERIFICATION.md # Doc verification checklist
 │
 ├── ClubOSV1-frontend/          # Next.js frontend application
 │   ├── src/
@@ -162,9 +163,42 @@ CLUBOSV1/
 │   │   └── scripts/          # Admin tools
 │   └── logs/                 # Application logs
 │
-├── docs/                      # Additional documentation
+├── ClubOS Agents/             # OpenAI Assistant configurations
+│   ├── Booking & AccessBot/   # Booking assistant docs
+│   ├── EmergencyBot/          # Emergency assistant docs
+│   ├── TechSupportBot/        # Tech support assistant docs
+│   └── BrandTone & MarketingBot/ # Brand assistant docs
+│
+├── docs/                      # Technical documentation
+│   ├── slack/                 # Slack integration docs
+│   ├── clubos_structure.txt   # System architecture
+│   └── ...                    # Other technical docs
+│
+├── scripts/                   # Utility scripts
+│   ├── auth/                 # Authentication scripts
+│   ├── backup/               # Backup scripts
+│   ├── deployment/           # Deployment scripts
+│   ├── tests/                # Test scripts
+│   └── utilities/            # General utilities
+│
 ├── assistant-instructions/    # GPT assistant templates
-└── archive/                  # Historical documentation
+│   ├── *.md                  # Assistant instruction docs
+│   └── assistant-*.json      # Assistant configurations
+│
+├── test-html/                # HTML test files
+│   └── *.html               # Test pages
+│
+├── archive/                  # Archived/old files
+│   ├── old-fixes/           # Old fix scripts
+│   ├── old-postgresql-migrations/ # Old SQL migrations
+│   ├── old-deployment-scripts/ # Old deploy scripts
+│   ├── completed-features/   # Completed feature docs
+│   └── test-scripts/        # Old test scripts
+│
+├── Notes/                   # Development notes
+├── .gitignore              # Git ignore rules (updated)
+├── package.json            # Root package file
+└── tsconfig.json           # TypeScript config
 ```
 
 ## 🔐 Security Features
@@ -295,10 +329,12 @@ See TESTING_GUIDE.md for test scenarios
 - Advanced reporting
 - WebSocket support
 
-### Known Issues
-1. ⚠️ **Slack replies not showing in ClubOS UI** - Real thread timestamps implemented but polling needs debugging
-2. Mobile UI needs responsive improvements
-3. Some TypeScript build warnings (non-critical)
+### Recent Updates
+1. ✅ **Root folder cleanup completed** - All scripts organized into appropriate folders
+2. ✅ **Slack Phase 2 fully implemented** - Real thread timestamps working
+3. ✅ **UI improvements** - Removed emojis, updated loading messages
+4. ✅ **Commands page** - Added tabbed interface with Triggers section
+5. ✅ **Assistant service** - Fixed JSON parsing, using full text responses
 
 ## 🔧 Troubleshooting
 

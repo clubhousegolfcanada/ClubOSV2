@@ -254,7 +254,7 @@ const StructuredResponseDemo: NextPage = () => {
                   : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
-              🚨 Emergency
+              Emergency
             </button>
             <button
               onClick={() => {
@@ -267,7 +267,7 @@ const StructuredResponseDemo: NextPage = () => {
                   : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
-              🔧 Tech Support
+              Tech Support
             </button>
             <button
               onClick={() => {
@@ -280,7 +280,7 @@ const StructuredResponseDemo: NextPage = () => {
                   : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
-              📅 Booking
+              Booking
             </button>
             <button
               onClick={() => {
@@ -293,7 +293,7 @@ const StructuredResponseDemo: NextPage = () => {
                   : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
-              💼 Brand Info
+              Brand Info
             </button>
           </div>
         </div>
@@ -314,7 +314,7 @@ const StructuredResponseDemo: NextPage = () => {
             </div>
             {completedActions.length === demos[selectedDemo].actions.length && (
               <div className="mt-2 text-green-500 text-sm font-medium">
-                ✅ All steps completed!
+                All steps completed!
               </div>
             )}
           </div>

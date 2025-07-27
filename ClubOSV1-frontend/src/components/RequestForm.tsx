@@ -596,7 +596,7 @@ const RequestForm: React.FC = () => {
                       }
                     `}
                   >
-                    🏢 Facilities
+                    Facilities
                   </button>
                   <button
                     type="button"
@@ -609,7 +609,7 @@ const RequestForm: React.FC = () => {
                       }
                     `}
                   >
-                    🔧 Tech Support
+                    Tech Support
                   </button>
                 </div>
               </div>
