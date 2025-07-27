@@ -281,8 +281,10 @@ const RequestForm: React.FC = () => {
         if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
           console.log('Found replies:', repliesResponse.data.data.replies);
           setSlackReplies(repliesResponse.data.data.replies);
-          setIsWaitingForReply(false);
-          return; // Stop polling
+          
+          // Don't stop waiting for replies - staff might send multiple messages
+          // Continue polling to check for new replies
+          console.log('Continuing to poll for additional replies...');
         } else {
           console.log('No replies yet, continuing to poll...');
         }
@@ -827,7 +829,7 @@ const RequestForm: React.FC = () => {
                 Your question has been posted to the general Slack channel.
                 
                 {/* Waiting for Reply State */}
-                {isWaitingForReply && (
+                {isWaitingForReply && slackReplies.length === 0 && (
                   <div className="mt-4 p-4 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
                     <div className="flex items-center gap-3">
                       {/* Loading animation */}
@@ -881,6 +883,18 @@ const RequestForm: React.FC = () => {
                         </p>
                       </div>
                     ))}
+                    
+                    {/* Still checking for new replies indicator */}
+                    {isWaitingForReply && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-[var(--text-secondary)]">
+                        <div className="flex gap-1">
+                          <div className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse"></div>
+                          <div className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                        <span className="text-xs">Checking for new replies...</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
