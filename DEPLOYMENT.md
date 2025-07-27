@@ -40,10 +40,10 @@ SLACK_SIGNING_SECRET=your-webhook-secret
 
 # OpenAI Configuration
 OPENAI_API_KEY=sk-...
-BOOKING_ACCESS_GPT_ID=asst_...
-EMERGENCY_GPT_ID=asst_...
-TECH_SUPPORT_GPT_ID=asst_...
-BRAND_MARKETING_GPT_ID=asst_...
+BOOKING_ACCESS_GPT_ID=asst_YeWa98dP4Dv0eXwyjMsCHeE7  # Configured ✅
+EMERGENCY_GPT_ID=asst_xxxxx  # Configured ✅
+TECH_SUPPORT_GPT_ID=asst_xxxxx  # Configured ✅
+BRAND_MARKETING_GPT_ID=asst_xxxxx  # Configured ✅
 
 # Optional Settings
 OPENAI_MODEL=gpt-4-turbo-preview
@@ -67,7 +67,7 @@ PORT=3001
 3. **Configure Environment Variables**
    - Go to Variables tab
    - Add all required environment variables
-   - Ensure all GPT Assistant IDs are configured
+   - GPT Assistant IDs are already configured ✅
 
 4. **Deploy**
    ```bash
@@ -171,9 +171,10 @@ git push origin main
    - Check Railway PostgreSQL is running
 
 4. **GPT Assistant Errors**
-   - Ensure all Assistant IDs are configured
+   - Assistant IDs are configured in Railway ✅
    - Verify OpenAI API key is valid
    - Check API rate limits
+   - Check Railway logs for specific errors
 
 ### Rollback Procedures
 

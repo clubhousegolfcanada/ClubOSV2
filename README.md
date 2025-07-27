@@ -219,7 +219,7 @@ Key endpoints:
 1. **Prerequisites**
    - Railway account with PostgreSQL add-on
    - All environment variables configured
-   - GPT Assistant IDs from OpenAI platform
+   - GPT Assistant IDs configured in Railway ✅
 
 2. **Deploy Backend**
    ```bash
@@ -261,6 +261,7 @@ See TESTING_GUIDE.md for test scenarios
 - PostgreSQL database integration
 - User authentication & RBAC
 - LLM routing with GPT-4
+- Specialized GPT Assistants (all configured)
 - Ticket management system
 - Customer feedback tracking
 - Slack outbound notifications
@@ -280,9 +281,9 @@ See TESTING_GUIDE.md for test scenarios
 - WebSocket support
 
 ### Known Issues
-1. GPT Assistant IDs must be manually configured in Railway
-2. Slack replies require Events API setup (Phase 2)
-3. Mobile UI needs responsive improvements
+1. Slack replies require Events API setup (Phase 2)
+2. Mobile UI needs responsive improvements
+3. Some TypeScript build warnings (non-critical)
 
 ## 🔧 Troubleshooting
 
@@ -291,7 +292,7 @@ See TESTING_GUIDE.md for test scenarios
 | "Cannot connect to database" | Verify DATABASE_URL in Railway environment |
 | "OpenAI API error" | Check API key validity and billing status |
 | "Slack messages not sending" | Verify webhook URL and channel permissions |
-| "GPT assistants not responding" | Ensure all Assistant IDs are configured |
+| "GPT assistants not responding" | Check Railway logs for specific errors |
 | "Authentication failed" | Clear browser cache and localStorage |
 
 ## 📚 Documentation

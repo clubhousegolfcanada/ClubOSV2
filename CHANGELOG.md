@@ -18,6 +18,7 @@ All notable changes to ClubOS will be documented in this file.
   - Real-time configuration updates
 
 - **Enhanced LLM System**
+  - All GPT Assistant IDs configured in Railway
   - Context injection from conversation history
   - Route normalization for consistency
   - Improved error handling and fallbacks

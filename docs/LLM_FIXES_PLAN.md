@@ -1,5 +1,7 @@
 # ClubOS LLM System Fixes Implementation Plan
 
+> **Note**: Many of these issues have been resolved in v1.6.0. This document is retained for historical reference.
+
 ## Critical Issues Identified
 
 ### 1. Missing Context/Memory System

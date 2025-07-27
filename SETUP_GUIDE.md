@@ -57,11 +57,11 @@ FACILITIES_SLACK_USER=U00000000
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4-turbo-preview
 
-# GPT Assistant IDs (get from OpenAI platform)
-BOOKING_ACCESS_GPT_ID=asst_...
-EMERGENCY_GPT_ID=asst_...
-TECH_SUPPORT_GPT_ID=asst_...
-BRAND_MARKETING_GPT_ID=asst_...
+# GPT Assistant IDs (configured in Railway)
+BOOKING_ACCESS_GPT_ID=asst_YeWa98dP4Dv0eXwyjMsCHeE7
+EMERGENCY_GPT_ID=asst_xxxxx
+TECH_SUPPORT_GPT_ID=asst_xxxxx
+BRAND_MARKETING_GPT_ID=asst_xxxxx
 ```
 
 #### Frontend (.env.local file)
@@ -136,14 +136,11 @@ Visit http://localhost:3000 to access the application.
    - Create new key
    - Add to .env as OPENAI_API_KEY
 
-2. **Create GPT Assistants**:
-   - Go to https://platform.openai.com/assistants
-   - Create four assistants:
-     - Booking & Access Assistant
-     - Emergency Response Assistant
-     - Tech Support Assistant
-     - Brand & Marketing Assistant
-   - Copy each assistant ID to corresponding env variable
+2. **GPT Assistants** (Already configured in Railway ✅):
+   - Booking & Access Assistant: `asst_YeWa98dP4Dv0eXwyjMsCHeE7`
+   - Emergency Response Assistant: Configured
+   - Tech Support Assistant: Configured
+   - Brand & Marketing Assistant: Configured
 
 3. **Configure Assistants** (see `/assistant-instructions/` folder for templates):
    - Each assistant needs specific instructions
@@ -227,7 +224,7 @@ lsof -ti:3000 | xargs kill -9
 - Check API key is valid
 - Verify billing is active
 - Check rate limits
-- Ensure assistant IDs exist
+- Assistant IDs are configured in Railway ✅
 
 ## Development Workflow
 
