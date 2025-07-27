@@ -2,7 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.6.0] - 2024-11-26
+## [1.6.1] - 2025-07-27
+
+### Changed
+- **Commands Page Redesign**
+  - Modern UI matching Dashboard's minimalist style
+  - Renamed "Triggers" to "Remote Actions" for clarity
+  - Implemented pill-style category tabs
+  - Added collapsible sections for Remote Actions
+  - Updated typography and spacing throughout
+  - Improved button styles with consistent hover states
+
+### Fixed
+- TypeScript compilation errors in backend (AppError class constructor)
+- Vercel deployment issues (removed experimental CSS optimization)
+- Import errors in commands.tsx (removed non-existent Header component)
+- Various type errors in auth.ts, slack.ts, tone.ts, and gptWebhook.ts
+
+## [1.6.0] - 2025-07-26
 
 ### Added
 - **PostgreSQL Integration**

@@ -31,6 +31,8 @@ interface Command {
   keywords?: string[];
   usageCount?: number;
   action?: string;
+  location?: string;
+  bayNumber?: string;
 }
 
 // Sample commands data (same as original)
@@ -183,60 +185,113 @@ const commands: Command[] = [
     usageCount: 23
   },
   
-  // Automated Simulator Resets
+  // Automated Simulator Resets - Bedford
   {
-    id: 'reset-trackman-bay1',
-    name: 'Reset TrackMan - Bay 1',
-    description: 'Remotely restart TrackMan software for Bay 1',
+    id: 'reset-bedford-bay1',
+    name: 'Bedford Bay 1',
+    description: 'Reset TrackMan at Bedford location',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'bay 1'],
-    action: 'ninjaone'
+    keywords: ['reset', 'restart', 'trackman', 'bedford', 'bay 1'],
+    action: 'ninjaone',
+    location: 'Bedford',
+    bayNumber: '1'
   },
   {
-    id: 'reset-trackman-bay2',
-    name: 'Reset TrackMan - Bay 2',
-    description: 'Remotely restart TrackMan software for Bay 2',
+    id: 'reset-bedford-bay2',
+    name: 'Bedford Bay 2',
+    description: 'Reset TrackMan at Bedford location',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'bay 2'],
-    action: 'ninjaone'
+    keywords: ['reset', 'restart', 'trackman', 'bedford', 'bay 2'],
+    action: 'ninjaone',
+    location: 'Bedford',
+    bayNumber: '2'
+  },
+  
+  // Automated Simulator Resets - Dartmouth
+  {
+    id: 'reset-dartmouth-bay1',
+    name: 'Dartmouth Bay 1',
+    description: 'Reset TrackMan at Dartmouth location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 1'],
+    action: 'ninjaone',
+    location: 'Dartmouth',
+    bayNumber: '1'
   },
   {
-    id: 'reset-trackman-bay3',
-    name: 'Reset TrackMan - Bay 3',
-    description: 'Remotely restart TrackMan software for Bay 3',
+    id: 'reset-dartmouth-bay2',
+    name: 'Dartmouth Bay 2',
+    description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'bay 3'],
-    action: 'ninjaone'
+    keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 2'],
+    action: 'ninjaone',
+    location: 'Dartmouth',
+    bayNumber: '2'
   },
   {
-    id: 'reset-trackman-bay4',
-    name: 'Reset TrackMan - Bay 4',
-    description: 'Remotely restart TrackMan software for Bay 4',
+    id: 'reset-dartmouth-bay3',
+    name: 'Dartmouth Bay 3',
+    description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'bay 4'],
-    action: 'ninjaone'
+    keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 3'],
+    action: 'ninjaone',
+    location: 'Dartmouth',
+    bayNumber: '3'
   },
   {
-    id: 'reset-trackman-bay5',
-    name: 'Reset TrackMan - Bay 5',
-    description: 'Remotely restart TrackMan software for Bay 5',
+    id: 'reset-dartmouth-bay4',
+    name: 'Dartmouth Bay 4',
+    description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'bay 5'],
-    action: 'ninjaone'
+    keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 4'],
+    action: 'ninjaone',
+    location: 'Dartmouth',
+    bayNumber: '4'
   },
+  
+  // Automated Simulator Resets - Stratford
   {
-    id: 'reset-trackman-bay6',
-    name: 'Reset TrackMan - Bay 6',
-    description: 'Remotely restart TrackMan software for Bay 6',
+    id: 'reset-stratford-bay1',
+    name: 'Stratford Bay 1',
+    description: 'Reset TrackMan at Stratford location',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'bay 6'],
-    action: 'ninjaone'
+    keywords: ['reset', 'restart', 'trackman', 'stratford', 'bay 1'],
+    action: 'ninjaone',
+    location: 'Stratford',
+    bayNumber: '1'
+  },
+  
+  // Automated Simulator Resets - Bayers Lake
+  {
+    id: 'reset-bayerslake-bay1',
+    name: 'Bayers Lake Bay 1',
+    description: 'Reset TrackMan at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 1'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    bayNumber: '1'
+  },
+  
+  // Automated Simulator Resets - Truro
+  {
+    id: 'reset-truro-bay1',
+    name: 'Truro Bay 1',
+    description: 'Reset TrackMan at Truro location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'truro', 'bay 1'],
+    action: 'ninjaone',
+    location: 'Truro',
+    bayNumber: '1'
   },
   {
     id: 'reset-all-trackman',
@@ -305,8 +360,6 @@ export default function CommandsRedesigned() {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    'global-resets': true,
-    'individual-bays': false,
     'other-systems': false
   });
 
@@ -510,91 +563,68 @@ export default function CommandsRedesigned() {
             <>
               {/* Remote Actions Tab */}
               <div className="space-y-6">
-                {/* Global Resets */}
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => toggleSection('global-resets')}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
-                  >
-                    <h3 className="text-lg font-medium text-[var(--text-primary)]">Global Resets</h3>
-                    {expandedSections['global-resets'] ? (
-                      <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
-                    )}
-                  </button>
+                {/* Quick Bay Resets - Grouped by Location */}
+                <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6">
+                  <h3 className="text-lg font-medium text-[var(--text-primary)] mb-4">Quick Bay Resets</h3>
+                  <p className="text-sm text-[var(--text-secondary)] font-light mb-6">
+                    Click any bay to instantly reset TrackMan software
+                  </p>
                   
-                  {expandedSections['global-resets'] && (
-                    <div className="p-6 pt-0 space-y-4">
-                      {filteredTriggers.filter(t => t.id === 'reset-all-trackman').map((trigger) => (
-                        <div
-                          key={trigger.id}
-                          className="bg-[var(--bg-tertiary)] rounded-xl p-6 border border-[var(--border-secondary)]"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-medium text-[var(--text-primary)] mb-2">
-                                {trigger.name}
-                              </h4>
-                              <p className="text-sm text-[var(--text-secondary)] font-light">
-                                {trigger.description}
-                              </p>
+                  {/* Group triggers by location */}
+                  {(() => {
+                    const groupedByLocation = filteredTriggers
+                      .filter(t => t.location && t.bayNumber)
+                      .reduce((acc, trigger) => {
+                        if (!acc[trigger.location!]) {
+                          acc[trigger.location!] = [];
+                        }
+                        acc[trigger.location!].push(trigger);
+                        return acc;
+                      }, {} as Record<string, Command[]>);
+                    
+                    const locationOrder = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
+                    
+                    return (
+                      <div className="space-y-6">
+                        {locationOrder.map(location => {
+                          const triggers = groupedByLocation[location];
+                          if (!triggers || triggers.length === 0) return null;
+                          
+                          return (
+                            <div key={location}>
+                              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-3">{location}</h4>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                {triggers.sort((a, b) => parseInt(a.bayNumber!) - parseInt(b.bayNumber!)).map((trigger) => (
+                                  <button
+                                    key={trigger.id}
+                                    onClick={() => handleExecuteReset(trigger)}
+                                    className="relative group"
+                                  >
+                                    <div className="bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-3 transition-all duration-200 cursor-pointer">
+                                      <div className="text-center">
+                                        <div className="text-xl font-semibold text-[var(--text-primary)] group-hover:text-white transition-colors">
+                                          {trigger.bayNumber}
+                                        </div>
+                                        <div className="text-xs text-[var(--text-muted)] group-hover:text-white/80 mt-0.5 transition-colors">
+                                          Bay {trigger.bayNumber}
+                                        </div>
+                                      </div>
+                                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Zap className="w-4 h-4 text-white animate-pulse" />
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                            <button
-                              onClick={() => handleExecuteReset(trigger)}
-                              className="ml-6 px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-lg font-medium transition-all flex items-center gap-2 group"
-                            >
-                              <Zap className="w-4 h-4 group-hover:animate-pulse" />
-                              Execute Reset
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* Individual Bay Resets */}
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => toggleSection('individual-bays')}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
-                  >
-                    <h3 className="text-lg font-medium text-[var(--text-primary)]">Individual Bay Resets</h3>
-                    {expandedSections['individual-bays'] ? (
-                      <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
-                    )}
-                  </button>
-                  
-                  {expandedSections['individual-bays'] && (
-                    <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredTriggers.filter(t => t.name.includes('Bay') && t.name.includes('TrackMan')).map((trigger) => (
-                        <div
-                          key={trigger.id}
-                          className="bg-[var(--bg-tertiary)] rounded-xl p-4 border border-[var(--border-secondary)]"
-                        >
-                          <h4 className="text-sm font-medium text-[var(--text-primary)] mb-2">
-                            {trigger.name}
-                          </h4>
-                          <p className="text-xs text-[var(--text-secondary)] font-light mb-4">
-                            {trigger.description}
-                          </p>
-                          <button
-                            onClick={() => handleExecuteReset(trigger)}
-                            className="w-full px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 group"
-                          >
-                            <Zap className="w-3.5 h-3.5 group-hover:animate-pulse" />
-                            Execute
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Other System Resets */}
+                {/* Other System Actions */}
                 <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
                   <button
                     onClick={() => toggleSection('other-systems')}
@@ -610,32 +640,57 @@ export default function CommandsRedesigned() {
                   
                   {expandedSections['other-systems'] && (
                     <div className="p-6 pt-0 space-y-4">
+                      {/* PC Reboot */}
                       {filteredTriggers.filter(t => t.id === 'reboot-simulator-pc').map((trigger) => (
                         <div
                           key={trigger.id}
-                          className="bg-[var(--bg-tertiary)] rounded-xl p-6 border border-[var(--border-secondary)]"
+                          className="bg-[var(--bg-tertiary)] rounded-xl p-4 border border-[var(--border-secondary)] flex items-center justify-between"
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="text-base font-medium text-[var(--text-primary)] mb-2">
-                                {trigger.name}
-                              </h4>
-                              <p className="text-sm text-[var(--text-secondary)] font-light">
-                                {trigger.description}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleExecuteReset(trigger)}
-                              className="ml-6 px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-lg font-medium transition-all flex items-center gap-2 group"
-                            >
-                              <Power className="w-4 h-4 group-hover:animate-pulse" />
-                              Execute Reboot
-                            </button>
+                          <div>
+                            <h4 className="text-sm font-medium text-[var(--text-primary)]">
+                              {trigger.name}
+                            </h4>
+                            <p className="text-xs text-[var(--text-secondary)] font-light mt-1">
+                              {trigger.description}
+                            </p>
                           </div>
+                          <button
+                            onClick={() => handleExecuteReset(trigger)}
+                            className="ml-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2 group"
+                          >
+                            <Power className="w-3.5 h-3.5" />
+                            Reboot PC
+                          </button>
                         </div>
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Reset All Bays - Less Prominent */}
+                <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-medium text-[var(--text-primary)]">Reset All TrackMan Systems</h3>
+                      <p className="text-sm text-[var(--text-secondary)] font-light mt-1">
+                        Restart TrackMan software on all bays simultaneously
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const resetAllTrigger = filteredTriggers.find(t => t.id === 'reset-all-trackman');
+                        if (resetAllTrigger) {
+                          if (confirm('Are you sure you want to reset ALL TrackMan systems? This will affect all bays.')) {
+                            handleExecuteReset(resetAllTrigger);
+                          }
+                        }
+                      }}
+                      className="ml-4 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Reset All Bays
+                    </button>
+                  </div>
                 </div>
               </div>
             </>

@@ -227,4 +227,4 @@ For deployment issues:
 - Review application logs
 - Contact system administrator
 
-Last updated: November 2024
+Last updated: July 2025
