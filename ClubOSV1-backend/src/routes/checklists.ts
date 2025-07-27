@@ -92,7 +92,7 @@ router.get('/template/:category/:type',
 // Submit a completed checklist
 router.post('/submit',
   authenticate,
-  roleGuard(['admin', 'operator', 'support']),
+  roleGuard(['admin', 'operator', 'support', 'kiosk']),
   validate([
     body('category').isIn(['cleaning', 'tech']).withMessage('Invalid category'),
     body('type').isIn(['daily', 'weekly', 'quarterly']).withMessage('Invalid type'),

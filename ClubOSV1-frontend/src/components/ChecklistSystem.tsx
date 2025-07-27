@@ -156,6 +156,15 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       const completedTaskIds = Object.keys(completedTasks).filter(id => completedTasks[id]);
       
+      console.log('Submitting checklist:', {
+        category: activeCategory,
+        type: activeType,
+        location: selectedLocation,
+        completedTasks: completedTaskIds,
+        totalTasks: currentTemplate.tasks.length,
+        hasToken: !!token
+      });
+      
       const response = await axios.post(
         `${API_URL}/checklists/submit`,
         {
@@ -182,7 +191,19 @@ export const ChecklistSystem: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to submit checklist:', error);
-      toast.error(error.response?.data?.error || 'Failed to submit checklist');
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+      } else if (error.response?.status === 400) {
+        toast.error(error.response?.data?.error || 'Invalid submission data');
+      } else {
+        toast.error(error.response?.data?.error || error.response?.data?.message || 'Failed to submit checklist');
+      }
     } finally {
       setIsSubmitting(false);
     }
