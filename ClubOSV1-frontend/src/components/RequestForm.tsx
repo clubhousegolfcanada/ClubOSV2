@@ -8,6 +8,7 @@ import { Lock, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { ResponseDisplay } from './ResponseDisplay';
+import { SlackConversation } from './SlackConversation';
 
 // Ensure API URL is properly formatted
 const getApiUrl = () => {
@@ -817,6 +818,13 @@ const RequestForm: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Slack Conversation Panel - Show when not using Smart Assist or after Slack submission */}
+      {(!smartAssistEnabled || (showResponse && lastResponse && !smartAssistEnabled)) && (
+        <div className="mt-6">
+          <SlackConversation className="w-full" />
         </div>
       )}
 
