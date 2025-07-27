@@ -25,9 +25,9 @@ router.get('/check-user', authenticate, async (req: Request, res: Response) => {
     // Get total user count
     const userCount = await db.query('SELECT COUNT(*) as count FROM users');
     
-    // Get all users (limited to 10 for safety)
+    // Get all users
     const allUsers = await db.query(
-      'SELECT id, email, name, role FROM users ORDER BY created_at DESC LIMIT 10'
+      'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC'
     );
     
     res.json({

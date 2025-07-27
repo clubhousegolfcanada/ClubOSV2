@@ -85,11 +85,25 @@ export const UserDebugCheck: React.FC = () => {
           {/* Database Stats */}
           <div className="bg-[var(--bg-secondary)] rounded-lg p-4">
             <h4 className="font-medium mb-2">Database Stats</h4>
-            <p className="text-sm">Total users: {debugInfo.databaseStats.totalUsers}</p>
+            <p className="text-sm mb-2">Total users: {debugInfo.databaseStats.totalUsers}</p>
             {debugInfo.databaseStats.totalUsers === 0 && (
               <p className="text-sm text-yellow-400 mt-2">
                 ⚠️ No users in database! The database might be empty or not properly connected.
               </p>
+            )}
+            {debugInfo.databaseStats.recentUsers.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs text-[var(--text-muted)] mb-2">Users in database:</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {debugInfo.databaseStats.recentUsers.map((u: any) => (
+                    <div key={u.id} className="text-xs p-2 bg-[var(--bg-tertiary)] rounded">
+                      <p className="font-medium">{u.name} ({u.role})</p>
+                      <p className="text-[var(--text-muted)]">{u.email}</p>
+                      <p className="font-mono text-[10px] text-[var(--text-muted)]">{u.id}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
