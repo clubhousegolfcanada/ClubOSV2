@@ -18,6 +18,10 @@ export interface ProcessedRequest extends UserRequest {
   processingTime: number;
   serverProcessingTime?: number; // Server-only processing time
   error?: string;
+  isEmergency?: boolean; // Flag for emergency requests
+  priority?: 'low' | 'medium' | 'high' | 'urgent' | 'normal'; // Request priority
+  user?: any; // User info for notifications
+  requestDescription?: string; // Original request for notifications
 }
 
 export interface LLMResponse {

@@ -220,19 +220,40 @@ export class SlackFallbackService {
   }
 
   async sendProcessedNotification(processed: ProcessedRequest): Promise<string | undefined> {
+    // Determine urgency and color based on emergency/priority
+    const isEmergency = processed.isEmergency || processed.botRoute === 'Emergency';
+    const isHighPriority = processed.priority === 'high' || processed.priority === 'urgent';
+    const color = isEmergency ? 'danger' : isHighPriority ? 'warning' : 'good';
+    const urgencyPrefix = isEmergency ? '🚨 EMERGENCY: ' : isHighPriority ? '⚠️ HIGH PRIORITY: ' : '';
+    
     const message: SlackMessage = {
       channel: process.env.SLACK_CHANNEL || '#clubos-requests',
       username: 'ClubOSV1 Bot',
-      text: 'Request Processed Successfully',
+      text: `${urgencyPrefix}Request Processed Successfully`,
       attachments: [
         {
-          color: 'good',
-          title: 'Processing Summary',
+          color,
+          title: isEmergency ? '🚨 EMERGENCY RESPONSE REQUIRED' : 'Processing Summary',
           text: processed.llmResponse?.response || 'Request processed',
           fields: [
             {
+              title: 'From',
+              value: processed.user?.name || processed.user?.email || 'Unknown User',
+              short: false
+            },
+            {
+              title: 'Location',
+              value: processed.location || 'Not specified',
+              short: true
+            },
+            {
               title: 'Bot Route',
               value: processed.botRoute,
+              short: true
+            },
+            {
+              title: 'Priority',
+              value: processed.priority || 'normal',
               short: true
             },
             {
@@ -241,14 +262,9 @@ export class SlackFallbackService {
               short: true
             },
             {
-              title: 'Processing Time',
-              value: `${processed.processingTime}ms`,
-              short: true
-            },
-            {
-              title: 'Status',
-              value: processed.status,
-              short: true
+              title: 'Original Request',
+              value: processed.requestDescription || 'N/A',
+              short: false
             }
           ],
           footer: 'ClubOSV1 LLM Processing',

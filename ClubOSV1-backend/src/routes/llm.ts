@@ -350,6 +350,11 @@ router.post('/request',
           slackThreadTs
         };
 
+        // Check if this is an emergency or high priority request that needs immediate Slack notification
+        const isEmergency = targetRoute === 'Emergency';
+        const isHighPriority = llmResponse?.extractedInfo?.suggestedPriority === 'high' || 
+                              llmResponse?.extractedInfo?.suggestedPriority === 'urgent';
+        
         // Check system configuration for Slack notification settings
         try {
           const { db } = await import('../utils/database');
@@ -361,12 +366,27 @@ router.post('/request',
           if (configResult.rows.length > 0) {
             const slackConfig = configResult.rows[0].value;
             
-            // Only send Slack notification if configured and enabled
-            if (slackConfig.enabled && slackConfig.sendOnLLMSuccess && config.features?.slack) {
+            // ALWAYS send Slack notification for emergencies or high priority
+            // OR if configured to send on LLM success
+            if (config.features?.slack && slackConfig.enabled && 
+                (isEmergency || isHighPriority || slackConfig.sendOnLLMSuccess)) {
+              
+              // Add emergency flag to the request for special handling
+              if (isEmergency || isHighPriority) {
+                processedRequest.isEmergency = true;
+                processedRequest.priority = llmResponse?.extractedInfo?.suggestedPriority || 'high';
+              }
+              
               slackFallback.sendProcessedNotification(processedRequest)
                 .then(threadTs => {
                   processedRequest.slackThreadTs = threadTs;
-                  logger.info('Slack notification sent for LLM success', { threadTs });
+                  logger.info('Slack notification sent', { 
+                    threadTs,
+                    isEmergency,
+                    isHighPriority,
+                    route: targetRoute,
+                    priority: processedRequest.priority
+                  });
                 })
                 .catch(err => logger.error('Failed to send Slack notification', err));
             }
