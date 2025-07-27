@@ -1,9 +1,10 @@
 import express from 'express';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import ninjaOneService from '../services/ninjaone';
 import { pool } from '../utils/db';  // Fixed import path
-import { sendSlackNotification } from '../services/slack';
+import { slackFallback } from '../services/slackFallback';
 import { logger } from '../utils/logger';
+import { UserRole } from '../types';
 
 const router = express.Router();
 
@@ -52,7 +53,7 @@ const SCRIPT_MAP: Record<string, string> = {
 };
 
 // Execute remote action
-router.post('/execute', requireAuth, requireRole('operator'), async (req, res) => {
+router.post('/execute', authenticate, authorize(['operator', 'admin']), async (req, res) => {
   const startTime = Date.now();
   
   try {
@@ -157,14 +158,20 @@ router.post('/execute', requireAuth, requireRole('operator'), async (req, res) =
       
       // Send Slack notification in demo mode
       try {
-        await sendSlackNotification(
-          `🎮 [DEMO] Remote Action Simulated\n` +
-          `User: ${req.user.email}\n` +
-          `Action: ${actionDescriptions[action] || action}\n` +
-          `Device: ${deviceName}\n` +
-          `Note: This is a demo - no actual restart occurred`,
-          '#tech-alerts'
-        );
+        await slackFallback.sendMessage({
+          channel: '#tech-alerts',
+          username: 'ClubOS Remote Actions',
+          text: '🎮 [DEMO] Remote Action Simulated',
+          attachments: [{
+            color: 'good',
+            fields: [
+              { title: 'User', value: req.user.email, short: true },
+              { title: 'Action', value: actionDescriptions[action] || action, short: true },
+              { title: 'Device', value: deviceName, short: true },
+              { title: 'Note', value: 'This is a demo - no actual restart occurred', short: false }
+            ]
+          }]
+        });
       } catch (slackError) {
         logger.warn('Could not send Slack notification:', slackError);
       }
@@ -218,21 +225,33 @@ router.post('/execute', requireAuth, requireRole('operator'), async (req, res) =
 
     // Send Slack notification for critical actions
     if (action === 'reboot-pc') {
-      await sendSlackNotification(
-        `⚠️ PC Reboot Initiated\n` +
-        `User: ${req.user.email}\n` +
-        `Device: ${deviceName}\n` +
-        `Expected downtime: 3-5 minutes\n` +
-        `Job ID: ${job.jobId}`,
-        '#tech-alerts'
-      );
+      await slackFallback.sendMessage({
+        channel: '#tech-alerts',
+        username: 'ClubOS Remote Actions',
+        text: '⚠️ PC Reboot Initiated',
+        attachments: [{
+          color: 'warning',
+          fields: [
+            { title: 'User', value: req.user.email, short: true },
+            { title: 'Device', value: deviceName, short: true },
+            { title: 'Expected Downtime', value: '3-5 minutes', short: true },
+            { title: 'Job ID', value: job.jobId, short: true }
+          ]
+        }]
+      });
     } else {
-      await sendSlackNotification(
-        `🔧 Remote Action: ${action}\n` +
-        `User: ${req.user.email}\n` +
-        `Device: ${deviceName}`,
-        '#tech-actions-log'
-      );
+      await slackFallback.sendMessage({
+        channel: '#tech-actions-log', 
+        username: 'ClubOS Remote Actions',
+        text: `🔧 Remote Action: ${action}`,
+        attachments: [{
+          color: 'good',
+          fields: [
+            { title: 'User', value: req.user.email, short: true },
+            { title: 'Device', value: deviceName, short: true }
+          ]
+        }]
+      });
     }
 
     res.json({
@@ -254,7 +273,7 @@ router.post('/execute', requireAuth, requireRole('operator'), async (req, res) =
 });
 
 // Check job status
-router.get('/status/:jobId', requireAuth, async (req, res) => {
+router.get('/status/:jobId', authenticate, async (req, res) => {
   try {
     // Check if simulated/demo job
     if (req.params.jobId.startsWith('DEMO-') || req.params.jobId.startsWith('SIM-')) {
@@ -295,7 +314,7 @@ router.get('/status/:jobId', requireAuth, async (req, res) => {
 });
 
 // Get device status (simplified)
-router.get('/devices/:location', requireAuth, requireRole('operator'), async (req, res) => {
+router.get('/devices/:location', authenticate, authorize(['operator', 'admin']), async (req, res) => {
   try {
     const location = req.params.location;
     const devices = DEVICE_MAP[location];
@@ -352,7 +371,7 @@ router.get('/devices/:location', requireAuth, requireRole('operator'), async (re
 });
 
 // Get recent actions (for monitoring)
-router.get('/recent', requireAuth, requireRole('operator'), async (req, res) => {
+router.get('/recent', authenticate, authorize(['operator', 'admin']), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT action_type, location, device_name, initiated_by, status, created_at
