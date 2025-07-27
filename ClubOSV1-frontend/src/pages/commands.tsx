@@ -622,7 +622,7 @@ export default function CommandsRedesigned() {
               </div>
 
               {/* Commands List */}
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {filteredCommands.map((command) => {
                   const config = categoryConfig[command.category];
                   const Icon = config.icon;
@@ -630,7 +630,7 @@ export default function CommandsRedesigned() {
                   return (
                     <div
                       key={command.id}
-                      className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6 hover:border-[var(--accent)] transition-all group"
+                      className="card group h-full flex flex-col"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -676,9 +676,10 @@ export default function CommandsRedesigned() {
           ) : (
             <>
               {/* Remote Actions Tab */}
-              <div className="space-y-6">
-                {/* Location Cards */}
-                {(() => {
+              <div>
+                {/* Location Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {(() => {
                   const groupedByLocation = filteredTriggers
                     .filter(t => t.location)
                     .reduce((acc, trigger) => {
@@ -773,9 +774,12 @@ export default function CommandsRedesigned() {
                     </>
                   );
                 })()}
+                </div>
 
-                {/* Other System Actions */}
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
+                {/* Additional Controls */}
+                <div className="mt-6 space-y-6">
+                  {/* Other System Actions */}
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
                   <button
                     onClick={() => toggleSection('other-systems')}
                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
@@ -841,6 +845,7 @@ export default function CommandsRedesigned() {
                       Reset All Bays
                     </button>
                   </div>
+                </div>
                 </div>
               </div>
             </>
