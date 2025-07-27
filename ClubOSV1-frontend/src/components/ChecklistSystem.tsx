@@ -37,6 +37,8 @@ export const ChecklistSystem: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'checklist' | 'tracker'>('checklist');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [trackerLocation, setTrackerLocation] = useState<string>('all');
+  const [trackerPeriod, setTrackerPeriod] = useState<'week' | 'month' | 'all'>('week');
 
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
@@ -45,12 +47,12 @@ export const ChecklistSystem: React.FC = () => {
     loadTemplate();
   }, [activeCategory, activeType]);
 
-  // Load submissions when tracker tab is active
+  // Load submissions when tracker tab is active or filters change
   useEffect(() => {
     if (activeTab === 'tracker') {
       loadSubmissions();
     }
-  }, [activeTab]);
+  }, [activeTab, trackerLocation, trackerPeriod]);
 
   const loadTemplate = async () => {
     try {
@@ -93,8 +95,33 @@ export const ChecklistSystem: React.FC = () => {
     setLoadingSubmissions(true);
     try {
       const token = localStorage.getItem('clubos_token');
+      
+      // Build query params
+      let queryParams = 'limit=100';
+      
+      // Add location filter
+      if (trackerLocation !== 'all') {
+        queryParams += `&location=${encodeURIComponent(trackerLocation)}`;
+      }
+      
+      // Add date filter based on period
+      if (trackerPeriod !== 'all') {
+        const now = new Date();
+        let startDate;
+        
+        if (trackerPeriod === 'week') {
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        } else if (trackerPeriod === 'month') {
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        }
+        
+        if (startDate) {
+          queryParams += `&startDate=${startDate.toISOString()}`;
+        }
+      }
+      
       const response = await axios.get(
-        `${API_URL}/checklists/submissions?limit=50`,
+        `${API_URL}/checklists/submissions?${queryParams}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -142,8 +169,11 @@ export const ChecklistSystem: React.FC = () => {
       );
       
       if (response.data.success) {
-        toast.success('Checklist submitted successfully!');
+        toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!`);
         setCompletedTasks({});
+        
+        // Reload template to reset the form
+        loadTemplate();
         
         // Reload submissions if on tracker tab
         if (activeTab === 'tracker') {
@@ -369,66 +399,166 @@ export const ChecklistSystem: React.FC = () => {
       ) : (
         <>
           {/* Completion Tracker */}
-          <div className="card">
-            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6">Recent Submissions</h3>
-            
-            {loadingSubmissions ? (
-              <div className="text-center py-8 text-[var(--text-secondary)]">Loading submissions...</div>
-            ) : submissions.length === 0 ? (
-              <div className="text-center py-8 text-[var(--text-secondary)]">No submissions found</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--border-secondary)]">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">User</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Category</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Location</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Tasks</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Completed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {submissions.map((submission) => (
-                      <tr key={submission.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-secondary)]">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-[var(--text-muted)]" />
-                            <span className="text-sm text-[var(--text-primary)]">{submission.user_name}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`text-sm font-medium ${getCategoryColor(submission.category)}`}>
-                            {submission.category.charAt(0).toUpperCase() + submission.category.slice(1)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
-                          {submission.type.charAt(0).toUpperCase() + submission.type.slice(1)}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[var(--text-muted)]" />
-                            <span className="text-sm text-[var(--text-secondary)]">{submission.location}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-sm text-[var(--text-secondary)]">{submission.total_tasks}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-[var(--text-muted)]" />
-                            <span className="text-sm text-[var(--text-secondary)]">
-                              {new Date(submission.completion_time).toLocaleString()}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
+          <div className="space-y-6">
+            {/* Filters */}
+            <div className="card">
+              <div className="flex flex-wrap gap-4 items-center">
+                {/* Location Filter */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">Location</label>
+                  <select
+                    value={trackerLocation}
+                    onChange={(e) => setTrackerLocation(e.target.value)}
+                    className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] min-w-[150px]"
+                  >
+                    <option value="all">All Locations</option>
+                    {locations.map(location => (
+                      <option key={location} value={location}>{location}</option>
                     ))}
-                  </tbody>
-                </table>
+                  </select>
+                </div>
+
+                {/* Time Period Filter */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">Time Period</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setTrackerPeriod('week')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        trackerPeriod === 'week'
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
+                      }`}
+                    >
+                      Last Week
+                    </button>
+                    <button
+                      onClick={() => setTrackerPeriod('month')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        trackerPeriod === 'month'
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
+                      }`}
+                    >
+                      Last Month
+                    </button>
+                    <button
+                      onClick={() => setTrackerPeriod('all')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        trackerPeriod === 'all'
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
+                      }`}
+                    >
+                      All Time
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Submissions Table */}
+            <div className="card">
+              <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
+                Checklist Submissions
+                {trackerLocation !== 'all' && ` - ${trackerLocation}`}
+                {trackerPeriod !== 'all' && ` (${trackerPeriod === 'week' ? 'Last 7 days' : 'Last 30 days'})`}
+              </h3>
+              
+              {loadingSubmissions ? (
+                <div className="text-center py-8 text-[var(--text-secondary)]">Loading submissions...</div>
+              ) : submissions.length === 0 ? (
+                <div className="text-center py-8 text-[var(--text-secondary)]">
+                  <div className="mb-2">No submissions found</div>
+                  <div className="text-sm text-[var(--text-muted)]">
+                    {trackerLocation !== 'all' || trackerPeriod !== 'all' 
+                      ? 'Try adjusting your filters' 
+                      : 'Complete a checklist to see it here'}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Group submissions by location */}
+                  {(() => {
+                    const groupedSubmissions = submissions.reduce((acc, submission) => {
+                      if (!acc[submission.location]) {
+                        acc[submission.location] = [];
+                      }
+                      acc[submission.location].push(submission);
+                      return acc;
+                    }, {} as Record<string, Submission[]>);
+
+                    return Object.entries(groupedSubmissions).map(([location, locationSubmissions]) => (
+                      <div key={location} className="mb-8 last:mb-0">
+                        <h4 className="text-lg font-medium text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-[var(--accent)]" />
+                          {location}
+                          <span className="text-sm text-[var(--text-muted)] font-normal">
+                            ({locationSubmissions.length} submission{locationSubmissions.length !== 1 ? 's' : ''})
+                          </span>
+                        </h4>
+                        
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-[var(--border-secondary)]">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">User</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Category</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Type</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Tasks</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Completed</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {locationSubmissions.map((submission) => (
+                                <tr key={submission.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-secondary)]">
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-2">
+                                      <User className="w-4 h-4 text-[var(--text-muted)]" />
+                                      <div>
+                                        <div className="text-sm text-[var(--text-primary)]">{submission.user_name}</div>
+                                        <div className="text-xs text-[var(--text-muted)]">{submission.user_email}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <span className={`text-sm font-medium ${getCategoryColor(submission.category)}`}>
+                                      {submission.category.charAt(0).toUpperCase() + submission.category.slice(1)}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                                    {submission.type.charAt(0).toUpperCase() + submission.type.slice(1)}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-2">
+                                      <CheckSquare className="w-4 h-4 text-green-500" />
+                                      <span className="text-sm text-[var(--text-secondary)]">{submission.total_tasks}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="w-4 h-4 text-[var(--text-muted)]" />
+                                      <div>
+                                        <div className="text-sm text-[var(--text-secondary)]">
+                                          {new Date(submission.completion_time).toLocaleDateString()}
+                                        </div>
+                                        <div className="text-xs text-[var(--text-muted)]">
+                                          {new Date(submission.completion_time).toLocaleTimeString()}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </>
+              )}
+            </div>
           </div>
         </>
       )}
