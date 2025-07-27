@@ -8,12 +8,19 @@ interface EnvironmentVariables {
   NODE_ENV: string;
   JWT_SECRET: string;
   SESSION_SECRET: string;
+  DATABASE_URL: string;
   
   // Optional - AI
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
   OPENAI_MAX_TOKENS?: string;
   OPENAI_TEMPERATURE?: string;
+  
+  // Optional - GPT Assistant IDs
+  BOOKING_ACCESS_GPT_ID?: string;
+  EMERGENCY_GPT_ID?: string;
+  TECH_SUPPORT_GPT_ID?: string;
+  BRAND_MARKETING_GPT_ID?: string;
   
   // Optional - Slack
   SLACK_WEBHOOK_URL?: string;
@@ -96,6 +103,18 @@ export class EnvironmentValidator {
       minLength: 32,
       description: 'Session encryption secret'
     },
+    DATABASE_URL: {
+      required: true,
+      custom: (value: string) => {
+        // Validate PostgreSQL connection string format
+        const pgPattern = /^postgres(ql)?:\/\/[^:]+:[^@]+@[^:]+:\d+\/[^?]+/;
+        if (!pgPattern.test(value)) {
+          return 'DATABASE_URL must be a valid PostgreSQL connection string (postgresql://user:password@host:port/database)';
+        }
+        return true;
+      },
+      description: 'PostgreSQL database connection URL'
+    },
     
     // Optional variables
     OPENAI_API_KEY: {
@@ -143,6 +162,23 @@ export class EnvironmentValidator {
       max: 1,
       default: '0.3',
       description: 'OpenAI response randomness'
+    },
+    // GPT Assistant IDs
+    BOOKING_ACCESS_GPT_ID: {
+      pattern: /^asst_[a-zA-Z0-9]{24}$/,
+      description: 'OpenAI Assistant ID for Booking & Access requests'
+    },
+    EMERGENCY_GPT_ID: {
+      pattern: /^asst_[a-zA-Z0-9]{24}$/,
+      description: 'OpenAI Assistant ID for Emergency requests'
+    },
+    TECH_SUPPORT_GPT_ID: {
+      pattern: /^asst_[a-zA-Z0-9]{24}$/,
+      description: 'OpenAI Assistant ID for Tech Support requests'
+    },
+    BRAND_MARKETING_GPT_ID: {
+      pattern: /^asst_[a-zA-Z0-9]{24}$/,
+      description: 'OpenAI Assistant ID for Brand & Marketing requests'
     },
     SLACK_WEBHOOK_URL: {
       type: 'url',
@@ -237,6 +273,9 @@ export class EnvironmentValidator {
           warnings.push('OPENAI_API_KEY not set - AI features will be disabled');
         } else if (key === 'SLACK_WEBHOOK_URL') {
           warnings.push('SLACK_WEBHOOK_URL not set - Slack integration will be disabled');
+        } else if (key.endsWith('_GPT_ID')) {
+          const routeName = key.replace('_GPT_ID', '').replace(/_/g, ' ');
+          warnings.push(`${key} not set - ${routeName} assistant will not be available`);
         }
         return;
       }
@@ -337,6 +376,7 @@ export class EnvironmentValidator {
     logger.info('✅ Environment validation passed');
     logger.info(`🔧 Environment: ${this.config.NODE_ENV}`);
     logger.info(`🚀 Port: ${this.config.PORT}`);
+    logger.info(`🗄️ Database: ${this.config.DATABASE_URL ? 'PostgreSQL configured' : 'Not configured'}`);
     logger.info(`🤖 AI: ${this.config.OPENAI_API_KEY ? 'Enabled' : 'Disabled'}`);
     logger.info(`💬 Slack: ${this.config.SLACK_WEBHOOK_URL ? 'Enabled' : 'Disabled'}`);
     

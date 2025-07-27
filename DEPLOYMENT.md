@@ -25,11 +25,14 @@ NEXT_PUBLIC_API_URL=https://your-railway-app.railway.app/api
 
 #### Backend (Railway)
 ```bash
-# Core Configuration
+# Core Configuration (Required)
 NODE_ENV=production
-FRONTEND_URL=https://your-app.vercel.app
-JWT_SECRET=your-32-char-secret-key
-SESSION_SECRET=your-session-secret
+JWT_SECRET=your-32-char-secret-key  # Must be 32+ characters
+SESSION_SECRET=your-session-secret  # Must be 32+ characters
+PORT=3001
+
+# Optional Configuration
+FRONTEND_URL=https://your-app.vercel.app  # Optional, defaults to http://localhost:3000
 
 # Database
 DATABASE_URL=postgresql://user:pass@host:port/dbname
@@ -101,10 +104,9 @@ PORT=3001
 
 1. **Create Admin User**
    ```bash
-   # First, ensure the backend is running
-   # Then run the admin creation script
+   # Run the admin creation script
    cd ClubOSV1-backend
-   node scripts/createAdmin.ts
+   npm run create:admin
    ```
 
 2. **Initialize System Configurations**
@@ -127,7 +129,7 @@ PORT=3001
 ### Logs
 - **Railway**: `railway logs` or check dashboard
 - **Vercel**: Function logs in dashboard
-- **Application logs**: Check `/api/logs` endpoint (admin only)
+- **Application logs**: Check `/api/access/logs` endpoint (admin only)
 
 ### Database Backups
 - Railway PostgreSQL includes automatic daily backups

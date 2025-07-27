@@ -169,13 +169,24 @@ CLUBOSV1/
 
 ## 🔐 Security Features
 
-- **Authentication**: JWT tokens with 7-day expiration
+- **Authentication**: JWT tokens with 24-hour expiration
 - **Password Policy**: Minimum 8 characters with complexity requirements
 - **Role-Based Access Control**: Granular permissions per user type
-- **Rate Limiting**: API protection against abuse (100 req/15min)
+- **Rate Limiting**: API protection against abuse (100 req/15min) - *Currently disabled for demo*
 - **Input Validation**: Comprehensive sanitization and validation
 - **CORS Protection**: Configured for production domains
 - **Webhook Verification**: Slack signature validation
+
+## 🎮 Demo Mode
+
+The system is currently configured in demo mode for testing purposes:
+
+- **Authentication**: Main LLM endpoint (`/api/llm/request`) has authentication disabled
+- **Rate Limiting**: Temporarily disabled on LLM endpoints due to Railway proxy issues
+- **Default Admin**: Auto-created on startup (admin@clubhouse247golf.com / admin123)
+- **Test without OpenAI**: System includes fallback routing when API keys unavailable
+
+**Note**: For production deployment, re-enable authentication and rate limiting by uncommenting the middleware in `/routes/llm.ts`.
 
 ## 🛠️ Development
 

@@ -310,6 +310,36 @@ npm run test:integration
 npm run test:integration -- bookings
 ```
 
+### All Available Test Commands
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode (re-runs on file changes)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run only unit tests
+npm run test:unit
+
+# Run only integration tests
+npm run test:integration
+```
+
+### Other Useful Commands
+```bash
+# Type check without building
+npm run typecheck
+
+# Lint code
+npm run lint
+
+# Check environment configuration
+npm run check:env
+```
+
 ## Production Verification
 
 After deployment:

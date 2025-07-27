@@ -87,11 +87,15 @@ npx ts-node src/scripts/runMigrations.ts
 
 ```bash
 cd ClubOSV1-backend
-npm run create-admin
+npm run create:admin
 
-# Or use the script directly:
-node scripts/createAdmin.ts
+# Default credentials:
+# Email: admin@clubhouse247golf.com
+# Password: admin123
+# ⚠️ Change this password after first login!
 ```
+
+Note: An admin user is auto-created on first startup if none exists.
 
 ### 6. Start Development Servers
 
