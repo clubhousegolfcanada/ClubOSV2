@@ -258,7 +258,7 @@ export default function ClubOSBoy() {
           {/* Footer Help Text */}
           <div className="mt-6 text-center">
             <p className="text-sm text-[var(--text-muted)]">
-              Need immediate help? Call us at (902)707-3748
+              Need immediate help? Message us at (902)707-3748
             </p>
           </div>
         </div>
