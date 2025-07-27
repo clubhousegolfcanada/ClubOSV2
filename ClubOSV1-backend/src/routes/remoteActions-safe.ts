@@ -4,6 +4,8 @@ import { pool } from '../utils/db';
 
 const router = express.Router();
 
+// Force rebuild - Railway cache issue 2025-07-27
+
 // Temporary safe version that won't crash on import
 router.post('/execute', requireAuth, async (req: any, res) => {
   // Check role manually

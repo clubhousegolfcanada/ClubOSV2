@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --noEmit false --skipLibCheck true && cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy'",
+    "build": "rm -rf dist && tsc --noEmit false --skipLibCheck true && cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy'",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "start:safe": "NODE_ENV=production node --max-old-space-size=512 dist/index.js || npm run start:safe",

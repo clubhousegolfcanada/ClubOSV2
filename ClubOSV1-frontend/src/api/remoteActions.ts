@@ -66,12 +66,4 @@ export const actionWarnings: Record<string, string> = {
   'restart-all': 'This will restart both TrackMan and the browser. Any active session will be interrupted.'
 };
 
-export const getActionIcon = (action: string): string => {
-  const icons: Record<string, string> = {
-    'restart-trackman': '🏌️',
-    'restart-browser': '🌐',
-    'reboot-pc': '💻',
-    'restart-all': '🔄'
-  };
-  return icons[action] || '🔧';
-};
+// Removed getActionIcon to avoid emoji issues
