@@ -608,10 +608,88 @@ export default function CommandsRedesigned() {
     }
   };
 
-  const handleExecuteReset = (trigger: Command) => {
-    toast.success(`Executing: ${trigger.name}`);
-    // TODO: Implement actual NinjaOne API call
-    console.log('Execute NinjaOne reset:', trigger.id);
+  const handleExecuteReset = async (trigger: Command) => {
+    const confirmMessage = trigger.bayNumber 
+      ? `Reset TrackMan on ${trigger.location} Bay ${trigger.bayNumber}?`
+      : `Reset ${trigger.systemType} system at ${trigger.location}?`;
+      
+    if (!confirm(confirmMessage)) return;
+
+    const toastId = toast.loading(`Executing ${trigger.name}...`);
+    
+    try {
+      // Determine action type
+      let action = 'restart-sim';
+      if (trigger.systemType === 'music') action = 'restart-music';
+      if (trigger.systemType === 'tv') action = 'restart-tv';
+      
+      const response = await fetch('/api/remote-actions/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          action,
+          location: trigger.location!,
+          bayNumber: trigger.bayNumber,
+          systemType: trigger.systemType
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to execute action');
+      }
+      
+      const result = await response.json();
+      toast.success(result.message, { id: toastId });
+      
+      // Start polling for job status if not simulated
+      if (result.jobId && !result.simulated) {
+        pollJobStatus(result.jobId, result.device);
+      }
+      
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to execute action', { 
+        id: toastId 
+      });
+    }
+  };
+
+  const pollJobStatus = async (jobId: string, deviceName: string) => {
+    let attempts = 0;
+    const maxAttempts = 24; // 2 minutes (5 second intervals)
+    
+    const interval = setInterval(async () => {
+      attempts++;
+      
+      try {
+        const response = await fetch(`/api/remote-actions/status/${jobId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to check status');
+        
+        const status = await response.json();
+        
+        if (status.status === 'completed') {
+          toast.success(`✅ ${deviceName} action completed successfully`);
+          clearInterval(interval);
+        } else if (status.status === 'failed') {
+          toast.error(`❌ ${deviceName} action failed`);
+          clearInterval(interval);
+        } else if (attempts >= maxAttempts) {
+          toast.warning(`⏱️ ${deviceName} action is taking longer than expected`);
+          clearInterval(interval);
+        }
+      } catch (error) {
+        // Stop polling on error
+        clearInterval(interval);
+      }
+    }, 5000);
   };
 
   const toggleSection = (section: string) => {
@@ -833,14 +911,69 @@ export default function CommandsRedesigned() {
                                           <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Sim</span>
                                         </button>
                                         <button
-                                          onClick={() => toast.success(`Restarting PC for Bay ${trigger.bayNumber}`)}
+                                          onClick={async () => {
+                                            if (!confirm(`⚠️ This will fully restart the PC for ${trigger.location} Bay ${trigger.bayNumber}. The bay will be unavailable for 3-5 minutes. Continue?`)) {
+                                              return;
+                                            }
+                                            const toastId = toast.loading(`Rebooting PC...`);
+                                            try {
+                                              const response = await fetch('/api/remote-actions/execute', {
+                                                method: 'POST',
+                                                headers: {
+                                                  'Content-Type': 'application/json',
+                                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                                },
+                                                body: JSON.stringify({
+                                                  action: 'reboot-pc',
+                                                  location: trigger.location,
+                                                  bayNumber: trigger.bayNumber
+                                                })
+                                              });
+                                              if (!response.ok) throw new Error('Failed');
+                                              toast.success('PC reboot initiated. Bay will be back online in 3-5 minutes.', { 
+                                                id: toastId,
+                                                duration: 10000 
+                                              });
+                                            } catch (error) {
+                                              toast.error('Failed to reboot PC', { id: toastId });
+                                            }
+                                          }}
                                           className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-red-500 border-2 border-red-500/50 hover:border-red-500 rounded transition-all group/btn"
                                         >
                                           <Power className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
                                           <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">PC</span>
                                         </button>
                                         <button
-                                          onClick={() => toast.success(`Other action for Bay ${trigger.bayNumber}`)}
+                                          onClick={async () => {
+                                            if (!confirm(`Run other system actions for ${trigger.location} Bay ${trigger.bayNumber}? This will clear temp files, reset network adapters, and perform other maintenance tasks.`)) {
+                                              return;
+                                            }
+                                            const toastId = toast.loading(`Executing other system actions...`);
+                                            try {
+                                              const response = await fetch('/api/remote-actions/execute', {
+                                                method: 'POST',
+                                                headers: {
+                                                  'Content-Type': 'application/json',
+                                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                                },
+                                                body: JSON.stringify({
+                                                  action: 'other',
+                                                  location: trigger.location,
+                                                  bayNumber: trigger.bayNumber
+                                                })
+                                              });
+                                              if (!response.ok) throw new Error('Failed');
+                                              const result = await response.json();
+                                              toast.success(result.message, { id: toastId });
+                                              
+                                              // Start polling for job status if not simulated
+                                              if (result.jobId && !result.simulated) {
+                                                pollJobStatus(result.jobId, result.device);
+                                              }
+                                            } catch (error) {
+                                              toast.error('Failed to execute other actions', { id: toastId });
+                                            }
+                                          }}
                                           className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-green-500 border-2 border-green-500/50 hover:border-green-500 rounded transition-all group/btn"
                                         >
                                           <AlertCircle className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />

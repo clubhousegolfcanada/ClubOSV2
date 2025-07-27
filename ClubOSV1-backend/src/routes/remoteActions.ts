@@ -52,7 +52,8 @@ const SCRIPT_MAP: Record<string, string> = {
   'restart-sim': 'SCRIPT-RESTART-TRACKMAN',
   'reboot-pc': 'SCRIPT-REBOOT-PC',
   'restart-music': 'SCRIPT-RESTART-MUSIC',
-  'restart-tv': 'SCRIPT-RESTART-TV'
+  'restart-tv': 'SCRIPT-RESTART-TV',
+  'other': 'SCRIPT-OTHER-ACTIONS'
 };
 
 // Execute remote action

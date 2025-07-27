@@ -24,6 +24,7 @@ import historyRoutes from './routes/history';
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
 import checklistsRoutes from './routes/checklists';
+import remoteActionsRoutes from './routes/remoteActions';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
@@ -90,6 +91,7 @@ app.use('/api/history', historyRoutes);
 app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/checklists', checklistsRoutes);
+app.use('/api/remote-actions', remoteActionsRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
