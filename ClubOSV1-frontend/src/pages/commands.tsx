@@ -7,11 +7,12 @@ interface Command {
   id: string;
   name: string;
   description: string;
-  category: 'techsupport' | 'policies' | 'brand' | 'facilities';
+  category: 'techsupport' | 'policies' | 'brand' | 'facilities' | 'resets';
   type: string;
   example?: string;
   keywords?: string[];
   usageCount?: number;
+  action?: 'ninjaone' | 'local'; // For automated actions
 }
 
 const commands: Command[] = [
@@ -169,6 +170,80 @@ const commands: Command[] = [
     type: 'information',
     example: 'Do you rent golf clubs?',
     keywords: ['rental', 'clubs', 'equipment', 'gear']
+  },
+  
+  // Automated Simulator Resets
+  {
+    id: 'reset-trackman-bay1',
+    name: 'Reset TrackMan - Bay 1',
+    description: 'Remotely restart TrackMan software for Bay 1',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bay 1'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reset-trackman-bay2',
+    name: 'Reset TrackMan - Bay 2',
+    description: 'Remotely restart TrackMan software for Bay 2',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bay 2'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reset-trackman-bay3',
+    name: 'Reset TrackMan - Bay 3',
+    description: 'Remotely restart TrackMan software for Bay 3',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bay 3'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reset-trackman-bay4',
+    name: 'Reset TrackMan - Bay 4',
+    description: 'Remotely restart TrackMan software for Bay 4',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bay 4'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reset-trackman-bay5',
+    name: 'Reset TrackMan - Bay 5',
+    description: 'Remotely restart TrackMan software for Bay 5',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bay 5'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reset-trackman-bay6',
+    name: 'Reset TrackMan - Bay 6',
+    description: 'Remotely restart TrackMan software for Bay 6',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bay 6'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reset-all-trackman',
+    name: 'Reset All TrackMan Systems',
+    description: 'Remotely restart all TrackMan software across all bays',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'all bays'],
+    action: 'ninjaone'
+  },
+  {
+    id: 'reboot-simulator-pc',
+    name: 'Reboot Simulator PC',
+    description: 'Fully reboot a simulator PC (specify bay in request)',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reboot', 'restart', 'pc', 'computer'],
+    action: 'ninjaone'
   }
 ];
 
@@ -176,7 +251,8 @@ const categoryColors = {
   techsupport: 'bg-orange-500',
   policies: 'bg-blue-500',
   brand: 'bg-purple-500',
-  facilities: 'bg-green-500'
+  facilities: 'bg-green-500',
+  resets: 'bg-red-500'
 };
 
 // Command Card Component
@@ -218,22 +294,39 @@ function CommandCard({ command, copiedCommand, copyCommand }: {
         </div>
       )}
       
-      {/* Copy Button */}
-      <button
-        onClick={() => copyCommand(command)}
-        className="absolute top-4 right-4 p-1.5 hover:bg-gray-800 rounded transition-colors"
-        title="Copy example"
-      >
-        {copiedCommand === command.id ? (
-          <svg className="w-4 h-4 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      {/* Action/Copy Button */}
+      {command.category === 'resets' && command.action === 'ninjaone' ? (
+        <button
+          onClick={() => {
+            toast.success(`Executing: ${command.name}`);
+            // TODO: Implement NinjaOne API call
+            console.log('Execute NinjaOne reset:', command.id);
+          }}
+          className="absolute top-4 right-4 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+          title="Execute reset"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-        ) : (
-          <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-        )}
-      </button>
+          Execute
+        </button>
+      ) : (
+        <button
+          onClick={() => copyCommand(command)}
+          className="absolute top-4 right-4 p-1.5 hover:bg-gray-800 rounded transition-colors"
+          title="Copy example"
+        >
+          {copiedCommand === command.id ? (
+            <svg className="w-4 h-4 text-[#0B4E43]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -244,7 +337,7 @@ export default function Commands() {
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const categories = ['all', 'techsupport', 'policies', 'brand', 'facilities'];
+  const categories = ['all', 'techsupport', 'policies', 'brand', 'facilities', 'resets'];
   
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
     // Initialize all categories as expanded
@@ -260,7 +353,8 @@ export default function Commands() {
     techsupport: '🔧',
     policies: '📝',
     brand: '🎨',
-    facilities: '🏢'
+    facilities: '🏢',
+    resets: '🔄'
   };
 
   const toggleCategory = (category: string) => {
