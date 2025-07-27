@@ -792,9 +792,25 @@ export default function Operations() {
                                 )}
                               </td>
                               <td className="py-3 px-4">
-                                <span className={`px-2 py-1 text-xs rounded-full border ${roleColors[u.role]}`}>
-                                  {u.role}
-                                </span>
+                                {editingUser === u.id ? (
+                                  <select
+                                    value={editFormData.role}
+                                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as User['role'] })}
+                                    className="px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded text-sm"
+                                    disabled={u.id === user?.id} // Prevent changing own role
+                                  >
+                                    {user?.role === 'admin' && (
+                                      <option value="admin">Admin</option>
+                                    )}
+                                    <option value="operator">Operator</option>
+                                    <option value="support">Support</option>
+                                    <option value="kiosk">Kiosk</option>
+                                  </select>
+                                ) : (
+                                  <span className={`px-2 py-1 text-xs rounded-full border ${roleColors[u.role]}`}>
+                                    {u.role}
+                                  </span>
+                                )}
                               </td>
                               <td className="py-3 px-4">
                                 {editingUser === u.id ? (

@@ -330,16 +330,33 @@ router.put('/users/:userId',
       .trim()
       .isEmail()
       .normalizeEmail()
-      .withMessage('Valid email is required')
+      .withMessage('Valid email is required'),
+    body('role')
+      .optional()
+      .isIn(['admin', 'operator', 'support', 'kiosk'])
+      .withMessage('Invalid role')
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { userId } = req.params;
-      const { name, phone, email } = req.body;
+      const { name, phone, email, role } = req.body;
       
       // Users can only update their own profile unless they're admin
       if (userId !== req.user!.id && req.user!.role !== 'admin') {
         throw new AppError('You can only update your own profile', 403, 'UNAUTHORIZED');
+      }
+      
+      // Role change authorization
+      if (role) {
+        // Users cannot change their own role
+        if (userId === req.user!.id) {
+          throw new AppError('You cannot change your own role', 403, 'SELF_ROLE_CHANGE');
+        }
+        
+        // Only admins can create or modify admin roles
+        if (role === 'admin' && req.user!.role !== 'admin') {
+          throw new AppError('Only admins can assign admin role', 403, 'INSUFFICIENT_PERMISSIONS');
+        }
       }
       
       // Check if email is being changed and if it's already taken
@@ -351,7 +368,7 @@ router.put('/users/:userId',
       }
       
       // Update user
-      const updatedUser = await db.updateUser(userId, { name, phone, email });
+      const updatedUser = await db.updateUser(userId, { name, phone, email, role });
       
       if (!updatedUser) {
         throw new AppError('User not found', 404, 'USER_NOT_FOUND');
