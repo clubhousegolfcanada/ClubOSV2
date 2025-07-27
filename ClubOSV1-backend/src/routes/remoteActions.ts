@@ -2,7 +2,7 @@ import express from 'express';
 import { requireAuth, requireRole } from '../middleware/auth';
 import ninjaOneService from '../services/ninjaone';
 import { pool } from '../utils/db';
-import { sendSlackNotification } from '../services/slack';
+// import { sendSlackNotification } from '../services/slack'; // TODO: Implement Slack notifications
 
 const router = express.Router();
 
@@ -145,16 +145,16 @@ router.post('/execute', requireAuth, requireRole('operator'), async (req, res) =
        JSON.stringify({ timestamp: new Date().toISOString() })]
     );
 
-    // Send Slack notification
-    await sendSlackNotification(
-      `🔧 Remote Action Executed\n` +
-      `User: ${req.user.email}\n` +
-      `Action: ${action}\n` +
-      `Device: ${device.name}\n` +
-      `Location: ${location}\n` +
-      `Job ID: ${job.jobId}`,
-      '#tech-alerts'
-    );
+    // TODO: Send Slack notification
+    // await sendSlackNotification(
+    //   `🔧 Remote Action Executed\n` +
+    //   `User: ${req.user.email}\n` +
+    //   `Action: ${action}\n` +
+    //   `Device: ${device.name}\n` +
+    //   `Location: ${location}\n` +
+    //   `Job ID: ${job.jobId}`,
+    //   '#tech-alerts'
+    // );
 
     res.json({
       success: true,
