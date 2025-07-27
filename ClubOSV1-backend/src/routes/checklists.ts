@@ -9,6 +9,84 @@ import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 
+// Define checklist templates
+const CHECKLIST_TEMPLATES = {
+  cleaning: {
+    daily: [
+      { id: 'balls', label: 'Replace practice balls' },
+      { id: 'garbage', label: 'Empty all garbage bins' },
+      { id: 'bathroom', label: 'Clean and restock bathrooms' },
+      { id: 'water', label: 'Refill water stations' },
+      { id: 'mats', label: 'Check and clean hitting mats' },
+      { id: 'screens', label: 'Wipe down screens' }
+    ],
+    weekly: [
+      { id: 'deep-clean', label: 'Deep clean all bays' },
+      { id: 'vacuum', label: 'Vacuum entire facility' },
+      { id: 'windows', label: 'Clean all windows' },
+      { id: 'equipment', label: 'Inspect and clean equipment' },
+      { id: 'storage', label: 'Organize storage areas' },
+      { id: 'hvac', label: 'Check HVAC filters' }
+    ],
+    quarterly: [
+      { id: 'walls', label: 'Wash walls and touch-up paint' },
+      { id: 'carpet', label: 'Deep carpet cleaning' },
+      { id: 'maintenance', label: 'Equipment maintenance check' },
+      { id: 'inventory', label: 'Complete inventory audit' },
+      { id: 'safety', label: 'Safety equipment inspection' }
+    ]
+  },
+  tech: {
+    weekly: [
+      { id: 'software', label: 'Update TrackMan software' },
+      { id: 'cables', label: 'Check all cable connections' },
+      { id: 'projectors', label: 'Clean projector lenses' },
+      { id: 'computers', label: 'Run system diagnostics' },
+      { id: 'network', label: 'Test network connectivity' },
+      { id: 'backups', label: 'Verify backup systems' }
+    ],
+    quarterly: [
+      { id: 'calibration', label: 'Calibrate all TrackMan units' },
+      { id: 'hardware', label: 'Hardware inspection and cleaning' },
+      { id: 'ups', label: 'Test UPS battery systems' },
+      { id: 'security', label: 'Review security footage retention' },
+      { id: 'licenses', label: 'Verify software licenses' },
+      { id: 'documentation', label: 'Update technical documentation' }
+    ]
+  }
+};
+
+// Get checklist template
+router.get('/template/:category/:type',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category, type } = req.params;
+      
+      if (!CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES]) {
+        throw new AppError('Invalid category', 400, 'INVALID_CATEGORY');
+      }
+      
+      const template = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES][type as keyof typeof CHECKLIST_TEMPLATES['cleaning']];
+      
+      if (!template) {
+        throw new AppError('Invalid checklist type', 400, 'INVALID_TYPE');
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          category,
+          type,
+          tasks: template
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Submit a completed checklist
 router.post('/submit',
   authenticate,

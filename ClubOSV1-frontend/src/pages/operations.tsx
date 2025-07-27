@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2 } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
+import { ChecklistSystem } from '@/components/ChecklistSystem';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -1025,7 +1026,7 @@ export default function Operations() {
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
-                Cleaning Checklists
+                Checklists
                 {showCleaning && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
@@ -1034,7 +1035,7 @@ export default function Operations() {
             
             <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
               {showCleaning 
-                ? 'Manage daily cleaning tasks and maintenance checklists for all locations.'
+                ? 'Complete cleaning and tech maintenance checklists with real-time tracking and submission history.'
                 : 'Manage system users, configurations, and analytics.'}
             </p>
           </div>
@@ -1043,8 +1044,8 @@ export default function Operations() {
             <>
               {showCleaning ? (
                 <>
-                  {/* Cleaning Checklists Content */}
-                  {renderCleaningContent()}
+                  {/* Checklists Content */}
+                  <ChecklistSystem />
                 </>
               ) : (
                 <>

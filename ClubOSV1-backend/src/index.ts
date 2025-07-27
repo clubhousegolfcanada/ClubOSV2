@@ -152,6 +152,18 @@ async function startServer() {
     const { initializeSystemConfigs } = await import('./routes/system-config');
     await initializeSystemConfigs();
     logger.info('✅ System configurations initialized');
+    
+    // Run database migrations
+    try {
+      const migrationPath = path.join(__dirname, 'database', 'migrations', '008_checklist_submissions.sql');
+      if (require('fs').existsSync(migrationPath)) {
+        const migration = require('fs').readFileSync(migrationPath, 'utf8');
+        await db.query(migration);
+        logger.info('✅ Checklist submissions table migration completed');
+      }
+    } catch (migrationError) {
+      logger.warn('⚠️  Migration already applied or failed:', migrationError);
+    }
   } catch (error) {
     logger.error('❌ Database initialization failed:', error);
     if (process.env.NODE_ENV === 'production') {
