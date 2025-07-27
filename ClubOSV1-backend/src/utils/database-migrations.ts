@@ -196,6 +196,65 @@ export async function runMigrations() {
       }
     }
     
+    // Migration 7: Add slack_replies table for Phase 2 Slack integration
+    try {
+      await query(`
+        CREATE TABLE IF NOT EXISTS slack_replies (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          thread_ts VARCHAR(255) NOT NULL,
+          user_name VARCHAR(255),
+          user_id VARCHAR(255) NOT NULL,
+          text TEXT NOT NULL,
+          timestamp TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await query(`CREATE INDEX IF NOT EXISTS idx_slack_replies_thread_ts ON slack_replies(thread_ts)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_slack_replies_user_id ON slack_replies(user_id)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_slack_replies_timestamp ON slack_replies(timestamp DESC)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_slack_replies_created_at ON slack_replies(created_at DESC)`);
+      
+      logger.info('✅ Migration: slack_replies table created');
+    } catch (error: any) {
+      if (!error.message.includes('already exists')) {
+        logger.error('Failed to create slack_replies table:', error);
+      }
+    }
+    
+    // Migration 8: Create slack_replies_view for easy querying
+    try {
+      await query(`
+        CREATE OR REPLACE VIEW slack_replies_view AS
+        SELECT 
+          sr.id as reply_id,
+          sr.thread_ts,
+          sr.user_name as reply_user_name,
+          sr.user_id as reply_user_id,
+          sr.text as reply_text,
+          sr.timestamp as reply_timestamp,
+          sr.created_at as reply_created_at,
+          
+          -- Original message details
+          sm.id as original_message_id,
+          sm.user_id as original_user_id,
+          sm.request_id as original_request_id,
+          sm.slack_channel,
+          sm.request_description,
+          sm.location,
+          sm.route,
+          sm.created_at as original_created_at
+          
+        FROM slack_replies sr
+        JOIN slack_messages sm ON sr.thread_ts = sm.slack_thread_ts
+        ORDER BY sr.timestamp DESC
+      `);
+      
+      logger.info('✅ Migration: slack_replies_view created');
+    } catch (error: any) {
+      logger.error('Failed to create slack_replies_view:', error);
+    }
+    
     logger.info('✅ All migrations completed');
   } catch (error) {
     logger.error('Migration failed:', error);

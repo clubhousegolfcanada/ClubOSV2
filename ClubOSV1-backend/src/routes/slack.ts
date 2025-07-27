@@ -10,8 +10,7 @@ import { db } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { 
   handleSlackUrlVerification, 
-  applySlackSecurity,
-  captureRawBody 
+  applySlackSecurity 
 } from '../middleware/slackSecurity';
 
 const router = Router();
@@ -91,7 +90,7 @@ router.post('/message',
           completedAt: new Date().toISOString()
         };
 
-        await appendToJsonArray('userLogs.json', completedRequest);
+        // Request completed - stored in database via customer_interactions
 
         logger.info('Slack message sent successfully', { requestId });
 
@@ -115,7 +114,7 @@ router.post('/message',
           failedAt: new Date().toISOString()
         };
 
-        await appendToJsonArray('userLogs.json', failedRequest);
+        // Request failed - logged in database via customer_interactions
 
         throw new AppError(
           'SLACK_SEND_FAILED',
@@ -131,8 +130,78 @@ router.post('/message',
   }
 );
 
-// Slack webhook endpoint (for receiving messages from Slack)
-// Apply signature verification
+// Slack Events API endpoint (Phase 2: Reply tracking)
+router.post('/events',
+  handleSlackUrlVerification, // Handle URL verification first
+  applySlackSecurity, // Then verify signature
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      logger.info('Slack events API received (verified)', {
+        type: req.body.type,
+        event: req.body.event?.type
+      });
+
+      // Handle different Slack event types
+      const { type, event } = req.body;
+
+      // URL verification challenge
+      if (type === 'url_verification') {
+        return res.json({ challenge: req.body.challenge });
+      }
+
+      // Event callback
+      if (type === 'event_callback') {
+        // Log Slack event for debugging
+        logger.info('Slack event received', {
+          eventType: event?.type,
+          event: event,
+          verified: true
+        });
+
+        // Handle different event types
+        switch (event?.type) {
+          case 'message':
+            // Only process threaded replies (not direct messages)
+            if (event.thread_ts && !event.bot_id) {
+              logger.info('Slack thread reply received', { 
+                user: event.user,
+                text: event.text,
+                channel: event.channel,
+                thread_ts: event.thread_ts
+              });
+              
+              await storeSlackReply(event);
+            }
+            break;
+          
+          case 'app_mention':
+            // Handle mentions
+            logger.info('App mentioned in Slack', {
+              user: event.user,
+              text: event.text,
+              channel: event.channel
+            });
+            
+            await processSlackMention(event);
+            break;
+
+          default:
+            logger.info('Unhandled Slack event type', { type: event?.type });
+        }
+      }
+
+      // Default response
+      res.json({ ok: true });
+
+    } catch (error) {
+      logger.error('Slack events API error:', error);
+      // Slack expects a 200 response even on errors
+      res.status(200).json({ ok: false, error: 'Internal error' });
+    }
+  }
+);
+
+// Legacy webhook endpoint (keeping for compatibility)
 router.post('/webhook',
   handleSlackUrlVerification, // Handle URL verification first
   applySlackSecurity, // Then verify signature
@@ -346,6 +415,63 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
+// Get Slack replies for a specific thread
+router.get('/replies/:threadTs', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { threadTs } = req.params;
+    
+    // Get replies using the view for enriched data
+    const repliesResult = await db.query(
+      `SELECT * FROM slack_replies_view 
+       WHERE thread_ts = $1 
+       ORDER BY reply_timestamp ASC`,
+      [threadTs]
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        threadTs,
+        replies: repliesResult.rows,
+        count: repliesResult.rows.length
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all recent Slack conversations with replies
+router.get('/conversations', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    // Get conversations with reply counts
+    const conversationsResult = await db.query(
+      `SELECT 
+        sm.*,
+        COUNT(sr.id) as reply_count,
+        MAX(sr.timestamp) as last_reply_at
+       FROM slack_messages sm
+       LEFT JOIN slack_replies sr ON sm.slack_thread_ts = sr.thread_ts
+       GROUP BY sm.id
+       ORDER BY COALESCE(MAX(sr.timestamp), sm.created_at) DESC
+       LIMIT $1`,
+      [limit]
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        conversations: conversationsResult.rows,
+        count: conversationsResult.rows.length
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Test Slack connection
 router.post('/test', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -406,8 +532,38 @@ router.post('/test', async (req: Request, res: Response, next: NextFunction) => 
 });
 
 // Helper functions
+async function storeSlackReply(event: any) {
+  try {
+    // Store the Slack reply in the database
+    await db.query(
+      `INSERT INTO slack_replies 
+       (thread_ts, user_name, user_id, text, timestamp)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        event.thread_ts,
+        event.user_profile?.display_name || event.user_profile?.real_name || 'Unknown User',
+        event.user,
+        event.text,
+        new Date(parseFloat(event.ts) * 1000) // Convert Slack timestamp to Date
+      ]
+    );
+    
+    logger.info('Slack reply stored successfully', { 
+      thread_ts: event.thread_ts,
+      user: event.user,
+      text: event.text.substring(0, 50) + '...'
+    });
+    
+    // TODO: Trigger real-time notification to frontend (WebSocket/SSE)
+    
+  } catch (error) {
+    logger.error('Failed to store Slack reply:', error);
+    throw error;
+  }
+}
+
 async function processSlackMessage(event: any) {
-  // Process incoming Slack messages
+  // Process incoming Slack messages (legacy handler)
   logger.info('Processing Slack message', { text: event.text });
   // Add your message processing logic here
 }

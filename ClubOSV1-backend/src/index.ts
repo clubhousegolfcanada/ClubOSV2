@@ -55,6 +55,13 @@ app.use(cors({
   exposedHeaders: ['Content-Disposition']
 }));
 
+// Custom middleware to capture raw body for Slack signature verification
+app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, res, next) => {
+  req.rawBody = req.body;
+  req.body = JSON.parse(req.body.toString());
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(requestLogger);
 
