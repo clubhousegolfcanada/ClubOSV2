@@ -796,7 +796,7 @@ const RequestForm: React.FC = () => {
               {smartAssistEnabled ? 'Processing your request...' : 'Sending to Slack...'}
             </p>
             <p className="text-sm text-gray-400 mb-1">
-              {smartAssistEnabled ? 'This could take up to 30 seconds... we are thinking' : 'This may take a few seconds'}
+              {smartAssistEnabled ? 'This could take up to 30 seconds... we are thinking' : 'This could take up to 2-3 minutes for a response... we are asking a real human'}
             </p>
             {elapsedTime > 0 && (
               <p className="text-xs text-gray-500">
