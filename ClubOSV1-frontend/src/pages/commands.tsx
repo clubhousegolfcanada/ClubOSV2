@@ -557,7 +557,7 @@ const categoryConfig = {
 export default function CommandsRedesigned() {
   const router = useRouter();
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<'commands' | 'remote-actions'>('commands');
+  const [activeTab, setActiveTab] = useState<'commands' | 'remote-actions'>('remote-actions');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
@@ -627,19 +627,6 @@ export default function CommandsRedesigned() {
           <div className="mb-8">
             <div className="flex items-center gap-6 mb-6">
               <button
-                onClick={() => setActiveTab('commands')}
-                className={`text-2xl font-semibold transition-all relative pb-1 ${
-                  activeTab === 'commands' 
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Commands
-                {activeTab === 'commands' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
-              <button
                 onClick={() => setActiveTab('remote-actions')}
                 className={`text-2xl font-semibold transition-all relative pb-1 ${
                   activeTab === 'remote-actions' 
@@ -649,6 +636,19 @@ export default function CommandsRedesigned() {
               >
                 Remote Actions
                 {activeTab === 'remote-actions' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('commands')}
+                className={`text-2xl font-semibold transition-all relative pb-1 ${
+                  activeTab === 'commands' 
+                    ? 'text-[var(--text-primary)]' 
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                Commands
+                {activeTab === 'commands' && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
               </button>
