@@ -403,7 +403,11 @@ export default function Operations() {
       });
       
       if (response.data.success) {
-        toast.success('User updated successfully');
+        if (response.data.message) {
+          toast.success(response.data.message);
+        } else {
+          toast.success('User updated successfully');
+        }
         setEditingUser(null);
         fetchUsers();
       }

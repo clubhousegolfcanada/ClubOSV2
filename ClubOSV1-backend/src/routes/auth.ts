@@ -374,14 +374,22 @@ router.put('/users/:userId',
         throw new AppError('User not found', 404, 'USER_NOT_FOUND');
       }
       
-      logger.info('User profile updated:', { userId, updatedBy: req.user!.id });
+      logger.info('User profile updated:', { 
+        userId, 
+        updatedBy: req.user!.id,
+        roleChanged: !!role,
+        newRole: role 
+      });
       
       // Transform user for response
       const transformedUser = transformUser(updatedUser);
       
       res.json({
         success: true,
-        data: transformedUser
+        data: transformedUser,
+        ...(role && { 
+          message: 'Role updated successfully. User must log out and back in for changes to take effect.' 
+        })
       });
       
     } catch (error) {
