@@ -80,8 +80,8 @@ router.post('/message',
       });
 
       try {
-        // Send to Slack
-        await slackFallback.sendDirectMessage(userRequest);
+        // Send to Slack and get thread timestamp
+        const threadTs = await slackFallback.sendDirectMessage(userRequest);
 
         // Update request status
         const completedRequest = {
@@ -93,14 +93,15 @@ router.post('/message',
 
         // Request completed - stored in database via customer_interactions
 
-        logger.info('Slack message sent successfully', { requestId });
+        logger.info('Slack message sent successfully', { requestId, threadTs });
 
         res.json({
           success: true,
           data: {
             requestId,
             message: 'Request sent to Slack successfully',
-            timestamp: userRequest.timestamp
+            timestamp: userRequest.timestamp,
+            threadTs: threadTs // Include thread timestamp for frontend polling
           }
         });
 
