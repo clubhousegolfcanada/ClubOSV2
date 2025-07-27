@@ -172,12 +172,21 @@ export const useAnalytics = () => {
   const [period, setPeriod] = useState('24h');
 
   useEffect(() => {
+    // Skip on server-side rendering
+    if (typeof window === 'undefined') return;
+    
     const fetchStats = async () => {
       try {
+        const token = localStorage.getItem('clubos_token');
+        if (!token) {
+          // No token, keep default values
+          return;
+        }
+        
         const response = await axios.get(`${API_URL}/history/stats/overview`, {
           params: { period },
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         

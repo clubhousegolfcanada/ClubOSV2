@@ -15,19 +15,24 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     console.log('[Axios Interceptor] Processing request to:', config.url);
-    const token = localStorage.getItem('clubos_token');
-    console.log('[Axios Interceptor] Token found:', !!token);
-    console.log('[Axios Interceptor] Token value:', token ? token.substring(0, 20) + '...' : 'null');
     
-    if (token) {
-      // Ensure headers object exists
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('[Axios Interceptor] Added auth header:', config.headers.Authorization?.substring(0, 30) + '...');
-      console.log('[Axios Interceptor] Full config headers:', config.headers);
-    } else {
-      console.log('[Axios Interceptor] No token found, request will be sent without auth');
+    // Only access localStorage on client side
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('clubos_token');
+      console.log('[Axios Interceptor] Token found:', !!token);
+      console.log('[Axios Interceptor] Token value:', token ? token.substring(0, 20) + '...' : 'null');
+      
+      if (token) {
+        // Ensure headers object exists
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log('[Axios Interceptor] Added auth header:', config.headers.Authorization?.substring(0, 30) + '...');
+        console.log('[Axios Interceptor] Full config headers:', config.headers);
+      } else {
+        console.log('[Axios Interceptor] No token found, request will be sent without auth');
+      }
     }
+    
     return config;
   },
   (error) => {
