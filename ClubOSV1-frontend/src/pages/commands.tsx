@@ -827,23 +827,23 @@ export default function CommandsRedesigned() {
                                       <div className="grid grid-cols-3 gap-2">
                                         <button
                                           onClick={() => handleExecuteReset(trigger)}
-                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded transition-all group/btn"
+                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-orange-500 border-2 border-orange-500/30 hover:border-orange-500 rounded transition-all group/btn"
                                         >
-                                          <RefreshCw className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <RefreshCw className="w-3.5 h-3.5 text-orange-500 group-hover/btn:text-white" />
                                           <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Sim</span>
                                         </button>
                                         <button
                                           onClick={() => toast.success(`Restarting PC for Bay ${trigger.bayNumber}`)}
-                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded transition-all group/btn"
+                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-red-500 border-2 border-red-500/30 hover:border-red-500 rounded transition-all group/btn"
                                         >
-                                          <Power className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <Power className="w-3.5 h-3.5 text-red-500 group-hover/btn:text-white" />
                                           <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">PC</span>
                                         </button>
                                         <button
                                           onClick={() => toast.success(`Other action for Bay ${trigger.bayNumber}`)}
-                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded transition-all group/btn"
+                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-green-500 border-2 border-green-500/30 hover:border-green-500 rounded transition-all group/btn"
                                         >
-                                          <AlertCircle className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <AlertCircle className="w-3.5 h-3.5 text-green-500 group-hover/btn:text-white" />
                                           <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Other</span>
                                         </button>
                                       </div>
