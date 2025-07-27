@@ -171,9 +171,9 @@ const RequestForm: React.FC = () => {
       setTimeout(() => {
         document.getElementById('response-area')?.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'nearest' 
+          block: 'start' 
         });
-      }, 100);
+      }, 200);
     }
   }, [lastResponse, isNewSubmission, smartAssistEnabled, notify, isMounted]);
 
@@ -223,6 +223,14 @@ const RequestForm: React.FC = () => {
     setIsProcessing(true); // Start loading state
     setFeedbackGiven(null); // Clear previous feedback
     setLastRequestData(data); // Store the request data for feedback
+    
+    // Scroll to loading area immediately
+    setTimeout(() => {
+      document.getElementById('response-area')?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }, 100);
 
     const request: UserRequest = {
       requestDescription: data.requestDescription,
