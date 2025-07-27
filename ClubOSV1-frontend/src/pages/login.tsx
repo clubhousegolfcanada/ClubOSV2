@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { Eye, EyeOff } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -12,6 +13,10 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +44,29 @@ const LoginPage = () => {
       toast.error(message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: resetEmail
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setShowResetModal(false);
+        setResetEmail('');
+      }
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      const message = error.response?.data?.message || 'Failed to send reset email. Please try again.';
+      toast.error(message);
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -77,17 +105,42 @@ const LoginPage = () => {
               <label htmlFor="password" className="block text-sm font-medium text-[var(--text-secondary)]">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                className="mt-1 block w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-md text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="block w-full px-3 py-2 pr-10 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-md text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(true)}
+                className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
+              >
+                Forgot your password?
+              </button>
             </div>
           </div>
 
@@ -102,6 +155,57 @@ const LoginPage = () => {
           </div>
         </form>
       </div>
+
+      {/* Password Reset Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+              Reset Password
+            </h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              Enter your email address and we'll send you instructions to reset your password.
+            </p>
+            
+            <form onSubmit={handlePasswordReset}>
+              <div className="mb-4">
+                <label htmlFor="reset-email" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  Email address
+                </label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-md text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
+                  placeholder="email@example.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetModal(false);
+                    setResetEmail('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-[var(--border-primary)] rounded-md text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResetting}
+                  className="flex-1 px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-md text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isResetting ? 'Sending...' : 'Send Reset Email'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

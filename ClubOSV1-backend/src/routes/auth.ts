@@ -12,6 +12,42 @@ import { transformUser } from '../utils/transformers';
 
 const router = Router();
 
+// Request password reset
+router.post('/forgot-password',
+  validate([
+    body('email').isEmail().withMessage('Valid email required')
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body;
+      
+      // Check if user exists
+      const user = await db.findUserByEmail(email.toLowerCase());
+      
+      // Always return success to prevent email enumeration
+      // In production, this would send an email if user exists
+      if (user) {
+        // TODO: Generate reset token and send email
+        logger.info('Password reset requested:', { email });
+        
+        // In a real implementation:
+        // 1. Generate a secure reset token
+        // 2. Store token with expiration in database
+        // 3. Send email with reset link
+        // 4. Create a reset page that accepts the token
+      }
+      
+      res.json({
+        success: true,
+        message: 'If an account exists with this email, you will receive password reset instructions.'
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Login endpoint
 router.post('/login',
   validate([

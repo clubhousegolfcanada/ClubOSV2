@@ -697,7 +697,7 @@ router.post('/test', async (req: Request, res: Response, next: NextFunction) => 
     const slackConfig = configResult.rows[0]?.value || { enabled: true };
     
     if (!slackConfig.enabled) {
-      throw new AppError('SLACK_DISABLED', 'Slack integration is currently disabled', 503);
+      throw new AppError('Slack integration is currently disabled', 503, 'SLACK_DISABLED');
     }
 
     const testMessage = {
