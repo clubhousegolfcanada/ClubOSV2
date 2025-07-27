@@ -17,7 +17,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     const feedback = await db.query(
       `SELECT * FROM feedback 
        WHERE user_id = $1 OR user_email = $2 
-       ORDER BY "createdAt" DESC 
+       ORDER BY created_at DESC 
        LIMIT $3 OFFSET $4`,
       [userId, userEmail, Number(limit), Number(offset)]
     );
@@ -26,7 +26,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     const interactions = await db.query(
       `SELECT * FROM customer_interactions 
        WHERE user_id = $1 OR user_email = $2 
-       ORDER BY "createdAt" DESC 
+       ORDER BY created_at DESC 
        LIMIT $3 OFFSET $4`,
       [userId, userEmail, Number(limit), Number(offset)]
     );
@@ -36,7 +36,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...feedback.rows.map(f => ({
         type: 'feedback',
         id: f.id,
-        timestamp: f.createdAt,
+        timestamp: f.created_at,
         request: f.request_description,
         response: f.response,
         route: f.route,
@@ -50,7 +50,7 @@ router.get('/interactions', authenticate, async (req, res) => {
       ...interactions.rows.map(i => ({
         type: 'interaction',
         id: i.id,
-        timestamp: i.createdAt,
+        timestamp: i.created_at,
         request: i.request_text,
         response: i.response_text,
         route: i.route,
@@ -104,7 +104,7 @@ router.get('/bookings', authenticate, async (req, res) => {
         type: b.type,
         recurringDays: b.recurring_days,
         status: b.status,
-        createdAt: b.createdAt.toISOString(),
+        createdAt: b.created_at.toISOString(),
         cancelledAt: b.cancelled_at?.toISOString()
       })),
       pagination: {
@@ -133,7 +133,7 @@ router.get('/tickets', authenticate, async (req, res) => {
     
     // Sort by created date descending
     const sorted = tickets.sort((a, b) => 
-      b.createdAt.getTime() - a.createdAt.getTime()
+      b.created_at.getTime() - a.created_at.getTime()
     );
     
     // Apply pagination
@@ -149,8 +149,8 @@ router.get('/tickets', authenticate, async (req, res) => {
         status: t.status,
         priority: t.priority,
         location: t.location,
-        createdAt: t.createdAt.toISOString(),
-        updatedAt: t.updatedAt.toISOString(),
+        createdAt: t.created_at.toISOString(),
+        updatedAt: t.updated_at.toISOString(),
         resolvedAt: t.resolved_at?.toISOString()
       })),
       pagination: {
@@ -202,7 +202,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
       // Total requests
       db.query(
         `SELECT COUNT(*) as count FROM customer_interactions 
-         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+         WHERE created_at >= $1 AND created_at <= $2`,
         [startDate, end]
       ),
       
@@ -210,7 +210,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
       db.query(
         `SELECT COUNT(DISTINCT COALESCE(user_id::text, user_email)) as count 
          FROM customer_interactions 
-         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+         WHERE created_at >= $1 AND created_at <= $2`,
         [startDate, end]
       ),
       
@@ -221,7 +221,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
            SUM(CASE WHEN is_useful THEN 1 ELSE 0 END) as useful,
            AVG(confidence) as avg_confidence
          FROM feedback 
-         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+         WHERE created_at >= $1 AND created_at <= $2`,
         [startDate, end]
       ),
       
@@ -231,7 +231,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
            COUNT(*) as total,
            SUM(CASE WHEN status = 'resolved' OR status = 'closed' THEN 1 ELSE 0 END) as resolved
          FROM tickets 
-         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+         WHERE created_at >= $1 AND created_at <= $2`,
         [startDate, end]
       ),
       
@@ -241,7 +241,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
            COUNT(*) as total,
            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
          FROM bookings 
-         WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
+         WHERE created_at >= $1 AND created_at <= $2`,
         [startDate, end]
       )
     ]);

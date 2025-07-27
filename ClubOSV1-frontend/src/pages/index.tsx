@@ -16,9 +16,19 @@ export default function Home() {
   const { user } = useAuthState();
   const [previousStats, setPreviousStats] = useState<any>(null);
   
-  // Fetch previous period stats for comparison
+  // Fetch previous period stats for comparison - only when authenticated
   useEffect(() => {
     const fetchPreviousPeriod = async () => {
+      // Only fetch if user is authenticated
+      if (!user) {
+        setPreviousStats({
+          totalRequests: 0,
+          averageConfidence: 0,
+          totalBookings: 0
+        });
+        return;
+      }
+      
       try {
         // For 24h period, get yesterday's data
         const yesterday = new Date();
@@ -46,7 +56,7 @@ export default function Home() {
     };
     
     fetchPreviousPeriod();
-  }, []);
+  }, [user]);
   
   // Auto-refresh stats every 30 seconds - DISABLED
   // useEffect(() => {

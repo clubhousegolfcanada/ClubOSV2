@@ -83,10 +83,10 @@ export class OpenAIProvider extends BaseLLMProvider {
         try {
           const { db } = await import('../../utils/database');
           const interactions = await db.query(
-            `SELECT request_text, response_text, route, confidence, "createdAt" 
+            `SELECT request_text, response_text, route, confidence, created_at 
              FROM customer_interactions 
              WHERE user_id = $1 
-             ORDER BY "createdAt" DESC 
+             ORDER BY created_at DESC 
              LIMIT 5`,
             [userId]
           );
