@@ -807,65 +807,81 @@ export default function CommandsRedesigned() {
                         if (!locationData) return null;
                         
                         return (
-                          <div key={location} className="card group p-4 sm:p-6 md:p-8">
+                          <div key={location} className="card group p-4 sm:p-6">
                             {/* Location Header */}
                             <div className="flex items-center gap-2 mb-4">
                               <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
                               <h3 className="text-base sm:text-lg font-medium text-[var(--text-primary)]">{location}</h3>
                             </div>
                             
-                            {/* Quick Bay Resets */}
+                            {/* Bay Controls */}
                             {locationData.bays.length > 0 && (
-                              <div className="mb-4">
-                                <p className="text-xs text-[var(--text-secondary)] font-light mb-3">Quick Bay Resets</p>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                              <div className="space-y-3 mb-4">
+                                <p className="text-xs text-[var(--text-secondary)] font-light">Bay Controls</p>
+                                <div className="space-y-2">
                                   {locationData.bays.sort((a, b) => parseInt(a.bayNumber!) - parseInt(b.bayNumber!)).map((trigger) => (
-                                    <button
-                                      key={trigger.id}
-                                      onClick={() => handleExecuteReset(trigger)}
-                                      className="group/btn"
-                                    >
-                                      <div className="bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-2 sm:p-3 transition-all duration-200">
-                                        <div className="text-center">
-                                          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto mb-0.5 sm:mb-1 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                          <div className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] group-hover/btn:text-white">
-                                            Bay {trigger.bayNumber}
-                                          </div>
-                                        </div>
+                                    <div key={trigger.id} className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-[var(--text-primary)]">Bay {trigger.bayNumber}</span>
                                       </div>
-                                    </button>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                          onClick={() => handleExecuteReset(trigger)}
+                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded transition-all group/btn"
+                                        >
+                                          <RefreshCw className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Sim</span>
+                                        </button>
+                                        <button
+                                          onClick={() => toast.success(`Restarting PC for Bay ${trigger.bayNumber}`)}
+                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded transition-all group/btn"
+                                        >
+                                          <Power className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">PC</span>
+                                        </button>
+                                        <button
+                                          onClick={() => toast.success(`Other action for Bay ${trigger.bayNumber}`)}
+                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded transition-all group/btn"
+                                        >
+                                          <AlertCircle className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Other</span>
+                                        </button>
+                                      </div>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
                             )}
                             
-                            {/* System Controls */}
-                            <div className="border-t border-[var(--border-secondary)] pt-4">
-                              <p className="text-xs text-[var(--text-secondary)] font-light mb-3">System Controls</p>
-                              <div className="grid grid-cols-2 gap-3">
-                                {/* Music Reset */}
-                                {locationData.music && (
-                                  <button
-                                    onClick={() => handleExecuteReset(locationData.music!)}
-                                    className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-2.5 sm:p-3 transition-all group/btn"
-                                  >
-                                    <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                    <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] group-hover/btn:text-white">Music</span>
-                                  </button>
-                                )}
-                                
-                                {/* TV Reset */}
-                                {locationData.tv && (
-                                  <button
-                                    onClick={() => handleExecuteReset(locationData.tv!)}
-                                    className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-2.5 sm:p-3 transition-all group/btn"
-                                  >
-                                    <Tv className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                    <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] group-hover/btn:text-white">TV</span>
-                                  </button>
-                                )}
+                            {/* System Controls Card */}
+                            {(locationData.music || locationData.tv) && (
+                              <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-3">
+                                <p className="text-xs text-[var(--text-secondary)] font-light mb-2">System Controls</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {/* Music Reset */}
+                                  {locationData.music && (
+                                    <button
+                                      onClick={() => handleExecuteReset(locationData.music!)}
+                                      className="flex items-center justify-center gap-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded p-2 transition-all group/btn"
+                                    >
+                                      <Music className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                      <span className="text-xs font-medium text-[var(--text-primary)] group-hover/btn:text-white">Music</span>
+                                    </button>
+                                  )}
+                                  
+                                  {/* TV Reset */}
+                                  {locationData.tv && (
+                                    <button
+                                      onClick={() => handleExecuteReset(locationData.tv!)}
+                                      className="flex items-center justify-center gap-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded p-2 transition-all group/btn"
+                                    >
+                                      <Tv className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                      <span className="text-xs font-medium text-[var(--text-primary)] group-hover/btn:text-white">TV</span>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         );
                       })}
