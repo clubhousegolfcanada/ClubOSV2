@@ -37,6 +37,7 @@ const CHECKLIST_TEMPLATES = {
     ]
   },
   tech: {
+    daily: null, // Tech doesn't have daily tasks
     weekly: [
       { id: 'software', label: 'Update TrackMan software' },
       { id: 'cables', label: 'Check all cable connections' },
@@ -67,10 +68,11 @@ router.get('/template/:category/:type',
         throw new AppError('Invalid category', 400, 'INVALID_CATEGORY');
       }
       
-      const template = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES][type as keyof typeof CHECKLIST_TEMPLATES['cleaning']];
+      const categoryTemplates = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES];
+      const template = categoryTemplates[type as keyof typeof categoryTemplates];
       
       if (!template) {
-        throw new AppError('Invalid checklist type', 400, 'INVALID_TYPE');
+        throw new AppError('Invalid checklist type for this category', 400, 'INVALID_TYPE');
       }
       
       res.json({

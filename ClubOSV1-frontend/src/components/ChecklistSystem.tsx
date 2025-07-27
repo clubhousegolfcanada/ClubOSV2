@@ -40,6 +40,13 @@ export const ChecklistSystem: React.FC = () => {
 
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
+  // Handle category change - tech doesn't have daily
+  useEffect(() => {
+    if (activeCategory === 'tech' && activeType === 'daily') {
+      setActiveType('weekly');
+    }
+  }, [activeCategory]);
+
   // Load checklist template
   useEffect(() => {
     loadTemplate();
@@ -144,13 +151,8 @@ export const ChecklistSystem: React.FC = () => {
     return category === 'cleaning' ? 'text-blue-400' : 'text-purple-400';
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'daily': return '☀️';
-      case 'weekly': return '📅';
-      case 'quarterly': return '📊';
-      default: return '📋';
-    }
+  const getTypeLabel = (type: string) => {
+    return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
   return (
@@ -234,7 +236,12 @@ export const ChecklistSystem: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => setActiveType('weekly')}
+                    onClick={() => {
+                      setActiveType('weekly');
+                      if (activeCategory === 'tech' && activeType === 'daily') {
+                        setActiveType('weekly'); // Force weekly for tech
+                      }
+                    }}
                     className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
                       activeType === 'weekly'
                         ? 'bg-[var(--accent)] text-white'
@@ -277,7 +284,7 @@ export const ChecklistSystem: React.FC = () => {
             <div className="card">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
-                  {getTypeIcon(activeType)} {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {activeType.charAt(0).toUpperCase() + activeType.slice(1)}
+                  {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {getTypeLabel(activeType)}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)]">
                   Complete all tasks below and submit when finished.
