@@ -29,6 +29,12 @@ export const errorHandler = (
     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   };
 
+  // Add CORS headers to error responses
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
   res.status(statusCode).json(errorResponse);
 };
 
