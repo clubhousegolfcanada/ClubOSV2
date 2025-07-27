@@ -232,10 +232,10 @@ export const ChecklistSystem: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Tab Navigation */}
-      <div className="flex items-center gap-6 mb-6">
+      <div className="flex items-center gap-4 md:gap-6 mb-6 overflow-x-auto">
         <button
           onClick={() => setActiveTab('checklist')}
-          className={`text-lg font-semibold transition-all relative pb-1 ${
+          className={`text-base md:text-lg font-semibold transition-all relative pb-1 whitespace-nowrap ${
             activeTab === 'checklist' 
               ? 'text-[var(--text-primary)]' 
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -248,7 +248,7 @@ export const ChecklistSystem: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('tracker')}
-          className={`text-lg font-semibold transition-all relative pb-1 ${
+          className={`text-base md:text-lg font-semibold transition-all relative pb-1 whitespace-nowrap ${
             activeTab === 'tracker' 
               ? 'text-[var(--text-primary)]' 
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -272,7 +272,7 @@ export const ChecklistSystem: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setActiveCategory('cleaning')}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                    className={`flex-1 px-3 md:px-4 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
                       activeCategory === 'cleaning'
                         ? 'bg-blue-500 text-white border-blue-500'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
@@ -288,7 +288,7 @@ export const ChecklistSystem: React.FC = () => {
                         setActiveType('weekly');
                       }
                     }}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                    className={`flex-1 px-3 md:px-4 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
                       activeCategory === 'tech'
                         ? 'bg-purple-500 text-white border-purple-500'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
@@ -306,7 +306,7 @@ export const ChecklistSystem: React.FC = () => {
                   {activeCategory === 'cleaning' && (
                     <button
                       onClick={() => setActiveType('daily')}
-                      className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
+                      className={`flex-1 px-2 md:px-3 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
                         activeType === 'daily'
                           ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                           : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
@@ -317,7 +317,7 @@ export const ChecklistSystem: React.FC = () => {
                   )}
                   <button
                     onClick={() => setActiveType('weekly')}
-                    className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
+                    className={`flex-1 px-2 md:px-3 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
                       activeType === 'weekly'
                         ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
@@ -327,7 +327,7 @@ export const ChecklistSystem: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setActiveType('quarterly')}
-                    className={`flex-1 px-3 py-3 rounded-lg font-medium transition-all ${
+                    className={`flex-1 px-2 md:px-3 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
                       activeType === 'quarterly'
                         ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
@@ -399,12 +399,12 @@ export const ChecklistSystem: React.FC = () => {
 
               {/* Progress and Submit */}
               <div className="border-t border-[var(--border-secondary)] pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
                     <div className="text-sm text-[var(--text-secondary)]">
                       Progress: {Object.values(completedTasks).filter(Boolean).length} / {currentTemplate.tasks.length} tasks
                     </div>
-                    <div className="h-2 w-48 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                    <div className="h-2 w-full md:w-48 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-[var(--accent)] transition-all duration-300"
                         style={{ 
@@ -416,7 +416,7 @@ export const ChecklistSystem: React.FC = () => {
                   <button
                     onClick={handleSubmit}
                     disabled={!isAllTasksCompleted() || isSubmitting}
-                    className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                    className={`w-full md:w-auto px-6 py-3 rounded-lg font-medium transition-all ${
                       isAllTasksCompleted() && !isSubmitting
                         ? 'bg-green-500 text-white hover:bg-green-600'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed'

@@ -173,8 +173,8 @@ export default function Operations() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(true);
-  const [showCleaning, setShowCleaning] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showCleaning, setShowCleaning] = useState(true);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
@@ -1005,23 +1005,10 @@ export default function Operations() {
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
-            <div className="flex items-center gap-6 mb-6">
-              <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); }}
-                className={`text-2xl font-semibold transition-all relative pb-1 ${
-                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Operations
-                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
               <button
                 onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); }}
-                className={`text-2xl font-semibold transition-all relative pb-1 ${
+                className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
                   showCleaning 
                     ? 'text-[var(--text-primary)]' 
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -1029,6 +1016,19 @@ export default function Operations() {
               >
                 Checklists
                 {showCleaning && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+                )}
+              </button>
+              <button
+                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); }}
+                className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
+                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning
+                    ? 'text-[var(--text-primary)]' 
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                Operations
+                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
               </button>
@@ -1051,29 +1051,30 @@ export default function Operations() {
               ) : (
                 <>
                   {/* Operations Tab Navigation */}
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                <div className="flex flex-wrap gap-2 md:gap-4">
                   <button
                     onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showAnalytics
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     <BarChart3 className="w-4 h-4" />
-                    Analytics
+                    <span className="hidden sm:inline">Analytics</span>
+                    <span className="sm:hidden">Stats</span>
                   </button>
                   <button
                     onClick={() => { setShowFeedback(true); setShowSystemConfig(false); setShowAnalytics(false); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showFeedback
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     <AlertCircle className="w-4 h-4" />
-                    Feedback Log
+                    Feedback
                     {feedback.length > 0 && !showFeedback && (
                       <span className="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
                         {feedback.length}
@@ -1082,24 +1083,26 @@ export default function Operations() {
                   </button>
                   <button
                     onClick={() => { setShowFeedback(false); setShowSystemConfig(true); setShowAnalytics(false); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showSystemConfig
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     <Settings className="w-4 h-4" />
-                    System Config
+                    <span className="hidden sm:inline">System Config</span>
+                    <span className="sm:hidden">Config</span>
                   </button>
                   <button
                     onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all ${
                       !showFeedback && !showSystemConfig && !showAnalytics
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    User Management
+                    <span className="hidden sm:inline">User Management</span>
+                    <span className="sm:hidden">Users</span>
                   </button>
                 </div>
                 
@@ -1107,16 +1110,16 @@ export default function Operations() {
                 <div className="flex gap-2">
                   <button
                     onClick={createBackup}
-                    className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm md:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
                     title="Create backup of all data"
                   >
                     <Save className="w-4 h-4" />
-                    Backup
+                    <span className="hidden sm:inline">Backup</span>
                   </button>
-                  <label className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2 cursor-pointer"
+                  <label className="px-3 py-2 text-sm md:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2 cursor-pointer"
                      title="Restore from backup file">
                     <Upload className="w-4 h-4" />
-                    Restore
+                    <span className="hidden sm:inline">Restore</span>
                     <input
                       type="file"
                       accept=".json"
