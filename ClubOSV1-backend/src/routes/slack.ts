@@ -429,6 +429,33 @@ router.get('/thread-replies/:threadTs', async (req: Request, res: Response, next
       });
     }
     
+    // First, let's find the channel ID if we have a channel name
+    let channelId = process.env.SLACK_CHANNEL_ID;
+    
+    if (!channelId) {
+      // Try to get channel ID from channel name
+      const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
+      const channelsResponse = await axios.get('https://slack.com/api/conversations.list', {
+        headers: {
+          'Authorization': `Bearer ${botToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (channelsResponse.data.ok) {
+        const channel = channelsResponse.data.channels.find((ch: any) => ch.name === channelName);
+        if (channel) {
+          channelId = channel.id;
+        }
+      }
+    }
+    
+    if (!channelId) {
+      throw new Error('Could not determine Slack channel ID');
+    }
+    
+    logger.info('Fetching thread replies', { channelId, threadTs });
+    
     // Call Slack API directly to get thread replies
     const slackResponse = await axios.get('https://slack.com/api/conversations.replies', {
       headers: {
@@ -436,23 +463,41 @@ router.get('/thread-replies/:threadTs', async (req: Request, res: Response, next
         'Content-Type': 'application/json'
       },
       params: {
-        channel: process.env.SLACK_CHANNEL_ID || process.env.SLACK_CHANNEL || '#clubos-assistants',
+        channel: channelId,
         ts: threadTs
       }
     });
     
     if (!slackResponse.data.ok) {
+      logger.error('Slack API error', { 
+        error: slackResponse.data.error, 
+        channelId, 
+        threadTs,
+        response: slackResponse.data 
+      });
       throw new Error(`Slack API error: ${slackResponse.data.error}`);
     }
     
+    logger.info('Slack API response', { 
+      messageCount: slackResponse.data.messages?.length || 0,
+      threadTs 
+    });
+    
     // Skip the first message (original) and return only replies
-    const replies = slackResponse.data.messages.slice(1).map((msg: any) => ({
+    const messages = slackResponse.data.messages || [];
+    const replies = messages.slice(1).map((msg: any) => ({
       user: msg.user,
       text: msg.text,
       ts: msg.ts,
       timestamp: new Date(parseFloat(msg.ts) * 1000).toISOString(),
       user_name: msg.user // We'll enhance this with user info later if needed
     }));
+    
+    logger.info('Thread replies found', { 
+      totalMessages: messages.length,
+      repliesCount: replies.length,
+      threadTs 
+    });
     
     res.json({
       success: true,
@@ -495,6 +540,66 @@ router.get('/conversations', async (req: Request, res: Response, next: NextFunct
       }
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+// Debug endpoint to check Slack channel and recent messages
+router.get('/debug-channel', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const botToken = process.env.SLACK_BOT_TOKEN;
+    
+    if (!botToken) {
+      return res.status(500).json({
+        success: false,
+        error: 'Slack bot token not configured'
+      });
+    }
+    
+    // Get channel info
+    const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
+    const channelsResponse = await axios.get('https://slack.com/api/conversations.list', {
+      headers: {
+        'Authorization': `Bearer ${botToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    let channelInfo = null;
+    if (channelsResponse.data.ok) {
+      channelInfo = channelsResponse.data.channels.find((ch: any) => ch.name === channelName);
+    }
+    
+    // Get recent messages if we found the channel
+    let recentMessages = null;
+    if (channelInfo) {
+      const historyResponse = await axios.get('https://slack.com/api/conversations.history', {
+        headers: {
+          'Authorization': `Bearer ${botToken}`,
+          'Content-Type': 'application/json'
+        },
+        params: {
+          channel: channelInfo.id,
+          limit: 5
+        }
+      });
+      
+      if (historyResponse.data.ok) {
+        recentMessages = historyResponse.data.messages;
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        configuredChannel: process.env.SLACK_CHANNEL || '#clubos-assistants',
+        channelName,
+        channelInfo,
+        recentMessages
+      }
+    });
+  } catch (error) {
+    logger.error('Debug channel error:', error);
     next(error);
   }
 });
