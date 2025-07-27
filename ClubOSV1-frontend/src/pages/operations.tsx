@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2 } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { ChecklistSystem } from '@/components/ChecklistSystem';
+import { UserDebugCheck } from '@/components/UserDebugCheck';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -1044,6 +1045,11 @@ export default function Operations() {
             <>
               {showCleaning ? (
                 <>
+                  {/* Debug Check - Temporary */}
+                  <div className="mb-6">
+                    <UserDebugCheck />
+                  </div>
+                  
                   {/* Checklists Content */}
                   <ChecklistSystem />
                 </>

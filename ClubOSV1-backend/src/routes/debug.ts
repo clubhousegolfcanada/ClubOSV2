@@ -1,45 +1,64 @@
 import { Router, Request, Response } from 'express';
-// JSON operations removed - using PostgreSQL
+import { authenticate } from '../middleware/auth';
+import { db } from '../utils/database';
 import { logger } from '../utils/logger';
-import path from 'path';
-import fs from 'fs';
 
 const router = Router();
 
-// Debug endpoint to check users (remove in production)
-router.get('/debug/users', async (req: Request, res: Response) => {
+// Debug endpoint to check user and database status
+router.get('/check-user', authenticate, async (req: Request, res: Response) => {
   try {
-    const dataDir = process.env.DATA_PATH || path.join(process.cwd(), 'src', 'data');
-    const usersPath = path.join(dataDir, 'users.json');
+    const tokenUser = req.user;
     
-    logger.info('Debug info:', {
-      dataDir,
-      usersPath,
-      cwd: process.cwd(),
-      exists: fs.existsSync(usersPath)
-    });
+    // Check if user exists in database by ID
+    const userById = await db.query(
+      'SELECT id, email, name, role FROM users WHERE id = $1',
+      [tokenUser!.id]
+    );
     
-    if (fs.existsSync(usersPath)) {
-      const users = JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
-      res.json({
-        dataDir,
-        usersPath,
-        userCount: users.length,
-        users: users.map((u: any) => ({ email: u.email, role: u.role }))
-      });
-    } else {
-      res.json({
-        dataDir,
-        usersPath,
-        exists: false,
-        message: 'Users file not found'
-      });
-    }
-  } catch (error) {
+    // Check if user exists in database by email
+    const userByEmail = await db.query(
+      'SELECT id, email, name, role FROM users WHERE email = $1',
+      [tokenUser!.email]
+    );
+    
+    // Get total user count
+    const userCount = await db.query('SELECT COUNT(*) as count FROM users');
+    
+    // Get all users (limited to 10 for safety)
+    const allUsers = await db.query(
+      'SELECT id, email, name, role FROM users ORDER BY created_at DESC LIMIT 10'
+    );
+    
     res.json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      cwd: process.cwd(),
-      dataPath: process.env.DATA_PATH
+      success: true,
+      tokenInfo: {
+        id: tokenUser!.id,
+        email: tokenUser!.email,
+        role: tokenUser!.role
+      },
+      databaseCheck: {
+        userExistsById: userById.rows.length > 0,
+        userExistsByEmail: userByEmail.rows.length > 0,
+        userByIdData: userById.rows[0] || null,
+        userByEmailData: userByEmail.rows[0] || null
+      },
+      databaseStats: {
+        totalUsers: parseInt(userCount.rows[0]?.count || '0'),
+        recentUsers: allUsers.rows
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        databaseUrl: process.env.DATABASE_URL ? 'Connected' : 'Not configured',
+        isRailway: process.env.RAILWAY_ENVIRONMENT ? true : false
+      }
+    });
+  } catch (error: any) {
+    logger.error('Debug check failed', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check user status',
+      details: error.message
     });
   }
 });
