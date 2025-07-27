@@ -223,6 +223,15 @@ router.get('/submissions',
         offset = 0
       } = req.query;
 
+      logger.info('Loading checklist submissions', {
+        requestedBy: req.user!.email,
+        filters: { category, type, location, userId, startDate, endDate, limit, offset }
+      });
+
+      // Check if table exists and has any data
+      const tableCheck = await db.query('SELECT COUNT(*) as total FROM checklist_submissions');
+      logger.info('Total submissions in database:', { total: tableCheck.rows[0].total });
+
       let queryStr = `
         SELECT 
           cs.*,
@@ -285,6 +294,11 @@ router.get('/submissions',
 
       const countResult = await db.query(countQuery, countParams);
 
+      logger.info('Checklist submissions loaded', {
+        count: result.rows.length,
+        total: countResult.rows[0].total
+      });
+
       res.json({
         success: true,
         data: result.rows,
@@ -294,7 +308,12 @@ router.get('/submissions',
           offset: parseInt(offset as string)
         }
       });
-    } catch (error) {
+    } catch (error: any) {
+      logger.error('Failed to load checklist submissions', {
+        error: error.message,
+        code: error.code,
+        requestedBy: req.user?.email
+      });
       next(error);
     }
   }

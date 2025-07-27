@@ -128,9 +128,21 @@ export const ChecklistSystem: React.FC = () => {
       if (response.data.success) {
         setSubmissions(response.data.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load submissions:', error);
-      toast.error('Failed to load submission history');
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied. Contact your administrator.');
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to load submission history');
+      }
     } finally {
       setLoadingSubmissions(false);
     }
