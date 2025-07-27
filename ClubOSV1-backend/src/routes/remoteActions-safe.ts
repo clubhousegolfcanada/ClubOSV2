@@ -1,11 +1,18 @@
 import express from 'express';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { pool } from '../utils/db';
 
 const router = express.Router();
 
 // Temporary safe version that won't crash on import
-router.post('/execute', requireAuth, requireRole('operator'), async (req, res) => {
+router.post('/execute', requireAuth, async (req: any, res) => {
+  // Check role manually
+  if (req.user?.role !== 'operator' && req.user?.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'Operator or admin role required'
+    });
+  }
   try {
     const { action, location, bayNumber } = req.body;
     
@@ -54,7 +61,14 @@ router.get('/status/:jobId', requireAuth, async (req, res) => {
 });
 
 // Get device status
-router.get('/devices/:location', requireAuth, requireRole('operator'), async (req, res) => {
+router.get('/devices/:location', requireAuth, async (req: any, res) => {
+  // Check role manually
+  if (req.user?.role !== 'operator' && req.user?.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'Operator or admin role required'
+    });
+  }
   try {
     // Return all devices as online in demo mode
     const devices = [
