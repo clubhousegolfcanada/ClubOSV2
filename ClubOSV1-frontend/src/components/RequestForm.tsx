@@ -266,15 +266,18 @@ const RequestForm: React.FC = () => {
         if (conversationsResponse.data.success && conversationsResponse.data.data.conversations.length > 0) {
           const latestConversation = conversationsResponse.data.data.conversations[0];
           
-          // Check if this conversation has replies
-          if (latestConversation.reply_count > 0) {
-            const repliesResponse = await axios.get(`${API_URL}/slack/replies/${latestConversation.slack_thread_ts}`);
+          // Use the simplified endpoint to check for replies directly from Slack
+          try {
+            const repliesResponse = await axios.get(`${API_URL}/slack/thread-replies/${latestConversation.slack_thread_ts}`);
             if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
               setSlackReplies(repliesResponse.data.data.replies);
               setLastSlackThreadTs(latestConversation.slack_thread_ts);
               setIsWaitingForReply(false);
               return; // Stop polling
             }
+          } catch (replyError) {
+            // If thread not found or no replies, continue polling
+            console.log('No replies yet, continuing to poll...');
           }
         }
         
@@ -852,16 +855,16 @@ const RequestForm: React.FC = () => {
                       <strong className="text-[var(--accent)]">Staff Response:</strong>
                     </div>
                     {slackReplies.map((reply, index) => (
-                      <div key={reply.reply_id || index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+                      <div key={reply.ts || index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
                         <div className="flex items-center gap-2 mb-2 text-sm text-[var(--text-secondary)]">
                           <span className="font-medium text-[var(--text-primary)]">
-                            {reply.reply_user_name || 'Staff Member'}
+                            {reply.user_name || reply.user || 'Staff Member'}
                           </span>
                           <span>•</span>
-                          <span>{new Date(reply.reply_timestamp).toLocaleString()}</span>
+                          <span>{new Date(reply.timestamp).toLocaleString()}</span>
                         </div>
                         <p className="text-[var(--text-primary)]">
-                          {reply.reply_text}
+                          {reply.text}
                         </p>
                       </div>
                     ))}
