@@ -258,7 +258,7 @@ export class SlackFallbackService {
         if (channel?.id) {
           logger.info('Found channel, sending via Web API', { channelId: channel.id, channelName });
           const { ts } = await this.sendMessageWithWebAPI(message, channel.id);
-          logger.info('Web API message sent successfully', { threadTs: ts });
+          logger.info('Web API message sent successfully with REAL thread timestamp', { threadTs: ts });
           threadTs = ts;
         } else {
           throw new Error(`Channel '${channelName}' not found. Available channels: ${channelsResponse.channels?.map(ch => ch.name).join(', ')}`);
