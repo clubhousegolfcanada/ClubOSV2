@@ -155,14 +155,35 @@ async function startServer() {
     
     // Run database migrations
     try {
-      const migrationPath = path.join(__dirname, 'database', 'migrations', '008_checklist_submissions.sql');
-      if (require('fs').existsSync(migrationPath)) {
-        const migration = require('fs').readFileSync(migrationPath, 'utf8');
+      const migrationPath = join(__dirname, 'database', 'migrations', '008_checklist_submissions.sql');
+      const fs = require('fs');
+      if (fs.existsSync(migrationPath)) {
+        const migration = fs.readFileSync(migrationPath, 'utf8');
         await db.query(migration);
         logger.info('✅ Checklist submissions table migration completed');
+      } else {
+        // Try simpler approach - just run the CREATE TABLE directly
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS checklist_submissions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            category VARCHAR(50) NOT NULL CHECK (category IN ('cleaning', 'tech')),
+            type VARCHAR(50) NOT NULL CHECK (type IN ('daily', 'weekly', 'quarterly')),
+            location VARCHAR(100) NOT NULL,
+            completed_tasks JSONB NOT NULL DEFAULT '[]',
+            total_tasks INTEGER NOT NULL,
+            completion_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          )
+        `);
+        logger.info('✅ Checklist submissions table created');
       }
-    } catch (migrationError) {
-      logger.warn('⚠️  Migration already applied or failed:', migrationError);
+    } catch (migrationError: any) {
+      if (migrationError.code === '42P07') { // Table already exists
+        logger.info('✅ Checklist submissions table already exists');
+      } else {
+        logger.warn('⚠️  Migration error:', migrationError.message);
+      }
     }
   } catch (error) {
     logger.error('❌ Database initialization failed:', error);

@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "rm -rf dist && tsc --noEmit false --skipLibCheck true && cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy'",
+    "build": "rm -rf dist && tsc --noEmit false --skipLibCheck true && cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy' && cp -r src/database dist/ 2>/dev/null || echo 'No database files to copy'",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "start:safe": "NODE_ENV=production node --max-old-space-size=512 dist/index.js || npm run start:safe",
@@ -27,7 +27,7 @@
     "db:setup": "node dist/scripts/setupDatabase.js",
     "setup:user-settings": "tsx scripts/setup-user-settings.ts",
     "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts",
-    "postbuild": "cp -r src/knowledge-base dist/ 2>/dev/null || echo 'Knowledge base copy completed'"
+    "postbuild": "cp -r src/knowledge-base dist/ 2>/dev/null || echo 'Knowledge base copy completed' && cp -r src/database dist/ 2>/dev/null || echo 'Database files copy completed'"
   },
   "keywords": [
     "clubos",
