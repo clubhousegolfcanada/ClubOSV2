@@ -2,15 +2,32 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { ApiError } from '../types';
 
+// Custom error class for application errors
+export class AppError extends Error {
+  statusCode: number;
+  code: string;
+  
+  constructor(message: string, statusCode: number = 500, code: string = 'INTERNAL_SERVER_ERROR') {
+    super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+    Object.setPrototypeOf(this, AppError.prototype);
+  }
+}
+
 export const errorHandler = (
   err: Error | ApiError,
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
+  // Type guard to check if error is a standard Error with stack
+  const isError = err instanceof Error;
+  const stack = isError ? err.stack : undefined;
+  
   logger.error('Error caught by error handler:', {
     error: err.message,
-    stack: err.stack,
+    stack: stack,
     path: req.path,
     method: req.method,
     body: req.body,
@@ -26,7 +43,7 @@ export const errorHandler = (
     code: isAppError ? err.code : 'INTERNAL_SERVER_ERROR',
     message: err.message || 'An unexpected error occurred',
     timestamp: new Date().toISOString(),
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    details: process.env.NODE_ENV === 'development' ? stack : undefined
   };
 
   // Add CORS headers to error responses

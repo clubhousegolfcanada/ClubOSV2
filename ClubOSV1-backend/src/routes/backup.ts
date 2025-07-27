@@ -89,7 +89,8 @@ router.get('/stats', authenticate, authorize(['admin']), async (req, res) => {
   try {
     const stats = {
       tables: {} as any,
-      totalSize: 0
+      totalSize: 0,
+      databaseSize: null as any
     };
     
     // Get row counts for each table

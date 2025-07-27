@@ -51,8 +51,6 @@ export const createRateLimiter = (windowMs: number, max: number, message: string
     message,
     standardHeaders: true,
     legacyHeaders: false,
-    // Fix for Railway proxy - trust only the first proxy
-    trustProxy: process.env.NODE_ENV === 'production' ? 1 : false,
     // Skip problematic headers
     skip: (req) => {
       // Skip rate limiting in development
@@ -258,9 +256,12 @@ export const fileUploadSecurity = (req: Request, res: Response, next: NextFuncti
   const maxFileSize = 5 * 1024 * 1024; // 5MB
   const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
   
-  if (req.files) {
+  // Type assertion for files property (added by multer or similar middleware)
+  const reqWithFiles = req as Request & { files?: any };
+  
+  if (reqWithFiles.files) {
     // Validate file uploads
-    const files = Array.isArray(req.files) ? req.files : [req.files];
+    const files = Array.isArray(reqWithFiles.files) ? reqWithFiles.files : [reqWithFiles.files];
     
     for (const file of files) {
       // Check file size
