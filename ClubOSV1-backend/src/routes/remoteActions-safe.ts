@@ -1,13 +1,13 @@
 import express from 'express';
-import { requireAuth } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { pool } from '../utils/db';
 
 const router = express.Router();
 
-// Force rebuild - Railway cache issue 2025-07-27
+// Force rebuild - Railway cache issue 2025-07-27 v2
 
 // Temporary safe version that won't crash on import
-router.post('/execute', requireAuth, async (req: any, res) => {
+router.post('/execute', authenticate, async (req: any, res) => {
   // Check role manually
   if (req.user?.role !== 'operator' && req.user?.role !== 'admin') {
     return res.status(403).json({
@@ -63,7 +63,7 @@ router.get('/status/:jobId', requireAuth, async (req, res) => {
 });
 
 // Get device status
-router.get('/devices/:location', requireAuth, async (req: any, res) => {
+router.get('/devices/:location', authenticate, async (req: any, res) => {
   // Check role manually
   if (req.user?.role !== 'operator' && req.user?.role !== 'admin') {
     return res.status(403).json({
