@@ -409,4 +409,38 @@ router.post('/apply-optimization', authenticate, roleGuard(['admin']), async (re
   }
 });
 
+// DELETE /api/analytics/clear-old-data - Clear old interaction data
+router.delete('/clear-old-data', authenticate, roleGuard(['admin']), async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    
+    // Delete customer interactions older than specified days
+    const deleteResult = await db.query(`
+      DELETE FROM customer_interactions 
+      WHERE "createdAt" < CURRENT_DATE - INTERVAL '${parseInt(days as string)} days'
+      RETURNING id
+    `);
+    
+    const deletedCount = deleteResult.rows.length;
+    
+    logger.info('Cleared old analytics data', {
+      userId: req.user?.id,
+      deletedCount,
+      olderThanDays: days
+    });
+    
+    res.json({
+      success: true,
+      message: `Cleared ${deletedCount} old interaction records`,
+      deletedCount
+    });
+  } catch (error) {
+    logger.error('Error clearing old data:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to clear old data' 
+    });
+  }
+});
+
 export default router;

@@ -1175,14 +1175,40 @@ export default function Operations() {
                           Monitor routing performance and identify optimization opportunities
                         </p>
                       </div>
-                      <button
-                        onClick={fetchAnalytics}
-                        disabled={analyticsLoading}
-                        className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
-                        Refresh
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={fetchAnalytics}
+                          disabled={analyticsLoading}
+                          className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm('Clear analytics data older than 30 days? This will remove old customer interaction logs.')) {
+                              try {
+                                const token = localStorage.getItem('clubos_token');
+                                const response = await axios.delete(`${API_URL}/analytics/clear-old-data?days=30`, {
+                                  headers: { Authorization: `Bearer ${token}` }
+                                });
+                                if (response.data.success) {
+                                  toast.success(`Cleared ${response.data.deletedCount} old records`);
+                                  fetchAnalytics();
+                                }
+                              } catch (error) {
+                                console.error('Failed to clear old data:', error);
+                                toast.error('Failed to clear old data');
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2"
+                          title="Clear old analytics data"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Clear Old Data
+                        </button>
+                      </div>
                     </div>
 
                     {analyticsLoading ? (
