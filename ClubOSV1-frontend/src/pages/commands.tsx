@@ -82,6 +82,16 @@ const commands: Command[] = [
     keywords: ['calibration', 'wrong distance', 'inaccurate'],
     usageCount: 28
   },
+  {
+    id: 'wifi-password',
+    name: 'WiFi Password',
+    description: 'Get the current WiFi password for customers',
+    category: 'techsupport',
+    type: 'information',
+    example: 'What is the WiFi password?',
+    keywords: ['wifi', 'wi-fi', 'internet', 'password', 'network'],
+    usageCount: 95
+  },
   
   // Policies Commands
   {
