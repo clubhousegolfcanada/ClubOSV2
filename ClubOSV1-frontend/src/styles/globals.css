@@ -644,4 +644,26 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
+  
+  /* Toggle Checkbox */
+  .toggle-checkbox {
+    @apply appearance-none w-12 h-6 bg-[var(--bg-tertiary)] rounded-full cursor-pointer transition-colors duration-200 relative;
+    @apply border border-[var(--border-secondary)];
+  }
+
+  .toggle-checkbox:checked {
+    @apply bg-[var(--accent)] border-[var(--accent)];
+  }
+
+  .toggle-checkbox:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .toggle-checkbox::after {
+    @apply content-[''] absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200;
+  }
+
+  .toggle-checkbox:checked::after {
+    @apply translate-x-6;
+  }
 }

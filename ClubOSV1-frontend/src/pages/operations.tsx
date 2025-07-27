@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -52,6 +52,10 @@ export default function Operations() {
   const [feedback, setFeedback] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showSystemConfig, setShowSystemConfig] = useState(false);
+  const [systemConfigs, setSystemConfigs] = useState<any>({});
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configSaving, setConfigSaving] = useState(false);
   
   // Password change modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -80,8 +84,11 @@ export default function Operations() {
       if (showFeedback) {
         fetchFeedback();
       }
+      if (showSystemConfig) {
+        fetchSystemConfigs();
+      }
     }
-  }, [user, showFeedback]);
+  }, [user, showFeedback, showSystemConfig]);
 
   // Validate password whenever it changes
   useEffect(() => {
@@ -170,6 +177,52 @@ export default function Operations() {
     } catch (error) {
       console.error('Failed to clear feedback:', error);
       toast.error('Failed to clear feedback');
+    }
+  };
+
+  const fetchSystemConfigs = async () => {
+    try {
+      setConfigLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/system-config`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setSystemConfigs(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch system configs:', error);
+      toast.error('Failed to load system configurations');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const updateSystemConfig = async (key: string, value: any) => {
+    try {
+      setConfigSaving(true);
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.put(`${API_URL}/system-config/${key}`, 
+        { value },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        toast.success('Configuration updated successfully');
+        // Update local state
+        setSystemConfigs((prev: any) => ({
+          ...prev,
+          [key]: {
+            ...prev[key],
+            value
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to update system config:', error);
+      toast.error('Failed to update configuration');
+    } finally {
+      setConfigSaving(false);
     }
   };
 
@@ -503,9 +556,9 @@ export default function Operations() {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex gap-4">
                   <button
-                    onClick={() => setShowFeedback(false)}
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      !showFeedback
+                      !showFeedback && !showSystemConfig
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
@@ -513,7 +566,7 @@ export default function Operations() {
                     User Management
                   </button>
                   <button
-                    onClick={() => setShowFeedback(true)}
+                    onClick={() => { setShowFeedback(true); setShowSystemConfig(false); }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showFeedback
                         ? 'bg-[var(--accent)] text-white'
@@ -527,6 +580,17 @@ export default function Operations() {
                         {feedback.length}
                       </span>
                     )}
+                  </button>
+                  <button
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(true); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                      showSystemConfig
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4" />
+                    System Config
                   </button>
                 </div>
                 
@@ -554,7 +618,7 @@ export default function Operations() {
                 </div>
               </div>
 
-              {!showFeedback ? (
+              {!showFeedback && !showSystemConfig ? (
                 <>
                   {/* User Management Section */}
                   <div className="card">
@@ -751,7 +815,7 @@ export default function Operations() {
                     </div>
                   </div>
                 </>
-              ) : (
+              ) : showFeedback ? (
                 <>
                   {/* Feedback Section */}
                   <div className="card">
@@ -854,7 +918,205 @@ export default function Operations() {
                     )}
                   </div>
                 </>
-              )}
+              ) : showSystemConfig ? (
+                <>
+                  {/* System Configuration Section */}
+                  <div className="card">
+                    <div className="flex justify-between items-center mb-6">
+                      <div>
+                        <h2 className="text-xl font-semibold">System Configuration</h2>
+                        <p className="text-sm text-[var(--text-secondary)] mt-1">
+                          Configure system-wide settings and features
+                        </p>
+                      </div>
+                      <button
+                        onClick={fetchSystemConfigs}
+                        disabled={configLoading}
+                        className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${configLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </button>
+                    </div>
+
+                    {configLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)] mx-auto"></div>
+                        <p className="text-[var(--text-secondary)] mt-4">Loading configurations...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Slack Notifications */}
+                        {systemConfigs.slack_notifications && (
+                          <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                              <Bell className="w-5 h-5 text-[var(--accent)]" />
+                              <h3 className="text-lg font-semibold">Slack Notifications</h3>
+                            </div>
+                            <div className="space-y-4">
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Enable Slack notifications</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.slack_notifications.value.enabled}
+                                  onChange={(e) => updateSystemConfig('slack_notifications', {
+                                    ...systemConfigs.slack_notifications.value,
+                                    enabled: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Send on LLM success</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.slack_notifications.value.sendOnLLMSuccess}
+                                  onChange={(e) => updateSystemConfig('slack_notifications', {
+                                    ...systemConfigs.slack_notifications.value,
+                                    sendOnLLMSuccess: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                  disabled={!systemConfigs.slack_notifications.value.enabled}
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Send on LLM failure</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.slack_notifications.value.sendOnLLMFailure}
+                                  onChange={(e) => updateSystemConfig('slack_notifications', {
+                                    ...systemConfigs.slack_notifications.value,
+                                    sendOnLLMFailure: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                  disabled={!systemConfigs.slack_notifications.value.enabled}
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Send direct requests</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.slack_notifications.value.sendDirectRequests}
+                                  onChange={(e) => updateSystemConfig('slack_notifications', {
+                                    ...systemConfigs.slack_notifications.value,
+                                    sendDirectRequests: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                  disabled={!systemConfigs.slack_notifications.value.enabled}
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Send tickets</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.slack_notifications.value.sendTickets}
+                                  onChange={(e) => updateSystemConfig('slack_notifications', {
+                                    ...systemConfigs.slack_notifications.value,
+                                    sendTickets: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                  disabled={!systemConfigs.slack_notifications.value.enabled}
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Send unhelpful feedback</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.slack_notifications.value.sendUnhelpfulFeedback}
+                                  onChange={(e) => updateSystemConfig('slack_notifications', {
+                                    ...systemConfigs.slack_notifications.value,
+                                    sendUnhelpfulFeedback: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                  disabled={!systemConfigs.slack_notifications.value.enabled}
+                                />
+                              </label>
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)] mt-4">
+                              Last updated: {new Date(systemConfigs.slack_notifications.updatedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* System Features */}
+                        {systemConfigs.system_features && (
+                          <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                              <Settings className="w-5 h-5 text-[var(--accent)]" />
+                              <h3 className="text-lg font-semibold">System Features</h3>
+                            </div>
+                            <div className="space-y-4">
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Smart Assist</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.system_features.value.smartAssist}
+                                  onChange={(e) => updateSystemConfig('system_features', {
+                                    ...systemConfigs.system_features.value,
+                                    smartAssist: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Bookings</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.system_features.value.bookings}
+                                  onChange={(e) => updateSystemConfig('system_features', {
+                                    ...systemConfigs.system_features.value,
+                                    bookings: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Tickets</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.system_features.value.tickets}
+                                  onChange={(e) => updateSystemConfig('system_features', {
+                                    ...systemConfigs.system_features.value,
+                                    tickets: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Slack Integration</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.system_features.value.slack}
+                                  onChange={(e) => updateSystemConfig('system_features', {
+                                    ...systemConfigs.system_features.value,
+                                    slack: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between">
+                                <span className="text-sm">Customer Kiosk</span>
+                                <input
+                                  type="checkbox"
+                                  checked={systemConfigs.system_features.value.customerKiosk}
+                                  onChange={(e) => updateSystemConfig('system_features', {
+                                    ...systemConfigs.system_features.value,
+                                    customerKiosk: e.target.checked
+                                  })}
+                                  className="toggle-checkbox"
+                                />
+                              </label>
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)] mt-4">
+                              Last updated: {new Date(systemConfigs.system_features.updatedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
 
               {/* System Status */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

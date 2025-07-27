@@ -350,14 +350,29 @@ router.post('/request',
           slackThreadTs
         };
 
-        // Send success notification to Slack if configured (async)
-        if (config.features?.slack) {
-          slackFallback.sendProcessedNotification(processedRequest)
-            .then(threadTs => {
-              processedRequest.slackThreadTs = threadTs;
-              // Thread ID logged with initial request
-            })
-            .catch(err => logger.error('Failed to send Slack notification', err));
+        // Check system configuration for Slack notification settings
+        try {
+          const { db } = await import('../utils/database');
+          const configResult = await db.query(
+            'SELECT value FROM system_config WHERE key = $1',
+            ['slack_notifications']
+          );
+          
+          if (configResult.rows.length > 0) {
+            const slackConfig = configResult.rows[0].value;
+            
+            // Only send Slack notification if configured and enabled
+            if (slackConfig.enabled && slackConfig.sendOnLLMSuccess && config.features?.slack) {
+              slackFallback.sendProcessedNotification(processedRequest)
+                .then(threadTs => {
+                  processedRequest.slackThreadTs = threadTs;
+                  logger.info('Slack notification sent for LLM success', { threadTs });
+                })
+                .catch(err => logger.error('Failed to send Slack notification', err));
+            }
+          }
+        } catch (err) {
+          logger.warn('Failed to check Slack notification config', err);
         }
 
       } catch (llmError) {

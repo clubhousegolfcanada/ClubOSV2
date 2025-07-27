@@ -1,338 +1,366 @@
-# ClubOS - Golf Simulator Management System
+# ClubOS V1 - Intelligent Golf Simulator Management System
 
-Comprehensive management platform for ClubHouse247 Golf facilities. Features intelligent request routing, ticket management, and customer-facing kiosk interface.
+A comprehensive AI-powered management platform for Clubhouse 24/7 Golf facilities, featuring intelligent request routing, automated ticket management, and customer self-service capabilities.
 
 ## 🎯 Overview
 
-ClubOS streamlines golf simulator facility operations by:
-- Processing customer and staff requests through AI or human support
-- Managing support tickets for facilities and technical issues
-- Providing customer self-service through ClubOS Boy kiosk interface
-- Tracking performance metrics and feedback
+ClubOS transforms golf simulator facility operations with:
+- **AI-Powered Request Processing**: Routes customer inquiries to specialized GPT assistants
+- **Smart Ticket Management**: Track and resolve facility & technical issues efficiently  
+- **Customer Kiosk Interface**: Self-service portal for 24/7 customer support
+- **Real-time Slack Integration**: Seamless handoff between AI and human support
+- **Performance Analytics**: Track response quality and operational metrics
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- PostgreSQL database
-- OpenAI API key
-- Slack webhook URL
-- Railway account (for deployment)
+- Node.js 18+ and npm
+- PostgreSQL database (Railway provides this)
+- OpenAI API account with GPT-4 access
+- Slack workspace with webhook access
+- Railway account for deployment
 
 ### Installation
 
 ```bash
 # Clone repository
 git clone [repository-url]
-cd ClubOSV1
+cd CLUBOSV1
 
-# Install frontend dependencies
-cd ClubOSV1-frontend
-npm install
-
-# Install backend dependencies
-cd ../ClubOSV1-backend
-npm install
+# Install all dependencies
+cd ClubOSV1-backend && npm install
+cd ../ClubOSV1-frontend && npm install
 ```
 
-### Environment Configuration
+### Environment Setup
 
-#### Backend (.env)
-```env
-# Server
-PORT=3001
-NODE_ENV=development
-
-# Database (Railway provides DATABASE_URL automatically)
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-
-# Authentication
-JWT_SECRET=your-secure-jwt-secret
-
-# AI Services
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4-turbo-preview
-
-# Slack Integration
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
-SLACK_CHANNEL=#clubos-requests
-
-# OpenAI Assistants (optional)
-BOOKING_ACCESS_GPT_ID=asst_...
-EMERGENCY_GPT_ID=asst_...
-TECH_SUPPORT_GPT_ID=asst_...
-BRAND_MARKETING_GPT_ID=asst_...
-```
-
-#### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-```
+Create `.env` files based on the templates in [SETUP_GUIDE.md](./SETUP_GUIDE.md).
 
 ### Running Locally
 
 ```bash
-# Start backend (Terminal 1)
+# Terminal 1 - Backend
 cd ClubOSV1-backend
 npm run dev
 
-# Start frontend (Terminal 2)
+# Terminal 2 - Frontend  
 cd ClubOSV1-frontend
 npm run dev
 ```
 
-Access the application at: http://localhost:3000
+Visit http://localhost:3000
 
-### Initial Setup
+## 🏗️ System Architecture
 
-1. **Create admin user:**
-   ```bash
-   cd ClubOSV1-backend
-   npm run create:admin
-   # Default: admin@clubhouse247golf.com / admin123
-   ```
+### Technology Stack
 
-2. **Create kiosk user (for customer terminals):**
-   ```bash
-   npm run create:kiosk
-   # Generates unique credentials for kiosk mode
-   ```
+**Frontend**
+- Next.js 13+ with TypeScript
+- Tailwind CSS for styling
+- Zustand for state management
+- React Hook Form for forms
+- Axios for API communication
 
-## 🎨 Features
+**Backend**
+- Node.js + Express + TypeScript
+- PostgreSQL database
+- JWT authentication
+- OpenAI GPT-4 integration
+- Slack webhook integration
 
-### 1. Smart Request Processing
-- **AI-Powered Routing**: Automatically routes requests to appropriate departments
-- **Smart Assist Toggle**: Switch between AI processing and direct Slack messaging
-- **Route Selection**: Manual override for specific departments:
-  - Auto (AI decides)
-  - Emergency
-  - Booking & Access
-  - Tech Support
-  - Brand Tone
+**Infrastructure**
+- Railway for hosting
+- PostgreSQL on Railway
+- GitHub CI/CD integration
 
-### 2. Ticket Management System
-- **Create Tickets**: Convert requests into trackable tickets
-- **Categories**: Facilities and Tech Support
-- **Priority Levels**: Low, Medium, High, Urgent
-- **Status Tracking**: Open, In Progress, Resolved, Closed
-- **Comments**: Add notes and updates to tickets
-- **Filtering**: View by status, category, or all tickets
+### AI Assistant Architecture
 
-### 3. User Management
-- **Role-Based Access Control**:
-  - **Admin**: Full system access
-  - **Operator**: Tickets and operations management
-  - **Support**: Basic features access
-  - **Kiosk**: Customer-facing interface only
-- **User CRUD Operations**: Create, update, delete users
-- **Password Management**: Secure password reset functionality
+The system uses specialized GPT assistants for different request types:
 
-### 4. ClubOS Boy (Customer Kiosk)
-- **Simplified Interface**: Touch-friendly design for public use
-- **Auto-Reset**: Returns to home after 30 seconds
-- **Direct to Slack**: All customer questions routed to staff
-- **Location Context**: Optional location field for better support
+```
+User Request → LLM Router → Specialized Assistant → Structured Response
+                    ↓
+              Confidence Score
+                    ↓
+            Route Selection:
+            • Emergency (urgent issues)
+            • Booking & Access (reservations)
+            • Tech Support (equipment)
+            • Brand Tone (general info)
+```
+
+## 🎨 Key Features
+
+### 1. Intelligent Request Routing
+- **Auto-routing**: AI analyzes requests and selects appropriate department
+- **Manual Override**: Force specific route when needed
+- **Confidence Scoring**: Transparency in AI decision-making
+- **Fallback Logic**: Graceful degradation to Slack when AI unavailable
+
+### 2. Multi-Mode Operation
+- **Smart Assist ON**: Full AI processing with specialized assistants
+- **Smart Assist OFF**: Direct routing to Slack support team
+- **Ticket Mode**: Create trackable tickets for complex issues
+- **Kiosk Mode**: Simplified interface for customer terminals
+
+### 3. Advanced Ticket System
+- Categories: Facilities & Technical Support
+- Priority Levels: Low → Medium → High → Urgent
+- Status Workflow: Open → In Progress → Resolved → Closed
+- Collaborative comments and updates
+- Bulk operations for administrators
+
+### 4. User & Access Management
+| Role | Description | Access Level |
+|------|-------------|--------------|
+| Admin | System administrators | Full access to all features |
+| Operator | Facility operators | Tickets, operations, all routing |
+| Support | Support staff | Basic features, limited routing |
+| Kiosk | Customer terminals | ClubOS Boy interface only |
 
 ### 5. Operations Dashboard
-- **User Management**: Add/edit/delete users
-- **Feedback Analytics**: Track helpful vs unhelpful AI responses
-- **System Health**: Monitor request processing
-- **Data Management**: Backup and restore functionality
+- User management with CRUD operations
+- System configuration controls
+- Feedback analytics and export
+- Slack notification preferences
+- Database backup/restore
 
-### 6. Feedback System
-- **Response Rating**: Users mark AI responses as helpful/not helpful
-- **Continuous Improvement**: Track patterns in unhelpful responses
-- **Export for Training**: Download feedback data for AI improvement
-
-## 🏗️ Architecture
-
-### Frontend Stack
-- **Framework**: Next.js 13+
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: Zustand
-- **Forms**: React Hook Form
-- **HTTP Client**: Axios
-- **Icons**: Lucide React
-
-### Backend Stack
-- **Runtime**: Node.js with Express
-- **Language**: TypeScript
-- **Database**: PostgreSQL (Railway)
-- **Authentication**: JWT with bcrypt
-- **AI Integration**: OpenAI GPT-4
-- **External Services**: Slack Webhooks
-
-### Deployment
-- **Platform**: Railway
-- **Database**: PostgreSQL on Railway
-- **CI/CD**: GitHub integration
-- **SSL**: Handled by Railway
+### 6. Customer Feedback Loop
+- Rate AI responses as helpful/not helpful
+- Track patterns in unsuccessful interactions
+- Export data for AI model improvement
+- Automatic Slack alerts for poor responses
 
 ## 📁 Project Structure
 
 ```
-ClubOSV1/
-├── ClubOSV1-frontend/
-│   ├── src/
-│   │   ├── pages/          # Next.js pages
-│   │   ├── components/     # React components
-│   │   ├── state/         # State management
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── utils/         # Utility functions
-│   │   └── types/         # TypeScript types
-│   └── public/            # Static assets
+CLUBOSV1/
+├── README.md                    # This file
+├── SETUP_GUIDE.md              # Detailed setup instructions
+├── DEPLOYMENT.md               # Production deployment guide
+├── TESTING_GUIDE.md            # Comprehensive testing documentation
+├── DEVELOPMENT_GUIDE.md        # Developer guidelines
+├── CHANGELOG.md                # Version history
 │
-└── ClubOSV1-backend/
-    ├── src/
-    │   ├── routes/        # API endpoints
-    │   ├── services/      # Business logic
-    │   ├── middleware/    # Express middleware
-    │   ├── utils/        # Helpers
-    │   ├── types/        # TypeScript types
-    │   └── scripts/      # Admin utilities
-    └── data/             # File storage (legacy)
+├── ClubOSV1-frontend/          # Next.js frontend application
+│   ├── src/
+│   │   ├── pages/              # Page components
+│   │   ├── components/         # Reusable components
+│   │   ├── api/               # API client
+│   │   ├── state/             # Global state management
+│   │   ├── hooks/             # Custom React hooks
+│   │   └── types/             # TypeScript definitions
+│   └── public/                # Static assets
+│
+├── ClubOSV1-backend/           # Express backend API
+│   ├── src/
+│   │   ├── routes/            # API endpoints
+│   │   ├── services/          # Business logic
+│   │   ├── middleware/        # Express middleware
+│   │   ├── utils/            # Utility functions
+│   │   ├── database/         # Database migrations
+│   │   └── scripts/          # Admin tools
+│   └── logs/                 # Application logs
+│
+├── docs/                      # Additional documentation
+├── assistant-instructions/    # GPT assistant templates
+└── archive/                  # Historical documentation
 ```
 
-## 🔒 Security
+## 🔐 Security Features
 
-- **Authentication**: JWT-based with 7-day expiration
-- **Password Requirements**: 8+ characters, uppercase, lowercase, number
-- **Role-Based Access**: Granular permissions per user role
-- **Rate Limiting**: Protection against abuse
-- **Input Validation**: Comprehensive request validation
-- **CORS**: Configured for production domains
+- **Authentication**: JWT tokens with 7-day expiration
+- **Password Policy**: Minimum 8 characters with complexity requirements
+- **Role-Based Access Control**: Granular permissions per user type
+- **Rate Limiting**: API protection against abuse (100 req/15min)
+- **Input Validation**: Comprehensive sanitization and validation
+- **CORS Protection**: Configured for production domains
+- **Webhook Verification**: Slack signature validation
 
 ## 🛠️ Development
 
-### Commands
+### Essential Commands
 
-#### Frontend
 ```bash
-npm run dev       # Development server
-npm run build     # Production build
-npm run start     # Production server
-npm run lint      # Run ESLint
+# Backend Development
+cd ClubOSV1-backend
+npm run dev          # Start with hot reload
+npm run build        # Production build
+npm run test         # Run test suite
+npm run lint         # Code quality check
+
+# Frontend Development
+cd ClubOSV1-frontend
+npm run dev          # Development server
+npm run build        # Production build
+npm run lint         # Code quality check
+
+# Admin Tasks
+cd ClubOSV1-backend
+npm run create:admin  # Create admin user
+npm run create:kiosk  # Create kiosk user
+node scripts/createAdmin.ts  # Manual admin creation
 ```
 
-#### Backend
-```bash
-npm run dev       # Development with hot reload
-npm run build     # Compile TypeScript
-npm start         # Production server
-npm run lint      # Run ESLint
-npm run test      # Run tests
+### API Documentation
 
-# Admin scripts
-npm run create:admin   # Create admin user
-npm run create:kiosk   # Create kiosk user
-npm run reset:admin    # Reset admin password
-```
+See [API Reference](./ClubOSV1-backend/docs/API_USAGE_TRACKING.md) for complete endpoint documentation.
 
-### API Endpoints
-
-#### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - Create user (admin only)
-- `GET /api/auth/me` - Current user info
-- `POST /api/auth/change-password` - Change password
-
-#### Requests
+Key endpoints:
 - `POST /api/llm/request` - Process request with AI
-- `GET /api/llm/status` - LLM service status
-
-#### Tickets
-- `GET /api/tickets` - List tickets
-- `POST /api/tickets` - Create ticket
-- `PATCH /api/tickets/:id/status` - Update status
-- `POST /api/tickets/:id/comments` - Add comment
-- `DELETE /api/tickets/:id` - Delete ticket
-
-#### Feedback
-- `POST /api/feedback` - Submit feedback
-- `GET /api/feedback/not-useful` - Get unhelpful responses
-- `GET /api/feedback/export` - Export feedback data
-
-#### Customer
+- `POST /api/tickets` - Create support ticket
+- `POST /api/feedback` - Submit response feedback
 - `POST /api/customer/ask` - Customer kiosk endpoint
-- `GET /api/customer/stats` - Usage statistics
 
 ## 🚀 Deployment
 
-### Railway Deployment
+### Production Deployment (Railway)
 
-1. **Connect GitHub repository** to Railway
-2. **Add environment variables** in Railway dashboard
-3. **Deploy services**:
-   - Frontend service
-   - Backend service
-   - PostgreSQL database
-4. **Configure domains** if using custom URLs
+1. **Prerequisites**
+   - Railway account with PostgreSQL add-on
+   - All environment variables configured
+   - GPT Assistant IDs from OpenAI platform
 
-### Database Migrations
+2. **Deploy Backend**
+   ```bash
+   cd ClubOSV1-backend
+   railway up
+   ```
 
-```sql
--- Run these on first deployment
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+3. **Deploy Frontend**
+   - Push to GitHub
+   - Railway auto-deploys from main branch
 
--- Tables are created automatically by the application
--- Or use migration scripts in /migrations
+4. **Post-Deployment**
+   - Create initial admin user
+   - Configure system settings
+   - Test all integrations
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+
+## 🧪 Testing
+
+Run the comprehensive test suite:
+
+```bash
+# Unit tests
+cd ClubOSV1-backend && npm test
+
+# Integration tests  
+npm run test:integration
+
+# Manual testing
+See TESTING_GUIDE.md for test scenarios
 ```
+
+## 📊 System Status
+
+### Current Implementation Status
+
+✅ **Completed Features**
+- PostgreSQL database integration
+- User authentication & RBAC
+- LLM routing with GPT-4
+- Ticket management system
+- Customer feedback tracking
+- Slack outbound notifications
+- System configuration UI
+- ClubOS Boy kiosk mode
+
+⚠️ **In Progress**
+- Slack reply tracking (Phase 2)
+- Real-time notifications
+- Advanced analytics dashboard
+
+❌ **Planned Features**
+- Email notifications
+- Mobile application
+- Multi-language support
+- Advanced reporting
+- WebSocket support
+
+### Known Issues
+1. GPT Assistant IDs must be manually configured in Railway
+2. Slack replies require Events API setup (Phase 2)
+3. Mobile UI needs responsive improvements
 
 ## 🔧 Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| Database connection failed | Check DATABASE_URL in Railway |
-| OpenAI errors | Verify API key and billing |
-| Slack not receiving messages | Check webhook URL and channel |
-| Authentication issues | Clear localStorage and re-login |
-| Kiosk mode not working | Ensure kiosk user role is set |
+| "Cannot connect to database" | Verify DATABASE_URL in Railway environment |
+| "OpenAI API error" | Check API key validity and billing status |
+| "Slack messages not sending" | Verify webhook URL and channel permissions |
+| "GPT assistants not responding" | Ensure all Assistant IDs are configured |
+| "Authentication failed" | Clear browser cache and localStorage |
 
-## 📊 Usage Flow
+## 📚 Documentation
 
-### Staff Usage
+- [Setup Guide](./SETUP_GUIDE.md) - Detailed setup instructions
+- [Deployment Guide](./DEPLOYMENT.md) - Production deployment
+- [Testing Guide](./TESTING_GUIDE.md) - Comprehensive testing
+- [Development Guide](./DEVELOPMENT_GUIDE.md) - Developer guidelines
+- [Slack Integration](./docs/SLACK_INTEGRATION.md) - Slack setup
+- [Technical Debt](./docs/TECHNICAL_DEBT.md) - Known issues
+- [API Documentation](./ClubOSV1-backend/docs/) - API reference
+
+## 🎮 Usage Examples
+
+### Staff Member Flow
 1. Login with credentials
-2. Enter request description
-3. Choose Smart Assist (AI) or Slack
-4. Submit and receive response
-5. Rate response as helpful/not helpful
+2. Enter customer request
+3. System routes to appropriate assistant
+4. Review AI response
+5. Convert to ticket if needed
+6. Rate response quality
 
-### Customer Usage (ClubOS Boy)
-1. Access kiosk interface (no login)
+### Customer Kiosk Flow
+1. Access /clubosboy (no login)
 2. Type question
-3. Add location (optional)
-4. Submit - goes directly to staff
+3. Add bay location
+4. Submit → Routes to Slack
+5. Staff responds via Slack
 
-### Ticket Creation
-1. Toggle "Ticket Mode" on main page
-2. Enter description
-3. Select category and priority
-4. Submit to create ticket
+### Emergency Handling
+1. System detects emergency keywords
+2. Routes to Emergency assistant
+3. Provides immediate response
+4. Creates urgent ticket
+5. Notifies staff via Slack
 
 ## 🔮 Roadmap
 
-### In Progress
-- [ ] Slack reply tracking
-- [ ] Real-time notifications
-- [ ] WebSocket support
+### Q4 2024
+- [ ] Complete Slack reply tracking
+- [ ] Implement WebSocket notifications
+- [ ] Mobile UI improvements
 
-### Planned
-- [ ] Email notifications
+### Q1 2025
 - [ ] Advanced analytics dashboard
-- [ ] Mobile app
-- [ ] Multi-language support
-- [ ] API rate limiting per user
-- [ ] Automated backups
+- [ ] Email notification system
+- [ ] API v2 with GraphQL
 
-## 👥 Contributing
+### Future
+- [ ] Mobile applications
+- [ ] Voice assistant integration
+- [ ] Multi-facility support
+- [ ] AI model fine-tuning
 
-This is a private project for ClubHouse247 Golf. For access or questions, contact the development team.
+## 👥 Support
+
+For technical support or questions:
+- Check documentation first
+- Review [TESTING_GUIDE.md](./TESTING_GUIDE.md) for common issues
+- Contact development team for access
 
 ## 📄 License
 
-Proprietary - All rights reserved by ClubHouse247 Golf.
+Proprietary software - All rights reserved by Clubhouse 24/7 Golf
 
 ---
 
-Built with ❤️ for autonomous golf facility management
+**Version**: 1.0.0  
+**Last Updated**: November 2024  
+**Status**: Production Ready with Active Development
+
+Built with ❤️ for the future of golf facility management

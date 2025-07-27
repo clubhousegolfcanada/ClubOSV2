@@ -2,6 +2,45 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.6.0] - 2024-11-26
+
+### Added
+- **PostgreSQL Integration**
+  - Migrated from JSON file storage to PostgreSQL
+  - Automatic table creation and migrations
+  - Connection pooling for better performance
+  - Database backup/restore functionality
+
+- **System Configuration UI**
+  - Operations page system config tab
+  - Slack notification controls
+  - Feature toggles for system components
+  - Real-time configuration updates
+
+- **Enhanced LLM System**
+  - Context injection from conversation history
+  - Route normalization for consistency
+  - Improved error handling and fallbacks
+  - Session tracking for multi-turn conversations
+
+### Changed
+- **Documentation Overhaul**
+  - Consolidated 30+ markdown files into organized structure
+  - Created archive for completed features
+  - Updated README with current system state
+  - Added comprehensive testing guide
+
+- **Security Improvements**
+  - Fixed trust proxy settings for Railway
+  - Enhanced rate limiting configuration
+  - Improved input validation
+
+### Fixed
+- LLM response display now shows full structured data
+- Route naming inconsistencies (Booking&Access vs Booking & Access)
+- Authentication token handling in frontend
+- Slack notification logic for different scenarios
+
 ## [1.5.0] - 2025-01-25
 
 ### Added
