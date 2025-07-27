@@ -118,6 +118,7 @@ export default function Home() {
       <Head>
         <title>ClubOS - Golf Simulator Management</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+        <meta name="deploy-version" content="2024-11-26-hydration-fix" />
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)]">
