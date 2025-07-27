@@ -54,8 +54,9 @@ export class SlackFallbackService {
     try {
       // Convert webhook message format to Web API format
       // Note: username and icon_emoji are not supported with bot tokens
+      // Use the provided channelId, not the one from the message
       const result = await this.webClient.chat.postMessage({
-        channel: channelId,
+        channel: channelId,  // Use channel ID, not channel name from message
         text: message.text,
         attachments: message.attachments
       });
