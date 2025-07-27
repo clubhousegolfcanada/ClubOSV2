@@ -423,7 +423,7 @@ Proprietary software - All rights reserved by Clubhouse 24/7 Golf
 
 ---
 
-**Version**: 1.6.1  
+**Version**: 1.7.0  
 **Last Updated**: July 27, 2025  
 **Status**: Production Ready  
 **Lead Developer**: Claude (AI) - Full read/write capabilities  

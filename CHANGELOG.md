@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.7.0] - 2025-07-27
+
+### Added
+- **NinjaOne Remote Actions Integration**
+  - Remote control of simulator PCs and facility systems
+  - Support for TrackMan, music system, and TV controls
+  - PowerShell scripts for automated actions
+  - Real-time job status tracking
+  - Demo mode with simulated responses
+  - Comprehensive action logging to database
+  - Slack notifications for critical actions
+  - Location-based device management (Bedford, Dartmouth, Stratford, Bayers Lake, Truro)
+  - Role-based access control (operator+ required)
+
+- **Remote Actions UI**
+  - New Remote Actions tab in Commands page
+  - Location-grouped control interface
+  - Bay-specific controls with multiple action types
+  - System-wide controls for music and TV
+  - Visual feedback with loading states
+  - Confirmation dialogs for destructive actions
+
+### Technical
+- 7 PowerShell scripts for different action types
+- NinjaOne API service with OAuth2 authentication
+- Database migration for action history tracking
+- Full integration with existing auth system
+
 ## [1.6.1] - 2025-07-27
 
 ### Changed
@@ -201,6 +229,9 @@ All notable changes to ClubOS will be documented in this file.
 
 ## Version History
 
+- **1.7.0** - NinjaOne Remote Actions Integration
+- **1.6.1** - Commands Page Redesign
+- **1.6.0** - PostgreSQL & Enhanced LLM System
 - **1.5.0** - Customer Kiosk & Enhanced Tickets
 - **1.4.0** - Ticket Management System
 - **1.3.0** - Feedback System & User Management

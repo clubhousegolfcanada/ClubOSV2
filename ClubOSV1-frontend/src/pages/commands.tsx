@@ -620,30 +620,16 @@ export default function CommandsRedesigned() {
     
     try {
       // Determine action type
-      let action = 'restart-sim';
+      let action = 'restart-trackman';
       if (trigger.systemType === 'music') action = 'restart-music';
       if (trigger.systemType === 'tv') action = 'restart-tv';
       
-      const response = await fetch('/api/remote-actions/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          action,
-          location: trigger.location!,
-          bayNumber: trigger.bayNumber,
-          systemType: trigger.systemType
-        })
+      const result = await remoteActionsAPI.execute({
+        action: action as any,
+        location: trigger.location!,
+        bayNumber: trigger.bayNumber || ''
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to execute action');
-      }
       
-      const result = await response.json();
       toast.success(result.message, { id: toastId });
       
       // Start polling for job status if not simulated
@@ -666,15 +652,7 @@ export default function CommandsRedesigned() {
       attempts++;
       
       try {
-        const response = await fetch(`/api/remote-actions/status/${jobId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!response.ok) throw new Error('Failed to check status');
-        
-        const status = await response.json();
+        const status = await remoteActionsAPI.getStatus(jobId);
         
         if (status.status === 'completed') {
           toast.success(`✅ ${deviceName} action completed successfully`);
@@ -921,19 +899,11 @@ export default function CommandsRedesigned() {
                                             }
                                             const toastId = toast.loading(`Rebooting PC...`);
                                             try {
-                                              const response = await fetch('/api/remote-actions/execute', {
-                                                method: 'POST',
-                                                headers: {
-                                                  'Content-Type': 'application/json',
-                                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                                },
-                                                body: JSON.stringify({
-                                                  action: 'reboot-pc',
-                                                  location: trigger.location,
-                                                  bayNumber: trigger.bayNumber
-                                                })
+                                              const result = await remoteActionsAPI.execute({
+                                                action: 'reboot-pc',
+                                                location: trigger.location!,
+                                                bayNumber: trigger.bayNumber || ''
                                               });
-                                              if (!response.ok) throw new Error('Failed');
                                               toast.success('PC reboot initiated. Bay will be back online in 3-5 minutes.', { 
                                                 id: toastId,
                                                 duration: 10000 
@@ -954,20 +924,11 @@ export default function CommandsRedesigned() {
                                             }
                                             const toastId = toast.loading(`Executing other system actions...`);
                                             try {
-                                              const response = await fetch('/api/remote-actions/execute', {
-                                                method: 'POST',
-                                                headers: {
-                                                  'Content-Type': 'application/json',
-                                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                                },
-                                                body: JSON.stringify({
-                                                  action: 'other',
-                                                  location: trigger.location,
-                                                  bayNumber: trigger.bayNumber
-                                                })
+                                              const result = await remoteActionsAPI.execute({
+                                                action: 'other',
+                                                location: trigger.location!,
+                                                bayNumber: trigger.bayNumber || ''
                                               });
-                                              if (!response.ok) throw new Error('Failed');
-                                              const result = await response.json();
                                               toast.success(result.message, { id: toastId });
                                               
                                               // Start polling for job status if not simulated

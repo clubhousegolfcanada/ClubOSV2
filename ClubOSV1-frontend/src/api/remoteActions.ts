@@ -1,9 +1,9 @@
 import api from './apiClient';
 
-// Simplified API client for PC/software remote actions only
+// API client for PC/software remote actions
 
 export interface RemoteActionParams {
-  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'restart-all';
+  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'restart-all' | 'restart-music' | 'restart-tv' | 'other';
   location: string;
   bayNumber: string;
 }
@@ -66,4 +66,12 @@ export const actionWarnings: Record<string, string> = {
   'restart-all': 'This will restart both TrackMan and the browser. Any active session will be interrupted.'
 };
 
-// Removed getActionIcon to avoid emoji issues
+export const getActionIcon = (action: string): string => {
+  const icons: Record<string, string> = {
+    'restart-trackman': '🏌️',
+    'restart-browser': '🌐',
+    'reboot-pc': '💻',
+    'restart-all': '🔄'
+  };
+  return icons[action] || '🔧';
+};
