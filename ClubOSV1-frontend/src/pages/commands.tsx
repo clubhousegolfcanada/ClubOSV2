@@ -683,7 +683,10 @@ export default function CommandsRedesigned() {
           toast.error(`❌ ${deviceName} action failed`);
           clearInterval(interval);
         } else if (attempts >= maxAttempts) {
-          toast.warning(`⏱️ ${deviceName} action is taking longer than expected`);
+          toast(`⏱️ ${deviceName} action is taking longer than expected`, {
+            icon: '⚠️',
+            duration: 5000
+          });
           clearInterval(interval);
         }
       } catch (error) {
