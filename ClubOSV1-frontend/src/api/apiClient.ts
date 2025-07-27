@@ -48,12 +48,26 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
     // Always use the LLM endpoint - it handles both smart assist and Slack routing
     const endpoint = '/llm/request';
     
+    // Get user info from localStorage if available
+    let userInfo = null;
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('clubos_user');
+      if (storedUser) {
+        try {
+          userInfo = JSON.parse(storedUser);
+        } catch (e) {
+          console.error('Failed to parse stored user:', e);
+        }
+      }
+    }
+    
     const payload = {
       requestDescription: request.requestDescription,
       location: request.location,
       routePreference: request.routePreference || "Auto",
       smartAssistEnabled: request.smartAssistEnabled, // This determines if it goes to LLM or Slack
-      clientStartTime // Include client start time
+      clientStartTime, // Include client start time
+      user: userInfo // Include user info if available
     };
     
     console.log('Submitting request to:', `${API_URL}${endpoint}`);

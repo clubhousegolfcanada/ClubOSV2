@@ -131,6 +131,17 @@ router.post('/request',
         } catch (err) {
           logger.warn('Failed to fetch user info', { userId: req.user.id, error: err });
         }
+      } else {
+        // In demo mode or when not authenticated, try to get user info from request body
+        if (req.body.user) {
+          fullUser = {
+            id: req.body.user.id || 'demo-user',
+            name: req.body.user.name || 'Demo User',
+            email: req.body.user.email || 'demo@example.com',
+            phone: req.body.user.phone,
+            role: req.body.user.role || 'support'
+          };
+        }
       }
 
       // Log raw request body first
@@ -347,7 +358,8 @@ router.post('/request',
           llmResponse,
           status: 'completed',
           processingTime: Date.now() - startTime,
-          slackThreadTs
+          slackThreadTs,
+          user: userRequest.user // Ensure user info is preserved
         };
 
         // Check if this is an emergency or high priority request that needs immediate Slack notification
