@@ -253,52 +253,39 @@ export class AssistantService {
         preview: textContent.substring(0, 200) + '...'
       });
 
-      // Parse the response
-      const { json, textAfter, fullText } = this.extractJsonFromText(textContent);
+      // For now, just use the full text content without JSON parsing
+      // since the Assistant is having trouble with JSON formatting
+      let responseText = textContent;
       
-      let responseText = fullText;
-      let structuredResponse = null;
-      let category = undefined;
-      let priority = undefined;
-      let actions = undefined;
-      let metadata = undefined;
-      let escalation = undefined;
+      // Clean up any markdown code blocks if present
+      responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/```/g, '');
       
-      if (json && json.response) {
-        structuredResponse = json;
-        responseText = json.response;
-        category = json.category;
-        priority = json.priority;
-        actions = json.actions;
-        metadata = json.metadata;
-        escalation = json.escalation;
-        
-        // If there's text after the JSON, append it
-        if (textAfter) {
-          responseText = responseText + '\n\n' + textAfter;
-        }
-        
-        logger.info('Successfully parsed structured response', {
-          route,
-          category,
-          priority,
-          hasActions: !!actions?.length,
-          hasTextAfter: !!textAfter
-        });
-      } else {
-        // No valid JSON found, use the cleaned text
-        logger.info('No structured JSON found, using plain text response', {
-          route,
-          textLength: responseText.length
-        });
-      }
+      // Remove any citation markers
+      responseText = responseText.replace(/【[^】]+】/g, '');
+      
+      // Trim whitespace
+      responseText = responseText.trim();
+      
+      logger.info('Using full text response (JSON parsing disabled)', {
+        route,
+        textLength: responseText.length,
+        preview: responseText.substring(0, 100) + '...'
+      });
+      
+      // Still try to extract metadata if JSON is present, but don't use it for the response
+      const { json } = this.extractJsonFromText(textContent);
+      let category = json?.category;
+      let priority = json?.priority;
+      let actions = json?.actions;
+      let metadata = json?.metadata;
+      let escalation = json?.escalation;
 
       return {
         response: responseText,
         assistantId,
         threadId: thread.id,
         confidence: 0.9,
-        structured: structuredResponse,
+        structured: json, // Use the extracted json if any
         category,
         priority,
         actions,
