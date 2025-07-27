@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2 } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { ChecklistSystem } from '@/components/ChecklistSystem';
+import { UserDebugCheck } from '@/components/UserDebugCheck';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -1129,16 +1130,20 @@ export default function Operations() {
               {!showFeedback && !showSystemConfig && !showAnalytics ? (
                 <>
                   {/* User Management Section */}
-                  <div className="card">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-semibold">User Management</h2>
-                      <button
-                        onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
-                      >
-                        {showCreateForm ? 'Cancel' : 'Add User'}
-                      </button>
-                    </div>
+                  <div className="space-y-6">
+                    {/* Database Status Check */}
+                    <UserDebugCheck />
+                    
+                    <div className="card">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-semibold">User Management</h2>
+                        <button
+                          onClick={() => setShowCreateForm(!showCreateForm)}
+                          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+                        >
+                          {showCreateForm ? 'Cancel' : 'Add User'}
+                        </button>
+                      </div>
 
                     {/* Create User Form */}
                     {showCreateForm && (
@@ -1337,6 +1342,7 @@ export default function Operations() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
                   </div>
                 </>
               ) : showFeedback ? (
