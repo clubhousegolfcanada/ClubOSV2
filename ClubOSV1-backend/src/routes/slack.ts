@@ -33,7 +33,7 @@ router.post('/message',
       const slackConfig = configResult.rows[0]?.value || { enabled: true };
       
       if (!slackConfig.enabled) {
-        throw new AppError('SLACK_DISABLED', 'Slack integration is currently disabled', 503);
+        throw new AppError('Slack integration is currently disabled', 503, 'SLACK_DISABLED');
       }
 
       // Create user request object with user info
@@ -119,10 +119,9 @@ router.post('/message',
         // Request failed - logged in database via customer_interactions
 
         throw new AppError(
-          'SLACK_SEND_FAILED',
           'Failed to send message to Slack',
           503,
-          slackError
+          'SLACK_SEND_FAILED'
         );
       }
 

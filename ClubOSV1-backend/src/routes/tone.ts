@@ -64,7 +64,7 @@ router.post('/convert',
       // Poll for completion
       while (runStatus === 'queued' || runStatus === 'in_progress') {
         if (attempts >= maxAttempts) {
-          throw new AppError('TIMEOUT', 'Tone conversion timed out', 408);
+          throw new AppError('Tone conversion timed out', 408, 'TIMEOUT');
         }
         
         await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
@@ -84,7 +84,7 @@ router.post('/convert',
       }
       
       if (runStatus !== 'completed') {
-        throw new AppError('FAILED', 'Tone conversion failed', 500);
+        throw new AppError('Tone conversion failed', 500, 'FAILED');
       }
       
       // Get the assistant's response
@@ -103,7 +103,7 @@ router.post('/convert',
       );
       
       if (!assistantMessage) {
-        throw new AppError('NO_RESPONSE', 'No response from tone converter', 500);
+        throw new AppError('No response from tone converter', 500, 'NO_RESPONSE');
       }
       
       const convertedText = assistantMessage.content[0].text.value;
@@ -128,9 +128,9 @@ router.post('/convert',
       
       if (axios.isAxiosError(error)) {
         next(new AppError(
-          'OPENAI_ERROR',
           'Failed to convert tone',
-          error.response?.status || 500
+          error.response?.status || 500,
+          'OPENAI_ERROR'
         ));
       } else {
         next(error);

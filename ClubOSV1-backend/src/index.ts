@@ -20,7 +20,7 @@ import userSettingsRoutes from './routes/userSettings';
 import backupRoutes from './routes/backup';
 import accessRoutes from './routes/access';
 import historyRoutes from './routes/history';
-import testCorsRoutes from './routes/test-cors';
+// import testCorsRoutes from './routes/test-cors'; // Removed during cleanup
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
 import { requestLogger } from './middleware/requestLogger';
@@ -85,18 +85,43 @@ app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/history', historyRoutes);
-app.use('/api/test-cors', testCorsRoutes);
+// app.use('/api/test-cors', testCorsRoutes); // Removed during cleanup
 app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    database: 'postgresql',
-    version: process.env.npm_package_version || '1.0.0'
-  });
+app.get('/health', async (req, res) => {
+  try {
+    // Basic health response
+    const health: any = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '1.0.0'
+    };
+
+    // Check database connection if initialized
+    if (db.initialized) {
+      try {
+        await db.query('SELECT 1');
+        health.database = 'connected';
+      } catch (error) {
+        health.database = 'error';
+        health.status = 'degraded';
+      }
+    } else {
+      health.database = 'not initialized';
+    }
+
+    res.status(health.status === 'ok' ? 200 : 503).json(health);
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed'
+    });
+  }
 });
 
 // Root endpoint

@@ -42,7 +42,7 @@ router.post('/login',
           success: false,
           error_message: 'User not found'
         });
-        throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+        throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
       }
       
       // Verify password
@@ -58,7 +58,7 @@ router.post('/login',
           success: false,
           error_message: 'Invalid password'
         });
-        throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+        throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
       }
       
       // Update last login
@@ -136,7 +136,7 @@ router.post('/register',
       // Check if user already exists
       const existingUser = await db.findUserByEmail(email);
       if (existingUser) {
-        throw new AppError('USER_EXISTS', 'User with this email already exists', 409);
+        throw new AppError('User with this email already exists', 409, 'USER_EXISTS');
       }
       
       // Create new user
@@ -181,7 +181,7 @@ router.get('/me',
       const user = await db.findUserById(req.user!.id);
       
       if (!user) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+        throw new AppError('User not found', 404, 'USER_NOT_FOUND');
       }
       
       // Transform user for response
@@ -240,14 +240,14 @@ router.post('/change-password',
       const user = await db.findUserById(req.user!.id);
       
       if (!user) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+        throw new AppError('User not found', 404, 'USER_NOT_FOUND');
       }
       
       // Verify current password
       const isValidPassword = await bcryptjs.compare(currentPassword, user.password);
       
       if (!isValidPassword) {
-        throw new AppError('INVALID_PASSWORD', 'Current password is incorrect', 401);
+        throw new AppError('Current password is incorrect', 401, 'INVALID_PASSWORD');
       }
       
       // Update password
@@ -303,14 +303,14 @@ router.put('/users/:userId',
       
       // Users can only update their own profile unless they're admin
       if (userId !== req.user!.id && req.user!.role !== 'admin') {
-        throw new AppError('UNAUTHORIZED', 'You can only update your own profile', 403);
+        throw new AppError('You can only update your own profile', 403, 'UNAUTHORIZED');
       }
       
       // Check if email is being changed and if it's already taken
       if (email) {
         const existingUser = await db.findUserByEmail(email);
         if (existingUser && existingUser.id !== userId) {
-          throw new AppError('EMAIL_EXISTS', 'Email already in use', 409);
+          throw new AppError('Email already in use', 409, 'EMAIL_EXISTS');
         }
       }
       
@@ -318,7 +318,7 @@ router.put('/users/:userId',
       const updatedUser = await db.updateUser(userId, { name, phone, email });
       
       if (!updatedUser) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+        throw new AppError('User not found', 404, 'USER_NOT_FOUND');
       }
       
       logger.info('User profile updated:', { userId, updatedBy: req.user!.id });
@@ -355,12 +355,12 @@ router.post('/users/:userId/reset-password',
       
       // Prevent resetting own password through this endpoint
       if (userId === req.user!.id) {
-        throw new AppError('SELF_RESET', 'Use the change-password endpoint to change your own password', 400);
+        throw new AppError('Use the change-password endpoint to change your own password', 400, 'SELF_RESET');
       }
       
       const user = await db.findUserById(userId);
       if (!user) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+        throw new AppError('User not found', 404, 'USER_NOT_FOUND');
       }
       
       // Update password
@@ -398,13 +398,13 @@ router.delete('/users/:userId',
       
       // Prevent self-deletion
       if (userId === req.user!.id) {
-        throw new AppError('SELF_DELETE', 'Cannot delete your own account', 400);
+        throw new AppError('Cannot delete your own account', 400, 'SELF_DELETE');
       }
       
       const deleted = await db.deleteUser(userId);
       
       if (!deleted) {
-        throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+        throw new AppError('User not found', 404, 'USER_NOT_FOUND');
       }
       
       // Log user deletion

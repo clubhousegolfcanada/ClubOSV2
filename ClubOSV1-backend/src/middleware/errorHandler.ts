@@ -55,15 +55,3 @@ export const errorHandler = (
   res.status(statusCode).json(errorResponse);
 };
 
-export class AppError extends Error {
-  constructor(
-    public code: string,
-    public message: string,
-    public statusCode: number = 500,
-    public details?: any
-  ) {
-    super(message);
-    this.name = 'AppError';
-    Error.captureStackTrace(this, this.constructor);
-  }
-}

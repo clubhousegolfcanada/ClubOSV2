@@ -143,7 +143,7 @@ if (process.env.NODE_ENV === 'development') {
         const { function_name, arguments: args, assistant_id = 'test' } = req.body;
 
         if (!function_name) {
-          throw new AppError('MISSING_PARAMETER', 'function_name is required', 400);
+          throw new AppError('function_name is required', 400, 'MISSING_PARAMETER');
         }
 
         // TODO: Re-enable when GPT function handler is fixed
