@@ -224,8 +224,11 @@ export async function runMigrations() {
     
     // Migration 8: Create slack_replies_view for easy querying
     try {
+      // Drop view if it exists first to avoid column rename errors
+      await query(`DROP VIEW IF EXISTS slack_replies_view`);
+      
       await query(`
-        CREATE OR REPLACE VIEW slack_replies_view AS
+        CREATE VIEW slack_replies_view AS
         SELECT 
           sr.id as reply_id,
           sr.thread_ts,
