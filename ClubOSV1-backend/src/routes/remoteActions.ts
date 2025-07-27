@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth, requireRole } from '../middleware/auth';
 import ninjaOneService from '../services/ninjaone';
-import { pool } from '../db';
+import { pool } from '../utils/db';
 import { sendSlackNotification } from '../services/slack';
 
 const router = express.Router();

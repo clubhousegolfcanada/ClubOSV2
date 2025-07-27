@@ -1,10 +1,11 @@
 import api from './index';
 
+// Simplified API client for PC/software remote actions only
+
 export interface RemoteActionParams {
-  action: string;
+  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'restart-all';
   location: string;
-  bayNumber?: string;
-  systemType?: string;
+  bayNumber: string;
 }
 
 export interface RemoteActionResponse {
@@ -13,6 +14,7 @@ export interface RemoteActionResponse {
   jobId: string;
   device: string;
   simulated?: boolean;
+  estimatedTime?: string;
 }
 
 export interface JobStatus {
@@ -21,24 +23,16 @@ export interface JobStatus {
   result?: any;
 }
 
-export interface RecentAction {
-  action_type: string;
-  location: string;
-  device_name: string;
-  initiated_by: string;
-  status: string;
-  created_at: string;
-}
-
-export interface RemoteActionStats {
-  totalActions: number;
-  successRate: number;
-  last24h: number;
-  mostCommonAction: string;
+export interface DeviceStatus {
+  bay: string;
+  name: string;
+  deviceId: string;
+  status: 'online' | 'offline' | 'unknown';
+  lastSeen: string | null;
 }
 
 export const remoteActionsAPI = {
-  // Execute a remote action
+  // Execute a remote action (PC/software restart only)
   execute: async (params: RemoteActionParams): Promise<RemoteActionResponse> => {
     const response = await api.post('/remote-actions/execute', params);
     return response.data;
@@ -50,15 +44,34 @@ export const remoteActionsAPI = {
     return response.data;
   },
 
-  // Get recent actions
-  getRecent: async (): Promise<{ actions: RecentAction[] }> => {
-    const response = await api.get('/remote-actions/recent');
-    return response.data;
-  },
-
-  // Get statistics
-  getStats: async (): Promise<RemoteActionStats> => {
-    const response = await api.get('/remote-actions/stats');
+  // Get device status for a location
+  getDeviceStatus: async (location: string): Promise<{ devices: DeviceStatus[]; demo?: boolean }> => {
+    const response = await api.get(`/remote-actions/devices/${location}`);
     return response.data;
   }
+};
+
+// Helper functions for the UI
+export const actionDescriptions: Record<string, string> = {
+  'restart-trackman': 'Restart TrackMan Software',
+  'restart-browser': 'Restart Browser Display',
+  'reboot-pc': 'Reboot PC (3-5 min downtime)',
+  'restart-all': 'Restart All Software'
+};
+
+export const actionWarnings: Record<string, string> = {
+  'restart-trackman': 'This will close and restart TrackMan. Any active session will be interrupted.',
+  'restart-browser': 'This will restart the browser with tournament display.',
+  'reboot-pc': '⚠️ This will fully restart the PC. The bay will be unavailable for 3-5 minutes.',
+  'restart-all': 'This will restart both TrackMan and the browser. Any active session will be interrupted.'
+};
+
+export const getActionIcon = (action: string): string => {
+  const icons: Record<string, string> = {
+    'restart-trackman': '🏌️',
+    'restart-browser': '🌐',
+    'reboot-pc': '💻',
+    'restart-all': '🔄'
+  };
+  return icons[action] || '🔧';
 };
