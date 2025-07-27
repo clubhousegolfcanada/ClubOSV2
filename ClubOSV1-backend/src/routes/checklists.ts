@@ -92,7 +92,6 @@ router.get('/template/:category/:type',
 // Submit a completed checklist
 router.post('/submit',
   authenticate,
-  roleGuard(['admin', 'operator', 'support', 'kiosk']),
   validate([
     body('category').isIn(['cleaning', 'tech']).withMessage('Invalid category'),
     body('type').isIn(['daily', 'weekly', 'quarterly']).withMessage('Invalid type'),
@@ -166,7 +165,6 @@ router.post('/submit',
 // Get checklist submissions with filtering
 router.get('/submissions',
   authenticate,
-  roleGuard(['admin', 'operator']),
   validate([
     query('category').optional().isIn(['cleaning', 'tech']),
     query('type').optional().isIn(['daily', 'weekly', 'quarterly']),
@@ -270,7 +268,6 @@ router.get('/submissions',
 // Get submission statistics
 router.get('/stats',
   authenticate,
-  roleGuard(['admin', 'operator']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Get completion stats by category and type
