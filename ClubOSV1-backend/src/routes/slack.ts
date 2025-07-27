@@ -4,6 +4,7 @@ import { validate, requestValidation } from '../middleware/validation';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { slackFallback } from '../services/slackFallback';
+import axios from 'axios';
 // JSON operations removed - using PostgreSQL
 import { UserRequest, SystemConfig } from '../types';
 import { db } from '../utils/database';
@@ -415,28 +416,54 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
-// Get Slack replies for a specific thread
-router.get('/replies/:threadTs', async (req: Request, res: Response, next: NextFunction) => {
+// Get Slack replies for a specific thread using Slack API
+router.get('/thread-replies/:threadTs', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { threadTs } = req.params;
+    const botToken = process.env.SLACK_BOT_TOKEN;
     
-    // Get replies using the view for enriched data
-    const repliesResult = await db.query(
-      `SELECT * FROM slack_replies_view 
-       WHERE thread_ts = $1 
-       ORDER BY reply_timestamp ASC`,
-      [threadTs]
-    );
+    if (!botToken) {
+      return res.status(500).json({
+        success: false,
+        error: 'Slack bot token not configured'
+      });
+    }
+    
+    // Call Slack API directly to get thread replies
+    const slackResponse = await axios.get('https://slack.com/api/conversations.replies', {
+      headers: {
+        'Authorization': `Bearer ${botToken}`,
+        'Content-Type': 'application/json'
+      },
+      params: {
+        channel: process.env.SLACK_CHANNEL_ID || process.env.SLACK_CHANNEL || '#clubos-assistants',
+        ts: threadTs
+      }
+    });
+    
+    if (!slackResponse.data.ok) {
+      throw new Error(`Slack API error: ${slackResponse.data.error}`);
+    }
+    
+    // Skip the first message (original) and return only replies
+    const replies = slackResponse.data.messages.slice(1).map((msg: any) => ({
+      user: msg.user,
+      text: msg.text,
+      ts: msg.ts,
+      timestamp: new Date(parseFloat(msg.ts) * 1000).toISOString(),
+      user_name: msg.user // We'll enhance this with user info later if needed
+    }));
     
     res.json({
       success: true,
       data: {
         threadTs,
-        replies: repliesResult.rows,
-        count: repliesResult.rows.length
+        replies,
+        count: replies.length
       }
     });
   } catch (error) {
+    logger.error('Failed to fetch thread replies:', error);
     next(error);
   }
 });
