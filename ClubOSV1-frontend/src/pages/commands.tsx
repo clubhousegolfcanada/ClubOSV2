@@ -18,7 +18,10 @@ import {
   RefreshCw,
   Power,
   Copy,
-  Check
+  Check,
+  Music,
+  Tv,
+  MapPin
 } from 'lucide-react';
 
 interface Command {
@@ -33,6 +36,7 @@ interface Command {
   action?: string;
   location?: string;
   bayNumber?: string;
+  systemType?: 'music' | 'tv';
 }
 
 // Sample commands data (same as original)
@@ -208,6 +212,28 @@ const commands: Command[] = [
     location: 'Bedford',
     bayNumber: '2'
   },
+  {
+    id: 'reset-bedford-music',
+    name: 'Bedford Music',
+    description: 'Reset music system at Bedford location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'music', 'bedford', 'audio'],
+    action: 'ninjaone',
+    location: 'Bedford',
+    systemType: 'music'
+  },
+  {
+    id: 'reset-bedford-tv',
+    name: 'Bedford Tournament TV',
+    description: 'Reset tournament TV at Bedford location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'tv', 'tournament', 'bedford'],
+    action: 'ninjaone',
+    location: 'Bedford',
+    systemType: 'tv'
+  },
   
   // Automated Simulator Resets - Dartmouth
   {
@@ -254,6 +280,28 @@ const commands: Command[] = [
     location: 'Dartmouth',
     bayNumber: '4'
   },
+  {
+    id: 'reset-dartmouth-music',
+    name: 'Dartmouth Music',
+    description: 'Reset music system at Dartmouth location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'music', 'dartmouth', 'audio'],
+    action: 'ninjaone',
+    location: 'Dartmouth',
+    systemType: 'music'
+  },
+  {
+    id: 'reset-dartmouth-tv',
+    name: 'Dartmouth Tournament TV',
+    description: 'Reset tournament TV at Dartmouth location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'tv', 'tournament', 'dartmouth'],
+    action: 'ninjaone',
+    location: 'Dartmouth',
+    systemType: 'tv'
+  },
   
   // Automated Simulator Resets - Stratford
   {
@@ -266,6 +314,28 @@ const commands: Command[] = [
     action: 'ninjaone',
     location: 'Stratford',
     bayNumber: '1'
+  },
+  {
+    id: 'reset-stratford-music',
+    name: 'Stratford Music',
+    description: 'Reset music system at Stratford location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'music', 'stratford', 'audio'],
+    action: 'ninjaone',
+    location: 'Stratford',
+    systemType: 'music'
+  },
+  {
+    id: 'reset-stratford-tv',
+    name: 'Stratford Tournament TV',
+    description: 'Reset tournament TV at Stratford location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'tv', 'tournament', 'stratford'],
+    action: 'ninjaone',
+    location: 'Stratford',
+    systemType: 'tv'
   },
   
   // Automated Simulator Resets - Bayers Lake
@@ -280,6 +350,28 @@ const commands: Command[] = [
     location: 'Bayers Lake',
     bayNumber: '1'
   },
+  {
+    id: 'reset-bayerslake-music',
+    name: 'Bayers Lake Music',
+    description: 'Reset music system at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'music', 'bayers lake', 'audio'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    systemType: 'music'
+  },
+  {
+    id: 'reset-bayerslake-tv',
+    name: 'Bayers Lake Tournament TV',
+    description: 'Reset tournament TV at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'tv', 'tournament', 'bayers lake'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    systemType: 'tv'
+  },
   
   // Automated Simulator Resets - Truro
   {
@@ -292,6 +384,28 @@ const commands: Command[] = [
     action: 'ninjaone',
     location: 'Truro',
     bayNumber: '1'
+  },
+  {
+    id: 'reset-truro-music',
+    name: 'Truro Music',
+    description: 'Reset music system at Truro location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'music', 'truro', 'audio'],
+    action: 'ninjaone',
+    location: 'Truro',
+    systemType: 'music'
+  },
+  {
+    id: 'reset-truro-tv',
+    name: 'Truro Tournament TV',
+    description: 'Reset tournament TV at Truro location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'tv', 'tournament', 'truro'],
+    action: 'ninjaone',
+    location: 'Truro',
+    systemType: 'tv'
   },
   {
     id: 'reset-all-trackman',
@@ -563,66 +677,102 @@ export default function CommandsRedesigned() {
             <>
               {/* Remote Actions Tab */}
               <div className="space-y-6">
-                {/* Quick Bay Resets - Grouped by Location */}
-                <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6">
-                  <h3 className="text-lg font-medium text-[var(--text-primary)] mb-4">Quick Bay Resets</h3>
-                  <p className="text-sm text-[var(--text-secondary)] font-light mb-6">
-                    Click any bay to instantly reset TrackMan software
-                  </p>
+                {/* Location Cards */}
+                {(() => {
+                  const groupedByLocation = filteredTriggers
+                    .filter(t => t.location)
+                    .reduce((acc, trigger) => {
+                      if (!acc[trigger.location!]) {
+                        acc[trigger.location!] = {
+                          bays: [],
+                          music: null,
+                          tv: null
+                        };
+                      }
+                      if (trigger.bayNumber) {
+                        acc[trigger.location!].bays.push(trigger);
+                      } else if (trigger.systemType === 'music') {
+                        acc[trigger.location!].music = trigger;
+                      } else if (trigger.systemType === 'tv') {
+                        acc[trigger.location!].tv = trigger;
+                      }
+                      return acc;
+                    }, {} as Record<string, { bays: Command[], music: Command | null, tv: Command | null }>);
                   
-                  {/* Group triggers by location */}
-                  {(() => {
-                    const groupedByLocation = filteredTriggers
-                      .filter(t => t.location && t.bayNumber)
-                      .reduce((acc, trigger) => {
-                        if (!acc[trigger.location!]) {
-                          acc[trigger.location!] = [];
-                        }
-                        acc[trigger.location!].push(trigger);
-                        return acc;
-                      }, {} as Record<string, Command[]>);
-                    
-                    const locationOrder = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
-                    
-                    return (
-                      <div className="space-y-6">
-                        {locationOrder.map(location => {
-                          const triggers = groupedByLocation[location];
-                          if (!triggers || triggers.length === 0) return null;
-                          
-                          return (
-                            <div key={location}>
-                              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-3">{location}</h4>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                {triggers.sort((a, b) => parseInt(a.bayNumber!) - parseInt(b.bayNumber!)).map((trigger) => (
+                  const locationOrder = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
+                  
+                  return (
+                    <>
+                      {locationOrder.map(location => {
+                        const locationData = groupedByLocation[location];
+                        if (!locationData) return null;
+                        
+                        return (
+                          <div key={location} className="card group p-4 sm:p-6 md:p-8">
+                            {/* Location Header */}
+                            <div className="flex items-center gap-2 mb-4">
+                              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
+                              <h3 className="text-base sm:text-lg font-medium text-[var(--text-primary)]">{location}</h3>
+                            </div>
+                            
+                            {/* Quick Bay Resets */}
+                            {locationData.bays.length > 0 && (
+                              <div className="mb-4">
+                                <p className="text-xs text-[var(--text-secondary)] font-light mb-3">Quick Bay Resets</p>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                  {locationData.bays.sort((a, b) => parseInt(a.bayNumber!) - parseInt(b.bayNumber!)).map((trigger) => (
+                                    <button
+                                      key={trigger.id}
+                                      onClick={() => handleExecuteReset(trigger)}
+                                      className="group/btn"
+                                    >
+                                      <div className="bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-2 sm:p-3 transition-all duration-200">
+                                        <div className="text-center">
+                                          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto mb-0.5 sm:mb-1 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <div className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] group-hover/btn:text-white">
+                                            Bay {trigger.bayNumber}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* System Controls */}
+                            <div className="border-t border-[var(--border-secondary)] pt-4">
+                              <p className="text-xs text-[var(--text-secondary)] font-light mb-3">System Controls</p>
+                              <div className="grid grid-cols-2 gap-3">
+                                {/* Music Reset */}
+                                {locationData.music && (
                                   <button
-                                    key={trigger.id}
-                                    onClick={() => handleExecuteReset(trigger)}
-                                    className="relative group"
+                                    onClick={() => handleExecuteReset(locationData.music!)}
+                                    className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-2.5 sm:p-3 transition-all group/btn"
                                   >
-                                    <div className="bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-3 transition-all duration-200 cursor-pointer">
-                                      <div className="text-center">
-                                        <div className="text-xl font-semibold text-[var(--text-primary)] group-hover:text-white transition-colors">
-                                          {trigger.bayNumber}
-                                        </div>
-                                        <div className="text-xs text-[var(--text-muted)] group-hover:text-white/80 mt-0.5 transition-colors">
-                                          Bay {trigger.bayNumber}
-                                        </div>
-                                      </div>
-                                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Zap className="w-4 h-4 text-white animate-pulse" />
-                                      </div>
-                                    </div>
+                                    <Music className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                    <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] group-hover/btn:text-white">Music</span>
                                   </button>
-                                ))}
+                                )}
+                                
+                                {/* TV Reset */}
+                                {locationData.tv && (
+                                  <button
+                                    onClick={() => handleExecuteReset(locationData.tv!)}
+                                    className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded-lg p-2.5 sm:p-3 transition-all group/btn"
+                                  >
+                                    <Tv className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                    <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] group-hover/btn:text-white">TV</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
 
                 {/* Other System Actions */}
                 <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
