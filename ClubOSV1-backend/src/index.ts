@@ -23,6 +23,7 @@ import historyRoutes from './routes/history';
 // import testCorsRoutes from './routes/test-cors'; // Removed during cleanup
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
+import checklistsRoutes from './routes/checklists';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
@@ -88,6 +89,7 @@ app.use('/api/history', historyRoutes);
 // app.use('/api/test-cors', testCorsRoutes); // Removed during cleanup
 app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/checklists', checklistsRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

@@ -1,18 +1,14 @@
 {
-  "name": "clubos-monorepo",
-  "version": "1.0.0",
-  "description": "ClubOS - Golf Simulator Management System",
+  "name": "clubosv1",
+  "version": "1.6.1",
+  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd ClubOSV1-backend && npm run dev",
-    "dev:frontend": "cd ClubOSV1-frontend && npm run dev",
-    "install:all": "npm run install:backend && npm run install:frontend",
-    "install:backend": "cd ClubOSV1-backend && npm install",
-    "install:frontend": "cd ClubOSV1-frontend && npm install",
-    "restart": "./restart.sh",
-    "start": "./start-dev.sh"
+    "dev": "concurrently \"cd ClubOSV1-backend && npm run dev\" \"cd ClubOSV1-frontend && npm run dev\"",
+    "install:all": "cd ClubOSV1-backend && npm install && cd ../ClubOSV1-frontend && npm install",
+    "build:all": "cd ClubOSV1-backend && npm run build && cd ../ClubOSV1-frontend && npm run build",
+    "deploy": "./deploy-facility.sh"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^7.6.0"
   }
 }
