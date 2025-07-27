@@ -316,6 +316,28 @@ const commands: Command[] = [
     bayNumber: '1'
   },
   {
+    id: 'reset-stratford-bay2',
+    name: 'Stratford Bay 2',
+    description: 'Reset TrackMan at Stratford location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'stratford', 'bay 2'],
+    action: 'ninjaone',
+    location: 'Stratford',
+    bayNumber: '2'
+  },
+  {
+    id: 'reset-stratford-bay3',
+    name: 'Stratford Bay 3',
+    description: 'Reset TrackMan at Stratford location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'stratford', 'bay 3'],
+    action: 'ninjaone',
+    location: 'Stratford',
+    bayNumber: '3'
+  },
+  {
     id: 'reset-stratford-music',
     name: 'Stratford Music',
     description: 'Reset music system at Stratford location',
@@ -351,6 +373,50 @@ const commands: Command[] = [
     bayNumber: '1'
   },
   {
+    id: 'reset-bayerslake-bay2',
+    name: 'Bayers Lake Bay 2',
+    description: 'Reset TrackMan at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 2'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    bayNumber: '2'
+  },
+  {
+    id: 'reset-bayerslake-bay3',
+    name: 'Bayers Lake Bay 3',
+    description: 'Reset TrackMan at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 3'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    bayNumber: '3'
+  },
+  {
+    id: 'reset-bayerslake-bay4',
+    name: 'Bayers Lake Bay 4',
+    description: 'Reset TrackMan at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 4'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    bayNumber: '4'
+  },
+  {
+    id: 'reset-bayerslake-bay5',
+    name: 'Bayers Lake Bay 5',
+    description: 'Reset TrackMan at Bayers Lake location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 5'],
+    action: 'ninjaone',
+    location: 'Bayers Lake',
+    bayNumber: '5'
+  },
+  {
     id: 'reset-bayerslake-music',
     name: 'Bayers Lake Music',
     description: 'Reset music system at Bayers Lake location',
@@ -384,6 +450,28 @@ const commands: Command[] = [
     action: 'ninjaone',
     location: 'Truro',
     bayNumber: '1'
+  },
+  {
+    id: 'reset-truro-bay2',
+    name: 'Truro Bay 2',
+    description: 'Reset TrackMan at Truro location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'truro', 'bay 2'],
+    action: 'ninjaone',
+    location: 'Truro',
+    bayNumber: '2'
+  },
+  {
+    id: 'reset-truro-bay3',
+    name: 'Truro Bay 3',
+    description: 'Reset TrackMan at Truro location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'truro', 'bay 3'],
+    action: 'ninjaone',
+    location: 'Truro',
+    bayNumber: '3'
   },
   {
     id: 'reset-truro-music',
