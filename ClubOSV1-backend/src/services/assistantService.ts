@@ -312,13 +312,13 @@ export class AssistantService {
 
   private getFallbackResponse(route: string, userMessage: string): string {
     const fallbacks: Record<string, string> = {
-      'Booking & Access': 'I can help you with bookings and access. Please contact the front desk at 555-0100 for immediate assistance.',
-      'Emergency': 'For emergencies, please call 911 immediately or contact facility management at 555-0111.',
-      'TechSupport': 'For technical support, please describe your issue and I\'ll help troubleshoot or create a support ticket.',
-      'BrandTone': 'I can provide information about our memberships, promotions, and facilities. What would you like to know?'
+      'Booking & Access': 'I can help you manage customer bookings and access issues. To process this request, please check the booking system or use the access control panel. For immediate assistance with booking disputes or refunds, consult the operations manual.',
+      'Emergency': 'For facility emergencies: 1) Ensure customer safety first, 2) Call 911 if needed, 3) Follow emergency protocols in the red binder, 4) Contact facility management at 555-0111, 5) Document the incident.',
+      'TechSupport': 'I can help troubleshoot equipment issues. Please describe the specific problem with the simulator or TrackMan system. Common fixes: restart the system, check cable connections, or run diagnostics from the admin panel.',
+      'BrandTone': 'I can help you create customer communications and marketing content. Please specify what type of message or content you need to develop for your members or promotional campaigns.'
     };
 
-    return fallbacks[route] || 'I\'m having trouble processing your request. Please try again or contact support.';
+    return fallbacks[route] || 'System is having trouble processing this request. Please try rephrasing your operational question or contact technical support.';
   }
 }
 

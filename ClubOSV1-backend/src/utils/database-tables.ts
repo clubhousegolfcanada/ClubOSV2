@@ -186,3 +186,22 @@ export const createIndexesSQL = [
   'CREATE INDEX IF NOT EXISTS idx_customer_interactions_user_id ON customer_interactions(user_id);',
   'CREATE INDEX IF NOT EXISTS idx_customer_interactions_created_at ON customer_interactions("createdAt");'
 ];
+
+// Add routing optimizations table
+export const routingOptimizationsTable = `
+  CREATE TABLE IF NOT EXISTS routing_optimizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    optimization_data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    applied_at TIMESTAMP,
+    applied_by UUID,
+    status VARCHAR(50) DEFAULT 'pending',
+    notes TEXT
+  );
+`;
+
+// Additional indexes for routing optimizations
+export const routingOptimizationIndexes = [
+  'CREATE INDEX IF NOT EXISTS idx_routing_optimizations_created_at ON routing_optimizations(created_at);',
+  'CREATE INDEX IF NOT EXISTS idx_routing_optimizations_status ON routing_optimizations(status);'
+];

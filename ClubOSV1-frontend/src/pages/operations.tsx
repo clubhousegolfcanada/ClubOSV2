@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3 } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -53,9 +53,12 @@ export default function Operations() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   // Password change modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -87,8 +90,11 @@ export default function Operations() {
       if (showSystemConfig) {
         fetchSystemConfigs();
       }
+      if (showAnalytics) {
+        fetchAnalytics();
+      }
     }
-  }, [user, showFeedback, showSystemConfig]);
+  }, [user, showFeedback, showSystemConfig, showAnalytics]);
 
   // Validate password whenever it changes
   useEffect(() => {
@@ -223,6 +229,37 @@ export default function Operations() {
       toast.error('Failed to update configuration');
     } finally {
       setConfigSaving(false);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      // Fetch multiple analytics endpoints
+      const [routingResponse, feedbackResponse, accuracyResponse] = await Promise.all([
+        axios.get(`${API_URL}/analytics/routing`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_URL}/analytics/feedback`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_URL}/analytics/routing-accuracy`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+      
+      setAnalyticsData({
+        routing: routingResponse.data.data,
+        feedback: feedbackResponse.data.data,
+        accuracy: accuracyResponse.data.data
+      });
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      toast.error('Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -556,9 +593,9 @@ export default function Operations() {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex gap-4">
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); }}
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      !showFeedback && !showSystemConfig
+                      !showFeedback && !showSystemConfig && !showAnalytics
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
@@ -566,7 +603,7 @@ export default function Operations() {
                     User Management
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(true); setShowSystemConfig(false); }}
+                    onClick={() => { setShowFeedback(true); setShowSystemConfig(false); setShowAnalytics(false); }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showFeedback
                         ? 'bg-[var(--accent)] text-white'
@@ -582,7 +619,7 @@ export default function Operations() {
                     )}
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(true); }}
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(true); setShowAnalytics(false); }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showSystemConfig
                         ? 'bg-[var(--accent)] text-white'
@@ -591,6 +628,17 @@ export default function Operations() {
                   >
                     <Settings className="w-4 h-4" />
                     System Config
+                  </button>
+                  <button
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                      showAnalytics
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Analytics
                   </button>
                 </div>
                 
@@ -618,7 +666,7 @@ export default function Operations() {
                 </div>
               </div>
 
-              {!showFeedback && !showSystemConfig ? (
+              {!showFeedback && !showSystemConfig && !showAnalytics ? (
                 <>
                   {/* User Management Section */}
                   <div className="card">
@@ -1112,6 +1160,184 @@ export default function Operations() {
                             </p>
                           </div>
                         )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : showAnalytics ? (
+                <>
+                  {/* Analytics Section */}
+                  <div className="card">
+                    <div className="flex justify-between items-center mb-6">
+                      <div>
+                        <h2 className="text-xl font-semibold">Routing Analytics</h2>
+                        <p className="text-sm text-[var(--text-secondary)] mt-1">
+                          Monitor routing performance and identify optimization opportunities
+                        </p>
+                      </div>
+                      <button
+                        onClick={fetchAnalytics}
+                        disabled={analyticsLoading}
+                        className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </button>
+                    </div>
+
+                    {analyticsLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)] mx-auto"></div>
+                        <p className="text-[var(--text-secondary)] mt-4">Loading analytics...</p>
+                      </div>
+                    ) : analyticsData ? (
+                      <div className="space-y-8">
+                        {/* Route Distribution */}
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Route Distribution</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {analyticsData.routing?.routeDistribution?.map((route: any) => (
+                              <div key={route.route} className="bg-[var(--bg-secondary)] rounded-lg p-4">
+                                <h4 className="font-medium text-sm mb-2">{route.route}</h4>
+                                <p className="text-2xl font-bold">{route.count}</p>
+                                <p className="text-xs text-[var(--text-muted)] mt-1">
+                                  Avg confidence: {Math.round(route.avg_confidence * 100)}%
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Low Confidence Requests */}
+                        {analyticsData.routing?.lowConfidenceRequests?.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">Low Confidence Requests</h3>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-[var(--border-secondary)]">
+                                    <th className="text-left py-2 px-3">Request</th>
+                                    <th className="text-left py-2 px-3">Route</th>
+                                    <th className="text-left py-2 px-3">Confidence</th>
+                                    <th className="text-left py-2 px-3">Date</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {analyticsData.routing.lowConfidenceRequests.slice(0, 10).map((req: any) => (
+                                    <tr key={req.id} className="border-b border-[var(--border-secondary)]">
+                                      <td className="py-2 px-3 max-w-xs truncate">{req.request_text}</td>
+                                      <td className="py-2 px-3">
+                                        <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                          req.route === 'Emergency' ? 'bg-red-500/20 text-red-400' :
+                                          req.route === 'TechSupport' ? 'bg-blue-500/20 text-blue-400' :
+                                          req.route === 'Booking & Access' ? 'bg-green-500/20 text-green-400' :
+                                          'bg-purple-500/20 text-purple-400'
+                                        }`}>
+                                          {req.route}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-3">{Math.round(req.confidence * 100)}%</td>
+                                      <td className="py-2 px-3 text-xs text-[var(--text-muted)]">
+                                        {new Date(req.createdAt).toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Feedback Analysis */}
+                        {analyticsData.feedback && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">Feedback Performance by Route</h3>
+                            <div className="space-y-3">
+                              {analyticsData.feedback.feedbackByRoute?.map((route: any) => (
+                                <div key={route.route} className="flex items-center justify-between bg-[var(--bg-secondary)] rounded-lg p-4">
+                                  <div>
+                                    <h4 className="font-medium">{route.route}</h4>
+                                    <p className="text-sm text-[var(--text-muted)]">
+                                      {route.total_feedback} total feedback
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-lg font-semibold">
+                                      {route.unhelpful_percentage}%
+                                    </p>
+                                    <p className="text-xs text-[var(--text-muted)]">
+                                      unhelpful rate
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Routing Accuracy Issues */}
+                        {analyticsData.accuracy?.potentialMisroutes?.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">Potential Routing Issues</h3>
+                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+                              <p className="text-sm text-yellow-400">
+                                These patterns suggest requests may be routed incorrectly based on feedback analysis.
+                              </p>
+                            </div>
+                            <div className="space-y-3">
+                              {analyticsData.accuracy.potentialMisroutes.map((issue: any, idx: number) => (
+                                <div key={idx} className="bg-[var(--bg-secondary)] rounded-lg p-4">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                      <p className="text-sm">
+                                        <span className="text-[var(--text-muted)]">Currently routed to:</span>{' '}
+                                        <span className="font-medium">{issue.original_route}</span>
+                                      </p>
+                                      <p className="text-sm">
+                                        <span className="text-[var(--text-muted)]">Should be routed to:</span>{' '}
+                                        <span className="font-medium text-green-400">{issue.suggested_route}</span>
+                                      </p>
+                                    </div>
+                                    <span className="text-sm font-semibold text-orange-400">
+                                      {issue.mismatch_count} cases
+                                    </span>
+                                  </div>
+                                  <div className="mt-2">
+                                    <p className="text-xs text-[var(--text-muted)]">Example requests:</p>
+                                    <ul className="mt-1 space-y-1">
+                                      {issue.example_requests.slice(0, 2).map((req: string, i: number) => (
+                                        <li key={i} className="text-xs text-[var(--text-secondary)] truncate">
+                                          • {req}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Recommendations */}
+                        {analyticsData.accuracy?.recommendations?.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">Optimization Recommendations</h3>
+                            <div className="space-y-2">
+                              {analyticsData.accuracy.recommendations.map((rec: string, idx: number) => (
+                                <div key={idx} className="flex items-start gap-2 bg-[var(--bg-secondary)] rounded-lg p-3">
+                                  <span className="text-[var(--accent)] mt-0.5">•</span>
+                                  <p className="text-sm">{rec}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-[var(--text-secondary)]">
+                        <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No analytics data available</p>
+                        <p className="text-sm mt-2">Click refresh to load routing analytics</p>
                       </div>
                     )}
                   </div>

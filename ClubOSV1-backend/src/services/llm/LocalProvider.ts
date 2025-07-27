@@ -13,26 +13,22 @@ export class LocalProvider extends BaseLLMProvider {
   constructor(config: LLMConfig = {}) {
     super(config, 'local');
     
-    // Initialize keyword patterns for routing
+    // Initialize keyword patterns for routing - updated to match new routing rules
     this.patterns = new Map([
-      ['booking', {
-        keywords: ['book', 'reservation', 'reserve', 'cancel', 'availability', 'schedule', 'bay', 'time slot', 'gift card', 'refund', 'reschedule'],
+      ['Booking & Access', {
+        keywords: ['book', 'reservation', 'reserve', 'cancel', 'availability', 'schedule', 'bay', 'time slot', 'refund', 'reschedule', 'unlock', 'door', 'access', 'entry', 'key', 'card', 'permission', 'locked out', 'can\'t enter', 'forgot code', 'payment', 'lost item'],
         confidence: 0.8
       }],
-      ['access', {
-        keywords: ['unlock', 'door', 'access', 'entry', 'key', 'card', 'grant', 'revoke', 'permission', 'locked out', 'can\'t enter', 'forgot code'],
-        confidence: 0.8
-      }],
-      ['emergency', {
-        keywords: ['emergency', 'fire', 'injury', 'hurt', 'accident', 'help', 'urgent', 'danger', 'alarm', 'power out', 'water leak', 'medical'],
+      ['Emergency', {
+        keywords: ['emergency', 'fire', 'injury', 'hurt', 'accident', 'help', 'urgent', 'danger', 'alarm', 'power out', 'water leak', 'medical', 'smoke', 'security', 'threat', 'safety'],
         confidence: 0.95
       }],
-      ['tech', {
-        keywords: ['not working', 'broken', 'error', 'fix', 'technical', 'software', 'hardware', 'simulator', 'screen', 'trackman', 'frozen', 'wifi', 'camera', 'projector'],
+      ['TechSupport', {
+        keywords: ['not working', 'broken', 'error', 'fix', 'technical', 'software', 'hardware', 'simulator', 'screen', 'trackman', 'frozen', 'wifi', 'camera', 'projector', 'how do i use', 'how to use', 'ball', 'tracking', 'sensor', 'calibrat', 'game', 'settings', 'equipment', 'restart', 'reboot', 'issue', 'problem'],
         confidence: 0.8
       }],
-      ['brand', {
-        keywords: ['promotion', 'marketing', 'discount', 'offer', 'membership', 'pricing', 'cost', 'hours', 'location', 'info', 'website'],
+      ['BrandTone', {
+        keywords: ['membership', 'pricing', 'cost', 'how much', 'promotion', 'discount', 'offer', 'hours', 'gift card', 'loyalty', 'new member', 'sign up'],
         confidence: 0.7
       }]
     ]);
@@ -79,7 +75,7 @@ export class LocalProvider extends BaseLLMProvider {
     });
     
     let bestMatch = {
-      route: 'brand' as any, // More flexible typing for route comparison
+      route: 'TechSupport' as any, // Default to TechSupport instead of BrandTone
       score: 0,
       matchedKeywords: [] as string[],
       solution: null as any
@@ -101,14 +97,14 @@ export class LocalProvider extends BaseLLMProvider {
       
       // Map knowledge base route to our routing system
       const routeMap: Record<string, string> = {
-        'BookingLLM': 'booking',
-        'EmergencyLLM': 'emergency',
-        'TrackManLLM': 'tech',
-        'GeneralInfoLLM': 'brand',
-        'ResponseToneLLM': 'brand'
+        'BookingLLM': 'Booking & Access',
+        'EmergencyLLM': 'Emergency',
+        'TrackManLLM': 'TechSupport',
+        'GeneralInfoLLM': 'TechSupport', // Default general queries to TechSupport
+        'ResponseToneLLM': 'TechSupport' // Default to TechSupport
       };
       
-      bestMatch.route = (routeMap[solution.knowledgeBase] || 'brand') as any;
+      bestMatch.route = (routeMap[solution.knowledgeBase] || 'TechSupport') as any;
       bestMatch.score = 0.9; // High confidence when we have a direct match
     } else {
       // Fall back to keyword matching
@@ -211,7 +207,7 @@ export class LocalProvider extends BaseLLMProvider {
         ? `Found matching issue in knowledge base: ${bestMatch.solution.issue}`
         : bestMatch.matchedKeywords.length > 0
           ? `Matched keywords: ${bestMatch.matchedKeywords.join(', ')}`
-          : 'No specific keywords matched, using brand route',
+          : 'No specific keywords matched, defaulting to TechSupport for general assistance',
       confidence: confidence || 0.3,
       extractedInfo,
       requestId: `local-${Date.now()}`,

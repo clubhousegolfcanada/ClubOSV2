@@ -549,12 +549,12 @@ router.post('/request',
 // Helper function for quick responses
 function getQuickResponse(route: string, description: string): string {
   const responses: Record<string, string> = {
-    'Emergency': 'For immediate assistance, please call 911 or contact facility management.',
-    'Booking&Access': 'I can help with booking changes, access issues, or reservations.',
-    'TechSupport': 'I\'ll help troubleshoot your technical issue.',
-    'BrandTone': 'I\'d be happy to provide information about our services and offerings.'
+    'Emergency': 'Follow emergency protocols: ensure safety, call 911 if needed, contact management, and document the incident.',
+    'Booking & Access': 'I\'ll help you manage this booking/access issue. Check the system for customer details and follow standard procedures.',
+    'TechSupport': 'I\'ll guide you through troubleshooting this equipment issue. Start with basic diagnostics.',
+    'BrandTone': 'I\'ll help you create appropriate customer communications for this situation.'
   };
-  return responses[route] || 'Let me help you with that request.';
+  return responses[route] || 'I\'ll assist you with this operational matter.';
 }
 
 // Get LLM status - temporarily remove auth for demo

@@ -107,17 +107,46 @@ export class LLMService {
       // LocalProvider's processRequest is actually async, so we need to handle it properly
       // For now, create a simple response directly
       const lowerDescription = description.toLowerCase();
-      let route: any = 'BrandTone';
+      let route: any = 'TechSupport'; // Default to TechSupport instead of BrandTone
       
-      if (lowerDescription.includes('emergency') || lowerDescription.includes('fire') || lowerDescription.includes('injury') || lowerDescription.includes('hurt') || lowerDescription.includes('accident')) {
+      // Emergency - highest priority
+      if (lowerDescription.includes('emergency') || lowerDescription.includes('fire') || 
+          lowerDescription.includes('injury') || lowerDescription.includes('hurt') || 
+          lowerDescription.includes('accident') || lowerDescription.includes('smoke') ||
+          lowerDescription.includes('security') || lowerDescription.includes('threat')) {
         route = 'Emergency';
-      } else if (lowerDescription.includes('unlock') || lowerDescription.includes('door') || lowerDescription.includes('access') || lowerDescription.includes('locked') || lowerDescription.includes('key') || lowerDescription.includes('book') || lowerDescription.includes('reservation') || lowerDescription.includes('cancel') || lowerDescription.includes('reschedule') || lowerDescription.includes('return') || lowerDescription.includes('refund')) {
+      } 
+      // Booking & Access
+      else if (lowerDescription.includes('unlock') || lowerDescription.includes('door') || 
+               lowerDescription.includes('access') || lowerDescription.includes('locked') || 
+               lowerDescription.includes('key') || lowerDescription.includes('book') || 
+               lowerDescription.includes('reservation') || lowerDescription.includes('cancel') || 
+               lowerDescription.includes('reschedule') || lowerDescription.includes('return') || 
+               lowerDescription.includes('refund') || lowerDescription.includes('card won') ||
+               lowerDescription.includes('can\'t get in') || lowerDescription.includes('payment')) {
         route = 'Booking & Access';
-      } else if (lowerDescription.includes('trackman') || lowerDescription.includes('frozen') || lowerDescription.includes('technical') || lowerDescription.includes('screen') || lowerDescription.includes('equipment') || lowerDescription.includes('tech') || lowerDescription.includes('support') || lowerDescription.includes('issue') || lowerDescription.includes('problem') || lowerDescription.includes('fix') || lowerDescription.includes('broken') || lowerDescription.includes('restart') || lowerDescription.includes('reboot')) {
+      } 
+      // TechSupport - expanded keywords
+      else if (lowerDescription.includes('trackman') || lowerDescription.includes('frozen') || 
+               lowerDescription.includes('technical') || lowerDescription.includes('screen') || 
+               lowerDescription.includes('equipment') || lowerDescription.includes('tech') || 
+               lowerDescription.includes('support') || lowerDescription.includes('issue') || 
+               lowerDescription.includes('problem') || lowerDescription.includes('fix') || 
+               lowerDescription.includes('broken') || lowerDescription.includes('restart') || 
+               lowerDescription.includes('reboot') || lowerDescription.includes('simulator') ||
+               lowerDescription.includes('how do i use') || lowerDescription.includes('not working') ||
+               lowerDescription.includes('ball') || lowerDescription.includes('tracking') ||
+               lowerDescription.includes('sensor') || lowerDescription.includes('calibrat')) {
         route = 'TechSupport';
-      } else if (lowerDescription.includes('member') || lowerDescription.includes('price') || lowerDescription.includes('gift') || lowerDescription.includes('promotion')) {
+      } 
+      // BrandTone - ONLY for specific membership/pricing/promotion queries
+      else if ((lowerDescription.includes('member') && (lowerDescription.includes('ship') || lowerDescription.includes('become'))) || 
+               (lowerDescription.includes('price') || lowerDescription.includes('cost') || lowerDescription.includes('how much')) || 
+               lowerDescription.includes('gift card') || lowerDescription.includes('promotion') ||
+               lowerDescription.includes('hours') || lowerDescription.includes('loyalty')) {
         route = 'BrandTone';
       }
+      // Default to TechSupport for general queries (not BrandTone)
       
       return {
         route,
@@ -130,8 +159,8 @@ export class LLMService {
     } catch (error) {
       logger.error('Error in routeWithoutLLM:', error);
       return {
-        route: 'general',
-        reasoning: 'Error in routing',
+        route: 'TechSupport', // Default to TechSupport on error
+        reasoning: 'Error in routing - defaulting to TechSupport',
         confidence: 0.1,
         extractedInfo: {},
         requestId: `error-${Date.now()}`,

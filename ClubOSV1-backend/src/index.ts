@@ -22,6 +22,7 @@ import accessRoutes from './routes/access';
 import historyRoutes from './routes/history';
 import testCorsRoutes from './routes/test-cors';
 import systemConfigRoutes from './routes/system-config';
+import analyticsRoutes from './routes/analytics';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
@@ -86,6 +87,7 @@ app.use('/api/access', accessRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/test-cors', testCorsRoutes);
 app.use('/api/system-config', systemConfigRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
