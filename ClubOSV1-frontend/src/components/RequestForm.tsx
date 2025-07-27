@@ -256,29 +256,35 @@ const RequestForm: React.FC = () => {
   }, [showResponse, lastResponse, smartAssistEnabled]);
 
   const pollForSlackReplies = async () => {
+    // Get thread_ts from the last response (when Smart Assist is off)
+    const threadTs = lastResponse?.slackThreadTs;
+    
+    if (!threadTs) {
+      console.error('No thread timestamp available for polling');
+      setIsWaitingForReply(false);
+      return;
+    }
+    
+    console.log('Starting to poll for replies using thread_ts:', threadTs);
+    setLastSlackThreadTs(threadTs);
+    
     let pollCount = 0;
     const maxPolls = 60; // Poll for 5 minutes (60 polls * 5 seconds)
     
     const poll = async () => {
       try {
-        // Get recent conversations to find our thread
-        const conversationsResponse = await axios.get(`${API_URL}/slack/conversations?limit=5`);
-        if (conversationsResponse.data.success && conversationsResponse.data.data.conversations.length > 0) {
-          const latestConversation = conversationsResponse.data.data.conversations[0];
-          
-          // Use the simplified endpoint to check for replies directly from Slack
-          try {
-            const repliesResponse = await axios.get(`${API_URL}/slack/thread-replies/${latestConversation.slack_thread_ts}`);
-            if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
-              setSlackReplies(repliesResponse.data.data.replies);
-              setLastSlackThreadTs(latestConversation.slack_thread_ts);
-              setIsWaitingForReply(false);
-              return; // Stop polling
-            }
-          } catch (replyError) {
-            // If thread not found or no replies, continue polling
-            console.log('No replies yet, continuing to poll...');
-          }
+        console.log(`Polling attempt ${pollCount + 1}/${maxPolls} for thread ${threadTs}`);
+        
+        // Use the specific thread_ts to check for replies directly from Slack
+        const repliesResponse = await axios.get(`${API_URL}/slack/thread-replies/${threadTs}`);
+        
+        if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
+          console.log('Found replies:', repliesResponse.data.data.replies);
+          setSlackReplies(repliesResponse.data.data.replies);
+          setIsWaitingForReply(false);
+          return; // Stop polling
+        } else {
+          console.log('No replies yet, continuing to poll...');
         }
         
         // Continue polling if no replies found and haven't exceeded max polls
@@ -286,11 +292,18 @@ const RequestForm: React.FC = () => {
         if (pollCount < maxPolls) {
           setTimeout(poll, 5000); // Poll every 5 seconds
         } else {
+          console.log('Polling timeout reached, stopping');
           setIsWaitingForReply(false); // Stop waiting after max time
         }
       } catch (error) {
         console.error('Error polling for replies:', error);
-        setIsWaitingForReply(false);
+        // Don't stop polling immediately on error, could be temporary
+        pollCount++;
+        if (pollCount < maxPolls) {
+          setTimeout(poll, 5000); // Continue polling
+        } else {
+          setIsWaitingForReply(false);
+        }
       }
     };
     
