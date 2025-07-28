@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Phone, Clock, User, MessageCircle } from 'lucide-react';
+import { Phone, Clock, User, MessageCircle, RefreshCw } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -22,17 +22,24 @@ export const RecentMessages: React.FC = () => {
   const fetchRecentMessages = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
+      console.log('Fetching recent messages from:', `${API_URL}/openphone/recent-conversations?limit=10`);
+      
       const response = await axios.get(`${API_URL}/openphone/recent-conversations?limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('Recent messages response:', response.data);
+      
       if (response.data.success) {
-        setMessages(response.data.data);
+        setMessages(response.data.data || []);
         setError(null);
+      } else {
+        setError(response.data.error || 'Failed to load messages');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch recent messages:', err);
-      setError('Failed to load recent messages');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to load recent messages';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -93,15 +100,40 @@ export const RecentMessages: React.FC = () => {
       <div className="text-center py-8">
         <Phone className="w-12 h-12 mx-auto mb-4 opacity-50" />
         <h3 className="text-lg font-semibold mb-2">No Recent Messages</h3>
-        <p className="text-[var(--text-secondary)]">
-          OpenPhone conversations will appear here as they come in.
+        <p className="text-[var(--text-secondary)] mb-4">
+          No OpenPhone conversations found in the database.
         </p>
+        <div className="space-y-2 text-sm text-[var(--text-muted)]">
+          <p>This could mean:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>No OpenPhone webhooks have been received yet</li>
+            <li>The webhook integration needs to be configured</li>
+            <li>Historical messages need to be imported</li>
+          </ul>
+        </div>
+        <button
+          onClick={fetchRecentMessages}
+          className="mt-4 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2 mx-auto"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Check Again
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={fetchRecentMessages}
+          className="px-3 py-1 text-sm bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-1"
+          title="Manually refresh messages"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh
+        </button>
+      </div>
       {messages.map((message) => (
         <div key={message.id} className="bg-[var(--bg-secondary)] rounded-lg p-4 hover:bg-[var(--bg-tertiary)] transition-colors">
           <div className="flex justify-between items-start mb-2">

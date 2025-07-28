@@ -540,6 +540,47 @@ router.get('/recent-conversations', authenticate, roleGuard(['admin']), async (r
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     
+    logger.info('Fetching recent conversations', { limit });
+    
+    const result = await db.query(`
+      SELECT 
+        id,
+        conversation_id,
+        phone_number,
+        customer_name,
+        employee_name,
+        messages,
+        created_at,
+        updated_at,
+        processed,
+        metadata
+      FROM openphone_conversations 
+      ORDER BY updated_at DESC 
+      LIMIT $1
+    `, [limit]);
+    
+    logger.info('Recent conversations fetched', { count: result.rows.length });
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+    
+  } catch (error) {
+    logger.error('Failed to get recent conversations:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to retrieve recent conversations' 
+    });
+  }
+});
+
+// Debug endpoint for recent conversations (no auth required)
+router.get('/debug/recent', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    
     const result = await db.query(`
       SELECT 
         id,
@@ -560,14 +601,16 @@ router.get('/recent-conversations', authenticate, roleGuard(['admin']), async (r
     res.json({
       success: true,
       data: result.rows,
-      count: result.rows.length
+      count: result.rows.length,
+      message: `Found ${result.rows.length} recent conversations`
     });
     
   } catch (error) {
-    logger.error('Failed to get recent conversations:', error);
+    logger.error('Debug recent conversations error:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Failed to retrieve recent conversations' 
+      error: 'Failed to retrieve recent conversations',
+      details: error.message
     });
   }
 });
