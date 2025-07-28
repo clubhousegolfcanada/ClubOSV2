@@ -35,6 +35,7 @@
     "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts",
     "test:openphone": "tsx src/scripts/test-openphone.ts",
     "verify:sop": "tsx src/scripts/verify-sop-setup.ts",
+    "migrate:sop": "tsx src/scripts/run-sop-migrations.ts",
     "postbuild": "echo 'Build completed. All assets copied.'"
   },
   "keywords": [
