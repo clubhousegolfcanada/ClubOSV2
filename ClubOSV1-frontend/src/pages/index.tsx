@@ -200,59 +200,60 @@ export default function Home() {
       
       <main className="min-h-screen bg-[var(--bg-primary)]">
         <div className="container mx-auto px-4 py-8">
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-            {/* Request Form - Takes up 2 columns on large screens */}
-            <div className="lg:col-span-2">
+          {/* Main Content Grid - Adjusted for better alignment */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Request Form - Takes up 3 columns on large screens */}
+            <div className="lg:col-span-3">
               <RequestForm />
             </div>
             
-            {/* External Tools - Takes up 1 column on large screens */}
-            <div className="lg:col-span-1">
-              <DatabaseExternalTools />
-            </div>
-          </div>
-
-          {/* Quick Stats Grid - Mobile friendly, shown on all screen sizes */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {quickStats.map((stat, index) => (
-              <div key={index} className="card group hover:border-[var(--accent)] relative">
-                <div className="flex flex-col h-full">
-                  <div className="flex-1">
-                    <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                      {stat.label}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xl md:text-2xl font-semibold">{stat.value}</p>
-                      {stat.statusIndicator && (
-                        <div className={`w-2 h-2 rounded-full animate-pulse ${
-                          stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
-                          stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
-                          'bg-[var(--text-muted)]'
-                        }`} />
+            {/* Sidebar - Contains Quick Stats and External Tools */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Quick Stats Cards - Vertical Stack */}
+              <div className="space-y-3">
+                {quickStats.map((stat, index) => (
+                  <div key={index} className="card group hover:border-[var(--accent)] relative">
+                    <div className="flex flex-col">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                          {stat.label}
+                        </p>
+                        {stat.statusIndicator && (
+                          <div className={`w-2 h-2 rounded-full animate-pulse ${
+                            stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
+                            stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
+                            'bg-[var(--text-muted)]'
+                          }`} />
+                        )}
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-2xl font-semibold">{stat.value}</p>
+                        {stat.change && (
+                          <div className={`text-sm font-medium ${
+                            stat.trend === 'up' ? 'text-[var(--status-success)]' : 
+                            stat.trend === 'down' ? 'text-[var(--status-error)]' : 
+                            'text-[var(--text-secondary)]'
+                          }`}>
+                            {stat.change}
+                          </div>
+                        )}
+                      </div>
+                      {stat.isButton && (
+                        <button
+                          onClick={stat.onClick}
+                          className="mt-3 w-full px-3 py-2 text-sm font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-lg transition-colors"
+                        >
+                          {stat.buttonText}
+                        </button>
                       )}
                     </div>
-                    {stat.change && (
-                      <div className={`text-xs md:text-sm font-medium mt-1 ${
-                        stat.trend === 'up' ? 'text-[var(--status-success)]' : 
-                        stat.trend === 'down' ? 'text-[var(--status-error)]' : 
-                        'text-[var(--text-secondary)]'
-                      }`}>
-                        {stat.change}
-                      </div>
-                    )}
                   </div>
-                  {stat.isButton && (
-                    <button
-                      onClick={stat.onClick}
-                      className="mt-3 w-full px-3 py-2 text-xs md:text-sm font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-lg transition-colors"
-                    >
-                      {stat.buttonText}
-                    </button>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
+              
+              {/* External Tools - Below Stats */}
+              <DatabaseExternalTools />
+            </div>
           </div>
         </div>
       </main>

@@ -208,8 +208,8 @@ const DatabaseExternalTools: React.FC = () => {
 
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">External Tools</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
         {canEdit && (
           <div className="flex gap-2">
             {isEditMode ? (
@@ -251,7 +251,7 @@ const DatabaseExternalTools: React.FC = () => {
         )}
       </div>
       
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-2">
         {tools.map((tool) => {
           const Icon = tool.icon;
           const url = getToolUrl(tool.id);
@@ -260,20 +260,17 @@ const DatabaseExternalTools: React.FC = () => {
           return (
             <div key={tool.id} className="relative">
               {isEditMode ? (
-                <div className="w-full p-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
                     <div 
-                      className="p-2 rounded-lg bg-[var(--bg-tertiary)]"
+                      className="p-1.5 rounded bg-[var(--bg-tertiary)]"
                       style={{ color: tool.color }}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm text-[var(--text-primary)]">
+                      <p className="font-medium text-xs text-[var(--text-primary)]">
                         {tool.name}
-                      </p>
-                      <p className="text-xs text-[var(--text-secondary)]">
-                        {tool.subtitle}
                       </p>
                     </div>
                     {editedUrls[tool.id] !== DEFAULT_EXTERNAL_TOOLS[tool.id as keyof typeof DEFAULT_EXTERNAL_TOOLS] && (
@@ -290,35 +287,35 @@ const DatabaseExternalTools: React.FC = () => {
                     type="url"
                     value={url}
                     onChange={(e) => handleUrlChange(tool.id, e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded text-sm focus:outline-none focus:border-[var(--accent)]"
+                    className="w-full px-2 py-1.5 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded text-xs focus:outline-none focus:border-[var(--accent)]"
                     placeholder="Enter URL..."
                   />
                 </div>
               ) : (
                 <button
                   onClick={() => handleToolClick(url)}
-                  className="w-full p-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] transition-all duration-200 group"
+                  className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 group"
                   disabled={!url}
                 >
-                  <div className="flex items-center gap-3 w-full">
+                  <div className="flex items-center gap-2.5 w-full">
                     <div 
-                      className="p-2 rounded-lg bg-[var(--bg-tertiary)]"
+                      className="p-1.5 rounded bg-[var(--bg-tertiary)] group-hover:bg-[var(--bg-primary)]"
                       style={{ color: tool.color }}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-medium text-sm text-[var(--text-primary)]">
+                      <p className="font-medium text-xs text-[var(--text-primary)]">
                         {tool.name}
                       </p>
-                      <p className="text-xs text-[var(--text-secondary)]">
+                      <p className="text-[10px] text-[var(--text-muted)]">
                         {tool.subtitle}
                       </p>
                     </div>
                     {isCustomized && (
-                      <div className="w-2 h-2 bg-[var(--accent)] rounded-full mr-2" title="Customized URL" />
+                      <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full" title="Customized URL" />
                     )}
-                    <ExternalLink className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
+                    <ExternalLink className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors" />
                   </div>
                 </button>
               )}
@@ -328,14 +325,14 @@ const DatabaseExternalTools: React.FC = () => {
       </div>
       
       {isEditMode && (
-        <div className="mt-3 text-xs text-[var(--text-secondary)]">
-          💡 Your custom links are saved to your account and sync across devices
+        <div className="mt-2 text-[10px] text-[var(--text-muted)]">
+          Custom links sync across devices
         </div>
       )}
       
       {!user && (
-        <div className="mt-3 text-xs text-[var(--text-secondary)] text-center">
-          <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize these links
+        <div className="mt-2 text-[10px] text-[var(--text-muted)] text-center">
+          <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
         </div>
       )}
     </div>
