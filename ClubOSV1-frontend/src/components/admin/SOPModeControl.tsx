@@ -5,8 +5,6 @@ import toast from 'react-hot-toast';
 import { 
   Brain, 
   Eye, 
-  ToggleLeft, 
-  ToggleRight,
   AlertCircle,
   TrendingUp,
   DollarSign
@@ -129,77 +127,67 @@ export const SOPModeControl: React.FC = () => {
     : '0';
 
   return (
-    <div className="space-y-6">
-      {/* Status Overview */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Brain className="w-5 h-5" />
-              SOP Module Control
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)] mt-1">
-              Switch between OpenAI Assistants and local SOP module
-            </p>
-          </div>
-          
-          <div className={`px-3 py-1 rounded-full text-sm ${
-            status.module.initialized 
-              ? 'bg-green-500/20 text-green-400' 
-              : 'bg-red-500/20 text-red-400'
-          }`}>
-            {status.module.initialized ? 'Initialized' : 'Not Initialized'}
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* Module Status */}
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm text-[var(--text-secondary)]">Module Status</span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          status.module.initialized 
+            ? 'bg-green-500/20 text-green-400' 
+            : 'bg-red-500/20 text-red-400'
+        }`}>
+          {status.module.initialized ? 'Initialized' : 'Not Initialized'}
+        </span>
+      </div>
 
         {/* Mode Controls */}
         <div className="space-y-4">
           {/* Shadow Mode Toggle */}
-          <div className="flex items-center justify-between p-4 bg-[var(--bg-secondary)] rounded-lg">
-            <div className="flex items-center gap-3">
-              <Eye className="w-5 h-5 text-[var(--text-secondary)]" />
-              <div>
-                <h4 className="font-medium">Shadow Mode</h4>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Run both systems in parallel for comparison
-                </p>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-[var(--text-secondary)]" />
+              <label className="text-sm font-medium">Shadow Mode</label>
             </div>
             <button
               onClick={() => toggleMode('SOP_SHADOW_MODE')}
               disabled={isLoading}
-              className="relative"
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                status.config.SOP_SHADOW_MODE 
+                  ? 'bg-[var(--accent)]' 
+                  : 'bg-[var(--bg-tertiary)]'
+              }`}
             >
-              {status.config.SOP_SHADOW_MODE ? (
-                <ToggleRight className="w-10 h-10 text-[var(--accent)]" />
-              ) : (
-                <ToggleLeft className="w-10 h-10 text-[var(--text-muted)]" />
-              )}
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  status.config.SOP_SHADOW_MODE ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
 
           {/* SOP Mode Toggle */}
-          <div className="flex items-center justify-between p-4 bg-[var(--bg-secondary)] rounded-lg">
-            <div className="flex items-center gap-3">
-              <Brain className="w-5 h-5 text-[var(--text-secondary)]" />
-              <div>
-                <h4 className="font-medium">Use SOP Module</h4>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Replace OpenAI Assistants with local SOPs
-                </p>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Brain className="w-4 h-4 text-[var(--text-secondary)]" />
+              <label className="text-sm font-medium">Use SOP Module</label>
             </div>
             <button
               onClick={() => toggleMode('USE_INTELLIGENT_SOP')}
               disabled={isLoading || status.config.SOP_SHADOW_MODE}
-              className="relative"
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                status.config.USE_INTELLIGENT_SOP 
+                  ? 'bg-[var(--accent)]' 
+                  : 'bg-[var(--bg-tertiary)]'
+              } ${
+                status.config.SOP_SHADOW_MODE ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
               title={status.config.SOP_SHADOW_MODE ? 'Disable Shadow Mode first' : ''}
             >
-              {status.config.USE_INTELLIGENT_SOP ? (
-                <ToggleRight className="w-10 h-10 text-[var(--accent)]" />
-              ) : (
-                <ToggleLeft className="w-10 h-10 text-[var(--text-muted)]" />
-              )}
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  status.config.USE_INTELLIGENT_SOP ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
 
@@ -213,27 +201,26 @@ export const SOPModeControl: React.FC = () => {
           )}
         </div>
 
-        {/* Module Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-6">
-          <div className="text-center">
-            <p className="text-2xl font-bold">{status.module.documentCount}</p>
-            <p className="text-sm text-[var(--text-secondary)]">Documents</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">{status.module.assistants.length}</p>
-            <p className="text-sm text-[var(--text-secondary)]">Assistants</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">{status.config.SOP_CONFIDENCE_THRESHOLD}</p>
-            <p className="text-sm text-[var(--text-secondary)]">Min Confidence</p>
-          </div>
+      {/* Module Stats */}
+      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[var(--border-secondary)]">
+        <div className="text-center">
+          <p className="text-lg font-semibold">{status.module.documentCount}</p>
+          <p className="text-xs text-[var(--text-muted)]">Documents</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-semibold">{status.module.assistants.length}</p>
+          <p className="text-xs text-[var(--text-muted)]">Assistants</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-semibold">{status.config.SOP_CONFIDENCE_THRESHOLD}</p>
+          <p className="text-xs text-[var(--text-muted)]">Min Confidence</p>
         </div>
       </div>
 
       {/* Shadow Mode Statistics */}
       {shadowStats && shadowStats.overall.total_comparisons > 0 && (
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Shadow Mode Performance</h3>
+        <div className="pt-4 border-t border-[var(--border-secondary)]">
+          <h4 className="text-sm font-semibold mb-3">Shadow Mode Performance</h4>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="text-center">
@@ -281,12 +268,12 @@ export const SOPModeControl: React.FC = () => {
       )}
 
       {/* Current Status */}
-      <div className={`p-4 rounded-lg ${
+      <div className={`p-3 rounded-lg text-sm ${
         status.config.USE_INTELLIGENT_SOP 
           ? 'bg-green-500/10 border border-green-500/20' 
           : 'bg-blue-500/10 border border-blue-500/20'
       }`}>
-        <p className={`text-sm font-medium ${
+        <p className={`font-medium ${
           status.config.USE_INTELLIGENT_SOP ? 'text-green-400' : 'text-blue-400'
         }`}>
           Currently using: {status.config.USE_INTELLIGENT_SOP ? 'SOP Module' : 'OpenAI Assistants'}

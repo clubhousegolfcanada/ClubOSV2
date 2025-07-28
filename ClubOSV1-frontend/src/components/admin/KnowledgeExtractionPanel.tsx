@@ -422,56 +422,60 @@ export const KnowledgeExtractionPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-semibold">Knowledge Extraction</h2>
-          <p className="text-[var(--text-secondary)] mt-1">
-            Extract and apply knowledge from OpenPhone conversations
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              activeTab === 'stats'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setActiveTab('extract')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              activeTab === 'extract'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            <Brain className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setActiveTab('review')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              activeTab === 'review'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setActiveTab('add')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              activeTab === 'add'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-          </button>
-        </div>
+      {/* Tab Navigation */}
+      <div className="flex gap-6 border-b border-[var(--border-secondary)]">
+        <button
+          onClick={() => setActiveTab('stats')}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            activeTab === 'stats'
+              ? 'text-[var(--text-primary)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+          }`}
+        >
+          Overview
+          {activeTab === 'stats' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('extract')}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            activeTab === 'extract'
+              ? 'text-[var(--text-primary)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+          }`}
+        >
+          Extract
+          {activeTab === 'extract' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('review')}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            activeTab === 'review'
+              ? 'text-[var(--text-primary)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+          }`}
+        >
+          Review
+          {activeTab === 'review' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('add')}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            activeTab === 'add'
+              ? 'text-[var(--text-primary)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+          }`}
+        >
+          Import
+          {activeTab === 'add' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+          )}
+        </button>
       </div>
 
       {/* Statistics Tab */}

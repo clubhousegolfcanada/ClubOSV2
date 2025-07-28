@@ -1168,38 +1168,39 @@ export default function Operations() {
                 </>
               ) : showKnowledge ? (
                 <>
-                  {/* Knowledge Center - World Class Grid Layout */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    {/* Left Column - Main Content (8 columns) */}
-                    <div className="lg:col-span-8 space-y-4">
-                      {/* SOP Control & Knowledge Extraction Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* SOP Module Control - Compact */}
-                        <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-base font-semibold flex items-center gap-2">
-                              <Brain className="w-4 h-4 text-[var(--accent)]" />
-                              SOP Control
-                            </h3>
-                            <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded-full">
-                              Initialized
-                            </span>
-                          </div>
+                  {/* Knowledge Center - Dashboard-style Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+                    {/* Left Column - SOP Control & Shadow Mode (3 columns) */}
+                    <div className="lg:col-span-3">
+                      <div className="card">
+                        <div className="p-4 border-b border-[var(--border-secondary)]">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <Brain className="w-5 h-5 text-[var(--accent)]" />
+                            SOP System
+                          </h3>
+                        </div>
+                        <div className="p-4">
                           <SOPModeControl />
                         </div>
-                        
-                        {/* Knowledge Extraction - Compact */}
-                        <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-base font-semibold flex items-center gap-2">
-                              <Brain className="w-4 h-4 text-[var(--accent)]" />
-                              Extract Knowledge
+                      </div>
+                    </div>
+                    
+                    {/* Center Panel - Knowledge Extraction (6 columns) */}
+                    <div className="lg:col-span-6 space-y-4">
+                      <div className="card">
+                        <div className="p-4 border-b border-[var(--border-secondary)]">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                              <Brain className="w-5 h-5 text-[var(--accent)]" />
+                              Knowledge Extraction
                             </h3>
-                            <div className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                              <span className="text-xs text-[var(--text-muted)]">Live</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                              <span className="text-sm text-[var(--text-secondary)]">Live</span>
                             </div>
                           </div>
+                        </div>
+                        <div className="p-4">
                           <KnowledgeExtractionPanel />
                         </div>
                       </div>
@@ -1275,8 +1276,8 @@ export default function Operations() {
                       </div>
                     </div>
 
-                    {/* Right Column - Sidebar (4 columns) */}
-                    <div className="lg:col-span-4">
+                    {/* Right Sidebar - Status Panel (3 columns) */}
+                    <div className="lg:col-span-3">
                       {/* Recent Messages - Compact Sidebar */}
                       <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
                         <div className="flex items-center justify-between mb-3">

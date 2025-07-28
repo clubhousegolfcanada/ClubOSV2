@@ -91,6 +91,14 @@ git push origin main
 
 ## 📊 Recent Updates
 
+### v1.8.4 (July 2025)
+- ✅ Knowledge UI redesigned to match Dashboard layout
+- ✅ Dashboard-style 3-6-3 column layout for Knowledge section
+- ✅ Inline switch toggles replacing large toggle buttons
+- ✅ Consistent spacing, typography, and visual hierarchy
+- ✅ Streamlined components with tab navigation
+- ✅ Status panel matching Dashboard design
+
 ### v1.8.3 (July 2025)
 - ✅ Knowledge Center restructured under Operations section
 - ✅ Card-based layout for SOP control and Knowledge extraction
