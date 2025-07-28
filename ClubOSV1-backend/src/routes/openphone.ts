@@ -535,4 +535,41 @@ router.get('/stats', async (req: Request, res: Response) => {
   }
 });
 
+// Get recent conversations for live display (admin only)
+router.get('/recent-conversations', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    const result = await db.query(`
+      SELECT 
+        id,
+        conversation_id,
+        phone_number,
+        customer_name,
+        employee_name,
+        messages,
+        created_at,
+        updated_at,
+        processed,
+        metadata
+      FROM openphone_conversations 
+      ORDER BY updated_at DESC 
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+    
+  } catch (error) {
+    logger.error('Failed to get recent conversations:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to retrieve recent conversations' 
+    });
+  }
+});
+
 export default router;

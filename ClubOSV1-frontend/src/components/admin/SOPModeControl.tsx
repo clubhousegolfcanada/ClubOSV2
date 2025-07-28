@@ -277,18 +277,6 @@ export const SOPModeControl: React.FC = () => {
             </div>
           </div>
 
-          {/* Estimated Savings */}
-          <div className="mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-400" />
-                <span className="text-sm text-green-400">Potential Monthly Savings</span>
-              </div>
-              <span className="text-lg font-bold text-green-400">
-                ${Math.round(750 * (shadowStats.overall.high_confidence_count / shadowStats.overall.total_comparisons))}
-              </span>
-            </div>
-          </div>
         </div>
       )}
 
