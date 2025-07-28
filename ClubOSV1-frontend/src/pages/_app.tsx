@@ -58,9 +58,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         // Also try to hide HubSpot nav directly if we have access
         try {
           const parentDoc = window.parent.document;
-          const hubspotNav = parentDoc.querySelector('.header-container');
-          const mobileNav = parentDoc.querySelector('.mobile-nav');
-          const headerWrapper = parentDoc.querySelector('.header__container');
+          const hubspotNav = parentDoc.querySelector('.header-container') as HTMLElement;
+          const mobileNav = parentDoc.querySelector('.mobile-nav') as HTMLElement;
+          const headerWrapper = parentDoc.querySelector('.header__container') as HTMLElement;
           
           if (hubspotNav) hubspotNav.style.display = 'none';
           if (mobileNav) mobileNav.style.display = 'none';
