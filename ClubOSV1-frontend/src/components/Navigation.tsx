@@ -72,7 +72,7 @@ const Navigation: React.FC = () => {
                 ClubOS
               </Link>
               <span className="text-[10px] text-[var(--text-muted)] -mt-1 hidden md:block">
-                Golf Simulator Management
+                v1.8.1
               </span>
             </div>
             
