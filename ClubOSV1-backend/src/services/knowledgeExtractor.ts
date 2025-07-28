@@ -652,16 +652,18 @@ Return a JSON object with:
         };
       }
 
-      // For bulk imports, analyze and show what would be created
-      const prompt = `Analyze this document and show what you would extract for our SOP system.
+      // For bulk imports, analyze and organize the content while preserving exact text
+      const prompt = `Parse this document and organize it into sections for our SOP system. PRESERVE THE EXACT ORIGINAL TEXT - do not summarize, interpret, or rewrite anything.
 
 Document:
 ${entry}
 
-Determine:
-1. Which assistant category this fits: emergency, booking, tech, or brand
-2. What sections you would create with titles and content
-3. Which categories might also benefit from this content (overlaps)
+Instructions:
+1. Identify which assistant category this content fits: emergency, booking, tech, or brand
+2. Split the document into logical sections based on headers, topics, or natural breaks
+3. Extract the exact original titles and content - DO NOT rewrite or summarize
+4. Keep all specific details, procedures, names, numbers, and exact wording
+5. Only organize/split the content, never change the actual text
 
 Return a JSON object with:
 {
@@ -669,22 +671,22 @@ Return a JSON object with:
   "possibleCategories": ["emergency", "booking", "tech", "brand"],
   "sections": [
     {
-      "title": "Clear section title",
-      "content": "Complete section content",
-      "confidence": 0.95,
-      "reasoning": "Why this section is important"
+      "title": "Exact original title or first line",
+      "content": "Exact original content with all details preserved",
+      "confidence": 0.95
     },
     ...
-  ],
-  "summary": "Brief summary of the document"
-}`;
+  ]
+}
+
+CRITICAL: The "content" field must contain the exact original text from the document. Do not summarize, paraphrase, or interpret. Preserve all specific information, procedures, contact details, numbers, and exact wording.`;
 
       const response = await this.openai.chat.completions.create({
         model: this.MODEL,
         messages: [
           {
             role: 'system',
-            content: 'You are analyzing documents for a golf simulator SOP system. Provide detailed analysis of what would be extracted and why.'
+            content: 'You are parsing documents for a golf simulator SOP system. Your ONLY job is to organize content into sections while preserving the exact original text. Never summarize, interpret, or rewrite any content. Extract and preserve the exact wording, numbers, procedures, and details from the original document.'
           },
           {
             role: 'user',
