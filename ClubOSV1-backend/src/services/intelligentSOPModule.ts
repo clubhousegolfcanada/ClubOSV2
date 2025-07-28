@@ -293,8 +293,13 @@ export class IntelligentSOPModule {
     }
     
     try {
+      const startTime = Date.now();
+      
       // Get query embedding
+      logger.info('Generating query embedding...');
+      const embeddingStart = Date.now();
       const queryEmbedding = await this.getEmbedding(query);
+      logger.info(`Query embedding generated in ${Date.now() - embeddingStart}ms`);
       
       // Get documents for this assistant
       const normalizedAssistant = this.normalizeAssistant(assistant);
@@ -346,8 +351,13 @@ export class IntelligentSOPModule {
     }
     
     try {
+      const totalStart = Date.now();
+      
       // Find relevant documents
+      logger.info('Finding relevant documents...');
+      const docStart = Date.now();
       const relevantDocs = await this.findRelevantContext(query, assistant);
+      logger.info(`Found ${relevantDocs.length} relevant docs in ${Date.now() - docStart}ms`);
       
       if (relevantDocs.length === 0) {
         logger.info('No relevant SOP documents found', { assistant, query });
@@ -368,6 +378,8 @@ export class IntelligentSOPModule {
       }
       
       // Call GPT-4o with context
+      logger.info('Calling GPT-4o...');
+      const gptStart = Date.now();
       const completion = await this.openai.chat.completions.create({
         model: this.CHAT_MODEL,
         messages: [
@@ -378,6 +390,7 @@ export class IntelligentSOPModule {
         max_tokens: 1000,
         response_format: { type: "json_object" }
       });
+      logger.info(`GPT-4o responded in ${Date.now() - gptStart}ms`);
       
       const responseContent = completion.choices[0].message.content || '';
       
@@ -405,6 +418,8 @@ export class IntelligentSOPModule {
       }, 0);
       
       const confidence = Math.min(0.95, 0.7 + avgSimilarity * 0.25);
+      
+      logger.info(`Total SOP processing time: ${Date.now() - totalStart}ms`);
       
       return {
         response: structured.response || responseContent,
@@ -579,6 +594,24 @@ export class IntelligentSOPModule {
       documentCount,
       assistants: Array.from(this.documentsCache.keys())
     };
+  }
+
+  // Get loaded documents for debugging
+  getLoadedDocuments() {
+    const docs: Record<string, any> = {};
+    
+    for (const [assistant, documents] of this.documentsCache.entries()) {
+      docs[assistant] = documents.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        contentLength: doc.content.length,
+        contentPreview: doc.content.substring(0, 200) + '...',
+        hasEmbedding: !!doc.embedding,
+        metadata: doc.metadata
+      }));
+    }
+    
+    return docs;
   }
 }
 
