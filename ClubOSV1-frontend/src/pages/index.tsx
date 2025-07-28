@@ -6,15 +6,30 @@ import { useEffect, useState } from 'react';
 import { useDemoMode, useAnalytics } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+interface QuickStat {
+  label: string;
+  value: string;
+  change?: string;
+  trend: 'up' | 'down' | 'neutral';
+  isButton?: boolean;
+  onClick?: () => void;
+  buttonText?: string;
+  statusIndicator?: boolean;
+}
 
 export default function Home() {
   const { runDemo } = useDemoMode();
   const { stats, period } = useAnalytics();
   const { user } = useAuthState();
+  const router = useRouter();
   const [previousStats, setPreviousStats] = useState<any>(null);
+  const [weeklyChecklistCount, setWeeklyChecklistCount] = useState<number>(0);
+  const [slackStatus, setSlackStatus] = useState<'connected' | 'error' | 'unknown'>('unknown');
   
   // Fetch previous period stats for comparison - only when authenticated
   useEffect(() => {
@@ -58,6 +73,64 @@ export default function Home() {
     fetchPreviousPeriod();
   }, [user]);
   
+  // Fetch weekly checklist submissions
+  useEffect(() => {
+    const fetchChecklistData = async () => {
+      if (!user) return;
+      
+      try {
+        const token = localStorage.getItem('clubos_token');
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        const response = await axios.get(`${API_URL}/checklists/submissions`, {
+          params: { 
+            startDate: startOfWeek.toISOString(),
+            limit: 100
+          },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          setWeeklyChecklistCount(response.data.data?.length || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch checklist data:', error);
+        setWeeklyChecklistCount(0);
+      }
+    };
+    
+    fetchChecklistData();
+  }, [user]);
+  
+  // Check Slack status
+  useEffect(() => {
+    const checkSlackStatus = async () => {
+      try {
+        const token = localStorage.getItem('clubos_token');
+        // Test Slack connectivity by checking system status
+        const response = await axios.get(`${API_URL}/system/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success && response.data.data?.slack?.connected) {
+          setSlackStatus('connected');
+        } else {
+          setSlackStatus('error');
+        }
+      } catch (error) {
+        console.error('Failed to check Slack status:', error);
+        setSlackStatus('unknown');
+      }
+    };
+    
+    if (user) {
+      checkSlackStatus();
+    }
+  }, [user]);
+  
   // Auto-refresh stats every 30 seconds - DISABLED
   // useEffect(() => {
   //   const interval = setInterval(() => {
@@ -87,12 +160,15 @@ export default function Home() {
   const responseChange = parseFloat(responseDiff) > 0 ? `+${responseDiff}s` : `${responseDiff}s`;
   const responseTrend = parseFloat(responseDiff) < 0 ? 'down' : parseFloat(responseDiff) > 0 ? 'up' : 'neutral';
 
-  const quickStats = [
+  const quickStats: QuickStat[] = [
     { 
-      label: 'Active Bookings', 
-      value: 'N/A', 
+      label: 'Weekly Checklists', 
+      value: weeklyChecklistCount.toString(), 
       change: '', 
-      trend: 'neutral' as const 
+      trend: 'neutral' as const,
+      isButton: true,
+      onClick: () => router.push('/operations?tab=checklists'),
+      buttonText: 'Go to Checklists'
     },
     { 
       label: 'Requests Today', 
@@ -101,10 +177,11 @@ export default function Home() {
       trend: requestTrend as any
     },
     { 
-      label: 'Avg Response Time', 
-      value: `${avgResponseSeconds}s`, 
-      change: responseChange, 
-      trend: responseTrend as any
+      label: 'Slack Status', 
+      value: slackStatus === 'connected' ? 'Connected' : slackStatus === 'error' ? 'Error' : 'Checking...', 
+      change: '', 
+      trend: slackStatus === 'connected' ? 'up' : slackStatus === 'error' ? 'down' : 'neutral' as any,
+      statusIndicator: true
     },
     { 
       label: 'System Status', 
@@ -136,25 +213,42 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Quick Stats Grid - Hidden on mobile, shown at bottom on desktop */}
-          <div className="hidden md:grid md:grid-cols-4 gap-4">
+          {/* Quick Stats Grid - Mobile friendly, shown on all screen sizes */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {quickStats.map((stat, index) => (
-              <div key={index} className="card group hover:border-[var(--accent)]">
-                <div className="flex items-center justify-between">
-                  <div>
+              <div key={index} className="card group hover:border-[var(--accent)] relative">
+                <div className="flex flex-col h-full">
+                  <div className="flex-1">
                     <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                       {stat.label}
                     </p>
-                    <p className="text-2xl font-semibold mt-1">{stat.value}</p>
-                  </div>
-                  {stat.change && (
-                    <div className={`text-sm font-medium ${
-                      stat.trend === 'up' ? 'text-[var(--status-success)]' : 
-                      stat.trend === 'down' ? 'text-[var(--status-error)]' : 
-                      'text-[var(--text-secondary)]'
-                    }`}>
-                      {stat.change}
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xl md:text-2xl font-semibold">{stat.value}</p>
+                      {stat.statusIndicator && (
+                        <div className={`w-2 h-2 rounded-full animate-pulse ${
+                          stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
+                          stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
+                          'bg-[var(--text-muted)]'
+                        }`} />
+                      )}
                     </div>
+                    {stat.change && (
+                      <div className={`text-xs md:text-sm font-medium mt-1 ${
+                        stat.trend === 'up' ? 'text-[var(--status-success)]' : 
+                        stat.trend === 'down' ? 'text-[var(--status-error)]' : 
+                        'text-[var(--text-secondary)]'
+                      }`}>
+                        {stat.change}
+                      </div>
+                    )}
+                  </div>
+                  {stat.isButton && (
+                    <button
+                      onClick={stat.onClick}
+                      className="mt-3 w-full px-3 py-2 text-xs md:text-sm font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-lg transition-colors"
+                    >
+                      {stat.buttonText}
+                    </button>
                   )}
                 </div>
               </div>
