@@ -95,6 +95,10 @@ export const ChecklistSystem: React.FC = () => {
     setLoadingSubmissions(true);
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        setLoadingSubmissions(false);
+        return;
+      }
       
       // Build query params
       let queryParams = 'limit=100';
@@ -110,9 +114,13 @@ export const ChecklistSystem: React.FC = () => {
         let startDate;
         
         if (trackerPeriod === 'week') {
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          // Get the start of the current week (Sunday)
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - now.getDay());
+          startDate.setHours(0, 0, 0, 0);
         } else if (trackerPeriod === 'month') {
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          // Get the start of the current month
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         }
         
         if (startDate) {
@@ -126,7 +134,11 @@ export const ChecklistSystem: React.FC = () => {
       );
       
       if (response.data.success) {
-        setSubmissions(response.data.data);
+        setSubmissions(response.data.data || []);
+      } else {
+        // Only show error if response indicates failure
+        console.error('API returned unsuccessful response:', response.data);
+        toast.error(response.data.error || 'Failed to load submission history');
       }
     } catch (error: any) {
       console.error('Failed to load submissions:', error);
@@ -136,12 +148,17 @@ export const ChecklistSystem: React.FC = () => {
         message: error.message
       });
       
+      // Only show error toast for actual errors, not for empty results
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
       } else if (error.response?.status === 403) {
         toast.error('Access denied. Contact your administrator.');
-      } else {
+      } else if (error.response?.status >= 400) {
+        // Only show error for actual HTTP errors
         toast.error(error.response?.data?.error || 'Failed to load submission history');
+      } else if (!error.response) {
+        // Network error
+        toast.error('Network error. Please check your connection.');
       }
     } finally {
       setLoadingSubmissions(false);
@@ -463,7 +480,7 @@ export const ChecklistSystem: React.FC = () => {
                           : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
                       }`}
                     >
-                      Last Week
+                      This Week
                     </button>
                     <button
                       onClick={() => setTrackerPeriod('month')}
@@ -473,7 +490,7 @@ export const ChecklistSystem: React.FC = () => {
                           : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
                       }`}
                     >
-                      Last Month
+                      This Month
                     </button>
                     <button
                       onClick={() => setTrackerPeriod('all')}
@@ -495,7 +512,7 @@ export const ChecklistSystem: React.FC = () => {
               <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
                 Checklist Submissions
                 {trackerLocation !== 'all' && ` - ${trackerLocation}`}
-                {trackerPeriod !== 'all' && ` (${trackerPeriod === 'week' ? 'Last 7 days' : 'Last 30 days'})`}
+                {trackerPeriod !== 'all' && ` (${trackerPeriod === 'week' ? 'This Week' : 'This Month'})`}
               </h3>
               
               {loadingSubmissions ? (
