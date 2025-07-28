@@ -72,6 +72,7 @@ export const KnowledgeExtractionPanel: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({});
   const [confirming, setConfirming] = useState(false);
+  const [originalEntry, setOriginalEntry] = useState('');
 
   useEffect(() => {
     if (activeTab === 'stats') {
@@ -240,6 +241,9 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       setProcessing(true);
       const token = localStorage.getItem('clubos_token');
       
+      // Store original entry for restore if cancelled
+      setOriginalEntry(manualEntry);
+      
       // For test mode, only process first 500 characters
       const entryToProcess = testMode ? manualEntry.substring(0, 500) + '\n\n[TEST MODE - Only first 500 characters processed]' : manualEntry;
       
@@ -275,6 +279,9 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       
       setSelectedCategories(defaultSelection);
       setShowPreview(true);
+      
+      // Clear the text area to save space since content is now in preview
+      setManualEntry('');
       
     } catch (error) {
       console.error('Failed to preview entry:', error);
@@ -325,8 +332,12 @@ export const KnowledgeExtractionPanel: React.FC = () => {
         { duration: 6000 }
       );
       
-      // Reset form
-      setManualEntry('');
+      // Reset form and replace text area with processed content summary
+      const processedSummary = `// Import completed: ${result.imported} sections imported${multiSuffix}${clearSuffix}\n// Original content processed and categorized\n\n${previewData.sections.map((section: any, index: number) => 
+        `Section ${index + 1}${section.title ? `: ${section.title}` : ''}\n${section.content}\n`
+      ).join('\n')}`;
+      
+      setManualEntry(processedSummary);
       setPreviewData(null);
       setShowPreview(false);
       setClearExisting(false);
@@ -868,6 +879,147 @@ export const KnowledgeExtractionPanel: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Preview Section */}
+            {showPreview && previewData && (
+              <div className="mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-green-400">Import Preview</h4>
+                  <button
+                    onClick={() => {
+                      setShowPreview(false);
+                      setPreviewData(null);
+                      setSelectedCategories({});
+                      // Restore original content
+                      setManualEntry(originalEntry);
+                      setOriginalEntry('');
+                    }}
+                    className="text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  >
+                    Close Preview
+                  </button>
+                </div>
+
+                {/* Category Selection */}
+                <div className="mb-4">
+                  <h5 className="text-sm font-medium mb-2">Target Assistant Categories:</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {['emergency', 'booking', 'tech', 'brand'].map(category => (
+                      <label key={category} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories[category] || false}
+                          onChange={(e) => setSelectedCategories({
+                            ...selectedCategories,
+                            [category]: e.target.checked
+                          })}
+                          className="rounded"
+                        />
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(category)}`}>
+                          {category}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview Content */}
+                <div className="space-y-4">
+                  <div>
+                    <h5 className="text-sm font-medium mb-2">Detected Primary Category:</h5>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(previewData.primaryCategory || 'general')}`}>
+                      {previewData.primaryCategory || 'None detected'}
+                    </span>
+                  </div>
+
+                  {previewData.sections && previewData.sections.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Parsed Sections ({previewData.sections.length}):</h5>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {previewData.sections.map((section: any, index: number) => (
+                          <div key={index} className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium text-[var(--text-muted)]">
+                                Section {index + 1}
+                              </span>
+                              {section.category && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(section.category)}`}>
+                                  {section.category}
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              {section.title && (
+                                <div>
+                                  <span className="text-xs text-[var(--text-muted)]">Title:</span>
+                                  <input
+                                    type="text"
+                                    value={section.title}
+                                    onChange={(e) => {
+                                      const newSections = [...previewData.sections];
+                                      newSections[index] = { ...section, title: e.target.value };
+                                      setPreviewData({ ...previewData, sections: newSections });
+                                    }}
+                                    className="w-full mt-1 px-2 py-1 text-sm bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded"
+                                  />
+                                </div>
+                              )}
+                              <div>
+                                <span className="text-xs text-[var(--text-muted)]">Content:</span>
+                                <textarea
+                                  value={section.content}
+                                  onChange={(e) => {
+                                    const newSections = [...previewData.sections];
+                                    newSections[index] = { ...section, content: e.target.value };
+                                    setPreviewData({ ...previewData, sections: newSections });
+                                  }}
+                                  className="w-full mt-1 px-2 py-1 text-sm bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded min-h-[60px] resize-y"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Confirm Import Button */}
+                  <div className="flex gap-3 pt-4 border-t border-[var(--border-primary)]">
+                    <button
+                      onClick={confirmImport}
+                      disabled={confirming || Object.values(selectedCategories).every(v => !v)}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {confirming ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Confirm Import
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowPreview(false);
+                        setPreviewData(null);
+                        setSelectedCategories({});
+                        // Restore original content
+                        setManualEntry(originalEntry);
+                        setOriginalEntry('');
+                      }}
+                      disabled={confirming}
+                      className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="mt-6 space-y-4">
               <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
