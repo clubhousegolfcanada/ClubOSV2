@@ -204,27 +204,38 @@ export class AssistantService {
         if (useIntelligentSOP && !shadowMode) {
           const confidenceThreshold = parseFloat(process.env.SOP_CONFIDENCE_THRESHOLD || '0.75');
           
-          if (sopResponse.confidence >= confidenceThreshold) {
-            logger.info('Using SOP response (SOP Mode Active)', {
-              route,
-              confidence: sopResponse.confidence
-            });
-            
-            // Return SOP response
+          // When SOP mode is active, ALWAYS use SOP response (no fallback)
+          logger.info('Using SOP response (SOP Mode Active)', {
+            route,
+            confidence: sopResponse.confidence,
+            threshold: confidenceThreshold,
+            meetsThreshold: sopResponse.confidence >= confidenceThreshold
+          });
+          
+          // Return SOP response even if confidence is low
+          if (sopResponse.confidence === 0 && sopResponse.source === 'no_match') {
             return {
-              response: sopResponse.response,
+              response: `I apologize, but I don't have any information in my local knowledge base about this topic yet. The SOP system is active but needs to be populated with relevant documentation. 
+
+Please add relevant knowledge through the Knowledge Extraction panel in Operations to enable proper responses.`,
               assistantId: `sop-${route}`,
               threadId: `sop-${Date.now()}`,
-              confidence: sopResponse.confidence,
-              structured: sopResponse.structured
+              confidence: 0,
+              structured: {
+                text: "No SOP documents found. Please add knowledge to the system.",
+                category: "no_data",
+                priority: "low"
+              }
             };
-          } else {
-            logger.warn('SOP confidence too low, falling back to Assistant', {
-              route,
-              confidence: sopResponse.confidence,
-              threshold: confidenceThreshold
-            });
           }
+          
+          return {
+            response: sopResponse.response,
+            assistantId: `sop-${route}`,
+            threadId: `sop-${Date.now()}`,
+            confidence: sopResponse.confidence,
+            structured: sopResponse.structured
+          };
         }
       } catch (error) {
         logger.error('SOP module error:', error);

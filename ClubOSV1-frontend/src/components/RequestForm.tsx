@@ -48,22 +48,11 @@ interface FormData {
 }
 
 const RequestForm: React.FC = () => {
+  const router = useRouter();
+  
+  // Initialize state with consistent defaults
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
-  const { preferences } = useSettingsState();
-  const { user } = useAuthState();
-  const { 
-    isSubmitting, 
-    lastResponse, 
-    error,
-    submitRequest,
-    resetRequestState,
-    setLastResponse 
-  } = useRequestSubmission();
-  const { notify } = useNotifications();
-  const { demoMode, runDemo } = useDemoMode();
-  
   const [smartAssistEnabled, setSmartAssistEnabled] = useState(true);
   const [routePreference, setRoutePreference] = useState<RequestRoute>('Auto');
   const [showResponse, setShowResponse] = useState(false);
@@ -81,7 +70,19 @@ const RequestForm: React.FC = () => {
   const [slackReplies, setSlackReplies] = useState<any[]>([]);
   const [isWaitingForReply, setIsWaitingForReply] = useState(false);
   const [lastSlackThreadTs, setLastSlackThreadTs] = useState<string | null>(null);
-  const router = useRouter();
+
+  const { preferences } = useSettingsState();
+  const { user } = useAuthState();
+  const { 
+    isSubmitting, 
+    lastResponse, 
+    error,
+    submitRequest,
+    resetRequestState,
+    setLastResponse 
+  } = useRequestSubmission();
+  const { notify } = useNotifications();
+  const { demoMode, runDemo } = useDemoMode();
 
   const {
     register,
@@ -115,15 +116,15 @@ const RequestForm: React.FC = () => {
     }
   }, [preferences.defaultRoute]);
 
-  // Check for ticket query parameter on mount
+  // Check for ticket query parameter on mount (client-side only)
   useEffect(() => {
-    if (router.query.ticket === 'true') {
+    if (isMounted && router.query.ticket === 'true') {
       setIsTicketMode(true);
       setSmartAssistEnabled(false);
       // Remove the query parameter from URL without reload
       router.replace('/', undefined, { shallow: true });
     }
-  }, [router.query.ticket, router]);
+  }, [router.query.ticket, router, isMounted]);
 
   // Handle demo mode
   useEffect(() => {
@@ -156,10 +157,10 @@ const RequestForm: React.FC = () => {
 
   // Handle response display
   useEffect(() => {
+    if (!isMounted) return; // Skip on server-side
+    
     if (lastResponse && isNewSubmission) {
-      if (isMounted) {
-        console.log('Full lastResponse object:', JSON.stringify(lastResponse, null, 2));
-      }
+      console.log('Full lastResponse object:', JSON.stringify(lastResponse, null, 2));
       
       setShowResponse(true);
       setIsNewSubmission(false); // Reset the flag
