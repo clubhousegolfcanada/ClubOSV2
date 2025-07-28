@@ -184,11 +184,23 @@ const Knowledge: React.FC = () => {
               ) : feedback.length > 0 ? (
                 <div className="space-y-4">
                   {feedback.map((item) => (
-                    <FeedbackResponse
-                      key={item.id}
-                      feedback={item}
-                      onUpdate={fetchFeedback}
-                    />
+                    <div key={item.id} className="bg-[var(--bg-secondary)] rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <p className="text-sm text-[var(--text-secondary)] mb-1">Query:</p>
+                          <p className="font-medium mb-2">{item.query}</p>
+                          <p className="text-sm text-[var(--text-secondary)] mb-1">User Feedback:</p>
+                          <p className="text-[var(--text-muted)] mb-3">{item.feedback}</p>
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          {new Date(item.timestamp).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-[var(--text-secondary)] mb-1">AI Response:</p>
+                        <FeedbackResponse responseData={item.response} />
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
