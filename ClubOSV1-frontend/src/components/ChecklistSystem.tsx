@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, Check, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { useStore } from '../state/useStore';
+import { useAuthState } from '../state/useStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -46,7 +46,7 @@ export const ChecklistSystem: React.FC = () => {
   const [comments, setComments] = useState('');
   const [createTicket, setCreateTicket] = useState(false);
   
-  const { user } = useStore();
+  const { user } = useAuthState();
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
   // Load checklist template
