@@ -1952,7 +1952,7 @@ export default function Operations() {
               ) : null}
 
               {/* System Status - Only show when not in specific views */}
-              {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
+              {!showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">System Status</h3>
