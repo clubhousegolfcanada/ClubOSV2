@@ -304,6 +304,33 @@ router.get('/debug/all', async (req: Request, res: Response) => {
   }
 });
 
+// Test OpenPhone connection
+router.get('/test-connection', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const connected = await openPhoneService.testConnection();
+    const phoneNumbers = await openPhoneService.getPhoneNumbers();
+    
+    res.json({
+      success: true,
+      data: {
+        connected,
+        phoneNumbers: phoneNumbers.map(p => ({
+          number: p.phoneNumber,
+          name: p.name
+        }))
+      }
+    });
+    
+  } catch (error) {
+    logger.error('OpenPhone connection test failed:', error);
+    res.status(500).json({ 
+      success: false,
+      data: { connected: false },
+      error: 'Connection test failed'
+    });
+  }
+});
+
 // Import historical conversations (admin only)
 router.post('/import-history', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
   try {
