@@ -266,14 +266,13 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
               <button
                 key={index}
                 onClick={button.onClick}
-                className={`px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex flex-col items-center ${
+                className={`px-4 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
                   button.active
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
-                }`}
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-secondary)] hover:border-[var(--accent)]'
+                } border`}
               >
-                <span>{button.label}</span>
-                <span className="font-bold text-lg">{button.count}</span>
+                {button.label} <span className="font-bold">{button.count}</span>
               </button>
             ))}
           </div>
