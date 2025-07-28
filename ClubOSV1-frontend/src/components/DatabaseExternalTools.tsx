@@ -258,20 +258,26 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   return (
     <div className="card">
       <div className="space-y-3">
-        {/* Status Pills Section */}
+        {/* Status Section */}
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3">Status</h3>
-          <div className="flex flex-wrap gap-2">
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-2">Status</h3>
+          <div className="inline-flex rounded-lg bg-[var(--bg-secondary)] p-1">
             {toggleButtons.map((button, index) => (
               <button
                 key={index}
                 onClick={button.onClick}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-full hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 active:scale-95 ${
-                  button.active ? 'border-[var(--accent)] bg-[var(--bg-tertiary)]' : ''
+                className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  button.active
+                    ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                } ${
+                  index === 0 ? 'rounded-l-md' : ''
+                } ${
+                  index === toggleButtons.length - 1 ? 'rounded-r-md' : ''
                 }`}
               >
-                <span>{button.label}</span>
-                <span className="font-bold">({button.count})</span>
+                {button.label}
+                <span className="ml-1 font-bold">{button.count}</span>
               </button>
             ))}
           </div>
