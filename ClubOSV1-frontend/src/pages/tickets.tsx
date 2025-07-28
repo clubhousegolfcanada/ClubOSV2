@@ -58,6 +58,17 @@ export default function TicketCenter() {
   const { notify } = useNotifications();
   const { user } = useAuthState();
 
+  // Handle URL parameters on mount
+  useEffect(() => {
+    const { category, status } = router.query;
+    if (category === 'tech' || category === 'facilities') {
+      setActiveTab(category);
+    }
+    if (status === 'open' || status === 'in-progress' || status === 'resolved' || status === 'closed') {
+      setFilterStatus(status as TicketStatus);
+    }
+  }, [router.query]);
+
   // Calculate ticket counts for badges
   const ticketCounts = useMemo(() => {
     const counts = {

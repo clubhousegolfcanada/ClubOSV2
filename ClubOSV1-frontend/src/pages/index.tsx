@@ -198,7 +198,7 @@ export default function Home() {
       trend: requestTrend as any
     },
     { 
-      label: 'Tech Tickets Open', 
+      label: 'Tech Tickets', 
       value: techTicketsOpen.toString(), 
       change: '', 
       trend: techTicketsOpen > 5 ? 'down' : 'neutral' as any,
@@ -207,7 +207,7 @@ export default function Home() {
       buttonText: 'View Tech Tickets'
     },
     { 
-      label: 'Facilities Tickets', 
+      label: 'Facilities', 
       value: facilitiesTicketsOpen.toString(), 
       change: '', 
       trend: facilitiesTicketsOpen > 5 ? 'down' : 'neutral' as any,
