@@ -3,10 +3,12 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2 } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { ChecklistSystem } from '@/components/ChecklistSystem';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
+import { KnowledgeExtractionPanel } from '@/components/admin/KnowledgeExtractionPanel';
+import { SOPModeControl } from '@/components/admin/SOPModeControl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -175,6 +177,7 @@ export default function Operations() {
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCleaning, setShowCleaning] = useState(true);
+  const [showKnowledge, setShowKnowledge] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
@@ -1007,7 +1010,7 @@ export default function Operations() {
           <div className="mb-8">
             <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
               <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); }}
+                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
                   showCleaning 
                     ? 'text-[var(--text-primary)]' 
@@ -1020,15 +1023,15 @@ export default function Operations() {
                 )}
               </button>
               <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); }}
+                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning
+                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge
                     ? 'text-[var(--text-primary)]' 
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 Operations
-                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && (
+                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
               </button>
@@ -1054,7 +1057,7 @@ export default function Operations() {
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                 <div className="flex flex-wrap gap-2 md:gap-4">
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); }}
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); setShowKnowledge(false); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showAnalytics
                         ? 'bg-[var(--accent)] text-white'
@@ -1066,7 +1069,7 @@ export default function Operations() {
                     <span className="sm:hidden">Stats</span>
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(true); setShowSystemConfig(false); setShowAnalytics(false); }}
+                    onClick={() => { setShowFeedback(true); setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showFeedback
                         ? 'bg-[var(--accent)] text-white'
@@ -1082,7 +1085,7 @@ export default function Operations() {
                     )}
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(true); setShowAnalytics(false); }}
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(true); setShowAnalytics(false); setShowKnowledge(false); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showSystemConfig
                         ? 'bg-[var(--accent)] text-white'
@@ -1094,9 +1097,21 @@ export default function Operations() {
                     <span className="sm:hidden">Config</span>
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); }}
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(true); }}
+                    className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
+                      showKnowledge
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Brain className="w-4 h-4" />
+                    <span className="hidden sm:inline">Knowledge</span>
+                    <span className="sm:hidden">AI</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all ${
-                      !showFeedback && !showSystemConfig && !showAnalytics
+                      !showFeedback && !showSystemConfig && !showAnalytics && !showKnowledge
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
@@ -1130,7 +1145,7 @@ export default function Operations() {
                 </div>
               </div>
 
-              {!showFeedback && !showSystemConfig && !showAnalytics ? (
+              {!showFeedback && !showSystemConfig && !showAnalytics && !showKnowledge ? (
                 <>
                   {/* User Management Section */}
                   <div className="space-y-6">
@@ -1884,9 +1899,18 @@ export default function Operations() {
                     )}
                   </div>
                 </>
+              ) : showKnowledge ? (
+                <>
+                  {/* Knowledge Extraction Section */}
+                  <div className="space-y-6">
+                    <SOPModeControl />
+                    <KnowledgeExtractionPanel />
+                  </div>
+                </>
               ) : null}
 
-              {/* System Status */}
+              {/* System Status - Only show when not in specific views */}
+              {!showFeedback && !showSystemConfig && !showAnalytics && !showKnowledge && !showCleaning && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">System Status</h3>
@@ -1924,6 +1948,7 @@ export default function Operations() {
                   </div>
                 </div>
               </div>
+              )}
                 </>
               )}
             </>

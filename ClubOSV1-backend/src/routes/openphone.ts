@@ -1,8 +1,11 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/errors';
 import crypto from 'crypto';
+import { authenticate } from '../middleware/auth';
+import { roleGuard } from '../middleware/roleGuard';
+import { openPhoneService } from '../services/openphoneService';
 
 const router = Router();
 
@@ -179,6 +182,56 @@ router.put('/conversations/:id/processed', async (req: Request, res: Response) =
     res.status(500).json({ 
       success: false,
       error: 'Failed to update conversation' 
+    });
+  }
+});
+
+// Import historical conversations (admin only)
+router.post('/import-history', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const { daysBack = 30 } = req.body;
+    
+    logger.info(`Starting OpenPhone historical import for ${daysBack} days`);
+    
+    const stats = await openPhoneService.importHistoricalConversations(daysBack);
+    
+    res.json({
+      success: true,
+      message: `Import complete: ${stats.imported} imported, ${stats.skipped} skipped, ${stats.errors} errors`,
+      data: stats
+    });
+    
+  } catch (error) {
+    logger.error('Failed to import OpenPhone history:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to import historical conversations' 
+    });
+  }
+});
+
+// Test OpenPhone connection (admin only)
+router.get('/test-connection', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const isConnected = await openPhoneService.testConnection();
+    const phoneNumbers = await openPhoneService.getPhoneNumbers();
+    
+    res.json({
+      success: true,
+      data: {
+        connected: isConnected,
+        phoneNumbers: phoneNumbers.map(p => ({
+          number: p.phoneNumber,
+          name: p.name
+        }))
+      }
+    });
+    
+  } catch (error) {
+    logger.error('OpenPhone connection test failed:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Connection test failed' 
     });
   }
 });

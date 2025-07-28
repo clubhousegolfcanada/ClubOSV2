@@ -27,6 +27,8 @@
     "db:setup": "node dist/scripts/setupDatabase.js",
     "setup:user-settings": "tsx scripts/setup-user-settings.ts",
     "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts",
+    "test:openphone": "tsx src/scripts/test-openphone.ts",
+    "verify:sop": "tsx src/scripts/verify-sop-setup.ts",
     "postbuild": "cp -r src/knowledge-base dist/ 2>/dev/null || echo 'Knowledge base copy completed' && cp -r src/database dist/ 2>/dev/null || echo 'Database files copy completed'"
   },
   "keywords": [

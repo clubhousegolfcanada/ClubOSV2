@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import { logger } from '../utils/logger';
 import { config } from '../utils/envValidator';
+import { db } from '../utils/database';
+import { intelligentSOPModule } from './intelligentSOPModule';
 
 interface AssistantResponse {
   response: string;
@@ -154,6 +156,81 @@ export class AssistantService {
     userMessage: string,
     context?: Record<string, any>
   ): Promise<AssistantResponse> {
+    // Shadow Mode: Run SOP module in parallel but don't use response yet
+    const shadowMode = process.env.SOP_SHADOW_MODE === 'true';
+    const useIntelligentSOP = process.env.USE_INTELLIGENT_SOP === 'true';
+    
+    let sopShadowId: string | null = null;
+    
+    if (shadowMode || useIntelligentSOP) {
+      // Try SOP module in shadow mode or for actual use
+      try {
+        const sopStart = Date.now();
+        const sopResponse = await intelligentSOPModule.processWithContext(
+          userMessage,
+          route,
+          context
+        );
+        const sopTime = Date.now() - sopStart;
+        
+        // Log comparison
+        logger.info(shadowMode ? 'SHADOW MODE - SOP Response' : 'SOP MODULE Response', {
+          route,
+          confidence: sopResponse.confidence,
+          responseTime: sopTime,
+          responsePreview: sopResponse.response?.substring(0, 100)
+        });
+        
+        // Store comparison for analysis (we'll fill assistant response later)
+        if (db.initialized && shadowMode) {
+          const result = await db.query(`
+            INSERT INTO sop_shadow_comparisons 
+            (query, route, assistant_response, sop_response, sop_confidence, sop_time_ms)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+          `, [
+            userMessage,
+            route,
+            '', // Will be updated after Assistant response
+            sopResponse.response,
+            sopResponse.confidence,
+            sopTime
+          ]);
+          
+          sopShadowId = result.rows[0]?.id;
+        }
+        
+        // If USE_INTELLIGENT_SOP is true (not shadow mode), use SOP response
+        if (useIntelligentSOP && !shadowMode) {
+          const confidenceThreshold = parseFloat(process.env.SOP_CONFIDENCE_THRESHOLD || '0.75');
+          
+          if (sopResponse.confidence >= confidenceThreshold) {
+            logger.info('Using SOP response (SOP Mode Active)', {
+              route,
+              confidence: sopResponse.confidence
+            });
+            
+            // Return SOP response
+            return {
+              response: sopResponse.response,
+              assistantId: `sop-${route}`,
+              threadId: `sop-${Date.now()}`,
+              confidence: sopResponse.confidence,
+              structured: sopResponse.structured
+            };
+          } else {
+            logger.warn('SOP confidence too low, falling back to Assistant', {
+              route,
+              confidence: sopResponse.confidence,
+              threshold: confidenceThreshold
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('SOP module error:', error);
+      }
+    }
+    
     if (!this.isEnabled || !this.openai) {
       logger.warn('Assistant service is disabled - returning fallback response');
       return {
@@ -280,6 +357,19 @@ export class AssistantService {
       let metadata = json?.metadata;
       let escalation = json?.escalation;
 
+      // Update shadow comparison if we have one
+      if (sopShadowId && db.initialized) {
+        const assistantTime = Date.now() - startTime;
+        await db.query(`
+          UPDATE sop_shadow_comparisons 
+          SET assistant_response = $1,
+              assistant_time_ms = $2
+          WHERE id = $3
+        `, [responseText, assistantTime, sopShadowId]).catch(err => {
+          logger.error('Failed to update shadow comparison:', err);
+        });
+      }
+      
       return {
         response: responseText,
         assistantId,

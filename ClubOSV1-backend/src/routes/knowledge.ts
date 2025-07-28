@@ -1,120 +1,175 @@
-// src/routes/knowledge.ts
-
 import { Router, Request, Response } from 'express';
-import { knowledgeLoader } from '../knowledge-base/knowledgeLoader';
+import { knowledgeExtractor } from '../services/knowledgeExtractor';
 import { logger } from '../utils/logger';
-import { LocalProvider } from '../services/llm/LocalProvider';
+import { authenticate } from '../middleware/auth';
+import { roleGuard } from '../middleware/roleGuard';
 
 const router = Router();
 
-// Get all knowledge bases
-router.get('/', (req: Request, res: Response) => {
+// All knowledge routes require admin access
+router.use(authenticate);
+router.use(roleGuard(['admin']));
+
+// Process unprocessed OpenPhone conversations
+router.post('/extract', async (req: Request, res: Response) => {
   try {
-    const knowledgeBasesMap = knowledgeLoader.getAllKnowledgeBases();
-    const knowledgeBases = Array.from(knowledgeBasesMap.values());
+    const { limit = 10 } = req.body;
+    
+    logger.info('Starting knowledge extraction', { limit });
+    
+    const stats = await knowledgeExtractor.processUnprocessedConversations(limit);
+    
     res.json({
       success: true,
-      count: knowledgeBases.length,
-      knowledgeBases: knowledgeBases.map(kb => ({
-        // route: kb.route, // Property doesn't exist
-        // description: kb.description, // Property doesn't exist
-        version: kb.version,
-        lastUpdated: kb.lastUpdated,
-        categories: kb.categories
-      }))
+      data: stats,
+      message: `Processed ${stats.processed} conversations, extracted ${stats.extracted} knowledge items`
     });
+    
   } catch (error) {
-    logger.error('Error fetching knowledge bases:', error);
+    logger.error('Knowledge extraction failed:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch knowledge bases'
+      error: 'Failed to extract knowledge'
     });
   }
 });
 
-// Search knowledge base
-router.post('/search', (req: Request, res: Response) => {
+// Get unapplied knowledge for review
+router.get('/unapplied', async (req: Request, res: Response) => {
   try {
-    const { query } = req.body;
+    const { category, limit = 50 } = req.query;
     
-    if (!query) {
-      return res.status(400).json({
-        success: false,
-        error: 'Query parameter is required'
-      });
-    }
-    
-    const results = knowledgeLoader.searchKnowledge(query);
+    const knowledge = await knowledgeExtractor.getUnappliedKnowledge(
+      category as string,
+      parseInt(limit as string)
+    );
     
     res.json({
       success: true,
-      query,
-      count: results.length,
-      results
+      data: knowledge,
+      count: knowledge.length
     });
+    
   } catch (error) {
-    logger.error('Error searching knowledge base:', error);
+    logger.error('Failed to get unapplied knowledge:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to search knowledge base'
+      error: 'Failed to retrieve knowledge'
     });
   }
 });
 
-// Find solution for symptoms
-router.post('/solution', async (req: Request, res: Response) => {
+// Mark knowledge as applied
+router.put('/:id/apply', async (req: Request, res: Response) => {
   try {
-    const { symptoms } = req.body;
+    const { id } = req.params;
+    const { sopFile } = req.body;
     
-    if (!symptoms || !Array.isArray(symptoms)) {
+    if (!sopFile) {
       return res.status(400).json({
         success: false,
-        error: 'Symptoms array is required'
+        error: 'SOP file path is required'
       });
     }
     
-    const solutions = await knowledgeLoader.findSolution(symptoms);
+    await knowledgeExtractor.markKnowledgeApplied(id, sopFile);
     
     res.json({
       success: true,
-      symptoms,
-      count: solutions.length,
-      solutions
+      message: 'Knowledge marked as applied'
     });
+    
   } catch (error) {
-    logger.error('Error finding solution:', error);
+    logger.error('Failed to mark knowledge as applied:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to find solution'
+      error: 'Failed to update knowledge'
     });
   }
 });
 
-// Test the local provider with knowledge base
-router.post('/test', async (req: Request, res: Response) => {
+// Batch apply knowledge
+router.post('/apply-batch', async (req: Request, res: Response) => {
   try {
-    const { description, userId, context } = req.body;
+    const { knowledgeIds, sopFile } = req.body;
     
-    if (!description) {
+    if (!knowledgeIds || !Array.isArray(knowledgeIds) || knowledgeIds.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Description is required'
+        error: 'Knowledge IDs array is required'
       });
     }
     
-    const provider = new LocalProvider();
-    const result = await provider.processRequest(description, userId, context);
+    if (!sopFile) {
+      return res.status(400).json({
+        success: false,
+        error: 'SOP file path is required'
+      });
+    }
+    
+    await knowledgeExtractor.applyKnowledgeBatch(knowledgeIds, sopFile);
     
     res.json({
       success: true,
-      description,
-      result
+      message: `Applied ${knowledgeIds.length} knowledge items to ${sopFile}`
     });
+    
   } catch (error) {
-    logger.error('Error testing local provider:', error);
+    logger.error('Failed to batch apply knowledge:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to test local provider'
+      error: 'Failed to apply knowledge batch'
+    });
+  }
+});
+
+// Get extraction statistics
+router.get('/stats', async (req: Request, res: Response) => {
+  try {
+    const stats = await knowledgeExtractor.getExtractionStats();
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+    
+  } catch (error) {
+    logger.error('Failed to get extraction stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve statistics'
+    });
+  }
+});
+
+// Search for similar knowledge
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const { problem, category } = req.query;
+    
+    if (!problem || !category) {
+      return res.status(400).json({
+        success: false,
+        error: 'Problem and category are required'
+      });
+    }
+    
+    const similar = await knowledgeExtractor.findSimilarKnowledge(
+      problem as string,
+      category as string
+    );
+    
+    res.json({
+      success: true,
+      data: similar,
+      count: similar.length
+    });
+    
+  } catch (error) {
+    logger.error('Failed to search knowledge:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search knowledge'
     });
   }
 });

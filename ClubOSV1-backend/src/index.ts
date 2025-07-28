@@ -31,6 +31,8 @@ import checklistsRoutes from './routes/checklists';
 import remoteActionsRoutes from './routes/remoteActions';
 import debugRoutes from './routes/debug';
 import openphoneRoutes from './routes/openphone';
+import knowledgeRoutes from './routes/knowledge';
+import sopMonitoringRoutes from './routes/sop-monitoring';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -106,6 +108,8 @@ app.use('/api/checklists', checklistsRoutes);
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/openphone', openphoneRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
+app.use('/api/sop-monitoring', sopMonitoringRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -169,6 +173,12 @@ async function startServer() {
     const { initializeSystemConfigs } = await import('./routes/system-config');
     await initializeSystemConfigs();
     logger.info('✅ System configurations initialized');
+    
+    // Initialize SOP embeddings
+    logger.info('Initializing SOP embeddings...');
+    const { intelligentSOPModule } = await import('./services/intelligentSOPModule');
+    const sopStatus = intelligentSOPModule.getStatus();
+    logger.info('✅ SOP module status:', sopStatus);
     
     // Run database migrations - ensure checklist_submissions table exists
     try {
