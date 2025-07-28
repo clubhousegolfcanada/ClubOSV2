@@ -944,7 +944,6 @@ export default function Operations() {
                 </button>
               )}
                 </div>
-              </div>
               
               {/* Sidebar - Quick Stats & History (4 columns) */}
               <div className="lg:col-span-4 space-y-4">
