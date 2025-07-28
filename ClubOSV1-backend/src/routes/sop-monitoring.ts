@@ -120,6 +120,63 @@ router.get('/comparison/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Audit SOP system setup
+router.get('/audit', async (req: Request, res: Response) => {
+  try {
+    // Check current sop_embeddings table contents
+    const embeddings = await db.query(`
+      SELECT assistant, COUNT(*) as doc_count, 
+             MIN(created_at) as oldest,
+             MAX(updated_at) as newest,
+             COUNT(CASE WHEN metadata->>'imported' = 'true' THEN 1 END) as imported_count
+      FROM sop_embeddings 
+      GROUP BY assistant
+      ORDER BY assistant
+    `);
+    
+    // Check extracted_knowledge table
+    const extracted = await db.query(`
+      SELECT source_type, category, COUNT(*) as count
+      FROM extracted_knowledge 
+      GROUP BY source_type, category
+      ORDER BY source_type, category
+    `);
+    
+    // Check shadow comparisons
+    const shadowStats = await db.query(`
+      SELECT COUNT(*) as total_comparisons,
+             AVG(sop_confidence) as avg_confidence,
+             AVG(sop_time_ms) as avg_response_time
+      FROM sop_shadow_comparisons
+      WHERE created_at > NOW() - INTERVAL '7 days'
+    `);
+    
+    // Get SOP module status
+    const { intelligentSOPModule } = await import('../services/intelligentSOPModule');
+    const sopStatus = intelligentSOPModule.getStatus();
+    const loadedDocs = intelligentSOPModule.getLoadedDocuments();
+    
+    res.json({
+      success: true,
+      data: {
+        currentEmbeddings: embeddings.rows,
+        extractedKnowledge: extracted.rows,
+        shadowStats: shadowStats.rows[0],
+        sopModuleStatus: sopStatus,
+        loadedDocuments: loadedDocs,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    logger.error('SOP audit failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to audit SOP system'
+    });
+  }
+});
+
 // Get SOP module status
 router.get('/sop-status', async (req: Request, res: Response) => {
   try {

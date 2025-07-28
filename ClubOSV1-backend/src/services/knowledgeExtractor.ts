@@ -325,7 +325,7 @@ Only extract knowledge if:
   /**
    * Process manual knowledge entry from user
    */
-  async processManualEntry(entry: string): Promise<any> {
+  async processManualEntry(entry: string, clearExisting: boolean = false): Promise<any> {
     if (!this.openai) {
       throw new Error('OpenAI not configured');
     }
@@ -335,7 +335,7 @@ Only extract knowledge if:
       const isBulkImport = this.detectBulkImport(entry);
       
       if (isBulkImport) {
-        return await this.processBulkImport(entry);
+        return await this.processBulkImport(entry, clearExisting);
       } else {
         return await this.processSingleEntry(entry);
       }
@@ -451,7 +451,7 @@ Return ONLY a valid JSON object with these fields: problem, solution, category, 
   /**
    * Process bulk import of knowledge directly into SOP embeddings
    */
-  private async processBulkImport(entry: string): Promise<any> {
+  private async processBulkImport(entry: string, clearExisting: boolean = false): Promise<any> {
     logger.info('Processing bulk import into SOP embeddings...');
     
     const prompt = `Analyze this OpenAI assistant document and determine which assistant category it belongs to, then structure it for our SOP system.
@@ -511,6 +511,12 @@ Return a JSON object with:
     }
 
     const imported = [];
+    
+    // Clear existing embeddings for this assistant if requested
+    if (clearExisting) {
+      logger.info(`Clearing existing embeddings for assistant: ${result.assistant}`);
+      await db.query('DELETE FROM sop_embeddings WHERE assistant = $1', [result.assistant]);
+    }
     
     // Import the sections into SOP embeddings - import the intelligent SOP module for embedding generation
     const { intelligentSOPModule } = await import('./intelligentSOPModule');
@@ -619,6 +625,221 @@ Return a JSON object with:
       summary: result.summary,
       sections: imported
     };
+  }
+
+  /**
+   * Preview what the AI will do with the entry without saving
+   */
+  async previewManualEntry(entry: string): Promise<any> {
+    if (!this.openai) {
+      throw new Error('OpenAI not configured');
+    }
+
+    try {
+      // Detect if this is a bulk import
+      const isBulkImport = this.detectBulkImport(entry);
+      
+      if (!isBulkImport) {
+        // For single entries, just return a simple preview
+        return {
+          isBulkImport: false,
+          recommendedCategory: 'general',
+          sections: [{
+            title: 'Single Knowledge Entry',
+            content: entry,
+            confidence: 0.8
+          }]
+        };
+      }
+
+      // For bulk imports, analyze and show what would be created
+      const prompt = `Analyze this document and show what you would extract for our SOP system.
+
+Document:
+${entry}
+
+Determine:
+1. Which assistant category this fits: emergency, booking, tech, or brand
+2. What sections you would create with titles and content
+3. Which categories might also benefit from this content (overlaps)
+
+Return a JSON object with:
+{
+  "primaryCategory": "emergency|booking|tech|brand",
+  "possibleCategories": ["emergency", "booking", "tech", "brand"],
+  "sections": [
+    {
+      "title": "Clear section title",
+      "content": "Complete section content",
+      "confidence": 0.95,
+      "reasoning": "Why this section is important"
+    },
+    ...
+  ],
+  "summary": "Brief summary of the document"
+}`;
+
+      const response = await this.openai.chat.completions.create({
+        model: this.MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are analyzing documents for a golf simulator SOP system. Provide detailed analysis of what would be extracted and why.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 4000,
+        response_format: { type: 'json_object' }
+      });
+
+      const result = JSON.parse(response.choices[0].message.content || '{}');
+      
+      return {
+        isBulkImport: true,
+        ...result
+      };
+      
+    } catch (error) {
+      logger.error('Failed to preview entry:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process confirmed entry with selected categories
+   */
+  async processConfirmedEntry(sections: any[], selectedCategories: Record<string, boolean>, clearExisting: boolean = false): Promise<any> {
+    if (!this.openai) {
+      throw new Error('OpenAI not configured');
+    }
+
+    try {
+      const categories = Object.keys(selectedCategories).filter(k => selectedCategories[k]);
+      const imported = [];
+      
+      // Import the sections into SOP embeddings
+      const { intelligentSOPModule } = await import('./intelligentSOPModule');
+      
+      for (const category of categories) {
+        // Clear existing embeddings for this assistant if requested
+        if (clearExisting) {
+          logger.info(`Clearing existing embeddings for assistant: ${category}`);
+          await db.query('DELETE FROM sop_embeddings WHERE assistant = $1', [category]);
+        }
+        
+        // Process each section for this category
+        for (const section of sections) {
+          try {
+            // Generate embedding for the content
+            const embeddingResponse = await this.openai.embeddings.create({
+              model: 'text-embedding-3-small',
+              input: section.content.slice(0, 8000)
+            });
+            
+            const embedding = embeddingResponse.data[0].embedding;
+            
+            // Create unique ID for this section
+            const sectionId = `imported_${category}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Check for duplicates by title and assistant
+            const existing = await db.query(`
+              SELECT id FROM sop_embeddings
+              WHERE assistant = $1 AND title ILIKE $2
+              LIMIT 1
+            `, [category, `%${section.title}%`]);
+
+            if (existing.rows.length > 0 && !clearExisting) {
+              logger.info(`Updating existing section: ${section.title} in ${category}`);
+              
+              // Update existing
+              await db.query(`
+                UPDATE sop_embeddings 
+                SET content = $1, embedding = $2, updated_at = NOW(),
+                    metadata = $3
+                WHERE id = $4
+              `, [
+                section.content,
+                JSON.stringify(embedding),
+                JSON.stringify({
+                  imported: true,
+                  multiCategory: true,
+                  confidence: section.confidence || 0.9,
+                  categories: categories,
+                  updatedBy: 'confirmed_import',
+                  timestamp: new Date().toISOString()
+                }),
+                existing.rows[0].id
+              ]);
+              
+              imported.push({
+                id: existing.rows[0].id,
+                title: section.title,
+                category: category,
+                action: 'updated'
+              });
+            } else {
+              // Insert new
+              const stored = await db.query(`
+                INSERT INTO sop_embeddings 
+                (id, assistant, title, content, embedding, metadata)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING *
+              `, [
+                sectionId,
+                category,
+                section.title,
+                section.content,
+                JSON.stringify(embedding),
+                JSON.stringify({
+                  imported: true,
+                  multiCategory: categories.length > 1,
+                  confidence: section.confidence || 0.9,
+                  categories: categories,
+                  createdBy: 'confirmed_import',
+                  timestamp: new Date().toISOString()
+                })
+              ]);
+
+              imported.push({
+                ...stored.rows[0],
+                category: category,
+                action: 'created'
+              });
+            }
+            
+            logger.info(`Imported section: ${section.title} -> ${category}`);
+            
+          } catch (error) {
+            logger.error('Failed to import section:', error);
+          }
+        }
+      }
+
+      // Refresh the intelligent SOP module cache
+      try {
+        await intelligentSOPModule.refreshDocumentCache();
+        logger.info('SOP module cache refreshed');
+      } catch (error) {
+        logger.warn('Failed to refresh SOP cache:', error);
+      }
+
+      logger.info(`Confirmed import completed: ${imported.length} sections imported into ${categories.length} categories`);
+
+      return {
+        imported: imported.length,
+        categories: categories,
+        sections: imported,
+        summary: `Imported ${sections.length} sections into ${categories.join(', ')} assistants`
+      };
+      
+    } catch (error) {
+      logger.error('Failed to process confirmed entry:', error);
+      throw error;
+    }
   }
 }
 

@@ -64,6 +64,14 @@ export const KnowledgeExtractionPanel: React.FC = () => {
   const [openPhoneConnected, setOpenPhoneConnected] = useState<boolean | null>(null);
   const [manualEntry, setManualEntry] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [clearExisting, setClearExisting] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [auditData, setAuditData] = useState<any>(null);
+  const [showAudit, setShowAudit] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({});
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'stats') {
@@ -222,6 +230,129 @@ export const KnowledgeExtractionPanel: React.FC = () => {
     }
   };
 
+  const previewEntry = async () => {
+    if (!manualEntry.trim()) {
+      toast.error('Please enter some knowledge to preview');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      // For test mode, only process first 500 characters
+      const entryToProcess = testMode ? manualEntry.substring(0, 500) + '\n\n[TEST MODE - Only first 500 characters processed]' : manualEntry;
+      
+      const response = await axios.post(
+        `${API_URL}/knowledge/preview-entry`,
+        { entry: entryToProcess },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const preview = response.data.data;
+      setPreviewData(preview);
+      
+      // Set default selected categories
+      const defaultSelection: Record<string, boolean> = {
+        emergency: false,
+        booking: false,
+        tech: false,
+        brand: false
+      };
+      
+      if (preview.primaryCategory) {
+        defaultSelection[preview.primaryCategory] = true;
+      }
+      
+      // Also select other possible categories if suggested
+      if (preview.possibleCategories) {
+        preview.possibleCategories.forEach((cat: string) => {
+          if (['emergency', 'booking', 'tech', 'brand'].includes(cat)) {
+            defaultSelection[cat] = cat === preview.primaryCategory;
+          }
+        });
+      }
+      
+      setSelectedCategories(defaultSelection);
+      setShowPreview(true);
+      
+    } catch (error) {
+      console.error('Failed to preview entry:', error);
+      
+      if (axios.isAxiosError(error) && error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('Failed to preview knowledge. Check console for details.');
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!previewData?.sections) {
+      toast.error('No preview data available');
+      return;
+    }
+
+    const selectedCats = Object.keys(selectedCategories).filter(k => selectedCategories[k]);
+    if (selectedCats.length === 0) {
+      toast.error('Please select at least one assistant category');
+      return;
+    }
+
+    try {
+      setConfirming(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      const response = await axios.post(
+        `${API_URL}/knowledge/confirm-entry`,
+        { 
+          sections: previewData.sections,
+          selectedCategories: selectedCategories,
+          clearExisting: clearExisting && !testMode
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const result = response.data.data;
+      const testPrefix = testMode ? 'TEST: ' : '';
+      const clearSuffix = clearExisting && !testMode ? ' (replaced existing)' : '';
+      const multiSuffix = selectedCats.length > 1 ? ` across ${selectedCats.length} assistants` : '';
+      
+      toast.success(
+        `${testPrefix}Import complete: ${result.imported} sections imported${multiSuffix}${clearSuffix}`,
+        { duration: 6000 }
+      );
+      
+      // Reset form
+      setManualEntry('');
+      setPreviewData(null);
+      setShowPreview(false);
+      setClearExisting(false);
+      setTestMode(false);
+      setSelectedCategories({});
+      
+      // Refresh stats or switch to review tab
+      if (activeTab === 'stats') {
+        fetchStats();
+      } else {
+        setActiveTab('review');
+      }
+      
+    } catch (error) {
+      console.error('Failed to confirm import:', error);
+      
+      if (axios.isAxiosError(error) && error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('Failed to confirm import. Check console for details.');
+      }
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   const processManualEntry = async () => {
     if (!manualEntry.trim()) {
       toast.error('Please enter some knowledge to add');
@@ -232,17 +363,25 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       setProcessing(true);
       const token = localStorage.getItem('clubos_token');
       
+      // For test mode, only process first 500 characters
+      const entryToProcess = testMode ? manualEntry.substring(0, 500) + '\n\n[TEST MODE - Only first 500 characters processed]' : manualEntry;
+      
       const response = await axios.post(
         `${API_URL}/knowledge/manual-entry`,
-        { entry: manualEntry },
+        { 
+          entry: entryToProcess,
+          clearExisting: clearExisting && !testMode // Don't clear in test mode
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       // Check if this was a bulk import
       if (response.data.data.imported !== undefined) {
         const { imported, assistant, summary } = response.data.data;
+        const testPrefix = testMode ? 'TEST: ' : '';
+        const clearSuffix = clearExisting && !testMode ? ' (replaced existing)' : '';
         toast.success(
-          `Bulk import complete: ${imported} sections imported into ${assistant} assistant`,
+          `${testPrefix}Bulk import complete: ${imported} sections imported into ${assistant} assistant${clearSuffix}`,
           { duration: 6000 }
         );
         if (summary) {
@@ -666,31 +805,77 @@ export const KnowledgeExtractionPanel: React.FC = () => {
                 />
               </div>
               
+              {/* Import Options */}
+              <div className="space-y-3 p-4 bg-[var(--bg-tertiary)] rounded-lg">
+                <h4 className="font-medium text-sm">Import Options</h4>
+                
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={testMode}
+                    onChange={(e) => setTestMode(e.target.checked)}
+                    className="rounded"
+                    disabled={processing}
+                  />
+                  <span className="text-sm">Test Mode (first 500 chars only)</span>
+                </label>
+                
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={clearExisting}
+                    onChange={(e) => setClearExisting(e.target.checked)}
+                    className="rounded"
+                    disabled={processing || testMode}
+                  />
+                  <span className="text-sm">Replace existing content for this assistant</span>
+                </label>
+                
+                {clearExisting && !testMode && (
+                  <div className="text-xs text-yellow-400 bg-yellow-500/10 p-2 rounded">
+                    ⚠️ This will delete all existing content for the detected assistant category
+                  </div>
+                )}
+              </div>
+              
               <div className="flex gap-3">
                 <button
-                  onClick={processManualEntry}
+                  onClick={previewEntry}
                   disabled={processing || !manualEntry.trim()}
-                  className="px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                 >
                   {processing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Processing...
+                      Analyzing...
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4" />
-                      Import to SOP System
+                      <Search className="w-4 h-4" />
+                      Preview Import
                     </>
                   )}
                 </button>
                 
                 <button
-                  onClick={() => setManualEntry('')}
+                  onClick={processManualEntry}
                   disabled={processing || !manualEntry.trim()}
+                  className="px-6 py-3 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Direct Import (old way)
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setManualEntry('');
+                    setClearExisting(false);
+                    setTestMode(false);
+                  }}
+                  disabled={processing}
                   className="px-4 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg disabled:opacity-50"
                 >
-                  Clear
+                  Clear All
                 </button>
               </div>
             </div>
