@@ -323,4 +323,157 @@ router.delete('/clear-embeddings', async (req: Request, res: Response) => {
   }
 });
 
+// Export all knowledge data
+router.get('/export', async (req: Request, res: Response) => {
+  try {
+    logger.info('Starting knowledge export...');
+    
+    // Initialize export data structure
+    const exportData = {
+      exportVersion: '1.0',
+      exportDate: new Date().toISOString(),
+      systemInfo: {
+        sopEnabled: process.env.USE_INTELLIGENT_SOP === 'true',
+        shadowMode: process.env.SOP_SHADOW_MODE === 'true',
+        confidenceThreshold: parseFloat(process.env.SOP_CONFIDENCE_THRESHOLD || '0.75')
+      },
+      sopDocuments: [] as any[],
+      extractedKnowledge: [] as any[],
+      conversations: [] as any[],
+      shadowComparisons: [] as any[],
+      metrics: {
+        totalDocuments: 0,
+        totalKnowledge: 0,
+        totalConversations: 0,
+        exportStats: {} as any
+      }
+    };
+
+    // 1. Export SOP Embeddings
+    if (db.initialized) {
+      try {
+        const sopResult = await db.query(`
+          SELECT id, assistant, title, content, metadata, created_at, updated_at
+          FROM sop_embeddings
+          ORDER BY assistant, title
+        `);
+        
+        exportData.sopDocuments = sopResult.rows.map(row => ({
+          ...row,
+          // Exclude embeddings to reduce file size
+          hasEmbedding: true
+        }));
+        exportData.metrics.totalDocuments = sopResult.rows.length;
+        
+        logger.info(`Exported ${sopResult.rows.length} SOP documents`);
+      } catch (error) {
+        logger.error('Failed to export SOP embeddings:', error);
+      }
+
+      // 2. Export Extracted Knowledge
+      try {
+        const knowledgeResult = await db.query(`
+          SELECT id, source_id, source_type, category, problem, solution, 
+                 confidence, created_at, updated_at, metadata
+          FROM extracted_knowledge
+          ORDER BY created_at DESC
+        `);
+        
+        exportData.extractedKnowledge = knowledgeResult.rows;
+        exportData.metrics.totalKnowledge = knowledgeResult.rows.length;
+        
+        logger.info(`Exported ${knowledgeResult.rows.length} extracted knowledge entries`);
+      } catch (error) {
+        logger.error('Failed to export extracted knowledge:', error);
+      }
+
+      // 3. Export OpenPhone Conversations (last 30 days)
+      try {
+        const conversationsResult = await db.query(`
+          SELECT id, conversation_id, phone_number, customer_name, employee_name,
+                 summary, key_points, category, sentiment, metadata, created_at
+          FROM openphone_conversations
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+          ORDER BY created_at DESC
+        `);
+        
+        exportData.conversations = conversationsResult.rows.map(row => ({
+          ...row,
+          // Exclude raw messages to reduce size
+          hasMessages: true
+        }));
+        exportData.metrics.totalConversations = conversationsResult.rows.length;
+        
+        logger.info(`Exported ${conversationsResult.rows.length} conversations`);
+      } catch (error) {
+        logger.error('Failed to export conversations:', error);
+      }
+
+      // 4. Export Shadow Comparisons (last 7 days)
+      try {
+        const shadowResult = await db.query(`
+          SELECT id, query, route, sop_confidence, sop_time_ms, 
+                 assistant_time_ms, created_at
+          FROM sop_shadow_comparisons
+          WHERE created_at >= NOW() - INTERVAL '7 days'
+          ORDER BY created_at DESC
+          LIMIT 1000
+        `);
+        
+        exportData.shadowComparisons = shadowResult.rows;
+        
+        logger.info(`Exported ${shadowResult.rows.length} shadow comparisons`);
+      } catch (error) {
+        logger.error('Failed to export shadow comparisons:', error);
+      }
+
+      // 5. Export Metrics Summary
+      try {
+        const metricsResult = await db.query(`
+          SELECT 
+            SUM(total_requests) as total_requests,
+            SUM(sop_used) as total_sop_used,
+            SUM(assistant_used) as total_assistant_used,
+            AVG(avg_confidence) as avg_confidence,
+            MIN(date) as earliest_date,
+            MAX(date) as latest_date
+          FROM sop_metrics
+        `);
+        
+        if (metricsResult.rows[0]) {
+          exportData.metrics.exportStats = metricsResult.rows[0];
+        }
+        
+        logger.info('Exported metrics summary');
+      } catch (error) {
+        logger.error('Failed to export metrics:', error);
+      }
+    }
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `clubos-knowledge-export-${timestamp}.json`;
+    
+    // Set response headers for download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Send the export data
+    res.json({
+      success: true,
+      data: exportData,
+      filename
+    });
+    
+    logger.info('Knowledge export completed successfully');
+    
+  } catch (error: any) {
+    logger.error('Knowledge export failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export knowledge data'
+    });
+  }
+});
+
 export default router;

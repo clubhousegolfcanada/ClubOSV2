@@ -182,6 +182,7 @@ export default function Operations() {
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [exportLoading, setExportLoading] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   // Cleaning state
@@ -710,6 +711,47 @@ export default function Operations() {
     toast.success('Checklist reset');
   };
 
+  const handleKnowledgeExport = async () => {
+    try {
+      setExportLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      const response = await axios.get(`${API_URL}/knowledge/export`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success) {
+        // Create a blob from the data
+        const exportData = response.data.data;
+        const jsonStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = response.data.filename || `clubos-knowledge-export-${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        toast.success(`Export complete! ${exportData.metrics.totalDocuments} documents, ${exportData.metrics.totalKnowledge} knowledge entries exported.`);
+      } else {
+        toast.error('Export failed: ' + (response.data.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      console.error('Knowledge export error:', error);
+      toast.error('Failed to export knowledge: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Filter checklists
   const filteredChecklists = checklists.filter(checklist => {
     const matchesCategory = selectedCleaningCategory === 'all' || checklist.category === selectedCleaningCategory;
@@ -1000,7 +1042,6 @@ export default function Operations() {
                   </div>
                 </div>
               </div>
-            </div>
           </>
         ) : (
           <>
@@ -1272,6 +1313,30 @@ export default function Operations() {
                           <p className="text-xl font-bold">0</p>
                           <p className="text-xs text-[var(--text-secondary)]">This Week</p>
                         </div>
+                      </div>
+                      
+                      {/* Export Knowledge Button */}
+                      <div className="mt-4">
+                        <button
+                          onClick={handleKnowledgeExport}
+                          disabled={exportLoading}
+                          className="w-full px-4 py-3 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+                        >
+                          {exportLoading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Exporting...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4" />
+                              Export All Knowledge
+                            </>
+                          )}
+                        </button>
+                        <p className="text-xs text-[var(--text-muted)] mt-2 text-center">
+                          Download complete backup of SOP & AI data
+                        </p>
                       </div>
                     </div>
                   </div>
