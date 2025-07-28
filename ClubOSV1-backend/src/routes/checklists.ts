@@ -303,10 +303,27 @@ router.get('/submissions',
         WHERE 1=1
       `;
       const countParams = params.slice(0, -2); // Remove limit and offset
-
-      if (category) countQuery += ` AND cs.category = $1`;
-      if (type) countQuery += ` AND cs.type = $${category ? 2 : 1}`;
-      // ... add other conditions
+      
+      // Rebuild the WHERE clause for count query with the same conditions
+      let countParamIndex = 0;
+      if (category) {
+        countQuery += ` AND cs.category = $${++countParamIndex}`;
+      }
+      if (type) {
+        countQuery += ` AND cs.type = $${++countParamIndex}`;
+      }
+      if (location) {
+        countQuery += ` AND cs.location = $${++countParamIndex}`;
+      }
+      if (userId) {
+        countQuery += ` AND cs.user_id = $${++countParamIndex}`;
+      }
+      if (startDate) {
+        countQuery += ` AND cs.completion_time >= $${++countParamIndex}`;
+      }
+      if (endDate) {
+        countQuery += ` AND cs.completion_time <= $${++countParamIndex}`;
+      }
 
       const countResult = await db.query(countQuery, countParams);
 

@@ -49,7 +49,8 @@ export const ChecklistSystem: React.FC = () => {
 
   // Load submissions when tracker tab is active or filters change
   useEffect(() => {
-    if (activeTab === 'tracker') {
+    // Only load if we're in the browser (avoid SSR issues)
+    if (typeof window !== 'undefined' && activeTab === 'tracker') {
       loadSubmissions();
     }
   }, [activeTab, trackerLocation, trackerPeriod]);
@@ -134,7 +135,8 @@ export const ChecklistSystem: React.FC = () => {
       );
       
       if (response.data.success) {
-        setSubmissions(response.data.data || []);
+        const submissions = response.data.data || [];
+        setSubmissions(submissions);
       } else {
         // Only show error if response indicates failure
         console.error('API returned unsuccessful response:', response.data);
