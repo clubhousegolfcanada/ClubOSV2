@@ -174,6 +174,7 @@ export default function Operations() {
   });
   const [feedback, setFeedback] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [showFeedbackSection, setShowFeedbackSection] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCleaning, setShowCleaning] = useState(true);
@@ -1208,74 +1209,88 @@ export default function Operations() {
                             </div>
                           </div>
 
-                          {/* Feedback Analysis - Compact */}
-                          <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          {/* Feedback Analysis - Collapsible */}
+                          <div className="bg-[var(--bg-secondary)] rounded-lg">
+                            <button
+                              onClick={() => setShowFeedbackSection(!showFeedbackSection)}
+                              className="w-full p-3 flex items-center justify-between hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+                            >
                               <h3 className="text-sm font-semibold flex items-center gap-1.5">
                                 <AlertCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
                                 Not Helpful Feedback
+                                {feedback.length > 0 && (
+                                  <span className="ml-2 px-1.5 py-0.5 text-[9px] bg-red-500/20 text-red-400 rounded-full">
+                                    {feedback.length}
+                                  </span>
+                                )}
                               </h3>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={fetchFeedback}
-                                  disabled={feedbackLoading}
-                                  className="px-2 py-1 text-[10px] bg-[var(--bg-primary)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-1"
-                                >
-                                  <RefreshCw className={`w-3 h-3 ${feedbackLoading ? 'animate-spin' : ''}`} />
-                                  <span className="hidden sm:inline">Refresh</span>
-                                </button>
-                                <button
-                                  onClick={exportFeedback}
-                                  disabled={feedback.length === 0}
-                                  className="px-2 py-1 text-[10px] bg-[var(--accent)] text-white rounded hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-1"
-                                >
-                                  <Download className="w-3 h-3" />
-                                  Export
-                                </button>
-                                <button
-                                  onClick={clearFeedback}
-                                  disabled={feedback.length === 0}
-                                  className="px-2 py-1 text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                                  title="Clear all feedback"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
+                              <ChevronRight className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${showFeedbackSection ? 'rotate-90' : ''}`} />
+                            </button>
                             
-                            {/* Feedback Content - Ultra Compact */}
-                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                              {feedbackLoading ? (
-                                <div className="flex items-center justify-center py-6">
-                                  <RefreshCw className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
-                                  <span className="ml-1 text-xs text-[var(--text-muted)]">Loading...</span>
+                            {showFeedbackSection && (
+                              <div className="px-3 pb-3">
+                                <div className="flex gap-1 mb-2">
+                                  <button
+                                    onClick={fetchFeedback}
+                                    disabled={feedbackLoading}
+                                    className="px-2 py-1 text-[10px] bg-[var(--bg-primary)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-1"
+                                  >
+                                    <RefreshCw className={`w-3 h-3 ${feedbackLoading ? 'animate-spin' : ''}`} />
+                                    <span className="hidden sm:inline">Refresh</span>
+                                  </button>
+                                  <button
+                                    onClick={exportFeedback}
+                                    disabled={feedback.length === 0}
+                                    className="px-2 py-1 text-[10px] bg-[var(--accent)] text-white rounded hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-1"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                    Export
+                                  </button>
+                                  <button
+                                    onClick={clearFeedback}
+                                    disabled={feedback.length === 0}
+                                    className="px-2 py-1 text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                                    title="Clear all feedback"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
                                 </div>
-                              ) : feedback.length > 0 ? (
-                                <div className="space-y-2">
-                                  {feedback.map((item) => (
-                                    <div key={item.id} className="bg-[var(--bg-primary)] rounded p-2 hover:bg-[var(--bg-tertiary)] transition-colors">
-                                      <div className="flex justify-between items-start mb-1">
-                                        <div className="flex-1">
-                                          <p className="text-xs font-medium truncate">{item.query}</p>
-                                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{item.feedback}</p>
-                                        </div>
-                                        <span className="text-[10px] text-[var(--text-muted)] ml-2">
-                                          {new Date(item.timestamp).toLocaleDateString()}
-                                        </span>
-                                      </div>
-                                      <div className="mt-1">
-                                        <FeedbackResponse responseData={item.response} />
-                                      </div>
+                                
+                                {/* Feedback Content - Ultra Compact */}
+                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                  {feedbackLoading ? (
+                                    <div className="flex items-center justify-center py-6">
+                                      <RefreshCw className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
+                                      <span className="ml-1 text-xs text-[var(--text-muted)]">Loading...</span>
                                     </div>
-                                  ))}
+                                  ) : feedback.length > 0 ? (
+                                    <div className="space-y-2">
+                                      {feedback.map((item) => (
+                                        <div key={item.id} className="bg-[var(--bg-primary)] rounded p-2 hover:bg-[var(--bg-tertiary)] transition-colors">
+                                          <div className="flex justify-between items-start mb-1">
+                                            <div className="flex-1">
+                                              <p className="text-xs font-medium truncate">{item.query}</p>
+                                              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{item.feedback}</p>
+                                            </div>
+                                            <span className="text-[10px] text-[var(--text-muted)] ml-2">
+                                              {new Date(item.timestamp).toLocaleDateString()}
+                                            </span>
+                                          </div>
+                                          <div className="mt-1">
+                                            <FeedbackResponse responseData={item.response} />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-6">
+                                      <AlertCircle className="w-6 h-6 mx-auto mb-1 opacity-30" />
+                                      <p className="text-xs text-[var(--text-muted)]">No feedback entries yet</p>
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="text-center py-6">
-                                  <AlertCircle className="w-6 h-6 mx-auto mb-1 opacity-30" />
-                                  <p className="text-xs text-[var(--text-muted)]">No feedback entries yet</p>
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
