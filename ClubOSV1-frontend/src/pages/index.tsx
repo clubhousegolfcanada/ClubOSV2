@@ -29,7 +29,8 @@ export default function Home() {
   const router = useRouter();
   const [previousStats, setPreviousStats] = useState<any>(null);
   const [weeklyChecklistCount, setWeeklyChecklistCount] = useState<number>(0);
-  const [slackStatus, setSlackStatus] = useState<'connected' | 'error' | 'unknown'>('unknown');
+  const [techTicketsOpen, setTechTicketsOpen] = useState<number>(0);
+  const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
   
   // Fetch previous period stats for comparison - only when authenticated
   useEffect(() => {
@@ -105,30 +106,49 @@ export default function Home() {
     fetchChecklistData();
   }, [user]);
   
-  // Check Slack status
+  // Fetch ticket stats
   useEffect(() => {
-    const checkSlackStatus = async () => {
+    const fetchTicketStats = async () => {
+      if (!user) return;
+      
       try {
         const token = localStorage.getItem('clubos_token');
-        // Test Slack connectivity by checking system status
-        const response = await axios.get(`${API_URL}/system/status`, {
+        const response = await axios.get(`${API_URL}/tickets/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        if (response.data.success && response.data.data?.slack?.connected) {
-          setSlackStatus('connected');
-        } else {
-          setSlackStatus('error');
+        if (response.data.success && response.data.data) {
+          const stats = response.data.data;
+          // Get open tickets by category
+          const techOpen = stats.byCategory.tech - 
+            (stats.byStatus.resolved || 0) - 
+            (stats.byStatus.closed || 0);
+          const facilitiesOpen = stats.byCategory.facilities - 
+            (stats.byStatus.resolved || 0) - 
+            (stats.byStatus.closed || 0);
+          
+          // Actually, let's get the correct open counts
+          const tickets = await axios.get(`${API_URL}/tickets?status=open`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (tickets.data.success && tickets.data.data) {
+            const openTickets = tickets.data.data;
+            setTechTicketsOpen(openTickets.filter((t: any) => t.category === 'tech').length);
+            setFacilitiesTicketsOpen(openTickets.filter((t: any) => t.category === 'facilities').length);
+          }
         }
       } catch (error) {
-        console.error('Failed to check Slack status:', error);
-        setSlackStatus('unknown');
+        console.error('Failed to fetch ticket stats:', error);
+        setTechTicketsOpen(0);
+        setFacilitiesTicketsOpen(0);
       }
     };
     
-    if (user) {
-      checkSlackStatus();
-    }
+    fetchTicketStats();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchTicketStats, 30000);
+    return () => clearInterval(interval);
   }, [user]);
   
   // Auto-refresh stats every 30 seconds - DISABLED
@@ -177,16 +197,22 @@ export default function Home() {
       trend: requestTrend as any
     },
     { 
-      label: 'Slack Status', 
-      value: slackStatus === 'connected' ? 'Connected' : slackStatus === 'error' ? 'Error' : 'Checking...', 
+      label: 'Tech Tickets Open', 
+      value: techTicketsOpen.toString(), 
       change: '', 
-      trend: slackStatus === 'connected' ? 'up' : slackStatus === 'error' ? 'down' : 'neutral' as any,
-      statusIndicator: true
+      trend: techTicketsOpen > 5 ? 'down' : 'neutral' as any,
+      isButton: true,
+      onClick: () => router.push('/tickets?category=tech&status=open'),
+      buttonText: 'View Tech Tickets'
     },
     { 
-      label: 'System Status', 
-      value: 'Operational', 
-      trend: 'neutral' as const 
+      label: 'Facilities Tickets', 
+      value: facilitiesTicketsOpen.toString(), 
+      change: '', 
+      trend: facilitiesTicketsOpen > 5 ? 'down' : 'neutral' as any,
+      isButton: true,
+      onClick: () => router.push('/tickets?category=facilities&status=open'),
+      buttonText: 'View Facilities'
     }
   ];
 
