@@ -321,6 +321,91 @@ Only extract knowledge if:
     
     return result.rows;
   }
+
+  /**
+   * Process manual knowledge entry from user
+   */
+  async processManualEntry(entry: string): Promise<any> {
+    if (!this.openai) {
+      throw new Error('OpenAI not configured');
+    }
+
+    try {
+      const prompt = `Analyze this manual knowledge entry and format it for our SOP system.
+
+Entry: "${entry}"
+
+Extract and structure this information as follows:
+1. Identify what problem or question this knowledge addresses
+2. Provide the solution or answer in a clear, actionable format
+3. Categorize it into one of: emergency, booking, tech, brand, or general
+4. Rate your confidence (0-1) in the categorization
+
+Example format:
+- Problem: "What is the color code for Clubhouse Grey?"
+- Solution: "Clubhouse Grey color code is #503285"
+- Category: "brand"
+- Confidence: 0.95
+
+Return ONLY a valid JSON object with these fields: problem, solution, category, confidence`;
+
+      const response = await this.openai.chat.completions.create({
+        model: this.MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a knowledge management assistant for a golf simulator business. Extract and categorize information precisely.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+
+      const result = JSON.parse(response.choices[0].message.content || '{}');
+      
+      // Validate the response
+      if (!result.problem || !result.solution || !result.category || result.confidence === undefined) {
+        throw new Error('Invalid response format from AI');
+      }
+
+      // Store in database
+      const stored = await db.query(`
+        INSERT INTO extracted_knowledge 
+        (source_id, source_type, category, problem, solution, confidence, applied_to_sop, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+      `, [
+        uuidv4(),
+        'manual',
+        result.category,
+        result.problem,
+        result.solution,
+        result.confidence,
+        false,
+        { 
+          originalEntry: entry,
+          createdBy: 'manual_entry',
+          timestamp: new Date().toISOString()
+        }
+      ]);
+
+      logger.info('Manual knowledge entry processed', {
+        category: result.category,
+        confidence: result.confidence,
+        id: stored.rows[0].id
+      });
+
+      return stored.rows[0];
+      
+    } catch (error) {
+      logger.error('Failed to process manual entry:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

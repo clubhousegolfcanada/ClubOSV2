@@ -174,4 +174,36 @@ router.get('/search', async (req: Request, res: Response) => {
   }
 });
 
+// Process manual knowledge entry
+router.post('/manual-entry', async (req: Request, res: Response) => {
+  try {
+    const { entry } = req.body;
+    
+    if (!entry || typeof entry !== 'string' || !entry.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Entry text is required'
+      });
+    }
+    
+    logger.info('Processing manual knowledge entry', { entry: entry.substring(0, 100) + '...' });
+    
+    // Process the manual entry using the knowledge extractor
+    const result = await knowledgeExtractor.processManualEntry(entry.trim());
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Knowledge processed and added to SOP'
+    });
+    
+  } catch (error) {
+    logger.error('Failed to process manual knowledge entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process knowledge entry'
+    });
+  }
+});
+
 export default router;

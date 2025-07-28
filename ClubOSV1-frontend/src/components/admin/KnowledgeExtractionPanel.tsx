@@ -15,7 +15,9 @@ import {
   FileText,
   Activity,
   Phone,
-  Cloud
+  Cloud,
+  PlusCircle,
+  Save
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -50,7 +52,7 @@ interface ExtractionStats {
 
 export const KnowledgeExtractionPanel: React.FC = () => {
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<'extract' | 'review' | 'stats'>('stats');
+  const [activeTab, setActiveTab] = useState<'extract' | 'review' | 'stats' | 'add'>('stats');
   const [isLoading, setIsLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -60,6 +62,8 @@ export const KnowledgeExtractionPanel: React.FC = () => {
   const [selectedKnowledge, setSelectedKnowledge] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [openPhoneConnected, setOpenPhoneConnected] = useState<boolean | null>(null);
+  const [manualEntry, setManualEntry] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'stats') {
@@ -218,6 +222,37 @@ export const KnowledgeExtractionPanel: React.FC = () => {
     }
   };
 
+  const processManualEntry = async () => {
+    if (!manualEntry.trim()) {
+      toast.error('Please enter some knowledge to add');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      const response = await axios.post(
+        `${API_URL}/knowledge/manual-entry`,
+        { entry: manualEntry },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Knowledge processed and added to SOP');
+      setManualEntry('');
+      
+      // Refresh stats
+      if (activeTab === 'stats') {
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('Failed to process manual entry:', error);
+      toast.error('Failed to process knowledge');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const filteredKnowledge = knowledge.filter(k => 
     searchTerm === '' || 
     k.problem.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -264,6 +299,16 @@ export const KnowledgeExtractionPanel: React.FC = () => {
             }`}
           >
             <FileText className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setActiveTab('add')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'add'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            <PlusCircle className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -566,6 +611,74 @@ export const KnowledgeExtractionPanel: React.FC = () => {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Add Tab */}
+      {activeTab === 'add' && (
+        <div className="space-y-6">
+          <div className="card">
+            <h3 className="text-lg font-semibold mb-4">Add Knowledge Manually</h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
+              Enter information you want to add to the SOP knowledge base. 
+              The AI will format and categorize it appropriately.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Knowledge Entry
+                </label>
+                <textarea
+                  value={manualEntry}
+                  onChange={(e) => setManualEntry(e.target.value)}
+                  placeholder="Example: Clubhouse Grey is #503285 color code"
+                  className="w-full min-h-[150px] p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg resize-y"
+                  disabled={processing}
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={processManualEntry}
+                  disabled={processing || !manualEntry.trim()}
+                  className="px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 flex items-center gap-2"
+                >
+                  {processing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Add to Knowledge Base
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setManualEntry('')}
+                  disabled={processing || !manualEntry.trim()}
+                  className="px-4 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg disabled:opacity-50"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            
+            <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-sm text-blue-400">
+                <strong>Tips:</strong>
+              </p>
+              <ul className="text-sm text-blue-400 mt-2 space-y-1 list-disc list-inside">
+                <li>Be specific about what you're documenting</li>
+                <li>Include relevant details like color codes, measurements, or procedures</li>
+                <li>The AI will categorize this into the appropriate SOP section</li>
+                <li>You can add troubleshooting steps, brand information, or operational procedures</li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
     </div>
