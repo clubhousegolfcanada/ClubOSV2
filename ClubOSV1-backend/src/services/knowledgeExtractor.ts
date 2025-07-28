@@ -454,39 +454,40 @@ Return ONLY a valid JSON object with these fields: problem, solution, category, 
   private async processBulkImport(entry: string, clearExisting: boolean = false): Promise<any> {
     logger.info('Processing bulk import into SOP embeddings...');
     
-    const prompt = `Analyze this OpenAI assistant document and determine which assistant category it belongs to, then structure it for our SOP system.
+    const prompt = `Parse this document and organize it into sections for our SOP system. PRESERVE THE EXACT ORIGINAL TEXT - do not summarize, interpret, or rewrite anything.
 
 Document:
 ${entry}
 
-First, determine the assistant category based on content:
-- "emergency": Emergency procedures, safety protocols, escalation contacts
-- "booking": Booking procedures, access control, refunds, memberships  
-- "tech": Technical troubleshooting, hardware issues, simulator problems
-- "brand": Brand guidelines, marketing, customer tone, company information
-
-Then extract knowledge sections with clear titles and content. Preserve the document structure but break into logical sections.
+Instructions:
+1. Identify which assistant category this content fits: emergency, booking, tech, or brand
+2. Split the document into logical sections based on headers, topics, or natural breaks
+3. Extract the exact original titles and content - DO NOT rewrite or summarize
+4. Keep all specific details, procedures, names, numbers, and exact wording
+5. Only organize/split the content, never change the actual text
 
 Return a JSON object with:
 {
   "assistant": "emergency|booking|tech|brand",
   "sections": [
     {
-      "title": "Clear section title",
-      "content": "Complete section content with all details preserved",
+      "title": "Exact original title or first line",
+      "content": "Exact original content with all details preserved",
       "confidence": 0.95
     },
     ...
   ],
   "summary": "Brief summary of the document imported"
-}`;
+}
+
+CRITICAL: The "content" field must contain the exact original text from the document. Do not summarize, paraphrase, or interpret. Preserve all specific information, procedures, contact details, numbers, and exact wording.`;
 
     const response = await this.openai!.chat.completions.create({
       model: this.MODEL,
       messages: [
         {
           role: 'system',
-          content: 'You are importing OpenAI assistant documents into a golf simulator SOP system. Preserve all content accurately and categorize correctly to match existing assistant routing.'
+          content: 'You are parsing documents for a golf simulator SOP system. Your ONLY job is to organize content into sections while preserving the exact original text. Never summarize, interpret, or rewrite any content. Extract and preserve the exact wording, numbers, procedures, and details from the original document.'
         },
         {
           role: 'user',
