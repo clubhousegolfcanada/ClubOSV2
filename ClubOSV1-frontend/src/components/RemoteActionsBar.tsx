@@ -77,7 +77,7 @@ const RemoteActionsBar: React.FC = () => {
   };
 
   // Check if user has permission
-  if (!user || !hasMinimumRole(user.role, ['operator'])) {
+  if (!user || !hasMinimumRole(user.role, 'operator')) {
     return null;
   }
 
