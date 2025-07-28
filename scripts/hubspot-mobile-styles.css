@@ -1,0 +1,59 @@
+/**
+ * HubSpot Mobile Styles for ClubOS Integration
+ * 
+ * Add this CSS to your HubSpot stylesheet when ClubOS is embedded.
+ * It automatically hides the HubSpot navigation on mobile when the page contains a ClubOS iframe.
+ * 
+ * Installation:
+ * 1. Add to your HubSpot Design Manager stylesheet
+ * 2. Or add as a <style> tag in the page template
+ */
+
+/* Hide HubSpot navigation on mobile when ClubOS iframe is present */
+@media (max-width: 768px) {
+  body:has(iframe[src*="clubos"]) .header-container,
+  body:has(iframe[src*="clubos"]) .header__container,
+  body:has(iframe[src*="clubos"]) .mobile-nav,
+  body:has(iframe[src*="clubos"]) .navbar,
+  body:has(iframe[src*="clubos"]) .navigation-primary,
+  body:has(iframe[src*="clubos"]) header,
+  body:has(iframe[src*="clubos"]) [role="navigation"],
+  body:has(iframe[src*="clubos"]) .hs-menu-wrapper,
+  body:has(iframe[src*="clubos"]) .header {
+    display: none !important;
+  }
+  
+  /* Adjust iframe to take full viewport height */
+  body:has(iframe[src*="clubos"]) iframe[src*="clubos"] {
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* Alternative approach if :has() is not supported */
+@media (max-width: 768px) {
+  .clubos-embedded .header-container,
+  .clubos-embedded .header__container,
+  .clubos-embedded .mobile-nav,
+  .clubos-embedded .navbar,
+  .clubos-embedded .navigation-primary,
+  .clubos-embedded header,
+  .clubos-embedded [role="navigation"],
+  .clubos-embedded .hs-menu-wrapper,
+  .clubos-embedded .header {
+    display: none !important;
+  }
+  
+  .clubos-embedded iframe[src*="clubos"] {
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    z-index: 9999 !important;
+  }
+}

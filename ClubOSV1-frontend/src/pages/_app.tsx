@@ -43,6 +43,46 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     }
   }, [setUser, isAuthenticated]);
 
+  useEffect(() => {
+    // Hide HubSpot navigation on mobile when embedded
+    if (typeof window !== 'undefined' && window !== window.parent) {
+      const isMobile = window.innerWidth <= 768;
+      
+      if (isMobile) {
+        // Send message to parent to hide navigation
+        window.parent.postMessage({ 
+          type: 'clubos-hide-nav',
+          action: 'hide'
+        }, '*');
+        
+        // Also try to hide HubSpot nav directly if we have access
+        try {
+          const parentDoc = window.parent.document;
+          const hubspotNav = parentDoc.querySelector('.header-container');
+          const mobileNav = parentDoc.querySelector('.mobile-nav');
+          const headerWrapper = parentDoc.querySelector('.header__container');
+          
+          if (hubspotNav) hubspotNav.style.display = 'none';
+          if (mobileNav) mobileNav.style.display = 'none';
+          if (headerWrapper) headerWrapper.style.display = 'none';
+        } catch (e) {
+          // Cross-origin restrictions, rely on postMessage
+          console.log('ClubOS: Using postMessage for nav control');
+        }
+      }
+    }
+    
+    // Cleanup function to restore nav when unmounting
+    return () => {
+      if (typeof window !== 'undefined' && window !== window.parent) {
+        window.parent.postMessage({ 
+          type: 'clubos-hide-nav',
+          action: 'show'
+        }, '*');
+      }
+    };
+  }, []);
+
   // Check if we're embedded
   const isEmbedded = typeof window !== 'undefined' && window !== window.parent;
   
