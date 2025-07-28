@@ -3,6 +3,7 @@ import { knowledgeExtractor } from '../services/knowledgeExtractor';
 import { logger } from '../utils/logger';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
+import { db } from '../utils/database';
 
 const router = Router();
 
