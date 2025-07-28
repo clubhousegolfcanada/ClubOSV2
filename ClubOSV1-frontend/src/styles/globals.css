@@ -59,7 +59,7 @@
 @layer components {
   /* Card Component */
   .card {
-    @apply bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-8 mb-6;
+    @apply bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 md:p-8 mb-6;
     @apply transition-all duration-300;
   }
 

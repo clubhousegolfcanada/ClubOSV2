@@ -752,10 +752,10 @@ export default function Operations() {
             {/* Filters */}
             <div className="flex flex-wrap gap-4 mb-8">
               {/* Category Filter */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedCleaningCategory('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     selectedCleaningCategory === 'all'
                       ? 'bg-[var(--accent)] text-white'
                       : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
@@ -767,7 +767,7 @@ export default function Operations() {
                   <button
                     key={key}
                     onClick={() => setSelectedCleaningCategory(key)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                       selectedCleaningCategory === key
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
@@ -782,7 +782,7 @@ export default function Operations() {
               <select
                 value={selectedCleaningLocation}
                 onChange={(e) => setSelectedCleaningLocation(e.target.value)}
-                className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)]"
+                className="px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-xs sm:text-sm focus:outline-none focus:border-[var(--accent)]"
               >
                 <option value="all">All Locations</option>
                 <option value="All Locations">All Locations</option>
@@ -808,7 +808,7 @@ export default function Operations() {
             </div>
 
             {/* Checklists Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredChecklists.map((checklist) => {
                 const config = cleaningCategoryConfig[checklist.category];
                 const Icon = config.icon;
@@ -819,7 +819,7 @@ export default function Operations() {
                 return (
                   <div
                     key={checklist.id}
-                    className={`card group transition-all ${
+                    className={`bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-4 transition-all ${
                       isActive ? 'ring-2 ring-[var(--accent)]' : ''
                     }`}
                   >
@@ -935,7 +935,7 @@ export default function Operations() {
 
               {/* Add New Checklist Card */}
               {isCleaningEditMode && (
-                <button className="card border-2 border-dashed border-[var(--border-secondary)] hover:border-[var(--accent)] transition-all flex flex-col items-center justify-center gap-3 min-h-[200px]">
+                <button className="bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-4 hover:border-[var(--accent)] transition-all flex flex-col items-center justify-center gap-3 min-h-[200px]">
                   <Plus className="w-8 h-8 text-[var(--text-muted)]" />
                   <span className="text-[var(--text-secondary)]">Add New Checklist</span>
                 </button>
@@ -1003,7 +1003,7 @@ export default function Operations() {
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
           <div className="mb-8">
             <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
               <button

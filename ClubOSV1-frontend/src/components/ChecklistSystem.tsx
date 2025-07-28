@@ -326,8 +326,8 @@ export const ChecklistSystem: React.FC = () => {
       {activeTab === 'checklist' ? (
         <>
           {/* Category and Type Selection */}
-          <div className="card mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {/* Category Selection */}
               <div>
                 <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Category</label>
@@ -418,7 +418,7 @@ export const ChecklistSystem: React.FC = () => {
 
           {/* Checklist Tasks */}
           {currentTemplate && (
-            <div className="card">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
                   {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {getTypeLabel(activeType)}
@@ -428,7 +428,7 @@ export const ChecklistSystem: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
                 {currentTemplate.tasks.map((task) => (
                   <div
                     key={task.id}
@@ -529,8 +529,8 @@ export const ChecklistSystem: React.FC = () => {
           {/* Completion Tracker */}
           <div className="space-y-6">
             {/* Filters */}
-            <div className="card">
-              <div className="flex flex-wrap gap-4 items-center">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
+              <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
                 {/* Location Filter */}
                 <div>
                   <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">Location</label>
@@ -586,7 +586,7 @@ export const ChecklistSystem: React.FC = () => {
             </div>
 
             {/* Submissions Table */}
-            <div className="card">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
               <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
                 Checklist Submissions
                 {trackerLocation !== 'all' && ` - ${trackerLocation}`}
