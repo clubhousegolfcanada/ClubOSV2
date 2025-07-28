@@ -1,85 +1,106 @@
 #!/bin/bash
-
-echo "🧹 ClubOS Cleanup Script"
-echo "======================="
-echo ""
-echo "This will clean up temporary files and scripts from the root directory."
-echo "All important files will be preserved."
-echo ""
-read -p "Are you sure you want to proceed? (y/N) " -n 1 -r
-echo ""
-
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Cleanup cancelled."
-    exit 1
-fi
+# cleanup-clubosv1-root.sh
 
 cd "/Users/michaelbelairch1/Desktop/Clubhouse OS (Root)/CLUBOSV1"
 
-echo ""
-echo "📁 Creating archive directory for old scripts..."
-mkdir -p archive/deployment-scripts
-mkdir -p archive/test-scripts
-mkdir -p archive/fix-scripts
+# Create archive directory with timestamp
+ARCHIVE_DIR="archive/$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$ARCHIVE_DIR"
 
-echo ""
-echo "📦 Moving deployment scripts to archive..."
-mv deploy-*.sh archive/deployment-scripts/ 2>/dev/null
-mv commit-*.sh archive/deployment-scripts/ 2>/dev/null
+# Move old/completed files to archive
+echo "→ Archiving completed/old files..."
+mv CLEANUP_OPTIMIZATION_AUDIT.md "$ARCHIVE_DIR/" 2>/dev/null
+mv TECHNICAL_AUDIT_REPORT.md "$ARCHIVE_DIR/" 2>/dev/null
+mv DOCUMENTATION_VERIFICATION.md "$ARCHIVE_DIR/" 2>/dev/null
+mv CLUBOS_REVIEW_FOR_JASON.md "$ARCHIVE_DIR/" 2>/dev/null
+mv clubos-v1.0.0-deployment.tar.gz "$ARCHIVE_DIR/" 2>/dev/null
+mv audit-clubos.sh "$ARCHIVE_DIR/" 2>/dev/null
+mv cleanup-clubos.sh "$ARCHIVE_DIR/" 2>/dev/null
+mv optimize-clubos.sh "$ARCHIVE_DIR/" 2>/dev/null
+mv optimize-package.json "$ARCHIVE_DIR/" 2>/dev/null
+mv add-indexes.sql "$ARCHIVE_DIR/" 2>/dev/null
 
-echo ""
-echo "🧪 Moving test scripts to archive..."
-mv test-*.sh archive/test-scripts/ 2>/dev/null
-mv test-*.js archive/test-scripts/ 2>/dev/null
-mv test-*.html archive/test-scripts/ 2>/dev/null
+# Create organized structure
+echo "→ Organizing documentation..."
+mkdir -p docs/setup
+mkdir -p docs/deployment
+mkdir -p docs/development
 
-echo ""
-echo "🔧 Moving fix scripts to archive..."
-mv fix-*.sh archive/fix-scripts/ 2>/dev/null
-mv fix-*.js archive/fix-scripts/ 2>/dev/null
-mv *-fix.sh archive/fix-scripts/ 2>/dev/null
-mv *-fix.js archive/fix-scripts/ 2>/dev/null
-mv emergency-*.sh archive/fix-scripts/ 2>/dev/null
-mv temp-*.sh archive/fix-scripts/ 2>/dev/null
+# Move docs to proper locations
+mv SETUP_GUIDE.md docs/setup/ 2>/dev/null
+mv DEPLOYMENT.md docs/deployment/ 2>/dev/null
+mv CLUBOS_EXTERNAL_DEPLOYMENT_PACKAGE.md docs/deployment/ 2>/dev/null
+mv hubspot-embed-instructions.md docs/deployment/ 2>/dev/null
+mv DEVELOPMENT_GUIDE.md docs/development/ 2>/dev/null
+mv TESTING_GUIDE.md docs/development/ 2>/dev/null
 
-echo ""
-echo "🗑️  Moving other temporary files to archive..."
-mv check-*.sh archive/test-scripts/ 2>/dev/null
-mv check-*.js archive/test-scripts/ 2>/dev/null
-mv debug-*.js archive/test-scripts/ 2>/dev/null
-mv setup-*.sh archive/deployment-scripts/ 2>/dev/null
-mv setup-*.js archive/deployment-scripts/ 2>/dev/null
+# Clean up .DS_Store files
+find . -name ".DS_Store" -delete
 
-echo ""
-echo "📄 Moving documentation to archive..."
-mkdir -p archive/docs
-mv *_GUIDE.md archive/docs/ 2>/dev/null
-mv *_SETUP.md archive/docs/ 2>/dev/null
-mv *_UPDATE.md archive/docs/ 2>/dev/null
+# Update root README with current structure
+cat > README_STRUCTURE.md << 'EOF'
+# ClubOSV1 Directory Structure
 
-echo ""
-echo "🗑️  Removing unnecessary files..."
-rm -f .DS_Store 2>/dev/null
-rm -f package-lock.json 2>/dev/null  # This should be in subdirectories
-rm -f *.patch 2>/dev/null
+```
+CLUBOSV1/
+├── ClubOSV1-backend/     # Express/TypeScript API server
+├── ClubOSV1-frontend/    # Next.js/TypeScript UI
+├── ClubOS Agents/        # LLM agent configurations
+├── scripts/              # Utility scripts
+├── docs/                 # All documentation
+│   ├── setup/
+│   ├── deployment/
+│   └── development/
+├── archive/              # Old/completed files
+├── .env.production.example
+├── CHANGELOG.md         # Version history
+├── README.md            # Main documentation
+└── deploy-facility.sh   # Production deployment
+```
 
-echo ""
-echo "📋 Files that will remain in root:"
-echo "================================="
-ls -la | grep -E "(README|\.git|\.md$|ClubOSV1-|scripts/|Notes/|archive/)" | grep -v archive/
+## Quick Commands
 
-echo ""
-echo "✅ Cleanup complete!"
-echo ""
-echo "📊 Summary:"
-echo "- Deployment scripts moved to: archive/deployment-scripts/"
-echo "- Test scripts moved to: archive/test-scripts/"
-echo "- Fix scripts moved to: archive/fix-scripts/"
-echo "- Documentation moved to: archive/docs/"
-echo ""
-echo "💡 The archive directory contains all moved files if you need them later."
-echo ""
-echo "🎯 Next steps:"
-echo "1. Review the archive directory"
-echo "2. Delete archive directory when comfortable"
-echo "3. Run 'git add . && git commit -m \"chore: cleanup root directory\"'"
+```bash
+# Backend
+cd ClubOSV1-backend && npm run dev
+
+# Frontend  
+cd ClubOSV1-frontend && npm run dev
+
+# Deploy to production
+./deploy-facility.sh
+
+# Generate deployment package
+./generate-deployment-package.sh
+```
+
+## Latest Version: 1.6.1 (2025-07-27)
+- PostgreSQL integration complete
+- Multi-agent LLM routing active
+- Deployed on Railway + Vercel
+EOF
+
+echo "→ Creating clean package.json for root..."
+cat > package.json << 'EOF'
+{
+  "name": "clubosv1",
+  "version": "1.6.1",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"cd ClubOSV1-backend && npm run dev\" \"cd ClubOSV1-frontend && npm run dev\"",
+    "install:all": "cd ClubOSV1-backend && npm install && cd ../ClubOSV1-frontend && npm install",
+    "build:all": "cd ClubOSV1-backend && npm run build && cd ../ClubOSV1-frontend && npm run build",
+    "deploy": "./deploy-facility.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
+EOF
+
+# List final structure
+echo -e "\n✓ Cleanup complete. New structure:"
+ls -la | grep -E "^d|^-" | grep -v "^\."
+
+echo -e "\n✓ Archived files to: $ARCHIVE_DIR"
+echo "✓ Root is now clean and organized"

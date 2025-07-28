@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.8.1] - 2025-07-28
+
+### Added
+- **Dashboard Enhancements**
+  - ClubOS logo with version display (Clubhouse Green #0B3D3A)
+  - Weekly checklist submissions counter card
+  - Slack connection status indicator
+  - Quick access button to checklists page
+  - Mobile-friendly 2-column grid for dashboard cards
+
+### Fixed
+- Vercel build error - useStore/useAuthState hook usage in ChecklistSystem
+- Dashboard cards now display on mobile devices
+
+### Changed
+- Replaced "Active Bookings" card with "Weekly Checklists" 
+- Replaced "Avg Response Time" with "Slack Status"
+- Dashboard cards are now visible on all screen sizes
+- ClubOS logo aligned left with proper brand guidelines
+
+### Improved
+- Mobile UI for quick access to cleaning checklists
+- Root folder organization - moved scripts to appropriate directories
+- Documentation structure - archived old deployment docs
+
 ## [1.8.0] - 2025-07-28
 
 ### Added

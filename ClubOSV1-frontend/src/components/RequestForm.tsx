@@ -499,7 +499,7 @@ const RequestForm: React.FC = () => {
         }}>
           ClubOS
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>v1.8.0</p>
+        <p className="text-sm text-[var(--text-muted)] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>v1.8.1</p>
       </div>
       
       {/* Main Form Card */}
