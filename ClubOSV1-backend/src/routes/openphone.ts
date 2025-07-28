@@ -59,15 +59,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'conversation.updated':
         // Extract data - handle both direct data and nested object structure
         const messageData = data.object || data;
-        const conversationId = messageData.conversationId || data.conversationId;
         const phoneNumber = messageData.from || messageData.to || messageData.phoneNumber;
         const customerName = messageData.contactName || data.contactName || 'Unknown';
         const employeeName = messageData.userName || data.userName || 'Unknown';
         
-        if (!conversationId) {
-          logger.warn('No conversationId in webhook data', { type, data });
+        // Use phone number as primary identifier for time-based grouping
+        if (!phoneNumber) {
+          logger.warn('No phone number in webhook data', { type, data });
           break;
         }
+        
+        // Time-based conversation grouping (1 hour gap = new conversation)
+        const ONE_HOUR = 60 * 60 * 1000; // milliseconds
         
         // Build message object
         const newMessage = {
@@ -81,59 +84,77 @@ router.post('/webhook', async (req: Request, res: Response) => {
           media: messageData.media || []
         };
         
-        // Check if conversation exists
-        const existingConv = await db.query(
-          'SELECT id, messages FROM openphone_conversations WHERE conversation_id = $1',
-          [conversationId]
-        );
+        // Find recent conversation from same phone number within 1 hour
+        const recentConv = await db.query(`
+          SELECT id, messages, conversation_id, updated_at 
+          FROM openphone_conversations 
+          WHERE phone_number = $1 
+            AND updated_at > NOW() - INTERVAL '1 hour'
+            AND processed = false
+          ORDER BY updated_at DESC 
+          LIMIT 1
+        `, [phoneNumber]);
         
-        if (existingConv.rows.length > 0) {
-          // Update existing conversation - append new message
-          const existingMessages = existingConv.rows[0].messages || [];
-          const updatedMessages = [...existingMessages, newMessage];
+        if (recentConv.rows.length > 0) {
+          // Check if last message was within 1 hour
+          const lastUpdate = new Date(recentConv.rows[0].updated_at);
+          const now = new Date();
+          const timeDiff = now.getTime() - lastUpdate.getTime();
           
-          await db.query(`
-            UPDATE openphone_conversations 
-            SET messages = $1,
-                updated_at = CURRENT_TIMESTAMP,
-                phone_number = COALESCE(phone_number, $2),
-                customer_name = COALESCE(customer_name, $3),
-                employee_name = COALESCE(employee_name, $4)
-            WHERE conversation_id = $5
-          `, [
-            JSON.stringify(updatedMessages),
-            phoneNumber,
-            customerName,
-            employeeName,
-            conversationId
-          ]);
-          
-          logger.info('OpenPhone message added to existing conversation', { 
-            conversationId, 
-            messageCount: updatedMessages.length 
-          });
-        } else {
-          // Create new conversation
-          await db.query(`
-            INSERT INTO openphone_conversations 
-            (conversation_id, phone_number, customer_name, employee_name, messages, metadata)
-            VALUES ($1, $2, $3, $4, $5, $6)
-          `, [
-            conversationId,
-            phoneNumber,
-            customerName,
-            employeeName,
-            JSON.stringify([newMessage]),
-            { 
-              openPhoneId: messageData.id,
-              conversationId: conversationId,
-              type,
-              firstMessageAt: new Date().toISOString()
-            }
-          ]);
-          
-          logger.info('OpenPhone new conversation created', { conversationId, phoneNumber });
+          if (timeDiff < ONE_HOUR) {
+            // Update existing conversation - append new message
+            const existingMessages = recentConv.rows[0].messages || [];
+            const updatedMessages = [...existingMessages, newMessage];
+            
+            await db.query(`
+              UPDATE openphone_conversations 
+              SET messages = $1,
+                  updated_at = CURRENT_TIMESTAMP,
+                  customer_name = COALESCE(customer_name, $2),
+                  employee_name = COALESCE(employee_name, $3)
+              WHERE id = $4
+            `, [
+              JSON.stringify(updatedMessages),
+              customerName,
+              employeeName,
+              recentConv.rows[0].id
+            ]);
+            
+            logger.info('OpenPhone message added to recent conversation', { 
+              conversationId: recentConv.rows[0].conversation_id,
+              phoneNumber,
+              messageCount: updatedMessages.length,
+              timeSinceLastMessage: Math.round(timeDiff / 1000 / 60) + ' minutes'
+            });
+            break;
+          }
         }
+        
+        // Create new conversation (either no recent conv or > 1 hour gap)
+        const newConversationId = `conv_${phoneNumber}_${Date.now()}`;
+        
+        await db.query(`
+          INSERT INTO openphone_conversations 
+          (conversation_id, phone_number, customer_name, employee_name, messages, metadata)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+          newConversationId,
+          phoneNumber,
+          customerName,
+          employeeName,
+          JSON.stringify([newMessage]),
+          { 
+            openPhoneId: messageData.id,
+            openPhoneConversationId: messageData.conversationId,
+            type,
+            firstMessageAt: new Date().toISOString()
+          }
+        ]);
+        
+        logger.info('OpenPhone new conversation created (time-based split)', { 
+          conversationId: newConversationId, 
+          phoneNumber 
+        });
         break;
 
       case 'call.completed':
