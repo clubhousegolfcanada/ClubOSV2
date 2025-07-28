@@ -199,16 +199,16 @@ export default function Home() {
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)]">
-        <div className="container mx-auto px-4 py-8">
-          {/* Main Content Grid - Adjusted for better alignment */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Request Form - Takes up 3 columns on large screens */}
-            <div className="lg:col-span-3">
+        <div className="container mx-auto px-4 py-4 md:py-6 lg:py-8">
+          {/* Main Content Grid - Optimized for no-scroll */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+            {/* Request Form - Takes up 8 columns on large screens */}
+            <div className="lg:col-span-8">
               <RequestForm />
             </div>
             
-            {/* Sidebar - Contains Quick Stats and External Tools */}
-            <div className="lg:col-span-1">
+            {/* Sidebar - Contains Quick Stats and External Tools - 4 columns */}
+            <div className="lg:col-span-4">
               <DatabaseExternalTools quickStats={quickStats} />
             </div>
           </div>

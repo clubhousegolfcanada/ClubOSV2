@@ -224,55 +224,60 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   }
 
   return (
-    <div className="space-y-3">
-      {/* Quick Stats Cards */}
-      {quickStats.length > 0 && (
-        <div className="space-y-3">
-          {quickStats.map((stat, index) => (
-            <div key={index} className="card group hover:border-[var(--accent)] relative">
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                    {stat.label}
-                  </p>
-                  {stat.statusIndicator && (
-                    <div className={`w-2 h-2 rounded-full animate-pulse ${
-                      stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
-                      stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
-                      'bg-[var(--text-muted)]'
-                    }`} />
+    <div className="card">
+      {/* Combined Metrics and Quick Links Container */}
+      <div className="space-y-4">
+        {/* Quick Stats Grid - 2x2 layout on desktop, vertical on mobile */}
+        {quickStats.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {quickStats.map((stat, index) => (
+              <div key={index} className="p-2 sm:p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] transition-colors group">
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                      {stat.label}
+                    </p>
+                    {stat.statusIndicator && (
+                      <div className={`w-2 h-2 rounded-full animate-pulse ${
+                        stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
+                        stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
+                        'bg-[var(--text-muted)]'
+                      }`} />
+                    )}
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <p className="text-base sm:text-lg font-semibold">{stat.value}</p>
+                    {stat.change && (
+                      <div className={`text-xs font-medium ${
+                        stat.trend === 'up' ? 'text-[var(--status-success)]' : 
+                        stat.trend === 'down' ? 'text-[var(--status-error)]' : 
+                        'text-[var(--text-secondary)]'
+                      }`}>
+                        {stat.change}
+                      </div>
+                    )}
+                  </div>
+                  {stat.isButton && (
+                    <button
+                      onClick={stat.onClick}
+                      className="mt-2 w-full px-2 py-1.5 min-h-[32px] text-xs font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-md transition-colors active:scale-95"
+                    >
+                      {stat.buttonText}
+                    </button>
                   )}
                 </div>
-                <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-semibold">{stat.value}</p>
-                  {stat.change && (
-                    <div className={`text-sm font-medium ${
-                      stat.trend === 'up' ? 'text-[var(--status-success)]' : 
-                      stat.trend === 'down' ? 'text-[var(--status-error)]' : 
-                      'text-[var(--text-secondary)]'
-                    }`}>
-                      {stat.change}
-                    </div>
-                  )}
-                </div>
-                {stat.isButton && (
-                  <button
-                    onClick={stat.onClick}
-                    className="mt-3 w-full px-3 py-2 text-sm font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-lg transition-colors"
-                  >
-                    {stat.buttonText}
-                  </button>
-                )}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+        
+        {/* Divider */}
+        <div className="border-t border-[var(--border-secondary)]"></div>
       
-      {/* External Tools Card */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
+        {/* External Tools Section */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
           {canEdit && (
             <div className="flex gap-2">
             {isEditMode ? (
@@ -314,7 +319,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
         )}
       </div>
       
-      <div className="grid grid-cols-1 gap-2">
+        <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
         {tools.map((tool) => {
           const Icon = tool.icon;
           const url = getToolUrl(tool.id);
@@ -323,13 +328,13 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           return (
             <div key={tool.id} className="relative">
               {isEditMode ? (
-                <div className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg">
+                  <div className="w-full p-2.5 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <div 
-                      className="p-1.5 rounded bg-[var(--bg-tertiary)]"
-                      style={{ color: tool.color }}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
+                      <div 
+                        className="p-1 rounded bg-[var(--bg-tertiary)]"
+                        style={{ color: tool.color }}
+                      >
+                        <Icon className="w-3 h-3" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-xs text-[var(--text-primary)]">
@@ -357,15 +362,15 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
               ) : (
                 <button
                   onClick={() => handleToolClick(url)}
-                  className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 group"
+                  className="w-full p-2.5 min-h-[44px] bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 group active:scale-95"
                   disabled={!url}
                 >
-                  <div className="flex items-center gap-2.5 w-full">
+                  <div className="flex items-center gap-2 w-full">
                     <div 
-                      className="p-1.5 rounded bg-[var(--bg-tertiary)] group-hover:bg-[var(--bg-primary)]"
+                      className="p-1 rounded bg-[var(--bg-tertiary)] group-hover:bg-[var(--bg-primary)]"
                       style={{ color: tool.color }}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <Icon className="w-3 h-3" />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="font-medium text-xs text-[var(--text-primary)]">
@@ -378,26 +383,27 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
                     {isCustomized && (
                       <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full" title="Customized URL" />
                     )}
-                    <ExternalLink className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors" />
+                    <ExternalLink className="w-3 h-3 text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors" />
                   </div>
                 </button>
               )}
             </div>
-          );
-        })}
-      </div>
-      
-      {isEditMode && (
-        <div className="mt-2 text-[10px] text-[var(--text-muted)]">
-          Custom links sync across devices
+            );
+          })}
         </div>
-      )}
-      
-      {!user && (
-        <div className="mt-2 text-[10px] text-[var(--text-muted)] text-center">
-          <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
+        
+        {isEditMode && (
+          <div className="mt-2 text-[10px] text-[var(--text-muted)]">
+            Custom links sync across devices
+          </div>
+        )}
+        
+        {!user && (
+          <div className="mt-2 text-[10px] text-[var(--text-muted)] text-center">
+            <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
+          </div>
+        )}
         </div>
-      )}
       </div>
     </div>
   );
