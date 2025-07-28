@@ -126,18 +126,37 @@ railway logs
 
 ## 🔮 Roadmap
 
-### In Progress
-- Advanced analytics dashboard
-- WebSocket real-time updates
-
 ### Planned
-- Mobile applications
 - Multi-facility support
-- Voice assistant integration
+- Additional features as needed
 
 ## 📄 License
 
 Proprietary - Clubhouse 24/7 Golf. All rights reserved.
+
+## 🤖 Development with Claude
+
+### Claude's Role
+Claude is the lead AI developer with full read/write access to the codebase. When working with Claude:
+
+1. **Auto-Deployment** - Claude MUST commit and push changes after completing tasks
+2. **Git Workflow** - All changes auto-deploy via GitHub → Vercel/Railway
+3. **Version Updates** - Update version in `package.json` for new releases
+4. **Testing** - Claude should verify changes before committing
+5. **Documentation** - Claude maintains all documentation
+
+### Working with Claude
+```bash
+# Claude's typical workflow
+1. Make requested changes
+2. Test if possible
+3. git add -A
+4. git commit -m "descriptive message"
+5. git push origin main
+6. Confirm deployment
+```
+
+**Important**: Always remind Claude to commit and deploy after completing tasks!
 
 ---
 
