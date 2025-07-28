@@ -57,34 +57,83 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'message.delivered':
       case 'message.updated':
       case 'conversation.updated':
-        // Extract conversation data
-        const phoneNumber = data.to || data.from || data.phoneNumber;
-        const customerName = data.contactName || data.customerName || 'Unknown';
-        const employeeName = data.userName || data.employeeName || 'Unknown';
+        // Extract data - handle both direct data and nested object structure
+        const messageData = data.object || data;
+        const conversationId = messageData.conversationId || data.conversationId;
+        const phoneNumber = messageData.from || messageData.to || messageData.phoneNumber;
+        const customerName = messageData.contactName || data.contactName || 'Unknown';
+        const employeeName = messageData.userName || data.userName || 'Unknown';
         
-        // Store conversation
-        await db.query(`
-          INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata)
-          VALUES ($1, $2, $3, $4, $5)
-          ON CONFLICT (id) DO UPDATE SET
-            messages = $4,
-            metadata = $5,
-            created_at = CURRENT_TIMESTAMP
-        `, [
-          phoneNumber,
-          customerName,
-          employeeName,
-          JSON.stringify(data.messages || [data]),
-          { 
-            openPhoneId: data.id,
-            conversationId: data.conversationId,
-            type,
-            timestamp: new Date().toISOString()
-          }
-        ]);
+        if (!conversationId) {
+          logger.warn('No conversationId in webhook data', { type, data });
+          break;
+        }
         
-        logger.info('OpenPhone conversation stored', { phoneNumber, type });
+        // Build message object
+        const newMessage = {
+          id: messageData.id,
+          type: type,
+          from: messageData.from,
+          to: messageData.to,
+          body: messageData.body || messageData.text || '',
+          direction: messageData.direction,
+          createdAt: messageData.createdAt || new Date().toISOString(),
+          media: messageData.media || []
+        };
+        
+        // Check if conversation exists
+        const existingConv = await db.query(
+          'SELECT id, messages FROM openphone_conversations WHERE conversation_id = $1',
+          [conversationId]
+        );
+        
+        if (existingConv.rows.length > 0) {
+          // Update existing conversation - append new message
+          const existingMessages = existingConv.rows[0].messages || [];
+          const updatedMessages = [...existingMessages, newMessage];
+          
+          await db.query(`
+            UPDATE openphone_conversations 
+            SET messages = $1,
+                updated_at = CURRENT_TIMESTAMP,
+                phone_number = COALESCE(phone_number, $2),
+                customer_name = COALESCE(customer_name, $3),
+                employee_name = COALESCE(employee_name, $4)
+            WHERE conversation_id = $5
+          `, [
+            JSON.stringify(updatedMessages),
+            phoneNumber,
+            customerName,
+            employeeName,
+            conversationId
+          ]);
+          
+          logger.info('OpenPhone message added to existing conversation', { 
+            conversationId, 
+            messageCount: updatedMessages.length 
+          });
+        } else {
+          // Create new conversation
+          await db.query(`
+            INSERT INTO openphone_conversations 
+            (conversation_id, phone_number, customer_name, employee_name, messages, metadata)
+            VALUES ($1, $2, $3, $4, $5, $6)
+          `, [
+            conversationId,
+            phoneNumber,
+            customerName,
+            employeeName,
+            JSON.stringify([newMessage]),
+            { 
+              openPhoneId: messageData.id,
+              conversationId: conversationId,
+              type,
+              firstMessageAt: new Date().toISOString()
+            }
+          ]);
+          
+          logger.info('OpenPhone new conversation created', { conversationId, phoneNumber });
+        }
         break;
 
       case 'call.completed':
@@ -299,20 +348,43 @@ router.post('/webhook-test', async (req: Request, res: Response) => {
 router.get('/debug/all', async (req: Request, res: Response) => {
   try {
     const result = await db.query(`
-      SELECT * FROM openphone_conversations 
-      ORDER BY created_at DESC 
+      SELECT 
+        id,
+        conversation_id,
+        phone_number,
+        customer_name,
+        employee_name,
+        jsonb_array_length(messages) as message_count,
+        messages,
+        created_at,
+        updated_at,
+        processed,
+        metadata
+      FROM openphone_conversations 
+      ORDER BY updated_at DESC 
       LIMIT 100
     `);
     
     const count = await db.query(`
-      SELECT COUNT(*) as total FROM openphone_conversations
+      SELECT 
+        COUNT(DISTINCT conversation_id) as total_conversations,
+        COUNT(*) as total_records,
+        SUM(jsonb_array_length(messages)) as total_messages
+      FROM openphone_conversations
     `);
     
     res.json({
       success: true,
-      total: count.rows[0].total,
-      recent: result.rows,
-      message: `Found ${count.rows[0].total} total OpenPhone conversations`
+      stats: {
+        totalConversations: count.rows[0].total_conversations || 0,
+        totalRecords: count.rows[0].total_records || 0,
+        totalMessages: count.rows[0].total_messages || 0
+      },
+      conversations: result.rows.map(row => ({
+        ...row,
+        messages: row.messages || []
+      })),
+      message: `Found ${count.rows[0].total_conversations || 0} conversations with ${count.rows[0].total_messages || 0} total messages`
     });
     
   } catch (error) {

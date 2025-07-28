@@ -188,11 +188,13 @@ async function startServer() {
         -- OpenPhone conversations table
         CREATE TABLE IF NOT EXISTS openphone_conversations (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          conversation_id VARCHAR(255) UNIQUE,
           phone_number VARCHAR(20),
           customer_name VARCHAR(255),
           employee_name VARCHAR(255),
-          messages JSONB NOT NULL,
+          messages JSONB NOT NULL DEFAULT '[]',
           created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW(),
           processed BOOLEAN DEFAULT FALSE,
           metadata JSONB DEFAULT '{}'
         );
