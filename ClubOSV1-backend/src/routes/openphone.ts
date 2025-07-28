@@ -41,7 +41,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     const { type, data } = req.body;
     
-    logger.info('OpenPhone webhook received', { type, dataKeys: Object.keys(data || {}) });
+    // Enhanced logging for debugging
+    logger.info('OpenPhone webhook received', { 
+      type, 
+      dataKeys: Object.keys(data || {}),
+      rawBody: JSON.stringify(req.body).substring(0, 500),
+      headers: req.headers
+    });
+    console.log('OPENPHONE WEBHOOK:', JSON.stringify({ type, data }, null, 2));
 
     // Handle different webhook types
     switch (type) {
@@ -263,6 +270,36 @@ router.put('/conversations/:id/processed', async (req: Request, res: Response) =
     res.status(500).json({ 
       success: false,
       error: 'Failed to update conversation' 
+    });
+  }
+});
+
+// Debug endpoint to check all OpenPhone data
+router.get('/debug/all', async (req: Request, res: Response) => {
+  try {
+    const result = await db.query(`
+      SELECT * FROM openphone_conversations 
+      ORDER BY created_at DESC 
+      LIMIT 100
+    `);
+    
+    const count = await db.query(`
+      SELECT COUNT(*) as total FROM openphone_conversations
+    `);
+    
+    res.json({
+      success: true,
+      total: count.rows[0].total,
+      recent: result.rows,
+      message: `Found ${count.rows[0].total} total OpenPhone conversations`
+    });
+    
+  } catch (error) {
+    logger.error('Failed to get OpenPhone debug data:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to retrieve debug data',
+      details: error.message
     });
   }
 });
