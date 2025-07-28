@@ -168,7 +168,8 @@ router.post('/submit',
           const user = await db.findUserById(userId);
           
           // Determine incomplete tasks
-          const templateTasks = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES][type as keyof typeof CHECKLIST_TEMPLATES[typeof category]];
+          const categoryTemplates = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES];
+          const templateTasks = categoryTemplates ? categoryTemplates[type as keyof typeof categoryTemplates] : undefined;
           const incompleteTasks = templateTasks?.filter((task: any) => !completedTasks.includes(task.id)) || [];
           
           // Create ticket

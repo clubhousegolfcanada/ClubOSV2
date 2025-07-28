@@ -5,7 +5,13 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "rm -rf dist && tsc --noEmit false --skipLibCheck true && cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy' && cp -r src/database dist/ 2>/dev/null || echo 'No database files to copy'",
+    "build": "rm -rf dist && tsc --noEmit false --skipLibCheck true && npm run copy:assets",
+    "copy:assets": "npm run copy:knowledge && npm run copy:database && npm run copy:sops && npm run copy:assistant-instructions && npm run copy:clubos-agents",
+    "copy:knowledge": "cp -r src/knowledge-base dist/ 2>/dev/null || echo 'No knowledge base files to copy'",
+    "copy:database": "cp -r src/database dist/ 2>/dev/null || echo 'No database files to copy'",
+    "copy:sops": "mkdir -p dist/sops && cp -r ../sops/* dist/sops/ 2>/dev/null || echo 'No sops directory to copy'",
+    "copy:assistant-instructions": "mkdir -p dist/assistant-instructions && cp -r ../assistant-instructions/* dist/assistant-instructions/ 2>/dev/null || echo 'No assistant-instructions to copy'",
+    "copy:clubos-agents": "mkdir -p 'dist/ClubOS Agents' && cp -r '../ClubOS Agents'/* 'dist/ClubOS Agents'/ 2>/dev/null || echo 'No ClubOS Agents to copy'",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "start:safe": "NODE_ENV=production node --max-old-space-size=512 dist/index.js || npm run start:safe",
@@ -29,7 +35,7 @@
     "setup:user-settings:interactive": "tsx scripts/setup-user-settings-interactive.ts",
     "test:openphone": "tsx src/scripts/test-openphone.ts",
     "verify:sop": "tsx src/scripts/verify-sop-setup.ts",
-    "postbuild": "cp -r src/knowledge-base dist/ 2>/dev/null || echo 'Knowledge base copy completed' && cp -r src/database dist/ 2>/dev/null || echo 'Database files copy completed'"
+    "postbuild": "echo 'Build completed. All assets copied.'"
   },
   "keywords": [
     "clubos",

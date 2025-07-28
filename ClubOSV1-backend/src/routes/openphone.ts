@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
-import { AppError } from '../utils/errors';
+import { AppError } from '../middleware/errorHandler';
 import crypto from 'crypto';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
