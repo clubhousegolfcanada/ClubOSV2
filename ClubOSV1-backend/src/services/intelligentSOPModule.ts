@@ -137,13 +137,10 @@ export class IntelligentSOPModule {
   ): Promise<SOPDocument[]> {
     const documents: SOPDocument[] = [];
     
-    // Handle different path structures in development vs production
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const projectRoot = isDevelopment 
-      ? path.join(__dirname, '../../..') // Development: src/services -> root
-      : __dirname.includes('dist/services') 
-        ? path.join(__dirname, '../..') // Production: dist/services -> dist
-        : path.join(__dirname, '..'); // Fallback: assume we're one level deep
+    // In both development and production, files are now in src/ directory
+    const projectRoot = __dirname.includes('dist/services') 
+      ? path.join(__dirname, '../..') // Production: dist/services -> dist
+      : path.join(__dirname, '..'); // Development: src/services -> src
     
     for (const filePath of filePaths) {
       try {

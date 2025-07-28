@@ -31,6 +31,9 @@
     "**/*.test.ts",
     "src/__tests__",
     "src/scripts",
-    "src/tests"
+    "src/tests",
+    "src/sops",
+    "src/assistant-instructions",
+    "src/ClubOS Agents"
   ]
 }
