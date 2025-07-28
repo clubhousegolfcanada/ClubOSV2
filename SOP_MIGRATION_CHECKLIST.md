@@ -64,7 +64,12 @@ OPENPHONE_WEBHOOK_SECRET=your-secret
 
 2. **Configure Webhook**:
    - URL: `https://your-backend.railway.app/api/openphone/webhook`
-   - Events: message.created, conversation.updated, call.completed
+   - Events to select:
+     - `message.received` - Incoming customer messages
+     - `message.delivered` - Outgoing messages
+     - `call.completed` - Complete call information
+     - `call.summary.completed` - AI-generated summaries
+     - `call.transcript.completed` - Full transcripts
    - Secret: Match your env variable
 
 3. **Import Historical Data**:

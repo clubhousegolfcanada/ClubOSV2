@@ -37,6 +37,8 @@ Visit http://localhost:3000
 ### AI-Powered Operations
 - **Smart Request Routing** - GPT-4 analyzes and routes to specialized assistants
 - **4 Specialized Bots** - Emergency, Booking, Tech Support, Brand Tone
+- **Intelligent SOP System** - Local knowledge base with embeddings (saves $750/month)
+- **OpenPhone Integration** - Automatic knowledge extraction from customer calls
 - **Confidence Scoring** - Transparent AI decision-making
 - **Slack Fallback** - Seamless handoff to human support
 
@@ -80,6 +82,13 @@ git push origin main
 - **Backend** → Railway (2-3 min)
 
 ## 📊 Recent Updates
+
+### v1.8.2 (July 2025)
+- ✅ Intelligent SOP System with GPT-4o embeddings
+- ✅ OpenPhone webhook integration for knowledge extraction
+- ✅ Shadow mode for safe testing alongside OpenAI Assistants
+- ✅ Knowledge extraction admin panel in Operations
+- ✅ Support for AI call summaries and transcripts
 
 ### v1.8.1 (July 2025)
 - ✅ Streamlined dashboard with toggle navigation
