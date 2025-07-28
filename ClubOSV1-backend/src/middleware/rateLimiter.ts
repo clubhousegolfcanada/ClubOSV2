@@ -1,28 +1,89 @@
 import rateLimit from 'express-rate-limit';
 import { logger } from '../utils/logger';
+import * as Sentry from '@sentry/node';
 
+// Different rate limits for different endpoints
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Increased from 100 to 500 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 100 : 500, // Stricter in production
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting in development, be more lenient in production
   skip: (req) => {
     // Skip rate limiting for health checks
     if (req.path === '/health') return true;
     // Skip for authenticated admin users
     if (req.user?.role === 'admin') return true;
+    // Skip in development unless explicitly testing
+    if (process.env.NODE_ENV === 'development' && process.env.TEST_RATE_LIMIT !== 'true') return true;
     return false;
   },
   handler: (req, res) => {
     logger.warn('Rate limit exceeded', { 
       ip: req.ip,
-      path: req.path 
+      path: req.path,
+      userAgent: req.get('user-agent')
     });
+    
+    // Track in Sentry as a warning
+    Sentry.captureMessage('Rate limit exceeded', {
+      level: 'warning',
+      extra: {
+        ip: req.ip,
+        path: req.path,
+        userAgent: req.get('user-agent')
+      }
+    });
+    
     res.status(429).json({
       success: false,
-      message: 'Too many requests, please try again later.'
+      message: 'Too many requests, please try again later.',
+      retryAfter: req.rateLimit?.resetTime
     });
+  }
+});
+
+// Stricter rate limit for authentication endpoints
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Max 5 login attempts per 15 minutes
+  skipSuccessfulRequests: true, // Don't count successful logins
+  message: 'Too many login attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.error('Auth rate limit exceeded', { 
+      ip: req.ip,
+      email: req.body?.email
+    });
+    
+    // Track in Sentry as an error
+    Sentry.captureMessage('Authentication rate limit exceeded', {
+      level: 'error',
+      extra: {
+        ip: req.ip,
+        email: req.body?.email
+      }
+    });
+    
+    res.status(429).json({
+      success: false,
+      message: 'Too many login attempts. Please try again in 15 minutes.',
+      retryAfter: req.rateLimit?.resetTime
+    });
+  }
+});
+
+// API-specific rate limiter for LLM endpoints (more expensive)
+export const llmRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute
+  message: 'Too many AI requests, please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip for operators and admins
+    if (req.user?.role === 'admin' || req.user?.role === 'operator') return true;
+    return false;
   }
 });

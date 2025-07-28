@@ -2,6 +2,50 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.7.1] - 2025-07-28
+
+### Added
+- **Sentry Error Tracking**
+  - Real-time error monitoring for both frontend and backend
+  - Automatic error grouping and alerting
+  - Performance monitoring with transaction tracing
+  - Session replay for debugging user issues
+  - Environment-specific configuration (dev/prod)
+  - Sensitive data filtering (auth tokens, cookies)
+
+- **Enhanced Rate Limiting**
+  - Re-enabled production rate limiting (100 req/15min)
+  - Separate limits for auth endpoints (5 attempts/15min)
+  - LLM-specific rate limiting (10 req/min)
+  - Skip for admin users and health checks
+  - Sentry integration for tracking violations
+
+- **Graceful Shutdown**
+  - Proper connection draining on SIGTERM/SIGINT
+  - Database connection cleanup
+  - Sentry event flushing
+  - 30-second timeout for forced shutdown
+  - Keep-alive timeout optimization
+
+- **Request Validation & Sanitization**
+  - Input sanitization middleware for XSS prevention
+  - Script tag and JavaScript URL filtering
+  - Common validation utilities
+  - Express-validator integration
+
+### Improved
+- **System Stability**
+  - Better error handling for uncaught exceptions
+  - Unhandled promise rejection tracking
+  - Health check endpoint reliability
+  - Server startup logging improvements
+  - Production-ready error recovery
+
+### Security
+- Rate limiting properly configured for production
+- Input sanitization on all endpoints
+- Enhanced error logging without exposing sensitive data
+
 ## [1.7.0] - 2025-07-27
 
 ### Added
@@ -229,6 +273,7 @@ All notable changes to ClubOS will be documented in this file.
 
 ## Version History
 
+- **1.7.1** - System Stability & Error Tracking
 - **1.7.0** - NinjaOne Remote Actions Integration
 - **1.6.1** - Commands Page Redesign
 - **1.6.0** - PostgreSQL & Enhanced LLM System

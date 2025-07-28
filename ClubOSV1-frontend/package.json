@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@sentry/nextjs": "^9.42.0",
     "axios": "^1.6.5",
     "immer": "^10.0.3",
     "lucide-react": "^0.294.0",

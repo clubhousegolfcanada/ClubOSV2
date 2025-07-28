@@ -7,8 +7,12 @@ import { join } from 'path';
 // Load environment variables FIRST
 dotenv.config();
 
+import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './utils/sentry';
 import { logger } from './utils/logger';
 import { db } from './utils/database';
+
+// Initialize Sentry before anything else
+initSentry();
 import authRoutes from './routes/auth';
 import bookingsRoutes from './routes/bookings';
 import ticketsRoutes from './routes/tickets';
@@ -28,15 +32,20 @@ import remoteActionsRoutes from './routes/remoteActions';
 import debugRoutes from './routes/debug';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
-import { rateLimiter } from './middleware/rateLimiter';
+import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
 import { trackUsage } from './middleware/usageTracking';
 import { authLimiter } from './middleware/authLimiter';
+import { sanitizeMiddleware } from './middleware/requestValidation';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Trust proxy - required for proper IP detection on Railway
 app.set('trust proxy', true);
+
+// Sentry request handler must be first middleware
+app.use(sentryRequestHandler);
+app.use(sentryTracingHandler);
 
 // Middleware
 app.use(helmet({
@@ -67,6 +76,7 @@ app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, re
 });
 
 app.use(express.json({ limit: '10mb' }));
+app.use(sanitizeMiddleware);
 app.use(requestLogger);
 
 // Handle preflight requests
@@ -81,7 +91,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/feedback', feedbackRoutes);
-app.use('/api/llm', trackUsage, llmRoutes);
+app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
 app.use('/api/slack', slackRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
@@ -140,6 +150,9 @@ app.get('/', (req, res) => {
   });
 });
 
+// Sentry error handler must be before any other error middleware
+app.use(sentryErrorHandler);
+
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
@@ -197,30 +210,76 @@ async function startServer() {
   }
   
   // Start server regardless in development
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info(`🚀 Server running on port ${PORT}`);
     logger.info(`📊 Database: ${db.initialized ? 'PostgreSQL' : 'Not connected'}`);
     logger.info(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`🛡️ Sentry: ${process.env.SENTRY_DSN ? 'Enabled' : 'Disabled'}`);
   });
+
+  // Enable keep-alive with a longer timeout
+  server.keepAliveTimeout = 65000; // 65 seconds
+  server.headersTimeout = 66000; // 66 seconds
+
+  // Store server instance for graceful shutdown
+  app.set('server', server);
+}
+
+// Graceful shutdown handler
+async function gracefulShutdown(signal: string) {
+  logger.info(`${signal} received, starting graceful shutdown...`);
+  
+  const server = app.get('server');
+  if (server) {
+    // Stop accepting new connections
+    server.close(async () => {
+      logger.info('HTTP server closed');
+      
+      try {
+        // Close database connections
+        if (db.initialized) {
+          await db.end();
+          logger.info('Database connections closed');
+        }
+        
+        // Flush Sentry events
+        const Sentry = await import('@sentry/node');
+        await Sentry.close(2000);
+        logger.info('Sentry flushed');
+        
+        logger.info('Graceful shutdown completed');
+        process.exit(0);
+      } catch (error) {
+        logger.error('Error during shutdown:', error);
+        process.exit(1);
+      }
+    });
+    
+    // Force shutdown after 30 seconds
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 30000);
+  }
 }
 
 // Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  // Don't exit in production - try to recover
+  
+  // Send to Sentry
+  import('@sentry/node').then(Sentry => {
+    Sentry.captureException(error);
+  });
+  
+  // In production, attempt graceful shutdown
   if (process.env.NODE_ENV === 'production') {
-    logger.warn('Attempting to continue despite uncaught exception...');
+    logger.error('Attempting graceful shutdown after uncaught exception...');
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
   } else {
     process.exit(1);
   }
@@ -229,9 +288,15 @@ process.on('uncaughtException', (error) => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Don't exit in production - try to recover
+  
+  // Send to Sentry
+  import('@sentry/node').then(Sentry => {
+    Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)));
+  });
+  
+  // In production, log but don't exit
   if (process.env.NODE_ENV === 'production') {
-    logger.warn('Attempting to continue despite unhandled rejection...');
+    logger.warn('Continuing despite unhandled rejection...');
   } else {
     process.exit(1);
   }

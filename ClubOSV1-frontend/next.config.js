@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const { withSentryConfig } = require('@sentry/nextjs');
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
@@ -37,4 +39,22 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+// Sentry configuration
+const sentryWebpackPluginOptions = {
+  // For all available options, see:
+  // https://github.com/getsentry/sentry-webpack-plugin#options
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  
+  // Only upload source maps in production
+  silent: true,
+  dryRun: process.env.NODE_ENV !== 'production',
+  
+  // Hide source maps from generated client bundles
+  hideSourceMaps: true,
+  
+  // Automatically tree-shake Sentry logger statements to reduce bundle size
+  disableLogger: true,
+}
+
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);

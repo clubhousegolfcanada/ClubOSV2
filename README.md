@@ -206,10 +206,14 @@ CLUBOSV1/
 - **Authentication**: JWT tokens with 24-hour expiration
 - **Password Policy**: Minimum 8 characters with complexity requirements
 - **Role-Based Access Control**: Granular permissions per user type
-- **Rate Limiting**: API protection against abuse (100 req/15min) - *Currently disabled for demo*
-- **Input Validation**: Comprehensive sanitization and validation
+- **Rate Limiting**: Multi-tier API protection
+  - General: 100 req/15min (production)
+  - Auth: 5 attempts/15min
+  - LLM: 10 req/min
+- **Input Validation**: Comprehensive sanitization and XSS prevention
 - **CORS Protection**: Configured for production domains
 - **Webhook Verification**: Slack signature validation
+- **Error Tracking**: Sentry integration for real-time monitoring
 
 
 ## 🛠️ Development
@@ -342,11 +346,12 @@ See TESTING_GUIDE.md for test scenarios
 - WebSocket support
 
 ### Recent Updates (July 2025)
-1. ✅ **Commands page redesigned** - Modern UI matching Dashboard style, renamed "Triggers" to "Remote Actions"
-2. ✅ **Deployment issues fixed** - TypeScript compilation errors resolved, Vercel/Railway deployment successful
-3. ✅ **Code cleanup completed** - Removed test files, optimized scripts executed
-4. ✅ **UI/UX improvements** - Consistent design system, improved button styles and hover states
-5. ✅ **Performance optimizations** - Database indexes added, connection pooling implemented
+1. ✅ **System stability improvements** - Sentry error tracking, graceful shutdown, enhanced rate limiting
+2. ✅ **Commands page redesigned** - Modern UI matching Dashboard style, renamed "Triggers" to "Remote Actions"
+3. ✅ **Deployment issues fixed** - TypeScript compilation errors resolved, Vercel/Railway deployment successful
+4. ✅ **Code cleanup completed** - Removed test files, optimized scripts executed
+5. ✅ **UI/UX improvements** - Consistent design system, improved button styles and hover states
+6. ✅ **Performance optimizations** - Database indexes added, connection pooling implemented
 
 ## 🔧 Troubleshooting
 
@@ -423,7 +428,7 @@ Proprietary software - All rights reserved by Clubhouse 24/7 Golf
 
 ---
 
-**Version**: 1.7.0  
-**Last Updated**: July 27, 2025  
+**Version**: 1.7.1  
+**Last Updated**: July 28, 2025  
 **Status**: Production Ready  
 **Lead Developer**: Claude (AI) - Full read/write capabilities  
