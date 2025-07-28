@@ -613,6 +613,32 @@ export class IntelligentSOPModule {
     
     return docs;
   }
+
+  // Refresh document cache from database
+  async refreshDocumentCache() {
+    try {
+      logger.info('Refreshing SOP document cache...');
+      
+      // Clear current cache
+      this.documentsCache.clear();
+      
+      // Reload from database
+      const cachedDocs = await this.loadFromDatabase();
+      this.documentsCache = cachedDocs;
+      
+      logger.info(`SOP cache refreshed: ${this.getTotalDocumentCount()} documents loaded`);
+      
+    } catch (error) {
+      logger.error('Failed to refresh SOP cache:', error);
+      throw error;
+    }
+  }
+
+  // Get total document count across all assistants
+  private getTotalDocumentCount(): number {
+    return Array.from(this.documentsCache.values())
+      .reduce((sum, docs) => sum + docs.length, 0);
+  }
 }
 
 // Export singleton instance

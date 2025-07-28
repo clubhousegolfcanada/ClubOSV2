@@ -240,10 +240,10 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       
       // Check if this was a bulk import
       if (response.data.data.imported !== undefined) {
-        const { imported, summary } = response.data.data;
+        const { imported, assistant, summary } = response.data.data;
         toast.success(
-          `Bulk import complete: ${imported} items imported`,
-          { duration: 5000 }
+          `Bulk import complete: ${imported} sections imported into ${assistant} assistant`,
+          { duration: 6000 }
         );
         if (summary) {
           console.log('Import summary:', summary);
@@ -640,10 +640,11 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       {activeTab === 'add' && (
         <div className="space-y-6">
           <div className="card">
-            <h3 className="text-lg font-semibold mb-4">Add Knowledge Manually</h3>
+            <h3 className="text-lg font-semibold mb-4">Import to SOP System</h3>
             <p className="text-sm text-[var(--text-secondary)] mb-6">
-              Enter information you want to add to the SOP knowledge base. 
-              The AI will format and categorize it appropriately.
+              Import OpenAI assistant documents or knowledge directly into the SOP system. 
+              Content will be automatically categorized into the correct assistant (emergency, booking, tech, brand) 
+              and used immediately by the routing system.
             </p>
             
             <div className="space-y-4">
@@ -679,7 +680,7 @@ export const KnowledgeExtractionPanel: React.FC = () => {
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      Add to Knowledge Base
+                      Import to SOP System
                     </>
                   )}
                 </button>

@@ -449,40 +449,36 @@ Return ONLY a valid JSON object with these fields: problem, solution, category, 
   }
 
   /**
-   * Process bulk import of knowledge
+   * Process bulk import of knowledge directly into SOP embeddings
    */
   private async processBulkImport(entry: string): Promise<any> {
-    logger.info('Processing bulk import...');
+    logger.info('Processing bulk import into SOP embeddings...');
     
-    const prompt = `Analyze this document/bulk import and extract ALL knowledge items for our SOP system.
+    const prompt = `Analyze this OpenAI assistant document and determine which assistant category it belongs to, then structure it for our SOP system.
 
 Document:
 ${entry}
 
-Extract multiple knowledge items from this content. For each piece of knowledge:
-1. Identify the problem or question it addresses
-2. Provide the solution in a clear, actionable format
-3. Categorize into: emergency, booking, tech, brand, or general
-4. Rate confidence (0-1)
+First, determine the assistant category based on content:
+- "emergency": Emergency procedures, safety protocols, escalation contacts
+- "booking": Booking procedures, access control, refunds, memberships  
+- "tech": Technical troubleshooting, hardware issues, simulator problems
+- "brand": Brand guidelines, marketing, customer tone, company information
 
-Important:
-- Extract as many distinct knowledge items as possible
-- Preserve specific details like codes, numbers, procedures
-- Split complex procedures into step-by-step items
-- Keep solutions concise but complete
+Then extract knowledge sections with clear titles and content. Preserve the document structure but break into logical sections.
 
 Return a JSON object with:
 {
-  "items": [
+  "assistant": "emergency|booking|tech|brand",
+  "sections": [
     {
-      "problem": "...",
-      "solution": "...",
-      "category": "...",
+      "title": "Clear section title",
+      "content": "Complete section content with all details preserved",
       "confidence": 0.95
     },
     ...
   ],
-  "summary": "Brief summary of what was imported"
+  "summary": "Brief summary of the document imported"
 }`;
 
     const response = await this.openai!.chat.completions.create({
@@ -490,7 +486,7 @@ Return a JSON object with:
       messages: [
         {
           role: 'system',
-          content: 'You are a knowledge management assistant for a golf simulator business. Extract ALL relevant knowledge from documents accurately and comprehensively.'
+          content: 'You are importing OpenAI assistant documents into a golf simulator SOP system. Preserve all content accurately and categorize correctly to match existing assistant routing.'
         },
         {
           role: 'user',
@@ -504,67 +500,124 @@ Return a JSON object with:
 
     const result = JSON.parse(response.choices[0].message.content || '{}');
     
-    if (!result.items || !Array.isArray(result.items)) {
+    if (!result.assistant || !result.sections || !Array.isArray(result.sections)) {
       throw new Error('Invalid bulk import response format');
+    }
+
+    // Validate assistant category matches our routing
+    const validAssistant = ['emergency', 'booking', 'tech', 'brand'].includes(result.assistant);
+    if (!validAssistant) {
+      throw new Error(`Invalid assistant category: ${result.assistant}`);
     }
 
     const imported = [];
     
-    // Process each extracted item
-    for (const item of result.items) {
-      if (!item.problem || !item.solution || !item.category) {
-        logger.warn('Skipping invalid item:', item);
+    // Import the sections into SOP embeddings - import the intelligent SOP module for embedding generation
+    const { intelligentSOPModule } = await import('./intelligentSOPModule');
+  
+    // Process each section
+    for (const section of result.sections) {
+      if (!section.title || !section.content) {
+        logger.warn('Skipping invalid section:', section);
         continue;
       }
 
       try {
-        // Check for duplicates
+        // Generate embedding for the content
+        const embeddingResponse = await this.openai!.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: section.content.slice(0, 8000)
+        });
+        
+        const embedding = embeddingResponse.data[0].embedding;
+        
+        // Create unique ID for this section
+        const sectionId = `imported_${result.assistant}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Check for duplicates by title and assistant
         const existing = await db.query(`
-          SELECT id FROM extracted_knowledge
-          WHERE problem ILIKE $1
-          AND category = $2
+          SELECT id FROM sop_embeddings
+          WHERE assistant = $1 AND title ILIKE $2
           LIMIT 1
-        `, [`%${item.problem}%`, item.category]);
+        `, [result.assistant, `%${section.title}%`]);
 
         if (existing.rows.length > 0) {
-          logger.info(`Skipping duplicate: ${item.problem}`);
-          continue;
+          logger.info(`Updating existing section: ${section.title}`);
+          
+          // Update existing
+          await db.query(`
+            UPDATE sop_embeddings 
+            SET content = $1, embedding = $2, updated_at = NOW(),
+                metadata = $3
+            WHERE id = $4
+          `, [
+            section.content,
+            JSON.stringify(embedding),
+            JSON.stringify({
+              imported: true,
+              importSummary: result.summary,
+              confidence: section.confidence || 0.9,
+              updatedBy: 'bulk_import',
+              timestamp: new Date().toISOString()
+            }),
+            existing.rows[0].id
+          ]);
+          
+          imported.push({
+            id: existing.rows[0].id,
+            title: section.title,
+            action: 'updated'
+          });
+        } else {
+          // Insert new
+          const stored = await db.query(`
+            INSERT INTO sop_embeddings 
+            (id, assistant, title, content, embedding, metadata)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+          `, [
+            sectionId,
+            result.assistant,
+            section.title,
+            section.content,
+            JSON.stringify(embedding),
+            JSON.stringify({
+              imported: true,
+              importSummary: result.summary,
+              confidence: section.confidence || 0.9,
+              createdBy: 'bulk_import',
+              timestamp: new Date().toISOString()
+            })
+          ]);
+
+          imported.push({
+            ...stored.rows[0],
+            action: 'created'
+          });
         }
-
-        // Store in database
-        const stored = await db.query(`
-          INSERT INTO extracted_knowledge 
-          (source_id, source_type, category, problem, solution, confidence, applied_to_sop, metadata)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          RETURNING *
-        `, [
-          uuidv4(),
-          'bulk_import',
-          item.category,
-          item.problem,
-          item.solution,
-          item.confidence || 0.85,
-          false,
-          { 
-            bulkImport: true,
-            importSummary: result.summary,
-            createdBy: 'bulk_import',
-            timestamp: new Date().toISOString()
-          }
-        ]);
-
-        imported.push(stored.rows[0]);
+        
+        logger.info(`Imported section: ${section.title} -> ${result.assistant}`);
+        
       } catch (error) {
-        logger.error('Failed to import item:', error);
+        logger.error('Failed to import section:', error);
       }
     }
 
-    logger.info(`Bulk import completed: ${imported.length} items imported`);
+    // Refresh the intelligent SOP module cache to include new data
+    try {
+      intelligentSOPModule.refreshDocumentCache();
+      logger.info('SOP module cache refreshed');
+    } catch (error) {
+      logger.warn('Failed to refresh SOP cache:', error);
+    }
+
+    logger.info(`Bulk import completed: ${imported.length} sections imported into ${result.assistant} assistant`);
 
     return {
       imported: imported.length,
+      assistant: result.assistant,
       summary: result.summary,
-      items: imported
+      sections: imported
     };
   }
 }
