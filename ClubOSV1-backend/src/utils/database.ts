@@ -810,6 +810,17 @@ class DatabaseService {
       logger.error('Failed to log auth event:', error);
     }
   }
+
+  // Close database connections
+  async end(): Promise<void> {
+    try {
+      await pool.end();
+      logger.info('Database pool closed');
+    } catch (error) {
+      logger.error('Error closing database pool:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

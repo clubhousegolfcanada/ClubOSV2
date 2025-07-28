@@ -163,6 +163,8 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
           username: 'ClubOS Remote Actions',
           text: '🎮 [DEMO] Remote Action Simulated',
           attachments: [{
+            title: 'Remote Action',
+            text: '',
             color: 'good',
             fields: [
               { title: 'User', value: req.user.email, short: true },
@@ -230,6 +232,8 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
         username: 'ClubOS Remote Actions',
         text: '⚠️ PC Reboot Initiated',
         attachments: [{
+          title: 'PC Reboot',
+          text: '',
           color: 'warning',
           fields: [
             { title: 'User', value: req.user.email, short: true },
@@ -245,6 +249,8 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
         username: 'ClubOS Remote Actions',
         text: `🔧 Remote Action: ${action}`,
         attachments: [{
+          title: 'Action Log',
+          text: '',
           color: 'good',
           fields: [
             { title: 'User', value: req.user.email, short: true },

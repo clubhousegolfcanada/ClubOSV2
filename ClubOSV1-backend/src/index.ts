@@ -7,7 +7,7 @@ import { join } from 'path';
 // Load environment variables FIRST
 dotenv.config();
 
-import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './utils/sentry';
+import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler, setupSentryErrorHandler } from './utils/sentry';
 import { logger } from './utils/logger';
 import { db } from './utils/database';
 
@@ -150,8 +150,8 @@ app.get('/', (req, res) => {
   });
 });
 
-// Sentry error handler must be before any other error middleware
-app.use(sentryErrorHandler);
+// Setup Sentry error handler for Express
+setupSentryErrorHandler(app);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

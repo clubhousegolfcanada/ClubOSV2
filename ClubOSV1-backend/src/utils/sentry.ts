@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { Application } from 'express';
 
 export function initSentry() {
   const environment = process.env.NODE_ENV || 'development';
@@ -14,7 +15,7 @@ export function initSentry() {
     dsn,
     environment,
     integrations: [
-      new ProfilingIntegration(),
+      nodeProfilingIntegration(),
     ],
     // Performance Monitoring
     tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
@@ -49,11 +50,25 @@ export function initSentry() {
   console.log(`✅ Sentry initialized for ${environment} environment`);
 }
 
-// Error handler middleware
-export const sentryErrorHandler = Sentry.Handlers.errorHandler();
+// Setup Sentry for Express app
+export function setupSentryErrorHandler(app: Application) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
-// Request handler middleware (should be one of the first middlewares)
-export const sentryRequestHandler = Sentry.Handlers.requestHandler();
+// Placeholder middleware for request handling (Sentry v8 handles this differently)
+export const sentryRequestHandler = (req: any, res: any, next: any) => {
+  // In Sentry v8+, request handling is done automatically
+  next();
+};
 
-// Tracing handler middleware
-export const sentryTracingHandler = Sentry.Handlers.tracingHandler();
+// Placeholder middleware for tracing (Sentry v8 handles this differently)
+export const sentryTracingHandler = (req: any, res: any, next: any) => {
+  // In Sentry v8+, tracing is handled automatically with the integration
+  next();
+};
+
+// Error handler middleware - this will be called later with the app instance
+export const sentryErrorHandler = (req: any, res: any, next: any) => {
+  // This is a placeholder - actual error handling is set up via setupSentryErrorHandler
+  next();
+};
