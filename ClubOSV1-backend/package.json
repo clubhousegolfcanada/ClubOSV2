@@ -1,7 +1,7 @@
 {
   "name": "clubos-backend",
-  "version": "1.0.0",
-  "description": "ClubOS Backend - Local-first Node.js server for golf simulator management",
+  "version": "1.8.0",
+  "description": "ClubOS Backend - AI-powered golf simulator management with NinjaOne integration",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

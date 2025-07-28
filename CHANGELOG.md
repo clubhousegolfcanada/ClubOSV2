@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.8.0] - 2025-07-28
+
+### Added
+- **Enhanced Checklist System**
+  - Comment field for adding notes about issues or maintenance needs
+  - Automatic ticket creation from checklists with comments
+  - Delete functionality for checklist submissions (admin/operator only)
+  - Integration with existing ticket system
+  - Ticket includes incomplete tasks and user comments
+  - Database columns: comments, ticket_created, ticket_id
+
+- **Checklist Improvements**
+  - Fixed "Failed to load submission history" error
+  - Changed date filters to show current week/month instead of last 7/30 days
+  - Fixed 500 error when filtering by date
+  - Fixed React hydration errors
+  - Improved error handling to prevent false error messages
+
+### Fixed
+- Checklist submissions count query parameter handling
+- Date filtering now properly shows "This Week" and "This Month"
+- Backend compilation errors for deployment
+- Sentry integration updated to v9 compatibility
+
+### Changed
+- Checklist tracker now defaults to current week
+- Better TypeScript type definitions for Express middleware
+
 ## [1.7.1] - 2025-07-28
 
 ### Added
@@ -273,6 +301,7 @@ All notable changes to ClubOS will be documented in this file.
 
 ## Version History
 
+- **1.8.0** - Enhanced Checklist System with Comments & Ticket Creation
 - **1.7.1** - System Stability & Error Tracking
 - **1.7.0** - NinjaOne Remote Actions Integration
 - **1.6.1** - Commands Page Redesign
