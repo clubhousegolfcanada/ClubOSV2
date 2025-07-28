@@ -46,6 +46,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // Handle different webhook types
     switch (type) {
       case 'message.created':
+      case 'message.received':
+      case 'message.delivered':
       case 'message.updated':
       case 'conversation.updated':
         // Extract conversation data
@@ -106,6 +108,85 @@ router.post('/webhook', async (req: Request, res: Response) => {
         ]);
         
         logger.info('OpenPhone call stored', { phoneNumber: data.phoneNumber, duration: data.duration });
+        break;
+
+      case 'call.summary.completed':
+        // Store AI-generated call summary
+        await db.query(`
+          INSERT INTO openphone_conversations 
+          (phone_number, customer_name, employee_name, messages, metadata)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [
+          data.phoneNumber || data.to || data.from,
+          data.contactName || 'Unknown',
+          data.userName || 'Unknown',
+          JSON.stringify([{
+            type: 'call_summary',
+            summary: data.summary,
+            timestamp: data.timestamp || new Date().toISOString()
+          }]),
+          { 
+            openPhoneId: data.id,
+            callId: data.callId,
+            type,
+            aiGenerated: true
+          }
+        ]);
+        
+        logger.info('OpenPhone AI call summary stored', { phoneNumber: data.phoneNumber });
+        break;
+
+      case 'call.transcript.completed':
+        // Store call transcript
+        await db.query(`
+          INSERT INTO openphone_conversations 
+          (phone_number, customer_name, employee_name, messages, metadata)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [
+          data.phoneNumber || data.to || data.from,
+          data.contactName || 'Unknown',
+          data.userName || 'Unknown',
+          JSON.stringify([{
+            type: 'call_transcript',
+            transcript: data.transcript,
+            timestamp: data.timestamp || new Date().toISOString()
+          }]),
+          { 
+            openPhoneId: data.id,
+            callId: data.callId,
+            type,
+            transcriptUrl: data.transcriptUrl
+          }
+        ]);
+        
+        logger.info('OpenPhone call transcript stored', { phoneNumber: data.phoneNumber });
+        break;
+
+      case 'call.recording.completed':
+        // Store call recording URL
+        await db.query(`
+          INSERT INTO openphone_conversations 
+          (phone_number, customer_name, employee_name, messages, metadata)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [
+          data.phoneNumber || data.to || data.from,
+          data.contactName || 'Unknown',
+          data.userName || 'Unknown',
+          JSON.stringify([{
+            type: 'call_recording',
+            recordingUrl: data.recordingUrl,
+            duration: data.duration,
+            timestamp: data.timestamp || new Date().toISOString()
+          }]),
+          { 
+            openPhoneId: data.id,
+            callId: data.callId,
+            type,
+            recordingUrl: data.recordingUrl
+          }
+        ]);
+        
+        logger.info('OpenPhone call recording stored', { phoneNumber: data.phoneNumber });
         break;
 
       default:
