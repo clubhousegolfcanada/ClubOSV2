@@ -97,11 +97,13 @@ router.post('/submit',
     body('type').isIn(['daily', 'weekly', 'quarterly']).withMessage('Invalid type'),
     body('location').notEmpty().withMessage('Location is required'),
     body('completedTasks').isArray().withMessage('Completed tasks must be an array'),
-    body('totalTasks').isInt({ min: 1 }).withMessage('Total tasks must be a positive integer')
+    body('totalTasks').isInt({ min: 1 }).withMessage('Total tasks must be a positive integer'),
+    body('comments').optional().isString().withMessage('Comments must be a string'),
+    body('createTicket').optional().isBoolean().withMessage('Create ticket must be a boolean')
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { category, type, location, completedTasks, totalTasks } = req.body;
+      const { category, type, location, completedTasks, totalTasks, comments, createTicket } = req.body;
       let userId = req.user!.id;
 
       logger.info('Checklist submission attempt', {
@@ -152,11 +154,59 @@ router.post('/submit',
       // Save the submission
       const submission = await db.query(
         `INSERT INTO checklist_submissions 
-         (user_id, category, type, location, completed_tasks, total_tasks)
-         VALUES ($1, $2, $3, $4, $5, $6)
+         (user_id, category, type, location, completed_tasks, total_tasks, comments, ticket_created)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [userId, category, type, location, JSON.stringify(completedTasks), totalTasks]
+        [userId, category, type, location, JSON.stringify(completedTasks), totalTasks, comments || null, false]
       );
+      
+      // Create ticket if requested
+      let ticketData = null;
+      if (createTicket && comments) {
+        try {
+          // Get user details
+          const user = await db.findUserById(userId);
+          
+          // Determine incomplete tasks
+          const templateTasks = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES][type as keyof typeof CHECKLIST_TEMPLATES[typeof category]];
+          const incompleteTasks = templateTasks?.filter((task: any) => !completedTasks.includes(task.id)) || [];
+          
+          // Create ticket
+          const ticketResult = await db.query(
+            `INSERT INTO tickets 
+             (title, description, category, status, priority, location, created_by_id, created_by_name, created_by_email, created_by_phone)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             RETURNING *`,
+            [
+              `${category.charAt(0).toUpperCase() + category.slice(1)} Checklist - ${type.charAt(0).toUpperCase() + type.slice(1)} - ${location}`,
+              `Checklist submission with issues:\n\n${comments}\n\nIncomplete tasks:\n${incompleteTasks.map((t: any) => `- ${t.label}`).join('\n')}`,
+              category === 'tech' ? 'tech' : 'facilities',
+              'open',
+              incompleteTasks.length > 2 ? 'high' : 'medium',
+              location,
+              userId,
+              user?.name || 'Unknown',
+              user?.email || req.user!.email,
+              user?.phone || null
+            ]
+          );
+          
+          ticketData = ticketResult.rows[0];
+          
+          // Update submission with ticket ID
+          await db.query(
+            'UPDATE checklist_submissions SET ticket_created = true, ticket_id = $1 WHERE id = $2',
+            [ticketData.id, submission.rows[0].id]
+          );
+          
+          logger.info('Ticket created from checklist', {
+            ticketId: ticketData.id,
+            submissionId: submission.rows[0].id
+          });
+        } catch (ticketError) {
+          logger.error('Failed to create ticket from checklist', ticketError);
+        }
+      }
 
       logger.info('Checklist submitted', {
         userId,
@@ -168,7 +218,8 @@ router.post('/submit',
 
       res.json({
         success: true,
-        data: submission.rows[0]
+        data: submission.rows[0],
+        ticket: ticketData
       });
     } catch (error: any) {
       // Handle foreign key constraint violation
@@ -367,6 +418,43 @@ router.get('/submissions',
         });
       }
       
+      next(error);
+    }
+  }
+);
+
+// Delete a submission
+router.delete('/submissions/:id',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if submission exists and get details for logging
+      const existing = await db.query(
+        'SELECT * FROM checklist_submissions WHERE id = $1',
+        [id]
+      );
+      
+      if (existing.rows.length === 0) {
+        throw new AppError('Submission not found', 404, 'NOT_FOUND');
+      }
+      
+      // Delete the submission
+      await db.query('DELETE FROM checklist_submissions WHERE id = $1', [id]);
+      
+      logger.info('Checklist submission deleted', {
+        submissionId: id,
+        deletedBy: req.user!.email,
+        submission: existing.rows[0]
+      });
+      
+      res.json({
+        success: true,
+        message: 'Submission deleted successfully'
+      });
+    } catch (error) {
       next(error);
     }
   }

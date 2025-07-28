@@ -181,9 +181,28 @@ async function startServer() {
           completed_tasks JSONB NOT NULL DEFAULT '[]',
           total_tasks INTEGER NOT NULL,
           completion_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          comments TEXT,
+          ticket_created BOOLEAN DEFAULT FALSE,
+          ticket_id UUID
         )
       `);
+      
+      // Add new columns if they don't exist
+      await db.query(`
+        ALTER TABLE checklist_submissions 
+        ADD COLUMN IF NOT EXISTS comments TEXT
+      `).catch(() => {});
+      
+      await db.query(`
+        ALTER TABLE checklist_submissions 
+        ADD COLUMN IF NOT EXISTS ticket_created BOOLEAN DEFAULT FALSE
+      `).catch(() => {});
+      
+      await db.query(`
+        ALTER TABLE checklist_submissions 
+        ADD COLUMN IF NOT EXISTS ticket_id UUID
+      `).catch(() => {});
       
       // Create indexes if they don't exist
       await db.query(`CREATE INDEX IF NOT EXISTS idx_checklist_submissions_user_id ON checklist_submissions(user_id)`);

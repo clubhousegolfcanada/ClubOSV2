@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, Check } from 'lucide-react';
+import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, Check, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { useStore } from '../state/useStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -25,6 +26,9 @@ interface Submission {
   completion_time: string;
   user_name: string;
   user_email: string;
+  comments?: string;
+  ticket_created?: boolean;
+  ticket_id?: string;
 }
 
 export const ChecklistSystem: React.FC = () => {
@@ -39,7 +43,10 @@ export const ChecklistSystem: React.FC = () => {
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [trackerLocation, setTrackerLocation] = useState<string>('all');
   const [trackerPeriod, setTrackerPeriod] = useState<'week' | 'month' | 'all'>('week');
-
+  const [comments, setComments] = useState('');
+  const [createTicket, setCreateTicket] = useState(false);
+  
+  const { user } = useStore();
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
   // Load checklist template
@@ -203,14 +210,24 @@ export const ChecklistSystem: React.FC = () => {
           type: activeType,
           location: selectedLocation,
           completedTasks: completedTaskIds,
-          totalTasks: currentTemplate.tasks.length
+          totalTasks: currentTemplate.tasks.length,
+          comments: comments.trim(),
+          createTicket: createTicket && comments.trim().length > 0
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       if (response.data.success) {
         toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!`);
+        
+        if (response.data.ticket) {
+          toast.success('Support ticket created!', { duration: 4000 });
+        }
+        
+        // Reset form
         setCompletedTasks({});
+        setComments('');
+        setCreateTicket(false);
         
         // Reload template to reset the form
         loadTemplate();
@@ -246,6 +263,32 @@ export const ChecklistSystem: React.FC = () => {
 
   const getTypeLabel = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+  
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!confirm('Are you sure you want to delete this submission?')) return;
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      
+      await axios.delete(
+        `${API_URL}/checklists/submissions/${submissionId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Submission deleted successfully');
+      
+      // Reload submissions
+      loadSubmissions();
+    } catch (error: any) {
+      console.error('Failed to delete submission:', error);
+      
+      if (error.response?.status === 403) {
+        toast.error('You do not have permission to delete submissions');
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to delete submission');
+      }
+    }
   };
 
   return (
@@ -416,6 +459,39 @@ export const ChecklistSystem: React.FC = () => {
                 ))}
               </div>
 
+              {/* Comments and Ticket Section */}
+              {isAllTasksCompleted() && (
+                <div className="border-t border-[var(--border-secondary)] pt-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
+                      Comments (Optional)
+                    </label>
+                    <textarea
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      placeholder="Add any notes about issues, missing items, or required maintenance..."
+                      className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-50)] transition-colors resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  {comments.trim() && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="create-ticket"
+                        checked={createTicket}
+                        onChange={(e) => setCreateTicket(e.target.checked)}
+                        className="w-4 h-4 text-[var(--accent)] bg-[var(--bg-secondary)] border-[var(--border-secondary)] rounded focus:ring-[var(--accent)]"
+                      />
+                      <label htmlFor="create-ticket" className="text-sm text-[var(--text-secondary)] cursor-pointer">
+                        Create a support ticket for issues mentioned in comments
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {/* Progress and Submit */}
               <div className="border-t border-[var(--border-secondary)] pt-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -559,6 +635,9 @@ export const ChecklistSystem: React.FC = () => {
                                 <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Type</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Tasks</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Completed</th>
+                                {(user?.role === 'admin' || user?.role === 'operator') && (
+                                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Actions</th>
+                                )}
                               </tr>
                             </thead>
                             <tbody>
@@ -600,6 +679,17 @@ export const ChecklistSystem: React.FC = () => {
                                       </div>
                                     </div>
                                   </td>
+                                  {(user?.role === 'admin' || user?.role === 'operator') && (
+                                    <td className="py-3 px-4">
+                                      <button
+                                        onClick={() => handleDeleteSubmission(submission.id)}
+                                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
+                                        title="Delete submission"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
                             </tbody>
