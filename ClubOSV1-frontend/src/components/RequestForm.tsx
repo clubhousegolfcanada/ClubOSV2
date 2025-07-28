@@ -490,18 +490,6 @@ const RequestForm: React.FC = () => {
       {/* Inject keyframes */}
       <style dangerouslySetInnerHTML={{ __html: shimmerKeyframes }} />
       
-      {/* ClubOS Logo and Version */}
-      <div className="text-left mb-6">
-        <h1 className="text-4xl font-bold" style={{ 
-          fontFamily: 'Poppins, sans-serif',
-          fontWeight: 700,
-          color: '#0B3D3A'
-        }}>
-          ClubOS
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>v1.8.1</p>
-      </div>
-      
       {/* Main Form Card */}
       <div className="card group">
         <form onSubmit={handleSubmit(onSubmit)}>

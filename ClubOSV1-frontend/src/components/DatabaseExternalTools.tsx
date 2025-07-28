@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap } from 'lucide-react';
+import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap, ClipboardList, MessageSquare, Wrench, Building } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
 import { userSettingsApi } from '@/services/userSettings';
@@ -223,58 +223,72 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
     );
   }
 
+  // Define toggle buttons with icons
+  const toggleButtons = [
+    {
+      label: 'Checklists',
+      icon: ClipboardList,
+      count: quickStats.find(s => s.label === 'Weekly Checklists')?.value || '0',
+      onClick: quickStats.find(s => s.label === 'Weekly Checklists')?.onClick,
+      active: false
+    },
+    {
+      label: 'Requests',
+      icon: MessageSquare,
+      count: quickStats.find(s => s.label === 'Requests Today')?.value || '0',
+      onClick: () => router.push('/'),
+      active: router.pathname === '/'
+    },
+    {
+      label: 'Tech Tickets',
+      icon: Wrench,
+      count: quickStats.find(s => s.label === 'Tech Tickets Open')?.value || '0',
+      onClick: quickStats.find(s => s.label === 'Tech Tickets Open')?.onClick,
+      active: false
+    },
+    {
+      label: 'Facilities',
+      icon: Building,
+      count: quickStats.find(s => s.label === 'Facilities Tickets')?.value || '0',
+      onClick: quickStats.find(s => s.label === 'Facilities Tickets')?.onClick,
+      active: false
+    }
+  ];
+
   return (
-    <div className="card">
-      {/* Combined Metrics and Quick Links Container */}
-      <div className="space-y-4">
-        {/* Quick Stats Grid - 2x2 layout on desktop, vertical on mobile */}
-        {quickStats.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {quickStats.map((stat, index) => (
-              <div key={index} className="p-2 sm:p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] transition-colors group">
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                      {stat.label}
-                    </p>
-                    {stat.statusIndicator && (
-                      <div className={`w-2 h-2 rounded-full animate-pulse ${
-                        stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
-                        stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
-                        'bg-[var(--text-muted)]'
-                      }`} />
-                    )}
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <p className="text-base sm:text-lg font-semibold">{stat.value}</p>
-                    {stat.change && (
-                      <div className={`text-xs font-medium ${
-                        stat.trend === 'up' ? 'text-[var(--status-success)]' : 
-                        stat.trend === 'down' ? 'text-[var(--status-error)]' : 
-                        'text-[var(--text-secondary)]'
-                      }`}>
-                        {stat.change}
-                      </div>
-                    )}
-                  </div>
-                  {stat.isButton && (
-                    <button
-                      onClick={stat.onClick}
-                      className="mt-2 w-full px-2 py-1.5 min-h-[32px] text-xs font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-md transition-colors active:scale-95"
-                    >
-                      {stat.buttonText}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {/* Divider */}
-        <div className="border-t border-[var(--border-secondary)]"></div>
+    <div className="space-y-2">
+      {/* Toggle Button Row */}
+      <div className="card p-2 sm:p-3 overflow-x-auto">
+        <div className="flex gap-1.5 min-w-max sm:min-w-0">
+          {toggleButtons.map((button, index) => {
+            const Icon = button.icon;
+            return (
+              <button
+                key={index}
+                onClick={button.onClick}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border transition-all min-h-[36px] ${
+                  button.active
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border-[var(--border-secondary)] hover:border-[var(--accent)]'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">{button.label}</span>
+                <span className={`text-[10px] font-semibold px-1 py-0.5 rounded ${
+                  button.active
+                    ? 'bg-white/20'
+                    : 'bg-[var(--bg-tertiary)]'
+                }`}>
+                  {button.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       
-        {/* External Tools Section */}
+      {/* External Tools Card */}
+      <div className="card">
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
