@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, X } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -83,19 +83,19 @@ const RemoteActionsBar: React.FC = () => {
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
-      isExpanded ? 'h-auto' : 'h-12'
+      isExpanded ? 'h-auto max-h-[70vh] overflow-hidden' : 'h-12'
     }`}>
       {/* Collapsed Bar */}
       <div 
-        className="bg-[var(--bg-secondary)] border-t border-[var(--border-secondary)] cursor-pointer"
+        className="bg-[var(--bg-secondary)] border-t border-[var(--border-secondary)] cursor-pointer h-12"
         onClick={toggleExpanded}
       >
-        <div className="container mx-auto px-4 h-12 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-full flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-[var(--accent)]" />
             <span className="text-sm font-medium">Remote Actions</span>
             {!isExpanded && (
-              <span className="text-xs text-[var(--text-muted)] ml-2">
+              <span className="text-xs text-[var(--text-muted)] ml-2 hidden sm:inline">
                 {locations.map(l => l.name).join(' • ')}
               </span>
             )}
@@ -106,7 +106,18 @@ const RemoteActionsBar: React.FC = () => {
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="bg-[var(--bg-secondary)] border-t border-[var(--border-secondary)]">
+        <div className="bg-[var(--bg-secondary)] overflow-y-auto" style={{ maxHeight: 'calc(70vh - 3rem)' }}>
+          {/* Mobile Close Button */}
+          <div className="sm:hidden sticky top-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-2 flex justify-between items-center z-10">
+            <span className="text-sm font-medium">Remote Actions</span>
+            <button
+              onClick={toggleExpanded}
+              className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
           <div className="container mx-auto px-4 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {locations.map((location) => (
@@ -124,8 +135,7 @@ const RemoteActionsBar: React.FC = () => {
                         return (
                           <button
                             key={bay}
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={() => {
                               executeAction('restart-trackman', location.name, String(bay));
                             }}
                             disabled={isExecuting}
@@ -149,8 +159,7 @@ const RemoteActionsBar: React.FC = () => {
                     <div className="flex gap-1.5">
                       {location.hasMusic && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             executeAction('restart-music', location.name);
                           }}
                           disabled={executingActions.has(`${location.name}-restart-music-system`)}
@@ -166,8 +175,7 @@ const RemoteActionsBar: React.FC = () => {
                       )}
                       {location.hasTv && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             executeAction('restart-tv', location.name);
                           }}
                           disabled={executingActions.has(`${location.name}-restart-tv-system`)}
