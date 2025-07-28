@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
 import DatabaseExternalTools from '@/components/DatabaseExternalTools';
+import RemoteActionsBar from '@/components/RemoteActionsBar';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useDemoMode, useAnalytics } from '@/state/hooks';
@@ -224,7 +225,7 @@ export default function Home() {
         <meta name="deploy-version" content="2024-11-26-hydration-fix" />
       </Head>
       
-      <main className="min-h-screen bg-[var(--bg-primary)]">
+      <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-4 py-4 md:py-6 lg:py-8">
           {/* Main Content Grid - Optimized for no-scroll */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
@@ -239,6 +240,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+        
+        {/* Remote Actions Bar */}
+        <RemoteActionsBar />
       </main>
     </>
   );
