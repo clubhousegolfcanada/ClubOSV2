@@ -258,38 +258,22 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   return (
     <div className="card">
       <div className="space-y-3">
-        {/* Status Buttons Section */}
+        {/* Status Pills Section */}
         <div>
           <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3">Status</h3>
-          <div className="grid grid-cols-1 gap-1.5">
-            {toggleButtons.map((button, index) => {
-              const Icon = button.icon;
-              return (
-                <button
-                  key={index}
-                  onClick={button.onClick}
-                  className={`w-full p-2.5 min-h-[44px] bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 group active:scale-95 ${
-                    button.active ? 'border-[var(--accent)] bg-[var(--bg-tertiary)]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <div className={`p-1 rounded bg-[var(--bg-tertiary)] group-hover:bg-[var(--bg-primary)] ${
-                      button.active ? 'bg-[var(--bg-primary)]' : ''
-                    }`}>
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-medium text-xs text-[var(--text-primary)]">
-                        {button.label}
-                      </p>
-                    </div>
-                    <span className="text-sm font-semibold px-2 py-0.5 bg-[var(--bg-tertiary)] rounded">
-                      {button.count}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+          <div className="flex flex-wrap gap-2">
+            {toggleButtons.map((button, index) => (
+              <button
+                key={index}
+                onClick={button.onClick}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-full hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 active:scale-95 ${
+                  button.active ? 'border-[var(--accent)] bg-[var(--bg-tertiary)]' : ''
+                }`}
+              >
+                <span>{button.label}</span>
+                <span className="font-bold">({button.count})</span>
+              </button>
+            ))}
           </div>
         </div>
         
