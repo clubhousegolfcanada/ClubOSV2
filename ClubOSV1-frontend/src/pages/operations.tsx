@@ -1220,16 +1220,16 @@ export default function Operations() {
                     )}
 
                     {/* Users List */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <table className="w-full min-w-[640px]">
                         <thead>
                           <tr className="border-b border-[var(--border-secondary)]">
-                            <th className="text-left py-3 px-4">Name</th>
-                            <th className="text-left py-3 px-4">Email</th>
-                            <th className="text-left py-3 px-4">Role</th>
-                            <th className="text-left py-3 px-4">Phone</th>
-                            <th className="text-left py-3 px-4">Created</th>
-                            <th className="text-right py-3 px-4">Actions</th>
+                            <th className="text-left py-3 px-4 text-sm">Name</th>
+                            <th className="text-left py-3 px-4 text-sm">Email</th>
+                            <th className="text-left py-3 px-4 text-sm">Role</th>
+                            <th className="text-left py-3 px-4 text-sm hidden sm:table-cell">Phone</th>
+                            <th className="text-left py-3 px-4 text-sm hidden md:table-cell">Created</th>
+                            <th className="text-right py-3 px-4 text-sm">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1280,7 +1280,7 @@ export default function Operations() {
                                   </span>
                                 )}
                               </td>
-                              <td className="py-3 px-4">
+                              <td className="py-3 px-4 hidden sm:table-cell">
                                 {editingUser === u.id ? (
                                   <input
                                     type="tel"
@@ -1292,7 +1292,7 @@ export default function Operations() {
                                   u.phone || '-'
                                 )}
                               </td>
-                              <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                              <td className="py-3 px-4 text-sm text-[var(--text-secondary)] hidden md:table-cell">
                                 {new Date(u.createdAt).toLocaleDateString()}
                               </td>
                               <td className="py-3 px-4 text-right">
@@ -1313,31 +1313,34 @@ export default function Operations() {
                                     </button>
                                   </>
                                 ) : (
-                                  <>
+                                  <div className="flex items-center justify-end gap-1 sm:gap-3">
                                     <button
                                       onClick={() => startEditUser(u)}
-                                      className="text-blue-400 hover:text-blue-300 mr-3"
+                                      className="text-blue-400 hover:text-blue-300 text-sm"
                                       disabled={u.id === user?.id}
                                       title="Edit user"
                                     >
-                                      Edit
+                                      <span className="hidden sm:inline">Edit</span>
+                                      <Edit2 className="w-4 h-4 sm:hidden" />
                                     </button>
                                     <button
                                       onClick={() => openPasswordModal(u.id)}
-                                      className="text-yellow-400 hover:text-yellow-300 mr-3"
+                                      className="text-yellow-400 hover:text-yellow-300 text-sm"
                                       title={u.id === user?.id ? "Change password" : "Reset password"}
                                     >
-                                      Password
+                                      <span className="hidden sm:inline">Password</span>
+                                      <Key className="w-4 h-4 sm:hidden" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteUser(u.id)}
-                                      className="text-red-400 hover:text-red-300"
+                                      className="text-red-400 hover:text-red-300 text-sm"
                                       disabled={u.id === user?.id}
                                       title="Delete user"
                                     >
-                                      Delete
+                                      <span className="hidden sm:inline">Delete</span>
+                                      <Trash2 className="w-4 h-4 sm:hidden" />
                                     </button>
-                                  </>
+                                  </div>
                                 )}
                               </td>
                             </tr>
@@ -1352,7 +1355,7 @@ export default function Operations() {
                 <>
                   {/* Feedback Section */}
                   <div className="card">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
                       <div>
                         <h2 className="text-xl font-semibold">Not Helpful Feedback</h2>
                         <p className="text-sm text-[var(--text-secondary)] mt-1">
@@ -1363,27 +1366,29 @@ export default function Operations() {
                         <button
                           onClick={fetchFeedback}
                           disabled={feedbackLoading}
-                          className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
                         >
                           <RefreshCw className={`w-4 h-4 ${feedbackLoading ? 'animate-spin' : ''}`} />
-                          Refresh
+                          <span className="hidden sm:inline">Refresh</span>
                         </button>
                         <button
                           onClick={exportFeedback}
                           disabled={feedback.length === 0}
-                          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
                         >
                           <Download className="w-4 h-4" />
-                          Export for Claude
+                          <span className="hidden sm:inline">Export for Claude</span>
+                          <span className="sm:hidden">Export</span>
                         </button>
                         <button
                           onClick={clearFeedback}
                           disabled={feedback.length === 0}
-                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
                           title="Clear all feedback"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Clear All
+                          <span className="hidden sm:inline">Clear All</span>
+                          <span className="sm:hidden">Clear</span>
                         </button>
                       </div>
                     </div>
@@ -1406,15 +1411,15 @@ export default function Operations() {
                             key={item.id}
                             className="p-4 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]"
                           >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                            <div className="space-y-3 mb-3">
                               <div>
                                 <span className="text-xs text-[var(--text-muted)]">Request:</span>
-                                <p className="text-sm font-medium">{item.requestDescription}</p>
+                                <p className="text-sm font-medium mt-1">{item.requestDescription}</p>
                               </div>
-                              <div className="flex gap-4">
+                              <div className="flex flex-wrap gap-3 sm:gap-4">
                                 <div>
                                   <span className="text-xs text-[var(--text-muted)]">Route:</span>
-                                  <p className="text-sm">
+                                  <p className="text-sm mt-1">
                                     <span className={`px-2 py-0.5 text-xs rounded-full ${
                                       item.route === 'Emergency' ? 'bg-red-500/20 text-red-400' :
                                       item.route === 'TechSupport' ? 'bg-blue-500/20 text-blue-400' :
@@ -1427,21 +1432,23 @@ export default function Operations() {
                                 </div>
                                 <div>
                                   <span className="text-xs text-[var(--text-muted)]">Confidence:</span>
-                                  <p className="text-sm">{Math.round((item.confidence || 0) * 100)}%</p>
+                                  <p className="text-sm mt-1">{Math.round((item.confidence || 0) * 100)}%</p>
                                 </div>
                                 {item.location && (
                                   <div>
                                     <span className="text-xs text-[var(--text-muted)]">Location:</span>
-                                    <p className="text-sm">{item.location}</p>
+                                    <p className="text-sm mt-1">{item.location}</p>
                                   </div>
                                 )}
                               </div>
                             </div>
                             <div className="mb-3">
                               <span className="text-xs text-[var(--text-muted)]">Response:</span>
-                              <FeedbackResponse responseData={item.response} />
+                              <div className="mt-1">
+                                <FeedbackResponse responseData={item.response} />
+                              </div>
                             </div>
-                            <div className="flex justify-between items-center text-xs text-[var(--text-muted)]">
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-[var(--text-muted)]">
                               <span>{new Date(item.timestamp).toLocaleString()}</span>
                               <span>User: {item.userEmail || 'Unknown'}</span>
                             </div>
@@ -1653,7 +1660,7 @@ export default function Operations() {
                 <>
                   {/* Analytics Section */}
                   <div className="card">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
                       <div>
                         <h2 className="text-xl font-semibold">Routing Analytics</h2>
                         <p className="text-sm text-[var(--text-secondary)] mt-1">
@@ -1664,10 +1671,10 @@ export default function Operations() {
                         <button
                           onClick={fetchAnalytics}
                           disabled={analyticsLoading}
-                          className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
                         >
                           <RefreshCw className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
-                          Refresh
+                          <span className="hidden sm:inline">Refresh</span>
                         </button>
                         <button
                           onClick={async () => {
@@ -1687,11 +1694,12 @@ export default function Operations() {
                               }
                             }
                           }}
-                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2"
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2"
                           title="Clear old analytics data"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Clear Old Data
+                          <span className="hidden sm:inline">Clear Old Data</span>
+                          <span className="sm:hidden">Clear</span>
                         </button>
                       </div>
                     </div>
@@ -1723,7 +1731,30 @@ export default function Operations() {
                         {analyticsData.routing?.lowConfidenceRequests?.length > 0 && (
                           <div>
                             <h3 className="text-lg font-semibold mb-4">Low Confidence Requests</h3>
-                            <div className="overflow-x-auto">
+                            {/* Mobile Card View */}
+                            <div className="block sm:hidden space-y-3">
+                              {analyticsData.routing.lowConfidenceRequests.slice(0, 10).map((req: any) => (
+                                <div key={req.id} className="bg-[var(--bg-secondary)] rounded-lg p-4 space-y-2">
+                                  <p className="text-sm font-medium truncate">{req.request_text}</p>
+                                  <div className="flex items-center justify-between">
+                                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                      req.route === 'Emergency' ? 'bg-red-500/20 text-red-400' :
+                                      req.route === 'TechSupport' ? 'bg-blue-500/20 text-blue-400' :
+                                      req.route === 'Booking & Access' ? 'bg-green-500/20 text-green-400' :
+                                      'bg-purple-500/20 text-purple-400'
+                                    }`}>
+                                      {req.route}
+                                    </span>
+                                    <span className="text-sm">{Math.round(req.confidence * 100)}%</span>
+                                  </div>
+                                  <p className="text-xs text-[var(--text-muted)]">
+                                    {new Date(req.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Desktop Table View */}
+                            <div className="hidden sm:block overflow-x-auto">
                               <table className="w-full text-sm">
                                 <thead>
                                   <tr className="border-b border-[var(--border-secondary)]">
@@ -1856,21 +1887,21 @@ export default function Operations() {
               ) : null}
 
               {/* System Status */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">System Status</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">API Status</span>
-                      <span className="text-green-400">Operational</span>
+                      <span className="text-[var(--text-secondary)] text-sm">API Status</span>
+                      <span className="text-green-400 text-sm">Operational</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">Database</span>
-                      <span className="text-green-400">Connected</span>
+                      <span className="text-[var(--text-secondary)] text-sm">Database</span>
+                      <span className="text-green-400 text-sm">Connected</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">LLM Service</span>
-                      <span className="text-green-400">Active</span>
+                      <span className="text-[var(--text-secondary)] text-sm">LLM Service</span>
+                      <span className="text-green-400 text-sm">Active</span>
                     </div>
                   </div>
                 </div>
@@ -1879,16 +1910,16 @@ export default function Operations() {
                   <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">Total Users</span>
-                      <span className="font-medium">{users.length}</span>
+                      <span className="text-[var(--text-secondary)] text-sm">Total Users</span>
+                      <span className="font-medium text-sm">{users.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">Not Helpful Feedback</span>
-                      <span className="font-medium">{feedback.length}</span>
+                      <span className="text-[var(--text-secondary)] text-sm">Not Helpful Feedback</span>
+                      <span className="font-medium text-sm">{feedback.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">Active Sessions</span>
-                      <span className="font-medium">0</span>
+                      <span className="text-[var(--text-secondary)] text-sm">Active Sessions</span>
+                      <span className="font-medium text-sm">0</span>
                     </div>
                   </div>
                 </div>
