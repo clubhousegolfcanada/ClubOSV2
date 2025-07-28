@@ -36,7 +36,8 @@ export class IntelligentSOPModule {
       });
       this.initializeDocuments();
     } else {
-      logger.warn('IntelligentSOPModule: OpenAI API key not configured');
+      logger.warn('IntelligentSOPModule: OpenAI API key not configured - module disabled');
+      // Don't initialize documents when API key is missing
     }
   }
 
@@ -494,6 +495,11 @@ export class IntelligentSOPModule {
   }
 
   async persistEmbeddings(): Promise<void> {
+    if (!this.initialized || !this.openai) {
+      logger.warn('IntelligentSOPModule not initialized, cannot persist embeddings');
+      return;
+    }
+    
     if (!db.initialized) {
       logger.warn('Database not initialized, cannot persist embeddings');
       return;
@@ -550,6 +556,11 @@ export class IntelligentSOPModule {
 
   // Admin method to refresh specific documents
   async refreshDocument(filePath: string): Promise<void> {
+    if (!this.initialized || !this.openai) {
+      logger.warn('IntelligentSOPModule not initialized, cannot refresh document');
+      return;
+    }
+    
     logger.info('Refreshing document:', filePath);
     
     // Find which assistant this belongs to
@@ -616,6 +627,11 @@ export class IntelligentSOPModule {
 
   // Refresh document cache from database
   async refreshDocumentCache() {
+    if (!this.initialized || !this.openai) {
+      logger.warn('IntelligentSOPModule not initialized, cannot refresh cache');
+      return;
+    }
+    
     try {
       logger.info('Refreshing SOP document cache...');
       
