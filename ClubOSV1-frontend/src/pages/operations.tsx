@@ -174,7 +174,6 @@ export default function Operations() {
   });
   const [feedback, setFeedback] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCleaning, setShowCleaning] = useState(true);
@@ -218,7 +217,7 @@ export default function Operations() {
   useEffect(() => {
     if (user?.role === 'admin') {
       fetchUsers();
-      if (showFeedback || showKnowledge) {
+      if (showKnowledge) {
         fetchFeedback();
       }
       if (showSystemConfig) {
@@ -228,7 +227,7 @@ export default function Operations() {
         fetchAnalytics();
       }
     }
-  }, [user, showFeedback, showKnowledge, showSystemConfig, showAnalytics]);
+  }, [user, showKnowledge, showSystemConfig, showAnalytics]);
 
   // Validate password whenever it changes
   useEffect(() => {
@@ -448,7 +447,7 @@ export default function Operations() {
         toast.success('Backup restored successfully');
         // Reload data
         fetchUsers();
-        if (showFeedback) {
+        if (false) {
           fetchFeedback();
         }
       }
@@ -1011,7 +1010,7 @@ export default function Operations() {
           <div className="mb-8">
             <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
               <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); setShowKnowledge(false); }}
+                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
                   showCleaning 
                     ? 'text-[var(--text-primary)]' 
@@ -1024,21 +1023,21 @@ export default function Operations() {
                 )}
               </button>
               <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(false); }}
+                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge
+                  !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge
                     ? 'text-[var(--text-primary)]' 
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
-                Operations
-                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
+                Settings
+                {!showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
               </button>
               {user?.role === 'admin' && (
                 <button
-                  onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(true); }}
+                  onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(true); }}
                   className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
                     showKnowledge 
                       ? 'text-[var(--text-primary)]' 
@@ -1071,139 +1070,179 @@ export default function Operations() {
                 </>
               ) : showKnowledge ? (
                 <>
-                  {/* Knowledge Center Content */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* SOP Module Control Card */}
-                    <div className="card">
-                      <SOPModeControl />
-                    </div>
-                    
-                    {/* Knowledge Extraction Card */}
-                    <div className="card">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold flex items-center gap-2">
-                            <Brain className="w-5 h-5" />
-                            Knowledge Extraction
-                          </h3>
-                          <p className="text-sm text-[var(--text-secondary)] mt-1">
-                            Process conversations and extract knowledge for SOPs
-                          </p>
+                  {/* Knowledge Center - World Class Grid Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    {/* Left Column - Main Content (8 columns) */}
+                    <div className="lg:col-span-8 space-y-4">
+                      {/* SOP Control & Knowledge Extraction Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* SOP Module Control - Compact */}
+                        <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-base font-semibold flex items-center gap-2">
+                              <Brain className="w-4 h-4 text-[var(--accent)]" />
+                              SOP Control
+                            </h3>
+                            <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded-full">
+                              Initialized
+                            </span>
+                          </div>
+                          <SOPModeControl />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-xs text-[var(--text-secondary)]">Live</span>
-                        </div>
-                      </div>
-                      <KnowledgeExtractionPanel />
-                    </div>
-                  </div>
-
-                  {/* Recent Messages Card */}
-                  <div className="card mt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                          <MessageSquare className="w-5 h-5" />
-                          Recent Messages
-                        </h3>
-                        <p className="text-sm text-[var(--text-secondary)] mt-1">
-                          Latest OpenPhone conversations and customer interactions
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <RefreshCw className="w-4 h-4 animate-spin text-[var(--accent)]" />
-                        <span className="text-xs text-[var(--text-secondary)]">Auto-refresh</span>
-                      </div>
-                    </div>
-                    <RecentMessages />
-                  </div>
-
-                  {/* Feedback Analysis Card */}
-                  <div className="card mt-6">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">Not Helpful Feedback</h3>
-                        <p className="text-[var(--text-secondary)] mt-1">
-                          Review responses that users marked as not helpful
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={fetchFeedback}
-                          disabled={feedbackLoading}
-                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
-                        >
-                          <RefreshCw className={`w-4 h-4 ${feedbackLoading ? 'animate-spin' : ''}`} />
-                          <span className="hidden sm:inline">Refresh</span>
-                        </button>
-                        <button
-                          onClick={exportFeedback}
-                          disabled={feedback.length === 0}
-                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span className="hidden sm:inline">Export for Claude</span>
-                          <span className="sm:hidden">Export</span>
-                        </button>
-                        <button
-                          onClick={clearFeedback}
-                          disabled={feedback.length === 0}
-                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
-                          title="Clear all feedback"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span className="hidden sm:inline">Clear All</span>
-                          <span className="sm:hidden">Clear</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {feedbackLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <RefreshCw className="w-8 h-8 animate-spin" />
-                        <span className="ml-2">Loading feedback...</span>
-                      </div>
-                    ) : feedback.length > 0 ? (
-                      <div className="space-y-4">
-                        {feedback.map((item) => (
-                          <div key={item.id} className="bg-[var(--bg-secondary)] rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div className="flex-1">
-                                <p className="text-sm text-[var(--text-secondary)] mb-1">Query:</p>
-                                <p className="font-medium mb-2">{item.query}</p>
-                                <p className="text-sm text-[var(--text-secondary)] mb-1">User Feedback:</p>
-                                <p className="text-[var(--text-muted)] mb-3">{item.feedback}</p>
-                              </div>
-                              <div className="text-xs text-[var(--text-muted)]">
-                                {new Date(item.timestamp).toLocaleDateString()}
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-sm text-[var(--text-secondary)] mb-1">AI Response:</p>
-                              <FeedbackResponse responseData={item.response} />
+                        
+                        {/* Knowledge Extraction - Compact */}
+                        <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-base font-semibold flex items-center gap-2">
+                              <Brain className="w-4 h-4 text-[var(--accent)]" />
+                              Extract Knowledge
+                            </h3>
+                            <div className="flex items-center gap-1">
+                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                              <span className="text-xs text-[var(--text-muted)]">Live</span>
                             </div>
                           </div>
-                        ))}
+                          <KnowledgeExtractionPanel />
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <h3 className="text-lg font-semibold mb-2">No feedback entries yet</h3>
-                        <p className="text-[var(--text-secondary)]">
-                          When users mark responses as "not helpful", they'll appear here
-                        </p>
+
+                      {/* Feedback Analysis - Full Width */}
+                      <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                          <h3 className="text-base font-semibold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-[var(--accent)]" />
+                            Not Helpful Feedback
+                          </h3>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={fetchFeedback}
+                              disabled={feedbackLoading}
+                              className="px-3 py-1.5 text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-1.5"
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${feedbackLoading ? 'animate-spin' : ''}`} />
+                              <span className="hidden sm:inline">Refresh</span>
+                            </button>
+                            <button
+                              onClick={exportFeedback}
+                              disabled={feedback.length === 0}
+                              className="px-3 py-1.5 text-sm bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Export
+                            </button>
+                            <button
+                              onClick={clearFeedback}
+                              disabled={feedback.length === 0}
+                              className="px-3 py-1.5 text-sm bg-red-500/20 text-red-400 border border-red-500/30 rounded-md hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                              title="Clear all feedback"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Feedback Content - Compact */}
+                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                          {feedbackLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                              <RefreshCw className="w-6 h-6 animate-spin text-[var(--text-muted)]" />
+                              <span className="ml-2 text-sm text-[var(--text-muted)]">Loading...</span>
+                            </div>
+                          ) : feedback.length > 0 ? (
+                            <div className="space-y-3">
+                              {feedback.map((item) => (
+                                <div key={item.id} className="bg-[var(--bg-secondary)] rounded-md p-3 hover:bg-[var(--bg-tertiary)] transition-colors">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium truncate">{item.query}</p>
+                                      <p className="text-xs text-[var(--text-muted)] mt-1">{item.feedback}</p>
+                                    </div>
+                                    <span className="text-xs text-[var(--text-muted)] ml-2">
+                                      {new Date(item.timestamp).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <div className="mt-2">
+                                    <FeedbackResponse responseData={item.response} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                              <p className="text-sm text-[var(--text-muted)]">No feedback entries yet</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Right Column - Sidebar (4 columns) */}
+                    <div className="lg:col-span-4">
+                      {/* Recent Messages - Compact Sidebar */}
+                      <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-base font-semibold flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-[var(--accent)]" />
+                            Recent Messages
+                          </h3>
+                          <div className="flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3 animate-spin text-[var(--accent)]" />
+                            <span className="text-xs text-[var(--text-muted)]">Live</span>
+                          </div>
+                        </div>
+                        <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+                          <RecentMessages />
+                        </div>
+                      </div>
+                      
+                      {/* Quick Stats - Compact Cards */}
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 hover:bg-[var(--bg-tertiary)] hover:scale-105 transition-all duration-200 cursor-pointer">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-[var(--text-muted)]">Documents</span>
+                            <Brain className="w-3.5 h-3.5 text-[var(--accent)]" />
+                          </div>
+                          <p className="text-xl font-bold">0</p>
+                          <p className="text-xs text-[var(--text-secondary)]">In System</p>
+                        </div>
+                        
+                        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 hover:bg-[var(--bg-tertiary)] hover:scale-105 transition-all duration-200 cursor-pointer">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-[var(--text-muted)]">Processed</span>
+                            <CheckSquare className="w-3.5 h-3.5 text-green-400" />
+                          </div>
+                          <p className="text-xl font-bold">0</p>
+                          <p className="text-xs text-[var(--text-secondary)]">This Week</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                  
+                  <style jsx>{`
+                    .custom-scrollbar::-webkit-scrollbar {
+                      width: 6px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-track {
+                      background: var(--bg-secondary);
+                      border-radius: 3px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                      background: var(--border-secondary);
+                      border-radius: 3px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                      background: var(--text-muted);
+                    }
+                  `}</style>
                 </>
               ) : (
                 <>
-                  {/* Operations Tab Navigation */}
+                  {/* Settings Tab Navigation */}
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                 <div className="flex flex-wrap gap-2 md:gap-4">
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(true); }}
+                    onClick={() => { setShowSystemConfig(false); setShowAnalytics(true); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showAnalytics
                         ? 'bg-[var(--accent)] text-white'
@@ -1215,23 +1254,7 @@ export default function Operations() {
                     <span className="sm:hidden">Stats</span>
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(true); setShowSystemConfig(false); setShowAnalytics(false); }}
-                    className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
-                      showFeedback
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    <AlertCircle className="w-4 h-4" />
-                    Feedback
-                    {feedback.length > 0 && !showFeedback && (
-                      <span className="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
-                        {feedback.length}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(true); setShowAnalytics(false); }}
+                    onClick={() => { setShowSystemConfig(true); setShowAnalytics(false); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
                       showSystemConfig
                         ? 'bg-[var(--accent)] text-white'
@@ -1243,9 +1266,9 @@ export default function Operations() {
                     <span className="sm:hidden">Config</span>
                   </button>
                   <button
-                    onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); }}
+                    onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); }}
                     className={`px-3 py-2 text-sm md:px-4 md:text-base rounded-lg font-medium transition-all ${
-                      !showFeedback && !showSystemConfig && !showAnalytics
+                      !showSystemConfig && !showAnalytics
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
@@ -1279,7 +1302,7 @@ export default function Operations() {
                 </div>
               </div>
 
-              {!showFeedback && !showSystemConfig && !showAnalytics ? (
+              {!showSystemConfig && !showAnalytics ? (
                 <>
                   {/* User Management Section */}
                   <div className="space-y-6">
@@ -1498,113 +1521,6 @@ export default function Operations() {
                       </table>
                     </div>
                   </div>
-                  </div>
-                </>
-              ) : showFeedback ? (
-                <>
-                  {/* Feedback Section */}
-                  <div className="card">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
-                      <div>
-                        <h2 className="text-xl font-semibold">Not Helpful Feedback</h2>
-                        <p className="text-sm text-[var(--text-secondary)] mt-1">
-                          Review responses that users marked as not helpful
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={fetchFeedback}
-                          disabled={feedbackLoading}
-                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
-                        >
-                          <RefreshCw className={`w-4 h-4 ${feedbackLoading ? 'animate-spin' : ''}`} />
-                          <span className="hidden sm:inline">Refresh</span>
-                        </button>
-                        <button
-                          onClick={exportFeedback}
-                          disabled={feedback.length === 0}
-                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span className="hidden sm:inline">Export for Claude</span>
-                          <span className="sm:hidden">Export</span>
-                        </button>
-                        <button
-                          onClick={clearFeedback}
-                          disabled={feedback.length === 0}
-                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
-                          title="Clear all feedback"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span className="hidden sm:inline">Clear All</span>
-                          <span className="sm:hidden">Clear</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {feedbackLoading ? (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)] mx-auto"></div>
-                        <p className="text-[var(--text-secondary)] mt-4">Loading feedback...</p>
-                      </div>
-                    ) : feedback.length === 0 ? (
-                      <div className="text-center py-12 text-[var(--text-secondary)]">
-                        <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>No feedback entries yet</p>
-                        <p className="text-sm mt-2">When users mark responses as "not helpful", they'll appear here</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {feedback.map((item) => (
-                          <div
-                            key={item.id}
-                            className="p-4 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]"
-                          >
-                            <div className="space-y-3 mb-3">
-                              <div>
-                                <span className="text-xs text-[var(--text-muted)]">Request:</span>
-                                <p className="text-sm font-medium mt-1">{item.requestDescription}</p>
-                              </div>
-                              <div className="flex flex-wrap gap-3 sm:gap-4">
-                                <div>
-                                  <span className="text-xs text-[var(--text-muted)]">Route:</span>
-                                  <p className="text-sm mt-1">
-                                    <span className={`px-2 py-0.5 text-xs rounded-full ${
-                                      item.route === 'Emergency' ? 'bg-red-500/20 text-red-400' :
-                                      item.route === 'TechSupport' ? 'bg-blue-500/20 text-blue-400' :
-                                      item.route === 'Booking & Access' ? 'bg-green-500/20 text-green-400' :
-                                      'bg-purple-500/20 text-purple-400'
-                                    }`}>
-                                      {item.route}
-                                    </span>
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="text-xs text-[var(--text-muted)]">Confidence:</span>
-                                  <p className="text-sm mt-1">{Math.round((item.confidence || 0) * 100)}%</p>
-                                </div>
-                                {item.location && (
-                                  <div>
-                                    <span className="text-xs text-[var(--text-muted)]">Location:</span>
-                                    <p className="text-sm mt-1">{item.location}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="mb-3">
-                              <span className="text-xs text-[var(--text-muted)]">Response:</span>
-                              <div className="mt-1">
-                                <FeedbackResponse responseData={item.response} />
-                              </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-[var(--text-muted)]">
-                              <span>{new Date(item.timestamp).toLocaleString()}</span>
-                              <span>User: {item.userEmail || 'Unknown'}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </>
               ) : showSystemConfig ? (

@@ -215,14 +215,21 @@ export class AssistantService {
           // Return SOP response even if confidence is low
           if (sopResponse.confidence === 0 && sopResponse.source === 'no_match') {
             return {
-              response: `I apologize, but I don't have any information in my local knowledge base about this topic yet. The SOP system is active but needs to be populated with relevant documentation. 
+              response: `Nobody told me that answer yet... 
 
-Please add relevant knowledge through the Knowledge Extraction panel in Operations to enable proper responses.`,
+**Turn off Smart Assist and send to a human so I can learn!**
+
+To send to human:
+1. Toggle OFF the "Smart Assist" switch
+2. Submit the request again
+3. A human will receive and respond to your request
+
+Once a human answers, administrators can add this knowledge through the Knowledge Extraction panel so I can help with similar questions in the future.`,
               assistantId: `sop-${route}`,
               threadId: `sop-${Date.now()}`,
               confidence: 0,
               structured: {
-                text: "No SOP documents found. Please add knowledge to the system.",
+                text: "Nobody told me that answer yet... turn off Smart Assist and send to a human so I can learn",
                 category: "no_data",
                 priority: "low"
               }
