@@ -58,7 +58,6 @@ const Navigation: React.FC = () => {
         { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
-        { href: '/knowledge', label: 'Knowledge', roles: ['admin'] as UserRole[] },
         { href: '/tickets', label: 'Ticket Center', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/clubosboy', label: 'ClubOS Boy', roles: ['admin', 'operator', 'support'] as UserRole[], icon: '🤖' },
       ].filter(item => hasAnyRole(user?.role, item.roles));

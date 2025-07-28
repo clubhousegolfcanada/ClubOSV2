@@ -3,11 +3,12 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain, MessageSquare } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { ChecklistSystem } from '@/components/ChecklistSystem';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
-// Knowledge components moved to dedicated Knowledge page
+import { KnowledgeExtractionPanel } from '@/components/admin/KnowledgeExtractionPanel';
+import { SOPModeControl } from '@/components/admin/SOPModeControl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -176,6 +177,7 @@ export default function Operations() {
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCleaning, setShowCleaning] = useState(true);
+  const [showKnowledge, setShowKnowledge] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
@@ -215,7 +217,7 @@ export default function Operations() {
   useEffect(() => {
     if (user?.role === 'admin') {
       fetchUsers();
-      if (showFeedback) {
+      if (showFeedback || showKnowledge) {
         fetchFeedback();
       }
       if (showSystemConfig) {
@@ -225,7 +227,7 @@ export default function Operations() {
         fetchAnalytics();
       }
     }
-  }, [user, showFeedback, showSystemConfig, showAnalytics]);
+  }, [user, showFeedback, showKnowledge, showSystemConfig, showAnalytics]);
 
   // Validate password whenever it changes
   useEffect(() => {
@@ -1008,7 +1010,7 @@ export default function Operations() {
           <div className="mb-8">
             <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
               <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); }}
+                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
                   showCleaning 
                     ? 'text-[var(--text-primary)]' 
@@ -1021,23 +1023,40 @@ export default function Operations() {
                 )}
               </button>
               <button
-                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); }}
+                onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning
+                  !showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge
                     ? 'text-[var(--text-primary)]' 
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 Operations
-                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && (
+                {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
               </button>
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => { setShowFeedback(false); setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(true); }}
+                  className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
+                    showKnowledge 
+                      ? 'text-[var(--text-primary)]' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Knowledge
+                  {showKnowledge && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+                  )}
+                </button>
+              )}
             </div>
             
             <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
               {showCleaning 
                 ? 'Complete cleaning and tech maintenance checklists with real-time tracking and submission history.'
+                : showKnowledge
+                ? 'Manage AI knowledge extraction, feedback, and SOP system.'
                 : 'Manage system users, configurations, and analytics.'}
             </p>
           </div>
@@ -1048,6 +1067,70 @@ export default function Operations() {
                 <>
                   {/* Checklists Content */}
                   <ChecklistSystem />
+                </>
+              ) : showKnowledge ? (
+                <>
+                  {/* Knowledge Center Content */}
+                  <div className="space-y-6">
+                    <SOPModeControl />
+                    <KnowledgeExtractionPanel />
+                    
+                    {/* Knowledge Feedback Section */}
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h2 className="text-2xl font-semibold">Feedback Analysis</h2>
+                          <p className="text-[var(--text-secondary)] mt-1">
+                            Review and improve AI responses based on user feedback
+                          </p>
+                        </div>
+                        <button
+                          onClick={exportFeedback}
+                          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Export
+                        </button>
+                      </div>
+
+                      {feedbackLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                          <RefreshCw className="w-8 h-8 animate-spin" />
+                          <span className="ml-2">Loading feedback...</span>
+                        </div>
+                      ) : feedback.length > 0 ? (
+                        <div className="space-y-4">
+                          {feedback.map((item) => (
+                            <div key={item.id} className="bg-[var(--bg-secondary)] rounded-lg p-4">
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                  <p className="text-sm text-[var(--text-secondary)] mb-1">Query:</p>
+                                  <p className="font-medium mb-2">{item.query}</p>
+                                  <p className="text-sm text-[var(--text-secondary)] mb-1">User Feedback:</p>
+                                  <p className="text-[var(--text-muted)] mb-3">{item.feedback}</p>
+                                </div>
+                                <div className="text-xs text-[var(--text-muted)]">
+                                  {new Date(item.timestamp).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-sm text-[var(--text-secondary)] mb-1">AI Response:</p>
+                                <FeedbackResponse responseData={item.response} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="card text-center py-12">
+                          <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <h3 className="text-lg font-semibold mb-2">No Feedback Available</h3>
+                          <p className="text-[var(--text-secondary)]">
+                            All user feedback has been addressed or no feedback has been received yet.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               ) : (
                 <>
@@ -1888,7 +1971,7 @@ export default function Operations() {
               ) : null}
 
               {/* System Status - Only show when not in specific views */}
-              {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && (
+              {!showFeedback && !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">System Status</h3>
