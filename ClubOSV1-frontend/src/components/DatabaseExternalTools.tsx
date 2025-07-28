@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader } from 'lucide-react';
+import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
 import { userSettingsApi } from '@/services/userSettings';
+import { useRouter } from 'next/router';
+
+interface QuickStat {
+  label: string;
+  value: string;
+  change?: string;
+  trend: 'up' | 'down' | 'neutral';
+  isButton?: boolean;
+  onClick?: () => void;
+  buttonText?: string;
+  statusIndicator?: boolean;
+}
+
+interface DatabaseExternalToolsProps {
+  quickStats?: QuickStat[];
+}
 
 // Default URLs
 const DEFAULT_EXTERNAL_TOOLS = {
@@ -15,9 +31,10 @@ const DEFAULT_EXTERNAL_TOOLS = {
   GOOGLE_DRIVE: 'https://drive.google.com'
 };
 
-const DatabaseExternalTools: React.FC = () => {
+const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStats = [] }) => {
   const { user } = useAuthState();
   const { notify } = useNotifications();
+  const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -207,11 +224,57 @@ const DatabaseExternalTools: React.FC = () => {
   }
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
-        {canEdit && (
-          <div className="flex gap-2">
+    <div className="space-y-3">
+      {/* Quick Stats Cards */}
+      {quickStats.length > 0 && (
+        <div className="space-y-3">
+          {quickStats.map((stat, index) => (
+            <div key={index} className="card group hover:border-[var(--accent)] relative">
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    {stat.label}
+                  </p>
+                  {stat.statusIndicator && (
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${
+                      stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
+                      stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
+                      'bg-[var(--text-muted)]'
+                    }`} />
+                  )}
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <p className="text-2xl font-semibold">{stat.value}</p>
+                  {stat.change && (
+                    <div className={`text-sm font-medium ${
+                      stat.trend === 'up' ? 'text-[var(--status-success)]' : 
+                      stat.trend === 'down' ? 'text-[var(--status-error)]' : 
+                      'text-[var(--text-secondary)]'
+                    }`}>
+                      {stat.change}
+                    </div>
+                  )}
+                </div>
+                {stat.isButton && (
+                  <button
+                    onClick={stat.onClick}
+                    className="mt-3 w-full px-3 py-2 text-sm font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-lg transition-colors"
+                  >
+                    {stat.buttonText}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* External Tools Card */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
+          {canEdit && (
+            <div className="flex gap-2">
             {isEditMode ? (
               <>
                 <button
@@ -335,6 +398,7 @@ const DatabaseExternalTools: React.FC = () => {
           <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
         </div>
       )}
+      </div>
     </div>
   );
 };

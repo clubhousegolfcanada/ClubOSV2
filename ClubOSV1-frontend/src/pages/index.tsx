@@ -208,51 +208,8 @@ export default function Home() {
             </div>
             
             {/* Sidebar - Contains Quick Stats and External Tools */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Quick Stats Cards - Vertical Stack */}
-              <div className="space-y-3">
-                {quickStats.map((stat, index) => (
-                  <div key={index} className="card group hover:border-[var(--accent)] relative">
-                    <div className="flex flex-col">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                          {stat.label}
-                        </p>
-                        {stat.statusIndicator && (
-                          <div className={`w-2 h-2 rounded-full animate-pulse ${
-                            stat.trend === 'up' ? 'bg-[var(--status-success)]' : 
-                            stat.trend === 'down' ? 'bg-[var(--status-error)]' : 
-                            'bg-[var(--text-muted)]'
-                          }`} />
-                        )}
-                      </div>
-                      <div className="flex items-baseline justify-between">
-                        <p className="text-2xl font-semibold">{stat.value}</p>
-                        {stat.change && (
-                          <div className={`text-sm font-medium ${
-                            stat.trend === 'up' ? 'text-[var(--status-success)]' : 
-                            stat.trend === 'down' ? 'text-[var(--status-error)]' : 
-                            'text-[var(--text-secondary)]'
-                          }`}>
-                            {stat.change}
-                          </div>
-                        )}
-                      </div>
-                      {stat.isButton && (
-                        <button
-                          onClick={stat.onClick}
-                          className="mt-3 w-full px-3 py-2 text-sm font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-lg transition-colors"
-                        >
-                          {stat.buttonText}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* External Tools - Below Stats */}
-              <DatabaseExternalTools />
+            <div className="lg:col-span-1">
+              <DatabaseExternalTools quickStats={quickStats} />
             </div>
           </div>
         </div>
