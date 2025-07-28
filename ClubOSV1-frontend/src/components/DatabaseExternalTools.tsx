@@ -260,24 +260,19 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
       <div className="space-y-3">
         {/* Status Section */}
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-2">Status</h3>
-          <div className="inline-flex rounded-lg bg-[var(--bg-secondary)] p-1">
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3">Status</h3>
+          <div className="flex gap-2">
             {toggleButtons.map((button, index) => (
               <button
                 key={index}
                 onClick={button.onClick}
-                className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   button.active
-                    ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                } ${
-                  index === 0 ? 'rounded-l-md' : ''
-                } ${
-                  index === toggleButtons.length - 1 ? 'rounded-r-md' : ''
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                 }`}
               >
-                {button.label}
-                <span className="ml-1 font-bold">{button.count}</span>
+                {button.label} <span className="font-bold ml-1">{button.count}</span>
               </button>
             ))}
           </div>
