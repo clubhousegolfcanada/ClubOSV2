@@ -50,7 +50,11 @@ interface ExtractionStats {
   }>;
 }
 
-export const KnowledgeExtractionPanel: React.FC = () => {
+interface KnowledgeExtractionPanelProps {
+  onImportSuccess?: () => void;
+}
+
+export const KnowledgeExtractionPanel: React.FC<KnowledgeExtractionPanelProps> = ({ onImportSuccess }) => {
   const { user } = useAuthState();
   const [activeTab, setActiveTab] = useState<'extract' | 'review' | 'stats' | 'add'>('stats');
   const [isLoading, setIsLoading] = useState(false);
@@ -135,6 +139,11 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       // Refresh stats
       if (activeTab === 'stats') {
         fetchStats();
+      }
+      
+      // Notify parent component of successful extraction
+      if (onImportSuccess) {
+        onImportSuccess();
       }
     } catch (error) {
       console.error('Failed to extract knowledge:', error);
@@ -349,6 +358,11 @@ export const KnowledgeExtractionPanel: React.FC = () => {
         fetchStats();
       } else {
         setActiveTab('review');
+      }
+      
+      // Notify parent component of successful import
+      if (onImportSuccess) {
+        onImportSuccess();
       }
       
     } catch (error) {

@@ -180,6 +180,7 @@ export default function Operations() {
   const [showCleaning, setShowCleaning] = useState(true);
   const [showKnowledge, setShowKnowledge] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
+  const [systemMetrics, setSystemMetrics] = useState<any>({ total_documents: 0, unique_assistants: 0 });
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -221,6 +222,7 @@ export default function Operations() {
       fetchUsers();
       if (showKnowledge) {
         fetchFeedback();
+        fetchSystemMetrics();
       }
       if (showSystemConfig) {
         fetchSystemConfigs();
@@ -275,6 +277,25 @@ export default function Operations() {
       toast.error('Failed to load feedback');
     } finally {
       setFeedbackLoading(false);
+    }
+  };
+
+  const fetchSystemMetrics = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/sop-monitoring/sop-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success && response.data.data.metrics) {
+        setSystemMetrics({
+          total_documents: response.data.data.metrics.total_documents || 0,
+          unique_assistants: response.data.data.metrics.unique_assistants || 0
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch system metrics:', error);
+      // Keep default values if fetch fails
     }
   };
 
@@ -1205,7 +1226,7 @@ export default function Operations() {
                               </div>
                             </div>
                             <div className="p-3">
-                              <KnowledgeExtractionPanel />
+                              <KnowledgeExtractionPanel onImportSuccess={fetchSystemMetrics} />
                             </div>
                           </div>
 
@@ -1317,21 +1338,30 @@ export default function Operations() {
                       
                       {/* Quick Stats - Inline Metrics */}
                       <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-                        <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2">System Metrics</h3>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">System Metrics</h3>
+                          <button
+                            onClick={fetchSystemMetrics}
+                            className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                            title="Refresh metrics"
+                          >
+                            <RefreshCw className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
                               <Brain className="w-3 h-3 text-[var(--accent)]" />
                               Documents
                             </span>
-                            <span className="text-sm font-semibold">0</span>
+                            <span className="text-sm font-semibold">{systemMetrics.total_documents}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
                               <CheckSquare className="w-3 h-3 text-green-500" />
-                              Processed
+                              Assistants
                             </span>
-                            <span className="text-sm font-semibold">0</span>
+                            <span className="text-sm font-semibold">{systemMetrics.unique_assistants}</span>
                           </div>
                         </div>
                       </div>
