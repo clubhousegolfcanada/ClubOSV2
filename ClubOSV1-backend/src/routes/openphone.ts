@@ -274,7 +274,28 @@ router.put('/conversations/:id/processed', async (req: Request, res: Response) =
   }
 });
 
-// Debug endpoint to check all OpenPhone data
+// Health check endpoint (no auth required for debugging)
+router.get('/health', async (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'OpenPhone routes are working',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple webhook test (no auth, just logs)
+router.post('/webhook-test', async (req: Request, res: Response) => {
+  console.log('WEBHOOK TEST RECEIVED:', JSON.stringify(req.body, null, 2));
+  logger.info('Webhook test received', { body: req.body });
+  
+  res.json({
+    success: true,
+    message: 'Webhook test received',
+    receivedData: req.body
+  });
+});
+
+// Debug endpoint to check all OpenPhone data (no auth for debugging)
 router.get('/debug/all', async (req: Request, res: Response) => {
   try {
     const result = await db.query(`
