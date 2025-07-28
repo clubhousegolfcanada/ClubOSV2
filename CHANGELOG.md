@@ -2,6 +2,38 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.8.3] - 2025-07-28
+
+### Added
+- **Knowledge Management Section**
+  - New Knowledge toggle under Operations (admin only)
+  - Card-based layout for better organization
+  - Recent Messages component with live OpenPhone conversations
+  - Auto-refresh every 8 seconds for real-time updates
+  - Manual refresh button for testing
+  - Debug endpoint for troubleshooting connection issues
+
+### Changed
+- **Knowledge Center Restructuring**
+  - Moved Knowledge from top-level navigation to Operations section
+  - Split into separate cards: SOP Control, Knowledge Extraction, Recent Messages, Feedback
+  - Removed money saved calculations from shadow mode performance
+  - Updated empty states with more informative messages
+
+### Improved
+- **Feedback Section**
+  - Added Refresh, Export for Claude, and Clear All buttons
+  - Proper button states and loading indicators
+  - Responsive design with mobile-friendly buttons
+  - Updated title to "Not Helpful Feedback"
+  - Better empty state messaging
+
+### Fixed
+- TypeScript errors in Knowledge page with FeedbackResponse component
+- Recent Messages now shows historical data from database
+- Proper error handling and debugging features
+- Consistent UI patterns across Operations and Knowledge sections
+
 ## [1.8.1] - 2025-07-28
 
 ### Added
@@ -326,6 +358,9 @@ All notable changes to ClubOS will be documented in this file.
 
 ## Version History
 
+- **1.8.3** - Knowledge Center Restructuring & Live Updates
+- **1.8.2** - Intelligent SOP System & OpenPhone Integration
+- **1.8.1** - Dashboard Enhancements & Weekly Checklists
 - **1.8.0** - Enhanced Checklist System with Comments & Ticket Creation
 - **1.7.1** - System Stability & Error Tracking
 - **1.7.0** - NinjaOne Remote Actions Integration

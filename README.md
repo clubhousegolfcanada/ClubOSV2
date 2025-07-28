@@ -42,6 +42,14 @@ Visit http://localhost:3000
 - **Confidence Scoring** - Transparent AI decision-making
 - **Slack Fallback** - Seamless handoff to human support
 
+### Knowledge Management
+- **SOP Module Control** - Toggle between OpenAI Assistants and local SOP system
+- **Shadow Mode** - Run both systems in parallel for performance comparison
+- **Knowledge Extraction** - Process OpenPhone conversations into actionable knowledge
+- **Recent Messages** - Live view of customer interactions with auto-refresh
+- **Feedback Analysis** - Review and improve responses marked as "not helpful"
+- **Bulk Import** - Import documents (.docx, .md, .json) with AI categorization
+
 ### Ticket Management
 - **Dual Categories** - Tech issues & Facilities management
 - **Priority Workflow** - Low → Medium → High → Urgent
@@ -82,6 +90,14 @@ git push origin main
 - **Backend** → Railway (2-3 min)
 
 ## 📊 Recent Updates
+
+### v1.8.3 (July 2025)
+- ✅ Knowledge Center restructured under Operations section
+- ✅ Card-based layout for SOP control and Knowledge extraction
+- ✅ Live Recent Messages with 8-second auto-refresh
+- ✅ Complete feedback section with Refresh, Export, and Clear functions
+- ✅ Improved error handling and debugging features
+- ✅ Shadow mode performance tracking (without monetary calculations)
 
 ### v1.8.2 (July 2025)
 - ✅ Intelligent SOP System with GPT-4o embeddings
