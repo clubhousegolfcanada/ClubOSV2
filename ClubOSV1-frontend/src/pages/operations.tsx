@@ -1121,20 +1121,42 @@ export default function Operations() {
 
                   {/* Feedback Analysis Card */}
                   <div className="card mt-6">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold">Feedback Analysis</h3>
+                        <h3 className="text-lg font-semibold">Not Helpful Feedback</h3>
                         <p className="text-[var(--text-secondary)] mt-1">
-                          Review and improve AI responses based on user feedback
+                          Review responses that users marked as not helpful
                         </p>
                       </div>
-                      <button
-                        onClick={exportFeedback}
-                        className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] flex items-center gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        Export
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={fetchFeedback}
+                          disabled={feedbackLoading}
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${feedbackLoading ? 'animate-spin' : ''}`} />
+                          <span className="hidden sm:inline">Refresh</span>
+                        </button>
+                        <button
+                          onClick={exportFeedback}
+                          disabled={feedback.length === 0}
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span className="hidden sm:inline">Export for Claude</span>
+                          <span className="sm:hidden">Export</span>
+                        </button>
+                        <button
+                          onClick={clearFeedback}
+                          disabled={feedback.length === 0}
+                          className="px-3 py-2 text-sm sm:px-4 sm:text-base bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          title="Clear all feedback"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="hidden sm:inline">Clear All</span>
+                          <span className="sm:hidden">Clear</span>
+                        </button>
+                      </div>
                     </div>
 
                     {feedbackLoading ? (
@@ -1166,10 +1188,10 @@ export default function Operations() {
                       </div>
                     ) : (
                       <div className="text-center py-12">
-                        <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <h3 className="text-lg font-semibold mb-2">No Feedback Available</h3>
+                        <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-lg font-semibold mb-2">No feedback entries yet</h3>
                         <p className="text-[var(--text-secondary)]">
-                          All user feedback has been addressed or no feedback has been received yet.
+                          When users mark responses as "not helpful", they'll appear here
                         </p>
                       </div>
                     )}
