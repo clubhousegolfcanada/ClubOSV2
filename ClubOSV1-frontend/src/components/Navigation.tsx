@@ -6,6 +6,7 @@ import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
 import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import packageJson from '../../package.json';
 
 type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
@@ -72,7 +73,7 @@ const Navigation: React.FC = () => {
                 ClubOS
               </Link>
               <span className="text-[10px] text-[var(--text-muted)] -mt-1 hidden md:block">
-                v1.8.1
+                v{packageJson.version}
               </span>
             </div>
             
