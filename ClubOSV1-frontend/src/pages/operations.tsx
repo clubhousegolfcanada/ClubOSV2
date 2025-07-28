@@ -1168,160 +1168,165 @@ export default function Operations() {
                 </>
               ) : showKnowledge ? (
                 <>
-                  {/* Knowledge Center - Dashboard-style Layout */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-                    {/* Left Column - SOP Control & Shadow Mode (3 columns) */}
-                    <div className="lg:col-span-3">
-                      <div className="card">
-                        <div className="p-4 border-b border-[var(--border-secondary)]">
-                          <h3 className="text-lg font-semibold flex items-center gap-2">
-                            <Brain className="w-5 h-5 text-[var(--accent)]" />
-                            SOP System
-                          </h3>
-                        </div>
-                        <div className="p-4">
-                          <SOPModeControl />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Center Panel - Knowledge Extraction (6 columns) */}
-                    <div className="lg:col-span-6 space-y-4">
-                      <div className="card">
-                        <div className="p-4 border-b border-[var(--border-secondary)]">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold flex items-center gap-2">
-                              <Brain className="w-5 h-5 text-[var(--accent)]" />
-                              Knowledge Extraction
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                              <span className="text-sm text-[var(--text-secondary)]">Live</span>
+                  {/* Knowledge Center - Compressed Dashboard Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                    {/* Main Content Area */}
+                    <div className="lg:col-span-9">
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                        {/* Left Column - SOP Control (3 columns) */}
+                        <div className="lg:col-span-3">
+                          <div className="bg-[var(--bg-secondary)] rounded-lg">
+                            <div className="p-3 border-b border-[var(--border-primary)]">
+                              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                                <Brain className="w-4 h-4 text-[var(--accent)]" />
+                                SOP System
+                              </h3>
                             </div>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <KnowledgeExtractionPanel />
-                        </div>
-                      </div>
-
-                      {/* Feedback Analysis - Full Width */}
-                      <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                          <h3 className="text-base font-semibold flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 text-[var(--accent)]" />
-                            Not Helpful Feedback
-                          </h3>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={fetchFeedback}
-                              disabled={feedbackLoading}
-                              className="px-3 py-1.5 text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-1.5"
-                            >
-                              <RefreshCw className={`w-3.5 h-3.5 ${feedbackLoading ? 'animate-spin' : ''}`} />
-                              <span className="hidden sm:inline">Refresh</span>
-                            </button>
-                            <button
-                              onClick={exportFeedback}
-                              disabled={feedback.length === 0}
-                              className="px-3 py-1.5 text-sm bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              Export
-                            </button>
-                            <button
-                              onClick={clearFeedback}
-                              disabled={feedback.length === 0}
-                              className="px-3 py-1.5 text-sm bg-red-500/20 text-red-400 border border-red-500/30 rounded-md hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                              title="Clear all feedback"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="p-3">
+                              <SOPModeControl />
+                            </div>
                           </div>
                         </div>
                         
-                        {/* Feedback Content - Compact */}
-                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                          {feedbackLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                              <RefreshCw className="w-6 h-6 animate-spin text-[var(--text-muted)]" />
-                              <span className="ml-2 text-sm text-[var(--text-muted)]">Loading...</span>
-                            </div>
-                          ) : feedback.length > 0 ? (
-                            <div className="space-y-3">
-                              {feedback.map((item) => (
-                                <div key={item.id} className="bg-[var(--bg-secondary)] rounded-md p-3 hover:bg-[var(--bg-tertiary)] transition-colors">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium truncate">{item.query}</p>
-                                      <p className="text-xs text-[var(--text-muted)] mt-1">{item.feedback}</p>
-                                    </div>
-                                    <span className="text-xs text-[var(--text-muted)] ml-2">
-                                      {new Date(item.timestamp).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                  <div className="mt-2">
-                                    <FeedbackResponse responseData={item.response} />
-                                  </div>
+                        {/* Center Panel - Knowledge Extraction (9 columns) */}
+                        <div className="lg:col-span-9 space-y-3">
+                          <div className="bg-[var(--bg-secondary)] rounded-lg">
+                            <div className="p-3 border-b border-[var(--border-primary)]">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                                  <Brain className="w-4 h-4 text-[var(--accent)]" />
+                                  Knowledge Extraction
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                                  <span className="text-[10px] text-[var(--text-muted)]">Live</span>
                                 </div>
-                              ))}
+                              </div>
                             </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                              <p className="text-sm text-[var(--text-muted)]">No feedback entries yet</p>
+                            <div className="p-3">
+                              <KnowledgeExtractionPanel />
                             </div>
-                          )}
+                          </div>
+
+                          {/* Feedback Analysis - Compact */}
+                          <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                                <AlertCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+                                Not Helpful Feedback
+                              </h3>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={fetchFeedback}
+                                  disabled={feedbackLoading}
+                                  className="px-2 py-1 text-[10px] bg-[var(--bg-primary)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-1"
+                                >
+                                  <RefreshCw className={`w-3 h-3 ${feedbackLoading ? 'animate-spin' : ''}`} />
+                                  <span className="hidden sm:inline">Refresh</span>
+                                </button>
+                                <button
+                                  onClick={exportFeedback}
+                                  disabled={feedback.length === 0}
+                                  className="px-2 py-1 text-[10px] bg-[var(--accent)] text-white rounded hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center gap-1"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  Export
+                                </button>
+                                <button
+                                  onClick={clearFeedback}
+                                  disabled={feedback.length === 0}
+                                  className="px-2 py-1 text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                                  title="Clear all feedback"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Feedback Content - Ultra Compact */}
+                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                              {feedbackLoading ? (
+                                <div className="flex items-center justify-center py-6">
+                                  <RefreshCw className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
+                                  <span className="ml-1 text-xs text-[var(--text-muted)]">Loading...</span>
+                                </div>
+                              ) : feedback.length > 0 ? (
+                                <div className="space-y-2">
+                                  {feedback.map((item) => (
+                                    <div key={item.id} className="bg-[var(--bg-primary)] rounded p-2 hover:bg-[var(--bg-tertiary)] transition-colors">
+                                      <div className="flex justify-between items-start mb-1">
+                                        <div className="flex-1">
+                                          <p className="text-xs font-medium truncate">{item.query}</p>
+                                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{item.feedback}</p>
+                                        </div>
+                                        <span className="text-[10px] text-[var(--text-muted)] ml-2">
+                                          {new Date(item.timestamp).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                      <div className="mt-1">
+                                        <FeedbackResponse responseData={item.response} />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-center py-6">
+                                  <AlertCircle className="w-6 h-6 mx-auto mb-1 opacity-30" />
+                                  <p className="text-xs text-[var(--text-muted)]">No feedback entries yet</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Right Sidebar - Status Panel (3 columns) */}
-                    <div className="lg:col-span-3">
+                    <div className="lg:col-span-3 space-y-3">
                       {/* Recent Messages - Compact Sidebar */}
-                      <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-base font-semibold flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4 text-[var(--accent)]" />
+                      <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                            <MessageSquare className="w-3.5 h-3.5 text-[var(--accent)]" />
                             Recent Messages
                           </h3>
                           <div className="flex items-center gap-1">
-                            <RefreshCw className="w-3 h-3 animate-spin text-[var(--accent)]" />
-                            <span className="text-xs text-[var(--text-muted)]">Live</span>
+                            <RefreshCw className="w-2.5 h-2.5 animate-spin text-[var(--accent)]" />
+                            <span className="text-[10px] text-[var(--text-muted)]">Live</span>
                           </div>
                         </div>
-                        <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                           <RecentMessages />
                         </div>
                       </div>
                       
-                      {/* Quick Stats - Compact Cards */}
-                      <div className="grid grid-cols-2 gap-3 mt-4">
-                        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 hover:bg-[var(--bg-tertiary)] hover:scale-105 transition-all duration-200 cursor-pointer">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-[var(--text-muted)]">Documents</span>
-                            <Brain className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      {/* Quick Stats - Inline Metrics */}
+                      <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                        <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2">System Metrics</h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                              <Brain className="w-3 h-3 text-[var(--accent)]" />
+                              Documents
+                            </span>
+                            <span className="text-sm font-semibold">0</span>
                           </div>
-                          <p className="text-xl font-bold">0</p>
-                          <p className="text-xs text-[var(--text-secondary)]">In System</p>
-                        </div>
-                        
-                        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 hover:bg-[var(--bg-tertiary)] hover:scale-105 transition-all duration-200 cursor-pointer">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-[var(--text-muted)]">Processed</span>
-                            <CheckSquare className="w-3.5 h-3.5 text-green-400" />
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                              <CheckSquare className="w-3 h-3 text-green-500" />
+                              Processed
+                            </span>
+                            <span className="text-sm font-semibold">0</span>
                           </div>
-                          <p className="text-xl font-bold">0</p>
-                          <p className="text-xs text-[var(--text-secondary)]">This Week</p>
                         </div>
                       </div>
                       
                       {/* Export Knowledge Button */}
-                      <div className="mt-4">
+                      <div>
                         <button
                           onClick={handleKnowledgeExport}
                           disabled={exportLoading}
-                          className="w-full px-4 py-3 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+                          className="w-full px-3 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-1.5 text-xs font-medium disabled:opacity-50"
                         >
                           {exportLoading ? (
                             <>

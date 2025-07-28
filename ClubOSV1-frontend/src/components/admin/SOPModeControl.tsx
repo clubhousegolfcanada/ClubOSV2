@@ -7,7 +7,8 @@ import {
   Eye, 
   AlertCircle,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  ChevronRight
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -127,158 +128,108 @@ export const SOPModeControl: React.FC = () => {
     : '0';
 
   return (
-    <div className="space-y-4">
-      {/* Module Status */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-[var(--text-secondary)]">Module Status</span>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+    <div className="space-y-3">
+      {/* Compact Module Status */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Status</span>
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
           status.module.initialized 
-            ? 'bg-green-500/20 text-green-400' 
-            : 'bg-red-500/20 text-red-400'
+            ? 'bg-green-500/10 text-green-500' 
+            : 'bg-red-500/10 text-red-500'
         }`}>
-          {status.module.initialized ? 'Initialized' : 'Not Initialized'}
+          {status.module.initialized ? 'READY' : 'OFFLINE'}
         </span>
       </div>
 
-        {/* Mode Controls */}
-        <div className="space-y-4">
-          {/* Shadow Mode Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="w-4 h-4 text-[var(--text-secondary)]" />
-              <label className="text-sm font-medium">Shadow Mode</label>
-            </div>
-            <button
-              onClick={() => toggleMode('SOP_SHADOW_MODE')}
-              disabled={isLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                status.config.SOP_SHADOW_MODE 
-                  ? 'bg-[var(--accent)]' 
-                  : 'bg-[var(--bg-tertiary)]'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  status.config.SOP_SHADOW_MODE ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+      {/* Pill Toggle Controls */}
+      <div className="space-y-2">
+        {/* Shadow Mode */}
+        <div className="flex items-center justify-between py-1">
+          <span className="text-xs font-medium">Shadow Mode</span>
+          <button
+            onClick={() => toggleMode('SOP_SHADOW_MODE')}
+            disabled={isLoading}
+            className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${
+              status.config.SOP_SHADOW_MODE 
+                ? 'bg-[var(--accent)] text-white' 
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            {status.config.SOP_SHADOW_MODE ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
+        {/* Use SOP Module */}
+        <div className="flex items-center justify-between py-1">
+          <span className="text-xs font-medium">Use SOP Module</span>
+          <button
+            onClick={() => toggleMode('USE_INTELLIGENT_SOP')}
+            disabled={isLoading || status.config.SOP_SHADOW_MODE}
+            className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${
+              status.config.USE_INTELLIGENT_SOP 
+                ? 'bg-[var(--accent)] text-white' 
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            } ${
+              status.config.SOP_SHADOW_MODE ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title={status.config.SOP_SHADOW_MODE ? 'Disable Shadow Mode first' : ''}
+          >
+            {status.config.USE_INTELLIGENT_SOP ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
+        {status.config.SOP_SHADOW_MODE && (
+          <div className="text-[10px] text-yellow-500 flex items-center gap-1 mt-1">
+            <AlertCircle className="w-3 h-3" />
+            Disable shadow mode to switch
           </div>
-
-          {/* SOP Mode Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Brain className="w-4 h-4 text-[var(--text-secondary)]" />
-              <label className="text-sm font-medium">Use SOP Module</label>
-            </div>
-            <button
-              onClick={() => toggleMode('USE_INTELLIGENT_SOP')}
-              disabled={isLoading || status.config.SOP_SHADOW_MODE}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                status.config.USE_INTELLIGENT_SOP 
-                  ? 'bg-[var(--accent)]' 
-                  : 'bg-[var(--bg-tertiary)]'
-              } ${
-                status.config.SOP_SHADOW_MODE ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              title={status.config.SOP_SHADOW_MODE ? 'Disable Shadow Mode first' : ''}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  status.config.USE_INTELLIGENT_SOP ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          {status.config.SOP_SHADOW_MODE && (
-            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <p className="text-sm text-yellow-400 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                Shadow mode must be disabled before switching to SOP module
-              </p>
-            </div>
-          )}
-        </div>
-
-      {/* Module Stats */}
-      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[var(--border-secondary)]">
-        <div className="text-center">
-          <p className="text-lg font-semibold">{status.module.documentCount}</p>
-          <p className="text-xs text-[var(--text-muted)]">Documents</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-semibold">{status.module.assistants.length}</p>
-          <p className="text-xs text-[var(--text-muted)]">Assistants</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-semibold">{status.config.SOP_CONFIDENCE_THRESHOLD}</p>
-          <p className="text-xs text-[var(--text-muted)]">Min Confidence</p>
-        </div>
+        )}
       </div>
 
-      {/* Shadow Mode Statistics */}
-      {shadowStats && shadowStats.overall.total_comparisons > 0 && (
-        <div className="pt-4 border-t border-[var(--border-secondary)]">
-          <h4 className="text-sm font-semibold mb-3">Shadow Mode Performance</h4>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{shadowStats.overall.total_comparisons}</p>
-              <p className="text-sm text-[var(--text-secondary)]">Comparisons</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-400">{confidencePercentage}%</p>
-              <p className="text-sm text-[var(--text-secondary)]">Avg Confidence</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-400">{timeImprovement}%</p>
-              <p className="text-sm text-[var(--text-secondary)]">Faster</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-400">
-                {shadowStats.overall.high_confidence_count}
-              </p>
-              <p className="text-sm text-[var(--text-secondary)]">High Confidence</p>
-            </div>
-          </div>
+      {/* Inline Module Metrics */}
+      <div className="flex items-center justify-between py-2 border-t border-[var(--border-secondary)] text-[11px]">
+        <span className="text-[var(--text-muted)]">
+          <span className="font-medium text-[var(--text-secondary)]">{status.module.documentCount}</span> Docs
+        </span>
+        <span className="text-[var(--text-muted)]">
+          <span className="font-medium text-[var(--text-secondary)]">{status.module.assistants.length}</span> Assistants
+        </span>
+        <span className="text-[var(--text-muted)]">
+          <span className="font-medium text-[var(--text-secondary)]">{status.config.SOP_CONFIDENCE_THRESHOLD}</span> Min Conf
+        </span>
+      </div>
 
-          {/* Performance Indicators */}
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[var(--text-secondary)]">Average SOP Response Time</span>
-              <span className="font-medium">{Math.round(shadowStats.overall.avg_sop_time)}ms</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[var(--text-secondary)]">Average Assistant Response Time</span>
-              <span className="font-medium">{Math.round(shadowStats.overall.avg_assistant_time)}ms</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[var(--text-secondary)]">Ready for Production</span>
-              <span className={`font-medium ${
-                shadowStats.overall.high_confidence_count / shadowStats.overall.total_comparisons > 0.8
-                  ? 'text-green-400' : 'text-yellow-400'
-              }`}>
-                {shadowStats.overall.high_confidence_count / shadowStats.overall.total_comparisons > 0.8 ? 'Yes' : 'Not Yet'}
+      {/* Shadow Mode Performance - Collapsible */}
+      {shadowStats && shadowStats.overall.total_comparisons > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer py-2 border-t border-[var(--border-secondary)] flex items-center justify-between text-xs font-medium hover:text-[var(--accent)] transition-colors">
+            <span>Shadow Mode Performance</span>
+            <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
+          </summary>
+          
+          <div className="pt-2 pb-1 space-y-2">
+            {/* Compact inline metrics */}
+            <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+              <span>{shadowStats.overall.total_comparisons} Comparisons</span>
+              <span className="text-green-500">{confidencePercentage}% Confidence</span>
+              <span className="text-blue-500">{timeImprovement}% Faster</span>
+              <span className={shadowStats.overall.high_confidence_count / shadowStats.overall.total_comparisons > 0.8 ? 'text-green-500' : 'text-yellow-500'}>
+                {shadowStats.overall.high_confidence_count / shadowStats.overall.total_comparisons > 0.8 ? 'Ready' : 'Not Ready'}
               </span>
             </div>
           </div>
-
-        </div>
+        </details>
       )}
 
-      {/* Current Status */}
-      <div className={`p-3 rounded-lg text-sm ${
-        status.config.USE_INTELLIGENT_SOP 
-          ? 'bg-green-500/10 border border-green-500/20' 
-          : 'bg-blue-500/10 border border-blue-500/20'
-      }`}>
-        <p className={`font-medium ${
-          status.config.USE_INTELLIGENT_SOP ? 'text-green-400' : 'text-blue-400'
+      {/* Current Mode - Minimal */}
+      <div className="text-[11px] text-center py-1.5 rounded bg-[var(--bg-secondary)]">
+        <span className="text-[var(--text-muted)]">Mode: </span>
+        <span className={`font-medium ${
+          status.config.USE_INTELLIGENT_SOP ? 'text-green-500' : 'text-blue-500'
         }`}>
-          Currently using: {status.config.USE_INTELLIGENT_SOP ? 'SOP Module' : 'OpenAI Assistants'}
-          {status.config.SOP_SHADOW_MODE && ' (with Shadow Mode)'}
-        </p>
+          {status.config.USE_INTELLIGENT_SOP ? 'SOP' : 'OpenAI'}
+          {status.config.SOP_SHADOW_MODE && ' + Shadow'}
+        </span>
       </div>
     </div>
   );

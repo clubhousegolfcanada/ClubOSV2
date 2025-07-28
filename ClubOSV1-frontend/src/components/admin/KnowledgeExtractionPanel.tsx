@@ -184,11 +184,11 @@ export const KnowledgeExtractionPanel: React.FC = () => {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      emergency: 'text-red-500 bg-red-500/10',
-      booking: 'text-green-500 bg-green-500/10',
-      tech: 'text-blue-500 bg-blue-500/10',
-      brand: 'text-purple-500 bg-purple-500/10',
-      general: 'text-gray-500 bg-gray-500/10'
+      emergency: 'text-red-600 bg-red-500/10',
+      booking: 'text-green-600 bg-green-500/10',
+      tech: 'text-blue-600 bg-blue-500/10',
+      brand: 'text-purple-600 bg-purple-500/10',
+      general: 'text-gray-600 bg-gray-500/10'
     };
     return colors[category] || colors.general;
   };
@@ -421,60 +421,48 @@ export const KnowledgeExtractionPanel: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex gap-6 border-b border-[var(--border-secondary)]">
+    <div className="space-y-4">
+      {/* Segmented Pill Navigation */}
+      <div className="inline-flex items-center p-1 bg-[var(--bg-secondary)] rounded-lg">
         <button
           onClick={() => setActiveTab('stats')}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'stats'
-              ? 'text-[var(--text-primary)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              ? 'bg-[var(--accent)] text-white'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           Overview
-          {activeTab === 'stats' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-          )}
         </button>
         <button
           onClick={() => setActiveTab('extract')}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'extract'
-              ? 'text-[var(--text-primary)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              ? 'bg-[var(--accent)] text-white'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           Extract
-          {activeTab === 'extract' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-          )}
         </button>
         <button
           onClick={() => setActiveTab('review')}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'review'
-              ? 'text-[var(--text-primary)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              ? 'bg-[var(--accent)] text-white'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           Review
-          {activeTab === 'review' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-          )}
         </button>
         <button
           onClick={() => setActiveTab('add')}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'add'
-              ? 'text-[var(--text-primary)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              ? 'bg-[var(--accent)] text-white'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           Import
-          {activeTab === 'add' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-          )}
         </button>
       </div>
 
@@ -488,48 +476,48 @@ export const KnowledgeExtractionPanel: React.FC = () => {
             </div>
           ) : stats ? (
             <>
-              {/* Overview Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="card">
-                  <h3 className="text-sm text-[var(--text-secondary)] mb-1">Total Extracted</h3>
-                  <p className="text-2xl font-bold">{stats.overview.total_extracted}</p>
+              {/* Compact Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Total</p>
+                  <p className="text-xl font-semibold">{stats.overview.total_extracted}</p>
                 </div>
-                <div className="card">
-                  <h3 className="text-sm text-[var(--text-secondary)] mb-1">Applied</h3>
-                  <p className="text-2xl font-bold text-green-500">{stats.overview.applied_count}</p>
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Applied</p>
+                  <p className="text-xl font-semibold text-green-500">{stats.overview.applied_count}</p>
                 </div>
-                <div className="card">
-                  <h3 className="text-sm text-[var(--text-secondary)] mb-1">Pending Review</h3>
-                  <p className="text-2xl font-bold text-yellow-500">{stats.overview.pending_count}</p>
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Pending</p>
+                  <p className="text-xl font-semibold text-yellow-500">{stats.overview.pending_count}</p>
                 </div>
-                <div className="card">
-                  <h3 className="text-sm text-[var(--text-secondary)] mb-1">Avg Confidence</h3>
-                  <p className="text-2xl font-bold">
-                    {(stats.overview.avg_confidence * 100).toFixed(1)}%
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Confidence</p>
+                  <p className="text-xl font-semibold">
+                    {(stats.overview.avg_confidence * 100).toFixed(0)}%
                   </p>
                 </div>
-                <div className="card">
-                  <h3 className="text-sm text-[var(--text-secondary)] mb-1">Unique Sources</h3>
-                  <p className="text-2xl font-bold">{stats.overview.unique_sources}</p>
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Sources</p>
+                  <p className="text-xl font-semibold">{stats.overview.unique_sources}</p>
                 </div>
               </div>
 
-              {/* Category Breakdown */}
-              <div className="card">
-                <h3 className="text-lg font-semibold mb-4">Knowledge by Category</h3>
-                <div className="space-y-3">
+              {/* Category Breakdown - Compact */}
+              <div className="bg-[var(--bg-secondary)] rounded-lg p-4">
+                <h3 className="text-sm font-semibold mb-3">By Category</h3>
+                <div className="space-y-2">
                   {stats.byCategory.map(cat => (
                     <div key={cat.category} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-sm ${getCategoryColor(cat.category)}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getCategoryColor(cat.category)}`}>
                           {cat.category}
                         </span>
-                        <span className="text-sm text-[var(--text-secondary)]">
-                          {cat.count} items
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {cat.count}
                         </span>
                       </div>
-                      <span className="text-sm">
-                        {(cat.avg_confidence * 100).toFixed(1)}% confidence
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        {(cat.avg_confidence * 100).toFixed(0)}%
                       </span>
                     </div>
                   ))}
@@ -548,11 +536,11 @@ export const KnowledgeExtractionPanel: React.FC = () => {
       {/* Extract Tab */}
       {activeTab === 'extract' && (
         <div className="space-y-6">
-          {/* OpenPhone Connection Status */}
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Phone className="w-5 h-5" />
+          {/* OpenPhone Connection Status - Compact */}
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Phone className="w-4 h-4" />
                 OpenPhone Connection
               </h3>
               {openPhoneConnected !== null && (
@@ -585,41 +573,38 @@ export const KnowledgeExtractionPanel: React.FC = () => {
             )}
             
             {/* Import Historical Data */}
-            <div className="space-y-3">
-              <h4 className="font-medium">Import Historical Conversations</h4>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Import past conversations from OpenPhone to build your knowledge base
-              </p>
+            <div className="space-y-2">
+              <p className="text-xs text-[var(--text-muted)]">Import Historical Data</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => importHistoricalConversations(7)}
                   disabled={importing || !openPhoneConnected}
-                  className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg disabled:opacity-50 flex items-center gap-2"
+                  className="px-3 py-1.5 text-xs bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-md disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {importing ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-3 h-3 animate-spin" />
                   ) : (
-                    <Cloud className="w-4 h-4" />
+                    <Cloud className="w-3 h-3" />
                   )}
-                  Import Last 7 Days
+                  Last 7 Days
                 </button>
                 <button
                   onClick={() => importHistoricalConversations(30)}
                   disabled={importing || !openPhoneConnected}
-                  className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg disabled:opacity-50 flex items-center gap-2"
+                  className="px-3 py-1.5 text-xs bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-md disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  <Cloud className="w-4 h-4" />
-                  Import Last 30 Days
+                  <Cloud className="w-3 h-3" />
+                  Last 30 Days
                 </button>
               </div>
             </div>
           </div>
           
-          {/* Extract Knowledge */}
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">Extract Knowledge from Conversations</h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-6">
-              Process imported OpenPhone conversations to extract reusable knowledge
+          {/* Extract Knowledge - Compact */}
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-4">
+            <h3 className="text-sm font-semibold mb-2">Extract Knowledge</h3>
+            <p className="text-xs text-[var(--text-muted)] mb-3">
+              Process conversations to extract reusable knowledge
             </p>
             
             <div className="space-y-4">
