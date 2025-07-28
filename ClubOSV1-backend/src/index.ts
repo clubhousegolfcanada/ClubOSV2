@@ -168,36 +168,65 @@ async function startServer() {
     await initializeSystemConfigs();
     logger.info('✅ System configurations initialized');
     
-    // Run database migrations
+    // Run database migrations - ensure checklist_submissions table exists
     try {
-      const migrationPath = join(__dirname, 'database', 'migrations', '008_checklist_submissions.sql');
-      const fs = require('fs');
-      if (fs.existsSync(migrationPath)) {
-        const migration = fs.readFileSync(migrationPath, 'utf8');
-        await db.query(migration);
-        logger.info('✅ Checklist submissions table migration completed');
+      // First, try to create the table if it doesn't exist
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS checklist_submissions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          category VARCHAR(50) NOT NULL CHECK (category IN ('cleaning', 'tech')),
+          type VARCHAR(50) NOT NULL CHECK (type IN ('daily', 'weekly', 'quarterly')),
+          location VARCHAR(100) NOT NULL,
+          completed_tasks JSONB NOT NULL DEFAULT '[]',
+          total_tasks INTEGER NOT NULL,
+          completion_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+      
+      // Create indexes if they don't exist
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_checklist_submissions_user_id ON checklist_submissions(user_id)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_checklist_submissions_category ON checklist_submissions(category)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_checklist_submissions_type ON checklist_submissions(type)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_checklist_submissions_location ON checklist_submissions(location)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_checklist_submissions_completion_time ON checklist_submissions(completion_time DESC)`);
+      
+      logger.info('✅ Checklist submissions table and indexes verified');
+      
+      // Verify the table exists and is accessible
+      const tableCheck = await db.query(`
+        SELECT COUNT(*) as count FROM information_schema.tables 
+        WHERE table_name = 'checklist_submissions'
+      `);
+      
+      if (tableCheck.rows[0].count > 0) {
+        const rowCount = await db.query('SELECT COUNT(*) as total FROM checklist_submissions');
+        logger.info(`✅ Checklist submissions table confirmed: ${rowCount.rows[0].total} records`);
       } else {
-        // Try simpler approach - just run the CREATE TABLE directly
+        logger.error('❌ Checklist submissions table creation failed');
+      }
+    } catch (migrationError: any) {
+      logger.error('❌ Checklist submissions migration error:', migrationError);
+      
+      // Try a more basic creation without foreign key constraint
+      try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS checklist_submissions (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            category VARCHAR(50) NOT NULL CHECK (category IN ('cleaning', 'tech')),
-            type VARCHAR(50) NOT NULL CHECK (type IN ('daily', 'weekly', 'quarterly')),
+            user_id UUID NOT NULL,
+            category VARCHAR(50) NOT NULL,
+            type VARCHAR(50) NOT NULL,
             location VARCHAR(100) NOT NULL,
-            completed_tasks JSONB NOT NULL DEFAULT '[]',
+            completed_tasks TEXT NOT NULL DEFAULT '[]',
             total_tasks INTEGER NOT NULL,
             completion_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
           )
         `);
-        logger.info('✅ Checklist submissions table created');
-      }
-    } catch (migrationError: any) {
-      if (migrationError.code === '42P07') { // Table already exists
-        logger.info('✅ Checklist submissions table already exists');
-      } else {
-        logger.warn('⚠️  Migration error:', migrationError.message);
+        logger.info('✅ Created checklist submissions table without constraints');
+      } catch (fallbackError: any) {
+        logger.error('❌ Failed to create checklist submissions table:', fallbackError);
       }
     }
   } catch (error) {

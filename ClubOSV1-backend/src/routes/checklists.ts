@@ -229,8 +229,24 @@ router.get('/submissions',
       });
 
       // Check if table exists and has any data
-      const tableCheck = await db.query('SELECT COUNT(*) as total FROM checklist_submissions');
-      logger.info('Total submissions in database:', { total: tableCheck.rows[0].total });
+      try {
+        const tableCheck = await db.query('SELECT COUNT(*) as total FROM checklist_submissions');
+        logger.info('Total submissions in database:', { total: tableCheck.rows[0].total });
+      } catch (tableError: any) {
+        logger.error('Table check failed:', tableError);
+        
+        // Check if table exists
+        const tableExists = await db.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'checklist_submissions'
+          )
+        `);
+        
+        if (!tableExists.rows[0].exists) {
+          throw new AppError('Checklist submissions table not found. Please contact support.', 500, 'TABLE_NOT_FOUND');
+        }
+      }
 
       let queryStr = `
         SELECT 
@@ -312,8 +328,28 @@ router.get('/submissions',
       logger.error('Failed to load checklist submissions', {
         error: error.message,
         code: error.code,
+        detail: error.detail,
+        table: error.table,
         requestedBy: req.user?.email
       });
+      
+      // Provide more specific error messages
+      if (error.code === '42P01') { // Table does not exist
+        return res.status(500).json({
+          success: false,
+          error: 'Checklist system is being initialized. Please try again in a moment.',
+          code: 'TABLE_INITIALIZING'
+        });
+      }
+      
+      if (error.code === '42703') { // Column does not exist
+        return res.status(500).json({
+          success: false,
+          error: 'Database schema update in progress. Please try again shortly.',
+          code: 'SCHEMA_UPDATE'
+        });
+      }
+      
       next(error);
     }
   }
