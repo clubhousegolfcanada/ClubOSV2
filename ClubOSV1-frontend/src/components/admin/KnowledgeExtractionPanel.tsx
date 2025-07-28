@@ -238,16 +238,38 @@ export const KnowledgeExtractionPanel: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      toast.success('Knowledge processed and added to SOP');
+      // Check if this was a bulk import
+      if (response.data.data.imported !== undefined) {
+        const { imported, summary } = response.data.data;
+        toast.success(
+          `Bulk import complete: ${imported} items imported`,
+          { duration: 5000 }
+        );
+        if (summary) {
+          console.log('Import summary:', summary);
+        }
+      } else {
+        // Single entry
+        toast.success('Knowledge processed and added to SOP');
+      }
+      
       setManualEntry('');
       
       // Refresh stats
       if (activeTab === 'stats') {
         fetchStats();
+      } else {
+        // Switch to review tab to see imported items
+        setActiveTab('review');
       }
     } catch (error) {
       console.error('Failed to process manual entry:', error);
-      toast.error('Failed to process knowledge');
+      
+      if (axios.isAxiosError(error) && error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('Failed to process knowledge. Check console for details.');
+      }
     } finally {
       setProcessing(false);
     }
@@ -627,13 +649,18 @@ export const KnowledgeExtractionPanel: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Knowledge Entry
+                  Knowledge Entry / Document Import
                 </label>
                 <textarea
                   value={manualEntry}
                   onChange={(e) => setManualEntry(e.target.value)}
-                  placeholder="Example: Clubhouse Grey is #503285 color code"
-                  className="w-full min-h-[150px] p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg resize-y"
+                  placeholder="Paste content here:
+• Single knowledge items (e.g., 'Clubhouse Grey is #503285')
+• Markdown documents (.md)
+• JSON exports from OpenAI assistants
+• Text from .docx files
+• Multiple items separated by line breaks"
+                  className="w-full min-h-[300px] p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg resize-y font-mono text-sm"
                   disabled={processing}
                 />
               </div>
@@ -667,16 +694,31 @@ export const KnowledgeExtractionPanel: React.FC = () => {
               </div>
             </div>
             
-            <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <p className="text-sm text-blue-400">
-                <strong>Tips:</strong>
-              </p>
-              <ul className="text-sm text-blue-400 mt-2 space-y-1 list-disc list-inside">
-                <li>Be specific about what you're documenting</li>
-                <li>Include relevant details like color codes, measurements, or procedures</li>
-                <li>The AI will categorize this into the appropriate SOP section</li>
-                <li>You can add troubleshooting steps, brand information, or operational procedures</li>
-              </ul>
+            <div className="mt-6 space-y-4">
+              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-sm text-blue-400">
+                  <strong>Supported Formats:</strong>
+                </p>
+                <ul className="text-sm text-blue-400 mt-2 space-y-1 list-disc list-inside">
+                  <li><strong>Single Items:</strong> "Clubhouse Grey is #503285"</li>
+                  <li><strong>Markdown:</strong> Paste entire .md files with headers and sections</li>
+                  <li><strong>JSON:</strong> OpenAI assistant exports or knowledge bases</li>
+                  <li><strong>Plain Text:</strong> Copy from .docx or any text source</li>
+                  <li><strong>Bulk Import:</strong> Multiple items separated by line breaks</li>
+                </ul>
+              </div>
+              
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-sm text-yellow-400">
+                  <strong>Processing Notes:</strong>
+                </p>
+                <ul className="text-sm text-yellow-400 mt-2 space-y-1 list-disc list-inside">
+                  <li>Large documents will be split into logical sections</li>
+                  <li>Headers and structure will be preserved</li>
+                  <li>The AI will categorize each piece appropriately</li>
+                  <li>Duplicate detection prevents redundant entries</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

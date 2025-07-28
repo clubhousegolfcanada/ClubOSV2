@@ -331,7 +331,53 @@ Only extract knowledge if:
     }
 
     try {
-      const prompt = `Analyze this manual knowledge entry and format it for our SOP system.
+      // Detect if this is a bulk import (markdown, JSON, or multi-line)
+      const isBulkImport = this.detectBulkImport(entry);
+      
+      if (isBulkImport) {
+        return await this.processBulkImport(entry);
+      } else {
+        return await this.processSingleEntry(entry);
+      }
+    } catch (error) {
+      logger.error('Failed to process manual entry:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Detect if the entry is a bulk import
+   */
+  private detectBulkImport(entry: string): boolean {
+    // Check for markdown headers
+    if (entry.includes('###') || entry.includes('##') || entry.includes('#')) {
+      return true;
+    }
+    
+    // Check for JSON structure
+    if (entry.trim().startsWith('{') || entry.trim().startsWith('[')) {
+      try {
+        JSON.parse(entry);
+        return true;
+      } catch {
+        // Not valid JSON
+      }
+    }
+    
+    // Check for multiple substantial lines (bulk text)
+    const lines = entry.split('\n').filter(line => line.trim().length > 10);
+    if (lines.length > 3) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Process a single knowledge entry
+   */
+  private async processSingleEntry(entry: string): Promise<any> {
+    const prompt = `Analyze this manual knowledge entry and format it for our SOP system.
 
 Entry: "${entry}"
 
@@ -349,62 +395,177 @@ Example format:
 
 Return ONLY a valid JSON object with these fields: problem, solution, category, confidence`;
 
-      const response = await this.openai.chat.completions.create({
-        model: this.MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a knowledge management assistant for a golf simulator business. Extract and categorize information precisely.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.1,
-        response_format: { type: 'json_object' }
-      });
+    const response = await this.openai!.chat.completions.create({
+      model: this.MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a knowledge management assistant for a golf simulator business. Extract and categorize information precisely.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' }
+    });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
-      
-      // Validate the response
-      if (!result.problem || !result.solution || !result.category || result.confidence === undefined) {
-        throw new Error('Invalid response format from AI');
+    const result = JSON.parse(response.choices[0].message.content || '{}');
+    
+    // Validate the response
+    if (!result.problem || !result.solution || !result.category || result.confidence === undefined) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    // Store in database
+    const stored = await db.query(`
+      INSERT INTO extracted_knowledge 
+      (source_id, source_type, category, problem, solution, confidence, applied_to_sop, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [
+      uuidv4(),
+      'manual',
+      result.category,
+      result.problem,
+      result.solution,
+      result.confidence,
+      false,
+      { 
+        originalEntry: entry,
+        createdBy: 'manual_entry',
+        timestamp: new Date().toISOString()
+      }
+    ]);
+
+    logger.info('Manual knowledge entry processed', {
+      category: result.category,
+      confidence: result.confidence,
+      id: stored.rows[0].id
+    });
+
+    return stored.rows[0];
+  }
+
+  /**
+   * Process bulk import of knowledge
+   */
+  private async processBulkImport(entry: string): Promise<any> {
+    logger.info('Processing bulk import...');
+    
+    const prompt = `Analyze this document/bulk import and extract ALL knowledge items for our SOP system.
+
+Document:
+${entry}
+
+Extract multiple knowledge items from this content. For each piece of knowledge:
+1. Identify the problem or question it addresses
+2. Provide the solution in a clear, actionable format
+3. Categorize into: emergency, booking, tech, brand, or general
+4. Rate confidence (0-1)
+
+Important:
+- Extract as many distinct knowledge items as possible
+- Preserve specific details like codes, numbers, procedures
+- Split complex procedures into step-by-step items
+- Keep solutions concise but complete
+
+Return a JSON object with:
+{
+  "items": [
+    {
+      "problem": "...",
+      "solution": "...",
+      "category": "...",
+      "confidence": 0.95
+    },
+    ...
+  ],
+  "summary": "Brief summary of what was imported"
+}`;
+
+    const response = await this.openai!.chat.completions.create({
+      model: this.MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a knowledge management assistant for a golf simulator business. Extract ALL relevant knowledge from documents accurately and comprehensively.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 4000,
+      response_format: { type: 'json_object' }
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || '{}');
+    
+    if (!result.items || !Array.isArray(result.items)) {
+      throw new Error('Invalid bulk import response format');
+    }
+
+    const imported = [];
+    
+    // Process each extracted item
+    for (const item of result.items) {
+      if (!item.problem || !item.solution || !item.category) {
+        logger.warn('Skipping invalid item:', item);
+        continue;
       }
 
-      // Store in database
-      const stored = await db.query(`
-        INSERT INTO extracted_knowledge 
-        (source_id, source_type, category, problem, solution, confidence, applied_to_sop, metadata)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *
-      `, [
-        uuidv4(),
-        'manual',
-        result.category,
-        result.problem,
-        result.solution,
-        result.confidence,
-        false,
-        { 
-          originalEntry: entry,
-          createdBy: 'manual_entry',
-          timestamp: new Date().toISOString()
+      try {
+        // Check for duplicates
+        const existing = await db.query(`
+          SELECT id FROM extracted_knowledge
+          WHERE problem ILIKE $1
+          AND category = $2
+          LIMIT 1
+        `, [`%${item.problem}%`, item.category]);
+
+        if (existing.rows.length > 0) {
+          logger.info(`Skipping duplicate: ${item.problem}`);
+          continue;
         }
-      ]);
 
-      logger.info('Manual knowledge entry processed', {
-        category: result.category,
-        confidence: result.confidence,
-        id: stored.rows[0].id
-      });
+        // Store in database
+        const stored = await db.query(`
+          INSERT INTO extracted_knowledge 
+          (source_id, source_type, category, problem, solution, confidence, applied_to_sop, metadata)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING *
+        `, [
+          uuidv4(),
+          'bulk_import',
+          item.category,
+          item.problem,
+          item.solution,
+          item.confidence || 0.85,
+          false,
+          { 
+            bulkImport: true,
+            importSummary: result.summary,
+            createdBy: 'bulk_import',
+            timestamp: new Date().toISOString()
+          }
+        ]);
 
-      return stored.rows[0];
-      
-    } catch (error) {
-      logger.error('Failed to process manual entry:', error);
-      throw error;
+        imported.push(stored.rows[0]);
+      } catch (error) {
+        logger.error('Failed to import item:', error);
+      }
     }
+
+    logger.info(`Bulk import completed: ${imported.length} items imported`);
+
+    return {
+      imported: imported.length,
+      summary: result.summary,
+      items: imported
+    };
   }
 }
 
