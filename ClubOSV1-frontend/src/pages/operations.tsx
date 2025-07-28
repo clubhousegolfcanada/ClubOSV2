@@ -906,13 +906,13 @@ export default function Operations() {
                           </button>
                           <button
                             onClick={() => handleResetChecklist(checklist.id)}
-                            className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                            className="px-2 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
                           >
                             <RefreshCw className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setActiveChecklist(null)}
-                            className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                            className="px-2 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-md hover:bg-[var(--bg-tertiary)] transition-colors"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -938,11 +938,69 @@ export default function Operations() {
 
               {/* Add New Checklist Card */}
               {isCleaningEditMode && (
-                <button className="bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-4 hover:border-[var(--accent)] transition-all flex flex-col items-center justify-center gap-3 min-h-[200px]">
-                  <Plus className="w-8 h-8 text-[var(--text-muted)]" />
-                  <span className="text-[var(--text-secondary)]">Add New Checklist</span>
+                <button className="bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--border-secondary)] rounded-lg p-3 hover:border-[var(--accent)] hover:shadow-lg transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[150px]">
+                  <Plus className="w-6 h-6 text-[var(--text-muted)]" />
+                  <span className="text-xs text-[var(--text-secondary)]">Add New Checklist</span>
                 </button>
               )}
+                </div>
+              </div>
+              
+              {/* Sidebar - Quick Stats & History (4 columns) */}
+              <div className="lg:col-span-4 space-y-4">
+                {/* Submission History - Compact */}
+                <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[var(--accent)]" />
+                      Recent Submissions
+                    </h3>
+                    <span className="text-xs text-[var(--text-muted)]">Last 7 days</span>
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    <div className="text-xs text-[var(--text-muted)] text-center py-4">
+                      No recent submissions
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[var(--bg-secondary)] rounded-lg p-3 hover:bg-[var(--bg-tertiary)] hover:scale-105 transition-all duration-200 cursor-pointer">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-[var(--text-muted)]">Today</span>
+                      <CheckSquare className="w-3.5 h-3.5 text-[var(--accent)]" />
+                    </div>
+                    <p className="text-xl font-bold">0</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Completed</p>
+                  </div>
+                  
+                  <div className="bg-[var(--bg-secondary)] rounded-lg p-3 hover:bg-[var(--bg-tertiary)] hover:scale-105 transition-all duration-200 cursor-pointer">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-[var(--text-muted)]">This Week</span>
+                      <BarChart3 className="w-3.5 h-3.5 text-green-400" />
+                    </div>
+                    <p className="text-xl font-bold">0</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Total</p>
+                  </div>
+                </div>
+                
+                {/* Active Location Stats */}
+                <div className="card p-4 hover:shadow-lg transition-shadow duration-200">
+                  <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[var(--accent)]" />
+                    By Location
+                  </h3>
+                  <div className="space-y-2">
+                    {['Bedford', 'Dartmouth', 'Stratford', 'Truro', 'Bayers Lake'].map(location => (
+                      <div key={location} className="flex justify-between items-center text-xs">
+                        <span className="text-[var(--text-secondary)]">{location}</span>
+                        <span className="font-medium">0</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         ) : (
