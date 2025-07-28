@@ -1,0 +1,226 @@
+import { Router, Request, Response } from 'express';
+import { db } from '../utils/database';
+import { logger } from '../utils/logger';
+import { AppError } from '../utils/errors';
+import crypto from 'crypto';
+
+const router = Router();
+
+// Verify OpenPhone webhook signature
+function verifyOpenPhoneSignature(payload: string, signature: string, secret: string): boolean {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+// OpenPhone webhook handler
+router.post('/webhook', async (req: Request, res: Response) => {
+  try {
+    // Get raw body for signature verification if available
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+    const signature = req.headers['x-openphone-signature'] as string;
+    const webhookSecret = process.env.OPENPHONE_WEBHOOK_SECRET;
+
+    // Verify signature if secret is configured
+    if (webhookSecret && signature) {
+      const isValid = verifyOpenPhoneSignature(rawBody, signature, webhookSecret);
+      if (!isValid) {
+        logger.warn('Invalid OpenPhone webhook signature');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+    }
+
+    const { type, data } = req.body;
+    
+    logger.info('OpenPhone webhook received', { type, dataKeys: Object.keys(data || {}) });
+
+    // Handle different webhook types
+    switch (type) {
+      case 'message.created':
+      case 'message.updated':
+      case 'conversation.updated':
+        // Extract conversation data
+        const phoneNumber = data.to || data.from || data.phoneNumber;
+        const customerName = data.contactName || data.customerName || 'Unknown';
+        const employeeName = data.userName || data.employeeName || 'Unknown';
+        
+        // Store conversation
+        await db.query(`
+          INSERT INTO openphone_conversations 
+          (phone_number, customer_name, employee_name, messages, metadata)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (id) DO UPDATE SET
+            messages = $4,
+            metadata = $5,
+            created_at = CURRENT_TIMESTAMP
+        `, [
+          phoneNumber,
+          customerName,
+          employeeName,
+          JSON.stringify(data.messages || [data]),
+          { 
+            openPhoneId: data.id,
+            conversationId: data.conversationId,
+            type,
+            timestamp: new Date().toISOString()
+          }
+        ]);
+        
+        logger.info('OpenPhone conversation stored', { phoneNumber, type });
+        break;
+
+      case 'call.completed':
+        // Store call information
+        await db.query(`
+          INSERT INTO openphone_conversations 
+          (phone_number, customer_name, employee_name, messages, metadata)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [
+          data.phoneNumber,
+          data.contactName || 'Unknown',
+          data.userName || 'Unknown',
+          JSON.stringify([{
+            type: 'call',
+            duration: data.duration,
+            direction: data.direction,
+            timestamp: data.timestamp
+          }]),
+          { 
+            openPhoneId: data.id,
+            type,
+            callDetails: {
+              duration: data.duration,
+              direction: data.direction,
+              recording: data.recordingUrl
+            }
+          }
+        ]);
+        
+        logger.info('OpenPhone call stored', { phoneNumber: data.phoneNumber, duration: data.duration });
+        break;
+
+      default:
+        logger.info('Unhandled OpenPhone webhook type', { type });
+    }
+    
+    // Always respond quickly to webhooks
+    res.json({ received: true });
+    
+  } catch (error) {
+    logger.error('OpenPhone webhook error:', error);
+    
+    // Still respond with 200 to prevent retries
+    res.json({ 
+      received: true, 
+      error: 'Processing error - logged for review' 
+    });
+  }
+});
+
+// Get unprocessed conversations for knowledge extraction
+router.get('/conversations/unprocessed', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    
+    const result = await db.query(`
+      SELECT * FROM openphone_conversations 
+      WHERE processed = false 
+      ORDER BY created_at DESC 
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+    
+  } catch (error) {
+    logger.error('Failed to get unprocessed conversations:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to retrieve conversations' 
+    });
+  }
+});
+
+// Mark conversation as processed
+router.put('/conversations/:id/processed', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(`
+      UPDATE openphone_conversations 
+      SET processed = true 
+      WHERE id = $1
+      RETURNING *
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Conversation not found' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+    
+  } catch (error) {
+    logger.error('Failed to mark conversation as processed:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update conversation' 
+    });
+  }
+});
+
+// Get conversation statistics
+router.get('/stats', async (req: Request, res: Response) => {
+  try {
+    const stats = await db.query(`
+      SELECT 
+        COUNT(*) as total_conversations,
+        COUNT(CASE WHEN processed = false THEN 1 END) as unprocessed_count,
+        COUNT(CASE WHEN processed = true THEN 1 END) as processed_count,
+        COUNT(DISTINCT phone_number) as unique_customers,
+        COUNT(DISTINCT employee_name) as unique_employees
+      FROM openphone_conversations
+    `);
+    
+    const recentActivity = await db.query(`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as conversation_count
+      FROM openphone_conversations
+      WHERE created_at > NOW() - INTERVAL '30 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `);
+    
+    res.json({
+      success: true,
+      data: {
+        overview: stats.rows[0],
+        recentActivity: recentActivity.rows
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Failed to get OpenPhone stats:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to retrieve statistics' 
+    });
+  }
+});
+
+export default router;

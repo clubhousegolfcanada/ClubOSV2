@@ -30,6 +30,7 @@ import analyticsRoutes from './routes/analytics';
 import checklistsRoutes from './routes/checklists';
 import remoteActionsRoutes from './routes/remoteActions';
 import debugRoutes from './routes/debug';
+import openphoneRoutes from './routes/openphone';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -104,6 +105,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/checklists', checklistsRoutes);
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/openphone', openphoneRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
