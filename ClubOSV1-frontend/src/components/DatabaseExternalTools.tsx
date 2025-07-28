@@ -261,18 +261,19 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
         {/* Status Section */}
         <div>
           <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3">Status</h3>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {toggleButtons.map((button, index) => (
               <button
                 key={index}
                 onClick={button.onClick}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex flex-col items-center ${
                   button.active
                     ? 'bg-[var(--accent)] text-white'
                     : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                 }`}
               >
-                {button.label} <span className="font-bold ml-1">{button.count}</span>
+                <span>{button.label}</span>
+                <span className="font-bold text-lg">{button.count}</span>
               </button>
             ))}
           </div>
