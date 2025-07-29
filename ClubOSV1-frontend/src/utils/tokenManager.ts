@@ -141,6 +141,9 @@ export class TokenManager {
   setupAxiosInterceptor(): void {
     if (typeof window === 'undefined') return;
     
+    // Skip interceptor setup on login page
+    if (window.location.pathname === '/login') return;
+    
     // Import axios dynamically to avoid SSR issues
     import('axios').then(({ default: axios }) => {
       axios.interceptors.response.use(
@@ -166,9 +169,14 @@ export class TokenManager {
           return response;
         },
         (error) => {
-          // Handle 401 errors
+          // Handle 401 errors (but not on login page or during login)
           if (error.response?.status === 401) {
-            this.handleTokenExpiration();
+            const isLoginPage = window.location.pathname === '/login';
+            const isAuthEndpoint = error.config?.url?.includes('/auth/login');
+            
+            if (!isLoginPage && !isAuthEndpoint) {
+              this.handleTokenExpiration();
+            }
           }
           return Promise.reject(error);
         }

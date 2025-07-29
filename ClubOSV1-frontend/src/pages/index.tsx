@@ -51,11 +51,13 @@ export default function Home() {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         
+        const token = localStorage.getItem('clubos_token');
         const response = await axios.get(`${API_URL}/history/stats/overview`, {
           params: { 
             period: '24h',
             endDate: yesterday.toISOString()
-          }
+          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         
         if (response.data.success && response.data.data) {
