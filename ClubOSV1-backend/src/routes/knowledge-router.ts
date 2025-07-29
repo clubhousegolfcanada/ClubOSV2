@@ -80,12 +80,9 @@ protectedRouter.post('/parse-and-route',
         data: {
           parsed: parsedUpdate,
           routing: routeResult,
-          message: isPartialSuccess 
-            ? `Knowledge saved to database. ${routeResult.message || 'Assistant update skipped'}`
-            : (routeResult.message || 'Knowledge update processed'),
+          message: 'Knowledge saved successfully to database', // Simple success message
           assistantUpdateStatus: routeResult.success ? 'success' : 'skipped'
-        },
-        error: routeResult.success ? undefined : routeResult.error
+        }
       });
     } catch (error) {
       logger.error('Knowledge routing error:', {

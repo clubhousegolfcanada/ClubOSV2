@@ -49,9 +49,9 @@ export class TokenManager {
     const decoded = this.decodeToken(token);
     if (!decoded || !decoded.exp) return true;
     
-    // Check if expired (with 30 second buffer)
+    // Check if expired (no buffer - was causing premature expiration)
     const now = Date.now() / 1000;
-    return decoded.exp < now + 30;
+    return decoded.exp < now;
   }
 
   /**

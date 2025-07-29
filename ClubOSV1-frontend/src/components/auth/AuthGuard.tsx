@@ -12,6 +12,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   const { isAuthenticated, user, setUser } = useAuthState();
 
   useEffect(() => {
+    // Only run on initial mount
+    if (typeof window === 'undefined') return;
+    
     // Check if user is stored in localStorage (for page refresh)
     const storedUser = localStorage.getItem('clubos_user');
     const storedToken = localStorage.getItem('clubos_token');
@@ -26,11 +29,17 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         localStorage.removeItem('clubos_token');
         router.push('/login');
       }
-    } else if (!isAuthenticated && !storedUser) {
-      // Not authenticated and no stored user, redirect to login
-      router.push('/login');
+    } else if (!isAuthenticated && !storedUser && !storedToken) {
+      // Only redirect if there's truly no auth data
+      const timer = setTimeout(() => {
+        if (!isAuthenticated) {
+          router.push('/login');
+        }
+      }, 100); // Small delay to allow state to sync
+      
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user, setUser, router]);
+  }, []); // Remove dependencies to prevent re-running
 
   if (!isAuthenticated) {
     return <>{fallback || <div>Loading...</div>}</>;
