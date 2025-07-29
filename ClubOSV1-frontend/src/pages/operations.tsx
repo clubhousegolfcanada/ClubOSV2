@@ -8,7 +8,7 @@ import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { ChecklistSystem } from '@/components/ChecklistSystem';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
-import { RecentMessages } from '@/components/RecentMessages';
+import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -1306,7 +1306,7 @@ export default function Operations() {
                           </div>
                         </div>
                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                          <RecentMessages />
+                          <OpenPhoneConversations />
                         </div>
                       </div>
                       

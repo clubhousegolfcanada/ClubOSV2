@@ -646,4 +646,142 @@ router.get('/debug/recent', async (req: Request, res: Response) => {
   }
 });
 
+// Get conversation count for display
+router.get('/conversations/count', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        COUNT(DISTINCT phone_number) as unique_customers,
+        COUNT(*) as total_conversations,
+        SUM(json_array_length(messages)) as total_messages,
+        COUNT(CASE WHEN processed = false THEN 1 END) as unprocessed_count
+      FROM openphone_conversations
+    `);
+    
+    res.json({
+      success: true,
+      data: {
+        uniqueCustomers: parseInt(result.rows[0].unique_customers) || 0,
+        totalConversations: parseInt(result.rows[0].total_conversations) || 0,
+        totalMessages: parseInt(result.rows[0].total_messages) || 0,
+        unprocessedCount: parseInt(result.rows[0].unprocessed_count) || 0
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get conversation count:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get conversation statistics'
+    });
+  }
+});
+
+// Export all conversations for AI processing
+router.get('/export/all', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const format = req.query.format as string || 'json';
+    
+    // Get all conversations ordered by phone number and created date
+    const result = await db.query(`
+      SELECT 
+        id,
+        conversation_id,
+        phone_number,
+        customer_name,
+        employee_name,
+        messages,
+        created_at,
+        updated_at,
+        processed,
+        metadata
+      FROM openphone_conversations
+      ORDER BY phone_number, created_at
+    `);
+    
+    if (format === 'llm') {
+      // Format optimized for LLM processing
+      const formattedData = result.rows.map(conv => ({
+        conversationId: conv.conversation_id,
+        customer: {
+          phone: conv.phone_number,
+          name: conv.customer_name
+        },
+        employee: conv.employee_name,
+        messages: conv.messages.map((msg: any) => ({
+          timestamp: msg.createdAt || msg.timestamp,
+          type: msg.type,
+          from: msg.from === conv.phone_number ? 'customer' : 'employee',
+          content: msg.body || msg.summary || msg.transcript || '[Call]',
+          metadata: {
+            duration: msg.duration,
+            direction: msg.direction,
+            mediaCount: msg.media?.length || 0
+          }
+        })),
+        conversationStart: conv.created_at,
+        lastActivity: conv.updated_at,
+        processed: conv.processed
+      }));
+      
+      res.json({
+        success: true,
+        exportDate: new Date().toISOString(),
+        conversationCount: formattedData.length,
+        data: formattedData
+      });
+    } else {
+      // Raw JSON export
+      res.json({
+        success: true,
+        exportDate: new Date().toISOString(),
+        conversationCount: result.rows.length,
+        data: result.rows
+      });
+    }
+  } catch (error) {
+    logger.error('Failed to export conversations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export conversations'
+    });
+  }
+});
+
+// Export as CSV for spreadsheet analysis
+router.get('/export/csv', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        conversation_id,
+        phone_number,
+        customer_name,
+        employee_name,
+        json_array_length(messages) as message_count,
+        created_at,
+        updated_at,
+        processed
+      FROM openphone_conversations
+      ORDER BY created_at DESC
+    `);
+    
+    // Create CSV header
+    let csv = 'Conversation ID,Phone Number,Customer Name,Employee Name,Message Count,First Contact,Last Contact,Processed\n';
+    
+    // Add data rows
+    result.rows.forEach(row => {
+      csv += `"${row.conversation_id}","${row.phone_number}","${row.customer_name}","${row.employee_name}",${row.message_count},"${row.created_at}","${row.updated_at}",${row.processed}\n`;
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=openphone_export_${new Date().toISOString().split('T')[0]}.csv`);
+    res.send(csv);
+  } catch (error) {
+    logger.error('Failed to export CSV:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export CSV'
+    });
+  }
+});
+
 export default router;
