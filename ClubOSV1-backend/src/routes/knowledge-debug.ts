@@ -175,4 +175,88 @@ router.post('/test-flow', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// Verify extracted knowledge count and samples
+router.get('/verify-extracted', authenticate, async (req: Request, res: Response) => {
+  try {
+    const stats: any = {};
+    
+    // Total count
+    const totalCount = await db.query('SELECT COUNT(*) as count FROM extracted_knowledge');
+    stats.totalDocuments = totalCount.rows[0].count;
+    
+    // By category
+    const byCategory = await db.query(`
+      SELECT category, COUNT(*) as count 
+      FROM extracted_knowledge 
+      GROUP BY category 
+      ORDER BY count DESC
+    `);
+    stats.byCategory = byCategory.rows;
+    
+    // Search for specific terms
+    const searchTerms = ['7iron', 'fan', 'bettergolf', 'nick'];
+    stats.searchResults = {};
+    
+    for (const term of searchTerms) {
+      const count = await db.query(`
+        SELECT COUNT(*) as count
+        FROM extracted_knowledge
+        WHERE problem ILIKE $1 OR solution ILIKE $1
+      `, [`%${term}%`]);
+      
+      const samples = await db.query(`
+        SELECT problem, solution, confidence, category
+        FROM extracted_knowledge
+        WHERE problem ILIKE $1 OR solution ILIKE $1
+        LIMIT 3
+      `, [`%${term}%`]);
+      
+      stats.searchResults[term] = {
+        count: count.rows[0].count,
+        samples: samples.rows
+      };
+    }
+    
+    // Recent uploads
+    const recent = await db.query(`
+      SELECT problem, category, confidence, created_at
+      FROM extracted_knowledge
+      ORDER BY created_at DESC
+      LIMIT 10
+    `);
+    stats.recentUploads = recent.rows;
+    
+    // Test unified search
+    const testSearches = ['7iron', 'golf tips', 'bettergolf'];
+    stats.unifiedSearchTests = {};
+    
+    for (const query of testSearches) {
+      const results = await knowledgeLoader.unifiedSearch(query, {
+        includeExtracted: true,
+        limit: 3
+      });
+      stats.unifiedSearchTests[query] = {
+        found: results.length,
+        results: results.map(r => ({
+          issue: r.issue.substring(0, 50),
+          source: r.source,
+          confidence: r.confidence
+        }))
+      };
+    }
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+    
+  } catch (error) {
+    logger.error('Failed to verify extracted knowledge:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: String(error) 
+    });
+  }
+});
+
 export default router;
