@@ -456,6 +456,7 @@ export class KnowledgeLoader {
       }
       
       if (includeSOPEmbeddings && this.dbInitialized) {
+        logger.info('Including SOP embeddings in search');
         promises.push(this.searchSOPEmbeddings(searchQuery, assistant || searchCategory));
       }
       
@@ -602,6 +603,18 @@ export class KnowledgeLoader {
     assistant?: string
   ): Promise<KnowledgeItem[]> {
     try {
+      // Map assistant names to categories
+      let searchCategory = assistant;
+      if (assistant && !['emergency', 'booking', 'tech', 'brand'].includes(assistant)) {
+        const assistantMap: Record<string, string> = {
+          'BrandTone': 'brand',
+          'TechSupport': 'tech',
+          'Emergency': 'emergency',
+          'Booking & Access': 'booking'
+        };
+        searchCategory = assistantMap[assistant] || assistant?.toLowerCase();
+      }
+      
       let queryText = `
         SELECT 
           id,
@@ -622,14 +635,19 @@ export class KnowledgeLoader {
       `;
       const params: any[] = [`%${searchQuery}%`, searchQuery];
       
-      if (assistant) {
+      if (searchCategory) {
         queryText += ` AND assistant = $3`;
-        params.push(assistant);
+        params.push(searchCategory);
       }
       
       queryText += ` ORDER BY updated_at DESC`;
       
+      logger.info('Searching SOP embeddings:', { searchQuery, searchCategory, queryPreview: queryText.substring(0, 100) });
+      
       const result = await query(queryText, params);
+      
+      logger.info('SOP embeddings search results:', { found: result.rows.length });
+      
       return result.rows;
     } catch (error) {
       logger.error('Failed to search SOP embeddings:', error);

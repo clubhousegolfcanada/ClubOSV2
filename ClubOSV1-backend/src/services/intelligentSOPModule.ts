@@ -352,7 +352,7 @@ export class IntelligentSOPModule {
         limit: topK * 2,
         includeStatic: true,
         includeExtracted: true,
-        includeSOPEmbeddings: false
+        includeSOPEmbeddings: true
       });
       
       const knowledgeDocs = knowledgeResults.map(item => ({
