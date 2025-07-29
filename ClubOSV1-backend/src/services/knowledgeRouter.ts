@@ -142,12 +142,18 @@ Respond with valid JSON only.`;
           route,
           assistantId: result.assistantId
         });
+      } else {
+        logger.error('Failed to update assistant knowledge:', {
+          assistant: update.target_assistant,
+          route,
+          error: result.message
+        });
       }
 
       return {
         success: result.success,
         assistant: update.target_assistant,
-        message: result.message,
+        message: result.success ? `Knowledge updated for ${update.target_assistant} assistant` : result.message,
         error: result.success ? undefined : result.message
       };
     } catch (error) {

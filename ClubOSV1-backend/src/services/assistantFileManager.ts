@@ -21,10 +21,14 @@ export class AssistantFileManager {
   async initializeKnowledgeFiles(assistantMap: Record<string, string>): Promise<void> {
     // Create database table for tracking knowledge if it doesn't exist
     try {
+      if (!db.initialized) {
+        logger.warn('Database not initialized, skipping knowledge file initialization');
+        return;
+      }
       await db.query(`
         CREATE TABLE IF NOT EXISTS assistant_knowledge (
           id SERIAL PRIMARY KEY,
-          assistant_id VARCHAR(255) NOT NULL,
+          assistant_id VARCHAR(255) NOT NULL UNIQUE,
           route VARCHAR(255) NOT NULL,
           knowledge JSONB NOT NULL,
           version VARCHAR(50) DEFAULT '1.0',
@@ -64,7 +68,10 @@ export class AssistantFileManager {
     await db.query(`
       INSERT INTO assistant_knowledge (assistant_id, route, knowledge)
       VALUES ($1, $2, $3)
-      ON CONFLICT (assistant_id) DO NOTHING
+      ON CONFLICT (assistant_id) DO UPDATE SET
+        route = EXCLUDED.route,
+        knowledge = EXCLUDED.knowledge,
+        updated_at = CURRENT_TIMESTAMP
     `, [assistantId, route, JSON.stringify(initialContent)]);
   }
 
@@ -96,6 +103,8 @@ export class AssistantFileManager {
     }
   ): Promise<boolean> {
     try {
+      // Ensure table exists first
+      await this.initializeKnowledgeFiles({ [assistantId]: assistantId });
       // Get current knowledge
       let currentData = await this.getAssistantKnowledge(assistantId);
       

@@ -43,7 +43,7 @@ router.post('/parse-and-route',
         data: {
           parsed: parsedUpdate,
           routing: routeResult,
-          message: routeResult.message
+          message: routeResult.message || 'Knowledge update processed'
         },
         error: routeResult.error
       });

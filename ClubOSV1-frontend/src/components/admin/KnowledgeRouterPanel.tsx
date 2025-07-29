@@ -64,7 +64,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
       );
       
       if (response.data.success) {
-        toast.success(response.data.data.message);
+        toast.success(response.data.data.message || 'Knowledge updated successfully');
         setInput('');
         fetchRecentUpdates();
       } else {
@@ -73,8 +73,14 @@ export const KnowledgeRouterPanel: React.FC = () => {
     } catch (error) {
       console.error('Knowledge routing error:', error);
       
-      if (axios.isAxiosError(error) && error.response?.data?.error) {
-        toast.error(error.response.data.error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          toast.error('Authentication required. Please log in again.');
+        } else if (error.response?.data?.error) {
+          toast.error(error.response.data.error);
+        } else {
+          toast.error('Failed to connect to server. Please try again.');
+        }
       } else {
         toast.error('Failed to process knowledge update');
       }
