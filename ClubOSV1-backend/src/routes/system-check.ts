@@ -23,7 +23,9 @@ router.get('/check', authenticate, async (req: Request, res: Response) => {
       services: {
         database: false,
         semanticSearch: false,
-        sopModule: false
+        sopModule: false,
+        semanticSearchWorking: false,
+        semanticSearchError: undefined as string | undefined
       },
       data: {
         extractedKnowledgeCount: 0,
