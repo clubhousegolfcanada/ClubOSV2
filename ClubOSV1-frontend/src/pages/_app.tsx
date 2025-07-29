@@ -35,8 +35,15 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     
     if (storedUser && storedToken && !isAuthenticated) {
       try {
-        const user = JSON.parse(storedUser);
-        setUser({ ...user, token: storedToken });
+        // Check if token is expired before restoring
+        if (!tokenManager.isTokenExpired(storedToken)) {
+          const user = JSON.parse(storedUser);
+          setUser({ ...user, token: storedToken });
+        } else {
+          // Clear expired token silently
+          localStorage.removeItem('clubos_user');
+          localStorage.removeItem('clubos_token');
+        }
       } catch (error) {
         console.error('Failed to restore auth state:', error);
         localStorage.removeItem('clubos_user');

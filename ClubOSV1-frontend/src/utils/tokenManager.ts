@@ -75,7 +75,8 @@ export class TokenManager {
       clearInterval(this.checkInterval);
     }
 
-    // Check every 30 seconds
+    // Don't check immediately on start - the token was just validated by login
+    // Start checking after 30 seconds
     this.checkInterval = setInterval(() => {
       const token = localStorage.getItem('clubos_token');
       
@@ -83,12 +84,6 @@ export class TokenManager {
         this.handleTokenExpiration();
       }
     }, 30000);
-
-    // Also check immediately
-    const token = localStorage.getItem('clubos_token');
-    if (token && this.isTokenExpired(token)) {
-      this.handleTokenExpiration();
-    }
   }
 
   /**
