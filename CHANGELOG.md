@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.8.5] - 2025-07-29
+
+### Added
+- Natural language knowledge update system with GPT-4o router
+- Database-first search to reduce OpenAI API calls  
+- Knowledge audit log table for complete update history
+- Assistant knowledge persistence in PostgreSQL
+- Markdown formatting support for assistant responses
+- Archive folder structure for old scripts and docs
+
+### Changed
+- Replaced vector-based SOP system with assistant-routed architecture
+- Simplified assistantFileManager to use database storage
+- Improved response formatting with ReactMarkdown
+- Cleaned up codebase - archived 50+ old test scripts
+
+### Fixed
+- TypeScript compilation errors in backend
+- Assistant response formatting in dashboard
+- Knowledge router validation middleware
+
+### Removed
+- Old SOP module and vector database dependencies
+- Unnecessary file management code for OpenAI assistants
+- Redundant test and debug shell scripts
+
 ## [1.8.3] - 2025-07-28
 
 ### Added

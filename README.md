@@ -37,18 +37,19 @@ Visit http://localhost:3000
 ### AI-Powered Operations
 - **Smart Request Routing** - GPT-4 analyzes and routes to specialized assistants
 - **4 Specialized Bots** - Emergency, Booking, Tech Support, Brand Tone
-- **Intelligent SOP System** - Local knowledge base with embeddings (saves $750/month)
+- **Knowledge Router System** - GPT-4o powered natural language processing
 - **OpenPhone Integration** - Automatic knowledge extraction from customer calls
 - **Confidence Scoring** - Transparent AI decision-making
 - **Slack Fallback** - Seamless handoff to human support
 
 ### Knowledge Management
-- **SOP Module Control** - Toggle between OpenAI Assistants and local SOP system
-- **Shadow Mode** - Run both systems in parallel for performance comparison
-- **Knowledge Extraction** - Process OpenPhone conversations into actionable knowledge
-- **Recent Messages** - Live view of customer interactions with auto-refresh
+- **Natural Language Updates** - Admins can update knowledge in plain English
+- **GPT-4o Knowledge Router** - Automatically parses and routes knowledge to assistants
+- **Database-First Search** - Checks local knowledge before calling OpenAI APIs
+- **Knowledge Audit Trail** - Complete history of all knowledge updates
+- **Assistant Knowledge Files** - Persistent storage for each specialized assistant
+- **Recent Messages** - Live view of customer interactions
 - **Feedback Analysis** - Review and improve responses marked as "not helpful"
-- **Bulk Import** - Import documents (.docx, .md, .json) with AI categorization
 
 ### Ticket Management
 - **Dual Categories** - Tech issues & Facilities management
@@ -89,7 +90,21 @@ git push origin main
 - **Frontend** → Vercel (1-2 min)
 - **Backend** → Railway (2-3 min)
 
+### Useful Scripts
+- `optimize-database.sh` - Database optimization utilities
+- `security-audit.sh` - Security checks and audit
+- `trigger-deployment.sh` - Manual deployment trigger
+- `quick-demo.sh` - Quick demo setup
+
 ## 📊 Recent Updates
+
+### v1.8.5 (July 2025) - Knowledge System Overhaul
+- ✅ Replaced vector-based SOP system with assistant-routed architecture
+- ✅ GPT-4o natural language router for knowledge updates
+- ✅ Database-first search before calling OpenAI (saves API costs)
+- ✅ Knowledge persistence in PostgreSQL audit log
+- ✅ Assistant responses now properly formatted with Markdown
+- ✅ Simplified codebase - removed 50+ test scripts
 
 ### v1.8.4 (July 2025)
 - ✅ Knowledge UI redesigned to match Dashboard layout
@@ -126,6 +141,21 @@ git push origin main
 - Horizontal scroll on mobile
 - Removed duplicate branding
 - Tighter spacing throughout
+
+## 🗂️ Project Structure
+
+```
+ClubOSV1/
+├── ClubOSV1-frontend/    # Next.js frontend
+├── ClubOSV1-backend/     # Express.js backend
+├── archive/              # Old scripts and docs
+│   ├── old-scripts/      # Archived shell scripts
+│   └── old-docs/         # Archived documentation
+├── docs/                 # Current documentation
+├── CHANGELOG.md          # Version history
+├── CLAUDE.md            # AI assistant instructions
+└── README.md            # This file
+```
 
 ## 🔧 Common Commands
 
