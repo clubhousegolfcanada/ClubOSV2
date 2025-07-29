@@ -9,6 +9,8 @@ import AuthGuard from '@/components/auth/AuthGuard';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { useKioskRedirect } from '@/hooks/useKioskRedirect';
+import { tokenManager } from '@/utils/tokenManager';
+import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -42,6 +44,19 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       }
     }
   }, [setUser, isAuthenticated]);
+
+  useEffect(() => {
+    // Start token monitoring when authenticated
+    if (isAuthenticated) {
+      tokenManager.startTokenMonitoring();
+      tokenManager.setupAxiosInterceptor();
+    }
+    
+    // Cleanup on unmount or when user logs out
+    return () => {
+      tokenManager.stopTokenMonitoring();
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Hide HubSpot navigation on mobile when embedded
@@ -100,6 +115,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         </AuthGuard>
       )}
       <Notifications />
+      {isAuthenticated && <SessionExpiryWarning />}
       <Toaster
         position="top-right"
         toastOptions={{

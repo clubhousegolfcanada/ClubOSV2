@@ -7,6 +7,7 @@ import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
 import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import packageJson from '../../package.json';
+import { tokenManager } from '@/utils/tokenManager';
 
 type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
@@ -17,6 +18,7 @@ const Navigation: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<'active' | 'warning' | 'expired'>('active');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Check if embedded
@@ -46,6 +48,36 @@ const Navigation: React.FC = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Monitor session status
+  useEffect(() => {
+    const checkSessionStatus = () => {
+      const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        setSessionStatus('expired');
+        return;
+      }
+
+      const timeUntilExpiry = tokenManager.getTimeUntilExpiration(token);
+      const fiveMinutes = 5 * 60 * 1000; // 5 minutes in ms
+
+      if (timeUntilExpiry <= 0) {
+        setSessionStatus('expired');
+      } else if (timeUntilExpiry < fiveMinutes) {
+        setSessionStatus('warning');
+      } else {
+        setSessionStatus('active');
+      }
+    };
+
+    // Check immediately
+    checkSessionStatus();
+
+    // Check every 10 seconds
+    const interval = setInterval(checkSessionStatus, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const navItems = user?.role === 'kiosk' 
@@ -101,7 +133,22 @@ const Navigation: React.FC = () => {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-3">
-            <div className="w-2 h-2 bg-[var(--status-success)] rounded-full animate-pulse" title="System Active"></div>
+            <div 
+              className={`w-2 h-2 rounded-full ${
+                sessionStatus === 'active' 
+                  ? 'bg-[var(--status-success)] animate-pulse' 
+                  : sessionStatus === 'warning' 
+                  ? 'bg-yellow-500 animate-pulse' 
+                  : 'bg-[var(--status-error)]'
+              }`} 
+              title={
+                sessionStatus === 'active' 
+                  ? 'Session Active' 
+                  : sessionStatus === 'warning' 
+                  ? 'Session Expiring Soon' 
+                  : 'Session Expired'
+              }
+            ></div>
             
             {/* User Dropdown */}
             {user && (
