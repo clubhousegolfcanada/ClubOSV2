@@ -12,6 +12,7 @@ interface DecodedToken {
 export class TokenManager {
   private static instance: TokenManager;
   private checkInterval: NodeJS.Timeout | null = null;
+  private hasShownExpiryMessage: boolean = false;
   
   private constructor() {}
   
@@ -100,14 +101,30 @@ export class TokenManager {
    * Handle token expiration
    */
   private handleTokenExpiration(): void {
+    // Check if we're already on the login page
+    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+      return; // Don't do anything if already on login page
+    }
+    
     // Get the logout function from the auth store
     const { logout } = useAuthState.getState();
+    
+    // Stop monitoring to prevent multiple calls
+    this.stopTokenMonitoring();
     
     // Call the proper logout function
     logout();
     
-    // Show notification
-    toast.error('Your session has expired. Please log in again.');
+    // Show notification only once
+    if (!this.hasShownExpiryMessage) {
+      toast.error('Your session has expired. Please log in again.');
+      this.hasShownExpiryMessage = true;
+      
+      // Reset the flag after navigation
+      setTimeout(() => {
+        this.hasShownExpiryMessage = false;
+      }, 3000);
+    }
     
     // Use Next.js router for navigation
     if (typeof window !== 'undefined') {

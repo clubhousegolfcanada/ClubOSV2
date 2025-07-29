@@ -23,6 +23,17 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
+      // Stop any existing token monitoring first
+      if (typeof window !== 'undefined') {
+        await import('../utils/tokenManager').then(({ tokenManager }) => {
+          tokenManager.stopTokenMonitoring();
+        });
+      }
+      
+      // Clear any stale auth data
+      localStorage.removeItem('clubos_token');
+      localStorage.removeItem('clubos_user');
+
       // Make real API call to login
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
@@ -35,8 +46,11 @@ const LoginPage = () => {
         // Login user with real data
         login(user, token);
 
-        toast.success(`Welcome back, ${user.name}!`);
-        router.push('/');
+        // Small delay before navigation to ensure state is set
+        setTimeout(() => {
+          toast.success(`Welcome back, ${user.name}!`);
+          router.push('/');
+        }, 100);
       }
     } catch (error: any) {
       console.error('Login error:', error);
