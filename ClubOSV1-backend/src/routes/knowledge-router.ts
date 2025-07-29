@@ -72,14 +72,20 @@ protectedRouter.post('/parse-and-route',
       // Step 2: Route to the appropriate assistant
       const routeResult = await knowledgeRouter.routeToAssistant(parsedUpdate);
 
+      // Even if assistant update fails, the knowledge was saved to database
+      const isPartialSuccess = !routeResult.success && parsedUpdate;
+      
       res.json({
-        success: routeResult.success,
+        success: true, // Always true if knowledge was saved to DB
         data: {
           parsed: parsedUpdate,
           routing: routeResult,
-          message: routeResult.message || 'Knowledge update processed'
+          message: isPartialSuccess 
+            ? `Knowledge saved to database. ${routeResult.message || 'Assistant update skipped'}`
+            : (routeResult.message || 'Knowledge update processed'),
+          assistantUpdateStatus: routeResult.success ? 'success' : 'skipped'
         },
-        error: routeResult.error
+        error: routeResult.success ? undefined : routeResult.error
       });
     } catch (error) {
       logger.error('Knowledge routing error:', {

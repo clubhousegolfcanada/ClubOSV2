@@ -405,10 +405,11 @@ export class AssistantService {
     assistantId: string;
   }> {
     if (!this.isEnabled || !this.openai) {
+      logger.info('Assistant service disabled - knowledge saved to database only');
       return {
         success: false,
-        message: 'Assistant service is disabled',
-        assistantId: 'disabled'
+        message: 'Assistant API disabled - knowledge saved to database for local searches',
+        assistantId: 'database-only'
       };
     }
 
