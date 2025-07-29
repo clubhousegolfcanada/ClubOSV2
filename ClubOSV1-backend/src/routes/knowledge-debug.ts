@@ -147,8 +147,12 @@ router.post('/test-flow', authenticate, async (req: Request, res: Response) => {
     // Test the provider directly
     const result = await localProvider.processRequest(testDescription);
     
-    // Also get what it searched for
-    const searchResults = localProvider.searchKnowledge(testDescription);
+    // Also get what it searched for using knowledgeLoader
+    const searchResults = await knowledgeLoader.unifiedSearch(testDescription, {
+      includeStatic: true,
+      includeExtracted: true,
+      includeSOPEmbeddings: true
+    });
     const solutions = await knowledgeLoader.findSolution([testDescription]);
     
     res.json({
