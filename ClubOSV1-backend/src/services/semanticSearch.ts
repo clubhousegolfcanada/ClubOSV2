@@ -21,6 +21,7 @@ export class SemanticSearchService {
     limit?: number;
     minRelevance?: number;
     includeAllCategories?: boolean;
+    category?: string;
   } = {}) {
     const { limit = 10, minRelevance = 0.5, includeAllCategories = true } = options;
     
@@ -132,7 +133,7 @@ export class SemanticSearchService {
       const queryEmbedding = embeddingResponse.data[0].embedding;
       
       // For now, since we don't have embeddings stored, use the semantic search
-      return this.searchKnowledge(query, { limit, includeAllCategories: !category });
+      return this.searchKnowledge(query, { limit, includeAllCategories: !category, category });
       
     } catch (error) {
       logger.error('Embedding search failed:', error);
