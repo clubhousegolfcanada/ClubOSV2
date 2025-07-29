@@ -468,7 +468,8 @@ Instructions:
 
 Return a JSON object with:
 {
-  "assistant": "emergency|booking|tech|brand",
+  "primaryCategory": "emergency|booking|tech|brand",
+  "possibleCategories": ["emergency", "booking", "tech", "brand"],
   "sections": [
     {
       "title": "Exact original title or first line",
@@ -501,52 +502,60 @@ CRITICAL: The "content" field must contain the exact original text from the docu
 
     const result = JSON.parse(response.choices[0].message.content || '{}');
     
-    if (!result.assistant || !result.sections || !Array.isArray(result.sections)) {
+    if (!result.primaryCategory || !result.possibleCategories || !result.sections || !Array.isArray(result.sections)) {
       throw new Error('Invalid bulk import response format');
     }
 
-    // Validate assistant category matches our routing
-    const validAssistant = ['emergency', 'booking', 'tech', 'brand'].includes(result.assistant);
-    if (!validAssistant) {
-      throw new Error(`Invalid assistant category: ${result.assistant}`);
+    // Validate categories match our routing
+    const validCategories = result.possibleCategories.filter(cat => 
+      ['emergency', 'booking', 'tech', 'brand'].includes(cat)
+    );
+    if (validCategories.length === 0) {
+      throw new Error(`No valid assistant categories found`);
     }
 
     const imported = [];
     
-    // Clear existing embeddings for this assistant if requested
+    // For direct import, automatically use all suggested categories
+    const categoriesToUse = validCategories;
+    
+    // Clear existing embeddings for these assistants if requested
     if (clearExisting) {
-      logger.info(`Clearing existing embeddings for assistant: ${result.assistant}`);
-      await db.query('DELETE FROM sop_embeddings WHERE assistant = $1', [result.assistant]);
+      for (const category of categoriesToUse) {
+        logger.info(`Clearing existing embeddings for assistant: ${category}`);
+        await db.query('DELETE FROM sop_embeddings WHERE assistant = $1', [category]);
+      }
     }
     
     // Import the sections into SOP embeddings - import the intelligent SOP module for embedding generation
     const { intelligentSOPModule } = await import('./intelligentSOPModule');
   
-    // Process each section
-    for (const section of result.sections) {
-      if (!section.title || !section.content) {
-        logger.warn('Skipping invalid section:', section);
-        continue;
-      }
+    // Process each section for each category
+    for (const category of categoriesToUse) {
+      for (const section of result.sections) {
+        if (!section.title || !section.content) {
+          logger.warn('Skipping invalid section:', section);
+          continue;
+        }
 
-      try {
-        // Generate embedding for the content
-        const embeddingResponse = await this.openai!.embeddings.create({
-          model: 'text-embedding-3-small',
-          input: section.content.slice(0, 8000)
-        });
-        
-        const embedding = embeddingResponse.data[0].embedding;
-        
-        // Create unique ID for this section
-        const sectionId = `imported_${result.assistant}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Check for duplicates by title and assistant
-        const existing = await db.query(`
-          SELECT id FROM sop_embeddings
-          WHERE assistant = $1 AND title ILIKE $2
-          LIMIT 1
-        `, [result.assistant, `%${section.title}%`]);
+        try {
+          // Generate embedding for the content
+          const embeddingResponse = await this.openai!.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: section.content.slice(0, 8000)
+          });
+          
+          const embedding = embeddingResponse.data[0].embedding;
+          
+          // Create unique ID for this section
+          const sectionId = `imported_${category}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Check for duplicates by title and assistant
+          const existing = await db.query(`
+            SELECT id FROM sop_embeddings
+            WHERE assistant = $1 AND title ILIKE $2
+            LIMIT 1
+          `, [category, `%${section.title}%`]);
 
         if (existing.rows.length > 0) {
           logger.info(`Updating existing section: ${section.title}`);
@@ -573,6 +582,7 @@ CRITICAL: The "content" field must contain the exact original text from the docu
           imported.push({
             id: existing.rows[0].id,
             title: section.title,
+            category: category,
             action: 'updated'
           });
         } else {
@@ -584,7 +594,7 @@ CRITICAL: The "content" field must contain the exact original text from the docu
             RETURNING *
           `, [
             sectionId,
-            result.assistant,
+            category,
             section.title,
             section.content,
             JSON.stringify(embedding),
@@ -592,6 +602,8 @@ CRITICAL: The "content" field must contain the exact original text from the docu
               imported: true,
               importSummary: result.summary,
               confidence: section.confidence || 0.9,
+              multiCategory: categoriesToUse.length > 1,
+              categories: categoriesToUse,
               createdBy: 'bulk_import',
               timestamp: new Date().toISOString()
             })
@@ -599,14 +611,16 @@ CRITICAL: The "content" field must contain the exact original text from the docu
 
           imported.push({
             ...stored.rows[0],
+            category: category,
             action: 'created'
           });
         }
         
-        logger.info(`Imported section: ${section.title} -> ${result.assistant}`);
+        logger.info(`Imported section: ${section.title} -> ${category}`);
         
-      } catch (error) {
-        logger.error('Failed to import section:', error);
+        } catch (error) {
+          logger.error('Failed to import section:', error);
+        }
       }
     }
 
@@ -618,11 +632,12 @@ CRITICAL: The "content" field must contain the exact original text from the docu
       logger.warn('Failed to refresh SOP cache:', error);
     }
 
-    logger.info(`Bulk import completed: ${imported.length} sections imported into ${result.assistant} assistant`);
+    logger.info(`Bulk import completed: ${imported.length} sections imported into ${categoriesToUse.length} assistants (${categoriesToUse.join(', ')})`);
 
     return {
       imported: imported.length,
-      assistant: result.assistant,
+      categories: categoriesToUse,
+      primaryCategory: result.primaryCategory,
       summary: result.summary,
       sections: imported
     };
