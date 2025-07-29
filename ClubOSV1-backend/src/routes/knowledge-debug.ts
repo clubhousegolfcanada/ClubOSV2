@@ -621,4 +621,70 @@ router.get('/document-distribution', authenticate, async (req: Request, res: Res
   }
 });
 
+// Test semantic search
+router.post('/semantic-search', authenticate, async (req: Request, res: Response) => {
+  const { query } = req.body;
+  const testQuery = query || 'What is 7iron?';
+  
+  try {
+    const { semanticSearch } = await import('../services/semanticSearch');
+    
+    // 1. Perform semantic search
+    const searchResults = await semanticSearch.searchKnowledge(testQuery, {
+      limit: 5,
+      includeAllCategories: true,
+      minRelevance: 0.5
+    });
+    
+    // 2. Generate a comprehensive answer if results found
+    let generatedAnswer = null;
+    if (searchResults.length > 0) {
+      generatedAnswer = await semanticSearch.generateAnswer(testQuery, searchResults);
+    }
+    
+    // 3. Compare with keyword search
+    const keywordResults = await db.query(`
+      SELECT id, problem, solution, category, confidence
+      FROM extracted_knowledge
+      WHERE problem ILIKE $1 OR solution ILIKE $1
+      LIMIT 5
+    `, [`%${testQuery}%`]);
+    
+    res.json({
+      success: true,
+      data: {
+        query: testQuery,
+        semanticSearch: {
+          resultsFound: searchResults.length,
+          results: searchResults.map(r => ({
+            problem: r.problem,
+            relevance: r.relevance,
+            reasoning: r.reasoning,
+            category: r.category
+          })),
+          generatedAnswer
+        },
+        keywordSearch: {
+          resultsFound: keywordResults.rows.length,
+          results: keywordResults.rows
+        },
+        comparison: {
+          semanticBetter: searchResults.length > keywordResults.rows.length,
+          explanation: searchResults.length > 0 
+            ? 'Semantic search understands the meaning of your question'
+            : 'No semantic matches found, may need to check OpenAI configuration'
+        }
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Semantic search test failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: String(error),
+      message: 'Make sure OPENAI_API_KEY is configured'
+    });
+  }
+});
+
 export default router;

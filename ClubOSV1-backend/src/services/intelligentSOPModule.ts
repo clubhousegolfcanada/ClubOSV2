@@ -296,30 +296,65 @@ export class IntelligentSOPModule {
     try {
       const startTime = Date.now();
       
-      // Use centralized knowledgeLoader for unified search
-      const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
+      // Try semantic search first for better understanding
+      const { semanticSearch } = await import('./semanticSearch');
       
-      // First, search all knowledge sources through unified search
-      const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
-        assistant: assistant,
-        limit: topK * 2, // Get more results to filter
-        includeStatic: true,
-        includeExtracted: true,
-        includeSOPEmbeddings: false // We'll handle embeddings separately for now
+      logger.info('Using semantic search for query:', { query, assistant });
+      
+      // Search using AI to understand the query
+      const semanticResults = await semanticSearch.searchKnowledge(query, {
+        limit: topK * 2,
+        includeAllCategories: true, // Search all categories for best results
+        minRelevance: 0.6
       });
       
-      logger.info('IntelligentSOPModule knowledge search results:', {
+      logger.info('Semantic search results:', {
         query,
         assistant,
-        resultsFound: knowledgeResults.length,
-        topResults: knowledgeResults.slice(0, 3).map(r => ({
-          issue: r.issue.substring(0, 50),
-          category: r.category,
-          source: r.source
+        resultsFound: semanticResults.length,
+        topResults: semanticResults.slice(0, 3).map(r => ({
+          problem: r.problem.substring(0, 50),
+          relevance: r.relevance,
+          category: r.category
         }))
       });
       
-      // Convert knowledge items to SOP documents
+      // If semantic search found good results, use them
+      if (semanticResults.length > 0) {
+        const knowledgeDocs = semanticResults.map(item => ({
+          id: item.id,
+          assistant: assistant,
+          title: item.problem.substring(0, 100),
+          content: `Problem: ${item.problem}\n\nSolution: ${item.solution}`,
+          embedding: null,
+          metadata: {
+            source: 'semantic_search',
+            confidence: item.relevance,
+            category: item.category,
+            reasoning: item.reasoning
+          }
+        }));
+        
+        if (knowledgeDocs.length >= topK) {
+          logger.info(`Found ${knowledgeDocs.length} semantic matches`);
+          return knowledgeDocs.slice(0, topK);
+        }
+        
+        // If we need more, also search embeddings
+        const embeddingResults = await this.searchEmbeddings(query, assistant, topK - knowledgeDocs.length);
+        return [...knowledgeDocs, ...embeddingResults];
+      }
+      
+      // Fallback to original search if semantic search fails
+      const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
+      const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
+        assistant: assistant,
+        limit: topK * 2,
+        includeStatic: true,
+        includeExtracted: true,
+        includeSOPEmbeddings: false
+      });
+      
       const knowledgeDocs = knowledgeResults.map(item => ({
         id: item.id,
         assistant: assistant,
