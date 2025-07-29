@@ -202,7 +202,7 @@ export class AssistantService {
         
         // If USE_INTELLIGENT_SOP is true (not shadow mode), use SOP response
         if (useIntelligentSOP && !shadowMode) {
-          const confidenceThreshold = parseFloat(process.env.SOP_CONFIDENCE_THRESHOLD || '0.75');
+          const confidenceThreshold = parseFloat(process.env.SOP_CONFIDENCE_THRESHOLD || '0.30');
           
           // When SOP mode is active, ALWAYS use SOP response (no fallback)
           logger.info('Using SOP response (SOP Mode Active)', {

@@ -305,7 +305,7 @@ export class IntelligentSOPModule {
       const semanticResults = await semanticSearch.searchKnowledge(query, {
         limit: topK * 2,
         includeAllCategories: true, // Search all categories for best results
-        minRelevance: 0.6
+        minRelevance: 0.3
       });
       
       logger.info('Semantic search results:', {

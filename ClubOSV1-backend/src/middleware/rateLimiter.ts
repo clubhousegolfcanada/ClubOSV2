@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/node';
 // Different rate limits for different endpoints
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 500, // Stricter in production
+  max: process.env.NODE_ENV === 'production' ? 300 : 500, // Increased for testing
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -77,7 +77,7 @@ export const authRateLimiter = rateLimit({
 // API-specific rate limiter for LLM endpoints (more expensive)
 export const llmRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per minute
+  max: 30, // Increased for testing (was 10)
   message: 'Too many AI requests, please slow down.',
   standardHeaders: true,
   legacyHeaders: false,
