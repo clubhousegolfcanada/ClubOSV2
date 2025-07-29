@@ -49,29 +49,32 @@ export class IntelligentSearchService {
         messages: [
           {
             role: 'system',
-            content: `You are a search query analyzer for a golf simulator business knowledge base. 
-            The knowledge base contains diverse information including:
-            - Technical installation and troubleshooting guides
-            - Booking system procedures and issues
-            - Competitor information (e.g., 7-iron, Better Golf, etc.)
-            - Brand guidelines, color codes, logos
-            - Emergency procedures
-            - Business relationships and contacts
-            - Hardware specifications
-            - Customer service scripts
+            content: `You are a context-aware search query analyzer. The AI must understand INTENT and CONTEXT, not just keywords.
             
-            Analyze the user's query and generate search variations. For business names:
-            - "7iron" could be written as "7-iron", "7 iron", "seven iron"
-            - "BetterGolf" could be "Better Golf", "better golf"
-            - Consider both as product names AND competitor business names
+            CONTEXT UNDERSTANDING RULES:
+            1. If user asks about "problems" → search for issues, troubleshooting, errors, failures, bugs
+            2. If user asks about "setup" → search for installation, configuration, initialization, deployment
+            3. If user asks about "competition" → search for ALL competitors: 7-iron, Better Golf, any facilities
+            4. If user asks about "colors" → search for brand guidelines, hex codes, RGB values, design standards
+            5. If user asks about "contact" → search for people names, emails, phone numbers, relationships
+            6. If user asks about "how to" → search for procedures, SOPs, guides, instructions
+            7. If user asks about "cost/price" → search for pricing, fees, rates, subscriptions, payments
+            8. If user asks about hardware → search for model numbers, specs, equipment, devices
             
-            Categories available: brand (competitors, branding, relationships), tech (hardware, software, troubleshooting), booking (reservations, access), emergency
+            EXPAND SEARCHES INTELLIGENTLY:
+            - "WiFi issues" → also search: network, internet, connectivity, UniFi, router, access point
+            - "booking problem" → also search: reservation, schedule, calendar, availability, access
+            - "projector" → also search: BenQ, display, screen, image quality, calibration
+            - "7iron" → search ALL variations: "7-iron", "7 iron", "seven iron", "7iron facility"
+            - "logo" → also search: brand, branding, colors, hex code, design, guidelines
             
-            Return a JSON object with:
+            Categories: brand, tech, booking, emergency (search ALL if context unclear)
+            
+            Return JSON with COMPREHENSIVE search coverage:
             {
-              "searchTerms": ["exact terms to search for, including variations"],
-              "categories": ["most relevant categories - can be multiple"],
-              "expandedQueries": ["alternative phrasings, synonyms, related searches"]
+              "searchTerms": ["ALL variations and related terms that could contain the answer"],
+              "categories": ["ALL categories that might have relevant info"],
+              "expandedQueries": ["conceptually related searches that provide context"]
             }`
           },
           {
@@ -191,11 +194,13 @@ export class IntelligentSearchService {
     
     // Filter by categories if specified
     if (preferredCategory) {
-      sqlQuery += ` AND assistant = $${paramIndex}`;
+      // Check both old assistant field and new categories array
+      sqlQuery += ` AND (assistant = $${paramIndex} OR $${paramIndex} = ANY(categories))`;
       params.push(preferredCategory);
       paramIndex++;
     } else if (intent.categories.length < 4) {
-      sqlQuery += ` AND assistant = ANY($${paramIndex}::text[])`;
+      // Check if any of the intent categories match
+      sqlQuery += ` AND (assistant = ANY($${paramIndex}::text[]) OR categories && $${paramIndex}::text[])`;
       params.push(intent.categories);
       paramIndex++;
     }

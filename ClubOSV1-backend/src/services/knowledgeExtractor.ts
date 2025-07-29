@@ -454,6 +454,27 @@ Return ONLY a valid JSON object with these fields: problem, solution, category, 
   private async processBulkImport(entry: string, clearExisting: boolean = false): Promise<any> {
     logger.info('Processing bulk import into SOP embeddings...');
     
+    // Create parent document record
+    const parentDocId = uuidv4();
+    const parentTitle = entry.substring(0, 100).replace(/\n/g, ' ').trim() + '...';
+    
+    try {
+      await db.query(`
+        INSERT INTO parent_documents (id, title, original_content, metadata)
+        VALUES ($1, $2, $3, $4)
+      `, [
+        parentDocId,
+        parentTitle,
+        entry,
+        JSON.stringify({
+          uploadDate: new Date().toISOString(),
+          contentLength: entry.length
+        })
+      ]);
+    } catch (error) {
+      logger.warn('Parent documents table might not exist yet, continuing without it');
+    }
+    
     const prompt = `Parse this document and organize it into sections for our SOP system. PRESERVE THE EXACT ORIGINAL TEXT - do not summarize, interpret, or rewrite anything.
 
 Document:
@@ -462,9 +483,9 @@ ${entry}
 Instructions:
 1. Identify which assistant category this content fits: emergency, booking, tech, or brand
 2. Split the document into logical sections based on headers, topics, or natural breaks
-3. Extract the exact original titles and content - DO NOT rewrite or summarize
-4. Keep all specific details, procedures, names, numbers, and exact wording
-5. Only organize/split the content, never change the actual text
+3. Create DESCRIPTIVE, SEARCHABLE titles (not "1. Overview" or "2. Key People")
+4. Extract and identify entities (companies, people, products)
+5. Keep all specific details, procedures, names, numbers, and exact wording
 
 Return a JSON object with:
 {
@@ -472,8 +493,13 @@ Return a JSON object with:
   "possibleCategories": ["emergency", "booking", "tech", "brand"],
   "sections": [
     {
-      "title": "Exact original title or first line",
+      "title": "Descriptive, searchable title (e.g., '7-iron Competitor Analysis' not '2. Key People')",
       "content": "Exact original content with all details preserved",
+      "type": "competitor-info|procedure|troubleshooting|contact-info|etc",
+      "entities": ["7-iron", "Nick Wang", "Better Golf", "etc"],
+      "companies": ["company names found"],
+      "people": ["person names found"],
+      "tags": ["relevant", "search", "keywords"],
       "confidence": 0.95
     },
     ...
@@ -481,7 +507,7 @@ Return a JSON object with:
   "summary": "Brief summary of the document imported"
 }
 
-CRITICAL: The "content" field must contain the exact original text from the document. Do not summarize, paraphrase, or interpret. Preserve all specific information, procedures, contact details, numbers, and exact wording.`;
+CRITICAL: The "content" field must contain the exact original text. But create SEARCHABLE titles and extract metadata for better search.`;
 
     const response = await this.openai!.chat.completions.create({
       model: this.MODEL,
@@ -515,6 +541,7 @@ CRITICAL: The "content" field must contain the exact original text from the docu
     }
 
     const imported = [];
+    const allSectionIds = []; // Track all section IDs for relationships
     
     // For direct import, automatically use all suggested categories
     const categoriesToUse = validCategories;
@@ -589,8 +616,8 @@ CRITICAL: The "content" field must contain the exact original text from the docu
           // Insert new
           const stored = await db.query(`
             INSERT INTO sop_embeddings 
-            (id, assistant, title, content, embedding, metadata)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            (id, assistant, title, content, embedding, metadata, parent_document_id, categories)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
           `, [
             sectionId,
@@ -604,9 +631,16 @@ CRITICAL: The "content" field must contain the exact original text from the docu
               confidence: section.confidence || 0.9,
               multiCategory: categoriesToUse.length > 1,
               categories: categoriesToUse,
+              type: section.type || 'general',
+              entities: section.entities || [],
+              companies: section.companies || [],
+              people: section.people || [],
+              tags: section.tags || [],
               createdBy: 'bulk_import',
               timestamp: new Date().toISOString()
-            })
+            }),
+            parentDocId, // Link to parent document
+            categoriesToUse // Store all applicable categories
           ]);
 
           imported.push({
@@ -614,6 +648,8 @@ CRITICAL: The "content" field must contain the exact original text from the docu
             category: category,
             action: 'created'
           });
+          
+          allSectionIds.push(sectionId);
         }
         
         logger.info(`Imported section: ${section.title} -> ${category}`);
@@ -624,6 +660,31 @@ CRITICAL: The "content" field must contain the exact original text from the docu
       }
     }
 
+    // Update all sections with their related sections
+    if (allSectionIds.length > 1) {
+      try {
+        await db.query(`
+          UPDATE sop_embeddings 
+          SET related_sections = $1
+          WHERE id = ANY($2)
+        `, [allSectionIds, allSectionIds]);
+        logger.info('Updated related sections for all imported documents');
+      } catch (error) {
+        logger.warn('Could not update related sections:', error);
+      }
+    }
+    
+    // Update parent document with total sections count
+    try {
+      await db.query(`
+        UPDATE parent_documents 
+        SET total_sections = $1
+        WHERE id = $2
+      `, [allSectionIds.length, parentDocId]);
+    } catch (error) {
+      logger.warn('Could not update parent document count:', error);
+    }
+    
     // Refresh the intelligent SOP module cache to include new data
     try {
       intelligentSOPModule.refreshDocumentCache();
@@ -677,9 +738,9 @@ ${entry}
 Instructions:
 1. Identify which assistant category this content fits: emergency, booking, tech, or brand
 2. Split the document into logical sections based on headers, topics, or natural breaks
-3. Extract the exact original titles and content - DO NOT rewrite or summarize
-4. Keep all specific details, procedures, names, numbers, and exact wording
-5. Only organize/split the content, never change the actual text
+3. Create DESCRIPTIVE, SEARCHABLE titles (not "1. Overview" or "2. Key People")
+4. Extract and identify entities (companies, people, products)
+5. Keep all specific details, procedures, names, numbers, and exact wording
 
 Return a JSON object with:
 {
@@ -687,15 +748,20 @@ Return a JSON object with:
   "possibleCategories": ["emergency", "booking", "tech", "brand"],
   "sections": [
     {
-      "title": "Exact original title or first line",
+      "title": "Descriptive, searchable title (e.g., '7-iron Competitor Analysis' not '2. Key People')",
       "content": "Exact original content with all details preserved",
+      "type": "competitor-info|procedure|troubleshooting|contact-info|etc",
+      "entities": ["7-iron", "Nick Wang", "Better Golf", "etc"],
+      "companies": ["company names found"],
+      "people": ["person names found"],
+      "tags": ["relevant", "search", "keywords"],
       "confidence": 0.95
     },
     ...
   ]
 }
 
-CRITICAL: The "content" field must contain the exact original text from the document. Do not summarize, paraphrase, or interpret. Preserve all specific information, procedures, contact details, numbers, and exact wording.`;
+CRITICAL: The "content" field must contain the exact original text. But create SEARCHABLE titles and extract metadata for better search.`;
 
       const response = await this.openai.chat.completions.create({
         model: this.MODEL,
@@ -817,6 +883,11 @@ CRITICAL: The "content" field must contain the exact original text from the docu
                   multiCategory: categories.length > 1,
                   confidence: section.confidence || 0.9,
                   categories: categories,
+                  type: section.type || 'general',
+                  entities: section.entities || [],
+                  companies: section.companies || [],
+                  people: section.people || [],
+                  tags: section.tags || [],
                   createdBy: 'confirmed_import',
                   timestamp: new Date().toISOString()
                 })
