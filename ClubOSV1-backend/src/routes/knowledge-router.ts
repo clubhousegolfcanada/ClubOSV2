@@ -6,8 +6,41 @@ import { handleValidationErrors } from '../middleware/validation';
 import { knowledgeRouter } from '../services/knowledgeRouter';
 import { logger } from '../utils/logger';
 import { body, query } from 'express-validator';
+import { config } from '../utils/envValidator';
+import { db } from '../utils/database';
 
 const router = Router();
+
+/**
+ * Test endpoint to check OpenAI configuration (PUBLIC)
+ */
+router.get('/test-config',
+  asyncHandler(async (req, res) => {
+    const hasApiKey = !!config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'sk-demo-key-not-for-production';
+    const keyPrefix = config.OPENAI_API_KEY ? config.OPENAI_API_KEY.substring(0, 7) + '...' : 'NOT SET';
+    
+    res.json({
+      success: true,
+      config: {
+        hasOpenAIKey: hasApiKey,
+        keyPrefix,
+        assistantIds: {
+          emergency: process.env.EMERGENCY_GPT_ID || 'NOT SET',
+          booking: process.env.BOOKING_ACCESS_GPT_ID || 'NOT SET',
+          tech: process.env.TECH_SUPPORT_GPT_ID || 'NOT SET',
+          brand: process.env.BRAND_MARKETING_GPT_ID || 'NOT SET'
+        },
+        database: {
+          initialized: db.initialized,
+          tables: {
+            knowledge_audit_log: 'required',
+            assistant_knowledge: 'required'
+          }
+        }
+      }
+    });
+  })
+);
 
 // Protected routes require admin authentication
 const protectedRouter = Router();
@@ -88,37 +121,6 @@ protectedRouter.get('/recent-updates',
         error: 'Failed to retrieve recent updates'
       });
     }
-  })
-);
-
-/**
- * Test endpoint to check OpenAI configuration
- */
-router.get('/test-config',
-  asyncHandler(async (req, res) => {
-    const hasApiKey = !!config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'sk-demo-key-not-for-production';
-    const keyPrefix = config.OPENAI_API_KEY ? config.OPENAI_API_KEY.substring(0, 7) + '...' : 'NOT SET';
-    
-    res.json({
-      success: true,
-      config: {
-        hasOpenAIKey: hasApiKey,
-        keyPrefix,
-        assistantIds: {
-          emergency: process.env.EMERGENCY_GPT_ID || 'NOT SET',
-          booking: process.env.BOOKING_ACCESS_GPT_ID || 'NOT SET',
-          tech: process.env.TECH_SUPPORT_GPT_ID || 'NOT SET',
-          brand: process.env.BRAND_MARKETING_GPT_ID || 'NOT SET'
-        },
-        database: {
-          initialized: db.initialized,
-          tables: {
-            knowledge_audit_log: 'required',
-            assistant_knowledge: 'required'
-          }
-        }
-      }
-    });
   })
 );
 
