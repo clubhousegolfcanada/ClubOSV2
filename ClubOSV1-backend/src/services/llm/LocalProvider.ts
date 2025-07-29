@@ -56,56 +56,51 @@ export class LocalProvider extends BaseLLMProvider {
     const startTime = Date.now();
     const lowerDescription = description.toLowerCase();
     
-    // First, try to find specific solutions from knowledge base
-    // Break the description into potential symptoms
-    const symptoms = [
+    // Use centralized knowledgeLoader for unified search
+    const searchResults = await knowledgeLoader.unifiedSearch(description, {
+      includeStatic: true,
+      includeExtracted: true,
+      includeSOPEmbeddings: true,
+      limit: 10
+    });
+    
+    logger.debug('Unified knowledge search:', {
       description,
-      ...description.split(' ').filter(word => word.length > 3)
-    ];
-    
-    const solutions = await knowledgeLoader.findSolution(symptoms);
-    
-    // Also try searching the knowledge base directly
-    const searchResults = knowledgeLoader.searchKnowledge(description);
-    
-    logger.debug('Knowledge base search:', {
-      description,
-      solutionsFound: solutions.length,
-      searchResultsFound: searchResults.length
+      resultsFound: searchResults.length,
+      sources: searchResults.map(r => r.source).filter((v, i, a) => a.indexOf(v) === i)
     });
     
     let bestMatch = {
-      route: 'TechSupport' as any, // Default to TechSupport instead of BrandTone
+      route: 'TechSupport' as any, // Default to TechSupport
       score: 0,
       matchedKeywords: [] as string[],
       solution: null as any
     };
 
-    // If we found specific solutions, use the best match
-    if (solutions.length > 0) {
-      // Sort by match score and take the best one
-      const sortedSolutions = solutions.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-      const solution = sortedSolutions[0];
+    // If we found knowledge matches, use them
+    if (searchResults.length > 0) {
+      const topResult = searchResults[0];
       
-      logger.debug('Best solution match:', {
-        issue: solution.issue,
-        matchScore: solution.matchScore,
-        matchedSymptom: solution.matchedSymptom
+      logger.debug('Best knowledge match:', {
+        issue: topResult.issue,
+        confidence: topResult.confidence,
+        source: topResult.source,
+        category: topResult.category
       });
       
-      bestMatch.solution = solution;
+      bestMatch.solution = topResult;
       
-      // Map knowledge base route to our routing system
-      const routeMap: Record<string, string> = {
-        'BookingLLM': 'Booking & Access',
-        'EmergencyLLM': 'Emergency',
-        'TrackManLLM': 'TechSupport',
-        'GeneralInfoLLM': 'TechSupport', // Default general queries to TechSupport
-        'ResponseToneLLM': 'TechSupport' // Default to TechSupport
+      // Map categories to routes
+      const categoryToRoute: Record<string, string> = {
+        'booking': 'Booking & Access',
+        'emergency': 'Emergency',
+        'tech': 'TechSupport',
+        'brand': 'BrandTone',
+        'general': 'TechSupport'
       };
       
-      bestMatch.route = (routeMap[solution.knowledgeBase] || 'TechSupport') as any;
-      bestMatch.score = 0.9; // High confidence when we have a direct match
+      bestMatch.route = (categoryToRoute[topResult.category] || 'TechSupport') as any;
+      bestMatch.score = topResult.confidence || 0.7;
     } else {
       // Fall back to keyword matching
       for (const [route, pattern] of this.patterns) {
@@ -148,8 +143,9 @@ export class LocalProvider extends BaseLLMProvider {
       extractedInfo.timeEstimate = bestMatch.solution.timeEstimate;
       extractedInfo.priority = bestMatch.solution.priority;
       extractedInfo.suggestedResponse = bestMatch.solution.customerScript;
-      extractedInfo.escalation = bestMatch.solution.escalation;
+      extractedInfo.escalation = bestMatch.solution.escalationPath;
       extractedInfo.solutions = bestMatch.solution.solutions;
+      extractedInfo.knowledgeSource = bestMatch.solution.source;
     }
     
     // Extract time mentions
@@ -204,7 +200,7 @@ export class LocalProvider extends BaseLLMProvider {
     return {
       route: bestMatch.route,
       reasoning: bestMatch.solution 
-        ? `Found matching issue in knowledge base: ${bestMatch.solution.issue}`
+        ? `Found matching knowledge in ${bestMatch.solution.source}: ${bestMatch.solution.issue}`
         : bestMatch.matchedKeywords.length > 0
           ? `Matched keywords: ${bestMatch.matchedKeywords.join(', ')}`
           : 'No specific keywords matched, defaulting to TechSupport for general assistance',
@@ -214,6 +210,7 @@ export class LocalProvider extends BaseLLMProvider {
       timestamp: new Date().toISOString(),
       metadata: {
         knowledgeBaseUsed: !!bestMatch.solution,
+        knowledgeSource: bestMatch.solution?.source || 'keyword_matching',
         suggestedTone: tone,
         latency
       }
@@ -249,17 +246,4 @@ export class LocalProvider extends BaseLLMProvider {
     return Object.fromEntries(this.patterns);
   }
   
-  /**
-   * Search knowledge base directly
-   */
-  searchKnowledge(query: string): any[] {
-    return knowledgeLoader.searchKnowledge(query);
-  }
-  
-  /**
-   * Get quick reference information
-   */
-  async getQuickReference(route: string): Promise<any> {
-    return await knowledgeLoader.getQuickReference(route);
-  }
 }

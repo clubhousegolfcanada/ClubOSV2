@@ -33,6 +33,8 @@ import debugRoutes from './routes/debug';
 import openphoneRoutes from './routes/openphone';
 import knowledgeRoutes from './routes/knowledge';
 import sopMonitoringRoutes from './routes/sop-monitoring';
+import adminKnowledgeRoutes from './routes/admin-knowledge';
+import knowledgeDebugRoutes from './routes/knowledge-debug';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -110,6 +112,8 @@ app.use('/api/debug', debugRoutes);
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/sop-monitoring', sopMonitoringRoutes);
+app.use('/api/admin-knowledge', adminKnowledgeRoutes);
+app.use('/api/knowledge-debug', knowledgeDebugRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

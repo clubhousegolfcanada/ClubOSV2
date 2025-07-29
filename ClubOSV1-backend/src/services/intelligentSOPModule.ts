@@ -296,8 +296,74 @@ export class IntelligentSOPModule {
     try {
       const startTime = Date.now();
       
+      // Use centralized knowledgeLoader for unified search
+      const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
+      
+      // First, search all knowledge sources through unified search
+      const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
+        assistant: assistant,
+        limit: topK * 2, // Get more results to filter
+        includeStatic: true,
+        includeExtracted: true,
+        includeSOPEmbeddings: false // We'll handle embeddings separately for now
+      });
+      
+      // Convert knowledge items to SOP documents
+      const knowledgeDocs = knowledgeResults.map(item => ({
+        id: item.id,
+        assistant: assistant,
+        title: item.issue.substring(0, 100),
+        content: this.formatKnowledgeAsContent(item),
+        embedding: null,
+        metadata: {
+          source: item.source,
+          confidence: item.confidence,
+          priority: item.priority
+        }
+      }));
+      
+      if (knowledgeDocs.length >= topK) {
+        logger.info(`Found ${knowledgeDocs.length} matches from unified knowledge search`);
+        return knowledgeDocs.slice(0, topK);
+      }
+      
+      // If we need more results, also search embeddings
+      const embeddingResults = await this.searchEmbeddings(query, assistant, topK - knowledgeDocs.length);
+      
+      return [...knowledgeDocs, ...embeddingResults];
+      
+    } catch (error) {
+      logger.error('Failed to find relevant context:', error);
+      return [];
+    }
+  }
+  
+  private formatKnowledgeAsContent(item: any): string {
+    let content = `Issue: ${item.issue}\n\n`;
+    
+    if (item.symptoms && item.symptoms.length > 0) {
+      content += `Symptoms: ${item.symptoms.join(', ')}\n\n`;
+    }
+    
+    if (item.solutions && item.solutions.length > 0) {
+      content += `Solutions:\n${item.solutions.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n')}\n\n`;
+    }
+    
+    if (item.customerScript) {
+      content += `Customer Script: ${item.customerScript}\n\n`;
+    }
+    
+    if (item.escalationPath) {
+      content += `Escalation: ${item.escalationPath}`;
+    }
+    
+    return content;
+  }
+  
+  private async searchEmbeddings(query: string, assistant: string, topK: number): Promise<SOPDocument[]> {
+    try {
       // Get query embedding
-      logger.info('Generating query embedding...');
+      logger.info('Generating query embedding for SOP search...');
       const embeddingStart = Date.now();
       const queryEmbedding = await this.getEmbedding(query);
       logger.info(`Query embedding generated in ${Date.now() - embeddingStart}ms`);
@@ -307,7 +373,7 @@ export class IntelligentSOPModule {
       const documents = this.documentsCache.get(normalizedAssistant) || [];
       
       if (documents.length === 0) {
-        logger.warn(`No documents found for assistant: ${assistant}`);
+        logger.warn(`No embedding documents found for assistant: ${assistant}`);
         return [];
       }
       
@@ -324,16 +390,15 @@ export class IntelligentSOPModule {
         .slice(0, topK)
         .map(s => s.doc);
       
-      logger.info(`Found ${relevant.length} relevant documents for query`, {
+      logger.info(`Found ${relevant.length} relevant embedding documents`, {
         assistant,
         queryPreview: query.substring(0, 50),
         topSimilarity: similarities[0]?.similarity || 0
       });
       
       return relevant;
-      
     } catch (error) {
-      logger.error('Failed to find relevant context:', error);
+      logger.error('Failed to search embeddings:', error);
       return [];
     }
   }

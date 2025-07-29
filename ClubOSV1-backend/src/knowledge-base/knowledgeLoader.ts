@@ -21,6 +21,18 @@ export interface KnowledgeItem {
   customerScript?: string;
   escalationPath?: string;
   metadata?: any;
+  confidence?: number;
+  source?: string;
+}
+
+export interface UnifiedSearchOptions {
+  includeStatic?: boolean;
+  includeExtracted?: boolean;
+  includeSOPEmbeddings?: boolean;
+  category?: string;
+  assistant?: string;
+  limit?: number;
+  minConfidence?: number;
 }
 
 export class KnowledgeLoader {
@@ -387,6 +399,203 @@ export class KnowledgeLoader {
     } catch (error) {
       logger.warn('Knowledge base DB not available, using file-based fallback');
       this.dbInitialized = false;
+    }
+  }
+
+  // NEW: Unified search across all knowledge sources
+  async unifiedSearch(
+    searchQuery: string,
+    options: UnifiedSearchOptions = {}
+  ): Promise<KnowledgeItem[]> {
+    const {
+      includeStatic = true,
+      includeExtracted = true,
+      includeSOPEmbeddings = true,
+      category,
+      assistant,
+      limit = 10,
+      minConfidence = 0.6
+    } = options;
+    
+    const results: KnowledgeItem[] = [];
+    
+    try {
+      // Map assistant to category if provided
+      let searchCategory = category;
+      if (!searchCategory && assistant) {
+        const categoryMap: Record<string, string> = {
+          'booking': 'booking',
+          'booking & access': 'booking',
+          'emergency': 'emergency',
+          'techsupport': 'tech',
+          'tech': 'tech',
+          'brandtone': 'brand',
+          'brand': 'brand',
+          'general': 'general'
+        };
+        searchCategory = categoryMap[assistant.toLowerCase()] || 'general';
+      }
+      
+      // Search all requested sources in parallel
+      const promises: Promise<any>[] = [];
+      
+      if (includeStatic && this.dbInitialized) {
+        promises.push(this.searchStaticKnowledge(searchQuery, searchCategory));
+      }
+      
+      if (includeExtracted && this.dbInitialized) {
+        promises.push(this.searchExtractedKnowledge(searchQuery, searchCategory, minConfidence));
+      }
+      
+      if (includeSOPEmbeddings && this.dbInitialized) {
+        promises.push(this.searchSOPEmbeddings(searchQuery, assistant || searchCategory));
+      }
+      
+      // Fallback to JSON files if DB not available
+      if (!this.dbInitialized && includeStatic) {
+        const jsonResults = this.searchKnowledge(searchQuery, searchCategory);
+        results.push(...jsonResults.map(r => ({
+          ...r,
+          source: 'json_file',
+          confidence: 0.5
+        })));
+      }
+      
+      // Wait for all searches to complete
+      const searchResults = await Promise.all(promises);
+      searchResults.forEach(items => results.push(...items));
+      
+      // Sort by confidence (if available) and limit
+      return results
+        .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+        .slice(0, limit);
+        
+    } catch (error) {
+      logger.error('Unified search failed:', error);
+      return results; // Return what we have so far
+    }
+  }
+  
+  // Search static knowledge base table
+  private async searchStaticKnowledge(
+    searchQuery: string,
+    category?: string
+  ): Promise<KnowledgeItem[]> {
+    try {
+      let queryText = `
+        SELECT *, 'knowledge_base' as source, 0.8 as confidence
+        FROM knowledge_base 
+        WHERE (
+          issue ILIKE $1 
+          OR $1 = ANY(symptoms)
+          OR EXISTS (
+            SELECT 1 FROM unnest(symptoms) s 
+            WHERE s ILIKE '%' || $1 || '%'
+          )
+        )
+      `;
+      const params: any[] = [`%${searchQuery}%`];
+      
+      if (category) {
+        queryText += ` AND category = $2`;
+        params.push(category);
+      }
+      
+      queryText += ` ORDER BY priority DESC, issue`;
+      
+      const result = await query(queryText, params);
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to search static knowledge:', error);
+      return [];
+    }
+  }
+  
+  // Search extracted knowledge table
+  private async searchExtractedKnowledge(
+    searchQuery: string,
+    category?: string,
+    minConfidence: number = 0.6
+  ): Promise<KnowledgeItem[]> {
+    try {
+      let queryText = `
+        SELECT 
+          id,
+          category,
+          problem as issue,
+          ARRAY[problem] as symptoms,
+          ARRAY[solution] as solutions,
+          CASE 
+            WHEN confidence >= 0.9 THEN 'high'
+            WHEN confidence >= 0.7 THEN 'medium'
+            ELSE 'low'
+          END as priority,
+          confidence,
+          'extracted_knowledge' as source,
+          metadata
+        FROM extracted_knowledge
+        WHERE confidence >= $1
+        AND (
+          problem ILIKE $2
+          OR solution ILIKE $2
+          OR to_tsvector('english', problem || ' ' || solution) @@ plainto_tsquery('english', $3)
+        )
+      `;
+      const params: any[] = [minConfidence, `%${searchQuery}%`, searchQuery];
+      
+      if (category) {
+        queryText += ` AND category = $4`;
+        params.push(category);
+      }
+      
+      queryText += ` ORDER BY confidence DESC, problem`;
+      
+      const result = await query(queryText, params);
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to search extracted knowledge:', error);
+      return [];
+    }
+  }
+  
+  // Search SOP embeddings table
+  private async searchSOPEmbeddings(
+    searchQuery: string,
+    assistant?: string
+  ): Promise<KnowledgeItem[]> {
+    try {
+      let queryText = `
+        SELECT 
+          id,
+          assistant as category,
+          title as issue,
+          ARRAY[title] as symptoms,
+          ARRAY[content] as solutions,
+          'medium' as priority,
+          0.7 as confidence,
+          'sop_embeddings' as source,
+          metadata
+        FROM sop_embeddings
+        WHERE (
+          title ILIKE $1
+          OR content ILIKE $1
+          OR to_tsvector('english', title || ' ' || content) @@ plainto_tsquery('english', $2)
+        )
+      `;
+      const params: any[] = [`%${searchQuery}%`, searchQuery];
+      
+      if (assistant) {
+        queryText += ` AND assistant = $3`;
+        params.push(assistant);
+      }
+      
+      queryText += ` ORDER BY updated_at DESC`;
+      
+      const result = await query(queryText, params);
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to search SOP embeddings:', error);
+      return [];
     }
   }
 }
