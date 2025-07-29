@@ -308,6 +308,17 @@ export class IntelligentSOPModule {
         includeSOPEmbeddings: false // We'll handle embeddings separately for now
       });
       
+      logger.info('IntelligentSOPModule knowledge search results:', {
+        query,
+        assistant,
+        resultsFound: knowledgeResults.length,
+        topResults: knowledgeResults.slice(0, 3).map(r => ({
+          issue: r.issue.substring(0, 50),
+          category: r.category,
+          source: r.source
+        }))
+      });
+      
       // Convert knowledge items to SOP documents
       const knowledgeDocs = knowledgeResults.map(item => ({
         id: item.id,

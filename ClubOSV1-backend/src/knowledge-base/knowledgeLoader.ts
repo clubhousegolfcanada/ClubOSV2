@@ -434,6 +434,14 @@ export class KnowledgeLoader {
           'general': 'general'
         };
         searchCategory = categoryMap[assistant.toLowerCase()] || 'general';
+        
+        // Log for debugging
+        logger.info('Knowledge search mapping:', {
+          assistant,
+          assistantLower: assistant.toLowerCase(),
+          mappedCategory: searchCategory,
+          searchQuery
+        });
       }
       
       // Search all requested sources in parallel
@@ -550,7 +558,22 @@ export class KnowledgeLoader {
       
       queryText += ` ORDER BY confidence DESC, problem`;
       
+      // Debug logging
+      logger.info('Searching extracted knowledge:', {
+        searchQuery,
+        category,
+        minConfidence,
+        queryPreview: queryText.substring(0, 100)
+      });
+      
       const result = await query(queryText, params);
+      
+      logger.info('Extracted knowledge search results:', {
+        found: result.rows.length,
+        category,
+        searchQuery
+      });
+      
       return result.rows;
     } catch (error) {
       logger.error('Failed to search extracted knowledge:', error);

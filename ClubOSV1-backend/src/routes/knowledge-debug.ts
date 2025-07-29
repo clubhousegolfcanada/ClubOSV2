@@ -483,4 +483,67 @@ router.post('/toggle-sop', authenticate, adminOnly, async (req: Request, res: Re
   }
 });
 
+// Direct search test - bypasses all modules
+router.post('/direct-search', authenticate, async (req: Request, res: Response) => {
+  const { query, category } = req.body;
+  const searchQuery = query || '7iron';
+  const searchCategory = category || 'brand';
+  
+  try {
+    // 1. Direct database search
+    const directResult = await db.query(`
+      SELECT id, problem, solution, category, confidence
+      FROM extracted_knowledge
+      WHERE category = $1
+      AND (
+        problem ILIKE $2
+        OR solution ILIKE $2
+      )
+      ORDER BY confidence DESC
+      LIMIT 10
+    `, [searchCategory, `%${searchQuery}%`]);
+    
+    // 2. Test unified search
+    const unifiedResults = await knowledgeLoader.unifiedSearch(searchQuery, {
+      category: searchCategory,
+      includeExtracted: true,
+      includeStatic: true,
+      limit: 10
+    });
+    
+    // 3. Count total in category
+    const categoryCount = await db.query(`
+      SELECT COUNT(*) as count
+      FROM extracted_knowledge
+      WHERE category = $1
+    `, [searchCategory]);
+    
+    res.json({
+      success: true,
+      data: {
+        query: searchQuery,
+        category: searchCategory,
+        directDatabaseResults: {
+          count: directResult.rows.length,
+          results: directResult.rows
+        },
+        unifiedSearchResults: {
+          count: unifiedResults.length,
+          results: unifiedResults
+        },
+        categoryStats: {
+          totalInCategory: categoryCount.rows[0].count
+        }
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Direct search failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: String(error) 
+    });
+  }
+});
+
 export default router;
