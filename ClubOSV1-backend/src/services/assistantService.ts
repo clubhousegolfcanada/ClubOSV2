@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { logger } from '../utils/logger';
 import { config } from '../utils/envValidator';
 import { db } from '../utils/database';
-import { intelligentSOPModule } from './intelligentSOPModule';
+// Intelligent SOP Module disabled - using OpenAI Assistants directly
 
 interface AssistantResponse {
   response: string;
@@ -156,98 +156,8 @@ export class AssistantService {
     userMessage: string,
     context?: Record<string, any>
   ): Promise<AssistantResponse> {
-    // Shadow Mode: Run SOP module in parallel but don't use response yet
-    const shadowMode = process.env.SOP_SHADOW_MODE === 'true';
-    const useIntelligentSOP = process.env.USE_INTELLIGENT_SOP === 'true';
-    
-    let sopShadowId: string | null = null;
-    
-    if (shadowMode || useIntelligentSOP) {
-      // Try SOP module in shadow mode or for actual use
-      try {
-        const sopStart = Date.now();
-        const sopResponse = await intelligentSOPModule.processWithContext(
-          userMessage,
-          route,
-          context
-        );
-        const sopTime = Date.now() - sopStart;
-        
-        // Log comparison
-        logger.info(shadowMode ? 'SHADOW MODE - SOP Response' : 'SOP MODULE Response', {
-          route,
-          confidence: sopResponse.confidence,
-          responseTime: sopTime,
-          responsePreview: sopResponse.response?.substring(0, 100)
-        });
-        
-        // Store comparison for analysis (we'll fill assistant response later)
-        if (db.initialized && shadowMode) {
-          const result = await db.query(`
-            INSERT INTO sop_shadow_comparisons 
-            (query, route, assistant_response, sop_response, sop_confidence, sop_time_ms)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id
-          `, [
-            userMessage,
-            route,
-            '', // Will be updated after Assistant response
-            sopResponse.response,
-            sopResponse.confidence,
-            sopTime
-          ]);
-          
-          sopShadowId = result.rows[0]?.id;
-        }
-        
-        // If USE_INTELLIGENT_SOP is true (not shadow mode), use SOP response
-        if (useIntelligentSOP && !shadowMode) {
-          const confidenceThreshold = parseFloat(process.env.SOP_CONFIDENCE_THRESHOLD || '0.30');
-          
-          // When SOP mode is active, ALWAYS use SOP response (no fallback)
-          logger.info('Using SOP response (SOP Mode Active)', {
-            route,
-            confidence: sopResponse.confidence,
-            threshold: confidenceThreshold,
-            meetsThreshold: sopResponse.confidence >= confidenceThreshold
-          });
-          
-          // Return SOP response even if confidence is low
-          if (sopResponse.confidence === 0 && sopResponse.source === 'no_match') {
-            return {
-              response: `Nobody told me that answer yet... 
-
-**Turn off Smart Assist and send to a human so I can learn!**
-
-To send to human:
-1. Toggle OFF the "Smart Assist" switch
-2. Submit the request again
-3. A human will receive and respond to your request
-
-Once a human answers, administrators can add this knowledge through the Knowledge Extraction panel so I can help with similar questions in the future.`,
-              assistantId: `sop-${route}`,
-              threadId: `sop-${Date.now()}`,
-              confidence: 0,
-              structured: {
-                text: "Nobody told me that answer yet... turn off Smart Assist and send to a human so I can learn",
-                category: "no_data",
-                priority: "low"
-              }
-            };
-          }
-          
-          return {
-            response: sopResponse.response,
-            assistantId: `sop-${route}`,
-            threadId: `sop-${Date.now()}`,
-            confidence: sopResponse.confidence,
-            structured: sopResponse.structured
-          };
-        }
-      } catch (error) {
-        logger.error('SOP module error:', error);
-      }
-    }
+    // SOP Module disabled - using OpenAI Assistants directly
+    // All knowledge updates now go through the GPT-4o router in Knowledge Center
     
     if (!this.isEnabled || !this.openai) {
       logger.warn('Assistant service is disabled - returning fallback response');
@@ -427,6 +337,107 @@ Once a human answers, administrators can add this knowledge through the Knowledg
     };
 
     return fallbacks[route] || 'System is having trouble processing this request. Please try rephrasing your operational question or contact technical support.';
+  }
+
+  /**
+   * Update assistant knowledge through structured knowledge updates
+   * This method is called by the KnowledgeRouter after parsing natural language input
+   */
+  async updateAssistantKnowledge(
+    route: string, 
+    knowledge: {
+      fact: string;
+      tags: string[];
+      intent: 'add' | 'update' | 'overwrite';
+      category: string;
+      key?: string;
+    }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    assistantId: string;
+  }> {
+    if (!this.isEnabled || !this.openai) {
+      return {
+        success: false,
+        message: 'Assistant service is disabled',
+        assistantId: 'disabled'
+      };
+    }
+
+    const assistantId = this.assistantMap[route];
+    if (!assistantId) {
+      return {
+        success: false,
+        message: `Unknown route: ${route}`,
+        assistantId: 'unknown'
+      };
+    }
+
+    try {
+      // Create a special thread for knowledge updates
+      const thread = await this.openai.beta.threads.create({
+        metadata: {
+          type: 'knowledge_update',
+          intent: knowledge.intent,
+          category: knowledge.category
+        }
+      });
+
+      // Format the knowledge update message
+      const knowledgeMessage = `SYSTEM KNOWLEDGE UPDATE:
+Intent: ${knowledge.intent}
+Category: ${knowledge.category}
+${knowledge.key ? `Key: ${knowledge.key}` : ''}
+Tags: ${knowledge.tags.join(', ')}
+
+Fact: ${knowledge.fact}
+
+Please acknowledge this knowledge update and store it for future reference.`;
+
+      // Add message to thread
+      await this.openai.beta.threads.messages.create(thread.id, {
+        role: 'user',
+        content: knowledgeMessage
+      });
+
+      // Run the thread
+      const run = await this.openai.beta.threads.runs.create(thread.id, {
+        assistant_id: assistantId
+      });
+
+      // Wait for completion
+      let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+      while (runStatus.status !== 'completed' && runStatus.status !== 'failed') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+      }
+
+      if (runStatus.status === 'failed') {
+        throw new Error('Assistant failed to process knowledge update');
+      }
+
+      // Log the successful update
+      logger.info('Knowledge update successful', {
+        route,
+        assistantId,
+        category: knowledge.category,
+        intent: knowledge.intent
+      });
+
+      return {
+        success: true,
+        message: `Knowledge successfully updated in ${route} assistant`,
+        assistantId
+      };
+    } catch (error) {
+      logger.error('Failed to update assistant knowledge:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        assistantId
+      };
+    }
   }
 }
 

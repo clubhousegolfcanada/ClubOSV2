@@ -32,16 +32,18 @@ import remoteActionsRoutes from './routes/remoteActions';
 import debugRoutes from './routes/debug';
 import openphoneRoutes from './routes/openphone';
 import knowledgeRoutes from './routes/knowledge';
-import sopMonitoringRoutes from './routes/sop-monitoring';
+// import sopMonitoringRoutes from './routes/sop-monitoring'; // SOP disabled
 import adminKnowledgeRoutes from './routes/admin-knowledge';
 import knowledgeDebugRoutes from './routes/knowledge-debug';
 import systemCheckRoutes from './routes/system-check';
 import assistantRoutes from './routes/assistant';
-import sopCheckRoutes from './routes/sop-check';
-import sopDebugRoutes from './routes/sop-debug';
-import sopDataCheckRoutes from './routes/sop-data-check';
-import intelligentSearchRoutes from './routes/intelligent-search';
+// SOP routes disabled - using OpenAI Assistants directly
+// import sopCheckRoutes from './routes/sop-check';
+// import sopDebugRoutes from './routes/sop-debug';
+// import sopDataCheckRoutes from './routes/sop-data-check';
+// import intelligentSearchRoutes from './routes/intelligent-search';
 import knowledgeEnhanceRoutes from './routes/knowledge-enhance';
+import knowledgeRouterRoutes from './routes/knowledge-router';
 import adminRoutes from './routes/admin';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -119,16 +121,18 @@ app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
-app.use('/api/sop-monitoring', sopMonitoringRoutes);
+// app.use('/api/sop-monitoring', sopMonitoringRoutes); // SOP disabled
 app.use('/api/admin-knowledge', adminKnowledgeRoutes);
 app.use('/api/knowledge-debug', knowledgeDebugRoutes);
 app.use('/api/system', systemCheckRoutes);
 app.use('/api/assistant', assistantRoutes);
-app.use('/api/sop-check', sopCheckRoutes);
-app.use('/api/sop-debug', sopDebugRoutes);
-app.use('/api/sop-data-check', sopDataCheckRoutes);
-app.use('/api/intelligent-search', intelligentSearchRoutes);
+// SOP routes disabled - using OpenAI Assistants directly
+// app.use('/api/sop-check', sopCheckRoutes);
+// app.use('/api/sop-debug', sopDebugRoutes);
+// app.use('/api/sop-data-check', sopDataCheckRoutes);
+// app.use('/api/intelligent-search', intelligentSearchRoutes);
 app.use('/api/knowledge-enhance', knowledgeEnhanceRoutes);
+app.use('/api/knowledge-router', knowledgeRouterRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
@@ -194,11 +198,8 @@ async function startServer() {
     await initializeSystemConfigs();
     logger.info('✅ System configurations initialized');
     
-    // Initialize SOP embeddings
-    logger.info('Initializing SOP embeddings...');
-    const { intelligentSOPModule } = await import('./services/intelligentSOPModule');
-    const sopStatus = intelligentSOPModule.getStatus();
-    logger.info('✅ SOP module status:', sopStatus);
+    // SOP module disabled - using OpenAI Assistants directly
+    logger.info('✅ Using OpenAI Assistants for AI responses');
     
     // Run database migrations - ensure all tables exist
     try {

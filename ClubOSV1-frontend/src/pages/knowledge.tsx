@@ -7,6 +7,7 @@ import { Download, AlertCircle, RefreshCw, Brain, MessageSquare, BarChart3, Sett
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { KnowledgeExtractionPanel } from '@/components/admin/KnowledgeExtractionPanel';
 import { SOPModeControl } from '@/components/admin/SOPModeControl';
+import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -153,7 +154,7 @@ const Knowledge: React.FC = () => {
           {/* Tab Content */}
           {activeTab === 'extraction' ? (
             <div className="space-y-6">
-              <SOPModeControl />
+              <KnowledgeRouterPanel />
               <KnowledgeExtractionPanel />
             </div>
           ) : activeTab === 'feedback' ? (
