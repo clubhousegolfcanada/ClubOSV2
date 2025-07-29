@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface StructuredResponse {
   response: string;
@@ -59,21 +60,34 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
     displayText = 'Request processed successfully';
   }
   
-  // Clean up any JSON artifacts that might still be in the display text
-  if (displayText.includes('{') && displayText.includes('}')) {
-    // Try to remove JSON blocks if they're still in the text
-    const cleanedText = displayText.replace(/\{[\s\S]*?\}/g, '').trim();
-    if (cleanedText) {
-      displayText = cleanedText;
-    }
-  }
+  // Don't clean up the text - preserve assistant formatting
+  // The assistants now return properly formatted text
   
   if (!structured) {
-    // Simple text response
+    // Simple text response - use ReactMarkdown for proper formatting
     return (
       <div className="space-y-2">
         <strong>Response:</strong>
-        <div className="response-text whitespace-pre-wrap">{displayText}</div>
+        <div className="response-text text-[var(--text-primary)]">
+          <ReactMarkdown 
+            components={{
+              p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+              ul: ({children}) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+              ol: ({children}) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+              li: ({children}) => <li className="text-[var(--text-primary)]">{children}</li>,
+              strong: ({children}) => <strong className="font-semibold text-[var(--text-primary)]">{children}</strong>,
+              em: ({children}) => <em className="italic">{children}</em>,
+              code: ({children}) => <code className="bg-[var(--bg-tertiary)] px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>,
+              pre: ({children}) => <pre className="bg-[var(--bg-tertiary)] p-3 rounded-lg overflow-x-auto mb-3">{children}</pre>,
+              blockquote: ({children}) => <blockquote className="border-l-4 border-[var(--accent)] pl-4 italic my-3">{children}</blockquote>,
+              h1: ({children}) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+              h2: ({children}) => <h2 className="text-lg font-semibold mb-2">{children}</h2>,
+              h3: ({children}) => <h3 className="text-base font-medium mb-2">{children}</h3>,
+            }}
+          >
+            {displayText}
+          </ReactMarkdown>
+        </div>
       </div>
     );
   }
@@ -119,8 +133,25 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
       {/* Main response */}
       <div>
         <strong>Response:</strong>
-        <div className="response-text whitespace-pre-wrap mt-1">
-          {structured.response || displayText}
+        <div className="response-text mt-1 text-[var(--text-primary)]">
+          <ReactMarkdown 
+            components={{
+              p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+              ul: ({children}) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+              ol: ({children}) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+              li: ({children}) => <li className="text-[var(--text-primary)]">{children}</li>,
+              strong: ({children}) => <strong className="font-semibold text-[var(--text-primary)]">{children}</strong>,
+              em: ({children}) => <em className="italic">{children}</em>,
+              code: ({children}) => <code className="bg-[var(--bg-tertiary)] px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>,
+              pre: ({children}) => <pre className="bg-[var(--bg-tertiary)] p-3 rounded-lg overflow-x-auto mb-3">{children}</pre>,
+              blockquote: ({children}) => <blockquote className="border-l-4 border-[var(--accent)] pl-4 italic my-3">{children}</blockquote>,
+              h1: ({children}) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+              h2: ({children}) => <h2 className="text-lg font-semibold mb-2">{children}</h2>,
+              h3: ({children}) => <h3 className="text-base font-medium mb-2">{children}</h3>,
+            }}
+          >
+            {structured.response || displayText}
+          </ReactMarkdown>
         </div>
       </div>
 
