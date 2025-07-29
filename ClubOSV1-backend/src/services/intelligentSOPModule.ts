@@ -313,11 +313,42 @@ export class IntelligentSOPModule {
     try {
       const startTime = Date.now();
       
-      // First, try direct database search for SOP embeddings
-      logger.info('Searching SOP embeddings directly from database:', { query, assistant });
+      // Use intelligent search service for better results
+      const { intelligentSearch } = await import('./intelligentSearch');
+      
+      logger.info('Using intelligent search for query:', { query, assistant });
+      
+      // Search intelligently across the database
+      const searchResults = await intelligentSearch.intelligentSearch(
+        query,
+        this.normalizeAssistant(assistant),
+        topK * 2
+      );
+      
+      logger.info(`Intelligent search found ${searchResults.length} results`);
+      
+      if (searchResults.length > 0) {
+        // Convert search results to SOP documents
+        const sopDocs = searchResults.map(result => ({
+          id: result.id,
+          assistant: result.assistant,
+          title: result.title,
+          content: result.content,
+          embedding: null,
+          metadata: {
+            source: 'intelligent_search',
+            relevance: result.relevance,
+            matchedTerms: result.matchedTerms
+          }
+        }));
+        
+        return sopDocs.slice(0, topK);
+      }
+      
+      // Fallback to direct database search if intelligent search fails
+      logger.info('Falling back to direct database search');
       const normalizedAssistant = this.normalizeAssistant(assistant);
       
-      // Direct database search
       const dbResult = await db.query(`
         SELECT id, assistant, title, content, metadata
         FROM sop_embeddings
@@ -329,12 +360,10 @@ export class IntelligentSOPModule {
         )
         ORDER BY updated_at DESC
         LIMIT $4
-      `, [normalizedAssistant, `%${query}%`, query, topK * 2]);
-      
-      logger.info(`Found ${dbResult.rows.length} documents from direct DB search`);
+      `, [normalizedAssistant, `%${query}%`, query, topK]);
       
       if (dbResult.rows.length > 0) {
-        const dbDocs = dbResult.rows.map(row => ({
+        return dbResult.rows.map(row => ({
           id: row.id,
           assistant: row.assistant,
           title: row.title,
@@ -345,74 +374,6 @@ export class IntelligentSOPModule {
             source: 'direct_db_search'
           }
         }));
-        
-        // If we have enough results, return them
-        if (dbDocs.length >= topK) {
-          return dbDocs.slice(0, topK);
-        }
-        
-        // Try to get more from unified search
-        const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
-        const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
-          assistant: assistant,
-          limit: topK - dbDocs.length,
-          includeStatic: true,
-          includeExtracted: true,
-          includeSOPEmbeddings: false // We already searched SOP
-        });
-        
-        const knowledgeDocs = knowledgeResults.map(item => ({
-          id: item.id,
-          assistant: assistant,
-          title: item.issue.substring(0, 100),
-          content: this.formatKnowledgeAsContent(item),
-          embedding: null,
-          metadata: {
-            source: item.source,
-            confidence: item.confidence,
-            priority: item.priority
-          }
-        }));
-        
-        return [...dbDocs, ...knowledgeDocs].slice(0, topK);
-      }
-      
-      // Fallback to unified search
-      logger.info('No direct DB results, falling back to unified search');
-      const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
-      const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
-        assistant: assistant,
-        limit: topK * 2,
-        includeStatic: true,
-        includeExtracted: true,
-        includeSOPEmbeddings: true
-      });
-      
-      logger.info(`Unified search found ${knowledgeResults.length} results`);
-      
-      const knowledgeDocs = knowledgeResults.map(item => ({
-        id: item.id,
-        assistant: assistant,
-        title: item.issue.substring(0, 100),
-        content: this.formatKnowledgeAsContent(item),
-        embedding: null,
-        metadata: {
-          source: item.source,
-          confidence: item.confidence,
-          priority: item.priority
-        }
-      }));
-      
-      if (knowledgeDocs.length > 0) {
-        return knowledgeDocs.slice(0, topK);
-      }
-      
-      // Last resort: try embeddings if we have them in cache
-      const documents = this.documentsCache.get(normalizedAssistant) || [];
-      if (documents.length > 0 && documents[0].embedding) {
-        logger.info('Trying embedding search as last resort');
-        const embeddingResults = await this.searchEmbeddings(query, assistant, topK);
-        return embeddingResults;
       }
       
       logger.warn(`No relevant documents found for query: "${query}" in assistant: ${assistant}`);
