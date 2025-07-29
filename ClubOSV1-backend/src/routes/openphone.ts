@@ -653,7 +653,7 @@ router.get('/conversations/count', authenticate, roleGuard(['admin']), async (re
       SELECT 
         COUNT(DISTINCT phone_number) as unique_customers,
         COUNT(*) as total_conversations,
-        SUM(json_array_length(messages)) as total_messages,
+        COALESCE(SUM(jsonb_array_length(messages)), 0) as total_messages,
         COUNT(CASE WHEN processed = false THEN 1 END) as unprocessed_count
       FROM openphone_conversations
     `);
