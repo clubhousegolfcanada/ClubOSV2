@@ -285,10 +285,10 @@ export class KnowledgeLoader {
         'Booking & Access': 'booking',
         'emergency': 'emergency',
         'Emergency': 'emergency',
-        'tech': 'technical',
-        'TechSupport': 'technical',
-        'brand': 'general',
-        'BrandTone': 'general'
+        'tech': 'tech',
+        'TechSupport': 'tech',
+        'brand': 'brand',
+        'BrandTone': 'brand'
       };
       
       const category = categoryMap[route] || 'general';
