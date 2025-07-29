@@ -124,12 +124,35 @@ export const useAuthState = create<AuthState>()(
           isAuthenticated: true,
           isLoading: false 
         });
+        
+        // Start token monitoring after login
+        if (typeof window !== 'undefined') {
+          import('../utils/tokenManager').then(({ tokenManager }) => {
+            tokenManager.startTokenMonitoring();
+            tokenManager.setupAxiosInterceptor();
+          });
+        }
       },
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
+        // Stop token monitoring
+        if (typeof window !== 'undefined') {
+          import('../utils/tokenManager').then(({ tokenManager }) => {
+            tokenManager.stopTokenMonitoring();
+          });
+        }
+        
         localStorage.removeItem('clubos_token');
         localStorage.removeItem('clubos_user');
         set({ user: null, isAuthenticated: false });
+        
+        // Navigate to login page
+        if (typeof window !== 'undefined') {
+          // Import router dynamically to avoid SSR issues
+          import('next/router').then(({ default: router }) => {
+            router.push('/login');
+          });
+        }
       },
       setAuthLoading: (isLoading) => set({ isLoading })
     }),

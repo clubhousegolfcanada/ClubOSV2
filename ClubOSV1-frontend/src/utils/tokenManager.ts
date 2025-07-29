@@ -105,16 +105,21 @@ export class TokenManager {
    * Handle token expiration
    */
   private handleTokenExpiration(): void {
-    // Clear local storage
-    localStorage.removeItem('clubos_token');
-    localStorage.removeItem('clubos_user');
+    // Get the logout function from the auth store
+    const { logout } = useAuthState.getState();
+    
+    // Call the proper logout function
+    logout();
     
     // Show notification
     toast.error('Your session has expired. Please log in again.');
     
-    // Redirect to login
+    // Use Next.js router for navigation
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      // Import router dynamically to avoid SSR issues
+      import('next/router').then(({ default: router }) => {
+        router.push('/login');
+      });
     }
   }
 
