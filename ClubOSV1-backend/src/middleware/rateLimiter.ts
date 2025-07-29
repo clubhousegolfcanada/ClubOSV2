@@ -24,6 +24,7 @@ export const rateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
+  validate: false, // Disable trust proxy validation for Railway
   skip: (req) => {
     // Skip rate limiting for health checks
     if (req.path === '/health') return true;
@@ -67,6 +68,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
+  validate: false, // Disable trust proxy validation for Railway
   handler: (req, res) => {
     logger.error('Auth rate limit exceeded', { 
       ip: req.ip,
@@ -98,6 +100,7 @@ export const llmRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
+  validate: false, // Disable trust proxy validation for Railway
   skip: (req) => {
     // Skip for operators and admins
     if (req.user?.role === 'admin' || req.user?.role === 'operator') return true;

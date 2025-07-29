@@ -23,6 +23,7 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true,
   keyGenerator,
+  validate: false, // Disable trust proxy validation for Railway
   handler: (req, res) => {
     logger.warn('Auth rate limit exceeded', { 
       ip: req.ip,

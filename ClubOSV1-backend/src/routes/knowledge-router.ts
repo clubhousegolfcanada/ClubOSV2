@@ -9,14 +9,15 @@ import { body, query } from 'express-validator';
 
 const router = Router();
 
-// All routes require admin authentication
-router.use(authenticate);
-router.use(roleGuard(['admin']));
+// Protected routes require admin authentication
+const protectedRouter = Router();
+protectedRouter.use(authenticate);
+protectedRouter.use(roleGuard(['admin']));
 
 /**
  * Parse natural language knowledge input and route to assistants
  */
-router.post('/parse-and-route',
+protectedRouter.post('/parse-and-route',
   [
     body('input').isString().notEmpty().withMessage('Input is required'),
   ],
@@ -65,7 +66,7 @@ router.post('/parse-and-route',
 /**
  * Get recent knowledge updates for monitoring
  */
-router.get('/recent-updates',
+protectedRouter.get('/recent-updates',
   [
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100')
   ],
@@ -124,7 +125,7 @@ router.get('/test-config',
 /**
  * Test endpoint to verify parsing without routing
  */
-router.post('/test-parse',
+protectedRouter.post('/test-parse',
   [
     body('input').isString().notEmpty().withMessage('Input is required'),
   ],
@@ -152,5 +153,8 @@ router.post('/test-parse',
     }
   })
 );
+
+// Mount protected routes under the main router
+router.use('/', protectedRouter);
 
 export default router;
