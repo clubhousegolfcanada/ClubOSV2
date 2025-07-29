@@ -29,6 +29,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   useKioskRedirect();
 
   useEffect(() => {
+    // Skip auth restoration on login page
+    if (router.pathname === '/login') {
+      return;
+    }
+    
     // Initialize auth state from localStorage
     const storedUser = localStorage.getItem('clubos_user');
     const storedToken = localStorage.getItem('clubos_token');
@@ -40,7 +45,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           const user = JSON.parse(storedUser);
           setUser({ ...user, token: storedToken });
         } else {
-          // Clear expired token silently
+          // Clear expired token silently (no redirect from here)
           localStorage.removeItem('clubos_user');
           localStorage.removeItem('clubos_token');
         }
@@ -50,11 +55,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         localStorage.removeItem('clubos_token');
       }
     }
-  }, [setUser, isAuthenticated]);
+  }, [setUser, isAuthenticated, router.pathname]);
 
   useEffect(() => {
-    // Start token monitoring when authenticated
-    if (isAuthenticated) {
+    // Start token monitoring when authenticated (but not on login page)
+    if (isAuthenticated && router.pathname !== '/login') {
       tokenManager.startTokenMonitoring();
       tokenManager.setupAxiosInterceptor();
     }
@@ -63,7 +68,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     return () => {
       tokenManager.stopTokenMonitoring();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, router.pathname]);
 
   useEffect(() => {
     // Hide HubSpot navigation on mobile when embedded

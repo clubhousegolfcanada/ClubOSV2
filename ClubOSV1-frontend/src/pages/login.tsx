@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
@@ -17,6 +17,15 @@ const LoginPage = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  
+  // Stop token monitoring when login page loads
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('../utils/tokenManager').then(({ tokenManager }) => {
+        tokenManager.stopTokenMonitoring();
+      });
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
