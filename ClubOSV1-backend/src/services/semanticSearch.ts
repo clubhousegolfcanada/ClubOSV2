@@ -82,7 +82,15 @@ export class SemanticSearchService {
         max_tokens: 2000
       });
       
-      const rankings = JSON.parse(response.choices[0].message.content || '[]');
+      let rankings = [];
+      try {
+        const parsed = JSON.parse(response.choices[0].message.content || '{}');
+        // Handle both array and object with array property
+        rankings = Array.isArray(parsed) ? parsed : (parsed.results || parsed.rankings || []);
+      } catch (parseError) {
+        logger.error('Failed to parse GPT response:', response.choices[0].message.content);
+        rankings = [];
+      }
       
       // Step 3: Return the ranked documents
       const results = rankings
