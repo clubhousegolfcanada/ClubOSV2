@@ -24,9 +24,14 @@ export class KnowledgeRouterService {
   private assistantIds: Record<string, string>;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: config.OPENAI_API_KEY
-    });
+    if (config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'sk-demo-key-not-for-production') {
+      this.openai = new OpenAI({
+        apiKey: config.OPENAI_API_KEY
+      });
+    } else {
+      logger.warn('OpenAI API key not configured - knowledge router will not be able to parse updates');
+      this.openai = null as any;
+    }
 
     // Map assistant types to their IDs
     this.assistantIds = {
@@ -41,6 +46,10 @@ export class KnowledgeRouterService {
    * Parse natural language input into structured knowledge update
    */
   async parseKnowledgeInput(input: string, userId?: string): Promise<KnowledgeUpdate> {
+    if (!this.openai) {
+      throw new Error('OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.');
+    }
+    
     try {
       const systemPrompt = `You are a knowledge router for ClubOS. Parse the user's input to extract knowledge updates for the AI assistants.
 

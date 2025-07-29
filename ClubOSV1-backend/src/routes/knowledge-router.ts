@@ -48,7 +48,12 @@ router.post('/parse-and-route',
         error: routeResult.error
       });
     } catch (error) {
-      logger.error('Knowledge routing error:', error);
+      logger.error('Knowledge routing error:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        input: input?.substring(0, 100),
+        userId
+      });
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Failed to process knowledge update'
@@ -82,6 +87,37 @@ router.get('/recent-updates',
         error: 'Failed to retrieve recent updates'
       });
     }
+  })
+);
+
+/**
+ * Test endpoint to check OpenAI configuration
+ */
+router.get('/test-config',
+  asyncHandler(async (req, res) => {
+    const hasApiKey = !!config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'sk-demo-key-not-for-production';
+    const keyPrefix = config.OPENAI_API_KEY ? config.OPENAI_API_KEY.substring(0, 7) + '...' : 'NOT SET';
+    
+    res.json({
+      success: true,
+      config: {
+        hasOpenAIKey: hasApiKey,
+        keyPrefix,
+        assistantIds: {
+          emergency: process.env.EMERGENCY_GPT_ID || 'NOT SET',
+          booking: process.env.BOOKING_ACCESS_GPT_ID || 'NOT SET',
+          tech: process.env.TECH_SUPPORT_GPT_ID || 'NOT SET',
+          brand: process.env.BRAND_MARKETING_GPT_ID || 'NOT SET'
+        },
+        database: {
+          initialized: db.initialized,
+          tables: {
+            knowledge_audit_log: 'required',
+            assistant_knowledge: 'required'
+          }
+        }
+      }
+    });
   })
 );
 
