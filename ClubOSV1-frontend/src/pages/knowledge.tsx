@@ -5,8 +5,6 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Download, AlertCircle, RefreshCw, Brain, MessageSquare, BarChart3, Settings } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
-import { KnowledgeExtractionPanel } from '@/components/admin/KnowledgeExtractionPanel';
-import { SOPModeControl } from '@/components/admin/SOPModeControl';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -27,7 +25,7 @@ type FeedbackItem = {
 
 const Knowledge: React.FC = () => {
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<'extraction' | 'feedback' | 'analytics'>('extraction');
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'feedback' | 'analytics'>('knowledge');
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
@@ -106,7 +104,7 @@ const Knowledge: React.FC = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Knowledge Center</h1>
             <p className="text-[var(--text-secondary)]">
-              Manage AI knowledge extraction, feedback, and SOP system
+              Manage assistant knowledge, user feedback, and system analytics
             </p>
           </div>
 
@@ -114,15 +112,15 @@ const Knowledge: React.FC = () => {
           <div className="mb-8">
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setActiveTab('extraction')}
+                onClick={() => setActiveTab('knowledge')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  activeTab === 'extraction'
+                  activeTab === 'knowledge'
                     ? 'bg-[var(--accent)] text-white'
                     : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <Brain className="w-4 h-4" />
-                Knowledge Extraction
+                Knowledge Management
               </button>
 
               <button
@@ -152,10 +150,9 @@ const Knowledge: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'extraction' ? (
+          {activeTab === 'knowledge' ? (
             <div className="space-y-6">
               <KnowledgeRouterPanel />
-              <KnowledgeExtractionPanel />
             </div>
           ) : activeTab === 'feedback' ? (
             <div className="space-y-6">

@@ -4,7 +4,6 @@ import toast from 'react-hot-toast';
 import { 
   Send, 
   RefreshCw, 
-  CheckCircle, 
   AlertCircle,
   Brain,
   Clock,
@@ -12,14 +11,6 @@ import {
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
-interface ParsedKnowledge {
-  intent: 'add' | 'update' | 'overwrite';
-  category: string;
-  key?: string;
-  value: string;
-  target_assistant: string;
-}
 
 interface RecentUpdate {
   id: string;
@@ -35,10 +26,7 @@ interface RecentUpdate {
 export const KnowledgeRouterPanel: React.FC = () => {
   const [input, setInput] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [testMode, setTestMode] = useState(false);
   const [recentUpdates, setRecentUpdates] = useState<RecentUpdate[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [parsedData, setParsedData] = useState<ParsedKnowledge | null>(null);
 
   useEffect(() => {
     fetchRecentUpdates();
@@ -66,32 +54,19 @@ export const KnowledgeRouterPanel: React.FC = () => {
       setProcessing(true);
       const token = localStorage.getItem('clubos_token');
       
-      if (testMode) {
-        // Test parse only
-        const response = await axios.post(
-          `${API_URL}/knowledge-router/test-parse`,
-          { input },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        setParsedData(response.data.data.parsed);
-        setShowPreview(true);
-        toast.success('Test parse successful!');
+      // Parse and route directly
+      const response = await axios.post(
+        `${API_URL}/knowledge-router/parse-and-route`,
+        { input },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        toast.success(response.data.data.message);
+        setInput('');
+        fetchRecentUpdates();
       } else {
-        // Parse and route
-        const response = await axios.post(
-          `${API_URL}/knowledge-router/parse-and-route`,
-          { input },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        if (response.data.success) {
-          toast.success(response.data.data.message);
-          setInput('');
-          fetchRecentUpdates();
-        } else {
-          toast.error(response.data.error || 'Failed to route knowledge');
-        }
+        toast.error(response.data.error || 'Failed to route knowledge');
       }
     } catch (error) {
       console.error('Knowledge routing error:', error);
@@ -122,12 +97,11 @@ export const KnowledgeRouterPanel: React.FC = () => {
       <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Brain className="w-5 h-5" />
-          Natural Language Knowledge Updates
+          Update Assistant Knowledge
         </h3>
         
         <p className="text-sm text-[var(--text-secondary)] mb-4">
-          Simply describe what knowledge you want to add, update, or overwrite. 
-          GPT-4o will parse your intent and route it to the correct assistant.
+          Type knowledge updates in plain English. Our AI will understand your intent and update the correct assistant.
         </p>
 
         <div className="space-y-4">
@@ -135,28 +109,15 @@ export const KnowledgeRouterPanel: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Examples:
-• Add HDMI fix to tech checklist
-• Update Clubhouse Grey color to #503285
-• Nick Wang is opening a Better Golf location in PEI
-• Overwrite emergency contact list with new numbers"
+• The HDMI fix for TrackMan is to restart the system
+• Clubhouse Grey color has been updated to #503285  
+• Nick Wang opened a new Better Golf location in PEI
+• Emergency contact for facilities is now 555-0199"
             className="w-full min-h-[150px] p-4 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg resize-y"
             disabled={processing}
           />
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={testMode}
-                onChange={(e) => setTestMode(e.target.checked)}
-                className="rounded"
-                disabled={processing}
-              />
-              <span className="text-sm text-[var(--text-secondary)]">
-                Test Mode (parse only, don't route)
-              </span>
-            </label>
-
+          <div className="flex items-center justify-end">
             <button
               onClick={handleSubmit}
               disabled={processing || !input.trim()}
@@ -170,57 +131,13 @@ export const KnowledgeRouterPanel: React.FC = () => {
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  {testMode ? 'Test Parse' : 'Send Update'}
+                  Send Update
                 </>
               )}
             </button>
           </div>
         </div>
       </div>
-
-      {/* Preview Section (Test Mode) */}
-      {showPreview && parsedData && (
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-          <h4 className="font-semibold text-green-400 mb-3">Parse Result</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)]">Intent:</span>
-              <span className="font-medium">{parsedData.intent.toUpperCase()}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)]">Category:</span>
-              <span className="font-medium">{parsedData.category}</span>
-            </div>
-            {parsedData.key && (
-              <div className="flex items-center gap-2">
-                <span className="text-[var(--text-muted)]">Key:</span>
-                <span className="font-medium">{parsedData.key}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)]">Target:</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getAssistantColor(parsedData.target_assistant)}`}>
-                {parsedData.target_assistant}
-              </span>
-            </div>
-            <div className="mt-2">
-              <span className="text-[var(--text-muted)]">Value:</span>
-              <div className="mt-1 p-2 bg-[var(--bg-primary)] rounded border border-[var(--border-primary)]">
-                {parsedData.value}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setShowPreview(false);
-              setParsedData(null);
-            }}
-            className="mt-4 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          >
-            Close Preview
-          </button>
-        </div>
-      )}
 
       {/* Recent Updates */}
       <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
@@ -281,11 +198,11 @@ export const KnowledgeRouterPanel: React.FC = () => {
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
         <h4 className="font-medium text-blue-400 mb-2">How it works:</h4>
         <ul className="text-sm text-blue-400 space-y-1 list-disc list-inside">
-          <li>Type natural language descriptions of knowledge updates</li>
-          <li>GPT-4o parses your intent and categorizes the knowledge</li>
-          <li>Updates are routed to the appropriate OpenAI Assistant</li>
-          <li>Audit logs track all changes for compliance</li>
-          <li>Critical updates (pricing, SOPs) trigger Slack notifications</li>
+          <li>Write knowledge updates in plain English</li>
+          <li>AI understands whether to add, update, or replace information</li>
+          <li>Knowledge is saved to our database first</li>
+          <li>Assistants check database before using OpenAI APIs</li>
+          <li>All updates are logged with full audit trail</li>
         </ul>
       </div>
     </div>

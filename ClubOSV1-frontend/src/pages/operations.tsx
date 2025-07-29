@@ -7,8 +7,7 @@ import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOf
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { ChecklistSystem } from '@/components/ChecklistSystem';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
-import { KnowledgeExtractionPanel } from '@/components/admin/KnowledgeExtractionPanel';
-import { SOPModeControl } from '@/components/admin/SOPModeControl';
+import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { RecentMessages } from '@/components/RecentMessages';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -1195,29 +1194,14 @@ export default function Operations() {
                     {/* Main Content Area */}
                     <div className="lg:col-span-9">
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-                        {/* Left Column - SOP Control (3 columns) */}
-                        <div className="lg:col-span-3">
-                          <div className="bg-[var(--bg-secondary)] rounded-lg">
-                            <div className="p-3 border-b border-[var(--border-primary)]">
-                              <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                                <Brain className="w-4 h-4 text-[var(--accent)]" />
-                                SOP System
-                              </h3>
-                            </div>
-                            <div className="p-3">
-                              <SOPModeControl />
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Center Panel - Knowledge Extraction (9 columns) */}
-                        <div className="lg:col-span-9 space-y-3">
+                        {/* Full Width Panel - Knowledge Management (12 columns) */}
+                        <div className="lg:col-span-12 space-y-3">
                           <div className="bg-[var(--bg-secondary)] rounded-lg">
                             <div className="p-3 border-b border-[var(--border-primary)]">
                               <div className="flex items-center justify-between">
                                 <h3 className="text-sm font-semibold flex items-center gap-1.5">
                                   <Brain className="w-4 h-4 text-[var(--accent)]" />
-                                  Knowledge Extraction
+                                  Knowledge Management
                                 </h3>
                                 <div className="flex items-center gap-1">
                                   <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
@@ -1226,7 +1210,7 @@ export default function Operations() {
                               </div>
                             </div>
                             <div className="p-3">
-                              <KnowledgeExtractionPanel onImportSuccess={fetchSystemMetrics} />
+                              <KnowledgeRouterPanel />
                             </div>
                           </div>
 
