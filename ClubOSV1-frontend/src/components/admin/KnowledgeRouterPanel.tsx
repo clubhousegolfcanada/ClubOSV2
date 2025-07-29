@@ -27,14 +27,16 @@ export const KnowledgeRouterPanel: React.FC = () => {
   const [input, setInput] = useState('');
   const [processing, setProcessing] = useState(false);
   const [recentUpdates, setRecentUpdates] = useState<RecentUpdate[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetchRecentUpdates();
   }, []);
 
   const fetchRecentUpdates = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
       const response = await axios.get(`${API_URL}/knowledge-router/recent-updates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -52,7 +54,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
 
     try {
       setProcessing(true);
-      const token = localStorage.getItem('clubos_token');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
       
       // Parse and route directly
       const response = await axios.post(
@@ -90,6 +92,17 @@ export const KnowledgeRouterPanel: React.FC = () => {
     };
     return colors[assistant] || 'text-gray-600 bg-gray-500/10';
   };
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-6 animate-pulse">
+          <div className="h-6 bg-gray-300 rounded w-1/3 mb-4"></div>
+          <div className="h-32 bg-gray-300 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -180,7 +193,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
                     </p>
                   </div>
                   <span className="text-xs text-[var(--text-muted)] whitespace-nowrap ml-4">
-                    {new Date(update.timestamp).toLocaleString()}
+                    {mounted ? new Date(update.timestamp).toLocaleString() : ''}
                   </span>
                 </div>
               </div>

@@ -47,7 +47,8 @@ router.get('/export', authenticate, authorize(['admin']), async (req, res) => {
       
       for (const table of tables) {
         try {
-          const result = await db.query(`SELECT * FROM ${table}`);
+          // Use parameterized query with identifier to prevent SQL injection
+          const result = await db.query(`SELECT * FROM "${table.replace(/"/g, '""')}"`);;
           backup.tables[table] = result.rows;
         } catch (err) {
           logger.error(`Failed to export table ${table}:`, err);
@@ -108,7 +109,7 @@ router.get('/stats', authenticate, authorize(['admin']), async (req, res) => {
     
     for (const table of tables) {
       try {
-        const result = await db.query(`SELECT COUNT(*) as count FROM ${table.name}`);
+        const result = await db.query(`SELECT COUNT(*) as count FROM "${table.name.replace(/"/g, '""')}"`);;
         stats.tables[table.displayName] = {
           count: parseInt(result.rows[0].count),
           tableName: table.name

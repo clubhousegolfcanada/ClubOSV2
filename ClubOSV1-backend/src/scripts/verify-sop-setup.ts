@@ -38,7 +38,7 @@ async function verifyDatabase() {
       
       if (result.rows[0].count > 0) {
         // Get row count
-        const countResult = await db.query(`SELECT COUNT(*) as total FROM ${table}`);
+        const countResult = await db.query(`SELECT COUNT(*) as total FROM "${table.replace(/"/g, '""')}"`);
         console.log(`✅ Table '${table}' exists - ${countResult.rows[0].total} rows`);
       } else {
         console.log(`❌ Table '${table}' is missing!`);

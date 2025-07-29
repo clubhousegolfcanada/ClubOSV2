@@ -280,22 +280,12 @@ export default function Operations() {
   };
 
   const fetchSystemMetrics = async () => {
-    try {
-      const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/sop-monitoring/sop-status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success && response.data.data.metrics) {
-        setSystemMetrics({
-          total_documents: response.data.data.metrics.total_documents || 0,
-          unique_assistants: response.data.data.metrics.unique_assistants || 0
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch system metrics:', error);
-      // Keep default values if fetch fails
-    }
+    // SOP monitoring is deprecated - using static metrics for now
+    // TODO: Replace with new knowledge system metrics
+    setSystemMetrics({
+      total_documents: 0,
+      unique_assistants: 4 // Emergency, Booking, Tech, Brand
+    });
   };
 
   const exportFeedback = async () => {
