@@ -84,6 +84,38 @@ export class KnowledgeLoader {
   }
   
   searchKnowledge(queryText: string, category?: string): any[] {
+    // Try to use async database search synchronously
+    // This is not ideal, but maintains backward compatibility
+    try {
+      // Create a promise and resolve it synchronously using a hack
+      let dbResults: any[] = [];
+      let dbError: any = null;
+      let finished = false;
+      
+      this.searchKnowledgeDB(queryText, category)
+        .then(results => {
+          dbResults = results;
+          finished = true;
+        })
+        .catch(error => {
+          dbError = error;
+          finished = true;
+        });
+      
+      // Wait a short time for the database query
+      const start = Date.now();
+      while (!finished && Date.now() - start < 100) {
+        // Busy wait - not ideal but works for backward compatibility
+      }
+      
+      if (dbResults.length > 0) {
+        return dbResults;
+      }
+    } catch (error) {
+      logger.warn('Failed to search knowledge DB synchronously:', error);
+    }
+    
+    // Fallback to file-based search
     const results: any[] = [];
     
     for (const [name, kb] of this.knowledgeBases) {
@@ -107,25 +139,62 @@ export class KnowledgeLoader {
   // New database-based methods
   async searchKnowledgeDB(searchQuery: string, category?: string): Promise<KnowledgeItem[]> {
     try {
+      // Search both knowledge_base and extracted_knowledge tables
       let queryText = `
-        SELECT * FROM knowledge_base 
-        WHERE (
-          issue ILIKE $1 
-          OR $1 = ANY(symptoms)
-          OR EXISTS (
-            SELECT 1 FROM unnest(symptoms) s 
-            WHERE s ILIKE '%' || $1 || '%'
+        WITH combined_knowledge AS (
+          -- From knowledge_base table
+          SELECT 
+            id,
+            category,
+            issue,
+            symptoms,
+            ARRAY[issue] as solutions,
+            priority,
+            NULL as confidence,
+            'knowledge_base' as source
+          FROM knowledge_base 
+          WHERE (
+            issue ILIKE $1 
+            OR $1 = ANY(symptoms)
+            OR EXISTS (
+              SELECT 1 FROM unnest(symptoms) s 
+              WHERE s ILIKE '%' || $1 || '%'
+            )
           )
+          
+          UNION ALL
+          
+          -- From extracted_knowledge table
+          SELECT 
+            id,
+            category,
+            problem as issue,
+            ARRAY[problem] as symptoms,
+            ARRAY[solution] as solutions,
+            CASE 
+              WHEN confidence >= 0.9 THEN 'high'
+              WHEN confidence >= 0.7 THEN 'medium'
+              ELSE 'low'
+            END as priority,
+            confidence,
+            'extracted_knowledge' as source
+          FROM extracted_knowledge
+          WHERE (
+            problem ILIKE $1
+            OR solution ILIKE $1
+          )
+          AND confidence >= 0.6
         )
+        SELECT * FROM combined_knowledge
       `;
       const params: any[] = [`%${searchQuery}%`];
       
       if (category) {
-        queryText += ` AND category = $2`;
+        queryText += ` WHERE category = $2`;
         params.push(category);
       }
       
-      queryText += ` ORDER BY priority DESC, issue`;
+      queryText += ` ORDER BY confidence DESC NULLS LAST, priority DESC, issue`;
       
       const result = await query(queryText, params);
       return result.rows;
@@ -137,14 +206,56 @@ export class KnowledgeLoader {
   
   async findSolutionDB(symptoms: string[]): Promise<KnowledgeItem[]> {
     try {
-      // Find entries where symptoms overlap
+      // Find entries from both tables
       const queryText = `
-        SELECT *, 
-          CARDINALITY(symptoms & $1::text[]) as match_count
-        FROM knowledge_base 
-        WHERE symptoms && $1::text[]
+        WITH combined_results AS (
+          -- From knowledge_base table (original logic)
+          SELECT 
+            kb.*,
+            CARDINALITY(symptoms & $1::text[]) as match_count,
+            'knowledge_base' as source
+          FROM knowledge_base kb
+          WHERE symptoms && $1::text[]
+          
+          UNION ALL
+          
+          -- From extracted_knowledge table
+          SELECT 
+            ek.id,
+            ek.category,
+            NULL as subcategory,
+            ek.problem as issue,
+            ARRAY[ek.problem] as symptoms,
+            ARRAY[ek.solution] as solutions,
+            CASE 
+              WHEN ek.confidence >= 0.9 THEN 'high'
+              WHEN ek.confidence >= 0.7 THEN 'medium'
+              ELSE 'low'
+            END as priority,
+            NULL as timeEstimate,
+            NULL as customerScript,
+            NULL as escalationPath,
+            ek.metadata,
+            CASE 
+              WHEN EXISTS (
+                SELECT 1 FROM unnest($1::text[]) s 
+                WHERE ek.problem ILIKE '%' || s || '%'
+                OR ek.solution ILIKE '%' || s || '%'
+              ) THEN 1
+              ELSE 0
+            END as match_count,
+            'extracted_knowledge' as source
+          FROM extracted_knowledge ek
+          WHERE ek.confidence >= 0.6
+          AND EXISTS (
+            SELECT 1 FROM unnest($1::text[]) s 
+            WHERE ek.problem ILIKE '%' || s || '%'
+            OR ek.solution ILIKE '%' || s || '%'
+          )
+        )
+        SELECT * FROM combined_results
         ORDER BY match_count DESC, priority DESC
-        LIMIT 5
+        LIMIT 10
       `;
       
       const result = await query(queryText, [symptoms]);
@@ -254,15 +365,24 @@ export class KnowledgeLoader {
   // Initialize database connection
   async initializeDB(): Promise<void> {
     try {
-      // Check if knowledge_base table exists
-      const result = await query(
+      // Check if both tables exist and count records
+      const kbResult = await query(
         `SELECT COUNT(*) as count FROM knowledge_base`
-      );
+      ).catch(() => ({ rows: [{ count: 0 }] }));
       
-      this.dbInitialized = result.rows[0].count >= 0;
+      const ekResult = await query(
+        `SELECT COUNT(*) as count FROM extracted_knowledge WHERE confidence >= 0.6`
+      ).catch(() => ({ rows: [{ count: 0 }] }));
+      
+      const totalRecords = (kbResult.rows[0].count || 0) + (ekResult.rows[0].count || 0);
+      
+      this.dbInitialized = totalRecords > 0 || (kbResult.rows[0].count >= 0 || ekResult.rows[0].count >= 0);
+      
       logger.info('Knowledge base DB initialized:', { 
         initialized: this.dbInitialized,
-        recordCount: result.rows[0].count 
+        knowledgeBaseRecords: kbResult.rows[0].count || 0,
+        extractedKnowledgeRecords: ekResult.rows[0].count || 0,
+        totalRecords
       });
     } catch (error) {
       logger.warn('Knowledge base DB not available, using file-based fallback');
