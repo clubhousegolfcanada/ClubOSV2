@@ -546,4 +546,79 @@ router.post('/direct-search', authenticate, async (req: Request, res: Response) 
   }
 });
 
+// Show document distribution and search across categories
+router.get('/document-distribution', authenticate, async (req: Request, res: Response) => {
+  try {
+    // 1. Get counts by category
+    const categoryDistribution = await db.query(`
+      SELECT category, COUNT(*) as count
+      FROM extracted_knowledge
+      GROUP BY category
+      ORDER BY count DESC
+    `);
+    
+    // 2. Search for common terms across all categories
+    const searchTerms = ['7iron', 'fan', 'bettergolf', 'nick', 'golf', 'tips'];
+    const termDistribution: any = {};
+    
+    for (const term of searchTerms) {
+      const termResults = await db.query(`
+        SELECT category, COUNT(*) as count
+        FROM extracted_knowledge
+        WHERE problem ILIKE $1 OR solution ILIKE $1
+        GROUP BY category
+      `, [`%${term}%`]);
+      
+      termDistribution[term] = termResults.rows;
+    }
+    
+    // 3. Get sample documents from each category
+    const categorySamples: any = {};
+    for (const row of categoryDistribution.rows) {
+      const samples = await db.query(`
+        SELECT problem, solution, confidence
+        FROM extracted_knowledge
+        WHERE category = $1
+        ORDER BY confidence DESC
+        LIMIT 3
+      `, [row.category]);
+      
+      categorySamples[row.category] = samples.rows;
+    }
+    
+    // 4. Search suggestions
+    const suggestions = [];
+    
+    // Check if documents are miscategorized
+    const techWithBrandTerms = await db.query(`
+      SELECT COUNT(*) as count
+      FROM extracted_knowledge
+      WHERE category = 'tech'
+      AND (problem ILIKE '%7iron%' OR problem ILIKE '%fan%' OR problem ILIKE '%bettergolf%')
+    `);
+    
+    if (techWithBrandTerms.rows[0].count > 0) {
+      suggestions.push(`Found ${techWithBrandTerms.rows[0].count} documents about 7iron/fan/bettergolf in 'tech' category instead of 'brand'`);
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        totalDocuments: categoryDistribution.rows.reduce((sum: number, r: any) => sum + parseInt(r.count), 0),
+        categoryDistribution: categoryDistribution.rows,
+        termDistribution,
+        categorySamples,
+        suggestions
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Document distribution check failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: String(error) 
+    });
+  }
+});
+
 export default router;

@@ -473,6 +473,21 @@ export class KnowledgeLoader {
       const searchResults = await Promise.all(promises);
       searchResults.forEach(items => results.push(...items));
       
+      // If no results found and we were searching a specific category, try searching all categories
+      if (results.length === 0 && searchCategory && includeExtracted) {
+        logger.info('No results in category, searching all categories:', { 
+          originalCategory: searchCategory,
+          searchQuery 
+        });
+        
+        const allCategoryResults = await this.searchExtractedKnowledge(
+          searchQuery, 
+          undefined, // No category filter
+          minConfidence
+        );
+        results.push(...allCategoryResults);
+      }
+      
       // Sort by confidence (if available) and limit
       return results
         .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
