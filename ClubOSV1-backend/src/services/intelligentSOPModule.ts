@@ -43,6 +43,23 @@ export class IntelligentSOPModule {
 
   private async initializeDocuments() {
     try {
+      // Try to load from database first
+      const cachedDocs = await this.loadFromDatabase();
+      if (cachedDocs.size > 0) {
+        this.documentsCache = cachedDocs;
+        this.initialized = true;
+        logger.info(`Loaded ${this.getTotalDocumentCount()} SOP embeddings from database`);
+        
+        // Log what we loaded for debugging
+        for (const [assistant, docs] of cachedDocs.entries()) {
+          logger.info(`Loaded ${docs.length} documents for ${assistant} assistant`);
+        }
+        return;
+      }
+
+      // If no documents in database, try to load from files (legacy)
+      logger.warn('No SOP embeddings found in database, checking for files...');
+      
       // Define document structure matching your actual files
       const assistantDocs = {
         'emergency': [
@@ -71,30 +88,30 @@ export class IntelligentSOPModule {
         ]
       };
 
-      // Try to load from database first
-      const cachedDocs = await this.loadFromDatabase();
-      if (cachedDocs.size > 0) {
-        this.documentsCache = cachedDocs;
-        this.initialized = true;
-        logger.info('Loaded SOP embeddings from database');
-        return;
-      }
-
       // Generate embeddings for all documents
-      logger.info('Initializing SOP document embeddings...');
+      logger.info('Initializing SOP document embeddings from files...');
       for (const [assistant, files] of Object.entries(assistantDocs)) {
         const docs = await this.loadAndEmbedDocuments(assistant, files);
-        this.documentsCache.set(assistant, docs);
+        if (docs.length > 0) {
+          this.documentsCache.set(assistant, docs);
+        }
       }
 
-      // Persist to database
-      await this.persistEmbeddings();
-      this.initialized = true;
-      logger.info('SOP document embeddings initialized successfully');
+      // Persist to database if we loaded any documents
+      if (this.documentsCache.size > 0) {
+        await this.persistEmbeddings();
+        this.initialized = true;
+        logger.info('SOP document embeddings initialized successfully from files');
+      } else {
+        // Even if no files found, mark as initialized so we can use database documents
+        this.initialized = true;
+        logger.info('SOP module initialized without file-based documents, will use database');
+      }
 
     } catch (error) {
       logger.error('Failed to initialize SOP documents:', error);
-      this.initialized = false;
+      // Still mark as initialized so we can use database queries
+      this.initialized = true;
     }
   }
 
@@ -296,56 +313,72 @@ export class IntelligentSOPModule {
     try {
       const startTime = Date.now();
       
-      // Try semantic search first for better understanding
-      const { semanticSearch } = await import('./semanticSearch');
+      // First, try direct database search for SOP embeddings
+      logger.info('Searching SOP embeddings directly from database:', { query, assistant });
+      const normalizedAssistant = this.normalizeAssistant(assistant);
       
-      logger.info('Using semantic search for query:', { query, assistant });
+      // Direct database search
+      const dbResult = await db.query(`
+        SELECT id, assistant, title, content, metadata
+        FROM sop_embeddings
+        WHERE assistant = $1
+        AND (
+          title ILIKE $2
+          OR content ILIKE $2
+          OR to_tsvector('english', title || ' ' || content) @@ plainto_tsquery('english', $3)
+        )
+        ORDER BY updated_at DESC
+        LIMIT $4
+      `, [normalizedAssistant, `%${query}%`, query, topK * 2]);
       
-      // Search using AI to understand the query
-      const semanticResults = await semanticSearch.searchKnowledge(query, {
-        limit: topK * 2,
-        includeAllCategories: true, // Search all categories for best results
-        minRelevance: 0.3
-      });
+      logger.info(`Found ${dbResult.rows.length} documents from direct DB search`);
       
-      logger.info('Semantic search results:', {
-        query,
-        assistant,
-        resultsFound: semanticResults.length,
-        topResults: semanticResults.slice(0, 3).map(r => ({
-          problem: r.problem.substring(0, 50),
-          relevance: r.relevance,
-          category: r.category
-        }))
-      });
-      
-      // If semantic search found good results, use them
-      if (semanticResults.length > 0) {
-        const knowledgeDocs = semanticResults.map(item => ({
-          id: item.id,
-          assistant: assistant,
-          title: item.problem.substring(0, 100),
-          content: `Problem: ${item.problem}\n\nSolution: ${item.solution}`,
+      if (dbResult.rows.length > 0) {
+        const dbDocs = dbResult.rows.map(row => ({
+          id: row.id,
+          assistant: row.assistant,
+          title: row.title,
+          content: row.content,
           embedding: null,
           metadata: {
-            source: 'semantic_search',
-            confidence: item.relevance,
-            category: item.category,
-            reasoning: item.reasoning
+            ...row.metadata,
+            source: 'direct_db_search'
           }
         }));
         
-        if (knowledgeDocs.length >= topK) {
-          logger.info(`Found ${knowledgeDocs.length} semantic matches`);
-          return knowledgeDocs.slice(0, topK);
+        // If we have enough results, return them
+        if (dbDocs.length >= topK) {
+          return dbDocs.slice(0, topK);
         }
         
-        // If we need more, also search embeddings
-        const embeddingResults = await this.searchEmbeddings(query, assistant, topK - knowledgeDocs.length);
-        return [...knowledgeDocs, ...embeddingResults];
+        // Try to get more from unified search
+        const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
+        const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
+          assistant: assistant,
+          limit: topK - dbDocs.length,
+          includeStatic: true,
+          includeExtracted: true,
+          includeSOPEmbeddings: false // We already searched SOP
+        });
+        
+        const knowledgeDocs = knowledgeResults.map(item => ({
+          id: item.id,
+          assistant: assistant,
+          title: item.issue.substring(0, 100),
+          content: this.formatKnowledgeAsContent(item),
+          embedding: null,
+          metadata: {
+            source: item.source,
+            confidence: item.confidence,
+            priority: item.priority
+          }
+        }));
+        
+        return [...dbDocs, ...knowledgeDocs].slice(0, topK);
       }
       
-      // Fallback to original search if semantic search fails
+      // Fallback to unified search
+      logger.info('No direct DB results, falling back to unified search');
       const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
       const knowledgeResults = await knowledgeLoader.unifiedSearch(query, {
         assistant: assistant,
@@ -354,6 +387,8 @@ export class IntelligentSOPModule {
         includeExtracted: true,
         includeSOPEmbeddings: true
       });
+      
+      logger.info(`Unified search found ${knowledgeResults.length} results`);
       
       const knowledgeDocs = knowledgeResults.map(item => ({
         id: item.id,
@@ -368,15 +403,20 @@ export class IntelligentSOPModule {
         }
       }));
       
-      if (knowledgeDocs.length >= topK) {
-        logger.info(`Found ${knowledgeDocs.length} matches from unified knowledge search`);
+      if (knowledgeDocs.length > 0) {
         return knowledgeDocs.slice(0, topK);
       }
       
-      // If we need more results, also search embeddings
-      const embeddingResults = await this.searchEmbeddings(query, assistant, topK - knowledgeDocs.length);
+      // Last resort: try embeddings if we have them in cache
+      const documents = this.documentsCache.get(normalizedAssistant) || [];
+      if (documents.length > 0 && documents[0].embedding) {
+        logger.info('Trying embedding search as last resort');
+        const embeddingResults = await this.searchEmbeddings(query, assistant, topK);
+        return embeddingResults;
+      }
       
-      return [...knowledgeDocs, ...embeddingResults];
+      logger.warn(`No relevant documents found for query: "${query}" in assistant: ${assistant}`);
+      return [];
       
     } catch (error) {
       logger.error('Failed to find relevant context:', error);
