@@ -38,7 +38,7 @@ Visit http://localhost:3000
 - **Smart Request Routing** - GPT-4 analyzes and routes to specialized assistants
 - **4 Specialized Bots** - Emergency, Booking, Tech Support, Brand Tone
 - **Knowledge Router System** - GPT-4o powered natural language processing
-- **OpenPhone Integration** - Automatic knowledge extraction from customer calls
+- **OpenPhone Integration** - Automatic knowledge extraction with conversation export and statistics
 - **Confidence Scoring** - Transparent AI decision-making
 - **Slack Fallback** - Seamless handoff to human support
 
@@ -48,7 +48,7 @@ Visit http://localhost:3000
 - **Database-First Search** - Checks local knowledge before calling OpenAI APIs
 - **Knowledge Audit Trail** - Complete history of all knowledge updates
 - **Assistant Knowledge Files** - Persistent storage for each specialized assistant
-- **Recent Messages** - Live view of customer interactions
+- **Conversation Statistics** - Customer count, message totals, and export functionality
 - **Feedback Analysis** - Review and improve responses marked as "not helpful"
 
 ### Ticket Management
@@ -104,6 +104,9 @@ git push origin main
 - ✅ Database-first search before calling OpenAI (saves API costs)
 - ✅ Knowledge persistence in PostgreSQL audit log
 - ✅ Assistant responses now properly formatted with Markdown
+- ✅ OpenPhone conversation export (AI-optimized, JSON, CSV formats)
+- ✅ Conversation statistics UI with customer count and message totals
+- ✅ Phone number-based conversation grouping (removed time gaps)
 - ✅ Simplified codebase - removed 50+ test scripts
 
 ### v1.8.4 (July 2025)
@@ -117,7 +120,7 @@ git push origin main
 ### v1.8.3 (July 2025)
 - ✅ Knowledge Center restructured under Operations section
 - ✅ Card-based layout for SOP control and Knowledge extraction
-- ✅ Live Recent Messages with 8-second auto-refresh
+- ✅ OpenPhone conversation statistics with export functionality
 - ✅ Complete feedback section with Refresh, Export, and Clear functions
 - ✅ Improved error handling and debugging features
 - ✅ Shadow mode performance tracking (without monetary calculations)
