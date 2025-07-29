@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { semanticSearch } from '../services/semanticSearch';
-import { intelligentSOPModule } from '../services/intelligentSOPModule';
+// SOP module disabled - using GPT-4o router
 
 const router = Router();
 
@@ -66,7 +66,13 @@ router.get('/check', authenticate, async (req: Request, res: Response) => {
     checks.services.semanticSearch = !!(semanticSearch as any).openai;
     
     // Check SOP module
-    const sopStatus = intelligentSOPModule.getStatus();
+    // SOP module disabled - using GPT-4o router
+    const sopStatus = { 
+      isInitialized: false, 
+      documentCount: 0, 
+      embeddingCount: 0,
+      message: 'SOP module disabled - using GPT-4o router' 
+    };
     checks.services.sopModule = sopStatus.initialized;
     
     // Test semantic search if available

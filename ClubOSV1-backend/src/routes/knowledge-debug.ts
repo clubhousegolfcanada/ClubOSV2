@@ -181,8 +181,8 @@ router.post('/test-flow', authenticate, async (req: Request, res: Response) => {
     
     // Step 3: Check what assistant service does
     if (sopEnabled) {
-      const { intelligentSOPModule } = await import('../services/intelligentSOPModule');
-      const sopDocs = await intelligentSOPModule.findRelevantContext(testDescription, testRoute);
+      // SOP module disabled - using GPT-4o router
+      const sopDocs: any[] = [];
       
       diagnostics.sopModuleResults = {
         documentsFound: sopDocs.length,
@@ -194,7 +194,8 @@ router.post('/test-flow', authenticate, async (req: Request, res: Response) => {
       };
       
       // Try processing with SOP
-      const sopResponse = await intelligentSOPModule.processWithContext(testDescription, testRoute);
+      // SOP module disabled - using GPT-4o router
+      const sopResponse = { response: '', confidence: 0, source: 'disabled' };
       diagnostics.sopResponse = {
         hasResponse: !!sopResponse.response,
         confidence: sopResponse.confidence,
@@ -422,8 +423,8 @@ router.post('/diagnose', authenticate, async (req: Request, res: Response) => {
       };
       
       // Check if the SOP module can find the knowledge
-      const { intelligentSOPModule } = await import('../services/intelligentSOPModule');
-      const sopDocs = await intelligentSOPModule.findRelevantContext(testQuery, 'BrandTone');
+      // SOP module disabled - using GPT-4o router
+      const sopDocs: any[] = [];
       
       diagnosis.sopModuleCheck.documentsFound = sopDocs.length;
       diagnosis.sopModuleCheck.documents = sopDocs.slice(0, 3).map(d => ({

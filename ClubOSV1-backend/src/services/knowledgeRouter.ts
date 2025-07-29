@@ -25,7 +25,7 @@ export class KnowledgeRouterService {
 
   constructor() {
     this.openai = new OpenAI({
-      apiKey: config.openaiApiKey
+      apiKey: config.OPENAI_API_KEY
     });
 
     // Map assistant types to their IDs
@@ -218,7 +218,7 @@ Respond with valid JSON only.`;
    * Send Slack notification for critical updates
    */
   private async notifySlack(update: KnowledgeUpdate): Promise<void> {
-    if (!config.slackWebhookUrl) return;
+    if (!config.SLACK_WEBHOOK_URL) return;
 
     try {
       const message = {
@@ -235,7 +235,7 @@ Respond with valid JSON only.`;
       };
 
       // Send to Slack webhook
-      await fetch(config.slackWebhookUrl, {
+      await fetch(config.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(message)

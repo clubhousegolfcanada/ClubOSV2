@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
-import { validateRequest } from '../middleware/validation';
+import { handleValidationErrors } from '../middleware/validation';
 import { knowledgeRouter } from '../services/knowledgeRouter';
 import { logger } from '../utils/logger';
 import { body, query } from 'express-validator';
@@ -17,9 +17,10 @@ router.use(roleGuard(['admin']));
  * Parse natural language knowledge input and route to assistants
  */
 router.post('/parse-and-route',
-  validateRequest([
+  [
     body('input').isString().notEmpty().withMessage('Input is required'),
-  ]),
+  ],
+  handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { input } = req.body;
     const userId = req.user?.id;
@@ -87,9 +88,10 @@ router.get('/recent-updates',
  * Test endpoint to verify parsing without routing
  */
 router.post('/test-parse',
-  validateRequest([
+  [
     body('input').isString().notEmpty().withMessage('Input is required'),
-  ]),
+  ],
+  handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { input } = req.body;
 

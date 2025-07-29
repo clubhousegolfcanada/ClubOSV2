@@ -2,6 +2,8 @@ import OpenAI from 'openai';
 import { logger } from '../utils/logger';
 import { config } from '../utils/envValidator';
 import { db } from '../utils/database';
+import { assistantFileManager } from './assistantFileManager';
+import { knowledgeSearchService } from './knowledgeSearchService';
 // Intelligent SOP Module disabled - using OpenAI Assistants directly
 
 interface AssistantResponse {
@@ -54,6 +56,18 @@ export class AssistantService {
       'tech': process.env.TECH_SUPPORT_GPT_ID || '',
       'brand': process.env.BRAND_MARKETING_GPT_ID || ''
     };
+
+    // Initialize knowledge files for each assistant
+    this.initializeKnowledgeFiles();
+  }
+
+  private async initializeKnowledgeFiles(): Promise<void> {
+    try {
+      await assistantFileManager.initializeKnowledgeFiles(this.assistantMap);
+      logger.info('✅ Assistant knowledge files initialized');
+    } catch (error) {
+      logger.error('Failed to initialize knowledge files:', error);
+    }
   }
 
   private extractJsonFromText(text: string): { json: any | null; textAfter: string; fullText: string } {
@@ -156,8 +170,34 @@ export class AssistantService {
     userMessage: string,
     context?: Record<string, any>
   ): Promise<AssistantResponse> {
-    // SOP Module disabled - using OpenAI Assistants directly
-    // All knowledge updates now go through the GPT-4o router in Knowledge Center
+    // First, check our database for recent knowledge updates
+    const dbSearch = await knowledgeSearchService.searchKnowledge(
+      userMessage,
+      route.toLowerCase()
+    );
+    
+    if (dbSearch.found && dbSearch.confidence > 0.8) {
+      logger.info('Using knowledge from database', {
+        route,
+        source: dbSearch.source,
+        confidence: dbSearch.confidence
+      });
+      
+      // Format the database response
+      const formattedResponse = this.formatDatabaseResponse(dbSearch.data, route);
+      
+      return {
+        response: formattedResponse,
+        assistantId: `db-${route}`,
+        threadId: `db-${Date.now()}`,
+        confidence: dbSearch.confidence,
+        structured: {
+          source: 'database',
+          category: dbSearch.data.category,
+          lastUpdated: dbSearch.data.lastUpdated
+        }
+      };
+    }
     
     if (!this.isEnabled || !this.openai) {
       logger.warn('Assistant service is disabled - returning fallback response');
@@ -285,18 +325,7 @@ export class AssistantService {
       let metadata = json?.metadata;
       let escalation = json?.escalation;
 
-      // Update shadow comparison if we have one
-      if (sopShadowId && db.initialized) {
-        const assistantTime = Date.now() - startTime;
-        await db.query(`
-          UPDATE sop_shadow_comparisons 
-          SET assistant_response = $1,
-              assistant_time_ms = $2
-          WHERE id = $3
-        `, [responseText, assistantTime, sopShadowId]).catch(err => {
-          logger.error('Failed to update shadow comparison:', err);
-        });
-      }
+      // Shadow comparison removed - using OpenAI Assistants directly
       
       return {
         response: responseText,
@@ -339,6 +368,24 @@ export class AssistantService {
     return fallbacks[route] || 'System is having trouble processing this request. Please try rephrasing your operational question or contact technical support.';
   }
 
+  private formatDatabaseResponse(data: any, route: string): string {
+    const routeTemplates: Record<string, string> = {
+      'Booking & Access': `Based on our records: ${data.answer}`,
+      'Emergency': `Emergency Protocol: ${data.answer}`,
+      'TechSupport': `Technical Solution: ${data.answer}`,
+      'BrandTone': `Brand Information: ${data.answer}`
+    };
+
+    const template = routeTemplates[route] || `Information: ${data.answer}`;
+    
+    if (data.lastUpdated) {
+      const updateDate = new Date(data.lastUpdated).toLocaleDateString();
+      return `${template}\n\n*Last updated: ${updateDate}*`;
+    }
+    
+    return template;
+  }
+
   /**
    * Update assistant knowledge through structured knowledge updates
    * This method is called by the KnowledgeRouter after parsing natural language input
@@ -375,7 +422,17 @@ export class AssistantService {
     }
 
     try {
-      // Create a special thread for knowledge updates
+      // Update the assistant's knowledge file
+      const fileUpdated = await assistantFileManager.updateKnowledgeFile(
+        assistantId,
+        knowledge
+      );
+
+      if (!fileUpdated) {
+        throw new Error('Failed to update knowledge file');
+      }
+
+      // Also create a thread to inform the assistant of the update
       const thread = await this.openai.beta.threads.create({
         metadata: {
           type: 'knowledge_update',
@@ -393,7 +450,7 @@ Tags: ${knowledge.tags.join(', ')}
 
 Fact: ${knowledge.fact}
 
-Please acknowledge this knowledge update and store it for future reference.`;
+This knowledge has been added to your knowledge file. You can now reference this information when answering questions.`;
 
       // Add message to thread
       await this.openai.beta.threads.messages.create(thread.id, {
@@ -401,33 +458,42 @@ Please acknowledge this knowledge update and store it for future reference.`;
         content: knowledgeMessage
       });
 
-      // Run the thread
+      // Run the thread to acknowledge the update
       const run = await this.openai.beta.threads.runs.create(thread.id, {
-        assistant_id: assistantId
+        assistant_id: assistantId,
+        instructions: 'Acknowledge the knowledge update. Your knowledge file has been updated with this information.'
       });
 
-      // Wait for completion
+      // Wait for completion (with timeout)
       let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
-      while (runStatus.status !== 'completed' && runStatus.status !== 'failed') {
+      let attempts = 0;
+      while (runStatus.status !== 'completed' && runStatus.status !== 'failed' && attempts < 30) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+        attempts++;
       }
 
       if (runStatus.status === 'failed') {
-        throw new Error('Assistant failed to process knowledge update');
+        logger.warn('Assistant failed to acknowledge update, but knowledge file was updated');
       }
 
-      // Log the successful update
+      // Verify the knowledge was stored
+      const verification = await assistantFileManager.verifyKnowledge(
+        assistantId,
+        knowledge.fact.substring(0, 50) // Search for first 50 chars
+      );
+
       logger.info('Knowledge update successful', {
         route,
         assistantId,
         category: knowledge.category,
-        intent: knowledge.intent
+        intent: knowledge.intent,
+        verified: verification.found
       });
 
       return {
         success: true,
-        message: `Knowledge successfully updated in ${route} assistant`,
+        message: `Knowledge successfully updated in ${route} assistant's file${verification.found ? ' (verified)' : ''}`,
         assistantId
       };
     } catch (error) {

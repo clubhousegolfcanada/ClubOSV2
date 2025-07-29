@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { knowledgeExtractor } from '../services/knowledgeExtractor';
+// Knowledge extractor disabled - using GPT-4o router
 import { logger } from '../utils/logger';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
@@ -18,7 +18,8 @@ router.post('/extract', async (req: Request, res: Response) => {
     
     logger.info('Starting knowledge extraction', { limit });
     
-    const stats = await knowledgeExtractor.processUnprocessedConversations(limit);
+    // Knowledge extractor disabled - using GPT-4o router
+    const stats = { processed: 0, extracted: 0 };
     
     res.json({
       success: true,
@@ -40,10 +41,8 @@ router.get('/unapplied', async (req: Request, res: Response) => {
   try {
     const { category, limit = 50 } = req.query;
     
-    const knowledge = await knowledgeExtractor.getUnappliedKnowledge(
-      category as string,
-      parseInt(limit as string)
-    );
+    // Knowledge extractor disabled
+    const knowledge: any[] = [];
     
     res.json({
       success: true,
@@ -73,7 +72,8 @@ router.put('/:id/apply', async (req: Request, res: Response) => {
       });
     }
     
-    await knowledgeExtractor.markKnowledgeApplied(id, sopFile);
+    // Knowledge extractor disabled
+    // await knowledgeExtractor.markKnowledgeApplied(id, sopFile);
     
     res.json({
       success: true,
@@ -108,7 +108,8 @@ router.post('/apply-batch', async (req: Request, res: Response) => {
       });
     }
     
-    await knowledgeExtractor.applyKnowledgeBatch(knowledgeIds, sopFile);
+    // Knowledge extractor disabled
+    // await knowledgeExtractor.applyKnowledgeBatch(knowledgeIds, sopFile);
     
     res.json({
       success: true,
@@ -127,7 +128,11 @@ router.post('/apply-batch', async (req: Request, res: Response) => {
 // Get extraction statistics
 router.get('/stats', async (req: Request, res: Response) => {
   try {
-    const stats = await knowledgeExtractor.getExtractionStats();
+    // Knowledge extractor disabled
+    const stats = { 
+      overview: { total_extracted: 0, applied_count: 0, pending_count: 0, avg_confidence: 0, unique_sources: 0 },
+      byCategory: []
+    };
     
     res.json({
       success: true,
@@ -155,10 +160,8 @@ router.get('/search', async (req: Request, res: Response) => {
       });
     }
     
-    const similar = await knowledgeExtractor.findSimilarKnowledge(
-      problem as string,
-      category as string
-    );
+    // Knowledge extractor disabled
+    const similar: any[] = [];
     
     res.json({
       success: true,
@@ -190,7 +193,8 @@ router.post('/preview-entry', async (req: Request, res: Response) => {
     logger.info('Previewing knowledge entry', { entry: entry.substring(0, 100) + '...' });
     
     // Get preview without saving
-    const preview = await knowledgeExtractor.previewManualEntry(entry.trim());
+    // Knowledge extractor disabled
+    const preview = { sections: [], primaryCategory: 'general' };
     
     res.json({
       success: true,
@@ -233,7 +237,8 @@ router.post('/confirm-entry', async (req: Request, res: Response) => {
     });
     
     // Process confirmed entry
-    const result = await knowledgeExtractor.processConfirmedEntry(sections, selectedCategories, clearExisting);
+    // Knowledge extractor disabled
+    const result = { imported: 0 };
     
     res.json({
       success: true,
@@ -268,7 +273,8 @@ router.post('/manual-entry', async (req: Request, res: Response) => {
     });
     
     // Process the manual entry using the knowledge extractor
-    const result = await knowledgeExtractor.processManualEntry(entry.trim(), clearExisting);
+    // Knowledge extractor disabled
+    const result = { category: 'general', id: Date.now() };
     
     res.json({
       success: true,
@@ -305,8 +311,8 @@ router.delete('/clear-embeddings', async (req: Request, res: Response) => {
     const deletedCount = result.rows[0]?.count || 0;
     
     // Refresh SOP module cache
-    const { intelligentSOPModule } = await import('../services/intelligentSOPModule');
-    await intelligentSOPModule.refreshDocumentCache();
+    // SOP module disabled - using GPT-4o router
+    // Document cache refresh not needed
     
     res.json({
       success: true,
