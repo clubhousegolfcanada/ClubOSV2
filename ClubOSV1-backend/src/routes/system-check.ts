@@ -73,7 +73,7 @@ router.get('/check', authenticate, async (req: Request, res: Response) => {
       embeddingCount: 0,
       message: 'SOP module disabled - using GPT-4o router' 
     };
-    checks.services.sopModule = sopStatus.initialized;
+    checks.services.sopModule = sopStatus.isInitialized;
     
     // Test semantic search if available
     if (checks.services.semanticSearch) {

@@ -61,9 +61,10 @@ router.post('/parse-and-route',
  * Get recent knowledge updates for monitoring
  */
 router.get('/recent-updates',
-  validateRequest([
+  [
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100')
-  ]),
+  ],
+  handleValidationErrors,
   asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit as string) || 20;
 

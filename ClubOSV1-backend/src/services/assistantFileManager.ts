@@ -1,66 +1,54 @@
-import OpenAI from 'openai';
 import { logger } from '../utils/logger';
-import { config } from '../utils/envValidator';
+import { db } from '../utils/database';
 
-interface KnowledgeFile {
+interface KnowledgeUpdate {
   assistantId: string;
-  fileName: string;
-  content: string;
+  route: string;
+  content: any;
 }
 
 export class AssistantFileManager {
-  private openai: OpenAI;
-  private knowledgeFileIds: Map<string, string> = new Map();
-
+  // Since we can't directly manage OpenAI Assistant files,
+  // we'll track knowledge updates in our database instead
+  
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: config.OPENAI_API_KEY
-    });
+    // No OpenAI client needed - assistants manage their own files
   }
 
   /**
-   * Initialize or get existing knowledge files for each assistant
+   * Initialize knowledge tracking for each assistant
    */
   async initializeKnowledgeFiles(assistantMap: Record<string, string>): Promise<void> {
-    for (const [route, assistantId] of Object.entries(assistantMap)) {
-      try {
-        // Check if assistant already has a knowledge file
-        const assistant = await this.openai.beta.assistants.retrieve(assistantId);
-        const existingFiles = assistant.file_ids || [];
-        
-        // Look for our knowledge file
-        let knowledgeFileId: string | null = null;
-        
-        for (const fileId of existingFiles) {
-          try {
-            const file = await this.openai.files.retrieve(fileId);
-            if (file.filename === `${route.toLowerCase()}_knowledge.json`) {
-              knowledgeFileId = fileId;
-              break;
-            }
-          } catch (error) {
-            // File might be deleted or inaccessible
-            logger.warn(`Could not retrieve file ${fileId} for assistant ${assistantId}`);
-          }
-        }
-
-        // Create knowledge file if it doesn't exist
-        if (!knowledgeFileId) {
-          knowledgeFileId = await this.createKnowledgeFile(route, assistantId);
-        }
-
-        this.knowledgeFileIds.set(assistantId, knowledgeFileId);
-        logger.info(`Knowledge file initialized for ${route}:`, { assistantId, fileId: knowledgeFileId });
-      } catch (error) {
-        logger.error(`Failed to initialize knowledge file for ${route}:`, error);
-      }
+    // Create database table for tracking knowledge if it doesn't exist
+    try {
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS assistant_knowledge (
+          id SERIAL PRIMARY KEY,
+          assistant_id VARCHAR(255) NOT NULL,
+          route VARCHAR(255) NOT NULL,
+          knowledge JSONB NOT NULL,
+          version VARCHAR(50) DEFAULT '1.0',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Create index for faster lookups
+      await db.query(`
+        CREATE INDEX IF NOT EXISTS idx_assistant_knowledge_assistant_id 
+        ON assistant_knowledge(assistant_id)
+      `);
+      
+      logger.info('Assistant knowledge tracking initialized');
+    } catch (error) {
+      logger.error('Failed to initialize knowledge tracking:', error);
     }
   }
 
   /**
-   * Create a new knowledge file for an assistant
+   * Create initial knowledge record for an assistant
    */
-  private async createKnowledgeFile(route: string, assistantId: string): Promise<string> {
+  private async createKnowledgeRecord(route: string, assistantId: string): Promise<void> {
     const initialContent = {
       assistant: route,
       version: "1.0",
@@ -73,30 +61,29 @@ export class AssistantFileManager {
       }
     };
 
-    // Create the file
-    const file = await this.openai.files.create({
-      file: Buffer.from(JSON.stringify(initialContent, null, 2)),
-      purpose: 'assistants'
-    });
-
-    // Attach to assistant
-    await this.openai.beta.assistants.update(assistantId, {
-      file_ids: [...(await this.getAssistantFileIds(assistantId)), file.id]
-    });
-
-    return file.id;
+    await db.query(`
+      INSERT INTO assistant_knowledge (assistant_id, route, knowledge)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (assistant_id) DO NOTHING
+    `, [assistantId, route, JSON.stringify(initialContent)]);
   }
 
   /**
-   * Get current file IDs for an assistant
+   * Get current knowledge for an assistant
    */
-  private async getAssistantFileIds(assistantId: string): Promise<string[]> {
-    const assistant = await this.openai.beta.assistants.retrieve(assistantId);
-    return assistant.file_ids || [];
+  private async getAssistantKnowledge(assistantId: string): Promise<any> {
+    const result = await db.query(`
+      SELECT knowledge FROM assistant_knowledge
+      WHERE assistant_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `, [assistantId]);
+    
+    return result.rows[0]?.knowledge || null;
   }
 
   /**
-   * Update knowledge file with new information
+   * Update knowledge for an assistant (stored in our database)
    */
   async updateKnowledgeFile(
     assistantId: string,
@@ -109,14 +96,15 @@ export class AssistantFileManager {
     }
   ): Promise<boolean> {
     try {
-      const fileId = this.knowledgeFileIds.get(assistantId);
-      if (!fileId) {
-        throw new Error(`No knowledge file found for assistant ${assistantId}`);
+      // Get current knowledge
+      let currentData = await this.getAssistantKnowledge(assistantId);
+      
+      if (!currentData) {
+        // Create initial record if none exists
+        const route = await this.getRouteForAssistant(assistantId);
+        await this.createKnowledgeRecord(route || 'unknown', assistantId);
+        currentData = await this.getAssistantKnowledge(assistantId);
       }
-
-      // Retrieve current content
-      const fileContent = await this.openai.files.content(fileId);
-      const currentData = JSON.parse(fileContent.toString());
 
       // Update based on intent
       switch (knowledge.intent) {
@@ -135,42 +123,37 @@ export class AssistantFileManager {
       currentData.lastUpdated = new Date().toISOString();
       currentData.version = this.incrementVersion(currentData.version || "1.0");
 
-      // Create new file with updated content
-      const newFile = await this.openai.files.create({
-        file: Buffer.from(JSON.stringify(currentData, null, 2)),
-        purpose: 'assistants'
-      });
+      // Save updated knowledge to database
+      await db.query(`
+        UPDATE assistant_knowledge 
+        SET knowledge = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE assistant_id = $2
+      `, [JSON.stringify(currentData), assistantId]);
 
-      // Update assistant with new file
-      const currentFileIds = await this.getAssistantFileIds(assistantId);
-      const updatedFileIds = currentFileIds.filter(id => id !== fileId);
-      updatedFileIds.push(newFile.id);
-
-      await this.openai.beta.assistants.update(assistantId, {
-        file_ids: updatedFileIds
-      });
-
-      // Delete old file
-      try {
-        await this.openai.files.del(fileId);
-      } catch (error) {
-        logger.warn('Could not delete old knowledge file:', error);
-      }
-
-      // Update our mapping
-      this.knowledgeFileIds.set(assistantId, newFile.id);
-
-      logger.info('Knowledge file updated successfully', {
+      logger.info('Knowledge updated successfully', {
         assistantId,
-        newFileId: newFile.id,
-        category: knowledge.category
+        category: knowledge.category,
+        intent: knowledge.intent
       });
 
       return true;
     } catch (error) {
-      logger.error('Failed to update knowledge file:', error);
+      logger.error('Failed to update knowledge:', error);
       return false;
     }
+  }
+
+  /**
+   * Get route name for an assistant ID
+   */
+  private async getRouteForAssistant(assistantId: string): Promise<string | null> {
+    const result = await db.query(`
+      SELECT route FROM assistant_knowledge
+      WHERE assistant_id = $1
+      LIMIT 1
+    `, [assistantId]);
+    
+    return result.rows[0]?.route || null;
   }
 
   /**
@@ -280,19 +263,16 @@ export class AssistantFileManager {
     matches: any[];
   }> {
     try {
-      const fileId = this.knowledgeFileIds.get(assistantId);
-      if (!fileId) {
+      const data = await this.getAssistantKnowledge(assistantId);
+      if (!data) {
         return { found: false, matches: [] };
       }
-
-      const fileContent = await this.openai.files.content(fileId);
-      const data = JSON.parse(fileContent.toString());
       
       const matches: any[] = [];
       const searchLower = searchTerm.toLowerCase();
 
       // Search through all knowledge arrays
-      for (const [category, items] of Object.entries(data.knowledge)) {
+      for (const [category, items] of Object.entries(data.knowledge || {})) {
         if (Array.isArray(items)) {
           for (const item of items) {
             if (
@@ -320,20 +300,20 @@ export class AssistantFileManager {
   }
 
   /**
-   * Get all knowledge for an assistant
+   * Get all knowledge entries for display/export
    */
-  async getAssistantKnowledge(assistantId: string): Promise<any> {
+  async getAllAssistantKnowledge(): Promise<any[]> {
     try {
-      const fileId = this.knowledgeFileIds.get(assistantId);
-      if (!fileId) {
-        return null;
-      }
-
-      const fileContent = await this.openai.files.content(fileId);
-      return JSON.parse(fileContent.toString());
+      const result = await db.query(`
+        SELECT assistant_id, route, knowledge, updated_at
+        FROM assistant_knowledge
+        ORDER BY updated_at DESC
+      `);
+      
+      return result.rows;
     } catch (error) {
-      logger.error('Failed to get assistant knowledge:', error);
-      return null;
+      logger.error('Failed to get all assistant knowledge:', error);
+      return [];
     }
   }
 }
