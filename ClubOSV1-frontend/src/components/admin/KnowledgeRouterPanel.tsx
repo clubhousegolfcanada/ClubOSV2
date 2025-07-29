@@ -198,9 +198,11 @@ export const KnowledgeRouterPanel: React.FC = () => {
                         : update.new_value}
                     </p>
                   </div>
-                  <span className="text-xs text-[var(--text-muted)] whitespace-nowrap ml-4">
-                    {mounted ? new Date(update.timestamp).toLocaleString() : ''}
-                  </span>
+                  {mounted && (
+                    <span className="text-xs text-[var(--text-muted)] whitespace-nowrap ml-4">
+                      {new Date(update.timestamp).toLocaleString()}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

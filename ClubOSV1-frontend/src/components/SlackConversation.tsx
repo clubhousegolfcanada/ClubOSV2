@@ -118,10 +118,12 @@ export const SlackConversation: React.FC<Props> = ({ threadTs, className }) => {
   }, [selectedThread]);
 
   const formatTimestamp = (timestamp: string) => {
+    if (typeof window === 'undefined') return '';
     return new Date(timestamp).toLocaleString();
   };
 
   const formatTimeAgo = (timestamp: string) => {
+    if (typeof window === 'undefined') return '';
     const now = new Date();
     const time = new Date(timestamp);
     const diff = now.getTime() - time.getTime();
