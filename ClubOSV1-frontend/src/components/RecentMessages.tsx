@@ -48,10 +48,9 @@ export const RecentMessages: React.FC = () => {
   useEffect(() => {
     fetchRecentMessages();
     
-    // Set up auto-refresh every 8 seconds
-    const interval = setInterval(fetchRecentMessages, 8000);
-    
-    return () => clearInterval(interval);
+    // Auto-refresh disabled to prevent rate limiting
+    // const interval = setInterval(fetchRecentMessages, 8000);
+    // return () => clearInterval(interval);
   }, []);
 
   const formatPhoneNumber = (phone: string) => {
@@ -148,9 +147,13 @@ export const RecentMessages: React.FC = () => {
       ))}
       
       <div className="text-center py-1">
-        <p className="text-[9px] text-[var(--text-muted)]">
-          Auto-updates every 8s
-        </p>
+        <button
+          onClick={fetchRecentMessages}
+          className="text-[9px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] flex items-center gap-1 mx-auto"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh messages
+        </button>
       </div>
     </div>
   );
