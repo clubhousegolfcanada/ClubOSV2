@@ -38,6 +38,7 @@ import knowledgeDebugRoutes from './routes/knowledge-debug';
 import systemCheckRoutes from './routes/system-check';
 import assistantRoutes from './routes/assistant';
 import sopCheckRoutes from './routes/sop-check';
+import sopDebugRoutes from './routes/sop-debug';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -120,6 +121,7 @@ app.use('/api/knowledge-debug', knowledgeDebugRoutes);
 app.use('/api/system', systemCheckRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/sop-check', sopCheckRoutes);
+app.use('/api/sop-debug', sopDebugRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
