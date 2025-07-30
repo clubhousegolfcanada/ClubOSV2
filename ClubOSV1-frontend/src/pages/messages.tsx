@@ -264,16 +264,18 @@ export default function Messages() {
                           <Phone className="w-3 h-3" />
                           <span>{conv.phone_number}</span>
                         </div>
-                        {conv.lastMessage && conv.lastMessage.text && (
+                        {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
                           <p className="text-xs text-[var(--text-secondary)] truncate">
                             {conv.lastMessage.direction === 'outbound' && 'You: '}
-                            {conv.lastMessage.text}
+                            {conv.lastMessage.text || conv.lastMessage.body}
                           </p>
                         )}
                         <div className="flex items-center gap-1 mt-1">
                           <Clock className="w-3 h-3 text-[var(--text-muted)]" />
                           <span className="text-xs text-[var(--text-muted)]">
-                            {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}
+                            {conv.updated_at && !isNaN(new Date(conv.updated_at).getTime())
+                              ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })
+                              : 'Recently'}
                           </span>
                         </div>
                       </div>
@@ -329,11 +331,13 @@ export default function Messages() {
                               ? 'bg-[var(--accent)] text-white'
                               : 'bg-[var(--bg-tertiary)]'
                           } rounded-lg px-4 py-2`}>
-                            <p className="text-sm">{message.text}</p>
+                            <p className="text-sm">{message.text || message.body || ''}</p>
                             <p className={`text-xs mt-1 ${
                               message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
                             }`}>
-                              {format(new Date(message.createdAt), 'h:mm a')}
+                              {message.createdAt && !isNaN(new Date(message.createdAt).getTime()) 
+                                ? format(new Date(message.createdAt), 'h:mm a')
+                                : 'Unknown time'}
                             </p>
                           </div>
                         </div>

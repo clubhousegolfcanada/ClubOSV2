@@ -60,8 +60,23 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // Extract data - handle both direct data and nested object structure
         const messageData = data.object || data;
         const phoneNumber = messageData.from || messageData.to || messageData.phoneNumber;
-        const customerName = messageData.contactName || data.contactName || 'Unknown';
-        const employeeName = messageData.userName || data.userName || 'Unknown';
+        
+        // Try multiple fields for contact name
+        const customerName = messageData.contactName || 
+                           data.contactName || 
+                           messageData.contact?.name ||
+                           data.contact?.name ||
+                           messageData.conversationPhoneNumberName ||
+                           data.conversationPhoneNumberName ||
+                           messageData.name ||
+                           data.name ||
+                           'Unknown';
+                           
+        const employeeName = messageData.userName || 
+                           data.userName || 
+                           messageData.user?.name ||
+                           data.user?.name ||
+                           'Unknown';
         
         // Use phone number as primary identifier for time-based grouping
         if (!phoneNumber) {

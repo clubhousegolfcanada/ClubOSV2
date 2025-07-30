@@ -268,6 +268,32 @@ export class OpenPhoneService {
   }
 
   /**
+   * Get contact details by phone number
+   */
+  async getContactByPhone(phoneNumber: string): Promise<any> {
+    if (!this.isConfigured) {
+      return null;
+    }
+
+    try {
+      const response = await this.client.get('/contacts', {
+        params: {
+          phoneNumber: phoneNumber,
+          limit: 1
+        }
+      });
+
+      if (response.data.data && response.data.data.length > 0) {
+        return response.data.data[0];
+      }
+      return null;
+    } catch (error: any) {
+      logger.error('Failed to fetch contact:', error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  /**
    * Get phone numbers associated with the account
    */
   async getPhoneNumbers(): Promise<any[]> {
