@@ -45,6 +45,7 @@ import assistantRoutes from './routes/assistant';
 import knowledgeEnhanceRoutes from './routes/knowledge-enhance';
 import knowledgeRouterRoutes from './routes/knowledge-router';
 import adminRoutes from './routes/admin';
+import publicRoutes from './routes/public';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -100,6 +101,9 @@ app.options('*', cors());
 // Rate limiting
 app.use('/api/', rateLimiter);
 app.use('/api/auth', authLimiter);
+
+// Public routes (no auth required)
+app.use('/api/public', publicRoutes);
 
 // API Routes
 app.use('/api/auth', authRoutes);
