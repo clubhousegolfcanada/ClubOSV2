@@ -196,27 +196,74 @@ export class OpenPhoneService {
   }
 
   /**
-   * Send a message via OpenPhone API
+   * Send an SMS message via OpenPhone
    */
-  async sendMessage(to: string, text: string, from?: string): Promise<any> {
+  async sendMessage(to: string, from: string, text: string): Promise<any> {
     if (!this.isConfigured) {
       throw new Error('OpenPhone not configured');
     }
 
     try {
-      const payload = {
+      logger.info('Sending OpenPhone message', { to, from, text: text.substring(0, 50) });
+      
+      const response = await this.client.post('/messages', {
         to,
-        text,
-        from: from || process.env.OPENPHONE_DEFAULT_NUMBER
-      };
+        from,
+        text
+      });
 
-      const response = await this.client.post('/messages', payload);
-      logger.info('Message sent via OpenPhone', { to, preview: text.substring(0, 50) });
+      // Store message in database
+      await this.storeOutboundMessage({
+        id: response.data.id,
+        to,
+        from,
+        text,
+        status: 'sent',
+        createdAt: new Date().toISOString()
+      });
 
       return response.data;
     } catch (error: any) {
       logger.error('Failed to send OpenPhone message:', error.response?.data || error.message);
+      
+      // Store failed message
+      await this.storeOutboundMessage({
+        id: `failed_${Date.now()}`,
+        to,
+        from,
+        text,
+        status: 'failed',
+        error: error.message,
+        createdAt: new Date().toISOString()
+      });
+      
       throw error;
+    }
+  }
+
+  private async storeOutboundMessage(message: any) {
+    const phoneNumber = message.to;
+    
+    // Update conversation with new message
+    const existingConv = await db.query(
+      'SELECT id, messages FROM openphone_conversations WHERE phone_number = $1',
+      [phoneNumber]
+    );
+    
+    if (existingConv.rows.length > 0) {
+      const messages = [...(existingConv.rows[0].messages || []), message];
+      await db.query(
+        'UPDATE openphone_conversations SET messages = $1, updated_at = NOW() WHERE id = $2',
+        [JSON.stringify(messages), existingConv.rows[0].id]
+      );
+    } else {
+      // Create new conversation
+      await db.query(
+        `INSERT INTO openphone_conversations 
+         (phone_number, customer_name, messages, created_at, updated_at) 
+         VALUES ($1, $2, $3, NOW(), NOW())`,
+        [phoneNumber, 'Unknown', JSON.stringify([message])]
+      );
     }
   }
 
