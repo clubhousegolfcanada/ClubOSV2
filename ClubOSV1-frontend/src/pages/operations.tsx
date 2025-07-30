@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain, MessageSquare } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
-import { ChecklistSystem } from '@/components/ChecklistSystem';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
@@ -176,7 +175,6 @@ export default function Operations() {
   const [showFeedbackSection, setShowFeedbackSection] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showCleaning, setShowCleaning] = useState(true);
   const [showKnowledge, setShowKnowledge] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [systemMetrics, setSystemMetrics] = useState<any>({ total_documents: 0, unique_assistants: 0 });
@@ -1119,34 +1117,21 @@ export default function Operations() {
           <div className="mb-8">
             <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
               <button
-                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(true); setShowKnowledge(false); }}
+                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); }}
                 className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                  showCleaning 
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Checklists
-                {showCleaning && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
-              <button
-                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(false); }}
-                className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                  !showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge
+                  !showSystemConfig && !showAnalytics && !showKnowledge
                     ? 'text-[var(--text-primary)]' 
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 Settings
-                {!showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
+                {!showSystemConfig && !showAnalytics && !showKnowledge && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
                 )}
               </button>
               {user?.role === 'admin' && (
                 <button
-                  onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowCleaning(false); setShowKnowledge(true); }}
+                  onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(true); }}
                   className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
                     showKnowledge 
                       ? 'text-[var(--text-primary)]' 
@@ -1162,9 +1147,7 @@ export default function Operations() {
             </div>
             
             <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
-              {showCleaning 
-                ? 'Complete cleaning and tech maintenance checklists with real-time tracking and submission history.'
-                : showKnowledge
+              {showKnowledge
                 ? 'Manage AI knowledge extraction, feedback, and SOP system.'
                 : 'Manage system users, configurations, and analytics.'}
             </p>
@@ -1172,12 +1155,7 @@ export default function Operations() {
 
           {user?.role === 'admin' ? (
             <>
-              {showCleaning ? (
-                <>
-                  {/* Checklists Content */}
-                  <ChecklistSystem />
-                </>
-              ) : showKnowledge ? (
+              {showKnowledge ? (
                 <>
                   {/* Knowledge Center - Compressed Dashboard Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
@@ -2099,7 +2077,7 @@ export default function Operations() {
               ) : null}
 
               {/* System Status - Only show when not in specific views */}
-              {!showSystemConfig && !showAnalytics && !showCleaning && !showKnowledge && (
+              {!showSystemConfig && !showAnalytics && !showKnowledge && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">System Status</h3>
