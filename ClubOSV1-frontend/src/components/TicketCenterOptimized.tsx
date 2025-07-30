@@ -302,128 +302,116 @@ const TicketCenterOptimized = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
-      {/* Header - Sticky on mobile */}
-      <div className="sticky top-0 z-10 bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Ticket Center</h1>
-              <p className="text-sm text-[var(--text-secondary)] hidden md:block">
-                View and manage all facilities and technical support tickets
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {user?.role === 'admin' && filteredTickets.length > 0 && (
-                <button
-                  onClick={() => {
-                    const categoryText = activeTab === 'all' ? '' : ` ${activeTab}`;
-                    const statusText = filter === 'all' ? '' : ` ${filter}`;
-                    if (confirm(`Clear all${statusText}${categoryText} tickets?`)) {
-                      clearAllTickets();
-                    }
-                  }}
-                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                  title="Clear all tickets"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              <button 
-                onClick={() => router.push('/')}
-                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New Ticket</span>
-              </button>
-            </div>
-          </div>
+    <div className="max-w-7xl mx-auto">
+      {/* Action Buttons */}
+      <div className="flex items-center justify-end gap-2 mb-4">
+        {user?.role === 'admin' && filteredTickets.length > 0 && (
+          <button
+            onClick={() => {
+              const categoryText = activeTab === 'all' ? '' : ` ${activeTab}`;
+              const statusText = filter === 'all' ? '' : ` ${filter}`;
+              if (confirm(`Clear all${statusText}${categoryText} tickets?`)) {
+                clearAllTickets();
+              }
+            }}
+            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Clear all tickets"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+        <button 
+          onClick={() => router.push('/')}
+          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">New Ticket</span>
+        </button>
+      </div>
 
-          {/* Tab Navigation */}
-          <div className="border-b border-[var(--border-primary)] mb-6">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
-                  activeTab === 'all'
-                    ? 'text-[var(--text-primary)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                All Tickets
-                {activeTab === 'all' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('facilities')}
-                className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
-                  activeTab === 'facilities'
-                    ? 'text-[var(--text-primary)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Facilities
-                {activeTab === 'facilities' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('tech')}
-                className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
-                  activeTab === 'tech'
-                    ? 'text-[var(--text-primary)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Tech Support
-                {activeTab === 'tech' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Search Bar - Mobile optimized */}
-          <div className="mb-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <input
-              type="text"
-              placeholder="Search tickets..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm"
-            />
-          </div>
-
-          {/* Filter Pills - Horizontal scroll on mobile */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
-            {filters.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value as TicketStatus | 'all')}
-                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                  filter === f.value
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-                }`}
-              >
-                {f.label}
-                {f.count > 0 && (
-                  <span className={`text-xs ${
-                    filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
-                  } px-1.5 py-0.5 rounded-full`}>
-                    {f.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+      {/* Tab Navigation */}
+      <div className="border-b border-[var(--border-primary)] mb-6">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'all'
+                ? 'text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            All Tickets
+            {activeTab === 'all' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('facilities')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'facilities'
+                ? 'text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            Facilities
+            {activeTab === 'facilities' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('tech')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'tech'
+                ? 'text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            Tech Support
+            {activeTab === 'tech' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+            )}
+          </button>
         </div>
       </div>
 
+      {/* Search Bar - Mobile optimized */}
+      <div className="mb-4 relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+        <input
+          type="text"
+          placeholder="Search tickets..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm"
+        />
+      </div>
+
+      {/* Filter Pills - Horizontal scroll on mobile */}
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        {filters.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setFilter(f.value as TicketStatus | 'all')}
+            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              filter === f.value
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            {f.label}
+            {f.count > 0 && (
+              <span className={`text-xs ${
+                filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
+              } px-1.5 py-0.5 rounded-full`}>
+                {f.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Ticket List - Optimized for mobile */}
-      <div className="container mx-auto px-3 sm:px-4 py-3">
+      <div>
         {loading ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--accent)]"></div>
