@@ -94,7 +94,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4 py-8">
+    <div className="min-h-screen flex items-start justify-center bg-[var(--bg-primary)] px-4 pt-20 pb-8">
       <div className="max-w-md w-full space-y-6">
         <div>
           <h1 className="text-center text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--accent)] to-teal-400 bg-clip-text text-transparent">
