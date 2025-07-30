@@ -195,7 +195,16 @@ app.use(errorHandler);
 // Initialize database and start server
 async function startServer() {
   try {
+    logger.info('🚀 Starting ClubOS Backend...');
+    logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`📍 Port: ${PORT}`);
+    
+    // Perform startup checks
+    const { performStartupChecks } = await import('./utils/startup-check');
+    await performStartupChecks();
+    
     // Initialize database
+    logger.info('🔄 Initializing database connection...');
     await db.initialize();
     logger.info('✅ Database initialized successfully');
     

@@ -10,6 +10,15 @@ import { messageSendLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
+// Health check endpoint
+router.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    service: 'messages',
+    timestamp: new Date().toISOString() 
+  });
+});
+
 // Get all conversations
 router.get('/conversations',
   authenticate,
@@ -18,15 +27,18 @@ router.get('/conversations',
     try {
       const { limit = 50, offset = 0, search } = req.query;
       
-      // First check if the new columns exist
+      // First check which columns exist
       const columnCheck = await db.query(`
         SELECT column_name 
         FROM information_schema.columns 
         WHERE table_name = 'openphone_conversations' 
-        AND column_name IN ('unread_count', 'last_read_at')
+        AND column_name IN ('unread_count', 'last_read_at', 'updated_at')
       `);
       
-      const hasNewColumns = columnCheck.rows.length === 2;
+      const existingColumns = columnCheck.rows.map(row => row.column_name);
+      const hasUnreadCount = existingColumns.includes('unread_count');
+      const hasLastReadAt = existingColumns.includes('last_read_at');
+      const hasUpdatedAt = existingColumns.includes('updated_at');
       
       let query = `
         SELECT 
@@ -35,10 +47,9 @@ router.get('/conversations',
           customer_name,
           employee_name,
           messages,
-          ${hasNewColumns ? 'unread_count,' : '0 as unread_count,'}
-          ${hasNewColumns ? 'last_read_at,' : 'NULL as last_read_at,'}
-          created_at,
-          updated_at
+          ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+          ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+          created_at${hasUpdatedAt ? ',\n          updated_at' : ''}
         FROM openphone_conversations
       `;
       
@@ -49,7 +60,8 @@ router.get('/conversations',
         params.push(`%${search}%`);
       }
       
-      query += ` ORDER BY updated_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      // Order by updated_at if it exists, otherwise by created_at
+      query += ` ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
       params.push(limit, offset);
       
       const result = await db.query(query, params);
@@ -59,7 +71,9 @@ router.get('/conversations',
         data: result.rows.map(row => ({
           ...row,
           lastMessage: row.messages?.[row.messages.length - 1] || null,
-          messageCount: row.messages?.length || 0
+          messageCount: row.messages?.length || 0,
+          // Ensure we always have updated_at for frontend
+          updated_at: row.updated_at || row.created_at
         }))
       });
     } catch (error) {
