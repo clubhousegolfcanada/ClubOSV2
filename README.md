@@ -197,34 +197,7 @@ railway logs
 - Additional features as needed
 
 ### Ready to Implement
-#### Public ClubOS Boy for HubSpot (Built July 2025)
-A public-facing version of ClubOS Boy is ready for HubSpot integration when needed:
-
-**What's Ready:**
-- Public page: `https://clubos-frontend.vercel.app/public/clubosboy`
-- No authentication required
-- Rate limiting (10 requests/minute)
-- Auto-timeout after 60 seconds
-- SMS integration: Text button opens (902) 707-3748
-
-**Quick Setup:**
-```html
-<!-- Add this iframe to any HubSpot page -->
-<iframe 
-  src="https://clubos-frontend.vercel.app/public/clubosboy" 
-  width="100%" 
-  height="800"
-  frameborder="0"
-  style="border: none; border-radius: 8px;"
-  title="ClubOS Boy - AI Golf Assistant">
-</iframe>
-```
-
-**Documentation:**
-- Full guide: `/docs/HUBSPOT_INTEGRATION.md`
-- Setup reference: `/PUBLIC_CLUBOSBOY_SETUP.md`
-
-All code is deployed and ready - just needs to be embedded in HubSpot when ready!
+- **Public ClubOS Boy for HubSpot** - Customer-facing AI assistant without authentication. See [`PUBLIC_CLUBOSBOY_SETUP.md`](./PUBLIC_CLUBOSBOY_SETUP.md) for implementation details.
 
 ## 📄 License
 
