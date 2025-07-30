@@ -1,11 +1,3 @@
-# Environment variables
-.env
-.env.local
-.env.*.local
-*.env
-*.env.backup.*
-.env.*
-
 # Dependencies
 node_modules/
 */node_modules/
@@ -15,75 +7,68 @@ dist/
 build/
 .next/
 out/
-*/dist/
-*/build/
-*/.next/
+*.tsbuildinfo
 
 # Logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-logs/
-server.log
-*/logs/
-*/server.log
+lerna-debug.log*
+.pnpm-debug.log*
 
-# OS files
-.DS_Store
-Thumbs.db
-Icon
+# Environment files (contain secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Testing
 coverage/
 .nyc_output/
 
+# Cache
+.cache/
+.parcel-cache/
+.npm/
+.eslintcache
+.stylelintcache
+
 # Temporary files
+tmp/
+temp/
 *.tmp
 *.temp
-.tmp.drivedownload/
-.tmp.driveupload/
 
-# Data files
-ClubOSV1-backend/data/*.json
-!ClubOSV1-backend/data/.gitkeep
+# Database files (if local)
+*.sqlite
+*.sqlite3
+*.db
 
 # Backup files
 *.backup
 *.bak
+backups/
 
-# Certificates
-*.pem
-*.key
-*.crt
-
-# Archive folders
-_Archive/
-Archive/
-archive/
-
-# Temporary fix scripts (should be in archive)
-fix-*.sh
-fix-*.js
-deploy-*.sh
-postgres-*.sh
-quick-fix-*.sh
-test-*.sh
-
-# Misc files that shouldn't be in root
-any
-Headers
-Network
-*.sql
-reset-admin.html
-
-# Keep root clean - scripts should be in folders
-/*.sh
-/*.js
-/*.ts
-!tsconfig.json
-!package.json
+# Lock files (optional - some prefer to commit these)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

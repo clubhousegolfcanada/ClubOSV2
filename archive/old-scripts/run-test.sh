@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Run the test with the token
+./test-search-simple.sh "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjMTkwNWJjYy0xODkxLTQxMjQtOTFTEiLCJibWFpbCI6Im1pa2VAY2x1YmhvdXNlZ29sZmNhbmFkYS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MjZxNjI3NzksZXhwIjoxNzI3MjcxOTc5LCJhdWQiOiJDbHViT1MiLCJpc3MiOiJDbHViT1MifQ.CMO7diKWxxl3mJhto-9p5XoBVW_V156JHHIJmEg2iDI"
