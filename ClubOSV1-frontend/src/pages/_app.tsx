@@ -11,6 +11,7 @@ import { useAuthState } from '@/state/useStore';
 import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 import { tokenManager } from '@/utils/tokenManager';
 import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
+import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -27,6 +28,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   
   // Use kiosk redirect hook
   useKioskRedirect();
+  
+  // Use message notifications hook
+  const { unreadCount } = useMessageNotifications();
 
   useEffect(() => {
     // Skip auth restoration on login page
@@ -118,7 +122,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
 
   return (
     <>
-      {showNavigation && <Navigation />}
+      {showNavigation && <Navigation unreadMessages={unreadCount} />}
       {isPublicRoute ? (
         <Component {...pageProps} />
       ) : (

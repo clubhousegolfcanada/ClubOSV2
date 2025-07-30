@@ -11,7 +11,11 @@ import { tokenManager } from '@/utils/tokenManager';
 
 type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
 
-const Navigation: React.FC = () => {
+interface NavigationProps {
+  unreadMessages?: number;
+}
+
+const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuthState();
@@ -119,14 +123,20 @@ const Navigation: React.FC = () => {
                     key={item.href}
                     href={item.href}
                     className={`
-                      px-3 py-2 rounded-md text-sm font-medium transition-all duration-200
+                      px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2
                       ${router.pathname === item.href
                         ? 'bg-[var(--accent)] text-white'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                       }
                     `}
                   >
+                    {item.icon && <span>{item.icon}</span>}
                     {item.label}
+                    {item.href === '/messages' && unreadMessages > 0 && (
+                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                        {unreadMessages}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -277,14 +287,22 @@ const Navigation: React.FC = () => {
               key={item.href}
               href={item.href}
               className={`
-                block px-4 py-3 rounded-md text-base font-medium transition-all duration-200 touch-manipulation
+                flex items-center justify-between px-4 py-3 rounded-md text-base font-medium transition-all duration-200 touch-manipulation
                 ${router.pathname === item.href
                   ? 'bg-[var(--accent)] text-white'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                 }
               `}
             >
-              {item.label}
+              <div className="flex items-center gap-2">
+                {item.icon && <span>{item.icon}</span>}
+                {item.label}
+              </div>
+              {item.href === '/messages' && unreadMessages > 0 && (
+                <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                  {unreadMessages}
+                </span>
+              )}
             </Link>
           ))}
         </div>
