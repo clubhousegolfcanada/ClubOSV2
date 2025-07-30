@@ -65,10 +65,7 @@ export default function Messages() {
     };
   }, []);
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Don't auto-scroll on conversation selection
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -170,6 +167,9 @@ export default function Messages() {
         
         setMessages([...messages, sentMessage]);
         setNewMessage('');
+        
+        // Scroll to bottom after sending
+        setTimeout(scrollToBottom, 100);
         
         // Refresh conversations to update last message
         loadConversations();
