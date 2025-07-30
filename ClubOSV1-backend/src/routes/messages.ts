@@ -66,9 +66,26 @@ router.get('/conversations',
       
       const result = await db.query(query, params);
       
+      // Filter out conversations without valid phone numbers
+      const validConversations = result.rows.filter(row => {
+        const isValid = row.phone_number && 
+                       row.phone_number !== 'Unknown' && 
+                       row.phone_number.trim() !== '';
+        
+        if (!isValid) {
+          logger.warn('Filtering out conversation with invalid phone number', {
+            id: row.id,
+            phone_number: row.phone_number,
+            customer_name: row.customer_name
+          });
+        }
+        
+        return isValid;
+      });
+      
       res.json({
         success: true,
-        data: result.rows.map(row => ({
+        data: validConversations.map(row => ({
           ...row,
           lastMessage: row.messages?.[row.messages.length - 1] || null,
           messageCount: row.messages?.length || 0,
