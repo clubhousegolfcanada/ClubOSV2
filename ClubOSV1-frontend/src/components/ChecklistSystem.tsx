@@ -362,33 +362,35 @@ export const ChecklistSystem: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Tab Navigation */}
-      <div className="flex items-center gap-4 mb-4 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('checklist')}
-          className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
-            activeTab === 'checklist' 
-              ? 'text-[var(--text-primary)]' 
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-          }`}
-        >
-          Checklists
-          {activeTab === 'checklist' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('tracker')}
-          className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
-            activeTab === 'tracker' 
-              ? 'text-[var(--text-primary)]' 
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-          }`}
-        >
-          Completion Tracker
-          {activeTab === 'tracker' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-          )}
-        </button>
+      <div className="border-b border-[var(--border-primary)] mb-6">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setActiveTab('checklist')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'checklist' 
+                ? 'text-[var(--text-primary)]' 
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            Checklists
+            {activeTab === 'checklist' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('tracker')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'tracker' 
+                ? 'text-[var(--text-primary)]' 
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            Completion Tracker
+            {activeTab === 'tracker' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+            )}
+          </button>
+        </div>
       </div>
 
       {activeTab === 'checklist' ? (

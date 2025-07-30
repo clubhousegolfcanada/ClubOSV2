@@ -340,37 +340,48 @@ const TicketCenterOptimized = () => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2 mb-4 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'all'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              }`}
-            >
-              All Tickets
-            </button>
-            <button
-              onClick={() => setActiveTab('facilities')}
-              className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'facilities'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              }`}
-            >
-              Facilities
-            </button>
-            <button
-              onClick={() => setActiveTab('tech')}
-              className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'tech'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              }`}
-            >
-              Tech Support
-            </button>
+          <div className="border-b border-[var(--border-primary)] mb-6">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                  activeTab === 'all'
+                    ? 'text-[var(--text-primary)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                All Tickets
+                {activeTab === 'all' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('facilities')}
+                className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                  activeTab === 'facilities'
+                    ? 'text-[var(--text-primary)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                Facilities
+                {activeTab === 'facilities' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('tech')}
+                className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                  activeTab === 'tech'
+                    ? 'text-[var(--text-primary)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                Tech Support
+                {activeTab === 'tech' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Search Bar - Mobile optimized */}
