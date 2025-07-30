@@ -1113,44 +1113,49 @@ export default function Operations() {
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
-        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
-          <div className="mb-8">
-            <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6">
-              <button
-                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); }}
-                className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                  !showSystemConfig && !showAnalytics && !showKnowledge
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Settings
-                {!showSystemConfig && !showAnalytics && !showKnowledge && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(true); }}
-                  className={`text-xl md:text-2xl font-semibold transition-all relative pb-1 ${
-                    showKnowledge 
-                      ? 'text-[var(--text-primary)]' 
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                  }`}
-                >
-                  Knowledge
-                  {showKnowledge && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                  )}
-                </button>
-              )}
-            </div>
-            
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          {/* Header Section */}
+          <div className="mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
+              Operations
+            </h1>
             <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
               {showKnowledge
                 ? 'Manage AI knowledge extraction, feedback, and SOP system.'
                 : 'Manage system users, configurations, and analytics.'}
             </p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-4 mb-4 overflow-x-auto">
+            <button
+              onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); }}
+              className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
+                !showSystemConfig && !showAnalytics && !showKnowledge
+                  ? 'text-[var(--text-primary)]' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Settings
+              {!showSystemConfig && !showAnalytics && !showKnowledge && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+              )}
+            </button>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(true); }}
+                className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
+                  showKnowledge 
+                    ? 'text-[var(--text-primary)]' 
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                Knowledge
+                {showKnowledge && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+                )}
+              </button>
+            )}
           </div>
 
           {user?.role === 'admin' ? (

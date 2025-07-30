@@ -692,43 +692,45 @@ export default function CommandsRedesigned() {
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)]">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          {/* Page Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-6 mb-6">
-              <button
-                onClick={() => setActiveTab('remote-actions')}
-                className={`text-2xl font-semibold transition-all relative pb-1 ${
-                  activeTab === 'remote-actions' 
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Remote Actions
-                {activeTab === 'remote-actions' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('commands')}
-                className={`text-2xl font-semibold transition-all relative pb-1 ${
-                  activeTab === 'commands' 
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Commands
-                {activeTab === 'commands' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
-            </div>
-            
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          {/* Header Section */}
+          <div className="mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
+              Commands & Actions
+            </h1>
             <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
-              {activeTab === 'commands' 
-                ? 'Common commands that ClubOS can help with. Responses are dynamic and always current.'
-                : 'Remote actions and automated controls for simulator and facility management.'}
+              Remote actions and automated controls for simulator and facility management.
             </p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-4 mb-4 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('remote-actions')}
+              className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
+                activeTab === 'remote-actions' 
+                  ? 'text-[var(--text-primary)]' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Remote Actions
+              {activeTab === 'remote-actions' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('commands')}
+              className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
+                activeTab === 'commands' 
+                  ? 'text-[var(--text-primary)]' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Commands
+              {activeTab === 'commands' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+              )}
+            </button>
           </div>
 
           {/* Search Bar */}
