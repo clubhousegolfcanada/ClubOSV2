@@ -76,12 +76,21 @@ router.get('/template/:category/:type',
       }
       
       // Fetch any customizations for this template
-      const customizations = await db.query(
-        `SELECT task_id, custom_label 
-         FROM checklist_task_customizations 
-         WHERE category = $1 AND type = $2`,
-        [category, type]
-      );
+      let customizations = { rows: [] };
+      try {
+        customizations = await db.query(
+          `SELECT task_id, custom_label 
+           FROM checklist_task_customizations 
+           WHERE category = $1 AND type = $2`,
+          [category, type]
+        );
+      } catch (dbError: any) {
+        // Table might not exist yet, log but continue
+        logger.warn('Failed to fetch checklist customizations', {
+          error: dbError.message,
+          code: dbError.code
+        });
+      }
       
       // Merge customizations with template
       const tasksWithCustomizations = template.map(task => {
