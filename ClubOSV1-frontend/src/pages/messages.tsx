@@ -116,7 +116,9 @@ export default function Messages() {
 
   const selectConversation = async (conversation: Conversation) => {
     setSelectedConversation(conversation);
-    setMessages(conversation.messages || []);
+    // Ensure messages is always an array
+    const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
+    setMessages(conversationMessages);
     
     // Mark as read
     try {
@@ -176,10 +178,12 @@ export default function Messages() {
     }
   };
 
-  const filteredConversations = conversations.filter(c => 
-    c.phone_number.includes(searchTerm) || 
-    c.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(c => {
+    if (!c) return false;
+    const phoneMatch = c.phone_number && c.phone_number.includes(searchTerm);
+    const nameMatch = c.customer_name && c.customer_name.toLowerCase().includes(searchTerm.toLowerCase());
+    return phoneMatch || nameMatch;
+  });
 
   if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
     return null;
@@ -247,7 +251,7 @@ export default function Messages() {
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-[var(--text-muted)]" />
                             <span className="font-medium text-sm">
-                              {conv.customer_name}
+                              {conv.customer_name || 'Unknown'}
                             </span>
                           </div>
                           {conv.unread_count > 0 && (
@@ -260,7 +264,7 @@ export default function Messages() {
                           <Phone className="w-3 h-3" />
                           <span>{conv.phone_number}</span>
                         </div>
-                        {conv.lastMessage && (
+                        {conv.lastMessage && conv.lastMessage.text && (
                           <p className="text-xs text-[var(--text-secondary)] truncate">
                             {conv.lastMessage.direction === 'outbound' && 'You: '}
                             {conv.lastMessage.text}
@@ -295,9 +299,9 @@ export default function Messages() {
                             <ArrowLeft className="w-5 h-5" />
                           </button>
                           <div>
-                            <h3 className="font-semibold">{selectedConversation.customer_name}</h3>
+                            <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
                             <p className="text-sm text-[var(--text-muted)]">
-                              {selectedConversation.phone_number}
+                              {selectedConversation.phone_number || 'No phone number'}
                             </p>
                           </div>
                         </div>
@@ -315,7 +319,7 @@ export default function Messages() {
 
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {messages.map((message, index) => (
+                      {messages && messages.length > 0 ? messages.map((message, index) => (
                         <div
                           key={message.id || index}
                           className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
@@ -333,7 +337,11 @@ export default function Messages() {
                             </p>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-center text-[var(--text-muted)] py-8">
+                          <p>No messages yet. Send a message to start the conversation.</p>
+                        </div>
+                      )}
                       <div ref={messagesEndRef} />
                     </div>
 
