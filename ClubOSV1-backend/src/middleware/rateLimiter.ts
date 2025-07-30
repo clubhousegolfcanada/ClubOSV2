@@ -107,3 +107,37 @@ export const llmRateLimiter = rateLimit({
     return false;
   }
 });
+
+// Rate limiter for sending messages
+export const messageSendLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 10, // 10 messages per minute per user
+  message: 'Too many messages sent, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by user ID if authenticated, otherwise by IP
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return keyGenerator(req);
+  },
+  validate: false,
+  skip: (req) => {
+    // Skip for admin users
+    if (req.user?.role === 'admin') return true;
+    return false;
+  },
+  handler: (req, res) => {
+    logger.warn('Message send rate limit exceeded', { 
+      userId: req.user?.id,
+      ip: req.ip
+    });
+    
+    res.status(429).json({
+      success: false,
+      error: 'Too many messages sent. Please wait a moment before sending more.',
+      retryAfter: req.rateLimit?.resetTime
+    });
+  }
+});

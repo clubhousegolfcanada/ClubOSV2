@@ -6,6 +6,7 @@ import { body, query } from 'express-validator';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { openPhoneService } from '../services/openphoneService';
+import { messageSendLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -99,6 +100,7 @@ router.get('/conversations/:phoneNumber',
 router.post('/send',
   authenticate,
   roleGuard(['admin', 'operator', 'support']),
+  messageSendLimiter,
   validate([
     body('to').isMobilePhone('any').withMessage('Invalid phone number'),
     body('text').notEmpty().withMessage('Message text is required'),

@@ -132,7 +132,7 @@ export default function Messages() {
         const sentMessage: Message = {
           id: response.data.data.id,
           text: newMessage.trim(),
-          from: process.env.NEXT_PUBLIC_OPENPHONE_NUMBER || '',
+          from: response.data.data.from || '',
           to: selectedConversation.phone_number,
           direction: 'outbound',
           createdAt: new Date().toISOString(),

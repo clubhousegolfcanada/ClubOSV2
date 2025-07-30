@@ -69,13 +69,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
           break;
         }
         
-        // Build message object
+        // Build message object (normalize body/text field)
         const newMessage = {
           id: messageData.id,
           type: type,
           from: messageData.from,
           to: messageData.to,
-          body: messageData.body || messageData.text || '',
+          text: messageData.body || messageData.text || '',
+          body: messageData.body || messageData.text || '', // Keep both for compatibility
           direction: messageData.direction,
           createdAt: messageData.createdAt || new Date().toISOString(),
           media: messageData.media || []
