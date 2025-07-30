@@ -294,10 +294,10 @@ export const ChecklistSystem: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Tab Navigation */}
-      <div className="flex items-center gap-4 md:gap-6 mb-6 overflow-x-auto">
+      <div className="flex items-center gap-4 mb-4 overflow-x-auto">
         <button
           onClick={() => setActiveTab('checklist')}
-          className={`text-base md:text-lg font-semibold transition-all relative pb-1 whitespace-nowrap ${
+          className={`text-sm font-semibold transition-all relative pb-1 whitespace-nowrap ${
             activeTab === 'checklist' 
               ? 'text-[var(--text-primary)]' 
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -310,7 +310,7 @@ export const ChecklistSystem: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('tracker')}
-          className={`text-base md:text-lg font-semibold transition-all relative pb-1 whitespace-nowrap ${
+          className={`text-sm font-semibold transition-all relative pb-1 whitespace-nowrap ${
             activeTab === 'tracker' 
               ? 'text-[var(--text-primary)]' 
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -326,18 +326,18 @@ export const ChecklistSystem: React.FC = () => {
       {activeTab === 'checklist' ? (
         <>
           {/* Category and Type Selection */}
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Category Selection */}
               <div>
-                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Category</label>
-                <div className="flex gap-2">
+                <label className="block text-xs font-medium mb-2 text-[var(--text-muted)] uppercase tracking-wider">Category</label>
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => setActiveCategory('cleaning')}
-                    className={`flex-1 px-3 md:px-4 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
+                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
                       activeCategory === 'cleaning'
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                     }`}
                   >
                     Cleaning
@@ -345,15 +345,14 @@ export const ChecklistSystem: React.FC = () => {
                   <button
                     onClick={() => {
                       setActiveCategory('tech');
-                      // Tech doesn't have daily, so switch to weekly
                       if (activeType === 'daily') {
                         setActiveType('weekly');
                       }
                     }}
-                    className={`flex-1 px-3 md:px-4 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
+                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
                       activeCategory === 'tech'
-                        ? 'bg-purple-500 text-white border-purple-500'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                     }`}
                   >
                     Tech
@@ -363,15 +362,15 @@ export const ChecklistSystem: React.FC = () => {
 
               {/* Type Selection */}
               <div>
-                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Type</label>
-                <div className="flex gap-2">
+                <label className="block text-xs font-medium mb-2 text-[var(--text-muted)] uppercase tracking-wider">Type</label>
+                <div className="flex gap-1.5">
                   {activeCategory === 'cleaning' && (
                     <button
                       onClick={() => setActiveType('daily')}
-                      className={`flex-1 px-2 md:px-3 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
+                      className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
                         activeType === 'daily'
-                          ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                       }`}
                     >
                       Daily
@@ -379,20 +378,20 @@ export const ChecklistSystem: React.FC = () => {
                   )}
                   <button
                     onClick={() => setActiveType('weekly')}
-                    className={`flex-1 px-2 md:px-3 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
+                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
                       activeType === 'weekly'
-                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                     }`}
                   >
                     Weekly
                   </button>
                   <button
                     onClick={() => setActiveType('quarterly')}
-                    className={`flex-1 px-2 md:px-3 py-2.5 md:py-3 rounded-lg font-medium text-sm md:text-base transition-all ${
+                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
                       activeType === 'quarterly'
-                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                     }`}
                   >
                     Quarterly
@@ -402,11 +401,11 @@ export const ChecklistSystem: React.FC = () => {
 
               {/* Location Selection */}
               <div>
-                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Location</label>
+                <label className="block text-xs font-medium mb-2 text-[var(--text-muted)] uppercase tracking-wider">Location</label>
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)]"
+                  className="w-full px-2 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
                 >
                   {locations.map(location => (
                     <option key={location} value={location}>{location}</option>
@@ -418,36 +417,36 @@ export const ChecklistSystem: React.FC = () => {
 
           {/* Checklist Tasks */}
           {currentTemplate && (
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
                   {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {getTypeLabel(activeType)}
                 </h3>
-                <p className="text-sm text-[var(--text-secondary)]">
+                <p className="text-xs text-[var(--text-muted)]">
                   Complete all tasks below and submit when finished.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                 {currentTemplate.tasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                    className={`p-3 rounded border transition-all cursor-pointer ${
                       completedTasks[task.id]
                         ? 'bg-green-500/10 border-green-500/30'
-                        : 'bg-[var(--bg-secondary)] border-[var(--border-secondary)] hover:border-[var(--border-primary)]'
+                        : 'bg-[var(--bg-tertiary)] border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
                     }`}
                     onClick={() => handleTaskToggle(task.id)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
                         completedTasks[task.id]
                           ? 'bg-green-500 border-green-500'
                           : 'border-[var(--border-primary)]'
                       }`}>
-                        {completedTasks[task.id] && <Check className="w-4 h-4 text-white" />}
+                        {completedTasks[task.id] && <Check className="w-3 h-3 text-white" />}
                       </div>
-                      <span className={`flex-1 ${
+                      <span className={`flex-1 text-xs ${
                         completedTasks[task.id]
                           ? 'text-[var(--text-primary)]'
                           : 'text-[var(--text-secondary)]'
@@ -461,30 +460,30 @@ export const ChecklistSystem: React.FC = () => {
 
               {/* Comments and Ticket Section */}
               {isAllTasksCompleted() && (
-                <div className="border-t border-[var(--border-secondary)] pt-6 space-y-4">
+                <div className="border-t border-[var(--border-secondary)] pt-3 space-y-3">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
+                    <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
                       Comments (Optional)
                     </label>
                     <textarea
                       value={comments}
                       onChange={(e) => setComments(e.target.value)}
                       placeholder="Add any notes about issues, missing items, or required maintenance..."
-                      className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-50)] transition-colors resize-none"
-                      rows={3}
+                      className="w-full px-3 py-2 rounded bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none transition-colors resize-none text-xs"
+                      rows={2}
                     />
                   </div>
                   
                   {comments.trim() && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         id="create-ticket"
                         checked={createTicket}
                         onChange={(e) => setCreateTicket(e.target.checked)}
-                        className="w-4 h-4 text-[var(--accent)] bg-[var(--bg-secondary)] border-[var(--border-secondary)] rounded focus:ring-[var(--accent)]"
+                        className="w-3 h-3 text-[var(--accent)] bg-[var(--bg-tertiary)] border-[var(--border-secondary)] rounded focus:ring-[var(--accent)]"
                       />
-                      <label htmlFor="create-ticket" className="text-sm text-[var(--text-secondary)] cursor-pointer">
+                      <label htmlFor="create-ticket" className="text-xs text-[var(--text-secondary)] cursor-pointer">
                         Create a support ticket for issues mentioned in comments
                       </label>
                     </div>
@@ -493,13 +492,13 @@ export const ChecklistSystem: React.FC = () => {
               )}
               
               {/* Progress and Submit */}
-              <div className="border-t border-[var(--border-secondary)] pt-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-                    <div className="text-sm text-[var(--text-secondary)]">
-                      Progress: {Object.values(completedTasks).filter(Boolean).length} / {currentTemplate.tasks.length} tasks
+              <div className="border-t border-[var(--border-secondary)] pt-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-[var(--text-secondary)]">
+                      Progress: {Object.values(completedTasks).filter(Boolean).length} / {currentTemplate.tasks.length}
                     </div>
-                    <div className="h-2 w-full md:w-48 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                    <div className="h-1.5 w-32 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-[var(--accent)] transition-all duration-300"
                         style={{ 
@@ -511,10 +510,10 @@ export const ChecklistSystem: React.FC = () => {
                   <button
                     onClick={handleSubmit}
                     disabled={!isAllTasksCompleted() || isSubmitting}
-                    className={`w-full md:w-auto px-6 py-3 rounded-lg font-medium transition-all ${
+                    className={`px-4 py-2 rounded text-xs font-medium transition-all ${
                       isAllTasksCompleted() && !isSubmitting
                         ? 'bg-green-500 text-white hover:bg-green-600'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed'
                     }`}
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Checklist'}
@@ -529,15 +528,15 @@ export const ChecklistSystem: React.FC = () => {
           {/* Completion Tracker */}
           <div className="space-y-6">
             {/* Filters */}
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
-              <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
+              <div className="flex flex-wrap gap-3 items-center">
                 {/* Location Filter */}
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">Location</label>
+                  <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">Location</label>
                   <select
                     value={trackerLocation}
                     onChange={(e) => setTrackerLocation(e.target.value)}
-                    className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] min-w-[150px]"
+                    className="px-2 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)] min-w-[120px]"
                   >
                     <option value="all">All Locations</option>
                     {locations.map(location => (
@@ -548,34 +547,34 @@ export const ChecklistSystem: React.FC = () => {
 
                 {/* Time Period Filter */}
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">Time Period</label>
-                  <div className="flex gap-2">
+                  <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">Time Period</label>
+                  <div className="flex gap-1.5">
                     <button
                       onClick={() => setTrackerPeriod('week')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
                         trackerPeriod === 'week'
                           ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
+                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
                       }`}
                     >
                       This Week
                     </button>
                     <button
                       onClick={() => setTrackerPeriod('month')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
                         trackerPeriod === 'month'
                           ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
+                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
                       }`}
                     >
                       This Month
                     </button>
                     <button
                       onClick={() => setTrackerPeriod('all')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
                         trackerPeriod === 'all'
                           ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
+                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
                       }`}
                     >
                       All Time
@@ -586,8 +585,8 @@ export const ChecklistSystem: React.FC = () => {
             </div>
 
             {/* Submissions Table */}
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 mb-6">
-              <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
                 Checklist Submissions
                 {trackerLocation !== 'all' && ` - ${trackerLocation}`}
                 {trackerPeriod !== 'all' && ` (${trackerPeriod === 'week' ? 'This Week' : 'This Month'})`}
@@ -617,11 +616,11 @@ export const ChecklistSystem: React.FC = () => {
                     }, {} as Record<string, Submission[]>);
 
                     return Object.entries(groupedSubmissions).map(([location, locationSubmissions]) => (
-                      <div key={location} className="mb-8 last:mb-0">
-                        <h4 className="text-lg font-medium text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-[var(--accent)]" />
+                      <div key={location} className="mb-4 last:mb-0">
+                        <h4 className="text-xs font-medium text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-[var(--accent)]" />
                           {location}
-                          <span className="text-sm text-[var(--text-muted)] font-normal">
+                          <span className="text-xs text-[var(--text-muted)] font-normal">
                             ({locationSubmissions.length} submission{locationSubmissions.length !== 1 ? 's' : ''})
                           </span>
                         </h4>
@@ -630,63 +629,63 @@ export const ChecklistSystem: React.FC = () => {
                           <table className="w-full">
                             <thead>
                               <tr className="border-b border-[var(--border-secondary)]">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">User</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Category</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Type</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Tasks</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Completed</th>
+                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">User</th>
+                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Category</th>
+                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Type</th>
+                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Tasks</th>
+                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Completed</th>
                                 {(user?.role === 'admin' || user?.role === 'operator') && (
-                                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Actions</th>
+                                  <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Actions</th>
                                 )}
                               </tr>
                             </thead>
                             <tbody>
                               {locationSubmissions.map((submission) => (
-                                <tr key={submission.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-secondary)]">
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center gap-2">
-                                      <User className="w-4 h-4 text-[var(--text-muted)]" />
+                                <tr key={submission.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]">
+                                  <td className="py-2 px-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <User className="w-3 h-3 text-[var(--text-muted)]" />
                                       <div>
-                                        <div className="text-sm text-[var(--text-primary)]">{submission.user_name}</div>
-                                        <div className="text-xs text-[var(--text-muted)]">{submission.user_email}</div>
+                                        <div className="text-xs text-[var(--text-primary)]">{submission.user_name}</div>
+                                        <div className="text-[10px] text-[var(--text-muted)]">{submission.user_email}</div>
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4">
-                                    <span className={`text-sm font-medium ${getCategoryColor(submission.category)}`}>
+                                  <td className="py-2 px-2">
+                                    <span className={`text-xs font-medium ${getCategoryColor(submission.category)}`}>
                                       {submission.category.charAt(0).toUpperCase() + submission.category.slice(1)}
                                     </span>
                                   </td>
-                                  <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                                  <td className="py-2 px-2 text-xs text-[var(--text-secondary)]">
                                     {submission.type.charAt(0).toUpperCase() + submission.type.slice(1)}
                                   </td>
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center gap-2">
-                                      <CheckSquare className="w-4 h-4 text-green-500" />
-                                      <span className="text-sm text-[var(--text-secondary)]">{submission.total_tasks}</span>
+                                  <td className="py-2 px-2">
+                                    <div className="flex items-center gap-1">
+                                      <CheckSquare className="w-3 h-3 text-green-500" />
+                                      <span className="text-xs text-[var(--text-secondary)]">{submission.total_tasks}</span>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center gap-2">
-                                      <Clock className="w-4 h-4 text-[var(--text-muted)]" />
+                                  <td className="py-2 px-2">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-[var(--text-muted)]" />
                                       <div>
-                                        <div className="text-sm text-[var(--text-secondary)]">
+                                        <div className="text-xs text-[var(--text-secondary)]">
                                           {new Date(submission.completion_time).toLocaleDateString()}
                                         </div>
-                                        <div className="text-xs text-[var(--text-muted)]">
+                                        <div className="text-[10px] text-[var(--text-muted)]">
                                           {new Date(submission.completion_time).toLocaleTimeString()}
                                         </div>
                                       </div>
                                     </div>
                                   </td>
                                   {(user?.role === 'admin' || user?.role === 'operator') && (
-                                    <td className="py-3 px-4">
+                                    <td className="py-2 px-2">
                                       <button
                                         onClick={() => handleDeleteSubmission(submission.id)}
-                                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
+                                        className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors"
                                         title="Delete submission"
                                       >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3 h-3" />
                                       </button>
                                     </td>
                                   )}

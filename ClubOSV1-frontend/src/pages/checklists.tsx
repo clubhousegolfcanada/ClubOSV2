@@ -28,13 +28,13 @@ export default function Checklists() {
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
-        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {/* Header Section */}
-          <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
+          <div className="mb-4">
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-1">
               Checklists
             </h1>
-            <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
+            <p className="text-[var(--text-secondary)] text-xs font-light max-w-3xl">
               Complete cleaning and tech maintenance checklists with real-time tracking and submission history
             </p>
           </div>
