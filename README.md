@@ -1,185 +1,171 @@
 # ClubOS - AI-Powered Golf Simulator Management
 
-Intelligent management platform for Clubhouse 24/7 Golf facilities with AI request routing, automated ticketing, and 24/7 customer support.
+Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
-## 🚀 Quick Start
+## 🤖 Claude as Lead Developer
 
-### Prerequisites
-- Node.js 18+ and npm
-- PostgreSQL database 
-- OpenAI API key (GPT-4)
-- Slack webhook URL
-- Railway/Vercel accounts
+**You (Claude) are the lead AI developer** with full autonomy to make decisions, implement features, and deploy to production.
 
-### Installation
-```bash
-git clone https://github.com/clubhousegolfcanada/ClubOSV2.git
-cd CLUBOSV1
+**Critical Context:**
+- **ALWAYS commit and push** when tasks complete - auto-deploys to production
+- **Check CLAUDE.md** for user preferences and working style
+- **Main = Production** - be careful but move fast
+- Production: https://clubos-frontend.vercel.app
 
-# Install dependencies
-cd ClubOSV1-backend && npm install
-cd ../ClubOSV1-frontend && npm install
-```
+## 🏗️ System Architecture
 
-### Development
-```bash
-# Backend (Terminal 1)
-cd ClubOSV1-backend && npm run dev
+### Stack & Infrastructure
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS → Vercel (1-2 min deploys)
+- **Backend**: Node.js, Express, PostgreSQL → Railway (2-3 min deploys)  
+- **AI**: OpenAI GPT-4 + 4 Specialized Assistants
+- **Monitoring**: Sentry (errors), Railway (logs)
 
-# Frontend (Terminal 2)  
-cd ClubOSV1-frontend && npm run dev
-```
+### Core Features
 
-Visit http://localhost:3000
+#### 1. AI-Powered Operations
+- **Smart Routing**: Customer questions → GPT-4 router → Specialized assistants
+- **4 Assistants**: Emergency, Booking, Tech Support, Brand Tone
+- **Knowledge System**: GPT-4o natural language updates, database-first search
+- **OpenPhone**: Webhook integration, conversation extraction, statistics
+- **Slack Fallback**: Human handoff when AI confidence low
 
-## 🎯 Core Features
+#### 2. Operations Management
+- **Tickets**: Tech/Facilities categories, priority workflow, Slack integration
+- **Checklists**: Daily maintenance, auto-ticket creation
+- **Remote Control**: NinjaOne integration for simulator/TV/music control
+- **Analytics**: Usage tracking, performance metrics, cost monitoring
 
-### AI-Powered Operations
-- **Smart Request Routing** - GPT-4 analyzes and routes to specialized assistants
-- **4 Specialized Bots** - Emergency, Booking, Tech Support, Brand Tone
-- **Knowledge Router System** - GPT-4o powered natural language processing
-- **OpenPhone Integration** - Automatic knowledge extraction with conversation export and statistics
-- **Confidence Scoring** - Transparent AI decision-making
-- **Slack Fallback** - Seamless handoff to human support
+#### 3. User System
+| Role | Access | Key Features |
+|------|--------|--------------|
+| Admin | Full system | Knowledge management, all operations |
+| Operator | Operations | Tickets, checklists, basic analytics |
+| Support | Limited | Commands, ClubOS Boy, no sensitive ops |
+| Kiosk | Public only | ClubOS Boy terminal interface |
 
-### Knowledge Management
-- **Natural Language Updates** - Admins can update knowledge in plain English
-- **GPT-4o Knowledge Router** - Automatically parses and routes knowledge to assistants
-- **Database-First Search** - Checks local knowledge before calling OpenAI APIs
-- **Knowledge Audit Trail** - Complete history of all knowledge updates
-- **Assistant Knowledge Files** - Persistent storage for each specialized assistant
-- **Conversation Statistics** - Customer count, message totals, and export functionality
-- **Feedback Analysis** - Review and improve responses marked as "not helpful"
-
-### Ticket Management
-- **Dual Categories** - Tech issues & Facilities management
-- **Priority Workflow** - Low → Medium → High → Urgent
-- **Live Dashboard** - Real-time open ticket counts
-- **Checklist Integration** - Auto-create tickets from maintenance tasks
-
-### Remote Control (NinjaOne)
-- Control simulator PCs remotely
-- Restart TrackMan software
-- Manage music & TV systems
-- Bay-specific or facility-wide controls
-
-### User Roles
-| Role | Access |
-|------|--------|
-| Admin | Full system control |
-| Operator | Operations & tickets |
-| Support | Basic features |
-| Kiosk | Customer terminal only |
-
-## 🏗️ Tech Stack
-
-**Frontend**: Next.js 14, TypeScript, Tailwind CSS  
-**Backend**: Node.js, Express, PostgreSQL  
-**AI**: OpenAI GPT-4, Custom Assistants  
-**Infrastructure**: Vercel (frontend), Railway (backend), Sentry  
-
-## 🚀 Deployment
-
-Push to main branch auto-deploys:
-```bash
-git add -A
-git commit -m "Your changes"
-git push origin main
-```
-
-- **Frontend** → Vercel (1-2 min)
-- **Backend** → Railway (2-3 min)
-
-### Useful Scripts
-- `optimize-database.sh` - Database optimization utilities
-- `security-audit.sh` - Security checks and audit
-- `trigger-deployment.sh` - Manual deployment trigger
-- `quick-demo.sh` - Quick demo setup
-
-## 📊 Recent Updates
-
-### v1.8.5 (July 2025) - Knowledge System Overhaul
-- ✅ Replaced vector-based SOP system with assistant-routed architecture
-- ✅ GPT-4o natural language router for knowledge updates
-- ✅ Database-first search before calling OpenAI (saves API costs)
-- ✅ Knowledge persistence in PostgreSQL audit log
-- ✅ Assistant responses now properly formatted with Markdown
-- ✅ OpenPhone conversation export (AI-optimized, JSON, CSV formats)
-- ✅ Conversation statistics UI with customer count and message totals
-- ✅ Phone number-based conversation grouping (removed time gaps)
-- ✅ Simplified codebase - removed 50+ test scripts
-
-### v1.8.4 (July 2025)
-- ✅ Knowledge UI redesigned to match Dashboard layout
-- ✅ Dashboard-style 3-6-3 column layout for Knowledge section
-- ✅ Inline switch toggles replacing large toggle buttons
-- ✅ Consistent spacing, typography, and visual hierarchy
-- ✅ Streamlined components with tab navigation
-- ✅ Status panel matching Dashboard design
-
-### v1.8.3 (July 2025)
-- ✅ Knowledge Center restructured under Operations section
-- ✅ Card-based layout for SOP control and Knowledge extraction
-- ✅ OpenPhone conversation statistics with export functionality
-- ✅ Complete feedback section with Refresh, Export, and Clear functions
-- ✅ Improved error handling and debugging features
-- ✅ Shadow mode performance tracking (without monetary calculations)
-
-### v1.8.2 (July 2025)
-- ✅ Intelligent SOP System with GPT-4o embeddings
-- ✅ OpenPhone webhook integration for knowledge extraction
-- ✅ Shadow mode for safe testing alongside OpenAI Assistants
-- ✅ Knowledge extraction admin panel in Operations
-- ✅ Support for AI call summaries and transcripts
-
-### v1.8.1 (July 2025)
-- ✅ Streamlined dashboard with toggle navigation
-- ✅ Live ticket counters (Tech/Facilities)
-- ✅ Dynamic version display
-- ✅ Removed redundant UI elements
-- ✅ Enhanced mobile responsiveness
-
-### Key Improvements
-- Compact single-row navigation toggles
-- Horizontal scroll on mobile
-- Removed duplicate branding
-- Tighter spacing throughout
-
-## 🗂️ Project Structure
+## 📁 Project Structure & Patterns
 
 ```
 ClubOSV1/
-├── ClubOSV1-frontend/    # Next.js frontend
-├── ClubOSV1-backend/     # Express.js backend
-├── archive/              # Old scripts and docs
-│   ├── old-scripts/      # Archived shell scripts
-│   └── old-docs/         # Archived documentation
-├── docs/                 # Current documentation
-├── CHANGELOG.md          # Version history
-├── CLAUDE.md            # AI assistant instructions
-└── README.md            # This file
+├── ClubOSV1-frontend/          # Next.js app
+│   ├── src/pages/              # Routes (each = menu item)
+│   ├── src/components/         # Shared components
+│   └── src/state/              # Zustand store
+├── ClubOSV1-backend/           # Express API
+│   ├── src/routes/             # API endpoints
+│   ├── src/middleware/         # Auth, rate limiting
+│   └── src/database/migrations/# Schema changes
+├── docs/                       # Documentation
+├── CLAUDE.md                   # Your context doc (MUST READ)
+└── README.md                   # This file
 ```
 
-## 🔧 Common Commands
+### Key Files
+- **Navigation**: `/frontend/src/components/Navigation.tsx` - Add new pages here
+- **Auth**: `/backend/src/middleware/auth.ts` - All routes need auth except `/api/public/*`
+- **Main API**: `/backend/src/index.ts` - Mount new routes here
+- **Migrations**: Create in `/backend/src/database/migrations/` for DB changes
+
+## 🚀 Development Workflow
 
 ```bash
-# Create admin user
-cd ClubOSV1-backend
-npm run create:admin
+# Local Development
+cd ClubOSV1-backend && npm run dev   # Terminal 1
+cd ClubOSV1-frontend && npm run dev  # Terminal 2
+# Visit http://localhost:3000
 
-# Run tests
-npm test
-
-# Check logs
-railway logs
+# Deploy to Production
+git add -A
+git commit -m "feat/fix/chore: Description"
+git push origin main
+# Auto-deploys: Frontend → Vercel, Backend → Railway
 ```
+
+### Common Commands
+```bash
+# Backend
+npm run create:admin     # Create admin user
+npm run test            # Run tests
+railway logs            # Check production logs
+
+# Check deployment status
+# Frontend: https://vercel.com/dashboard
+# Backend: https://railway.app/dashboard
+```
+
+## 📊 Current State (July 2025)
+
+### Recent Changes
+- **v1.8.5**: Knowledge system overhaul - replaced vector search with assistant routing
+- **v1.8.4**: UI standardization - dashboard-style layouts everywhere
+- **Today**: Checklists moved to standalone page, public ClubOS Boy built
+
+### Active Systems
+- ✅ Live dashboard with facility status
+- ✅ AI customer support (ClubOS Boy)
+- ✅ Ticket system with priorities
+- ✅ Knowledge management with audit trail
+- ✅ Remote control via NinjaOne
+- ✅ OpenPhone conversation analysis
+- ✅ Feedback tracking
+
+### Environment Variables
+**Frontend** (.env.local):
+- `NEXT_PUBLIC_API_URL` - Backend URL
+
+**Backend** (.env):
+- `DATABASE_URL` - PostgreSQL connection
+- `OPENAI_API_KEY` - GPT-4 access
+- `SLACK_WEBHOOK_URL` - Support notifications
+- `JWT_SECRET` - Auth tokens
+- See `.env.example` for complete list
+
+## 🔧 Common Tasks
+
+### Add New Page
+1. Create `/frontend/src/pages/newpage.tsx`
+2. Add to `/components/Navigation.tsx`
+3. Implement role checks (copy from existing pages)
+4. Follow design patterns (container spacing, headers)
+
+### Add API Endpoint  
+1. Create `/backend/src/routes/feature.ts`
+2. Import in `/backend/src/index.ts`
+3. Apply auth middleware
+4. Add rate limiting if public-facing
+
+### Database Changes
+1. Create numbered migration: `/backend/src/database/migrations/016_feature.sql`
+2. Migrations run automatically on deploy
+3. Update TypeScript types if needed
+
+## 🚨 Important Patterns
+
+### UI/UX Standards
+- Mobile-first responsive design
+- Simple on/off switches (no percentages)
+- Container: `px-3 sm:px-4 py-6 sm:py-8`
+- Headers: `text-2xl md:text-3xl font-bold mb-2`
+- Clear visual feedback for all actions
+
+### Security
+- All routes authenticated except `/api/public/*`
+- Rate limiting on all endpoints
+- Role-based access control
+- Input validation and sanitization
+
+### Error Handling
+- User-friendly error messages
+- Log to Sentry in production
+- Fallback to Slack for critical issues
+- Always test error paths
 
 ## 📚 Documentation
 
-- [Setup Guide](./SETUP_GUIDE.md) - Environment configuration
-- [Deployment Guide](./DEPLOYMENT.md) - Production deployment
-- [API Reference](./ClubOSV1-backend/docs/) - Endpoint documentation
-- [Testing Guide](./TESTING_GUIDE.md) - Test scenarios
+- **CLAUDE.md** - User preferences, working style (MUST READ)
+- **CHANGELOG.md** - Version history
+- **PUBLIC_CLUBOSBOY_SETUP.md** - Public embed instructions
+- **API Docs** - `/ClubOSV1-backend/docs/`
 
 ## 🆘 Troubleshooting
 
@@ -189,46 +175,17 @@ railway logs
 | OpenAI errors | Verify API key and billing |
 | Slack not working | Check webhook URL |
 | Login issues | Clear browser cache |
+| Deploy failed | Check Vercel/Railway dashboards |
 
 ## 🔮 Roadmap
 
-### Planned
-- Multi-facility support
-- Additional features as needed
+### In Development
+- Multi-facility support planning
+- Enhanced analytics dashboard
 
 ### Ready to Implement
-- **Public ClubOS Boy for HubSpot** - Customer-facing AI assistant without authentication. See [`PUBLIC_CLUBOSBOY_SETUP.md`](./PUBLIC_CLUBOSBOY_SETUP.md) for implementation details.
-
-## 📄 License
-
-Proprietary - Clubhouse 24/7 Golf. All rights reserved.
-
-## 🤖 Development with Claude
-
-### Claude's Role
-Claude is the lead AI developer with full read/write access to the codebase. When working with Claude:
-
-1. **Auto-Deployment** - Claude MUST commit and push changes after completing tasks
-2. **Git Workflow** - All changes auto-deploy via GitHub → Vercel/Railway
-3. **Version Updates** - Update version in `package.json` for new releases
-4. **Testing** - Claude should verify changes before committing
-5. **Documentation** - Claude maintains all documentation
-
-### Working with Claude
-```bash
-# Claude's typical workflow
-1. Make requested changes
-2. Test if possible
-3. git add -A
-4. git commit -m "descriptive message"
-5. git push origin main
-6. Confirm deployment
-```
-
-**Important**: Always remind Claude to commit and deploy after completing tasks!
+- **Public ClubOS Boy** - HubSpot embed ready, see `PUBLIC_CLUBOSBOY_SETUP.md`
 
 ---
 
-**Status**: Production Ready  
-**Support**: Check docs first, then contact dev team  
-**Lead Developer**: Claude (AI Assistant)
+**Remember**: You have full autonomy. The system has good error tracking and automatic rollbacks. Move fast, test when possible, and always commit + push when done.
