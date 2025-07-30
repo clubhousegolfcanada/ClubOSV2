@@ -305,11 +305,11 @@ const TicketCenterOptimized = () => {
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Header - Sticky on mobile */}
       <div className="sticky top-0 z-10 bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold">Ticket Center</h1>
-              <p className="text-sm text-[var(--text-secondary)] hidden md:block">
+              <h1 className="text-lg md:text-xl font-bold">Ticket Center</h1>
+              <p className="text-xs text-[var(--text-secondary)] hidden md:block">
                 View and manage all facilities and technical support tickets
               </p>
             </div>
@@ -323,50 +323,50 @@ const TicketCenterOptimized = () => {
                       clearAllTickets();
                     }
                   }}
-                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  className="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors"
                   title="Clear all tickets"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
               <button 
                 onClick={() => router.push('/')}
-                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
+                className="px-3 py-1.5 bg-[var(--accent)] text-white rounded text-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">New Ticket</span>
               </button>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2 mb-4 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-1.5 mb-3 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <button
               onClick={() => setActiveTab('all')}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`whitespace-nowrap px-2 py-1.5 rounded text-xs font-medium transition-all ${
                 activeTab === 'all'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
               }`}
             >
               All Tickets
             </button>
             <button
               onClick={() => setActiveTab('facilities')}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`whitespace-nowrap px-2 py-1.5 rounded text-xs font-medium transition-all ${
                 activeTab === 'facilities'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
               }`}
             >
               Facilities
             </button>
             <button
               onClick={() => setActiveTab('tech')}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`whitespace-nowrap px-2 py-1.5 rounded text-xs font-medium transition-all ${
                 activeTab === 'tech'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
               }`}
             >
               Tech Support
@@ -374,34 +374,34 @@ const TicketCenterOptimized = () => {
           </div>
 
           {/* Search Bar - Mobile optimized */}
-          <div className="mb-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+          <div className="mb-3 relative">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search tickets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm"
+              className="w-full pl-8 pr-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs"
             />
           </div>
 
           {/* Filter Pills - Horizontal scroll on mobile */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
             {filters.map((f) => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value as TicketStatus | 'all')}
-                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                className={`whitespace-nowrap px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1 ${
                   filter === f.value
                     ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                 }`}
               >
                 {f.label}
                 {f.count > 0 && (
-                  <span className={`text-xs ${
-                    filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
-                  } px-1.5 py-0.5 rounded-full`}>
+                  <span className={`text-[10px] ${
+                    filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-primary)]'
+                  } px-1 py-0.5 rounded-full`}>
                     {f.count}
                   </span>
                 )}
@@ -412,34 +412,34 @@ const TicketCenterOptimized = () => {
       </div>
 
       {/* Ticket List - Optimized for mobile */}
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-3 sm:px-4 py-3">
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
-            <p className="mt-2 text-[var(--text-secondary)]">Loading tickets...</p>
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--accent)]"></div>
+            <p className="mt-2 text-xs text-[var(--text-secondary)]">Loading tickets...</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {filteredTickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg p-3 md:p-4 hover:border-[var(--accent)] transition-colors"
+              className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-3 hover:border-[var(--accent)] transition-colors"
             >
               {/* Mobile-optimized layout */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {/* Ticket header with ID and priority */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-[var(--text-muted)] font-mono">#{ticket.id.slice(0, 8)}</span>
-                    <div className={`w-2 h-2 rounded-full ${priorityColors[ticket.priority]}`} />
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(ticket.status)}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">#{ticket.id.slice(0, 6)}</span>
+                    <div className={`w-1.5 h-1.5 rounded-full ${priorityColors[ticket.priority]}`} />
+                    <span className={`px-1.5 py-0.5 text-[10px] rounded ${getStatusColor(ticket.status)}`}>
                       {ticket.status.replace('-', ' ')}
                     </span>
                   </div>
                   
                   {/* Title - Clickable */}
                   <h3 
-                    className="font-medium text-sm md:text-base mb-2 line-clamp-2 cursor-pointer hover:text-[var(--accent)]"
+                    className="font-medium text-xs mb-1.5 line-clamp-2 cursor-pointer hover:text-[var(--accent)]"
                     onClick={() => {
                       setSelectedTicket(ticket);
                       setShowTicketDetail(true);
@@ -449,18 +449,18 @@ const TicketCenterOptimized = () => {
                   </h3>
                   
                   {/* Meta info */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
-                    <span className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--text-muted)]">
+                    <span className="flex items-center gap-0.5">
                       <span className="font-medium capitalize">{ticket.category}</span>
                     </span>
                     {ticket.location && <span>{ticket.location}</span>}
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
                       {formatTimeAgo(ticket.createdAt)}
                     </span>
                     {ticket.comments.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="w-3 h-3" />
+                      <span className="flex items-center gap-0.5">
+                        <MessageSquare className="w-2.5 h-2.5" />
                         {ticket.comments.length}
                       </span>
                     )}
@@ -468,33 +468,33 @@ const TicketCenterOptimized = () => {
                 </div>
 
                 {/* Quick actions */}
-                <div className="flex gap-1">
+                <div className="flex gap-0.5">
                   <button
                     onClick={() => {
                       setSelectedTicket(ticket);
                       setShowTicketDetail(true);
                     }}
-                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                    className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
                     title="View details"
                   >
-                    <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-secondary)]" />
                   </button>
                   {ticket.status === 'open' && (
                     <button
                       onClick={() => handleQuickResolve(ticket.id)}
-                      className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
                       title="Quick resolve"
                     >
-                      <Check className="w-4 h-4 text-green-500" />
+                      <Check className="w-3 h-3 text-green-500" />
                     </button>
                   )}
                   {(user?.role === 'admin' || user?.role === 'operator') && (
                     <button
                       onClick={() => deleteTicket(ticket.id)}
-                      className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
                       title="Delete ticket"
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-3 h-3 text-red-500" />
                     </button>
                   )}
                 </div>
@@ -506,15 +506,15 @@ const TicketCenterOptimized = () => {
 
         {/* Empty state */}
         {!loading && filteredTickets.length === 0 && (
-          <div className="text-center py-12">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)]" />
-            <p className="text-[var(--text-secondary)]">
+          <div className="text-center py-8">
+            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-[var(--text-muted)]" />
+            <p className="text-xs text-[var(--text-secondary)]">
               {searchTerm ? 'No tickets match your search' : 'No tickets found'}
             </p>
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="mt-2 text-sm text-[var(--accent)] hover:underline"
+                className="mt-2 text-xs text-[var(--accent)] hover:underline"
               >
                 Clear search
               </button>
@@ -528,10 +528,10 @@ const TicketCenterOptimized = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
           <div className="bg-[var(--bg-primary)] w-full sm:max-w-2xl max-h-[90vh] rounded-t-lg sm:rounded-lg overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="p-4 border-b border-[var(--border-primary)] flex items-center justify-between">
+            <div className="p-3 border-b border-[var(--border-primary)] flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Ticket Details</h2>
-                <p className="text-sm text-[var(--text-muted)]">#{selectedTicket.id.slice(0, 8)}</p>
+                <h2 className="text-sm font-semibold">Ticket Details</h2>
+                <p className="text-xs text-[var(--text-muted)]">#{selectedTicket.id.slice(0, 6)}</p>
               </div>
               <button
                 onClick={() => {
@@ -539,69 +539,69 @@ const TicketCenterOptimized = () => {
                   setSelectedTicket(null);
                   setNewComment('');
                 }}
-                className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
+                className="p-1.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {/* Ticket Info */}
               <div>
-                <h3 className="font-medium mb-2">{selectedTicket.title}</h3>
-                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
+                <h3 className="font-medium text-sm mb-1.5">{selectedTicket.title}</h3>
+                <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">
                   {selectedTicket.description}
                 </p>
               </div>
 
               {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-[var(--text-muted)]">Category:</span>
-                  <span className="ml-2 capitalize">{selectedTicket.category}</span>
+                  <span className="ml-1 capitalize">{selectedTicket.category}</span>
                 </div>
                 <div>
                   <span className="text-[var(--text-muted)]">Priority:</span>
-                  <span className={`ml-2 capitalize ${priorityColors[selectedTicket.priority].replace('bg-', 'text-')}`}>
+                  <span className={`ml-1 capitalize ${priorityColors[selectedTicket.priority].replace('bg-', 'text-')}`}>
                     {selectedTicket.priority}
                   </span>
                 </div>
                 <div>
                   <span className="text-[var(--text-muted)]">Status:</span>
-                  <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${getStatusColor(selectedTicket.status)}`}>
+                  <span className={`ml-1 px-1.5 py-0.5 text-[10px] rounded ${getStatusColor(selectedTicket.status)}`}>
                     {selectedTicket.status.replace('-', ' ')}
                   </span>
                 </div>
                 {selectedTicket.location && (
                   <div>
                     <span className="text-[var(--text-muted)]">Location:</span>
-                    <span className="ml-2">{selectedTicket.location}</span>
+                    <span className="ml-1">{selectedTicket.location}</span>
                   </div>
                 )}
                 <div>
                   <span className="text-[var(--text-muted)]">Created:</span>
-                  <span className="ml-2">{formatTimeAgo(selectedTicket.createdAt)}</span>
+                  <span className="ml-1">{formatTimeAgo(selectedTicket.createdAt)}</span>
                 </div>
                 <div>
                   <span className="text-[var(--text-muted)]">By:</span>
-                  <span className="ml-2">{selectedTicket.createdBy.name}</span>
+                  <span className="ml-1">{selectedTicket.createdBy.name}</span>
                 </div>
               </div>
 
               {/* Status Update */}
               <div>
-                <label className="text-sm text-[var(--text-muted)] block mb-2">Update Status:</label>
-                <div className="flex gap-2 flex-wrap">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">Update Status:</label>
+                <div className="flex gap-1.5 flex-wrap">
                   {(['open', 'in-progress', 'resolved', 'closed'] as TicketStatus[]).map(status => (
                     <button
                       key={status}
                       onClick={() => updateTicketStatus(selectedTicket.id, status)}
                       disabled={selectedTicket.status === status}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
                         selectedTicket.status === status
                           ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                          : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
                       }`}
                     >
                       {status.replace('-', ' ')}
@@ -612,20 +612,20 @@ const TicketCenterOptimized = () => {
 
               {/* Comments */}
               <div>
-                <h4 className="font-medium mb-2">Comments ({selectedTicket.comments.length})</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <h4 className="text-xs font-medium uppercase tracking-wider mb-1.5">Comments ({selectedTicket.comments.length})</h4>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto">
                   {selectedTicket.comments.length === 0 ? (
-                    <p className="text-sm text-[var(--text-muted)]">No comments yet</p>
+                    <p className="text-xs text-[var(--text-muted)]">No comments yet</p>
                   ) : (
                     selectedTicket.comments.map(comment => (
-                      <div key={comment.id} className="bg-[var(--bg-secondary)] rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium">{comment.createdBy.name}</span>
-                          <span className="text-xs text-[var(--text-muted)]">
+                      <div key={comment.id} className="bg-[var(--bg-tertiary)] rounded p-2">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs font-medium">{comment.createdBy.name}</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">
                             {formatTimeAgo(comment.createdAt)}
                           </span>
                         </div>
-                        <p className="text-sm">{comment.text}</p>
+                        <p className="text-xs">{comment.text}</p>
                       </div>
                     ))
                   )}
@@ -638,13 +638,13 @@ const TicketCenterOptimized = () => {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Add a comment..."
-                  className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm resize-none"
-                  rows={3}
+                  className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs resize-none"
+                  rows={2}
                 />
                 <button
                   onClick={() => addComment(selectedTicket.id)}
                   disabled={!newComment.trim()}
-                  className="mt-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg disabled:opacity-50"
+                  className="mt-1.5 px-3 py-1.5 bg-[var(--accent)] text-white rounded text-xs disabled:opacity-50"
                 >
                   Add Comment
                 </button>
