@@ -2,6 +2,56 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.9.0] - 2025-07-30
+
+### Added
+- **OpenPhone Messages Integration**
+  - Two-way SMS messaging interface at `/messages`
+  - Real-time conversation view with chat interface
+  - Send and receive messages directly from ClubOS
+  - Unread message counts and badges
+  - Message notifications throughout the app
+  - Auto-refresh every 10 seconds for new messages
+  - Mobile-optimized responsive design
+  - Contact name resolution with phone number fallback
+  - Rate limiting: 30 messages per minute per user
+
+### Features
+- **Navigation Enhancements**
+  - Messages added to main navigation with 💬 icon
+  - Red badge shows unread message count
+  - Works on both desktop and mobile views
+  - Operations reordered next to ClubOS Boy
+
+- **Real-time Notifications**
+  - Toast notifications for new messages
+  - Only shows when not on Messages page
+  - Polls for new messages every 30 seconds
+  - Integrates with existing notification system
+
+- **Public ClubOS Boy**
+  - Available without authentication for HubSpot
+  - 60-second auto-timeout for public safety
+  - Rate limiting to prevent abuse
+  - Contact details added to interface
+
+### Changed
+- Checklists now support admin-only task editing
+- Navigation order optimized for workflow
+- Operations page defaults to Analytics view
+
+### Fixed
+- Database schema compatibility for different versions
+- React hydration errors in Messages interface
+- Null safety throughout Messages components
+- Date formatting with proper validation
+
+### Technical
+- Added migrations 017 and 018 for Messages support
+- Enhanced OpenPhone webhook handling
+- Improved error handling and logging
+- Added verification and update scripts
+
 ## [1.8.5] - 2025-07-29
 
 ### Added

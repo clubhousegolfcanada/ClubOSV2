@@ -31,9 +31,10 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 #### 2. Operations Management
 - **Tickets**: Tech/Facilities categories, priority workflow, Slack integration
-- **Checklists**: Daily maintenance, auto-ticket creation
+- **Checklists**: Daily maintenance, auto-ticket creation, admin-only task editing
 - **Remote Control**: NinjaOne integration for simulator/TV/music control
 - **Analytics**: Usage tracking, performance metrics, cost monitoring
+- **Messages**: Two-way SMS via OpenPhone, real-time notifications, unread badges, 30 msg/min rate limit
 
 #### 3. User System
 | Role | Access | Key Features |
@@ -96,9 +97,9 @@ railway logs            # Check production logs
 ## 📊 Current State (July 2025)
 
 ### Recent Changes
+- **v1.9.0**: OpenPhone Messages integration, real-time chat interface, notification system
 - **v1.8.5**: Knowledge system overhaul - replaced vector search with assistant routing
 - **v1.8.4**: UI standardization - dashboard-style layouts everywhere
-- **Today**: Checklists moved to standalone page, public ClubOS Boy built
 
 ### Active Systems
 - ✅ Live dashboard with facility status
@@ -108,6 +109,7 @@ railway logs            # Check production logs
 - ✅ Remote control via NinjaOne
 - ✅ OpenPhone conversation analysis
 - ✅ Feedback tracking
+- ✅ Two-way SMS messaging interface
 
 ### Environment Variables
 **Frontend** (.env.local):
@@ -118,6 +120,9 @@ railway logs            # Check production logs
 - `OPENAI_API_KEY` - GPT-4 access
 - `SLACK_WEBHOOK_URL` - Support notifications
 - `JWT_SECRET` - Auth tokens
+- `OPENPHONE_API_KEY` - SMS messaging
+- `OPENPHONE_WEBHOOK_SECRET` - Webhook verification
+- `OPENPHONE_DEFAULT_NUMBER` - Default sending number
 - See `.env.example` for complete list
 
 ## 🔧 Common Tasks
