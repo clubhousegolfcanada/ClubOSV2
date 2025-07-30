@@ -174,7 +174,7 @@ export default function Operations() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [showFeedbackSection, setShowFeedbackSection] = useState(false);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(true);
   const [showKnowledge, setShowKnowledge] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [systemMetrics, setSystemMetrics] = useState<any>({ total_documents: 0, unique_assistants: 0 });
