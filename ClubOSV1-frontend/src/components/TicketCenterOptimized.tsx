@@ -303,74 +303,76 @@ const TicketCenterOptimized = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2 mb-4">
-        {user?.role === 'admin' && filteredTickets.length > 0 && (
-          <button
-            onClick={() => {
-              const categoryText = activeTab === 'all' ? '' : ` ${activeTab}`;
-              const statusText = filter === 'all' ? '' : ` ${filter}`;
-              if (confirm(`Clear all${statusText}${categoryText} tickets?`)) {
-                clearAllTickets();
-              }
-            }}
-            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-            title="Clear all tickets"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-        <button 
-          onClick={() => router.push('/')}
-          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Ticket</span>
-        </button>
-      </div>
-
-      {/* Tab Navigation */}
+      {/* Tab Navigation with Actions */}
       <div className="border-b border-[var(--border-primary)] mb-6">
-        <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
-              activeTab === 'all'
-                ? 'text-[var(--text-primary)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-          >
-            All Tickets
-            {activeTab === 'all' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+        <div className="flex justify-between items-center">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                activeTab === 'all'
+                  ? 'text-[var(--text-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              All Tickets
+              {activeTab === 'all' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('facilities')}
+              className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                activeTab === 'facilities'
+                  ? 'text-[var(--text-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Facilities
+              {activeTab === 'facilities' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('tech')}
+              className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                activeTab === 'tech'
+                  ? 'text-[var(--text-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Tech Support
+              {activeTab === 'tech' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+              )}
+            </button>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 pb-3">
+            {user?.role === 'admin' && filteredTickets.length > 0 && (
+              <button
+                onClick={() => {
+                  const categoryText = activeTab === 'all' ? '' : ` ${activeTab}`;
+                  const statusText = filter === 'all' ? '' : ` ${filter}`;
+                  if (confirm(`Clear all${statusText}${categoryText} tickets?`)) {
+                    clearAllTickets();
+                  }
+                }}
+                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                title="Clear all tickets"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
-          </button>
-          <button
-            onClick={() => setActiveTab('facilities')}
-            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
-              activeTab === 'facilities'
-                ? 'text-[var(--text-primary)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-          >
-            Facilities
-            {activeTab === 'facilities' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('tech')}
-            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
-              activeTab === 'tech'
-                ? 'text-[var(--text-primary)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-          >
-            Tech Support
-            {activeTab === 'tech' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-            )}
-          </button>
+            <button 
+              onClick={() => router.push('/')}
+              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Ticket</span>
+            </button>
+          </div>
         </div>
       </div>
 
