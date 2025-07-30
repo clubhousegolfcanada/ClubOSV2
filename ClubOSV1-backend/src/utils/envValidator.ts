@@ -60,6 +60,11 @@ interface EnvironmentVariables {
   ENABLE_DEMO_MODE?: string;
   ENABLE_DEBUG_ENDPOINTS?: string;
   ENABLE_SWAGGER_DOCS?: string;
+  
+  // Optional - Push Notifications
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
+  VAPID_EMAIL?: string;
 }
 
 interface ValidationRule {
@@ -219,6 +224,24 @@ export class EnvironmentValidator {
       max: 10000,
       default: '100',
       description: 'Maximum requests per window'
+    },
+    
+    // Push Notification Configuration
+    VAPID_PUBLIC_KEY: {
+      required: false,
+      minLength: 87,
+      description: 'VAPID public key for push notifications'
+    },
+    VAPID_PRIVATE_KEY: {
+      required: false,
+      minLength: 43,
+      description: 'VAPID private key for push notifications'
+    },
+    VAPID_EMAIL: {
+      required: false,
+      type: 'email',
+      pattern: /^mailto:/,
+      description: 'Contact email for push notifications (must start with mailto:)'
     }
   };
   

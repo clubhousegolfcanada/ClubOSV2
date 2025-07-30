@@ -87,17 +87,17 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
   const navItems = user?.role === 'kiosk' 
     ? [
         // Kiosk users only see ClubOS Boy
-        { href: '/clubosboy', label: 'ClubOS Boy', roles: ['kiosk'] as UserRole[], icon: '🤖' },
+        { href: '/clubosboy', label: 'ClubOS Boy', roles: ['kiosk'] as UserRole[] },
       ]
     : [
         // All other roles see the full navigation
         { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/tickets', label: 'Tickets', roles: ['admin', 'operator'] as UserRole[] },
-        { href: '/messages', label: 'Messages', roles: ['admin', 'operator', 'support'] as UserRole[], icon: '💬' },
+        { href: '/messages', label: 'Messages', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/checklists', label: 'Checklists', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
-        { href: '/clubosboy', label: 'ClubOS Boy', roles: ['admin', 'operator', 'support'] as UserRole[], icon: '🤖' },
+        { href: '/clubosboy', label: 'ClubOS Boy', roles: ['admin', 'operator', 'support'] as UserRole[] },
       ].filter(item => hasAnyRole(user?.role, item.roles));
 
   return (
@@ -130,12 +130,9 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                       }
                     `}
                   >
-                    {item.icon && <span>{item.icon}</span>}
                     {item.label}
                     {item.href === '/messages' && unreadMessages > 0 && (
-                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                        {unreadMessages}
-                      </span>
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     )}
                   </Link>
                 ))}
@@ -295,13 +292,10 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
               `}
             >
               <div className="flex items-center gap-2">
-                {item.icon && <span>{item.icon}</span>}
                 {item.label}
               </div>
               {item.href === '/messages' && unreadMessages > 0 && (
-                <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                  {unreadMessages}
-                </span>
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               )}
             </Link>
           ))}

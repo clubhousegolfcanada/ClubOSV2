@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.9.1] - 2025-07-30 (In Progress)
+
+### Added (Push Notifications - Phase 1)
+- **Database Infrastructure**
+  - Migration 019: push_subscriptions, notification_history, notification_preferences tables
+  - Indexes for performance optimization
+  - User notification preference storage
+  
+- **Backend Services**
+  - NotificationService with web-push integration
+  - VAPID key generation script
+  - Environment validation for push notification config
+  - Quiet hours support for notifications
+  - Failed subscription handling and retry logic
+
+### Technical Progress
+- ✅ Database migration created
+- ✅ VAPID keys generated
+- ✅ web-push package installed
+- ✅ NotificationService implemented
+- 🔄 API endpoints (in progress)
+- ⏳ OpenPhone webhook integration
+- ⏳ Service worker
+- ⏳ Frontend implementation
+
 ## [1.9.0] - 2025-07-30
 
 ### Added
