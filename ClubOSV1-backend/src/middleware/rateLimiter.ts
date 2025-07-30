@@ -111,7 +111,7 @@ export const llmRateLimiter = rateLimit({
 // Rate limiter for sending messages
 export const messageSendLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // 10 messages per minute per user
+  max: 30, // 30 messages per minute per user
   message: 'Too many messages sent, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

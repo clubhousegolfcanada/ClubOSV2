@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -185,7 +185,7 @@ export default function Messages() {
             <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-200px)]">
               
               {/* Conversations List */}
-              <div className="border-r border-[var(--border-secondary)] overflow-y-auto">
+              <div className={`${selectedConversation ? 'hidden md:block' : 'block'} border-r border-[var(--border-secondary)] overflow-y-auto`}>
                 {/* Search */}
                 <div className="p-4 border-b border-[var(--border-secondary)]">
                   <div className="relative">
@@ -255,17 +255,27 @@ export default function Messages() {
               </div>
 
               {/* Messages Area */}
-              <div className="col-span-2 flex flex-col">
+              <div className={`${selectedConversation ? 'block' : 'hidden md:block'} col-span-2 flex flex-col`}>
                 {selectedConversation ? (
                   <>
                     {/* Conversation Header */}
                     <div className="p-4 border-b border-[var(--border-secondary)]">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{selectedConversation.customer_name}</h3>
-                          <p className="text-sm text-[var(--text-muted)]">
-                            {selectedConversation.phone_number}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          {/* Mobile back button */}
+                          <button
+                            onClick={() => setSelectedConversation(null)}
+                            className="md:hidden p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                            aria-label="Back to conversations"
+                          >
+                            <ArrowLeft className="w-5 h-5" />
+                          </button>
+                          <div>
+                            <h3 className="font-semibold">{selectedConversation.customer_name}</h3>
+                            <p className="text-sm text-[var(--text-muted)]">
+                              {selectedConversation.phone_number}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <a
