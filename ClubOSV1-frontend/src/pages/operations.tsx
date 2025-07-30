@@ -1323,27 +1323,22 @@ export default function Operations() {
                         </div>
                       </div>
                       
-                      {/* Export Knowledge Button */}
-                      <div>
+                      {/* Export All Knowledge - Compact */}
+                      <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
                         <button
                           onClick={handleKnowledgeExport}
                           disabled={exportLoading}
-                          className="w-full px-3 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-1.5 text-xs font-medium disabled:opacity-50"
+                          className="w-full flex items-center justify-between px-3 py-2 bg-[var(--bg-primary)] hover:bg-[var(--accent)] hover:text-white text-sm rounded-md transition-all group disabled:opacity-50"
                         >
+                          <span className="font-medium">Export All Knowledge</span>
                           {exportLoading ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              Exporting...
-                            </>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <>
-                              <Download className="w-4 h-4" />
-                              Export All Knowledge
-                            </>
+                            <Download className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100" />
                           )}
                         </button>
-                        <p className="text-xs text-[var(--text-muted)] mt-2 text-center">
-                          Download complete backup of SOP & AI data
+                        <p className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">
+                          Complete backup of SOP & AI data
                         </p>
                       </div>
                     </div>

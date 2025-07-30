@@ -164,9 +164,9 @@ export const OpenPhoneConversations: React.FC = () => {
             <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
               <div className="flex items-center gap-2 text-[var(--text-muted)] mb-1">
                 <MessageSquare className="w-4 h-4" />
-                <span className="text-xs">Total Messages</span>
+                <span className="text-xs">Total Conversations</span>
               </div>
-              <p className="text-2xl font-bold">{stats.totalMessages}</p>
+              <p className="text-2xl font-bold">{stats.totalConversations || stats.uniqueCustomers}</p>
             </div>
           </div>
 
@@ -179,42 +179,46 @@ export const OpenPhoneConversations: React.FC = () => {
             </div>
           )}
 
-          {/* Export Actions */}
+          {/* Export Actions - Compact Layout */}
           <div className="border-t border-[var(--border-secondary)] pt-4">
-            <h4 className="text-sm font-medium mb-3">Export Conversations</h4>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Export Data</h4>
+            </div>
+            <div className="flex flex-col gap-1.5">
               <button
                 onClick={() => handleExport('llm')}
                 disabled={exporting}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="flex items-center justify-between px-3 py-2 bg-[var(--bg-primary)] hover:bg-[var(--accent)] hover:text-white text-xs rounded-md transition-all group disabled:opacity-50"
               >
-                <Download className="w-4 h-4" />
-                Export for AI Processing
+                <span>AI Processing</span>
+                <Download className="w-3 h-3 opacity-50 group-hover:opacity-100" />
               </button>
               
-              <button
-                onClick={() => handleExport('json')}
-                disabled={exporting}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors disabled:opacity-50"
-              >
-                <FileText className="w-4 h-4" />
-                Export Raw JSON
-              </button>
-              
-              <button
-                onClick={() => handleExport('csv')}
-                disabled={exporting}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors disabled:opacity-50"
-              >
-                <FileText className="w-4 h-4" />
-                Export as Spreadsheet
-              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="flex items-center justify-center gap-1 px-2 py-1.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] text-xs rounded-md transition-colors disabled:opacity-50"
+                >
+                  <FileText className="w-3 h-3" />
+                  JSON
+                </button>
+                
+                <button
+                  onClick={() => handleExport('csv')}
+                  disabled={exporting}
+                  className="flex items-center justify-center gap-1 px-2 py-1.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] text-xs rounded-md transition-colors disabled:opacity-50"
+                >
+                  <FileText className="w-3 h-3" />
+                  CSV
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Info Text */}
-          <div className="text-xs text-[var(--text-muted)] text-center">
-            All conversations from {stats.uniqueCustomers} customers
+          <div className="text-xs text-[var(--text-muted)] text-center pt-2">
+            {stats.totalConversations || stats.uniqueCustomers} conversations • {stats.uniqueCustomers} customers
           </div>
         </div>
       )}
