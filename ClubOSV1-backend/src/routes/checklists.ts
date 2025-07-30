@@ -75,12 +75,31 @@ router.get('/template/:category/:type',
         throw new AppError('Invalid checklist type for this category', 400, 'INVALID_TYPE');
       }
       
+      // Fetch any customizations for this template
+      const customizations = await db.query(
+        `SELECT task_id, custom_label 
+         FROM checklist_task_customizations 
+         WHERE category = $1 AND type = $2`,
+        [category, type]
+      );
+      
+      // Merge customizations with template
+      const tasksWithCustomizations = template.map(task => {
+        const customization = customizations.rows.find(c => c.task_id === task.id);
+        return {
+          ...task,
+          label: customization ? customization.custom_label : task.label,
+          originalLabel: task.label,
+          isCustomized: !!customization
+        };
+      });
+      
       res.json({
         success: true,
         data: {
           category,
           type,
-          tasks: template
+          tasks: tasksWithCustomizations
         }
       });
     } catch (error) {
@@ -503,6 +522,93 @@ router.get('/stats',
           recent: recent.rows
         }
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Update task label (admin only)
+router.put('/template/task',
+  authenticate,
+  roleGuard(['admin']),
+  validate([
+    body('category').isIn(['cleaning', 'tech']).withMessage('Invalid category'),
+    body('type').isIn(['daily', 'weekly', 'quarterly']).withMessage('Invalid type'),
+    body('taskId').notEmpty().withMessage('Task ID is required'),
+    body('label').notEmpty().trim().withMessage('Label is required')
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category, type, taskId, label } = req.body;
+      
+      // Validate task exists in template
+      const categoryTemplates = CHECKLIST_TEMPLATES[category as keyof typeof CHECKLIST_TEMPLATES];
+      const template = categoryTemplates?.[type as keyof typeof categoryTemplates];
+      const taskExists = template?.some((t: any) => t.id === taskId);
+      
+      if (!taskExists) {
+        throw new AppError('Task not found in template', 404, 'TASK_NOT_FOUND');
+      }
+      
+      // Upsert customization
+      await db.query(
+        `INSERT INTO checklist_task_customizations 
+         (category, type, task_id, custom_label, updated_by) 
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (category, type, task_id) 
+         DO UPDATE SET 
+           custom_label = $4,
+           updated_by = $5,
+           updated_at = CURRENT_TIMESTAMP`,
+        [category, type, taskId, label, req.user!.id]
+      );
+      
+      logger.info('Checklist task updated', {
+        category,
+        type,
+        taskId,
+        label,
+        updatedBy: req.user!.email
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Reset task to original label (admin only)
+router.delete('/template/task/:category/:type/:taskId',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category, type, taskId } = req.params;
+      
+      // Validate parameters
+      if (!['cleaning', 'tech'].includes(category)) {
+        throw new AppError('Invalid category', 400);
+      }
+      if (!['daily', 'weekly', 'quarterly'].includes(type)) {
+        throw new AppError('Invalid type', 400);
+      }
+      
+      await db.query(
+        `DELETE FROM checklist_task_customizations 
+         WHERE category = $1 AND type = $2 AND task_id = $3`,
+        [category, type, taskId]
+      );
+      
+      logger.info('Checklist task reset to default', {
+        category,
+        type,
+        taskId,
+        resetBy: req.user!.email
+      });
+      
+      res.json({ success: true });
     } catch (error) {
       next(error);
     }

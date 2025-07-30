@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, Check, Trash2 } from 'lucide-react';
+import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, Check, Trash2, Edit2, X, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useAuthState } from '../state/useStore';
@@ -9,6 +9,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 interface Task {
   id: string;
   label: string;
+  originalLabel?: string;
+  isCustomized?: boolean;
 }
 
 interface ChecklistTemplate {
@@ -45,8 +47,12 @@ export const ChecklistSystem: React.FC = () => {
   const [trackerPeriod, setTrackerPeriod] = useState<'week' | 'month' | 'all'>('week');
   const [comments, setComments] = useState('');
   const [createTicket, setCreateTicket] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [savingTask, setSavingTask] = useState(false);
   
   const { user } = useAuthState();
+  const isAdmin = user?.role === 'admin';
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
   // Load checklist template
@@ -184,6 +190,68 @@ export const ChecklistSystem: React.FC = () => {
   const isAllTasksCompleted = () => {
     if (!currentTemplate) return false;
     return currentTemplate.tasks.every(task => completedTasks[task.id] === true);
+  };
+
+  // Edit functionality for admin users
+  const handleEditStart = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditValue(task.label);
+  };
+
+  const handleEditSave = async (task: Task) => {
+    if (editValue.trim() === task.label) {
+      setEditingTaskId(null);
+      return;
+    }
+    
+    try {
+      setSavingTask(true);
+      const token = localStorage.getItem('clubos_token');
+      
+      await axios.put(
+        `${API_URL}/checklists/template/task`,
+        {
+          category: activeCategory,
+          type: activeType,
+          taskId: task.id,
+          label: editValue.trim()
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Task updated successfully');
+      setEditingTaskId(null);
+      loadTemplate(); // Reload to get updated data
+    } catch (error: any) {
+      console.error('Failed to update task:', error);
+      toast.error(error.response?.data?.error || 'Failed to update task');
+    } finally {
+      setSavingTask(false);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingTaskId(null);
+    setEditValue('');
+  };
+
+  const handleResetTask = async (task: Task) => {
+    if (!confirm(`Reset "${task.label}" to original text "${task.originalLabel}"?`)) return;
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      
+      await axios.delete(
+        `${API_URL}/checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Task reset to default');
+      loadTemplate();
+    } catch (error: any) {
+      console.error('Failed to reset task:', error);
+      toast.error('Failed to reset task');
+    }
   };
 
   const handleSubmit = async () => {
@@ -431,28 +499,103 @@ export const ChecklistSystem: React.FC = () => {
                 {currentTemplate.tasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`p-3 rounded border transition-all cursor-pointer ${
+                    className={`p-3 rounded border transition-all ${
                       completedTasks[task.id]
                         ? 'bg-green-500/10 border-green-500/30'
-                        : 'bg-[var(--bg-tertiary)] border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
-                    }`}
-                    onClick={() => handleTaskToggle(task.id)}
+                        : 'bg-[var(--bg-tertiary)] border-[var(--border-secondary)]'
+                    } ${editingTaskId === task.id ? '' : 'hover:bg-[var(--bg-primary)]'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                        completedTasks[task.id]
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-[var(--border-primary)]'
-                      }`}>
+                      <div 
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
+                          completedTasks[task.id]
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-[var(--border-primary)]'
+                        }`}
+                        onClick={() => handleTaskToggle(task.id)}
+                      >
                         {completedTasks[task.id] && <Check className="w-3 h-3 text-white" />}
                       </div>
-                      <span className={`flex-1 text-xs ${
-                        completedTasks[task.id]
-                          ? 'text-[var(--text-primary)]'
-                          : 'text-[var(--text-secondary)]'
-                      }`}>
-                        {task.label}
-                      </span>
+                      
+                      {editingTaskId === task.id ? (
+                        // Edit mode
+                        <div className="flex-1 flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleEditSave(task);
+                              if (e.key === 'Escape') handleEditCancel();
+                            }}
+                            className="flex-1 px-2 py-1 text-xs bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded focus:outline-none focus:border-[var(--accent)]"
+                            autoFocus
+                            disabled={savingTask}
+                          />
+                          <button
+                            onClick={() => handleEditSave(task)}
+                            disabled={savingTask}
+                            className="p-1 text-green-500 hover:text-green-600 disabled:opacity-50"
+                            title="Save"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleEditCancel}
+                            className="p-1 text-red-500 hover:text-red-600"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        // View mode
+                        <div className="flex-1 flex items-center justify-between group">
+                          <span 
+                            className={`flex-1 text-xs cursor-pointer ${
+                              completedTasks[task.id]
+                                ? 'text-[var(--text-primary)]'
+                                : 'text-[var(--text-secondary)]'
+                            }`}
+                            onClick={() => handleTaskToggle(task.id)}
+                          >
+                            {task.label}
+                            {task.isCustomized && (
+                              <span className="ml-1 text-[var(--accent)] text-[10px] opacity-70">
+                                (edited)
+                              </span>
+                            )}
+                          </span>
+                          
+                          {isAdmin && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditStart(task);
+                                }}
+                                className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                title="Edit task"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              
+                              {task.isCustomized && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleResetTask(task);
+                                  }}
+                                  className="p-1 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
+                                  title="Reset to default"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
