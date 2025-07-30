@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Filter, Download, RefreshCw, Search, ChevronDown, AlertCircle, Clock, CheckCircle, Settings, Building, Wrench, BookOpen, Users, BarChart3, Calendar, Tool, FileText, HelpCircle } from 'lucide-react';
+import { Plus, Filter, Download, RefreshCw, Search, ChevronDown, AlertCircle, Clock, CheckCircle, Settings, Building, Wrench, BookOpen, Users, BarChart3, Calendar, Hammer, FileText, HelpCircle } from 'lucide-react';
 
 // This is a MOCKUP component showing the new Ticket Center design
 // Demonstrates the tab structure and mobile-friendly layout
@@ -174,7 +174,7 @@ const TicketCenterRedesign = () => {
             </div>
             
             <div className="bg-[var(--bg-secondary)] rounded-lg p-6 hover:shadow-lg transition-shadow">
-              <Tool className="w-8 h-8 text-[var(--accent)] mb-3" />
+              <Hammer className="w-8 h-8 text-[var(--accent)] mb-3" />
               <h3 className="font-semibold mb-2">Equipment Registry</h3>
               <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Complete inventory of all facility equipment and status
