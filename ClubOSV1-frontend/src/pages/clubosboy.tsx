@@ -255,10 +255,50 @@ export default function ClubOSBoy() {
             )}
           </div>
 
+          {/* Contact Details Section */}
+          <div className="mt-8 bg-[var(--bg-secondary)] rounded-lg p-6 border border-[var(--border-primary)]">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-4 text-center">
+              Contact the Clubhouse
+            </h2>
+            <p className="text-[var(--text-secondary)] text-center mb-6">
+              Clubhouse provides 24/7 support for our members and guests. If we don't respond within 5 minutes, your next hour is on us! Whether you need help setting up games, have a quick question, or just want some tips, we've got you covered.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="text-center">
+                <p className="text-sm text-[var(--text-muted)] mb-1">Email</p>
+                <a href="mailto:booking@clubhouse247golf.com" className="text-[var(--accent)] hover:underline">
+                  booking@clubhouse247golf.com
+                </a>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-[var(--text-muted)] mb-1">Instagram</p>
+                <a href="https://instagram.com/clubhousegolfcanada" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
+                  @clubhousegolfcanada
+                </a>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-[var(--text-secondary)] mb-4">
+                Need to change or cancel a booking?
+              </p>
+              <a 
+                href="sms:9027073748" 
+                className="inline-flex items-center justify-center px-6 py-3 bg-[var(--accent)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Text Now: (902) 707-3748
+              </a>
+            </div>
+          </div>
+
           {/* Footer Help Text */}
           <div className="mt-6 text-center">
             <p className="text-sm text-[var(--text-muted)]">
-              Need immediate help? Message us at (902)707-3748
+              ClubOS Boy - Your AI-powered golf assistant
             </p>
           </div>
         </div>
