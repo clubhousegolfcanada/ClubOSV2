@@ -87,6 +87,7 @@ export default function Messages() {
       });
       
       if (response.data.success) {
+        console.log('Loaded conversations:', response.data.data);
         setConversations(response.data.data);
       } else {
         console.error('API returned success: false', response.data);
@@ -120,26 +121,33 @@ export default function Messages() {
     const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
     setMessages(conversationMessages);
     
-    // Mark as read
-    try {
-      const token = localStorage.getItem('clubos_token');
-      await axios.put(
-        `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // Update local state
-      setConversations(prev => prev.map(c => 
-        c.id === conversation.id ? { ...c, unread_count: 0 } : c
-      ));
-    } catch (error) {
-      console.error('Failed to mark as read:', error);
+    // Mark as read only if we have a phone number
+    if (conversation.phone_number) {
+      try {
+        const token = localStorage.getItem('clubos_token');
+        await axios.put(
+          `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        // Update local state
+        setConversations(prev => prev.map(c => 
+          c.id === conversation.id ? { ...c, unread_count: 0 } : c
+        ));
+      } catch (error) {
+        console.error('Failed to mark as read:', error);
+      }
     }
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || sending) return;
+    if (!newMessage.trim() || !selectedConversation || !selectedConversation.phone_number || sending) {
+      if (!selectedConversation?.phone_number) {
+        toast.error('Cannot send message: No phone number available');
+      }
+      return;
+    }
     
     setSending(true);
     try {
@@ -183,6 +191,7 @@ export default function Messages() {
 
   const filteredConversations = conversations.filter(c => {
     if (!c) return false;
+    if (!searchTerm) return true;
     const phoneMatch = c.phone_number && c.phone_number.includes(searchTerm);
     const nameMatch = c.customer_name && c.customer_name.toLowerCase().includes(searchTerm.toLowerCase());
     return phoneMatch || nameMatch;
@@ -296,10 +305,12 @@ export default function Messages() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
-                          <Phone className="w-3 h-3" />
-                          <span>{conv.phone_number}</span>
-                        </div>
+                        {conv.phone_number && (
+                          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
+                            <Phone className="w-3 h-3" />
+                            <span>{conv.phone_number}</span>
+                          </div>
+                        )}
                         {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
                           <p className="text-xs text-[var(--text-secondary)] truncate">
                             {conv.lastMessage.direction === 'outbound' && 'You: '}
