@@ -2,10 +2,11 @@ import Head from 'next/head';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -42,6 +43,7 @@ export default function Messages() {
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const { isSupported, permission, isSubscribed, isLoading: notificationLoading, subscribe, unsubscribe } = usePushNotifications();
 
   // Check auth
   useEffect(() => {
@@ -201,12 +203,45 @@ export default function Messages() {
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {/* Header */}
           <div className="mb-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
-              Messages
-            </h1>
-            <p className="text-[var(--text-secondary)] text-sm font-light">
-              Send and receive SMS messages with customers via OpenPhone
-            </p>
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
+                  Messages
+                </h1>
+                <p className="text-[var(--text-secondary)] text-sm font-light">
+                  Send and receive SMS messages with customers via OpenPhone
+                </p>
+              </div>
+              
+              {/* Push Notification Toggle */}
+              {isSupported && (
+                <div className="flex items-center gap-2">
+                  {notificationLoading ? (
+                    <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
+                      <span className="text-sm text-[var(--text-muted)]">Loading...</span>
+                    </div>
+                  ) : isSubscribed ? (
+                    <button
+                      onClick={unsubscribe}
+                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      title="Disable push notifications"
+                    >
+                      <Bell className="w-4 h-4" />
+                      <span className="text-sm hidden sm:inline">Notifications On</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={subscribe}
+                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      title="Enable push notifications"
+                    >
+                      <BellOff className="w-4 h-4" />
+                      <span className="text-sm hidden sm:inline">Notifications Off</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Messages Interface */}

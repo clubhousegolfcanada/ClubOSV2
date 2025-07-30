@@ -33,6 +33,19 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   const { unreadCount } = useMessageNotifications();
 
   useEffect(() => {
+    // Register service worker for push notifications
+    if ('serviceWorker' in navigator && isAuthenticated) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('Service Worker registered:', registration.scope);
+        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     // Skip auth restoration on login page
     if (router.pathname === '/login') {
       return;
