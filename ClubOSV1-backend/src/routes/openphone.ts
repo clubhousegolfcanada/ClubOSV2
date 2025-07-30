@@ -98,35 +98,42 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const existingMessages = existingConv.rows[0].messages || [];
           const updatedMessages = [...existingMessages, newMessage];
           
+          // Update conversation and increment unread count if inbound
+          const unreadIncrement = messageData.direction === 'inbound' ? 1 : 0;
+          
           await db.query(`
             UPDATE openphone_conversations 
             SET messages = $1,
                 updated_at = CURRENT_TIMESTAMP,
                 customer_name = COALESCE(customer_name, $2),
-                employee_name = COALESCE(employee_name, $3)
-            WHERE id = $4
+                employee_name = COALESCE(employee_name, $3),
+                unread_count = COALESCE(unread_count, 0) + $4
+            WHERE id = $5
           `, [
             JSON.stringify(updatedMessages),
             customerName,
             employeeName,
+            unreadIncrement,
             existingConv.rows[0].id
           ]);
           
           logger.info('OpenPhone message appended to customer conversation', { 
             conversationId,
             phoneNumber,
-            messageCount: updatedMessages.length
+            messageCount: updatedMessages.length,
+            direction: messageData.direction
           });
           break;
         }
         
         // First message from this phone number - create new record
         const newConversationId = conversationId;
+        const initialUnreadCount = messageData.direction === 'inbound' ? 1 : 0;
         
         await db.query(`
           INSERT INTO openphone_conversations 
-          (conversation_id, phone_number, customer_name, employee_name, messages, metadata)
-          VALUES ($1, $2, $3, $4, $5, $6)
+          (conversation_id, phone_number, customer_name, employee_name, messages, metadata, unread_count)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
         `, [
           newConversationId,
           phoneNumber,
@@ -138,7 +145,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
             openPhoneConversationId: messageData.conversationId,
             type,
             firstMessageAt: new Date().toISOString()
-          })
+          }),
+          initialUnreadCount
         ]);
         
         logger.info('OpenPhone new conversation created (time-based split)', { 
