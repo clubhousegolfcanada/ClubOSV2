@@ -168,12 +168,18 @@ const RequestForm: React.FC = () => {
       setIsProcessing(false); // Stop loading state
       notify('success', smartAssistEnabled ? 'Request processed successfully!' : 'Message sent to Slack!');
       
-      // Smooth scroll to response
+      // Smooth scroll to response with offset
       setTimeout(() => {
-        document.getElementById('response-area')?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        });
+        const element = document.getElementById('response-area');
+        if (element) {
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - 100; // 100px offset from top
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
       }, 200);
     }
   }, [lastResponse, isNewSubmission, smartAssistEnabled, notify, isMounted]);
@@ -225,12 +231,21 @@ const RequestForm: React.FC = () => {
     setFeedbackGiven(null); // Clear previous feedback
     setLastRequestData(data); // Store the request data for feedback
     
-    // Scroll to loading area immediately
+    // Gentle nudge scroll to loading area
     setTimeout(() => {
-      document.getElementById('response-area')?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
+      const element = document.getElementById('response-area');
+      if (element) {
+        const elementPosition = element.getBoundingClientRect().top;
+        // Only scroll if element is below the viewport
+        if (elementPosition > window.innerHeight - 200) {
+          const offsetPosition = elementPosition + window.pageYOffset - 150; // 150px offset for a gentle nudge
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }
     }, 100);
 
     const request: UserRequest = {
