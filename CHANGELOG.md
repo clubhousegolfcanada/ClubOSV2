@@ -2,7 +2,7 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.9.1] - 2025-07-30 (In Progress)
+## [1.9.1] - 2025-07-30
 
 ### Added (Push Notifications - Phase 1)
 - **Database Infrastructure**
@@ -17,15 +17,51 @@ All notable changes to ClubOS will be documented in this file.
   - Quiet hours support for notifications
   - Failed subscription handling and retry logic
 
+### Added (Push Notifications - Phase 2)
+- **API Endpoints**
+  - GET /api/notifications/vapid-key - Get public key for frontend
+  - POST /api/notifications/subscribe - Subscribe to push notifications
+  - DELETE /api/notifications/subscribe - Unsubscribe
+  - GET /api/notifications/subscription-status - Check subscription status
+  - PUT /api/notifications/preferences - Update notification preferences
+  - POST /api/notifications/test - Send test notification (admin only)
+  - GET /api/notifications/history - View notification history (admin only)
+  - GET /api/notifications/analytics - Notification analytics (admin only)
+
+- **OpenPhone Integration**
+  - Webhook now sends push notifications for inbound messages
+  - Notifications sent to all admin, operator, and support users
+  - Separate notifications for new conversations vs existing ones
+  - Message preview in notification body (truncated to 100 chars)
+
 ### Technical Progress
 - ✅ Database migration created
 - ✅ VAPID keys generated
 - ✅ web-push package installed
 - ✅ NotificationService implemented
-- 🔄 API endpoints (in progress)
-- ⏳ OpenPhone webhook integration
-- ⏳ Service worker
-- ⏳ Frontend implementation
+- ✅ API endpoints created
+- ✅ OpenPhone webhook integration
+- ⏳ Service worker (Phase 3 - next chat)
+- ⏳ Frontend implementation (Phase 3 - next chat)
+
+### Environment Variables Required
+Add these to your .env files:
+```bash
+# Backend .env
+VAPID_PUBLIC_KEY=BPSi4FpNO9pAc_g9_I0rvF5krHxRrh-d2Kl5c1p8tznb87J4JtM8XYLmG2dylr0pfU9vuOPBc_850xkCOdnnhdU
+VAPID_PRIVATE_KEY=N8VNoI2cR_2Y3O9FJG7PszhLYSIomo09Sp0nSB43AzQ
+VAPID_EMAIL=mailto:support@clubhouse247golf.com
+
+# Frontend .env.local
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=BPSi4FpNO9pAc_g9_I0rvF5krHxRrh-d2Kl5c1p8tznb87J4JtM8XYLmG2dylr0pfU9vuOPBc_850xkCOdnnhdU
+```
+
+### Next Steps for New Chat
+1. Create service worker in public/sw.js
+2. Add push notification React hooks
+3. Create notification permission UI in Messages page
+4. Test end-to-end push notifications
+5. Add PWA manifest for iOS support
 
 ## [1.9.0] - 2025-07-30
 

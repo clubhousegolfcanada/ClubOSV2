@@ -32,6 +32,7 @@ import remoteActionsRoutes from './routes/remoteActions';
 import debugRoutes from './routes/debug';
 import openphoneRoutes from './routes/openphone';
 import messagesRoutes from './routes/messages';
+import notificationsRoutes from './routes/notifications';
 import knowledgeRoutes from './routes/knowledge';
 // import sopMonitoringRoutes from './routes/sop-monitoring'; // SOP disabled
 import adminKnowledgeRoutes from './routes/admin-knowledge';
@@ -126,6 +127,7 @@ app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/notifications', notificationsRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 // app.use('/api/sop-monitoring', sopMonitoringRoutes); // SOP disabled
 app.use('/api/admin-knowledge', adminKnowledgeRoutes);

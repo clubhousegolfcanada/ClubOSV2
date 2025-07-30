@@ -97,6 +97,12 @@ railway logs            # Check production logs
 ## 📊 Current State (July 2025)
 
 ### Recent Changes
+- **v1.9.1**: Push notification infrastructure (Phase 1 & 2 complete)
+  - Database tables and migration ready
+  - NotificationService with web-push integration
+  - API endpoints for subscription management
+  - OpenPhone webhook integration for message notifications
+  - VAPID keys generated (need to be added to .env)
 - **v1.9.0**: OpenPhone Messages integration, real-time chat interface, notification system
 - **v1.8.5**: Knowledge system overhaul - replaced vector search with assistant routing
 - **v1.8.4**: UI standardization - dashboard-style layouts everywhere
@@ -110,10 +116,12 @@ railway logs            # Check production logs
 - ✅ OpenPhone conversation analysis
 - ✅ Feedback tracking
 - ✅ Two-way SMS messaging interface
+- 🔄 Push notifications (backend complete, frontend pending)
 
 ### Environment Variables
 **Frontend** (.env.local):
 - `NEXT_PUBLIC_API_URL` - Backend URL
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` - Push notification public key (pending)
 
 **Backend** (.env):
 - `DATABASE_URL` - PostgreSQL connection
@@ -123,6 +131,9 @@ railway logs            # Check production logs
 - `OPENPHONE_API_KEY` - SMS messaging
 - `OPENPHONE_WEBHOOK_SECRET` - Webhook verification
 - `OPENPHONE_DEFAULT_NUMBER` - Default sending number
+- `VAPID_PUBLIC_KEY` - Push notification public key (pending)
+- `VAPID_PRIVATE_KEY` - Push notification private key (pending)
+- `VAPID_EMAIL` - mailto: contact for push service (pending)
 - See `.env.example` for complete list
 
 ## 🔧 Common Tasks

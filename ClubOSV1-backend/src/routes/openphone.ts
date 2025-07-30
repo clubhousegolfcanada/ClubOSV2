@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { openPhoneService } from '../services/openphoneService';
+import { notificationService } from '../services/notificationService';
 
 const router = Router();
 
@@ -140,6 +141,45 @@ router.post('/webhook', async (req: Request, res: Response) => {
             messageCount: updatedMessages.length,
             direction: messageData.direction
           });
+          
+          // Send push notification for inbound messages
+          if (messageData.direction === 'inbound') {
+            try {
+              // Get all users with admin, operator, or support roles
+              const users = await db.query(
+                `SELECT id FROM users 
+                 WHERE role IN ('admin', 'operator', 'support') 
+                 AND active = true`
+              );
+              
+              const userIds = users.rows.map(u => u.id);
+              
+              // Send notification to all eligible users
+              await notificationService.sendToUsers(userIds, {
+                title: `New message from ${customerName}`,
+                body: (messageData.body || messageData.text || '').substring(0, 100) + 
+                      (messageData.body?.length > 100 ? '...' : ''),
+                icon: '/logo-192.png',
+                badge: '/badge-72.png',
+                tag: `message-${phoneNumber}`,
+                data: {
+                  type: 'messages',
+                  phoneNumber: phoneNumber,
+                  conversationId: existingConv.rows[0].id,
+                  url: '/messages'
+                }
+              });
+              
+              logger.info('Push notifications sent for inbound message', {
+                phoneNumber,
+                userCount: userIds.length
+              });
+            } catch (notifError) {
+              // Don't fail webhook if notification fails
+              logger.error('Failed to send push notification:', notifError);
+            }
+          }
+          
           break;
         }
         
@@ -170,6 +210,42 @@ router.post('/webhook', async (req: Request, res: Response) => {
           conversationId: newConversationId, 
           phoneNumber 
         });
+        
+        // Send push notification for new inbound conversation
+        if (messageData.direction === 'inbound') {
+          try {
+            const users = await db.query(
+              `SELECT id FROM users 
+               WHERE role IN ('admin', 'operator', 'support') 
+               AND active = true`
+            );
+            
+            const userIds = users.rows.map(u => u.id);
+            
+            await notificationService.sendToUsers(userIds, {
+              title: `New conversation from ${customerName}`,
+              body: (messageData.body || messageData.text || '').substring(0, 100) + 
+                    (messageData.body?.length > 100 ? '...' : ''),
+              icon: '/logo-192.png',
+              badge: '/badge-72.png',
+              tag: `message-${phoneNumber}`,
+              data: {
+                type: 'messages',
+                phoneNumber: phoneNumber,
+                conversationId: newConversationId,
+                url: '/messages'
+              }
+            });
+            
+            logger.info('Push notifications sent for new conversation', {
+              phoneNumber,
+              userCount: userIds.length
+            });
+          } catch (notifError) {
+            logger.error('Failed to send push notification:', notifError);
+          }
+        }
+        
         break;
 
       case 'call.completed':
