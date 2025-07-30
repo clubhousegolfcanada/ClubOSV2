@@ -257,12 +257,12 @@ export class OpenPhoneService {
         [JSON.stringify(messages), existingConv.rows[0].id]
       );
     } else {
-      // Create new conversation
+      // Create new conversation with phone number as customer name
       await db.query(
         `INSERT INTO openphone_conversations 
          (phone_number, customer_name, messages, created_at, updated_at) 
          VALUES ($1, $2, $3, NOW(), NOW())`,
-        [phoneNumber, 'Unknown', JSON.stringify([message])]
+        [phoneNumber, phoneNumber, JSON.stringify([message])]
       );
     }
   }

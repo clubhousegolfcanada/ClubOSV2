@@ -61,7 +61,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         const messageData = data.object || data;
         const phoneNumber = messageData.from || messageData.to || messageData.phoneNumber;
         
-        // Try multiple fields for contact name
+        // Try multiple fields for contact name, fallback to phone number
         const customerName = messageData.contactName || 
                            data.contactName || 
                            messageData.contact?.name ||
@@ -70,6 +70,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                            data.conversationPhoneNumberName ||
                            messageData.name ||
                            data.name ||
+                           phoneNumber || // Use phone number as fallback
                            'Unknown';
                            
         const employeeName = messageData.userName || 
@@ -206,7 +207,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
             WHERE id = $4
           `, [
             JSON.stringify(messages),
-            data.contactName || 'Unknown',
+            data.contactName || callPhoneNumber,
             data.userName || 'Unknown',
             existingCallConv.rows[0].id
           ]);
@@ -219,7 +220,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           `, [
             callConversationId,
             callPhoneNumber,
-            data.contactName || 'Unknown',
+            data.contactName || callPhoneNumber,
             data.userName || 'Unknown',
             JSON.stringify([callMessage]),
             JSON.stringify({ 
