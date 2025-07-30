@@ -18,6 +18,16 @@ router.get('/conversations',
     try {
       const { limit = 50, offset = 0, search } = req.query;
       
+      // First check if the new columns exist
+      const columnCheck = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'openphone_conversations' 
+        AND column_name IN ('unread_count', 'last_read_at')
+      `);
+      
+      const hasNewColumns = columnCheck.rows.length === 2;
+      
       let query = `
         SELECT 
           id,
@@ -25,8 +35,8 @@ router.get('/conversations',
           customer_name,
           employee_name,
           messages,
-          unread_count,
-          last_read_at,
+          ${hasNewColumns ? 'unread_count,' : '0 as unread_count,'}
+          ${hasNewColumns ? 'last_read_at,' : 'NULL as last_read_at,'}
           created_at,
           updated_at
         FROM openphone_conversations
@@ -78,13 +88,21 @@ router.get('/conversations/:phoneNumber',
         });
       }
       
-      // Mark as read
-      await db.query(
-        `UPDATE openphone_conversations 
-         SET unread_count = 0, last_read_at = NOW() 
-         WHERE phone_number = $1`,
-        [phoneNumber]
-      );
+      // Mark as read (check if columns exist first)
+      try {
+        await db.query(
+          `UPDATE openphone_conversations 
+           SET unread_count = 0, last_read_at = NOW() 
+           WHERE phone_number = $1`,
+          [phoneNumber]
+        );
+      } catch (error: any) {
+        // If columns don't exist, just log and continue
+        logger.warn('Could not update unread_count/last_read_at - columns may not exist', {
+          error: error.message,
+          phoneNumber
+        });
+      }
       
       res.json({
         success: true,
@@ -146,12 +164,19 @@ router.put('/conversations/:phoneNumber/read',
     try {
       const { phoneNumber } = req.params;
       
-      await db.query(
-        `UPDATE openphone_conversations 
-         SET unread_count = 0, last_read_at = NOW() 
-         WHERE phone_number = $1`,
-        [phoneNumber]
-      );
+      try {
+        await db.query(
+          `UPDATE openphone_conversations 
+           SET unread_count = 0, last_read_at = NOW() 
+           WHERE phone_number = $1`,
+          [phoneNumber]
+        );
+      } catch (error: any) {
+        logger.warn('Could not update unread_count/last_read_at', {
+          error: error.message,
+          phoneNumber
+        });
+      }
       
       res.json({ success: true });
     } catch (error) {
@@ -166,16 +191,27 @@ router.get('/unread-count',
   roleGuard(['admin', 'operator', 'support']),
   async (req, res, next) => {
     try {
-      const result = await db.query(
-        `SELECT COALESCE(SUM(unread_count), 0) as total_unread 
-         FROM openphone_conversations`
-      );
+      // Check if unread_count column exists
+      const columnExists = await db.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_name = 'openphone_conversations' 
+          AND column_name = 'unread_count'
+        ) as exists
+      `);
+      
+      let totalUnread = 0;
+      if (columnExists.rows[0].exists) {
+        const result = await db.query(
+          `SELECT COALESCE(SUM(unread_count), 0) as total_unread 
+           FROM openphone_conversations`
+        );
+        totalUnread = parseInt(result.rows[0].total_unread) || 0;
+      }
       
       res.json({
         success: true,
-        data: {
-          totalUnread: parseInt(result.rows[0].total_unread) || 0
-        }
+        data: { totalUnread }
       });
     } catch (error) {
       next(error);

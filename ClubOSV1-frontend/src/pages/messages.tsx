@@ -74,6 +74,13 @@ export default function Messages() {
   const loadConversations = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        console.error('No auth token found');
+        toast.error('Please log in again');
+        router.push('/login');
+        return;
+      }
+
       const response = await axios.get(`${API_URL}/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { limit: 100 }
@@ -81,10 +88,27 @@ export default function Messages() {
       
       if (response.data.success) {
         setConversations(response.data.data);
+      } else {
+        console.error('API returned success: false', response.data);
+        toast.error(response.data.error || 'Failed to load conversations');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load conversations:', error);
-      toast.error('Failed to load conversations');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: `${API_URL}/messages/conversations`
+      });
+      
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+        router.push('/login');
+      } else if (error.response?.status === 404) {
+        toast.error('Messages API not found. Please check backend deployment.');
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to load conversations');
+      }
     } finally {
       setLoading(false);
     }
