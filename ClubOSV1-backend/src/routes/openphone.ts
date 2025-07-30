@@ -133,12 +133,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
           customerName,
           employeeName,
           JSON.stringify([newMessage]),
-          { 
+          JSON.stringify({ 
             openPhoneId: messageData.id,
             openPhoneConversationId: messageData.conversationId,
             type,
             firstMessageAt: new Date().toISOString()
-          }
+          })
         ]);
         
         logger.info('OpenPhone new conversation created (time-based split)', { 
@@ -198,16 +198,16 @@ router.post('/webhook', async (req: Request, res: Response) => {
             data.contactName || 'Unknown',
             data.userName || 'Unknown',
             JSON.stringify([callMessage]),
-          { 
-            openPhoneId: data.id,
-            type,
-            callDetails: {
-              duration: data.duration,
-              direction: data.direction,
-              recording: data.recordingUrl
-            }
-          }
-        ]);
+            JSON.stringify({ 
+              openPhoneId: data.id,
+              type,
+              callDetails: {
+                duration: data.duration,
+                direction: data.direction,
+                recording: data.recordingUrl
+              }
+            })
+          ]);
         
         }
         
@@ -233,12 +233,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
             summary: data.summary,
             timestamp: data.timestamp || new Date().toISOString()
           }]),
-          { 
+          JSON.stringify({ 
             openPhoneId: data.id,
             callId: data.callId,
             type,
             aiGenerated: true
-          }
+          })
         ]);
         
         logger.info('OpenPhone AI call summary stored', { phoneNumber: data.phoneNumber });
@@ -259,12 +259,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
             transcript: data.transcript,
             timestamp: data.timestamp || new Date().toISOString()
           }]),
-          { 
+          JSON.stringify({ 
             openPhoneId: data.id,
             callId: data.callId,
             type,
             transcriptUrl: data.transcriptUrl
-          }
+          })
         ]);
         
         logger.info('OpenPhone call transcript stored', { phoneNumber: data.phoneNumber });
