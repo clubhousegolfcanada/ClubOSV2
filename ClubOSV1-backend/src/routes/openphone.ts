@@ -286,12 +286,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
             duration: data.duration,
             timestamp: data.timestamp || new Date().toISOString()
           }]),
-          { 
+          JSON.stringify({ 
             openPhoneId: data.id,
             callId: data.callId,
             type,
             recordingUrl: data.recordingUrl
-          }
+          })
         ]);
         
         logger.info('OpenPhone call recording stored', { phoneNumber: data.phoneNumber });
