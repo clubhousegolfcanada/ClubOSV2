@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
+import { ticketDb } from '../utils/ticketDb';
 import { slackFallback } from '../services/slackFallback';
 import { v4 as uuidv4 } from 'uuid';
 import { transformTicket } from '../utils/transformers';
@@ -174,6 +175,60 @@ router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req
   }
 });
 
+// POST /api/tickets/:id/comments - Add comment to ticket
+router.post('/:id/comments', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comment text is required'
+      });
+    }
+    
+    // Check if ticket exists
+    const tickets = await db.getTickets();
+    const ticket = tickets.find(t => t.id === id);
+    
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+    
+    // Add comment
+    const comment = await ticketDb.addComment(id, {
+      text: text.trim(),
+      createdBy: {
+        id: req.user!.id,
+        name: req.user!.name || req.user!.email.split('@')[0],
+        email: req.user!.email,
+        phone: req.user!.phone
+      }
+    });
+    
+    logger.info('Comment added to ticket', {
+      ticketId: id,
+      commentId: comment.id,
+      addedBy: req.user!.email
+    });
+    
+    res.json({
+      success: true,
+      data: comment
+    });
+  } catch (error) {
+    logger.error('Failed to add comment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add comment'
+    });
+  }
+});
+
 // GET /api/tickets/stats - Get ticket statistics
 router.get('/stats', authenticate, async (req, res) => {
   try {
@@ -208,6 +263,36 @@ router.get('/stats', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get ticket statistics'
+    });
+  }
+});
+
+// DELETE /api/tickets/clear-all - Clear all tickets (admin only)
+router.delete('/clear-all', authenticate, authorize(['admin']), async (req, res) => {
+  try {
+    const { category, status } = req.query;
+    
+    const deletedCount = await ticketDb.clearAll({
+      category: category as string,
+      status: status as string
+    });
+    
+    logger.info('Tickets cleared', {
+      count: deletedCount,
+      category,
+      status,
+      clearedBy: req.user!.email
+    });
+    
+    res.json({
+      success: true,
+      message: `Cleared ${deletedCount} ticket${deletedCount !== 1 ? 's' : ''}`
+    });
+  } catch (error) {
+    logger.error('Failed to clear tickets:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear tickets'
     });
   }
 });
