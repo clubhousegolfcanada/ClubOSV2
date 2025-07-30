@@ -390,7 +390,7 @@ const TicketCenterOptimized = () => {
             {filters.map((f) => (
               <button
                 key={f.value}
-                onClick={() => setFilter(f.value)}
+                onClick={() => setFilter(f.value as TicketStatus | 'all')}
                 className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   filter === f.value
                     ? 'bg-[var(--accent)] text-white'
