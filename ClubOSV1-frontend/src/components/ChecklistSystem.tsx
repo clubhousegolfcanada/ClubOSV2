@@ -365,7 +365,7 @@ export const ChecklistSystem: React.FC = () => {
       <div className="flex items-center gap-4 mb-4 overflow-x-auto">
         <button
           onClick={() => setActiveTab('checklist')}
-          className={`text-sm font-semibold transition-all relative pb-1 whitespace-nowrap ${
+          className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
             activeTab === 'checklist' 
               ? 'text-[var(--text-primary)]' 
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -378,7 +378,7 @@ export const ChecklistSystem: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('tracker')}
-          className={`text-sm font-semibold transition-all relative pb-1 whitespace-nowrap ${
+          className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
             activeTab === 'tracker' 
               ? 'text-[var(--text-primary)]' 
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
@@ -398,14 +398,14 @@ export const ChecklistSystem: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Category Selection */}
               <div>
-                <label className="block text-xs font-medium mb-2 text-[var(--text-muted)] uppercase tracking-wider">Category</label>
-                <div className="flex gap-1.5">
+                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Category</label>
+                <div className="flex gap-2">
                   <button
                     onClick={() => setActiveCategory('cleaning')}
-                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
                       activeCategory === 'cleaning'
                         ? 'bg-blue-500 text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Cleaning
@@ -417,10 +417,10 @@ export const ChecklistSystem: React.FC = () => {
                         setActiveType('weekly');
                       }
                     }}
-                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
                       activeCategory === 'tech'
                         ? 'bg-purple-500 text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Tech
@@ -430,15 +430,15 @@ export const ChecklistSystem: React.FC = () => {
 
               {/* Type Selection */}
               <div>
-                <label className="block text-xs font-medium mb-2 text-[var(--text-muted)] uppercase tracking-wider">Type</label>
-                <div className="flex gap-1.5">
+                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Type</label>
+                <div className="flex gap-2">
                   {activeCategory === 'cleaning' && (
                     <button
                       onClick={() => setActiveType('daily')}
-                      className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                      className={`flex-1 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                         activeType === 'daily'
                           ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                       }`}
                     >
                       Daily
@@ -446,20 +446,20 @@ export const ChecklistSystem: React.FC = () => {
                   )}
                   <button
                     onClick={() => setActiveType('weekly')}
-                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                    className={`flex-1 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                       activeType === 'weekly'
                         ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Weekly
                   </button>
                   <button
                     onClick={() => setActiveType('quarterly')}
-                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                    className={`flex-1 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                       activeType === 'quarterly'
                         ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
                     }`}
                   >
                     Quarterly
@@ -469,11 +469,11 @@ export const ChecklistSystem: React.FC = () => {
 
               {/* Location Selection */}
               <div>
-                <label className="block text-xs font-medium mb-2 text-[var(--text-muted)] uppercase tracking-wider">Location</label>
+                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Location</label>
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                  className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)]"
                 >
                   {locations.map(location => (
                     <option key={location} value={location}>{location}</option>
@@ -487,10 +487,10 @@ export const ChecklistSystem: React.FC = () => {
           {currentTemplate && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
               <div className="mb-3">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
                   {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {getTypeLabel(activeType)}
                 </h3>
-                <p className="text-xs text-[var(--text-muted)]">
+                <p className="text-sm text-[var(--text-muted)]">
                   Complete all tasks below and submit when finished.
                 </p>
               </div>
@@ -507,14 +507,14 @@ export const ChecklistSystem: React.FC = () => {
                   >
                     <div className="flex items-center gap-2">
                       <div 
-                        className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
+                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${
                           completedTasks[task.id]
                             ? 'bg-green-500 border-green-500'
                             : 'border-[var(--border-primary)]'
                         }`}
                         onClick={() => handleTaskToggle(task.id)}
                       >
-                        {completedTasks[task.id] && <Check className="w-3 h-3 text-white" />}
+                        {completedTasks[task.id] && <Check className="w-4 h-4 text-white" />}
                       </div>
                       
                       {editingTaskId === task.id ? (
@@ -552,7 +552,7 @@ export const ChecklistSystem: React.FC = () => {
                         // View mode
                         <div className="flex-1 flex items-center justify-between group">
                           <span 
-                            className={`flex-1 text-xs cursor-pointer ${
+                            className={`flex-1 text-sm cursor-pointer ${
                               completedTasks[task.id]
                                 ? 'text-[var(--text-primary)]'
                                 : 'text-[var(--text-secondary)]'
@@ -561,7 +561,7 @@ export const ChecklistSystem: React.FC = () => {
                           >
                             {task.label}
                             {task.isCustomized && (
-                              <span className="ml-1 text-[var(--accent)] text-[10px] opacity-70">
+                              <span className="ml-1 text-[var(--accent)] text-xs opacity-70">
                                 (edited)
                               </span>
                             )}

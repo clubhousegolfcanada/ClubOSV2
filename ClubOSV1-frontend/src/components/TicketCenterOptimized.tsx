@@ -305,11 +305,11 @@ const TicketCenterOptimized = () => {
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Header - Sticky on mobile */}
       <div className="sticky top-0 z-10 bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
-        <div className="container mx-auto px-3 sm:px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-lg md:text-xl font-bold">Ticket Center</h1>
-              <p className="text-xs text-[var(--text-secondary)] hidden md:block">
+              <h1 className="text-2xl md:text-3xl font-bold">Ticket Center</h1>
+              <p className="text-sm text-[var(--text-secondary)] hidden md:block">
                 View and manage all facilities and technical support tickets
               </p>
             </div>
@@ -323,50 +323,50 @@ const TicketCenterOptimized = () => {
                       clearAllTickets();
                     }
                   }}
-                  className="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                   title="Clear all tickets"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
               <button 
                 onClick={() => router.push('/')}
-                className="px-3 py-1.5 bg-[var(--accent)] text-white rounded text-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">New Ticket</span>
               </button>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-1.5 mb-3 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 mb-4 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <button
               onClick={() => setActiveTab('all')}
-              className={`whitespace-nowrap px-2 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'all'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
               All Tickets
             </button>
             <button
               onClick={() => setActiveTab('facilities')}
-              className={`whitespace-nowrap px-2 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'facilities'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
               Facilities
             </button>
             <button
               onClick={() => setActiveTab('tech')}
-              className={`whitespace-nowrap px-2 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'tech'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
               Tech Support
@@ -374,34 +374,34 @@ const TicketCenterOptimized = () => {
           </div>
 
           {/* Search Bar - Mobile optimized */}
-          <div className="mb-3 relative">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
+          <div className="mb-4 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search tickets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs"
+              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm"
             />
           </div>
 
           {/* Filter Pills - Horizontal scroll on mobile */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
             {filters.map((f) => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value as TicketStatus | 'all')}
-                className={`whitespace-nowrap px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1 ${
+                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   filter === f.value
                     ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
                 }`}
               >
                 {f.label}
                 {f.count > 0 && (
-                  <span className={`text-[10px] ${
-                    filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-primary)]'
-                  } px-1 py-0.5 rounded-full`}>
+                  <span className={`text-xs ${
+                    filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
+                  } px-1.5 py-0.5 rounded-full`}>
                     {f.count}
                   </span>
                 )}
