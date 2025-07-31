@@ -57,7 +57,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
       headers: req.headers,
       hasWrappedObject: !!req.body.object
     });
-    console.log('OPENPHONE WEBHOOK:', JSON.stringify({ type, data }, null, 2));
+    console.log('OPENPHONE WEBHOOK [v2]:', JSON.stringify({ type, data }, null, 2));
 
     // Handle different webhook types
     switch (type) {
