@@ -45,6 +45,7 @@ export default function Messages() {
   const [refreshing, setRefreshing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const desktopMessagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const { isSupported, permission, isSubscribed, isLoading: notificationLoading, subscribe, unsubscribe } = usePushNotifications();
@@ -95,12 +96,19 @@ export default function Messages() {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
-      scrollToBottom();
+      // Use timeout to ensure DOM is updated
+      setTimeout(() => {
+        scrollToBottom('instant');
+      }, 50);
     }
   }, [messages]);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
+    // Also scroll desktop container if it exists
+    if (desktopMessagesContainerRef.current) {
+      desktopMessagesContainerRef.current.scrollTop = desktopMessagesContainerRef.current.scrollHeight;
+    }
   };
 
   const loadConversations = async (showRefreshIndicator = false) => {
@@ -573,7 +581,7 @@ export default function Messages() {
                       </div>
 
                       {/* Messages */}
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      <div ref={desktopMessagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                         {messages && messages.length > 0 ? messages.map((message, index) => (
                           <div
                             key={message.id || index}
