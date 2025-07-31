@@ -230,8 +230,32 @@ router.post('/send',
         success: true,
         data: result
       });
-    } catch (error) {
-      next(error);
+    } catch (error: any) {
+      logger.error('Failed to send message:', {
+        error: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        to,
+        from: fromNumber,
+        userId: req.user?.id
+      });
+      
+      // Return more detailed error response
+      if (error.response?.status) {
+        // OpenPhone API error
+        return res.status(error.response.status).json({
+          success: false,
+          error: error.response?.data?.message || error.response?.data?.error || 'OpenPhone API error',
+          details: error.response?.data
+        });
+      }
+      
+      // Other errors
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to send message',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   }
 );

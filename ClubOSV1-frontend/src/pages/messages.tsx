@@ -190,7 +190,25 @@ export default function Messages() {
         loadConversations();
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to send message');
+      console.error('Failed to send message:', error);
+      console.error('Error response:', error.response);
+      
+      // Show more detailed error message
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to send message';
+      
+      toast.error(errorMessage);
+      
+      // If it's a 500 error, show additional info
+      if (error.response?.status === 500) {
+        console.error('Server error details:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
     } finally {
       setSending(false);
     }
