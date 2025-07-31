@@ -54,8 +54,24 @@ router.post('/webhook', async (req: Request, res: Response) => {
       objectKeys: req.body.object ? Object.keys(req.body.object) : []
     });
     
-    const webhookData = req.body.object || req.body;
-    const { type, data } = webhookData;
+    // Handle OpenPhone v3 webhook structure
+    // The entire webhook is wrapped in an "object" field
+    let webhookData = req.body;
+    let type, data;
+    
+    // Check if this is the v3 wrapped format
+    if (req.body.object && req.body.object.type) {
+      // V3 format: { object: { type, data, ... } }
+      type = req.body.object.type;
+      data = req.body.object.data;
+    } else if (req.body.type) {
+      // Direct format: { type, data, ... }
+      type = req.body.type;
+      data = req.body.data;
+    } else {
+      logger.warn('Unknown webhook format', { body: req.body });
+      return res.status(200).json({ received: true });
+    }
     
     // Enhanced logging for debugging
     logger.info('OpenPhone webhook received', { 
