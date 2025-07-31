@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain, MessageSquare, BellRing } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain, MessageSquare, BellRing, Sparkles, Edit } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
@@ -1895,6 +1895,24 @@ export default function Operations() {
                           >
                             <Settings className="w-4 h-4" />
                             Open Debug Panel
+                          </a>
+                        </div>
+
+                        {/* AI Prompt Templates */}
+                        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+                            <h3 className="text-lg font-semibold">AI Prompt Templates</h3>
+                          </div>
+                          <p className="text-sm text-[var(--text-muted)] mb-4">
+                            Customize how AI responds to customer messages without coding
+                          </p>
+                          <a
+                            href="/settings/ai-prompts"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit AI Prompts
                           </a>
                         </div>
 

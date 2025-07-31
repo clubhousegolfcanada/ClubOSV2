@@ -294,13 +294,26 @@ export default function Messages() {
           status: 'sent'
         };
         
-        setMessages([...messages, sentMessage]);
+        // Add message to local state immediately
+        setMessages(prev => [...prev, sentMessage]);
+        
+        // Update the selected conversation's messages too
+        setSelectedConversation(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: [...(Array.isArray(prev.messages) ? prev.messages : []), sentMessage],
+            lastMessage: sentMessage
+          };
+        });
         
         // Scroll to bottom after sending
         setTimeout(scrollToBottom, 100);
         
-        // Refresh conversations to update last message
-        loadConversations();
+        // Delay refresh to allow backend to process
+        setTimeout(() => {
+          loadConversations();
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Failed to send message:', error);
@@ -383,8 +396,37 @@ export default function Messages() {
         setAiSuggestion(null);
         setEditingSuggestion(false);
         
-        // Refresh conversations
-        loadConversations();
+        // Add the sent message to local state immediately
+        const sentText = editedText || aiSuggestion?.suggestedText || '';
+        const sentMessage: Message = {
+          id: response.data.data.messageId || Date.now().toString(),
+          text: sentText,
+          from: '', // Will be filled by backend
+          to: selectedConversation?.phone_number || '',
+          direction: 'outbound',
+          createdAt: new Date().toISOString(),
+          status: 'sent'
+        };
+        
+        setMessages(prev => [...prev, sentMessage]);
+        
+        // Update the selected conversation's messages too
+        setSelectedConversation(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: [...(Array.isArray(prev.messages) ? prev.messages : []), sentMessage],
+            lastMessage: sentMessage
+          };
+        });
+        
+        // Scroll to bottom
+        setTimeout(scrollToBottom, 100);
+        
+        // Delay refresh to allow backend to process
+        setTimeout(() => {
+          loadConversations();
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Failed to send AI suggestion:', error);

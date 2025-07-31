@@ -2,6 +2,7 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { encrypt, decrypt } from '../utils/encryption';
 import { assistantService } from './assistantService';
+import { promptTemplateService } from './promptTemplateService';
 
 interface Message {
   id: string;
@@ -58,8 +59,21 @@ export class MessageAssistantService {
         route = 'Emergency';
       }
       
-      // Create the prompt with customer safety context
-      const customerContext = `CRITICAL INSTRUCTIONS - YOU ARE RESPONDING TO A CUSTOMER:
+      // Get the prompt template from database
+      const template = await promptTemplateService.getTemplate('customer_message_response');
+      
+      let customerContext: string;
+      
+      if (template) {
+        // Use the template from database
+        customerContext = promptTemplateService.applyTemplate(template.template, {
+          conversation_history: conversationHistory,
+          relevant_knowledge: relevantKnowledge ? `RELEVANT PUBLIC KNOWLEDGE:\n${relevantKnowledge}\n\n` : '',
+          customer_message: customerMessage
+        });
+      } else {
+        // Fallback to hardcoded prompt if template not found
+        customerContext = `CRITICAL INSTRUCTIONS - YOU ARE RESPONDING TO A CUSTOMER:
 
 1. You are generating a suggested response to a CUSTOMER text message
 2. NEVER mention:
@@ -90,6 +104,7 @@ ${conversationHistory}
 ${relevantKnowledge ? `RELEVANT PUBLIC KNOWLEDGE:\n${relevantKnowledge}\n\n` : ''}CUSTOMER'S CURRENT MESSAGE: ${customerMessage}
 
 Generate a specific, helpful response. If you cannot provide a useful answer, respond with: "I'll need to check on that and get back to you shortly."`;
+      }
 
       // Use the assistant service with the appropriate route
       const assistantResponse = await assistantService.getAssistantResponse(

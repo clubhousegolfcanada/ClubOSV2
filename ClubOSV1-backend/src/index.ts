@@ -53,6 +53,7 @@ import publicRoutes from './routes/public';
 import callTranscriptRoutes from './routes/call-transcripts';
 import privacyRoutes from './routes/privacy';
 import customerInteractionsRoutes from './routes/customer-interactions';
+import promptTemplatesRoutes from './routes/promptTemplates';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -216,6 +217,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/call-transcripts', callTranscriptRoutes);
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/customer-interactions', customerInteractionsRoutes);
+app.use('/api/prompt-templates', promptTemplatesRoutes);
 
 
 // Root endpoint
