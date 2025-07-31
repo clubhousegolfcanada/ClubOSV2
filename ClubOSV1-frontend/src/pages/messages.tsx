@@ -84,8 +84,10 @@ export default function Messages() {
   useEffect(() => {
     loadConversations();
     
-    // Set up auto-refresh every 10 seconds
-    const interval = setInterval(loadConversations, 10000);
+    // Set up auto-refresh every 5 seconds for more responsive updates
+    const interval = setInterval(() => {
+      loadConversations(false); // Don't show refresh indicator for auto-refresh
+    }, 5000);
     setRefreshInterval(interval);
     
     return () => {
@@ -93,22 +95,45 @@ export default function Messages() {
     };
   }, []);
 
+  // Track previous message count for new message detection
+  const prevMessageCountRef = useRef(messages.length);
+  
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
+      // Check if new messages were added (not just initial load)
+      const isNewMessage = messages.length > prevMessageCountRef.current;
+      
       // Use timeout to ensure DOM is updated
       setTimeout(() => {
-        scrollToBottom('instant');
+        if (isNewMessage) {
+          scrollToBottom('smooth');
+        } else {
+          scrollToBottom('instant');
+        }
       }, 50);
+      
+      // Update the ref for next comparison
+      prevMessageCountRef.current = messages.length;
     }
   }, [messages]);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-    // Also scroll desktop container if it exists
-    if (desktopMessagesContainerRef.current) {
-      desktopMessagesContainerRef.current.scrollTop = desktopMessagesContainerRef.current.scrollHeight;
-    }
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+      // Also scroll desktop container if it exists
+      if (desktopMessagesContainerRef.current) {
+        if (behavior === 'smooth') {
+          desktopMessagesContainerRef.current.scrollTo({
+            top: desktopMessagesContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          desktopMessagesContainerRef.current.scrollTop = desktopMessagesContainerRef.current.scrollHeight;
+        }
+      }
+    });
   };
 
   const loadConversations = async (showRefreshIndicator = false) => {
@@ -141,8 +166,30 @@ export default function Messages() {
         if (selectedConversation) {
           const updated = response.data.data.find((c: Conversation) => c.id === selectedConversation.id);
           if (updated) {
+            // Check if there are new messages
+            const currentMessageIds = messages.map(m => m.id);
+            const updatedMessages = Array.isArray(updated.messages) ? updated.messages : [];
+            const hasNewMessages = updatedMessages.some(m => !currentMessageIds.includes(m.id));
+            
+            // Update the conversation and messages
             setSelectedConversation(updated);
-            setMessages(Array.isArray(updated.messages) ? updated.messages : []);
+            setMessages(updatedMessages);
+            
+            // If there are new messages and we're not already at the bottom, scroll down
+            if (hasNewMessages && updatedMessages.length > messages.length) {
+              // Show toast notification for new message
+              const newMessage = updatedMessages[updatedMessages.length - 1];
+              if (newMessage.direction === 'inbound') {
+                toast.success(`New message from ${updated.customer_name || 'customer'}`, {
+                  duration: 3000,
+                  icon: '💬'
+                });
+              }
+              
+              setTimeout(() => {
+                scrollToBottom('smooth');
+              }, 100);
+            }
           }
         }
       } else {
@@ -613,11 +660,16 @@ export default function Messages() {
                         <div className="p-4 border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)]">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                              <Sparkles className={`w-4 h-4 ${aiSuggestion.confidence < 0.5 ? 'text-yellow-500' : 'text-[var(--accent)]'}`} />
                               <span className="text-sm font-medium">AI Suggestion</span>
-                              <span className="text-xs text-[var(--text-muted)]">
+                              <span className={`text-xs ${aiSuggestion.confidence < 0.5 ? 'text-yellow-600 font-semibold' : 'text-[var(--text-muted)]'}`}>
                                 ({Math.round(aiSuggestion.confidence * 100)}% confidence)
                               </span>
+                              {aiSuggestion.confidence < 0.5 && (
+                                <span className="text-xs text-yellow-600 font-medium">
+                                  - Human review recommended
+                                </span>
+                              )}
                             </div>
                             <button
                               onClick={() => {
@@ -936,9 +988,9 @@ export default function Messages() {
                     <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                          <Sparkles className={`w-4 h-4 ${aiSuggestion.confidence < 0.5 ? 'text-yellow-500' : 'text-[var(--accent)]'}`} />
                           <span className="text-sm font-medium">AI Suggestion</span>
-                          <span className="text-xs text-[var(--text-muted)]">
+                          <span className={`text-xs ${aiSuggestion.confidence < 0.5 ? 'text-yellow-600 font-semibold' : 'text-[var(--text-muted)]'}`}>
                             {Math.round(aiSuggestion.confidence * 100)}%
                           </span>
                         </div>

@@ -70,23 +70,26 @@ export class MessageAssistantService {
    - Security procedures or access codes
    - Any confidential business information
 
-3. ONLY provide:
-   - Public information about services and hours
-   - Help with bookings and general inquiries
-   - Friendly, professional customer service
-   - Directions to contact the facility if needed
+3. AVOID generic responses like:
+   - "How can I assist you today?"
+   - "Thank you for reaching out"
+   - "Feel free to let me know"
+   - "For detailed inquiries..."
 
-4. If the customer asks about something you cannot answer, suggest they:
-   - Call the facility directly
-   - Visit in person
-   - Check the website
+4. BE SPECIFIC and helpful:
+   - Answer their actual question directly
+   - If you don't know, say "I'll need to check on that for you"
+   - Never tell them to call or visit - this IS the way they're contacting us
+   - If unsure, indicate a human will follow up
+
+5. IMPORTANT: This text conversation IS their primary way to reach us. Do NOT suggest calling or visiting.
 
 CONVERSATION HISTORY:
 ${conversationHistory}
 
 ${relevantKnowledge ? `RELEVANT PUBLIC KNOWLEDGE:\n${relevantKnowledge}\n\n` : ''}CUSTOMER'S CURRENT MESSAGE: ${customerMessage}
 
-Generate a helpful, professional response for this customer.`;
+Generate a specific, helpful response. If you cannot provide a useful answer, respond with: "I'll need to check on that and get back to you shortly."`;
 
       // Use the assistant service with the appropriate route
       const assistantResponse = await assistantService.getAssistantResponse(
@@ -116,7 +119,29 @@ Generate a helpful, professional response for this customer.`;
       
       // Ensure the response is appropriate
       if (suggestedText.includes('[removed]') || suggestedText.length < 10) {
-        suggestedText = 'Thank you for your message. How may I assist you with your golf simulator booking or inquiry today?';
+        suggestedText = "I'll need to check on that and get back to you shortly.";
+      }
+      
+      // Check for generic unhelpful responses
+      const genericPhrases = [
+        'how can i assist you',
+        'how may i help you',
+        'thank you for reaching out',
+        'feel free to let me know',
+        'for detailed inquiries',
+        'call or visit',
+        'visit our facility',
+        'call us directly'
+      ];
+      
+      const lowerResponse = suggestedText.toLowerCase();
+      const isGeneric = genericPhrases.some(phrase => lowerResponse.includes(phrase));
+      
+      if (isGeneric) {
+        // If the response is too generic, indicate human handoff needed
+        suggestedText = "I'll need to check on that and get back to you shortly.";
+        // Reduce confidence significantly
+        confidence = Math.min(confidence, 0.3);
       }
       
       // Calculate confidence based on various factors
@@ -222,6 +247,11 @@ Generate a helpful, professional response for this customer.`;
     const wordCount = suggestedText.split(' ').length;
     if (wordCount < 5 || wordCount > 100) {
       confidence -= 0.1;
+    }
+    
+    // Check if this is a handoff message
+    if (suggestedText.includes("I'll need to check") || suggestedText.includes("get back to you")) {
+      confidence = 0.3; // Low confidence indicates human should take over
     }
     
     // Cap confidence between 0 and 1
