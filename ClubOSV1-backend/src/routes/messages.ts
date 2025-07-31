@@ -7,6 +7,7 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { openPhoneService } from '../services/openphoneService';
 import { messageSendLimiter } from '../middleware/rateLimiter';
+import { formatToE164, isValidE164 } from '../utils/phoneNumberFormatter';
 
 const router = Router();
 
@@ -224,7 +225,7 @@ router.post('/send',
     body('from').optional().isMobilePhone('any')
   ]),
   async (req, res, next) => {
-    const { to, text, from } = req.body;
+    const { to, text, from, countryCode } = req.body;
     const fromNumber = from || process.env.OPENPHONE_DEFAULT_NUMBER;
     
     try {
@@ -235,28 +236,45 @@ router.post('/send',
         });
       }
       
+      // Format phone numbers to E.164
+      const formattedTo = formatToE164(to, countryCode);
+      if (!formattedTo || !isValidE164(formattedTo)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid recipient phone number format. Please use E.164 format (e.g., +1234567890) or provide a country code.'
+        });
+      }
+      
+      const formattedFrom = formatToE164(fromNumber, countryCode);
+      if (!formattedFrom || !isValidE164(formattedFrom)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid sender phone number format'
+        });
+      }
+      
       // Try to get OpenPhone user ID for the from number
       let userId: string | undefined;
       try {
-        const user = await openPhoneService.getUserByPhoneNumber(fromNumber);
+        const user = await openPhoneService.getUserByPhoneNumber(formattedFrom);
         if (user?.id) {
           userId = user.id;
-          logger.info('Found OpenPhone user for number', { phoneNumber: fromNumber, userId });
+          logger.info('Found OpenPhone user for number', { phoneNumber: formattedFrom, userId });
         }
       } catch (error) {
-        logger.warn('Could not fetch OpenPhone user', { phoneNumber: fromNumber, error });
+        logger.warn('Could not fetch OpenPhone user', { phoneNumber: formattedFrom, error });
       }
       
       // Send via OpenPhone with optional userId
-      const result = await openPhoneService.sendMessage(to, fromNumber, text, { 
+      const result = await openPhoneService.sendMessage(formattedTo, formattedFrom, text, { 
         userId,
         setInboxStatus: 'done' // Mark conversation as done after sending
       });
       
       // Log the action
       logger.info('Message sent via OpenPhone', {
-        to,
-        from: fromNumber,
+        to: formattedTo,
+        from: formattedFrom,
         userId: req.user?.id,
         messageId: result.id
       });

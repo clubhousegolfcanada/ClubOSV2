@@ -225,6 +225,11 @@ export class OpenPhoneService {
 
   /**
    * Send an SMS message via OpenPhone
+   * Note: For US numbers, ensure US Carrier Registration is completed in OpenPhone
+   * @param to - Recipient phone number in E.164 format
+   * @param from - Sender phone number in E.164 format
+   * @param text - Message content
+   * @param options - Optional userId and setInboxStatus
    */
   async sendMessage(to: string, from: string, text: string, options?: { userId?: string; setInboxStatus?: 'done' }): Promise<any> {
     if (!this.isConfigured) {
