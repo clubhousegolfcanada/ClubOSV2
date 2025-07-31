@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
@@ -56,6 +56,7 @@ export default function Messages() {
   const [editedSuggestionText, setEditedSuggestionText] = useState('');
   const [touchStart, setTouchStart] = useState(0);
   const [pullDistance, setPullDistance] = useState(0);
+  const [isInIframe, setIsInIframe] = useState(false);
 
   // Check auth
   useEffect(() => {
@@ -67,6 +68,15 @@ export default function Messages() {
   // Set client-side flag
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  // Check if we're in an iframe
+  useEffect(() => {
+    try {
+      setIsInIframe(window !== window.parent);
+    } catch (e) {
+      setIsInIframe(false);
+    }
   }, []);
 
   // Load conversations
@@ -407,6 +417,28 @@ export default function Messages() {
                     <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
                       <span className="text-sm text-[var(--text-muted)]">Loading...</span>
                     </div>
+                  ) : isInIframe && !isSubscribed ? (
+                    // In iframe - show pop-out button for notifications
+                    <button
+                      onClick={() => {
+                        const url = `${window.location.origin}/messages`;
+                        const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
+                        
+                        if (newWindow) {
+                          toast.info('Opening ClubOS in a new window to enable notifications', {
+                            duration: 5000,
+                            icon: '🔔'
+                          });
+                        } else {
+                          toast.error('Please allow pop-ups to enable notifications');
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent)]/90 transition-colors"
+                      title="Open in new window for notifications"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="text-sm">Enable Notifications</span>
+                    </button>
                   ) : !isSupported ? null : notificationLoading ? (
                     <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
                       <span className="text-sm text-[var(--text-muted)]">Loading...</span>
@@ -697,15 +729,35 @@ export default function Messages() {
                 {/* Push Notification Toggle */}
                 {isClient && isSupported && (
                   <button
-                    onClick={isSubscribed ? unsubscribe : subscribe}
+                    onClick={() => {
+                      // If in iframe and not subscribed, open in new window
+                      if (isInIframe && !isSubscribed) {
+                        const url = `${window.location.origin}/messages`;
+                        const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
+                        
+                        if (newWindow) {
+                          toast.info('Opening ClubOS in a new window to enable notifications', {
+                            duration: 5000,
+                            icon: '🔔'
+                          });
+                        } else {
+                          toast.error('Please allow pop-ups to enable notifications');
+                        }
+                      } else {
+                        // Normal toggle
+                        isSubscribed ? unsubscribe() : subscribe();
+                      }
+                    }}
                     className="p-2 rounded-full hover:bg-[var(--bg-tertiary)] transition-colors"
                     disabled={notificationLoading}
-                    title={isSubscribed ? "Disable notifications" : "Enable notifications"}
+                    title={isInIframe && !isSubscribed ? "Open in new window for notifications" : (isSubscribed ? "Disable notifications" : "Enable notifications")}
                   >
                     {notificationLoading ? (
                       <RefreshCw className="w-5 h-5 text-[var(--text-muted)] animate-spin" />
                     ) : isSubscribed ? (
                       <Bell className="w-5 h-5 text-[var(--accent)]" />
+                    ) : isInIframe ? (
+                      <ExternalLink className="w-5 h-5 text-[var(--text-muted)]" />
                     ) : (
                       <BellOff className="w-5 h-5 text-[var(--text-muted)]" />
                     )}
