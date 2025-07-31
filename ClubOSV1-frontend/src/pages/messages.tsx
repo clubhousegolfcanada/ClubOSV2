@@ -164,7 +164,7 @@ export default function Messages() {
         
         // Update selected conversation if it exists
         if (selectedConversation) {
-          const updated = response.data.data.find((c: Conversation) => c.id === selectedConversation.id);
+          const updated = response.data.data.find((c: Conversation) => c.phone_number === selectedConversation.phone_number);
           if (updated) {
             // Check if there are new messages
             const currentMessageIds = messages.map((m: Message) => m.id);

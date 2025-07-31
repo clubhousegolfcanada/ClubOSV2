@@ -59,6 +59,13 @@ export class MessageAssistantService {
         route = 'Emergency';
       }
       
+      logger.info('Message routing decision', {
+        customerMessage: customerMessage.substring(0, 50) + '...',
+        detectedRoute: route,
+        conversationId,
+        phoneNumber: phoneNumber.slice(-4) // Log only last 4 digits
+      });
+      
       // Get the prompt template from database
       const template = await promptTemplateService.getTemplate('customer_message_response');
       
@@ -107,13 +114,16 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
       }
 
       // Use the assistant service with the appropriate route
+      // Pass the actual customer message to the assistant, not the full prompt
       const assistantResponse = await assistantService.getAssistantResponse(
         route,
-        customerContext,
+        customerMessage, // Pass just the customer's message
         {
           userId: userId,
           isCustomerFacing: true,
-          conversationId: conversationId
+          conversationId: conversationId,
+          conversationHistory: conversationHistory,
+          relevantKnowledge: relevantKnowledge
         }
       );
 

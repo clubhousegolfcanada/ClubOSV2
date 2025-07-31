@@ -227,10 +227,26 @@ export class AssistantService {
       // Create a thread
       const thread = await this.openai.beta.threads.create();
 
+      // Build the message content with context if provided
+      let messageContent = userMessage;
+      
+      // If this is a customer-facing message with context, include it
+      if (isCustomerFacing && context?.conversationHistory) {
+        messageContent = `CONVERSATION HISTORY:
+${context.conversationHistory}
+
+${context.relevantKnowledge ? `RELEVANT KNOWLEDGE:
+${context.relevantKnowledge}
+
+` : ''}CURRENT CUSTOMER MESSAGE: ${userMessage}
+
+Please provide a helpful response to the customer's current message based on the conversation history and any relevant knowledge.`;
+      }
+
       // Add the user's message to the thread
       await this.openai.beta.threads.messages.create(thread.id, {
         role: 'user',
-        content: userMessage
+        content: messageContent
       });
 
       // Run the assistant with customer safety instructions if needed
@@ -243,7 +259,7 @@ export class AssistantService {
 - Do not mention ClubOS, internal systems, databases, or technical details
 - Do not mention employee names or internal procedures
 - Keep responses friendly and professional
-- If asked about something confidential, politely redirect to calling or visiting the facility`
+- If asked about something confidential, politely redirect to email booking@clubhouse247golf.com`
         } : {})
       });
 
