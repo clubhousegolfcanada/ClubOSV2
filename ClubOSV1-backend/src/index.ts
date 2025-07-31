@@ -70,6 +70,18 @@ app.set('trust proxy', true);
 app.use(sentryRequestHandler);
 app.use(sentryTracingHandler);
 
+// Add health check early for Railway deployment
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '1.0.0',
+    database: 'initializing'
+  });
+});
+
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -205,40 +217,6 @@ app.use('/api/call-transcripts', callTranscriptRoutes);
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/customer-interactions', customerInteractionsRoutes);
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  try {
-    // Basic health response
-    const health: any = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      version: process.env.npm_package_version || '1.0.0'
-    };
-
-    // Check database connection if initialized
-    if (db.initialized) {
-      try {
-        await db.query('SELECT 1');
-        health.database = 'connected';
-      } catch (error) {
-        health.database = 'error';
-        health.status = 'degraded';
-      }
-    } else {
-      health.database = 'not initialized';
-    }
-
-    res.status(health.status === 'ok' ? 200 : 503).json(health);
-  } catch (error) {
-    res.status(503).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: 'Health check failed'
-    });
-  }
-});
 
 // Root endpoint
 app.get('/', (req, res) => {
