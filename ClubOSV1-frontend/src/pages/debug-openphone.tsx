@@ -281,7 +281,7 @@ export default function DebugOpenPhone() {
                                 <td className="py-2">{conv.phone_number || 'NULL'}</td>
                                 <td className="py-2">{conv.customer_name || 'NULL'}</td>
                                 <td className="py-2">{conv.message_count || 0}</td>
-                                <td className="py-2">{isClient ? new Date(conv.created_at).toLocaleDateString() : ''}</td>
+                                <td className="py-2">{isClient ? (conv.created_at ? new Date(conv.created_at).toLocaleDateString() : '') : null}</td>
                               </tr>
                             ))}
                           </tbody>

@@ -330,9 +330,9 @@ export default function Messages() {
                         <div className="flex items-center gap-1 mt-1">
                           <Clock className="w-3 h-3 text-[var(--text-muted)]" />
                           <span className="text-xs text-[var(--text-muted)]">
-                            {isClient && conv.updated_at ? 
-                              formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 
-                              'Recently'}
+                            {isClient ? (
+                              conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 'Recently'
+                            ) : null}
                           </span>
                         </div>
                       </div>
@@ -392,9 +392,9 @@ export default function Messages() {
                             <p className={`text-xs mt-1 ${
                               message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
                             }`}>
-                              {isClient && message.createdAt ? 
-                                format(new Date(message.createdAt), 'h:mm a') : 
-                                ''}
+                              {isClient ? (
+                                message.createdAt ? format(new Date(message.createdAt), 'h:mm a') : ''
+                              ) : null}
                             </p>
                           </div>
                         </div>
