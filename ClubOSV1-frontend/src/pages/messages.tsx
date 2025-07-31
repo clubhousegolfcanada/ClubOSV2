@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { ClientDate } from '@/components/ClientDate';
+import { format, formatDistanceToNow } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
