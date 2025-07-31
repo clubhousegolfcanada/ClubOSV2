@@ -50,9 +50,23 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
+    
+    // Log the auth header for debugging
+    logger.debug('Auth header received:', {
+      path: req.path,
+      method: req.method,
+      hasAuthHeader: !!authHeader,
+      authHeaderLength: authHeader?.length
+    });
+    
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
     if (!token) {
+      logger.warn('No token provided', {
+        path: req.path,
+        method: req.method,
+        headers: Object.keys(req.headers)
+      });
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'No token provided'
@@ -117,12 +131,15 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     if (error instanceof jwt.JsonWebTokenError) {
       logger.warn('Invalid token attempt', {
         error: error.message,
-        ip: req.ip
+        ip: req.ip,
+        path: req.path,
+        tokenLength: authHeader?.length
       });
       
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid token'
+        message: 'Invalid token',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
 

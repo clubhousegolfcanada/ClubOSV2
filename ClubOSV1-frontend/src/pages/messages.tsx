@@ -170,6 +170,9 @@ export default function Messages() {
         return;
       }
       
+      console.log('Sending message with token:', token ? 'Token exists' : 'No token');
+      console.log('Token length:', token?.length);
+      
       const response = await axios.post(
         `${API_URL}/messages/send`,
         {
@@ -216,6 +219,18 @@ export default function Messages() {
                           'Failed to send message';
       
       toast.error(errorMessage);
+      
+      // If it's a 401 error, handle authentication failure
+      if (error.response?.status === 401) {
+        console.error('Authentication failed:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+        toast.error('Session expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
       
       // If it's a 500 error, show additional info
       if (error.response?.status === 500) {
