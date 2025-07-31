@@ -5,8 +5,15 @@ import { AlertCircle, X } from 'lucide-react';
 export const SessionExpiryWarning: React.FC = () => {
   const [showWarning, setShowWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const checkExpiry = () => {
       const token = localStorage.getItem('clubos_token');
       if (!token) return;
@@ -41,7 +48,7 @@ export const SessionExpiryWarning: React.FC = () => {
       clearInterval(interval);
       if (countdownInterval) clearInterval(countdownInterval);
     };
-  }, [showWarning]);
+  }, [mounted, showWarning]);
 
   if (!showWarning) return null;
 

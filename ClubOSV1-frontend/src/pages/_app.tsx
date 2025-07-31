@@ -1,7 +1,7 @@
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import Navigation from '@/components/Navigation';
 import Notifications from '@/components/Notifications';
@@ -25,6 +25,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   const router = useRouter();
   const { setUser, isAuthenticated } = useAuthState();
   const isPublicRoute = publicRoutes.includes(router.pathname);
+  const [authInitialized, setAuthInitialized] = useState(false);
   
   // Use kiosk redirect hook
   useKioskRedirect();
@@ -48,6 +49,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   useEffect(() => {
     // Skip auth restoration on login page
     if (router.pathname === '/login') {
+      setAuthInitialized(true);
       return;
     }
     
@@ -72,6 +74,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         localStorage.removeItem('clubos_token');
       }
     }
+    setAuthInitialized(true);
   }, [setUser, isAuthenticated, router.pathname]);
 
   useEffect(() => {
@@ -127,11 +130,19 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     };
   }, []);
 
-  // Check if we're embedded
-  const isEmbedded = typeof window !== 'undefined' && window !== window.parent;
+  // Use state for client-side values to prevent hydration mismatch
+  const [isEmbedded, setIsEmbedded] = useState(false);
+  const [showNavigation, setShowNavigation] = useState(false);
   
-  // Show navigation only on non-public routes (but always show in embedded mode)
-  const showNavigation = isEmbedded || (!isPublicRoute && isAuthenticated);
+  useEffect(() => {
+    // Check if embedded after mount
+    setIsEmbedded(window !== window.parent);
+  }, []);
+  
+  useEffect(() => {
+    // Update navigation visibility after mount
+    setShowNavigation(isEmbedded || (!isPublicRoute && isAuthenticated));
+  }, [isEmbedded, isPublicRoute, isAuthenticated]);
 
   return (
     <>

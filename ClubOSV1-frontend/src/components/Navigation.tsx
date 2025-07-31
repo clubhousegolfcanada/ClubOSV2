@@ -23,10 +23,12 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [sessionStatus, setSessionStatus] = useState<'active' | 'warning' | 'expired'>('active');
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Check if embedded
   useEffect(() => {
+    setMounted(true);
     const checkEmbedded = () => {
       try {
         setIsEmbedded(window !== window.parent);
@@ -56,6 +58,8 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
   // Monitor session status
   useEffect(() => {
+    if (!mounted) return;
+    
     const checkSessionStatus = () => {
       const token = localStorage.getItem('clubos_token');
       if (!token) {
@@ -82,7 +86,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     const interval = setInterval(checkSessionStatus, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   const navItems = user?.role === 'kiosk' 
     ? [
