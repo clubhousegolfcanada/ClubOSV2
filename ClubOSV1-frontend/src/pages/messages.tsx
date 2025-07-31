@@ -84,10 +84,10 @@ export default function Messages() {
   useEffect(() => {
     loadConversations();
     
-    // Set up auto-refresh every 5 seconds for more responsive updates
+    // Set up auto-refresh every 2 seconds for more responsive updates
     const interval = setInterval(() => {
       loadConversations(false); // Don't show refresh indicator for auto-refresh
-    }, 5000);
+    }, 2000);
     setRefreshInterval(interval);
     
     return () => {
@@ -164,32 +164,45 @@ export default function Messages() {
         
         // Update selected conversation if it exists
         if (selectedConversation) {
-          const updated = response.data.data.find((c: Conversation) => c.phone_number === selectedConversation.phone_number);
+          // Normalize phone numbers for comparison (remove any formatting)
+          const normalizePhone = (phone: string) => phone ? phone.replace(/\D/g, '') : '';
+          const selectedPhone = normalizePhone(selectedConversation.phone_number);
+          
+          const updated = response.data.data.find((c: Conversation) => 
+            normalizePhone(c.phone_number) === selectedPhone
+          );
+          
           if (updated) {
-            // Check if there are new messages
-            const currentMessageIds = messages.map((m: Message) => m.id);
             const updatedMessages = Array.isArray(updated.messages) ? updated.messages : [];
-            const hasNewMessages = updatedMessages.some((m: Message) => !currentMessageIds.includes(m.id));
+            const currentMessageCount = messages.length;
+            const updatedMessageCount = updatedMessages.length;
             
-            // Update the conversation and messages
+            // Always update the conversation and messages to ensure we have the latest data
             setSelectedConversation(updated);
             setMessages(updatedMessages);
             
-            // If there are new messages and we're not already at the bottom, scroll down
-            if (hasNewMessages && updatedMessages.length > messages.length) {
-              // Show toast notification for new message
-              const newMessage = updatedMessages[updatedMessages.length - 1];
-              if (newMessage.direction === 'inbound') {
+            // Check if there are new messages by comparing counts and checking the last message
+            if (updatedMessageCount > currentMessageCount) {
+              const newMessagesCount = updatedMessageCount - currentMessageCount;
+              const lastMessage = updatedMessages[updatedMessages.length - 1];
+              
+              // Show notification for new inbound messages
+              if (lastMessage && lastMessage.direction === 'inbound') {
                 toast.success(`New message from ${updated.customer_name || 'customer'}`, {
                   duration: 3000,
                   icon: '💬'
                 });
               }
               
+              // Scroll to bottom to show new messages
               setTimeout(() => {
                 scrollToBottom('smooth');
               }, 100);
+              
+              console.log(`Updated conversation with ${newMessagesCount} new message(s)`);
             }
+          } else {
+            console.warn('Could not find updated conversation for phone:', selectedConversation.phone_number);
           }
         }
       } else {
