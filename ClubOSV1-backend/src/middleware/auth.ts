@@ -47,10 +47,9 @@ export const verifyToken = (token: string): JWTPayload => {
 
 // Authentication middleware
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
-    
     // Log the auth header for debugging
     logger.debug('Auth header received:', {
       path: req.path,
