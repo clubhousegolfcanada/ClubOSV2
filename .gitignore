@@ -72,3 +72,10 @@ backups/
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Scripts with credentials
+*-with-creds.sh
+fix-openphone-local.sh
+
+# SQL files with credentials  
+*-with-creds.sql

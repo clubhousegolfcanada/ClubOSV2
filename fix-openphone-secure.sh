@@ -1,16 +1,25 @@
 #!/bin/bash
 
-# OpenPhone Column Fix Script
+# OpenPhone Column Fix Script (Secure Version)
 # This script fixes the column type issue in the openphone_conversations table
 
-echo "OpenPhone Column Fix Script"
-echo "=========================="
+echo "OpenPhone Column Fix Script (Secure)"
+echo "===================================="
 echo ""
 
-# Connection details from Railway
-DATABASE_URL="postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway"
+# Check for DATABASE_URL environment variable
+if [ -z "$DATABASE_URL" ]; then
+    echo "ERROR: DATABASE_URL environment variable not set"
+    echo ""
+    echo "To run this script:"
+    echo "1. Get your database URL from Railway dashboard"
+    echo "2. Run: export DATABASE_URL='your-database-url'"
+    echo "3. Run: ./fix-openphone-secure.sh"
+    echo ""
+    exit 1
+fi
 
-echo "Connecting to Railway database..."
+echo "Connecting to database..."
 echo ""
 
 # Execute the SQL fix
