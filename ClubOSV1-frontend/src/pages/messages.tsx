@@ -89,7 +89,10 @@ export default function Messages() {
       }
 
       const response = await axios.get(`${API_URL}/messages/conversations`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         params: { limit: 100 }
       });
       
@@ -132,11 +135,13 @@ export default function Messages() {
     if (conversation.phone_number) {
       try {
         const token = localStorage.getItem('clubos_token');
-        await axios.put(
-          `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        if (token) {
+          await axios.put(
+            `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
+            {},
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+        }
         
         // Update local state
         setConversations(prev => prev.map(c => 
@@ -159,13 +164,24 @@ export default function Messages() {
     setSending(true);
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        toast.error('Session expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
+      
       const response = await axios.post(
         `${API_URL}/messages/send`,
         {
           to: selectedConversation.phone_number,
           text: newMessage.trim()
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
       
       if (response.data.success) {
@@ -248,7 +264,7 @@ export default function Messages() {
               </div>
               
               {/* Push Notification Toggle */}
-              {isSupported && (
+              {isClient && isSupported && (
                 <div className="flex items-center gap-2">
                   {notificationLoading ? (
                     <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
@@ -280,7 +296,7 @@ export default function Messages() {
 
           {/* Messages Interface */}
           <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-200px)]">
+            <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-180px)]">
               
               {/* Conversations List */}
               <div className={`${selectedConversation ? 'hidden md:block' : 'block'} border-r border-[var(--border-secondary)] overflow-y-auto`}>
@@ -358,7 +374,7 @@ export default function Messages() {
               </div>
 
               {/* Messages Area */}
-              <div className={`${selectedConversation ? 'block' : 'hidden md:block'} col-span-2 flex flex-col`}>
+              <div className={`${selectedConversation ? 'block' : 'hidden md:block'} col-span-2 flex flex-col h-full overflow-hidden`}>
                 {selectedConversation ? (
                   <>
                     {/* Conversation Header */}
