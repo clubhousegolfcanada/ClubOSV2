@@ -4,7 +4,7 @@ import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Save, History, RefreshCw, AlertCircle, FileText } from 'lucide-react';
+import { Save, History, RefreshCw, AlertCircle, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
