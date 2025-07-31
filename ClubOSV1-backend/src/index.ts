@@ -50,6 +50,7 @@ import knowledgeEnhanceRoutes from './routes/knowledge-enhance';
 import knowledgeRouterRoutes from './routes/knowledge-router';
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
+import callTranscriptRoutes from './routes/call-transcripts';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -147,6 +148,7 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/knowledge-enhance', knowledgeEnhanceRoutes);
 app.use('/api/knowledge-router', knowledgeRouterRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/call-transcripts', callTranscriptRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

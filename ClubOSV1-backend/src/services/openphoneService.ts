@@ -507,6 +507,141 @@ export class OpenPhoneService {
   }
 
   /**
+   * Get call transcript by call ID
+   */
+  async getCallTranscript(callId: string): Promise<any> {
+    if (!this.isConfigured) {
+      throw new Error('OpenPhone not configured');
+    }
+
+    try {
+      const apiKey = this.client.defaults.headers['Authorization'] as string;
+      
+      const v1Client = axios.create({
+        baseURL: 'https://api.openphone.com/v1',
+        headers: {
+          'Authorization': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      logger.info('Fetching call transcript', { callId });
+      
+      const response = await openPhoneRateLimiter.execute(() =>
+        v1Client.get(`/call-transcripts/${callId}`)
+      );
+      
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        logger.info('No transcript found for call', { callId });
+        return null;
+      }
+      
+      logger.error('Failed to fetch call transcript:', {
+        callId,
+        error: error.response?.data || error.message,
+        status: error.response?.status
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * List calls with optional filters
+   */
+  async listCalls(params?: {
+    userId?: string;
+    phoneNumberId?: string;
+    direction?: 'inbound' | 'outbound';
+    participants?: string[];
+    createdAfter?: string;
+    createdBefore?: string;
+    limit?: number;
+    pageToken?: string;
+  }): Promise<{ calls: any[], nextPageToken?: string }> {
+    if (!this.isConfigured) {
+      return { calls: [] };
+    }
+
+    try {
+      const apiKey = this.client.defaults.headers['Authorization'] as string;
+      
+      const v1Client = axios.create({
+        baseURL: 'https://api.openphone.com/v1',
+        headers: {
+          'Authorization': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const queryParams: any = {};
+      if (params?.userId) queryParams.userId = params.userId;
+      if (params?.phoneNumberId) queryParams.phoneNumberId = params.phoneNumberId;
+      if (params?.direction) queryParams.direction = params.direction;
+      if (params?.participants) queryParams.participants = params.participants;
+      if (params?.createdAfter) queryParams.createdAfter = params.createdAfter;
+      if (params?.createdBefore) queryParams.createdBefore = params.createdBefore;
+      if (params?.limit) queryParams.limit = params.limit;
+      if (params?.pageToken) queryParams.pageToken = params.pageToken;
+      
+      logger.info('Listing calls', { params: queryParams });
+      
+      const response = await openPhoneRateLimiter.execute(() =>
+        v1Client.get('/calls', { params: queryParams })
+      );
+      
+      return {
+        calls: response.data.data || [],
+        nextPageToken: response.data.pageToken || undefined
+      };
+    } catch (error: any) {
+      logger.error('Failed to list calls:', error.response?.data || error.message);
+      return { calls: [] };
+    }
+  }
+
+  /**
+   * Get call summary by call ID
+   */
+  async getCallSummary(callId: string): Promise<any> {
+    if (!this.isConfigured) {
+      return null;
+    }
+
+    try {
+      const apiKey = this.client.defaults.headers['Authorization'] as string;
+      
+      const v1Client = axios.create({
+        baseURL: 'https://api.openphone.com/v1',
+        headers: {
+          'Authorization': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      logger.info('Fetching call summary', { callId });
+      
+      const response = await openPhoneRateLimiter.execute(() =>
+        v1Client.get(`/call-summaries/${callId}`)
+      );
+      
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        logger.info('No summary found for call', { callId });
+        return null;
+      }
+      
+      logger.error('Failed to fetch call summary:', {
+        callId,
+        error: error.response?.data || error.message
+      });
+      return null;
+    }
+  }
+
+  /**
    * Test API connection
    */
   async testConnection(): Promise<boolean> {
