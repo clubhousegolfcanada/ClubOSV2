@@ -41,7 +41,7 @@ export class OpenPhoneService {
       this.client = axios.create({
         baseURL: apiUrl,
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': apiKey, // OpenPhone expects the API key directly, not with Bearer prefix
           'Content-Type': 'application/json'
         }
       });
@@ -229,11 +229,21 @@ export class OpenPhoneService {
     try {
       logger.info('Sending OpenPhone message', { to, from, text: text.substring(0, 50) });
       
+      // Get the API key from the main client
+      const apiKey = this.client.defaults.headers['Authorization'];
+      
+      // Log the authorization format for debugging
+      logger.debug('OpenPhone authorization format:', {
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey?.length,
+        apiKeyPreview: apiKey ? `${apiKey.substring(0, 10)}...` : 'none'
+      });
+      
       // Create a separate client for v1 API
       const v1Client = axios.create({
         baseURL: 'https://api.openphone.com/v1',
         headers: {
-          'Authorization': this.client.defaults.headers['Authorization'],
+          'Authorization': apiKey, // Direct API key format
           'Content-Type': 'application/json'
         }
       });
@@ -352,11 +362,14 @@ export class OpenPhoneService {
     }
 
     try {
+      // Get the API key from the main client
+      const apiKey = this.client.defaults.headers['Authorization'];
+      
       // Use v1 API for phone numbers
       const v1Client = axios.create({
         baseURL: 'https://api.openphone.com/v1',
         headers: {
-          'Authorization': this.client.defaults.headers['Authorization'],
+          'Authorization': apiKey, // Direct API key format
           'Content-Type': 'application/json'
         }
       });
