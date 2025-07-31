@@ -15,6 +15,7 @@ export default function DebugOpenPhone() {
   const [dbData, setDbData] = useState<any>(null);
   const [connectionData, setConnectionData] = useState<any>(null);
   const [rawData, setRawData] = useState<any>(null);
+  const [diagnosticData, setDiagnosticData] = useState<any>(null);
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('Test message from ClubOS');
 
@@ -140,6 +141,25 @@ export default function DebugOpenPhone() {
       checkRawData();
     } catch (error: any) {
       toast.error('Failed to repair phone numbers: ' + error.message);
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runDiagnostic = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/debug-openphone/diagnose`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setDiagnosticData(response.data.data);
+      console.log('Diagnostic data:', response.data.data);
+      toast.success('Diagnostic complete - check console');
+    } catch (error: any) {
+      toast.error('Diagnostic failed: ' + error.message);
       console.error(error);
     } finally {
       setLoading(false);
@@ -307,6 +327,35 @@ export default function DebugOpenPhone() {
                       {connectionData.data.phoneNumbers && (
                         <div>Available Numbers: {connectionData.data.phoneNumbers.length}</div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Diagnostic */}
+            <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Quick Diagnostic
+                </h2>
+                <button
+                  onClick={runDiagnostic}
+                  disabled={loading}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+                >
+                  Run Diagnostic
+                </button>
+              </div>
+              
+              {diagnosticData && (
+                <div className="text-sm space-y-2">
+                  <div>Has sample conversation: {diagnosticData.sampleConversation ? 'Yes' : 'No'}</div>
+                  {diagnosticData.messageStructure && (
+                    <div className="p-2 bg-[var(--bg-primary)] rounded">
+                      <div className="font-medium mb-1">Message Structure:</div>
+                      <pre className="text-xs">{JSON.stringify(diagnosticData.messageStructure, null, 2)}</pre>
                     </div>
                   )}
                 </div>

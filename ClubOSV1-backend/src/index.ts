@@ -309,6 +309,26 @@ async function startServer() {
       // Continue - don't fail startup
     }
     
+    // Add updated_at column to openphone_conversations if missing
+    try {
+      logger.info('Checking openphone_conversations columns...');
+      await db.query(`
+        ALTER TABLE openphone_conversations
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+      `);
+      
+      // Update existing rows
+      await db.query(`
+        UPDATE openphone_conversations
+        SET updated_at = COALESCE(created_at, NOW())
+        WHERE updated_at IS NULL
+      `);
+      
+      logger.info('✅ OpenPhone updated_at column verified');
+    } catch (error) {
+      logger.error('Failed to add updated_at column:', error);
+    }
+    
     // Run other migrations
     try {
       // First, try to create the table if it doesn't exist

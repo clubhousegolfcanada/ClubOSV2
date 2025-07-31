@@ -134,20 +134,29 @@ router.get('/raw-conversations',
   roleGuard(['admin']),
   async (req, res) => {
     try {
+      // First check what columns exist to avoid errors
+      const columnCheck = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'openphone_conversations'
+      `);
+      
+      const columns = columnCheck.rows.map(r => r.column_name);
+      logger.info('Available columns:', columns);
+      
+      // Build query with only existing columns
+      const selectColumns = ['id'];
+      if (columns.includes('phone_number')) selectColumns.push('phone_number');
+      if (columns.includes('customer_name')) selectColumns.push('customer_name');
+      if (columns.includes('messages')) selectColumns.push('messages');
+      if (columns.includes('metadata')) selectColumns.push('metadata');
+      if (columns.includes('created_at')) selectColumns.push('created_at');
+      
       // Get ALL conversations without any filtering
       const result = await db.query(`
-        SELECT 
-          id,
-          phone_number,
-          customer_name,
-          employee_name,
-          messages,
-          created_at,
-          updated_at,
-          metadata,
-          conversation_id
+        SELECT ${selectColumns.join(', ')}
         FROM openphone_conversations
-        ORDER BY created_at DESC
+        ORDER BY ${columns.includes('created_at') ? 'created_at' : 'id'} DESC
         LIMIT 50
       `);
       
@@ -214,9 +223,22 @@ router.post('/repair-phone-numbers',
           let phoneNumber = null;
           let customerName = null;
           
+          logger.info(`Processing conversation ${conv.id}`, {
+            hasMessages: !!conv.messages,
+            messageCount: Array.isArray(conv.messages) ? conv.messages.length : 0,
+            metadata: conv.metadata
+          });
+          
           // Try to extract phone number from messages
           if (Array.isArray(conv.messages) && conv.messages.length > 0) {
             const firstMessage = conv.messages[0];
+            logger.info(`First message structure:`, {
+              hasFrom: !!firstMessage.from,
+              hasTo: !!firstMessage.to,
+              direction: firstMessage.direction,
+              type: firstMessage.type,
+              keys: Object.keys(firstMessage)
+            });
             
             // Determine phone number based on direction
             if (firstMessage.direction === 'incoming' || firstMessage.direction === 'inbound') {
@@ -230,6 +252,13 @@ router.post('/repair-phone-numbers',
             if (!phoneNumber) {
               phoneNumber = firstMessage.from || (Array.isArray(firstMessage.to) ? firstMessage.to[0] : firstMessage.to);
             }
+            
+            // If still no phone number, check if it's a different message structure
+            if (!phoneNumber && firstMessage.type === 'message.created') {
+              // Try nested structure
+              const messageData = firstMessage.data?.object || firstMessage.data || firstMessage;
+              phoneNumber = messageData.from || (Array.isArray(messageData.to) ? messageData.to[0] : messageData.to);
+            }
           }
           
           // Try metadata if no phone number found
@@ -237,21 +266,31 @@ router.post('/repair-phone-numbers',
             phoneNumber = conv.metadata.phoneNumber || conv.metadata.phone_number;
           }
           
-          if (phoneNumber && phoneNumber !== 'Unknown') {
+          logger.info(`Extracted phone number: ${phoneNumber} for conversation ${conv.id}`);
+          
+          if (phoneNumber && phoneNumber !== 'Unknown' && phoneNumber !== 'null') {
             // Update the conversation with the repaired phone number
-            await db.query(`
-              UPDATE openphone_conversations
-              SET phone_number = $1,
-                  customer_name = COALESCE(customer_name, $1),
-                  updated_at = NOW()
-              WHERE id = $2
-            `, [phoneNumber, conv.id]);
-            
-            repaired++;
-            logger.info(`Repaired conversation ${conv.id} with phone number ${phoneNumber}`);
+            // First check if updated_at column exists
+            try {
+              await db.query(`
+                UPDATE openphone_conversations
+                SET phone_number = $1,
+                    customer_name = COALESCE(customer_name, $1)
+                WHERE id = $2
+              `, [phoneNumber, conv.id]);
+              
+              repaired++;
+              logger.info(`Repaired conversation ${conv.id} with phone number ${phoneNumber}`);
+            } catch (updateError: any) {
+              logger.error(`Failed to update conversation ${conv.id}:`, updateError);
+              failed++;
+            }
           } else {
             failed++;
-            logger.warn(`Could not repair conversation ${conv.id} - no valid phone number found`);
+            logger.warn(`Could not repair conversation ${conv.id} - no valid phone number found`, {
+              extractedPhone: phoneNumber,
+              messages: conv.messages?.slice(0, 1) // Log first message for debugging
+            });
           }
         } catch (error) {
           failed++;
@@ -414,6 +453,50 @@ router.post('/test-send',
         success: false,
         error: error.message,
         details: error.response?.data || error
+      });
+    }
+  }
+);
+
+// Simple diagnostic endpoint
+router.get('/diagnose',
+  authenticate,
+  roleGuard(['admin']),
+  async (req, res) => {
+    try {
+      // Get one conversation with messages
+      const sample = await db.query(`
+        SELECT id, phone_number, messages
+        FROM openphone_conversations
+        WHERE messages IS NOT NULL
+        LIMIT 1
+      `);
+      
+      let messageStructure = null;
+      if (sample.rows.length > 0 && sample.rows[0].messages?.length > 0) {
+        const firstMsg = sample.rows[0].messages[0];
+        messageStructure = {
+          keys: Object.keys(firstMsg),
+          from: firstMsg.from,
+          to: firstMsg.to,
+          direction: firstMsg.direction,
+          type: firstMsg.type,
+          hasText: !!firstMsg.text,
+          hasBody: !!firstMsg.body
+        };
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          sampleConversation: sample.rows[0] || null,
+          messageStructure
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
       });
     }
   }
