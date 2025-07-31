@@ -221,7 +221,7 @@ export class OpenPhoneService {
   /**
    * Send an SMS message via OpenPhone
    */
-  async sendMessage(to: string, from: string, text: string): Promise<any> {
+  async sendMessage(to: string, from: string, text: string, options?: { userId?: string; setInboxStatus?: 'done' }): Promise<any> {
     if (!this.isConfigured) {
       throw new Error('OpenPhone not configured');
     }
@@ -238,12 +238,25 @@ export class OpenPhoneService {
         }
       });
       
-      // Format the request according to OpenPhone v1 API
-      const response = await v1Client.post('/messages', {
+      // Build request payload according to OpenPhone v1 API
+      const payload: any = {
         content: text,
         from: from,
         to: [to] // API expects an array
-      });
+      };
+      
+      // Add optional fields if provided
+      if (options?.userId) {
+        payload.userId = options.userId;
+      }
+      if (options?.setInboxStatus) {
+        payload.setInboxStatus = options.setInboxStatus;
+      }
+      
+      logger.debug('OpenPhone API payload:', payload);
+      
+      // Format the request according to OpenPhone v1 API
+      const response = await v1Client.post('/messages', payload);
 
       // Store message in database
       await this.storeOutboundMessage({
@@ -339,11 +352,37 @@ export class OpenPhoneService {
     }
 
     try {
-      const response = await this.client.get('/phone-numbers');
+      // Use v1 API for phone numbers
+      const v1Client = axios.create({
+        baseURL: 'https://api.openphone.com/v1',
+        headers: {
+          'Authorization': this.client.defaults.headers['Authorization'],
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const response = await v1Client.get('/phone-numbers');
       return response.data.data || [];
     } catch (error: any) {
       logger.error('Failed to fetch phone numbers:', error.response?.data || error.message);
       return [];
+    }
+  }
+  
+  /**
+   * Get phone number details by phone number
+   */
+  async getPhoneNumberDetails(phoneNumber: string): Promise<any> {
+    if (!this.isConfigured) {
+      return null;
+    }
+
+    try {
+      const phoneNumbers = await this.getPhoneNumbers();
+      return phoneNumbers.find(pn => pn.phoneNumber === phoneNumber) || null;
+    } catch (error: any) {
+      logger.error('Failed to get phone number details:', error.response?.data || error.message);
+      return null;
     }
   }
 

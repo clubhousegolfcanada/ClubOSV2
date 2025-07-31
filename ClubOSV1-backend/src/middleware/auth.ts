@@ -51,11 +51,12 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   
   try {
     // Log the auth header for debugging
-    logger.debug('Auth header received:', {
+    logger.info('Auth middleware called:', {
       path: req.path,
       method: req.method,
       hasAuthHeader: !!authHeader,
-      authHeaderLength: authHeader?.length
+      authHeaderLength: authHeader?.length,
+      authHeaderPreview: authHeader ? authHeader.substring(0, 20) + '...' : 'none'
     });
     
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
