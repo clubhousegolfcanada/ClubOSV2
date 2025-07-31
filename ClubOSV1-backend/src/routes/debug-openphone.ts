@@ -253,6 +253,15 @@ router.post('/repair-phone-numbers',
               phoneNumber = firstMessage.from || (Array.isArray(firstMessage.to) ? firstMessage.to[0] : firstMessage.to);
             }
             
+            // Log what we found
+            logger.info(`Message data for repair:`, {
+              from: firstMessage.from,
+              to: firstMessage.to,
+              direction: firstMessage.direction,
+              hasBody: !!firstMessage.body,
+              hasText: !!firstMessage.text
+            });
+            
             // If still no phone number, check if it's a different message structure
             if (!phoneNumber && firstMessage.type === 'message.created') {
               // Try nested structure

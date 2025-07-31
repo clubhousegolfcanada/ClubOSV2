@@ -63,22 +63,30 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'message.delivered':
       case 'message.updated':
       case 'conversation.updated':
-        // Extract data - handle both direct data and nested object structure
+        // OpenPhone v3 API has data nested in data.object
         const messageData = data.object || data;
         
-        // Fix: Handle 'to' as an array per OpenPhone API docs
+        // Extract phone number based on direction
         let phoneNumber;
         if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
           // For incoming messages, the customer is the sender
           phoneNumber = messageData.from;
         } else {
           // For outgoing messages, the customer is the recipient
-          // 'to' is an array, so take the first element
+          // Note: 'to' can be either string or array depending on webhook version
           phoneNumber = Array.isArray(messageData.to) ? messageData.to[0] : messageData.to;
         }
         
         // Fallback to other fields if needed
         phoneNumber = phoneNumber || messageData.phoneNumber;
+        
+        // Log extraction for debugging
+        logger.info('Phone number extraction:', {
+          direction: messageData.direction,
+          from: messageData.from,
+          to: messageData.to,
+          extracted: phoneNumber
+        });
         
         // Try multiple fields for contact name, fallback to phone number
         const customerName = messageData.contactName || 
@@ -104,18 +112,19 @@ router.post('/webhook', async (req: Request, res: Response) => {
           break;
         }
         
-        // Build message object (text is the correct field per API docs)
+        // Build message object (body is the field from webhook)
         const newMessage = {
           id: messageData.id,
           type: type,
           from: messageData.from,
-          to: Array.isArray(messageData.to) ? messageData.to : [messageData.to],
-          text: messageData.text || messageData.body || '', // 'text' is the correct field
-          body: messageData.text || messageData.body || '', // Keep both for compatibility
+          to: messageData.to, // Keep original format
+          text: messageData.body || messageData.text || '', // body is primary field
+          body: messageData.body || messageData.text || '', // Keep both for compatibility
           direction: messageData.direction || 'inbound',
           createdAt: messageData.createdAt || new Date().toISOString(),
           media: messageData.media || [],
-          status: messageData.status
+          status: messageData.status,
+          conversationId: messageData.conversationId
         };
         
         // Use phone number as the consistent conversation ID
