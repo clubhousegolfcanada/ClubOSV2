@@ -167,9 +167,9 @@ export default function Messages() {
           const updated = response.data.data.find((c: Conversation) => c.id === selectedConversation.id);
           if (updated) {
             // Check if there are new messages
-            const currentMessageIds = messages.map(m => m.id);
+            const currentMessageIds = messages.map((m: Message) => m.id);
             const updatedMessages = Array.isArray(updated.messages) ? updated.messages : [];
-            const hasNewMessages = updatedMessages.some(m => !currentMessageIds.includes(m.id));
+            const hasNewMessages = updatedMessages.some((m: Message) => !currentMessageIds.includes(m.id));
             
             // Update the conversation and messages
             setSelectedConversation(updated);
