@@ -63,14 +63,7 @@ import { sanitizeMiddleware } from './middleware/requestValidation';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Trust proxy - required for proper IP detection on Railway
-app.set('trust proxy', true);
-
-// Sentry request handler must be first middleware
-app.use(sentryRequestHandler);
-app.use(sentryTracingHandler);
-
-// Add health check early for Railway deployment
+// CRITICAL: Health check must be the VERY FIRST route for Railway deployment
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -78,9 +71,16 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
-    database: 'initializing'
+    database: db.initialized ? 'connected' : 'initializing'
   });
 });
+
+// Trust proxy - required for proper IP detection on Railway
+app.set('trust proxy', true);
+
+// Sentry request handler must be first middleware after health check
+app.use(sentryRequestHandler);
+app.use(sentryTracingHandler);
 
 // Middleware
 app.use(helmet({
@@ -240,6 +240,18 @@ async function startServer() {
     logger.info('🚀 Starting ClubOS Backend...');
     logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info(`📍 Port: ${PORT}`);
+    
+    // Start server immediately to respond to health checks
+    const server = app.listen(PORT, () => {
+      logger.info(`🚀 Server running on port ${PORT} (health check available)`);
+    });
+    
+    // Enable keep-alive with a longer timeout
+    server.keepAliveTimeout = 65000; // 65 seconds
+    server.headersTimeout = 66000; // 66 seconds
+    
+    // Store server instance for graceful shutdown
+    app.set('server', server);
     
     // Perform startup checks
     const { performStartupChecks } = await import('./utils/startup-check');
@@ -454,22 +466,12 @@ async function startServer() {
     } else {
       logger.warn('⚠️  Running without database in development mode');
     }
-  }
-  
-  // Start server regardless in development
-  const server = app.listen(PORT, () => {
-    logger.info(`🚀 Server running on port ${PORT}`);
-    logger.info(`📊 Database: ${db.initialized ? 'PostgreSQL' : 'Not connected'}`);
+    
+    // After database initialization, log final status
+    logger.info(`📊 Database: ${db.initialized ? 'PostgreSQL Connected' : 'Not connected'}`);
     logger.info(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info(`🛡️ Sentry: ${process.env.SENTRY_DSN ? 'Enabled' : 'Disabled'}`);
-  });
-
-  // Enable keep-alive with a longer timeout
-  server.keepAliveTimeout = 65000; // 65 seconds
-  server.headersTimeout = 66000; // 66 seconds
-
-  // Store server instance for graceful shutdown
-  app.set('server', server);
+  }
 }
 
 // Graceful shutdown handler
