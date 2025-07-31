@@ -55,8 +55,7 @@ export default function Messages() {
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const [editingSuggestion, setEditingSuggestion] = useState(false);
   const [editedSuggestionText, setEditedSuggestionText] = useState('');
-  const [touchStart, setTouchStart] = useState(0);
-  const [pullDistance, setPullDistance] = useState(0);
+  // Removed pull-to-refresh states for better native feel
   const [isInIframe, setIsInIframe] = useState(false);
 
   // Check auth
@@ -449,28 +448,7 @@ export default function Messages() {
     }
   };
 
-  // Pull to refresh handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientY);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!messagesContainerRef.current) return;
-    
-    const touchY = e.touches[0].clientY;
-    const diff = touchY - touchStart;
-    
-    if (messagesContainerRef.current.scrollTop === 0 && diff > 0) {
-      setPullDistance(Math.min(diff, 80));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (pullDistance > 60) {
-      loadConversations(true);
-    }
-    setPullDistance(0);
-  };
+  // Removed pull-to-refresh handlers for better native feel
 
   const formatMessageDate = (date: string) => {
     const messageDate = new Date(date);
@@ -501,7 +479,9 @@ export default function Messages() {
       <Head>
         <title>ClubOS - Messages</title>
         <meta name="description" content="OpenPhone SMS messaging interface" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
@@ -834,7 +814,7 @@ export default function Messages() {
         </div>
 
         {/* Mobile Layout - Optimized for native-like experience */}
-        <div className="md:hidden h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
+        <div className="md:hidden flex flex-col bg-[var(--bg-primary)]" style={{ height: '100vh', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Header - Fixed at top */}
           <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
             <div className="px-4 py-3">
@@ -883,7 +863,7 @@ export default function Messages() {
           </div>
 
           {/* Main Content Area - Flex container */}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0 }}>
             {/* Conversations List - Mobile optimized */}
             <div className={`${selectedConversation ? 'hidden' : 'flex'} flex-col w-full`}>
               {/* Search */}
@@ -904,16 +884,9 @@ export default function Messages() {
               <div 
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+                style={{ WebkitOverflowScrolling: 'touch' }}
               >
-                {/* Pull to Refresh Indicator */}
-                {pullDistance > 0 && (
-                  <div className="flex items-center justify-center py-4" style={{ height: pullDistance }}>
-                    <RefreshCw className={`w-5 h-5 text-[var(--text-muted)] ${pullDistance > 60 ? 'animate-spin' : ''}`} />
-                  </div>
-                )}
+                {/* Removed pull to refresh for better native feel */}
 
                 {/* Conversations */}
                 {loading && !refreshing ? (
@@ -1001,7 +974,7 @@ export default function Messages() {
                   </div>
 
                   {/* Messages - Mobile optimized with better spacing */}
-                  <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <div className="flex-1 overflow-y-auto px-4 py-4" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
                     {messages && messages.length > 0 ? (
                       <div className="space-y-3">
                         {messages.map((message, index) => (
@@ -1106,7 +1079,7 @@ export default function Messages() {
                   )}
                   
                   {/* Message Input - Mobile optimized */}
-                  <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3">
+                  <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
@@ -1130,14 +1103,16 @@ export default function Messages() {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type a message..."
-                        className="flex-1 px-4 py-2.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-full text-sm focus:outline-none focus:border-[var(--accent)]"
+                        className="flex-1 px-4 py-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-full text-base focus:outline-none focus:border-[var(--accent)]"
                         disabled={sending}
+                        style={{ fontSize: '16px' }} // Prevents zoom on iOS
                       />
                       
                       <button
                         type="submit"
                         disabled={!newMessage.trim() || sending}
-                        className="p-2.5 bg-[var(--accent)] text-white rounded-full active:scale-95 transition-transform disabled:opacity-50 disabled:active:scale-100"
+                        className="p-3 bg-[var(--accent)] text-white rounded-full disabled:opacity-50"
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
                         <Send className="w-5 h-5" />
                       </button>
