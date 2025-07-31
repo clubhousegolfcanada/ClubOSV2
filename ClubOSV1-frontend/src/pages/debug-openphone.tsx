@@ -126,6 +126,26 @@ export default function DebugOpenPhone() {
     }
   };
 
+  const repairPhoneNumbers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.post(`${API_URL}/debug-openphone/repair-phone-numbers`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success(response.data.data.message || 'Phone numbers repaired');
+      // Refresh data
+      checkDatabase();
+      checkRawData();
+    } catch (error: any) {
+      toast.error('Failed to repair phone numbers: ' + error.message);
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const sendTestMessage = async () => {
     if (!testPhone) {
       toast.error('Please enter a phone number');
@@ -300,13 +320,22 @@ export default function DebugOpenPhone() {
                   <AlertCircle className="w-5 h-5" />
                   Raw Data Analysis
                 </h2>
-                <button
-                  onClick={checkRawData}
-                  disabled={loading}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
-                >
-                  Check Raw Data
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={checkRawData}
+                    disabled={loading}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                  >
+                    Check Raw Data
+                  </button>
+                  <button
+                    onClick={repairPhoneNumbers}
+                    disabled={loading}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    Repair Phone Numbers
+                  </button>
+                </div>
               </div>
               
               {rawData && (
@@ -325,15 +354,24 @@ export default function DebugOpenPhone() {
                     <div>
                       <h3 className="font-medium mb-2">First 5 Conversations (Raw)</h3>
                       <div className="space-y-2 text-xs">
-                        {rawData.rawData.slice(0, 5).map((conv: any) => (
+                        {rawData.rawData.slice(0, 10).map((conv: any, index: number) => (
                           <div key={conv.id} className="p-2 bg-[var(--bg-primary)] rounded border border-[var(--border-primary)]">
+                            <div className="font-medium">Conversation {index + 1}:</div>
                             <div>ID: {conv.id}</div>
                             <div>Phone: {conv.phone_number || 'NULL'}</div>
                             <div>Name: {conv.customer_name || 'NULL'}</div>
                             <div>Messages: {conv.messageCount}</div>
+                            {conv.metadata && (
+                              <div className="mt-1">
+                                <div>Metadata: {JSON.stringify(conv.metadata).substring(0, 100)}...</div>
+                              </div>
+                            )}
                             {conv.firstMessage && (
                               <div className="mt-1 text-[var(--text-muted)]">
-                                First msg: {JSON.stringify(conv.firstMessage).substring(0, 100)}...
+                                <div>First msg from: {conv.firstMessage.from || 'NULL'}</div>
+                                <div>First msg to: {JSON.stringify(conv.firstMessage.to) || 'NULL'}</div>
+                                <div>Direction: {conv.firstMessage.direction || 'NULL'}</div>
+                                <div>Text: {(conv.firstMessage.text || conv.firstMessage.body || 'NO TEXT').substring(0, 50)}...</div>
                               </div>
                             )}
                           </div>

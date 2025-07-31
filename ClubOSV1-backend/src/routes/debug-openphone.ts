@@ -144,7 +144,8 @@ router.get('/raw-conversations',
           messages,
           created_at,
           updated_at,
-          metadata
+          metadata,
+          conversation_id
         FROM openphone_conversations
         ORDER BY created_at DESC
         LIMIT 50
@@ -180,6 +181,95 @@ router.get('/raw-conversations',
       });
     } catch (error: any) {
       logger.error('Raw conversations query failed', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+);
+
+// NEW: Repair phone numbers from message data
+router.post('/repair-phone-numbers',
+  authenticate,
+  roleGuard(['admin']),
+  async (req, res) => {
+    try {
+      logger.info('Starting phone number repair process');
+      
+      // Get all conversations with NULL or invalid phone numbers
+      const brokenConversations = await db.query(`
+        SELECT id, messages, metadata
+        FROM openphone_conversations
+        WHERE phone_number IS NULL 
+           OR phone_number = 'Unknown' 
+           OR phone_number = ''
+      `);
+      
+      let repaired = 0;
+      let failed = 0;
+      
+      for (const conv of brokenConversations.rows) {
+        try {
+          let phoneNumber = null;
+          let customerName = null;
+          
+          // Try to extract phone number from messages
+          if (Array.isArray(conv.messages) && conv.messages.length > 0) {
+            const firstMessage = conv.messages[0];
+            
+            // Determine phone number based on direction
+            if (firstMessage.direction === 'incoming' || firstMessage.direction === 'inbound') {
+              phoneNumber = firstMessage.from;
+            } else if (firstMessage.direction === 'outgoing' || firstMessage.direction === 'outbound') {
+              // For outbound, customer is the recipient
+              phoneNumber = Array.isArray(firstMessage.to) ? firstMessage.to[0] : firstMessage.to;
+            }
+            
+            // If still no phone number, try both from and to
+            if (!phoneNumber) {
+              phoneNumber = firstMessage.from || (Array.isArray(firstMessage.to) ? firstMessage.to[0] : firstMessage.to);
+            }
+          }
+          
+          // Try metadata if no phone number found
+          if (!phoneNumber && conv.metadata) {
+            phoneNumber = conv.metadata.phoneNumber || conv.metadata.phone_number;
+          }
+          
+          if (phoneNumber && phoneNumber !== 'Unknown') {
+            // Update the conversation with the repaired phone number
+            await db.query(`
+              UPDATE openphone_conversations
+              SET phone_number = $1,
+                  customer_name = COALESCE(customer_name, $1),
+                  updated_at = NOW()
+              WHERE id = $2
+            `, [phoneNumber, conv.id]);
+            
+            repaired++;
+            logger.info(`Repaired conversation ${conv.id} with phone number ${phoneNumber}`);
+          } else {
+            failed++;
+            logger.warn(`Could not repair conversation ${conv.id} - no valid phone number found`);
+          }
+        } catch (error) {
+          failed++;
+          logger.error(`Failed to repair conversation ${conv.id}:`, error);
+        }
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          totalBroken: brokenConversations.rows.length,
+          repaired,
+          failed,
+          message: `Repaired ${repaired} conversations, ${failed} failed`
+        }
+      });
+    } catch (error: any) {
+      logger.error('Phone number repair failed', error);
       res.status(500).json({
         success: false,
         error: error.message

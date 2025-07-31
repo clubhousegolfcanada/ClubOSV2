@@ -29,6 +29,7 @@ interface Conversation {
   unread_count: number;
   updated_at: string;
   lastMessage?: Message;
+  _debug_invalid_phone?: boolean;
 }
 
 export default function Messages() {
