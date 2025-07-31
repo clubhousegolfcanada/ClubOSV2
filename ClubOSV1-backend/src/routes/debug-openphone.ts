@@ -114,9 +114,7 @@ router.post('/sync-conversations',
       for (const conv of conversations) {
         try {
           // Extract phone number properly
-          const phoneNumber = conv.phoneNumber || 
-                            conv.participants?.find((p: any) => p.phoneNumber)?.phoneNumber ||
-                            conv.contact?.phoneNumber;
+          const phoneNumber = conv.phoneNumber || conv.contact?.phoneNumber;
           
           if (!phoneNumber || phoneNumber === 'Unknown') {
             logger.warn('Skipping conversation without valid phone number', conv);
