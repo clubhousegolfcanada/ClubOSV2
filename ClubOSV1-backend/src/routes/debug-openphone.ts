@@ -128,6 +128,66 @@ router.get('/database-check',
   }
 );
 
+// NEW: Get raw conversation data without filtering
+router.get('/raw-conversations',
+  authenticate,
+  roleGuard(['admin']),
+  async (req, res) => {
+    try {
+      // Get ALL conversations without any filtering
+      const result = await db.query(`
+        SELECT 
+          id,
+          phone_number,
+          customer_name,
+          employee_name,
+          messages,
+          created_at,
+          updated_at,
+          metadata
+        FROM openphone_conversations
+        ORDER BY created_at DESC
+        LIMIT 50
+      `);
+      
+      // Also get a count of different phone number states
+      const phoneStats = await db.query(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN phone_number IS NULL THEN 1 END) as null_phones,
+          COUNT(CASE WHEN phone_number = 'Unknown' THEN 1 END) as unknown_phones,
+          COUNT(CASE WHEN phone_number = '' THEN 1 END) as empty_phones,
+          COUNT(CASE WHEN phone_number IS NOT NULL AND phone_number != 'Unknown' AND phone_number != '' THEN 1 END) as valid_phones
+        FROM openphone_conversations
+      `);
+      
+      res.json({
+        success: true,
+        data: {
+          conversations: result.rows,
+          stats: phoneStats.rows[0],
+          totalFound: result.rows.length,
+          rawData: result.rows.map(row => ({
+            id: row.id,
+            phone_number: row.phone_number,
+            customer_name: row.customer_name,
+            hasMessages: Array.isArray(row.messages) && row.messages.length > 0,
+            messageCount: Array.isArray(row.messages) ? row.messages.length : 0,
+            firstMessage: Array.isArray(row.messages) && row.messages.length > 0 ? row.messages[0] : null,
+            metadata: row.metadata
+          }))
+        }
+      });
+    } catch (error: any) {
+      logger.error('Raw conversations query failed', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+);
+
 // Test OpenPhone connection
 router.get('/test-connection',
   authenticate,

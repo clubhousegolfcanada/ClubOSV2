@@ -298,6 +298,9 @@ export default function Messages() {
                             <span className="font-medium text-sm">
                               {conv.customer_name || 'Unknown'}
                             </span>
+                            {conv._debug_invalid_phone && (
+                              <span className="text-xs text-red-500">[Invalid]</span>
+                            )}
                           </div>
                           {conv.unread_count > 0 && (
                             <span className="bg-[var(--accent)] text-white text-xs px-2 py-0.5 rounded-full">

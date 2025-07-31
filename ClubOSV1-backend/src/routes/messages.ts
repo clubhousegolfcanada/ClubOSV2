@@ -102,21 +102,26 @@ router.get('/conversations',
         throw queryError;
       }
       
-      // Filter out conversations without valid phone numbers
-      const validConversations = result.rows.filter(row => {
+      // TEMPORARILY DISABLED: Show ALL conversations for debugging
+      // TODO: Re-enable filtering once we fix phone number extraction
+      const validConversations = result.rows.map(row => {
         const isValid = row.phone_number && 
                        row.phone_number !== 'Unknown' && 
                        row.phone_number.trim() !== '';
         
         if (!isValid) {
-          logger.warn('Filtering out conversation with invalid phone number', {
+          logger.warn('Found conversation with invalid phone number', {
             id: row.id,
             phone_number: row.phone_number,
             customer_name: row.customer_name
           });
         }
         
-        return isValid;
+        // Return all conversations, but mark invalid ones
+        return {
+          ...row,
+          _debug_invalid_phone: !isValid
+        };
       });
       
       logger.info('Returning conversations', {

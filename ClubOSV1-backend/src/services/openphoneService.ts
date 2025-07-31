@@ -156,21 +156,44 @@ export class OpenPhoneService {
           // Fetch full message history
           const messages = await this.fetchConversationMessages(conversation.id);
 
-          // Store in database
+          // Extract phone number from conversation or first message
+          let phoneNumber = conversation.phoneNumber || conversation.contact?.phoneNumber;
+          
+          // If no phone number in conversation, try to extract from messages
+          if (!phoneNumber && messages.length > 0) {
+            const firstMessage = messages[0];
+            if (firstMessage.direction === 'incoming' || firstMessage.direction === 'inbound') {
+              phoneNumber = firstMessage.from;
+            } else {
+              phoneNumber = Array.isArray(firstMessage.to) ? firstMessage.to[0] : firstMessage.to;
+            }
+          }
+          
+          if (!phoneNumber || phoneNumber === 'Unknown') {
+            logger.warn('Skipping conversation without valid phone number', {
+              conversationId: conversation.id,
+              phoneNumber: phoneNumber
+            });
+            stats.skipped++;
+            continue;
+          }
+
+          // Store in database with better phone number extraction
           await db.query(`
             INSERT INTO openphone_conversations 
-            (phone_number, customer_name, employee_name, messages, metadata)
-            VALUES ($1, $2, $3, $4, $5)
+            (phone_number, customer_name, employee_name, messages, metadata, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
           `, [
-            conversation.phoneNumber || conversation.contact?.phoneNumber || 'Unknown',
-            conversation.contact?.name || 'Unknown Customer',
+            phoneNumber,
+            conversation.contact?.name || phoneNumber, // Use phone as fallback name
             'Historical Import',
             JSON.stringify(messages),
             {
               openPhoneId: conversation.id,
               imported: true,
               importedAt: new Date().toISOString(),
-              lastMessageAt: conversation.lastMessageAt
+              lastMessageAt: conversation.lastMessageAt,
+              originalData: conversation // Store original for debugging
             }
           ]);
 

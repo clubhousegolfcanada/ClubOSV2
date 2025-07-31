@@ -65,7 +65,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'conversation.updated':
         // Extract data - handle both direct data and nested object structure
         const messageData = data.object || data;
-        const phoneNumber = messageData.from || messageData.to || messageData.phoneNumber;
+        
+        // Fix: Handle 'to' as an array per OpenPhone API docs
+        let phoneNumber;
+        if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
+          // For incoming messages, the customer is the sender
+          phoneNumber = messageData.from;
+        } else {
+          // For outgoing messages, the customer is the recipient
+          // 'to' is an array, so take the first element
+          phoneNumber = Array.isArray(messageData.to) ? messageData.to[0] : messageData.to;
+        }
+        
+        // Fallback to other fields if needed
+        phoneNumber = phoneNumber || messageData.phoneNumber;
         
         // Try multiple fields for contact name, fallback to phone number
         const customerName = messageData.contactName || 
@@ -91,17 +104,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
           break;
         }
         
-        // Build message object (normalize body/text field)
+        // Build message object (text is the correct field per API docs)
         const newMessage = {
           id: messageData.id,
           type: type,
           from: messageData.from,
-          to: messageData.to,
-          text: messageData.body || messageData.text || '',
-          body: messageData.body || messageData.text || '', // Keep both for compatibility
-          direction: messageData.direction,
+          to: Array.isArray(messageData.to) ? messageData.to : [messageData.to],
+          text: messageData.text || messageData.body || '', // 'text' is the correct field
+          body: messageData.text || messageData.body || '', // Keep both for compatibility
+          direction: messageData.direction || 'inbound',
           createdAt: messageData.createdAt || new Date().toISOString(),
-          media: messageData.media || []
+          media: messageData.media || [],
+          status: messageData.status
         };
         
         // Use phone number as the consistent conversation ID
@@ -467,10 +481,32 @@ router.post('/webhook-test', async (req: Request, res: Response) => {
   console.log('WEBHOOK TEST RECEIVED:', JSON.stringify(req.body, null, 2));
   logger.info('Webhook test received', { body: req.body });
   
+  // Extract and analyze the data
+  const { type, data } = req.body;
+  const messageData = data?.object || data;
+  
+  const analysis = {
+    type,
+    hasData: !!data,
+    hasObject: !!(data?.object),
+    messageFields: messageData ? Object.keys(messageData) : [],
+    from: messageData?.from,
+    to: messageData?.to,
+    toIsArray: Array.isArray(messageData?.to),
+    text: messageData?.text,
+    body: messageData?.body,
+    direction: messageData?.direction,
+    userId: messageData?.userId,
+    phoneNumberId: messageData?.phoneNumberId
+  };
+  
+  console.log('WEBHOOK ANALYSIS:', JSON.stringify(analysis, null, 2));
+  
   res.json({
     success: true,
     message: 'Webhook test received',
-    receivedData: req.body
+    receivedData: req.body,
+    analysis
   });
 });
 

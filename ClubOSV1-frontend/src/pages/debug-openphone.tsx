@@ -14,6 +14,7 @@ export default function DebugOpenPhone() {
   const [loading, setLoading] = useState(false);
   const [dbData, setDbData] = useState<any>(null);
   const [connectionData, setConnectionData] = useState<any>(null);
+  const [rawData, setRawData] = useState<any>(null);
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('Test message from ClubOS');
 
@@ -101,6 +102,25 @@ export default function DebugOpenPhone() {
       checkDatabase(); // Refresh database view
     } catch (error: any) {
       toast.error('Import failed: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkRawData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/debug-openphone/raw-conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setRawData(response.data.data);
+      console.log('Raw data:', response.data.data);
+      toast.success('Raw data loaded - check console');
+    } catch (error: any) {
+      toast.error('Failed to load raw data: ' + error.message);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -267,6 +287,58 @@ export default function DebugOpenPhone() {
                       {connectionData.data.phoneNumbers && (
                         <div>Available Numbers: {connectionData.data.phoneNumbers.length}</div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Raw Data Check */}
+            <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Raw Data Analysis
+                </h2>
+                <button
+                  onClick={checkRawData}
+                  disabled={loading}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                >
+                  Check Raw Data
+                </button>
+              </div>
+              
+              {rawData && (
+                <div className="space-y-4">
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Phone Number Stats</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>Total: {rawData.stats?.total || 0}</div>
+                      <div>Valid: {rawData.stats?.valid_phones || 0}</div>
+                      <div>Unknown: {rawData.stats?.unknown_phones || 0}</div>
+                      <div>Null: {rawData.stats?.null_phones || 0}</div>
+                    </div>
+                  </div>
+                  
+                  {rawData.rawData && rawData.rawData.length > 0 && (
+                    <div>
+                      <h3 className="font-medium mb-2">First 5 Conversations (Raw)</h3>
+                      <div className="space-y-2 text-xs">
+                        {rawData.rawData.slice(0, 5).map((conv: any) => (
+                          <div key={conv.id} className="p-2 bg-[var(--bg-primary)] rounded border border-[var(--border-primary)]">
+                            <div>ID: {conv.id}</div>
+                            <div>Phone: {conv.phone_number || 'NULL'}</div>
+                            <div>Name: {conv.customer_name || 'NULL'}</div>
+                            <div>Messages: {conv.messageCount}</div>
+                            {conv.firstMessage && (
+                              <div className="mt-1 text-[var(--text-muted)]">
+                                First msg: {JSON.stringify(conv.firstMessage).substring(0, 100)}...
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
