@@ -231,7 +231,14 @@ router.post('/repair-phone-numbers',
           
           // Try to extract phone number from messages
           if (Array.isArray(conv.messages) && conv.messages.length > 0) {
-            const firstMessage = conv.messages[0];
+            let firstMessage = conv.messages[0];
+            
+            // Handle nested object structure
+            if (firstMessage.object) {
+              logger.info('Message has nested object structure, unwrapping...');
+              firstMessage = firstMessage.object;
+            }
+            
             logger.info(`First message structure:`, {
               hasFrom: !!firstMessage.from,
               hasTo: !!firstMessage.to,
@@ -483,16 +490,35 @@ router.get('/diagnose',
       
       let messageStructure = null;
       if (sample.rows.length > 0 && sample.rows[0].messages?.length > 0) {
-        const firstMsg = sample.rows[0].messages[0];
-        messageStructure = {
-          keys: Object.keys(firstMsg),
-          from: firstMsg.from,
-          to: firstMsg.to,
-          direction: firstMsg.direction,
-          type: firstMsg.type,
-          hasText: !!firstMsg.text,
-          hasBody: !!firstMsg.body
-        };
+        let firstMsg = sample.rows[0].messages[0];
+        
+        // Check if it has nested object structure
+        const hasNestedObject = !!firstMsg.object;
+        if (hasNestedObject && firstMsg.object) {
+          messageStructure = {
+            nested: true,
+            outerKeys: Object.keys(firstMsg),
+            innerKeys: Object.keys(firstMsg.object),
+            from: firstMsg.object.from,
+            to: firstMsg.object.to,
+            direction: firstMsg.object.direction,
+            type: firstMsg.object.type,
+            hasText: !!firstMsg.object.text,
+            hasBody: !!firstMsg.object.body,
+            body: firstMsg.object.body ? firstMsg.object.body.substring(0, 50) + '...' : null
+          };
+        } else {
+          messageStructure = {
+            nested: false,
+            keys: Object.keys(firstMsg),
+            from: firstMsg.from,
+            to: firstMsg.to,
+            direction: firstMsg.direction,
+            type: firstMsg.type,
+            hasText: !!firstMsg.text,
+            hasBody: !!firstMsg.body
+          };
+        }
       }
       
       res.json({

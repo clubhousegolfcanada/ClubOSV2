@@ -511,6 +511,16 @@ router.post('/webhook-test', async (req: Request, res: Response) => {
   
   console.log('WEBHOOK ANALYSIS:', JSON.stringify(analysis, null, 2));
   
+  // Test storing a properly formatted message
+  if (messageData?.from && messageData?.body) {
+    logger.info('Would store message with structure:', {
+      from: messageData.from,
+      to: messageData.to,
+      body: messageData.body,
+      direction: messageData.direction
+    });
+  }
+  
   res.json({
     success: true,
     message: 'Webhook test received',
