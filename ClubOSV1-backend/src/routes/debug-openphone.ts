@@ -107,7 +107,7 @@ router.post('/sync-conversations',
       logger.info('Starting OpenPhone conversation sync');
       
       // Get recent conversations from OpenPhone
-      const conversations = await openPhoneService.getConversations(10);
+      const conversations = await openPhoneService.fetchRecentConversations(10);
       
       // Store each conversation
       let synced = 0;
