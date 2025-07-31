@@ -91,11 +91,13 @@ export class EnvironmentValidator {
       type: 'number',
       min: 1,
       max: 65535,
+      default: '3001',
       description: 'Server port number'
     },
     NODE_ENV: {
       required: true,
       pattern: /^(development|production|test)$/,
+      default: 'production',
       description: 'Application environment'
     },
     JWT_SECRET: {
@@ -299,6 +301,9 @@ export class EnvironmentValidator {
         } else if (key.endsWith('_GPT_ID')) {
           const routeName = key.replace('_GPT_ID', '').replace(/_/g, ' ');
           warnings.push(`${key} not set - ${routeName} assistant will not be available`);
+        } else if (key.startsWith('VAPID_')) {
+          // VAPID keys are optional - skip validation if not provided
+          info.push(`${key} not set - push notifications will be disabled`);
         }
         return;
       }
