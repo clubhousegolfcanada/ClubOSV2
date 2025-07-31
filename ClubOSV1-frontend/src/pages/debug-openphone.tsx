@@ -33,7 +33,13 @@ export default function DebugOpenPhone() {
       });
       
       setDbData(response.data.data);
-      toast.success('Database check complete');
+      
+      // Check for missing columns
+      if (response.data.data?.missingColumns?.length > 0) {
+        toast.warning(`Missing columns: ${response.data.data.missingColumns.join(', ')}`);
+      } else {
+        toast.success('Database check complete');
+      }
     } catch (error: any) {
       toast.error('Database check failed: ' + error.message);
       console.error(error);
@@ -149,6 +155,25 @@ export default function DebugOpenPhone() {
                       <span className="ml-2 font-semibold text-red-500">{dbData.invalidPhoneNumbers}</span>
                     </div>
                   </div>
+                  
+                  {/* Table Structure Info */}
+                  {(dbData.missingColumns?.length > 0 || dbData.tableColumns) && (
+                    <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                        Table Structure Issues
+                      </p>
+                      {dbData.missingColumns?.length > 0 && (
+                        <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                          Missing columns: {dbData.missingColumns.join(', ')}
+                        </p>
+                      )}
+                      {dbData.tableColumns && (
+                        <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                          Existing columns: {dbData.tableColumns.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   
                   {dbData.conversations.length > 0 && (
                     <div>

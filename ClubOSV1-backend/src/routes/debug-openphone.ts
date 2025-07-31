@@ -13,56 +13,116 @@ router.get('/database-check',
   roleGuard(['admin']),
   async (req, res) => {
     try {
+      // First check if table exists
+      const tableExists = await db.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'openphone_conversations'
+        )
+      `);
+      
+      if (!tableExists.rows[0].exists) {
+        return res.json({
+          success: false,
+          error: 'Table openphone_conversations does not exist',
+          data: {
+            databaseStatus: 'connected',
+            tableExists: false,
+            needsMigration: true
+          }
+        });
+      }
+      
+      // First check what columns exist
+      const columnCheck = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'openphone_conversations'
+      `);
+      
+      const columns = columnCheck.rows.map(r => r.column_name);
+      logger.info('OpenPhone table columns:', columns);
+      
+      // Build dynamic query based on existing columns
+      const selectColumns = ['id'];
+      
+      if (columns.includes('phone_number')) selectColumns.push('phone_number');
+      if (columns.includes('customer_name')) selectColumns.push('customer_name');
+      if (columns.includes('employee_name')) selectColumns.push('employee_name');
+      if (columns.includes('created_at')) selectColumns.push('created_at');
+      if (columns.includes('updated_at')) selectColumns.push('updated_at');
+      if (columns.includes('messages')) selectColumns.push('jsonb_array_length(messages) as message_count');
+      
       // Get all conversations from database
       const allConversations = await db.query(`
-        SELECT 
-          id,
-          phone_number,
-          customer_name,
-          employee_name,
-          created_at,
-          updated_at,
-          jsonb_array_length(messages) as message_count
+        SELECT ${selectColumns.join(', ')}
         FROM openphone_conversations
-        ORDER BY created_at DESC
+        ORDER BY ${columns.includes('created_at') ? 'created_at' : 'id'} DESC
         LIMIT 20
       `);
 
-      // Get count of invalid phone numbers
-      const invalidCount = await db.query(`
-        SELECT COUNT(*) as count
-        FROM openphone_conversations
-        WHERE phone_number IS NULL 
-           OR phone_number = 'Unknown' 
-           OR phone_number = ''
-      `);
+      // Get count of invalid phone numbers only if column exists
+      let invalidCount = { rows: [{ count: 0 }] };
+      if (columns.includes('phone_number')) {
+        invalidCount = await db.query(`
+          SELECT COUNT(*) as count
+          FROM openphone_conversations
+          WHERE phone_number IS NULL 
+             OR phone_number = 'Unknown' 
+             OR phone_number = ''
+        `);
+      }
 
-      // Get sample of messages
-      const sampleMessages = await db.query(`
-        SELECT 
-          phone_number,
-          messages->0 as first_message,
-          messages->-1 as last_message
-        FROM openphone_conversations
-        WHERE messages IS NOT NULL
-        LIMIT 5
-      `);
+      // Get sample of messages only if columns exist
+      let sampleMessages = { rows: [] };
+      if (columns.includes('messages') && columns.includes('phone_number')) {
+        sampleMessages = await db.query(`
+          SELECT 
+            phone_number,
+            messages->0 as first_message,
+            messages->-1 as last_message
+          FROM openphone_conversations
+          WHERE messages IS NOT NULL
+          LIMIT 5
+        `);
+      }
 
       res.json({
         success: true,
         data: {
           totalConversations: allConversations.rows.length,
           conversations: allConversations.rows,
-          invalidPhoneNumbers: invalidCount.rows[0].count,
+          invalidPhoneNumbers: invalidCount.rows[0]?.count || 0,
           sampleMessages: sampleMessages.rows,
-          databaseStatus: 'connected'
+          databaseStatus: 'connected',
+          tableColumns: columns,
+          missingColumns: ['phone_number', 'customer_name', 'employee_name', 'messages', 'created_at', 'updated_at']
+            .filter(col => !columns.includes(col))
         }
       });
     } catch (error: any) {
       logger.error('Database check failed', error);
+      
+      // Check if it's a column doesn't exist error
+      if (error.code === '42703') {
+        return res.json({
+          success: false,
+          error: `Column missing: ${error.message}`,
+          data: {
+            databaseStatus: 'connected',
+            tableExists: true,
+            missingColumn: true,
+            errorCode: error.code,
+            detail: error.detail || 'Column missing in openphone_conversations table'
+          }
+        });
+      }
+      
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message,
+        errorCode: error.code,
+        detail: error.detail
       });
     }
   }
