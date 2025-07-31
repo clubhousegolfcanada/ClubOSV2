@@ -7,6 +7,8 @@ import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { openPhoneService } from '../services/openphoneService';
 import { notificationService } from '../services/notificationService';
+import { ensureOpenPhoneColumns } from '../utils/database-helpers';
+import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../utils/openphone-db-helpers';
 
 const router = Router();
 
@@ -26,6 +28,9 @@ function verifyOpenPhoneSignature(payload: string, signature: string, secret: st
 // OpenPhone webhook handler
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
+    // Ensure database columns exist before processing webhook
+    await ensureOpenPhoneColumns();
+    
     // Get raw body for signature verification if available
     const rawBody = (req as any).rawBody || JSON.stringify(req.body);
     const signature = req.headers['x-openphone-signature'] as string;
@@ -119,21 +124,16 @@ router.post('/webhook', async (req: Request, res: Response) => {
           // Update conversation and increment unread count if inbound
           const unreadIncrement = messageData.direction === 'inbound' ? 1 : 0;
           
-          await db.query(`
-            UPDATE openphone_conversations 
-            SET messages = $1,
-                updated_at = CURRENT_TIMESTAMP,
-                customer_name = COALESCE(customer_name, $2),
-                employee_name = COALESCE(employee_name, $3),
-                unread_count = COALESCE(unread_count, 0) + $4
-            WHERE id = $5
-          `, [
-            JSON.stringify(updatedMessages),
+          // Calculate new unread count
+          const currentUnreadCount = existingConv.rows[0].unread_count || 0;
+          const newUnreadCount = currentUnreadCount + unreadIncrement;
+          
+          await updateOpenPhoneConversation(existingConv.rows[0].id, {
+            messages: updatedMessages,
+            unreadCount: newUnreadCount,
             customerName,
-            employeeName,
-            unreadIncrement,
-            existingConv.rows[0].id
-          ]);
+            employeeName
+          });
           
           logger.info('OpenPhone message appended to customer conversation', { 
             conversationId,
@@ -187,24 +187,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
         const newConversationId = conversationId;
         const initialUnreadCount = messageData.direction === 'inbound' ? 1 : 0;
         
-        await db.query(`
-          INSERT INTO openphone_conversations 
-          (conversation_id, phone_number, customer_name, employee_name, messages, metadata, unread_count)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `, [
-          newConversationId,
+        // Use safe insert helper that handles missing columns
+        await insertOpenPhoneConversation({
+          conversationId: newConversationId,
           phoneNumber,
           customerName,
           employeeName,
-          JSON.stringify([newMessage]),
-          JSON.stringify({ 
+          messages: [newMessage],
+          metadata: { 
             openPhoneId: messageData.id,
             openPhoneConversationId: messageData.conversationId,
             type,
             firstMessageAt: new Date().toISOString()
-          }),
-          initialUnreadCount
-        ]);
+          },
+          unreadCount: initialUnreadCount
+        });
         
         logger.info('OpenPhone new conversation created (time-based split)', { 
           conversationId: newConversationId, 
@@ -274,32 +271,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const messages = existingCallConv.rows[0].messages || [];
           messages.push(callMessage);
           
-          await db.query(`
-            UPDATE openphone_conversations
-            SET messages = $1,
-                updated_at = CURRENT_TIMESTAMP,
-                customer_name = COALESCE(customer_name, $2),
-                employee_name = COALESCE(employee_name, $3)
-            WHERE id = $4
-          `, [
-            JSON.stringify(messages),
-            data.contactName || callPhoneNumber,
-            data.userName || 'Unknown',
-            existingCallConv.rows[0].id
-          ]);
+          await updateOpenPhoneConversation(existingCallConv.rows[0].id, {
+            messages,
+            customerName: data.contactName || callPhoneNumber,
+            employeeName: data.userName || 'Unknown'
+          });
         } else {
           // Create new
-          await db.query(`
-            INSERT INTO openphone_conversations 
-            (conversation_id, phone_number, customer_name, employee_name, messages, metadata, unread_count)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-          `, [
-            callConversationId,
-            callPhoneNumber,
-            data.contactName || callPhoneNumber,
-            data.userName || 'Unknown',
-            JSON.stringify([callMessage]),
-            JSON.stringify({ 
+          await insertOpenPhoneConversation({
+            conversationId: callConversationId,
+            phoneNumber: callPhoneNumber,
+            customerName: data.contactName || callPhoneNumber,
+            employeeName: data.userName || 'Unknown',
+            messages: [callMessage],
+            metadata: { 
               openPhoneId: data.id,
               type,
               callDetails: {
@@ -307,9 +292,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 direction: data.direction,
                 recording: data.recordingUrl
               }
-            }),
-            0 // Calls start with 0 unread count
-          ]);
+            },
+            unreadCount: 0 // Calls start with 0 unread count
+          });
         
         }
         
@@ -322,82 +307,70 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
       case 'call.summary.completed':
         // Store AI-generated call summary
-        await db.query(`
-          INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata, unread_count)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `, [
-          data.phoneNumber || data.to || data.from,
-          data.contactName || 'Unknown',
-          data.userName || 'Unknown',
-          JSON.stringify([{
+        await insertOpenPhoneConversation({
+          phoneNumber: data.phoneNumber || data.to || data.from,
+          customerName: data.contactName || 'Unknown',
+          employeeName: data.userName || 'Unknown',
+          messages: [{
             type: 'call_summary',
             summary: data.summary,
             timestamp: data.timestamp || new Date().toISOString()
-          }]),
-          JSON.stringify({ 
+          }],
+          metadata: { 
             openPhoneId: data.id,
             callId: data.callId,
             type,
             aiGenerated: true
-          }),
-          0 // Summaries don't affect unread count
-        ]);
+          },
+          unreadCount: 0 // Summaries don't affect unread count
+        });
         
         logger.info('OpenPhone AI call summary stored', { phoneNumber: data.phoneNumber });
         break;
 
       case 'call.transcript.completed':
         // Store call transcript
-        await db.query(`
-          INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata, unread_count)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `, [
-          data.phoneNumber || data.to || data.from,
-          data.contactName || 'Unknown',
-          data.userName || 'Unknown',
-          JSON.stringify([{
+        await insertOpenPhoneConversation({
+          phoneNumber: data.phoneNumber || data.to || data.from,
+          customerName: data.contactName || 'Unknown',
+          employeeName: data.userName || 'Unknown',
+          messages: [{
             type: 'call_transcript',
             transcript: data.transcript,
             timestamp: data.timestamp || new Date().toISOString()
-          }]),
-          JSON.stringify({ 
+          }],
+          metadata: { 
             openPhoneId: data.id,
             callId: data.callId,
             type,
             transcriptUrl: data.transcriptUrl
-          }),
-          0 // Transcripts don't affect unread count
-        ]);
+          },
+          unreadCount: 0 // Transcripts don't affect unread count
+        });
         
         logger.info('OpenPhone call transcript stored', { phoneNumber: data.phoneNumber });
         break;
 
       case 'call.recording.completed':
         // Store call recording URL
-        await db.query(`
-          INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata, unread_count)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `, [
-          data.phoneNumber || data.to || data.from,
-          data.contactName || 'Unknown',
-          data.userName || 'Unknown',
-          JSON.stringify([{
+        await insertOpenPhoneConversation({
+          phoneNumber: data.phoneNumber || data.to || data.from,
+          customerName: data.contactName || 'Unknown',
+          employeeName: data.userName || 'Unknown',
+          messages: [{
             type: 'call_recording',
             recordingUrl: data.recordingUrl,
             duration: data.duration,
             timestamp: data.timestamp || new Date().toISOString()
-          }]),
-          JSON.stringify({ 
+          }],
+          metadata: { 
             openPhoneId: data.id,
             callId: data.callId,
             type,
             recordingUrl: data.recordingUrl
-          }),
-          0 // Recordings don't affect unread count
-        ]);
+          },
+          unreadCount: 0 // Recordings don't affect unread count
+        });
         
         logger.info('OpenPhone call recording stored', { phoneNumber: data.phoneNumber });
         break;
