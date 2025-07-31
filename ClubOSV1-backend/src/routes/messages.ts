@@ -11,12 +11,32 @@ import { messageSendLimiter } from '../middleware/rateLimiter';
 const router = Router();
 
 // Health check endpoint
-router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    service: 'messages',
-    timestamp: new Date().toISOString() 
-  });
+router.get('/health', async (req, res) => {
+  try {
+    // Test OpenPhone connection
+    const openPhoneConnected = await openPhoneService.testConnection();
+    
+    res.json({ 
+      status: 'ok', 
+      service: 'messages',
+      timestamp: new Date().toISOString(),
+      openPhone: {
+        connected: openPhoneConnected,
+        configured: !!process.env.OPENPHONE_API_KEY
+      }
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'degraded', 
+      service: 'messages',
+      timestamp: new Date().toISOString(),
+      openPhone: {
+        connected: false,
+        configured: !!process.env.OPENPHONE_API_KEY,
+        error: 'Connection test failed'
+      }
+    });
+  }
 });
 
 // Get all conversations
@@ -257,11 +277,24 @@ router.post('/send',
       
       // Return more detailed error response
       if (error.response?.status) {
-        // OpenPhone API error
-        return res.status(error.response.status).json({
+        // OpenPhone API error - use enhanced error message if available
+        const userMessage = error.userMessage || 
+                          error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'OpenPhone API error';
+        
+        // Map OpenPhone status codes to appropriate HTTP responses
+        let responseStatus = error.response.status;
+        if (responseStatus === 429) {
+          // For rate limit, return 503 Service Unavailable
+          responseStatus = 503;
+        }
+        
+        return res.status(responseStatus).json({
           success: false,
-          error: error.response?.data?.message || error.response?.data?.error || 'OpenPhone API error',
-          details: error.response?.data
+          error: userMessage,
+          code: error.response?.data?.code,
+          details: process.env.NODE_ENV === 'development' ? error.response?.data : undefined
         });
       }
       

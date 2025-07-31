@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
+import { openPhoneRateLimiter } from '../utils/openphone-rate-limiter';
 
 interface OpenPhoneConfig {
   apiKey: string;
@@ -65,12 +66,14 @@ export class OpenPhoneService {
     try {
       logger.info(`Fetching ${limit} recent conversations from OpenPhone`);
       
-      const response = await this.client.get('/conversations', {
-        params: {
-          limit,
-          sort: 'lastMessageAt:desc'
-        }
-      });
+      const response = await openPhoneRateLimiter.execute(() => 
+        this.client.get('/conversations', {
+          params: {
+            limit,
+            sort: 'lastMessageAt:desc'
+          }
+        })
+      );
 
       const conversations = response.data.data || [];
       logger.info(`Fetched ${conversations.length} conversations from OpenPhone`);
@@ -91,12 +94,14 @@ export class OpenPhoneService {
     }
 
     try {
-      const response = await this.client.get(`/conversations/${conversationId}/messages`, {
-        params: {
-          limit: 100,
-          sort: 'createdAt:asc'
-        }
-      });
+      const response = await openPhoneRateLimiter.execute(() =>
+        this.client.get(`/conversations/${conversationId}/messages`, {
+          params: {
+            limit: 100,
+            sort: 'createdAt:asc'
+          }
+        })
+      );
 
       return response.data.data || [];
     } catch (error: any) {
@@ -266,7 +271,9 @@ export class OpenPhoneService {
       logger.debug('OpenPhone API payload:', payload);
       
       // Format the request according to OpenPhone v1 API
-      const response = await v1Client.post('/messages', payload);
+      const response = await openPhoneRateLimiter.execute(() =>
+        v1Client.post('/messages', payload)
+      );
 
       // Store message in database
       await this.storeOutboundMessage({
@@ -280,11 +287,46 @@ export class OpenPhoneService {
 
       return response.data;
     } catch (error: any) {
-      logger.error('Failed to send OpenPhone message:', {
-        error: error.response?.data || error.message,
-        status: error.response?.status,
+      const status = error.response?.status;
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      
+      // Enhanced error logging based on status code
+      let errorContext = {
+        status,
+        error: errorMessage,
+        data: error.response?.data,
         headers: error.response?.headers
-      });
+      };
+      
+      // Handle specific OpenPhone error codes
+      switch (status) {
+        case 400:
+          logger.error('OpenPhone API: Bad Request - Invalid parameters', errorContext);
+          break;
+        case 401:
+          logger.error('OpenPhone API: Unauthorized - Invalid API key', errorContext);
+          break;
+        case 403:
+          logger.error('OpenPhone API: Forbidden - Insufficient permissions or feature not enabled', errorContext);
+          if (errorMessage.includes('international')) {
+            logger.error('International messaging may not be enabled for this workspace');
+          }
+          break;
+        case 404:
+          logger.error('OpenPhone API: Resource not found', errorContext);
+          break;
+        case 409:
+          logger.error('OpenPhone API: Conflict with another request', errorContext);
+          break;
+        case 429:
+          logger.error('OpenPhone API: Rate limit exceeded', errorContext);
+          break;
+        case 500:
+          logger.error('OpenPhone API: Server error', errorContext);
+          break;
+        default:
+          logger.error('OpenPhone API: Unknown error', errorContext);
+      }
       
       // Store failed message
       await this.storeOutboundMessage({
@@ -293,9 +335,17 @@ export class OpenPhoneService {
         from,
         text,
         status: 'failed',
-        error: error.response?.data?.message || error.message,
+        error: errorMessage,
+        errorCode: status,
         createdAt: new Date().toISOString()
       });
+      
+      // Enhance error message for common issues
+      if (status === 403 && errorMessage.includes('international')) {
+        error.userMessage = 'International messaging is not enabled. Please contact support to enable this feature.';
+      } else if (status === 401) {
+        error.userMessage = 'API authentication failed. Please check your OpenPhone API key configuration.';
+      }
       
       throw error;
     }
@@ -336,12 +386,14 @@ export class OpenPhoneService {
     }
 
     try {
-      const response = await this.client.get('/contacts', {
-        params: {
-          phoneNumber: phoneNumber,
-          limit: 1
-        }
-      });
+      const response = await openPhoneRateLimiter.execute(() =>
+        this.client.get('/contacts', {
+          params: {
+            phoneNumber: phoneNumber,
+            limit: 1
+          }
+        })
+      );
 
       if (response.data.data && response.data.data.length > 0) {
         return response.data.data[0];
@@ -374,7 +426,9 @@ export class OpenPhoneService {
         }
       });
       
-      const response = await v1Client.get('/phone-numbers');
+      const response = await openPhoneRateLimiter.execute(() =>
+        v1Client.get('/phone-numbers')
+      );
       return response.data.data || [];
     } catch (error: any) {
       logger.error('Failed to fetch phone numbers:', error.response?.data || error.message);
@@ -418,7 +472,9 @@ export class OpenPhoneService {
         }
       });
       
-      const response = await v1Client.get('/users');
+      const response = await openPhoneRateLimiter.execute(() =>
+        v1Client.get('/users')
+      );
       return response.data.data || [];
     } catch (error: any) {
       logger.error('Failed to fetch OpenPhone users:', error.response?.data || error.message);
