@@ -1,11 +1,11 @@
 import Head from 'next/head';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2 } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -42,7 +42,10 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const { isSupported, permission, isSubscribed, isLoading: notificationLoading, subscribe, unsubscribe } = usePushNotifications();
   const [isClient, setIsClient] = useState(false);
@@ -51,6 +54,8 @@ export default function Messages() {
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const [editingSuggestion, setEditingSuggestion] = useState(false);
   const [editedSuggestionText, setEditedSuggestionText] = useState('');
+  const [touchStart, setTouchStart] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
 
   // Check auth
   useEffect(() => {
@@ -77,13 +82,22 @@ export default function Messages() {
     };
   }, []);
 
-  // Don't auto-scroll on conversation selection
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  const loadConversations = async () => {
+  const loadConversations = async (showRefreshIndicator = false) => {
+    if (showRefreshIndicator) {
+      setRefreshing(true);
+    }
+    
     try {
       const token = localStorage.getItem('clubos_token');
       if (!token) {
@@ -104,18 +118,21 @@ export default function Messages() {
       if (response.data.success) {
         console.log('Loaded conversations:', response.data.data);
         setConversations(response.data.data);
+        
+        // Update selected conversation if it exists
+        if (selectedConversation) {
+          const updated = response.data.data.find((c: Conversation) => c.id === selectedConversation.id);
+          if (updated) {
+            setSelectedConversation(updated);
+            setMessages(Array.isArray(updated.messages) ? updated.messages : []);
+          }
+        }
       } else {
         console.error('API returned success: false', response.data);
         toast.error(response.data.error || 'Failed to load conversations');
       }
     } catch (error: any) {
       console.error('Failed to load conversations:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        url: `${API_URL}/messages/conversations`
-      });
       
       if (error.response?.status === 401) {
         toast.error('Session expired. Please log in again.');
@@ -127,6 +144,7 @@ export default function Messages() {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -156,6 +174,13 @@ export default function Messages() {
         console.error('Failed to mark as read:', error);
       }
     }
+    
+    // Scroll to bottom to show most recent messages
+    setTimeout(() => {
+      scrollToBottom('instant');
+      // Focus input on mobile
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const sendMessage = async () => {
@@ -167,6 +192,9 @@ export default function Messages() {
     }
     
     setSending(true);
+    const messageText = newMessage.trim();
+    setNewMessage(''); // Clear input immediately for better UX
+    
     try {
       const token = localStorage.getItem('clubos_token');
       if (!token) {
@@ -175,14 +203,11 @@ export default function Messages() {
         return;
       }
       
-      console.log('Sending message with token:', token ? 'Token exists' : 'No token');
-      console.log('Token length:', token?.length);
-      
       const response = await axios.post(
         `${API_URL}/messages/send`,
         {
           to: selectedConversation.phone_number,
-          text: newMessage.trim()
+          text: messageText
         },
         { 
           headers: { 
@@ -196,7 +221,7 @@ export default function Messages() {
         // Add message to local state
         const sentMessage: Message = {
           id: response.data.data.id,
-          text: newMessage.trim(),
+          text: messageText,
           from: response.data.data.from || '',
           to: selectedConversation.phone_number,
           direction: 'outbound',
@@ -205,7 +230,6 @@ export default function Messages() {
         };
         
         setMessages([...messages, sentMessage]);
-        setNewMessage('');
         
         // Scroll to bottom after sending
         setTimeout(scrollToBottom, 100);
@@ -215,9 +239,8 @@ export default function Messages() {
       }
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      console.error('Error response:', error.response);
+      setNewMessage(messageText); // Restore message on error
       
-      // Show more detailed error message
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           error.message || 
@@ -225,25 +248,9 @@ export default function Messages() {
       
       toast.error(errorMessage);
       
-      // If it's a 401 error, handle authentication failure
       if (error.response?.status === 401) {
-        console.error('Authentication failed:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
-        });
         toast.error('Session expired. Please log in again.');
         router.push('/login');
-        return;
-      }
-      
-      // If it's a 500 error, show additional info
-      if (error.response?.status === 500) {
-        console.error('Server error details:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
-        });
       }
     } finally {
       setSending(false);
@@ -322,6 +329,41 @@ export default function Messages() {
     }
   };
 
+  // Pull to refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!messagesContainerRef.current) return;
+    
+    const touchY = e.touches[0].clientY;
+    const diff = touchY - touchStart;
+    
+    if (messagesContainerRef.current.scrollTop === 0 && diff > 0) {
+      setPullDistance(Math.min(diff, 80));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 60) {
+      loadConversations(true);
+    }
+    setPullDistance(0);
+  };
+
+  const formatMessageDate = (date: string) => {
+    const messageDate = new Date(date);
+    
+    if (isToday(messageDate)) {
+      return format(messageDate, 'h:mm a');
+    } else if (isYesterday(messageDate)) {
+      return `Yesterday ${format(messageDate, 'h:mm a')}`;
+    } else {
+      return format(messageDate, 'MMM d, h:mm a');
+    }
+  };
+
   const filteredConversations = conversations.filter(c => {
     if (!c) return false;
     if (!searchTerm) return true;
@@ -339,310 +381,600 @@ export default function Messages() {
       <Head>
         <title>ClubOS - Messages</title>
         <meta name="description" content="OpenPhone SMS messaging interface" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          {/* Header */}
-          <div className="mb-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
-                  Messages
-                </h1>
-                <p className="text-[var(--text-secondary)] text-sm font-light">
-                  Send and receive SMS messages with customers via OpenPhone
-                </p>
-              </div>
-              
-              {/* Push Notification Toggle */}
-              {isClient && isSupported && (
-                <div className="flex items-center gap-2">
-                  {notificationLoading ? (
-                    <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
-                      <span className="text-sm text-[var(--text-muted)]">Loading...</span>
-                    </div>
-                  ) : isSubscribed ? (
-                    <button
-                      onClick={unsubscribe}
-                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                      title="Disable push notifications"
-                    >
-                      <Bell className="w-4 h-4" />
-                      <span className="text-sm hidden sm:inline">Notifications On</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={subscribe}
-                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                      title="Enable push notifications"
-                    >
-                      <BellOff className="w-4 h-4" />
-                      <span className="text-sm hidden sm:inline">Notifications Off</span>
-                    </button>
-                  )}
+        {/* Desktop Layout - Standard ClubOS design */}
+        <div className="hidden md:block">
+          <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+            {/* Header Section */}
+            <div className="mb-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
+                    Messages
+                  </h1>
+                  <p className="text-[var(--text-secondary)] text-sm font-light">
+                    Send and receive SMS messages with customers via OpenPhone
+                  </p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Messages Interface */}
-          <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-180px)]">
-              
-              {/* Conversations List */}
-              <div className={`${selectedConversation ? 'hidden md:block' : 'block'} border-r border-[var(--border-secondary)] overflow-y-auto`}>
-                {/* Search */}
-                <div className="p-4 border-b border-[var(--border-secondary)]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                    <input
-                      type="text"
-                      placeholder="Search by name or number..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Conversation Items */}
-                <div className="divide-y divide-[var(--border-secondary)]">
-                  {loading ? (
-                    <div className="p-4 text-center text-[var(--text-muted)]">
-                      Loading conversations...
-                    </div>
-                  ) : filteredConversations.length === 0 ? (
-                    <div className="p-4 text-center text-[var(--text-muted)]">
-                      No conversations found
-                    </div>
-                  ) : (
-                    filteredConversations.map(conv => (
-                      <div
-                        key={conv.id}
-                        onClick={() => selectConversation(conv)}
-                        className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors ${
-                          selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
-                        }`}
+                
+                {/* Push Notification Toggle */}
+                {isClient && isSupported && (
+                  <div className="flex items-center gap-2">
+                    {notificationLoading ? (
+                      <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
+                        <span className="text-sm text-[var(--text-muted)]">Loading...</span>
+                      </div>
+                    ) : isSubscribed ? (
+                      <button
+                        onClick={unsubscribe}
+                        className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                        title="Disable push notifications"
                       >
-                        <div className="flex items-start justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-[var(--text-muted)]" />
-                            <span className="font-medium text-sm">
-                              {conv.customer_name || 'Unknown'}
-                            </span>
-                            {conv._debug_invalid_phone && (
-                              <span className="text-xs text-red-500">[Invalid]</span>
-                            )}
-                          </div>
-                          {conv.unread_count > 0 && (
-                            <span className="bg-[var(--accent)] text-white text-xs px-2 py-0.5 rounded-full">
-                              {conv.unread_count}
-                            </span>
-                          )}
-                        </div>
-                        {conv.phone_number && (
-                          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
-                            <Phone className="w-3 h-3" />
-                            <span>{conv.phone_number}</span>
-                          </div>
-                        )}
-                        {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
-                          <p className="text-xs text-[var(--text-secondary)] truncate">
-                            {conv.lastMessage.direction === 'outbound' && 'You: '}
-                            {conv.lastMessage.text || conv.lastMessage.body}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                          <span className="text-xs text-[var(--text-muted)]">
-                            {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 'Recently'}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Messages Area */}
-              <div className={`${selectedConversation ? 'block' : 'hidden md:block'} col-span-2 flex flex-col h-full overflow-hidden`}>
-                {selectedConversation ? (
-                  <>
-                    {/* Conversation Header */}
-                    <div className="p-4 border-b border-[var(--border-secondary)]">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {/* Mobile back button */}
-                          <button
-                            onClick={() => setSelectedConversation(null)}
-                            className="md:hidden p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
-                            aria-label="Back to conversations"
-                          >
-                            <ArrowLeft className="w-5 h-5" />
-                          </button>
-                          <div>
-                            <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
-                            <p className="text-sm text-[var(--text-muted)]">
-                              {selectedConversation.phone_number || 'No phone number'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`tel:${selectedConversation.phone_number}`}
-                            className="p-2 rounded-lg bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                            title="Call customer"
-                          >
-                            <Phone className="w-4 h-4" />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {messages && messages.length > 0 ? messages.map((message, index) => (
-                        <div
-                          key={message.id || index}
-                          className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div className={`max-w-[70%] ${
-                            message.direction === 'outbound'
-                              ? 'bg-[var(--accent)] text-white'
-                              : 'bg-[var(--bg-tertiary)]'
-                          } rounded-lg px-4 py-2`}>
-                            <p className="text-sm">{message.text || message.body || ''}</p>
-                            <p className={`text-xs mt-1 ${
-                              message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
-                            }`}>
-                              {isClient && message.createdAt ? format(new Date(message.createdAt), 'h:mm a') : ''}
-                            </p>
-                          </div>
-                        </div>
-                      )) : (
-                        <div className="text-center text-[var(--text-muted)] py-8">
-                          <p>No messages yet. Send a message to start the conversation.</p>
-                        </div>
-                      )}
-                      <div ref={messagesEndRef} />
-                    </div>
-
-                    {/* AI Suggestion */}
-                    {showAiSuggestion && aiSuggestion && (
-                      <div className="p-4 border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)]">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-[var(--accent)]" />
-                            <span className="text-sm font-medium">AI Suggestion</span>
-                            <span className="text-xs text-[var(--text-muted)]">
-                              ({Math.round(aiSuggestion.confidence * 100)}% confidence)
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setShowAiSuggestion(false);
-                              setAiSuggestion(null);
-                            }}
-                            className="p-1 hover:bg-[var(--bg-secondary)] rounded"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                        
-                        {editingSuggestion ? (
-                          <textarea
-                            value={editedSuggestionText}
-                            onChange={(e) => setEditedSuggestionText(e.target.value)}
-                            className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm mb-2"
-                            rows={3}
-                          />
-                        ) : (
-                          <p className="text-sm mb-2">{aiSuggestion.suggestedText}</p>
-                        )}
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={async () => {
-                              if (editingSuggestion) {
-                                // Send edited suggestion
-                                await sendAiSuggestion(aiSuggestion.id, editedSuggestionText);
-                              } else {
-                                // Send original suggestion
-                                await sendAiSuggestion(aiSuggestion.id);
-                              }
-                            }}
-                            className="flex items-center gap-2 px-3 py-1 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 text-sm"
-                            disabled={sending}
-                          >
-                            <Check className="w-3 h-3" />
-                            Send
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              setEditingSuggestion(!editingSuggestion);
-                              if (!editingSuggestion) {
-                                setEditedSuggestionText(aiSuggestion.suggestedText);
-                              }
-                            }}
-                            className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-primary)] text-sm"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            {editingSuggestion ? 'Cancel Edit' : 'Edit'}
-                          </button>
-                        </div>
-                      </div>
+                        <Bell className="w-4 h-4" />
+                        <span className="text-sm">Notifications On</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={subscribe}
+                        className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                        title="Enable push notifications"
+                      >
+                        <BellOff className="w-4 h-4" />
+                        <span className="text-sm">Notifications Off</span>
+                      </button>
                     )}
-                    
-                    {/* Message Input */}
-                    <div className="p-4 border-t border-[var(--border-secondary)]">
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          sendMessage();
-                        }}
-                        className="flex gap-2"
-                      >
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          placeholder="Type a message..."
-                          className="flex-1 px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
-                          disabled={sending}
-                        />
-                        <button
-                          type="button"
-                          onClick={getAiSuggestion}
-                          disabled={loadingSuggestion || !selectedConversation || messages.length === 0}
-                          className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50 transition-colors flex items-center gap-2"
-                          title="Get AI suggestion"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          <span className="hidden sm:inline">AI</span>
-                        </button>
-                        
-                        <button
-                          type="submit"
-                          disabled={!newMessage.trim() || sending}
-                          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
-                        >
-                          <Send className="w-4 h-4" />
-                          <span className="hidden sm:inline">Send</span>
-                        </button>
-                      </form>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
-                    <div className="text-center">
-                      <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Select a conversation to start messaging</p>
-                    </div>
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Messages Interface */}
+            <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
+              <div className="grid grid-cols-3 h-[calc(100vh-180px)]">
+                
+                {/* Conversations List */}
+                <div className="border-r border-[var(--border-secondary)] overflow-y-auto">
+                  {/* Search */}
+                  <div className="p-4 border-b border-[var(--border-secondary)]">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                      <input
+                        type="text"
+                        placeholder="Search by name or number..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Conversation Items */}
+                  <div className="divide-y divide-[var(--border-secondary)]">
+                    {loading ? (
+                      <div className="p-4 text-center text-[var(--text-muted)]">
+                        Loading conversations...
+                      </div>
+                    ) : filteredConversations.length === 0 ? (
+                      <div className="p-4 text-center text-[var(--text-muted)]">
+                        No conversations found
+                      </div>
+                    ) : (
+                      filteredConversations.map(conv => (
+                        <div
+                          key={conv.id}
+                          onClick={() => selectConversation(conv)}
+                          className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors ${
+                            selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-[var(--text-muted)]" />
+                              <span className="font-medium text-sm">
+                                {conv.customer_name || 'Unknown'}
+                              </span>
+                              {conv._debug_invalid_phone && (
+                                <span className="text-xs text-red-500">[Invalid]</span>
+                              )}
+                            </div>
+                            {conv.unread_count > 0 && (
+                              <span className="bg-[var(--accent)] text-white text-xs px-2 py-0.5 rounded-full">
+                                {conv.unread_count}
+                              </span>
+                            )}
+                          </div>
+                          {conv.phone_number && (
+                            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
+                              <Phone className="w-3 h-3" />
+                              <span>{conv.phone_number}</span>
+                            </div>
+                          )}
+                          {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
+                            <p className="text-xs text-[var(--text-secondary)] truncate">
+                              {conv.lastMessage.direction === 'outbound' && 'You: '}
+                              {conv.lastMessage.text || conv.lastMessage.body}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                            <span className="text-xs text-[var(--text-muted)]">
+                              {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 'Recently'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Messages Area */}
+                <div className="col-span-2 flex flex-col h-full overflow-hidden">
+                  {selectedConversation ? (
+                    <>
+                      {/* Conversation Header */}
+                      <div className="p-4 border-b border-[var(--border-secondary)]">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
+                              <p className="text-sm text-[var(--text-muted)]">
+                                {selectedConversation.phone_number || 'No phone number'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${selectedConversation.phone_number}`}
+                              className="p-2 rounded-lg bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                              title="Call customer"
+                            >
+                              <Phone className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Messages */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {messages && messages.length > 0 ? messages.map((message, index) => (
+                          <div
+                            key={message.id || index}
+                            className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[70%] ${
+                              message.direction === 'outbound'
+                                ? 'bg-[var(--accent)] text-white'
+                                : 'bg-[var(--bg-tertiary)]'
+                            } rounded-lg px-4 py-2`}>
+                              <p className="text-sm">{message.text || message.body || ''}</p>
+                              <p className={`text-xs mt-1 ${
+                                message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
+                              }`}>
+                                {isClient && message.createdAt ? format(new Date(message.createdAt), 'h:mm a') : ''}
+                              </p>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="text-center text-[var(--text-muted)] py-8">
+                            <p>No messages yet. Send a message to start the conversation.</p>
+                          </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                      </div>
+
+                      {/* AI Suggestion */}
+                      {showAiSuggestion && aiSuggestion && (
+                        <div className="p-4 border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)]">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                              <span className="text-sm font-medium">AI Suggestion</span>
+                              <span className="text-xs text-[var(--text-muted)]">
+                                ({Math.round(aiSuggestion.confidence * 100)}% confidence)
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setShowAiSuggestion(false);
+                                setAiSuggestion(null);
+                              }}
+                              className="p-1 hover:bg-[var(--bg-secondary)] rounded"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          {editingSuggestion ? (
+                            <textarea
+                              value={editedSuggestionText}
+                              onChange={(e) => setEditedSuggestionText(e.target.value)}
+                              className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm mb-2"
+                              rows={3}
+                            />
+                          ) : (
+                            <p className="text-sm mb-2">{aiSuggestion.suggestedText}</p>
+                          )}
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                if (editingSuggestion) {
+                                  await sendAiSuggestion(aiSuggestion.id, editedSuggestionText);
+                                } else {
+                                  await sendAiSuggestion(aiSuggestion.id);
+                                }
+                              }}
+                              className="flex items-center gap-2 px-3 py-1 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 text-sm"
+                              disabled={sending}
+                            >
+                              <Check className="w-3 h-3" />
+                              Send
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                setEditingSuggestion(!editingSuggestion);
+                                if (!editingSuggestion) {
+                                  setEditedSuggestionText(aiSuggestion.suggestedText);
+                                }
+                              }}
+                              className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-primary)] text-sm"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              {editingSuggestion ? 'Cancel Edit' : 'Edit'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Message Input */}
+                      <div className="p-4 border-t border-[var(--border-secondary)]">
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            sendMessage();
+                          }}
+                          className="flex gap-2"
+                        >
+                          <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type a message..."
+                            className="flex-1 px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
+                            disabled={sending}
+                          />
+                          <button
+                            type="button"
+                            onClick={getAiSuggestion}
+                            disabled={loadingSuggestion || !selectedConversation || messages.length === 0}
+                            className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50 transition-colors flex items-center gap-2"
+                            title="Get AI suggestion"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            <span>AI</span>
+                          </button>
+                          
+                          <button
+                            type="submit"
+                            disabled={!newMessage.trim() || sending}
+                            className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
+                          >
+                            <Send className="w-4 h-4" />
+                            <span>Send</span>
+                          </button>
+                        </form>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
+                      <div className="text-center">
+                        <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>Select a conversation to start messaging</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Layout - Optimized for native-like experience */}
+        <div className="md:hidden h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
+          {/* Header - Fixed at top */}
+          <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between">
+                <h1 className="text-xl font-semibold text-[var(--text-primary)]">Messages</h1>
+                
+                {/* Push Notification Toggle */}
+                {isClient && isSupported && (
+                  <button
+                    onClick={isSubscribed ? unsubscribe : subscribe}
+                    className="p-2 rounded-full hover:bg-[var(--bg-tertiary)] transition-colors"
+                    disabled={notificationLoading}
+                    title={isSubscribed ? "Disable notifications" : "Enable notifications"}
+                  >
+                    {notificationLoading ? (
+                      <RefreshCw className="w-5 h-5 text-[var(--text-muted)] animate-spin" />
+                    ) : isSubscribed ? (
+                      <Bell className="w-5 h-5 text-[var(--accent)]" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-[var(--text-muted)]" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Area - Flex container */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Conversations List - Mobile optimized */}
+            <div className={`${selectedConversation ? 'hidden' : 'flex'} flex-col w-full`}>
+              {/* Search */}
+              <div className="flex-shrink-0 p-3 border-b border-[var(--border-secondary)]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="Search conversations..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-full text-sm focus:outline-none focus:border-[var(--accent)]"
+                  />
+                </div>
+              </div>
+
+              {/* Conversation List with Pull to Refresh */}
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* Pull to Refresh Indicator */}
+                {pullDistance > 0 && (
+                  <div className="flex items-center justify-center py-4" style={{ height: pullDistance }}>
+                    <RefreshCw className={`w-5 h-5 text-[var(--text-muted)] ${pullDistance > 60 ? 'animate-spin' : ''}`} />
+                  </div>
+                )}
+
+                {/* Conversations */}
+                {loading && !refreshing ? (
+                  <div className="p-8 text-center text-[var(--text-muted)]">
+                    <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                    Loading conversations...
+                  </div>
+                ) : filteredConversations.length === 0 ? (
+                  <div className="p-8 text-center text-[var(--text-muted)]">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No conversations found</p>
+                  </div>
+                ) : (
+                  filteredConversations.map(conv => (
+                    <div
+                      key={conv.id}
+                      onClick={() => selectConversation(conv)}
+                      className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] active:bg-[var(--bg-tertiary)] transition-colors ${
+                        selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-[var(--text-primary)] truncate">
+                              {conv.customer_name || 'Unknown'}
+                            </span>
+                            {conv.unread_count > 0 && (
+                              <span className="bg-[var(--accent)] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                {conv.unread_count}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)] truncate">
+                            {conv.phone_number}
+                          </p>
+                        </div>
+                        <span className="text-xs text-[var(--text-muted)] ml-2 flex-shrink-0">
+                          {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : ''}
+                        </span>
+                      </div>
+                      {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
+                        <p className="text-sm text-[var(--text-secondary)] truncate">
+                          {conv.lastMessage.direction === 'outbound' && <span className="text-[var(--text-muted)]">You: </span>}
+                          {conv.lastMessage.text || conv.lastMessage.body}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Messages Area - Mobile optimized */}
+            <div className={`${selectedConversation ? 'flex' : 'hidden'} flex-col flex-1 bg-[var(--bg-primary)]`}>
+              {selectedConversation && (
+                <>
+                  {/* Conversation Header - Mobile optimized */}
+                  <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          onClick={() => setSelectedConversation(null)}
+                          className="p-1 -ml-1 rounded-full hover:bg-[var(--bg-tertiary)] transition-colors"
+                        >
+                          <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-[var(--text-primary)] truncate">
+                            {selectedConversation.customer_name || 'Unknown'}
+                          </h3>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {selectedConversation.phone_number}
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={`tel:${selectedConversation.phone_number}`}
+                        className="p-2 rounded-full hover:bg-[var(--bg-tertiary)] transition-colors"
+                        title="Call customer"
+                      >
+                        <Phone className="w-5 h-5 text-[var(--accent)]" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Messages - Mobile optimized with better spacing */}
+                  <div className="flex-1 overflow-y-auto px-4 py-4">
+                    {messages && messages.length > 0 ? (
+                      <div className="space-y-3">
+                        {messages.map((message, index) => (
+                          <div
+                            key={message.id || index}
+                            className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[85%] ${
+                              message.direction === 'outbound'
+                                ? 'bg-[var(--accent)] text-white rounded-2xl rounded-br-sm'
+                                : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-2xl rounded-bl-sm'
+                            } px-4 py-2 shadow-sm`}>
+                              <p className="text-sm whitespace-pre-wrap break-words">
+                                {message.text || message.body || ''}
+                              </p>
+                              <p className={`text-xs mt-1 ${
+                                message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
+                              }`}>
+                                {isClient && message.createdAt ? formatMessageDate(message.createdAt) : ''}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-center text-[var(--text-muted)] px-8">
+                        <div>
+                          <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                          <p className="text-sm">No messages yet</p>
+                          <p className="text-xs mt-1">Send a message to start the conversation</p>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* AI Suggestion - Mobile optimized */}
+                  {showAiSuggestion && aiSuggestion && (
+                    <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                          <span className="text-sm font-medium">AI Suggestion</span>
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {Math.round(aiSuggestion.confidence * 100)}%
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowAiSuggestion(false);
+                            setAiSuggestion(null);
+                          }}
+                          className="p-1 -mr-1 rounded-full hover:bg-[var(--bg-tertiary)]"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      {editingSuggestion ? (
+                        <textarea
+                          value={editedSuggestionText}
+                          onChange={(e) => setEditedSuggestionText(e.target.value)}
+                          className="w-full p-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm mb-3 resize-none focus:outline-none focus:border-[var(--accent)]"
+                          rows={3}
+                          autoFocus
+                        />
+                      ) : (
+                        <p className="text-sm mb-3 p-3 bg-[var(--bg-primary)] rounded-lg">
+                          {aiSuggestion.suggestedText}
+                        </p>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            if (editingSuggestion) {
+                              await sendAiSuggestion(aiSuggestion.id, editedSuggestionText);
+                            } else {
+                              await sendAiSuggestion(aiSuggestion.id);
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--accent)] text-white rounded-lg font-medium text-sm active:scale-95 transition-transform"
+                          disabled={sending}
+                        >
+                          <Check className="w-4 h-4" />
+                          Send
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setEditingSuggestion(!editingSuggestion);
+                            if (!editingSuggestion) {
+                              setEditedSuggestionText(aiSuggestion.suggestedText);
+                            }
+                          }}
+                          className="px-4 py-2.5 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg font-medium text-sm active:scale-95 transition-transform"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Message Input - Mobile optimized */}
+                  <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        sendMessage();
+                      }}
+                      className="flex gap-2 items-end"
+                    >
+                      <button
+                        type="button"
+                        onClick={getAiSuggestion}
+                        disabled={loadingSuggestion || !selectedConversation || messages.length === 0}
+                        className="p-2.5 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-full active:scale-95 transition-transform disabled:opacity-50 disabled:active:scale-100"
+                        title="Get AI suggestion"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                      </button>
+                      
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-2.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-full text-sm focus:outline-none focus:border-[var(--accent)]"
+                        disabled={sending}
+                      />
+                      
+                      <button
+                        type="submit"
+                        disabled={!newMessage.trim() || sending}
+                        className="p-2.5 bg-[var(--accent)] text-white rounded-full active:scale-95 transition-transform disabled:opacity-50 disabled:active:scale-100"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </form>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

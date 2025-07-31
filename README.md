@@ -39,6 +39,7 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
   - Real-time notifications, unread badges
   - International phone number support
   - Rate limiting: 30 msg/min, 10 API calls/sec
+  - Push notifications for new messages (works in background)
 - **Call Transcripts**: Extract knowledge from customer calls, searchable archive
 
 #### 3. User System
@@ -127,12 +128,12 @@ railway logs            # Check production logs
 - ✅ OpenPhone conversation analysis
 - ✅ Feedback tracking
 - ✅ Two-way SMS messaging interface
-- 🔄 Push notifications (backend complete, frontend pending)
+- ✅ Push notifications for new messages (background notifications supported)
 
 ### Environment Variables
 **Frontend** (.env.local):
 - `NEXT_PUBLIC_API_URL` - Backend URL
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` - Push notification public key (pending)
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` - Push notification public key (REQUIRED for notifications)
 
 **Backend** (.env):
 - `DATABASE_URL` - PostgreSQL connection
@@ -143,10 +144,16 @@ railway logs            # Check production logs
 - `OPENPHONE_WEBHOOK_SECRET` - Webhook verification
 - `OPENPHONE_DEFAULT_NUMBER` - Default sending number
 - `ENCRYPTION_KEY` - Data encryption key (REQUIRED for privacy features)
-- `VAPID_PUBLIC_KEY` - Push notification public key (pending)
-- `VAPID_PRIVATE_KEY` - Push notification private key (pending)
-- `VAPID_EMAIL` - mailto: contact for push service (pending)
+- `VAPID_PUBLIC_KEY` - Push notification public key (REQUIRED for notifications)
+- `VAPID_PRIVATE_KEY` - Push notification private key (REQUIRED for notifications)
+- `VAPID_EMAIL` - mailto: contact for push service (REQUIRED for notifications)
 - See `.env.example` for complete list
+
+**Generate VAPID Keys**:
+```bash
+cd ClubOSV1-backend
+node scripts/generate-vapid-keys.js
+```
 
 ## 🔧 Common Tasks
 
