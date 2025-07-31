@@ -18,6 +18,7 @@ export default function DebugOpenPhone() {
   const [diagnosticData, setDiagnosticData] = useState<any>(null);
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('Test message from ClubOS');
+  const [isClient, setIsClient] = useState(false);
 
   // Check auth
   useEffect(() => {
@@ -25,6 +26,11 @@ export default function DebugOpenPhone() {
       router.push('/');
     }
   }, [user, router]);
+
+  // Set client-side flag
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const checkDatabase = async () => {
     setLoading(true);
@@ -275,7 +281,7 @@ export default function DebugOpenPhone() {
                                 <td className="py-2">{conv.phone_number || 'NULL'}</td>
                                 <td className="py-2">{conv.customer_name || 'NULL'}</td>
                                 <td className="py-2">{conv.message_count || 0}</td>
-                                <td className="py-2">{new Date(conv.created_at).toLocaleDateString()}</td>
+                                <td className="py-2">{isClient ? new Date(conv.created_at).toLocaleDateString() : ''}</td>
                               </tr>
                             ))}
                           </tbody>
