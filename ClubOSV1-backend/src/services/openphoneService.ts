@@ -33,7 +33,7 @@ export class OpenPhoneService {
 
   constructor(config?: OpenPhoneConfig) {
     const apiKey = config?.apiKey || process.env.OPENPHONE_API_KEY;
-    const apiUrl = config?.apiUrl || process.env.OPENPHONE_API_URL || 'https://api.openphone.com/v1';
+    const apiUrl = config?.apiUrl || process.env.OPENPHONE_API_URL || 'https://api.openphone.com/v3';
 
     this.isConfigured = !!apiKey;
 
@@ -229,15 +229,25 @@ export class OpenPhoneService {
     try {
       logger.info('Sending OpenPhone message', { to, from, text: text.substring(0, 50) });
       
-      const response = await this.client.post('/messages', {
-        to,
-        from,
-        text
+      // Create a separate client for v1 API
+      const v1Client = axios.create({
+        baseURL: 'https://api.openphone.com/v1',
+        headers: {
+          'Authorization': this.client.defaults.headers['Authorization'],
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Format the request according to OpenPhone v1 API
+      const response = await v1Client.post('/messages', {
+        content: text,
+        from: from,
+        to: [to] // API expects an array
       });
 
       // Store message in database
       await this.storeOutboundMessage({
-        id: response.data.id,
+        id: response.data.data?.id || response.data.id,
         to,
         from,
         text,
@@ -247,7 +257,11 @@ export class OpenPhoneService {
 
       return response.data;
     } catch (error: any) {
-      logger.error('Failed to send OpenPhone message:', error.response?.data || error.message);
+      logger.error('Failed to send OpenPhone message:', {
+        error: error.response?.data || error.message,
+        status: error.response?.status,
+        headers: error.response?.headers
+      });
       
       // Store failed message
       await this.storeOutboundMessage({
@@ -256,7 +270,7 @@ export class OpenPhoneService {
         from,
         text,
         status: 'failed',
-        error: error.message,
+        error: error.response?.data?.message || error.message,
         createdAt: new Date().toISOString()
       });
       
