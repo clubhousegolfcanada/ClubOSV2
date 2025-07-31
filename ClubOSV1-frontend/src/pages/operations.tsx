@@ -1842,6 +1842,24 @@ export default function Operations() {
                             </p>
                           </div>
                         )}
+
+                        {/* OpenPhone Debug Tools */}
+                        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <MessageSquare className="w-5 h-5 text-[var(--accent)]" />
+                            <h3 className="text-lg font-semibold">OpenPhone Debug Tools</h3>
+                          </div>
+                          <p className="text-sm text-[var(--text-muted)] mb-4">
+                            Debug and test OpenPhone integration, webhook processing, and message routing
+                          </p>
+                          <a
+                            href="/debug-openphone"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Open Debug Panel
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>
