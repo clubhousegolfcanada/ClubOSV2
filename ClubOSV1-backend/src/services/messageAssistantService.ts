@@ -137,15 +137,15 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
       const lowerResponse = suggestedText.toLowerCase();
       const isGeneric = genericPhrases.some(phrase => lowerResponse.includes(phrase));
       
+      // Calculate confidence based on various factors
+      let confidence = this.calculateConfidence(messages, suggestedText, relevantKnowledge);
+      
       if (isGeneric) {
         // If the response is too generic, indicate human handoff needed
         suggestedText = "I'll need to check on that and get back to you shortly.";
         // Reduce confidence significantly
         confidence = Math.min(confidence, 0.3);
       }
-      
-      // Calculate confidence based on various factors
-      const confidence = this.calculateConfidence(messages, suggestedText, relevantKnowledge);
       
       // Store the suggestion (encrypted)
       const suggestionId = await this.storeSuggestion({

@@ -1,4 +1,4 @@
-import { db } from '../utils/database';
+import { db, pool } from '../utils/database';
 import { logger } from '../utils/logger';
 
 export interface PromptTemplate {
@@ -56,7 +56,7 @@ class PromptTemplateService {
     userId: string,
     reason?: string
   ): Promise<boolean> {
-    const client = await db.getPool().connect();
+    const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
