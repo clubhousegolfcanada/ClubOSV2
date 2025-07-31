@@ -45,14 +45,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
       }
     }
 
-    const { type, data } = req.body;
+    // Handle wrapped webhook structure
+    const webhookData = req.body.object || req.body;
+    const { type, data } = webhookData;
     
     // Enhanced logging for debugging
     logger.info('OpenPhone webhook received', { 
       type, 
       dataKeys: Object.keys(data || {}),
       rawBody: JSON.stringify(req.body).substring(0, 500),
-      headers: req.headers
+      headers: req.headers,
+      hasWrappedObject: !!req.body.object
     });
     console.log('OPENPHONE WEBHOOK:', JSON.stringify({ type, data }, null, 2));
 
