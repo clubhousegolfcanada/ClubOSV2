@@ -189,7 +189,8 @@ export default function Home() {
   const responseChange = parseFloat(responseDiff) > 0 ? `+${responseDiff}s` : `${responseDiff}s`;
   const responseTrend = parseFloat(responseDiff) < 0 ? 'down' : parseFloat(responseDiff) > 0 ? 'up' : 'neutral';
 
-  const quickStats: QuickStat[] = [
+  // Only create quickStats after client-side hydration to prevent mismatches
+  const quickStats: QuickStat[] = !isClient ? [] : [
     { 
       label: 'Weekly Checklists', 
       value: weeklyChecklistCount.toString(), 

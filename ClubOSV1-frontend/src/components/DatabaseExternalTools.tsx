@@ -242,15 +242,15 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
     {
       label: 'Tech Tickets',
       icon: Wrench,
-      count: quickStats.find(s => s.label === 'Tech Tickets Open')?.value || '0',
-      onClick: quickStats.find(s => s.label === 'Tech Tickets Open')?.onClick,
+      count: quickStats.find(s => s.label === 'Tech Tickets')?.value || '0',
+      onClick: quickStats.find(s => s.label === 'Tech Tickets')?.onClick,
       active: false
     },
     {
       label: 'Facilities',
       icon: Building,
-      count: quickStats.find(s => s.label === 'Facilities Tickets')?.value || '0',
-      onClick: quickStats.find(s => s.label === 'Facilities Tickets')?.onClick,
+      count: quickStats.find(s => s.label === 'Facilities')?.value || '0',
+      onClick: quickStats.find(s => s.label === 'Facilities')?.onClick,
       active: false
     }
   ];
