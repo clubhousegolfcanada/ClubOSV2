@@ -22,6 +22,15 @@ export const usePushNotifications = () => {
 
   // Check if push notifications are supported
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      setState(prev => ({
+        ...prev,
+        isLoading: false
+      }));
+      return;
+    }
+
     const checkSupport = async () => {
       const isSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
       
@@ -50,14 +59,22 @@ export const usePushNotifications = () => {
 
   const checkSubscription = async () => {
     try {
+      // Check if we're on client side
+      if (typeof window === 'undefined' || !navigator.serviceWorker) {
+        return;
+      }
+
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       
       if (subscription) {
         // Verify with backend
+        const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
+        if (!token) return;
+        
         const response = await fetch(`${API_URL}/notifications/subscription-status`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });

@@ -32,12 +32,18 @@ export default function Home() {
   const [weeklyChecklistCount, setWeeklyChecklistCount] = useState<number>(0);
   const [techTicketsOpen, setTechTicketsOpen] = useState<number>(0);
   const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
+  const [isClient, setIsClient] = useState(false);
+  
+  // Set client flag
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   // Fetch previous period stats for comparison - only when authenticated
   useEffect(() => {
     const fetchPreviousPeriod = async () => {
-      // Only fetch if user is authenticated
-      if (!user) {
+      // Only fetch if user is authenticated and on client
+      if (!user || !isClient) {
         setPreviousStats({
           totalRequests: 0,
           averageConfidence: 0,
@@ -75,12 +81,12 @@ export default function Home() {
     };
     
     fetchPreviousPeriod();
-  }, [user]);
+  }, [user, isClient]);
   
   // Fetch weekly checklist submissions
   useEffect(() => {
     const fetchChecklistData = async () => {
-      if (!user) return;
+      if (!user || !isClient) return;
       
       try {
         const token = localStorage.getItem('clubos_token');
@@ -107,12 +113,12 @@ export default function Home() {
     };
     
     fetchChecklistData();
-  }, [user]);
+  }, [user, isClient]);
   
   // Fetch ticket stats
   useEffect(() => {
     const fetchTicketStats = async () => {
-      if (!user) return;
+      if (!user || !isClient) return;
       
       try {
         const token = localStorage.getItem('clubos_token');
@@ -152,7 +158,7 @@ export default function Home() {
     // Refresh every 30 seconds
     const interval = setInterval(fetchTicketStats, 30000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, isClient]);
   
   // Auto-refresh stats every 30 seconds - DISABLED
   // useEffect(() => {
