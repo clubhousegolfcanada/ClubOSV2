@@ -204,10 +204,10 @@ router.post('/send',
     body('from').optional().isMobilePhone('any')
   ]),
   async (req, res, next) => {
+    const { to, text, from } = req.body;
+    const fromNumber = from || process.env.OPENPHONE_DEFAULT_NUMBER;
+    
     try {
-      const { to, text, from } = req.body;
-      const fromNumber = from || process.env.OPENPHONE_DEFAULT_NUMBER;
-      
       if (!fromNumber) {
         return res.status(400).json({
           success: false,
