@@ -3,11 +3,12 @@ import Head from 'next/head';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain, MessageSquare } from 'lucide-react';
+import { Download, AlertCircle, RefreshCw, Save, Upload, Trash2, Key, Eye, EyeOff, Settings, Bell, BarChart3, CheckSquare, Calendar, Clock, MapPin, Check, X, ChevronRight, Plus, Edit2, Brain, MessageSquare, BellRing } from 'lucide-react';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { UserDebugCheck } from '@/components/UserDebugCheck';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -184,6 +185,26 @@ export default function Operations() {
   const [exportLoading, setExportLoading] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
+  // Push notifications hook
+  const { 
+    isSupported: pushSupported, 
+    permission: pushPermission, 
+    isSubscribed: pushSubscribed, 
+    isLoading: pushLoading, 
+    subscribe: subscribeToPush, 
+    unsubscribe: unsubscribeFromPush,
+    updatePreferences: updatePushPreferences 
+  } = usePushNotifications();
+  
+  // Notification preferences state
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    newMessages: true,
+    ticketUpdates: true,
+    systemAlerts: true,
+    quietHoursStart: '',
+    quietHoursEnd: ''
+  });
+  
   // Cleaning state
   const [cleaningActiveTab, setCleaningActiveTab] = useState<'checklists' | 'schedule'>('checklists');
   const [selectedCleaningCategory, setSelectedCleaningCategory] = useState<string>('all');
@@ -223,6 +244,7 @@ export default function Operations() {
       }
       if (showSystemConfig) {
         fetchSystemConfigs();
+        fetchNotificationPrefs();
       }
       if (showAnalytics) {
         fetchAnalytics();
@@ -344,6 +366,21 @@ export default function Operations() {
       toast.error('Failed to load system configurations');
     } finally {
       setConfigLoading(false);
+    }
+  };
+
+  // Fetch notification preferences
+  const fetchNotificationPrefs = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/notifications/preferences`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success && response.data.preferences) {
+        setNotificationPrefs(response.data.preferences);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notification preferences:', error);
     }
   };
 
@@ -1859,6 +1896,152 @@ export default function Operations() {
                             <Settings className="w-4 h-4" />
                             Open Debug Panel
                           </a>
+                        </div>
+
+                        {/* Push Notification Settings */}
+                        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <BellRing className="w-5 h-5 text-[var(--accent)]" />
+                            <h3 className="text-lg font-semibold">Push Notifications</h3>
+                          </div>
+                          
+                          {!pushSupported ? (
+                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                              <p className="text-sm text-yellow-400">
+                                Push notifications are not supported in this browser. Please use Chrome, Firefox, or Safari.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {/* Enable/Disable Toggle */}
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium">Enable Push Notifications</p>
+                                  <p className="text-xs text-[var(--text-muted)]">
+                                    {pushPermission === 'denied' 
+                                      ? 'Permission denied. Please enable in browser settings.'
+                                      : pushSubscribed 
+                                      ? 'You\'ll receive notifications for new messages and updates'
+                                      : 'Get notified about new messages and important updates'
+                                    }
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (pushSubscribed) {
+                                      await unsubscribeFromPush();
+                                    } else {
+                                      await subscribeToPush();
+                                    }
+                                  }}
+                                  disabled={pushLoading || pushPermission === 'denied'}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    pushSubscribed 
+                                      ? 'bg-[var(--accent)]' 
+                                      : 'bg-gray-600'
+                                  } ${pushLoading || pushPermission === 'denied' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      pushSubscribed ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+
+                              {/* Notification Preferences */}
+                              {pushSubscribed && (
+                                <>
+                                  <div className="border-t border-[var(--border-primary)] pt-4">
+                                    <h4 className="text-sm font-medium mb-3">Notification Types</h4>
+                                    <div className="space-y-3">
+                                      <label className="flex items-center justify-between">
+                                        <span className="text-sm">New Messages</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={notificationPrefs.newMessages}
+                                          onChange={(e) => {
+                                            const newPrefs = { ...notificationPrefs, newMessages: e.target.checked };
+                                            setNotificationPrefs(newPrefs);
+                                            updatePushPreferences(newPrefs);
+                                          }}
+                                          className="toggle-checkbox"
+                                        />
+                                      </label>
+                                      <label className="flex items-center justify-between">
+                                        <span className="text-sm">Ticket Updates</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={notificationPrefs.ticketUpdates}
+                                          onChange={(e) => {
+                                            const newPrefs = { ...notificationPrefs, ticketUpdates: e.target.checked };
+                                            setNotificationPrefs(newPrefs);
+                                            updatePushPreferences(newPrefs);
+                                          }}
+                                          className="toggle-checkbox"
+                                        />
+                                      </label>
+                                      <label className="flex items-center justify-between">
+                                        <span className="text-sm">System Alerts</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={notificationPrefs.systemAlerts}
+                                          onChange={(e) => {
+                                            const newPrefs = { ...notificationPrefs, systemAlerts: e.target.checked };
+                                            setNotificationPrefs(newPrefs);
+                                            updatePushPreferences(newPrefs);
+                                          }}
+                                          className="toggle-checkbox"
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  <div className="border-t border-[var(--border-primary)] pt-4">
+                                    <h4 className="text-sm font-medium mb-3">Quiet Hours</h4>
+                                    <p className="text-xs text-[var(--text-muted)] mb-3">
+                                      Pause notifications during specific hours
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="block text-xs text-[var(--text-muted)] mb-1">Start Time</label>
+                                        <input
+                                          type="time"
+                                          value={notificationPrefs.quietHoursStart}
+                                          onChange={(e) => {
+                                            const newPrefs = { ...notificationPrefs, quietHoursStart: e.target.value };
+                                            setNotificationPrefs(newPrefs);
+                                            updatePushPreferences(newPrefs);
+                                          }}
+                                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs text-[var(--text-muted)] mb-1">End Time</label>
+                                        <input
+                                          type="time"
+                                          value={notificationPrefs.quietHoursEnd}
+                                          onChange={(e) => {
+                                            const newPrefs = { ...notificationPrefs, quietHoursEnd: e.target.value };
+                                            setNotificationPrefs(newPrefs);
+                                            updatePushPreferences(newPrefs);
+                                          }}
+                                          className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Status Info */}
+                              <div className="text-xs text-[var(--text-muted)] pt-2">
+                                Status: {pushPermission === 'granted' ? '✓ Permission granted' : 
+                                        pushPermission === 'denied' ? '✗ Permission denied' : 
+                                        '○ Permission not requested'}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
