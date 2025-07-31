@@ -814,7 +814,7 @@ export default function Messages() {
         </div>
 
         {/* Mobile Layout - Optimized for native-like experience */}
-        <div className="md:hidden flex flex-col bg-[var(--bg-primary)]" style={{ height: '100vh', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <div className="md:hidden flex flex-col bg-[var(--bg-primary)]" style={{ height: '100dvh', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Header - Fixed at top */}
           <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
             <div className="px-4 py-3">
@@ -880,11 +880,14 @@ export default function Messages() {
                 </div>
               </div>
 
-              {/* Conversation List with Pull to Refresh */}
+              {/* Conversation List */}
               <div 
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto"
-                style={{ WebkitOverflowScrolling: 'touch' }}
+                style={{ 
+                  WebkitOverflowScrolling: 'touch',
+                  paddingBottom: 'env(safe-area-inset-bottom, 20px)'
+                }}
               >
                 {/* Removed pull to refresh for better native feel */}
 
@@ -900,42 +903,46 @@ export default function Messages() {
                     <p>No conversations found</p>
                   </div>
                 ) : (
-                  filteredConversations.map(conv => (
-                    <div
-                      key={conv.id}
-                      onClick={() => selectConversation(conv)}
-                      className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] active:bg-[var(--bg-tertiary)] transition-colors ${
-                        selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-1">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-[var(--text-primary)] truncate">
-                              {conv.customer_name || 'Unknown'}
-                            </span>
-                            {conv.unread_count > 0 && (
-                              <span className="bg-[var(--accent)] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                                {conv.unread_count}
+                  <>
+                    {filteredConversations.map(conv => (
+                      <div
+                        key={conv.id}
+                        onClick={() => selectConversation(conv)}
+                        className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] active:bg-[var(--bg-tertiary)] transition-colors ${
+                          selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[var(--text-primary)] truncate">
+                                {conv.customer_name || 'Unknown'}
                               </span>
-                            )}
+                              {conv.unread_count > 0 && (
+                                <span className="bg-[var(--accent)] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                  {conv.unread_count}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)] truncate">
+                              {conv.phone_number}
+                            </p>
                           </div>
-                          <p className="text-xs text-[var(--text-muted)] truncate">
-                            {conv.phone_number}
-                          </p>
+                          <span className="text-xs text-[var(--text-muted)] ml-2 flex-shrink-0">
+                            {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : ''}
+                          </span>
                         </div>
-                        <span className="text-xs text-[var(--text-muted)] ml-2 flex-shrink-0">
-                          {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : ''}
-                        </span>
+                        {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
+                          <p className="text-sm text-[var(--text-secondary)] truncate">
+                            {conv.lastMessage.direction === 'outbound' && <span className="text-[var(--text-muted)]">You: </span>}
+                            {conv.lastMessage.text || conv.lastMessage.body}
+                          </p>
+                        )}
                       </div>
-                      {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
-                        <p className="text-sm text-[var(--text-secondary)] truncate">
-                          {conv.lastMessage.direction === 'outbound' && <span className="text-[var(--text-muted)]">You: </span>}
-                          {conv.lastMessage.text || conv.lastMessage.body}
-                        </p>
-                      )}
-                    </div>
-                  ))
+                    ))}
+                    {/* Spacer to ensure last item is visible */}
+                    <div className="h-20" />
+                  </>
                 )}
               </div>
             </div>
@@ -1124,6 +1131,21 @@ export default function Messages() {
           </div>
         </div>
       </div>
+      <style jsx global>{`
+        /* Mobile keyboard handling */
+        @supports (height: 100dvh) {
+          .md\\:hidden {
+            height: 100dvh !important;
+          }
+        }
+        
+        /* Ensure conversation list is visible above keyboard */
+        @media (max-width: 768px) {
+          .conversation-list-container {
+            max-height: calc(100dvh - env(keyboard-inset-height, 0) - 120px);
+          }
+        }
+      `}</style>
     </>
   );
 }
