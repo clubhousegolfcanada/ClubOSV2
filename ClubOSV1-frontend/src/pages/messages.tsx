@@ -425,7 +425,7 @@ export default function Messages() {
                         const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
                         
                         if (newWindow) {
-                          toast.info('Opening ClubOS in a new window to enable notifications', {
+                          toast('Opening ClubOS in a new window to enable notifications', {
                             duration: 5000,
                             icon: '🔔'
                           });
@@ -736,7 +736,7 @@ export default function Messages() {
                         const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
                         
                         if (newWindow) {
-                          toast.info('Opening ClubOS in a new window to enable notifications', {
+                          toast('Opening ClubOS in a new window to enable notifications', {
                             duration: 5000,
                             icon: '🔔'
                           });
