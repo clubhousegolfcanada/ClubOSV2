@@ -365,8 +365,16 @@ export class OpenPhoneService {
       [phoneNumber]
     );
     
+    // Ensure the message has direction set to outbound
+    const outboundMessage = {
+      ...message,
+      direction: 'outbound',
+      body: message.text || message.body,
+      text: message.text || message.body
+    };
+    
     if (existingConv.rows.length > 0) {
-      const messages = [...(existingConv.rows[0].messages || []), message];
+      const messages = [...(existingConv.rows[0].messages || []), outboundMessage];
       await db.query(
         'UPDATE openphone_conversations SET messages = $1, updated_at = NOW() WHERE id = $2',
         [JSON.stringify(messages), existingConv.rows[0].id]
@@ -377,7 +385,7 @@ export class OpenPhoneService {
         `INSERT INTO openphone_conversations 
          (phone_number, customer_name, messages, created_at, updated_at) 
          VALUES ($1, $2, $3, NOW(), NOW())`,
-        [phoneNumber, phoneNumber, JSON.stringify([message])]
+        [phoneNumber, phoneNumber, JSON.stringify([outboundMessage])]
       );
     }
   }

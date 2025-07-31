@@ -147,7 +147,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           to: messageData.to, // Keep original format
           text: messageData.body || messageData.text || '', // body is primary field
           body: messageData.body || messageData.text || '', // Keep both for compatibility
-          direction: messageData.direction || 'inbound',
+          direction: (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 'inbound' : 'outbound',
           createdAt: messageData.createdAt || new Date().toISOString(),
           media: messageData.media || [],
           status: messageData.status,
@@ -172,7 +172,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const updatedMessages = [...existingMessages, newMessage];
           
           // Update conversation and increment unread count if inbound
-          const unreadIncrement = messageData.direction === 'inbound' ? 1 : 0;
+          const unreadIncrement = (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 1 : 0;
           
           // Calculate new unread count
           const currentUnreadCount = existingConv.rows[0].unread_count || 0;
@@ -193,7 +193,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           });
           
           // Send push notification for inbound messages
-          if (messageData.direction === 'inbound') {
+          if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
             try {
               // Get all users with admin, operator, or support roles
               const users = await db.query(
@@ -235,7 +235,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         
         // First message from this phone number - create new record
         const newConversationId = conversationId;
-        const initialUnreadCount = messageData.direction === 'inbound' ? 1 : 0;
+        const initialUnreadCount = (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 1 : 0;
         
         // Use safe insert helper that handles missing columns
         await insertOpenPhoneConversation({
@@ -259,7 +259,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         });
         
         // Send push notification for new inbound conversation
-        if (messageData.direction === 'inbound') {
+        if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
           try {
             const users = await db.query(
               `SELECT id FROM users 
