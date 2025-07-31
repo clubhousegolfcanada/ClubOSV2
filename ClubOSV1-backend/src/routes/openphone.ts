@@ -291,8 +291,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
           // Create new
           await db.query(`
             INSERT INTO openphone_conversations 
-            (conversation_id, phone_number, customer_name, employee_name, messages, metadata)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            (conversation_id, phone_number, customer_name, employee_name, messages, metadata, unread_count)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
           `, [
             callConversationId,
             callPhoneNumber,
@@ -307,7 +307,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 direction: data.direction,
                 recording: data.recordingUrl
               }
-            })
+            }),
+            0 // Calls start with 0 unread count
           ]);
         
         }
@@ -323,8 +324,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // Store AI-generated call summary
         await db.query(`
           INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata)
-          VALUES ($1, $2, $3, $4, $5)
+          (phone_number, customer_name, employee_name, messages, metadata, unread_count)
+          VALUES ($1, $2, $3, $4, $5, $6)
         `, [
           data.phoneNumber || data.to || data.from,
           data.contactName || 'Unknown',
@@ -339,7 +340,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
             callId: data.callId,
             type,
             aiGenerated: true
-          })
+          }),
+          0 // Summaries don't affect unread count
         ]);
         
         logger.info('OpenPhone AI call summary stored', { phoneNumber: data.phoneNumber });
@@ -349,8 +351,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // Store call transcript
         await db.query(`
           INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata)
-          VALUES ($1, $2, $3, $4, $5)
+          (phone_number, customer_name, employee_name, messages, metadata, unread_count)
+          VALUES ($1, $2, $3, $4, $5, $6)
         `, [
           data.phoneNumber || data.to || data.from,
           data.contactName || 'Unknown',
@@ -365,7 +367,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
             callId: data.callId,
             type,
             transcriptUrl: data.transcriptUrl
-          })
+          }),
+          0 // Transcripts don't affect unread count
         ]);
         
         logger.info('OpenPhone call transcript stored', { phoneNumber: data.phoneNumber });
@@ -375,8 +378,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // Store call recording URL
         await db.query(`
           INSERT INTO openphone_conversations 
-          (phone_number, customer_name, employee_name, messages, metadata)
-          VALUES ($1, $2, $3, $4, $5)
+          (phone_number, customer_name, employee_name, messages, metadata, unread_count)
+          VALUES ($1, $2, $3, $4, $5, $6)
         `, [
           data.phoneNumber || data.to || data.from,
           data.contactName || 'Unknown',
@@ -392,7 +395,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
             callId: data.callId,
             type,
             recordingUrl: data.recordingUrl
-          })
+          }),
+          0 // Recordings don't affect unread count
         ]);
         
         logger.info('OpenPhone call recording stored', { phoneNumber: data.phoneNumber });

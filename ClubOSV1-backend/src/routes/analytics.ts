@@ -278,7 +278,7 @@ router.get('/routing-accuracy', authenticate, roleGuard(['admin', 'operator']), 
               THEN 'TechSupport'
             WHEN LOWER(f.request_description) SIMILAR TO '%(member|price|cost|promotion|hours|gift card)%' 
               THEN 'BrandTone'
-            ELSE original_route
+            ELSE route
           END as suggested_route
         FROM feedback f
         WHERE f.is_useful = false
