@@ -44,10 +44,14 @@ export const usePushNotifications = () => {
         return;
       }
 
+      // Get current permission state
+      const currentPermission = Notification.permission;
+      console.log('Initial notification permission state:', currentPermission);
+
       setState(prev => ({
         ...prev,
         isSupported: true,
-        permission: Notification.permission
+        permission: currentPermission
       }));
 
       // Check subscription status
@@ -67,10 +71,15 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       
+      console.log('Current push subscription:', subscription ? 'Found' : 'Not found');
+      
       if (subscription) {
         // Verify with backend
         const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
-        if (!token) return;
+        if (!token) {
+          console.log('No auth token found, skipping subscription check');
+          return;
+        }
         
         const response = await fetch(`${API_URL}/notifications/subscription-status`, {
           headers: {
@@ -81,9 +90,17 @@ export const usePushNotifications = () => {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Backend subscription status:', data);
           setState(prev => ({
             ...prev,
-            isSubscribed: data.isSubscribed,
+            isSubscribed: data.data?.subscriptions?.length > 0 || false,
+            isLoading: false
+          }));
+        } else {
+          console.error('Failed to check subscription status:', response.status);
+          setState(prev => ({
+            ...prev,
+            isSubscribed: false,
             isLoading: false
           }));
         }
@@ -130,7 +147,22 @@ export const usePushNotifications = () => {
   }, [state.isSupported]);
 
   const subscribe = useCallback(async () => {
-    if (!state.isSupported || state.permission !== 'granted') {
+    // Check if notifications are supported
+    if (!state.isSupported) {
+      toast.error('Push notifications are not supported in this browser');
+      return false;
+    }
+
+    // Check current permission state
+    const currentPermission = Notification.permission;
+    console.log('Current notification permission:', currentPermission);
+    
+    if (currentPermission === 'denied') {
+      toast.error('Notifications are blocked. Please enable them in your browser settings.');
+      return false;
+    }
+    
+    if (currentPermission !== 'granted') {
       const granted = await requestPermission();
       if (!granted) return false;
     }
@@ -196,14 +228,23 @@ export const usePushNotifications = () => {
 
       toast.success('Push notifications enabled!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error subscribing:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to enable push notifications';
+      if (error.message.includes('VAPID')) {
+        errorMessage = 'Push notification service not configured. Please contact support.';
+      } else if (error.message.includes('subscription')) {
+        errorMessage = 'Failed to create notification subscription. Please try again.';
+      }
+      
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: 'Failed to enable push notifications'
+        error: errorMessage
       }));
-      toast.error('Failed to enable push notifications');
+      toast.error(errorMessage);
       return false;
     }
   }, [state.isSupported, state.permission, requestPermission]);
