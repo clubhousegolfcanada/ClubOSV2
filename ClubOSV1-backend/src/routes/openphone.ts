@@ -45,7 +45,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
       }
     }
 
-    // Handle wrapped webhook structure
+    // CRITICAL FIX: Handle wrapped webhook structure from OpenPhone v3
+    // OpenPhone sends: { object: { type, data } }
+    // We need to unwrap this structure
+    logger.info('Webhook received - checking structure', {
+      hasObject: !!req.body.object,
+      bodyKeys: Object.keys(req.body),
+      objectKeys: req.body.object ? Object.keys(req.body.object) : []
+    });
+    
     const webhookData = req.body.object || req.body;
     const { type, data } = webhookData;
     
