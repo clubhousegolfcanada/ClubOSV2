@@ -401,33 +401,36 @@ export default function Messages() {
                 </div>
                 
                 {/* Push Notification Toggle */}
-                {isClient && isSupported && (
-                  <div className="flex items-center gap-2">
-                    {notificationLoading ? (
-                      <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
-                        <span className="text-sm text-[var(--text-muted)]">Loading...</span>
-                      </div>
-                    ) : isSubscribed ? (
-                      <button
-                        onClick={unsubscribe}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                        title="Disable push notifications"
-                      >
-                        <Bell className="w-4 h-4" />
-                        <span className="text-sm">Notifications On</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={subscribe}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                        title="Enable push notifications"
-                      >
-                        <BellOff className="w-4 h-4" />
-                        <span className="text-sm">Notifications Off</span>
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {!isClient ? (
+                    // Server-side placeholder to prevent hydration mismatch
+                    <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
+                      <span className="text-sm text-[var(--text-muted)]">Loading...</span>
+                    </div>
+                  ) : !isSupported ? null : notificationLoading ? (
+                    <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
+                      <span className="text-sm text-[var(--text-muted)]">Loading...</span>
+                    </div>
+                  ) : isSubscribed ? (
+                    <button
+                      onClick={unsubscribe}
+                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      title="Disable push notifications"
+                    >
+                      <Bell className="w-4 h-4" />
+                      <span className="text-sm">Notifications On</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={subscribe}
+                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      title="Enable push notifications"
+                    >
+                      <BellOff className="w-4 h-4" />
+                      <span className="text-sm">Notifications Off</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -501,7 +504,7 @@ export default function Messages() {
                           <div className="flex items-center gap-1 mt-1">
                             <Clock className="w-3 h-3 text-[var(--text-muted)]" />
                             <span className="text-xs text-[var(--text-muted)]">
-                              {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 'Recently'}
+                              {!isClient ? 'Recently' : conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 'Recently'}
                             </span>
                           </div>
                         </div>
