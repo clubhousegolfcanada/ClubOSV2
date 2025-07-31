@@ -230,12 +230,12 @@ export class OpenPhoneService {
       logger.info('Sending OpenPhone message', { to, from, text: text.substring(0, 50) });
       
       // Get the API key from the main client
-      const apiKey = this.client.defaults.headers['Authorization'];
+      const apiKey = this.client.defaults.headers['Authorization'] as string;
       
       // Log the authorization format for debugging
       logger.debug('OpenPhone authorization format:', {
         hasApiKey: !!apiKey,
-        apiKeyLength: apiKey?.length,
+        apiKeyLength: apiKey ? apiKey.length : 0,
         apiKeyPreview: apiKey ? `${apiKey.substring(0, 10)}...` : 'none'
       });
       
@@ -363,7 +363,7 @@ export class OpenPhoneService {
 
     try {
       // Get the API key from the main client
-      const apiKey = this.client.defaults.headers['Authorization'];
+      const apiKey = this.client.defaults.headers['Authorization'] as string;
       
       // Use v1 API for phone numbers
       const v1Client = axios.create({
@@ -395,6 +395,57 @@ export class OpenPhoneService {
       return phoneNumbers.find(pn => pn.phoneNumber === phoneNumber) || null;
     } catch (error: any) {
       logger.error('Failed to get phone number details:', error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get OpenPhone users
+   */
+  async getUsers(): Promise<any[]> {
+    if (!this.isConfigured) {
+      return [];
+    }
+
+    try {
+      const apiKey = this.client.defaults.headers['Authorization'] as string;
+      
+      const v1Client = axios.create({
+        baseURL: 'https://api.openphone.com/v1',
+        headers: {
+          'Authorization': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const response = await v1Client.get('/users');
+      return response.data.data || [];
+    } catch (error: any) {
+      logger.error('Failed to fetch OpenPhone users:', error.response?.data || error.message);
+      return [];
+    }
+  }
+  
+  /**
+   * Get OpenPhone user by phone number
+   */
+  async getUserByPhoneNumber(phoneNumber: string): Promise<any> {
+    if (!this.isConfigured) {
+      return null;
+    }
+
+    try {
+      const phoneNumbers = await this.getPhoneNumbers();
+      const phoneNumberData = phoneNumbers.find(pn => pn.phoneNumber === phoneNumber);
+      
+      if (phoneNumberData?.userId) {
+        const users = await this.getUsers();
+        return users.find(u => u.id === phoneNumberData.userId) || null;
+      }
+      
+      return null;
+    } catch (error: any) {
+      logger.error('Failed to get user by phone number:', error.response?.data || error.message);
       return null;
     }
   }

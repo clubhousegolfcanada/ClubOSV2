@@ -537,4 +537,66 @@ router.get('/diagnose',
   }
 );
 
+// Test OpenPhone users endpoint
+router.get('/users',
+  authenticate,
+  roleGuard(['admin']),
+  async (req, res) => {
+    try {
+      logger.info('Testing OpenPhone users endpoint');
+      
+      const users = await openPhoneService.getUsers();
+      
+      res.json({
+        success: true,
+        data: {
+          users,
+          count: users.length
+        }
+      });
+    } catch (error: any) {
+      logger.error('Failed to fetch OpenPhone users', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+);
+
+// Test user lookup by phone number
+router.get('/user-by-phone/:phoneNumber',
+  authenticate,
+  roleGuard(['admin']),
+  async (req, res) => {
+    try {
+      const { phoneNumber } = req.params;
+      logger.info('Testing user lookup by phone number', { phoneNumber });
+      
+      const user = await openPhoneService.getUserByPhoneNumber(phoneNumber);
+      const phoneNumbers = await openPhoneService.getPhoneNumbers();
+      const phoneNumberData = phoneNumbers.find(pn => pn.phoneNumber === phoneNumber);
+      
+      res.json({
+        success: true,
+        data: {
+          user,
+          phoneNumberData,
+          phoneNumbers: phoneNumbers.map(pn => ({
+            phoneNumber: pn.phoneNumber,
+            userId: pn.userId,
+            name: pn.name
+          }))
+        }
+      });
+    } catch (error: any) {
+      logger.error('Failed to lookup user by phone number', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+);
+
 export default router;

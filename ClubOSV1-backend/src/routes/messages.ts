@@ -215,8 +215,23 @@ router.post('/send',
         });
       }
       
-      // Send via OpenPhone
-      const result = await openPhoneService.sendMessage(to, fromNumber, text);
+      // Try to get OpenPhone user ID for the from number
+      let userId: string | undefined;
+      try {
+        const user = await openPhoneService.getUserByPhoneNumber(fromNumber);
+        if (user?.id) {
+          userId = user.id;
+          logger.info('Found OpenPhone user for number', { phoneNumber: fromNumber, userId });
+        }
+      } catch (error) {
+        logger.warn('Could not fetch OpenPhone user', { phoneNumber: fromNumber, error });
+      }
+      
+      // Send via OpenPhone with optional userId
+      const result = await openPhoneService.sendMessage(to, fromNumber, text, { 
+        userId,
+        setInboxStatus: 'done' // Mark conversation as done after sending
+      });
       
       // Log the action
       logger.info('Message sent via OpenPhone', {
