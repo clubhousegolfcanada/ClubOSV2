@@ -8,6 +8,8 @@ import { logger } from '../utils/logger';
 import { openPhoneService } from '../services/openphoneService';
 import { messageSendLimiter } from '../middleware/rateLimiter';
 import { formatToE164, isValidE164 } from '../utils/phoneNumberFormatter';
+import { messageAssistantService } from '../services/messageAssistantService';
+import { anonymizePhoneNumber } from '../utils/encryption';
 
 const router = Router();
 
@@ -381,6 +383,200 @@ router.get('/unread-count',
       res.json({
         success: true,
         data: { totalUnread }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Generate AI suggestion for a message response
+router.post('/conversations/:phoneNumber/suggest-response',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  async (req, res, next) => {
+    try {
+      const { phoneNumber } = req.params;
+      
+      // Get conversation
+      const result = await db.query(
+        `SELECT * FROM openphone_conversations WHERE phone_number = $1`,
+        [phoneNumber]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Conversation not found'
+        });
+      }
+      
+      const conversation = result.rows[0];
+      const messages = conversation.messages || [];
+      
+      if (messages.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No messages in conversation'
+        });
+      }
+      
+      // Generate suggestion
+      const suggestion = await messageAssistantService.generateSuggestedResponse(
+        conversation.id,
+        phoneNumber,
+        messages,
+        req.user!.id
+      );
+      
+      // Log access for security
+      await db.createAuthLog({
+        user_id: req.user!.id,
+        action: 'generate_message_suggestion',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
+      
+      // Log anonymized phone number
+      logger.info('Generated message suggestion', {
+        conversationId: conversation.id,
+        phoneNumber: anonymizePhoneNumber(phoneNumber),
+        userId: req.user!.id,
+        confidence: suggestion.confidence
+      });
+      
+      res.json({
+        success: true,
+        data: suggestion
+      });
+    } catch (error) {
+      logger.error('Failed to generate suggestion:', error);
+      next(error);
+    }
+  }
+);
+
+// Approve and send a suggested response
+router.post('/suggestions/:suggestionId/approve-and-send',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  async (req, res, next) => {
+    try {
+      const { suggestionId } = req.params;
+      const { editedText } = req.body; // Allow editing before sending
+      
+      // Get the suggestion
+      const suggestion = await messageAssistantService.getSuggestion(suggestionId);
+      
+      if (!suggestion) {
+        return res.status(404).json({
+          success: false,
+          error: 'Suggestion not found'
+        });
+      }
+      
+      if (suggestion.sent) {
+        return res.status(400).json({
+          success: false,
+          error: 'This suggestion has already been sent'
+        });
+      }
+      
+      // Get conversation to get phone number
+      const convResult = await db.query(
+        'SELECT phone_number FROM openphone_conversations WHERE id = $1',
+        [suggestion.conversationId]
+      );
+      
+      if (convResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Conversation not found'
+        });
+      }
+      
+      const phoneNumber = convResult.rows[0].phone_number;
+      const textToSend = editedText || suggestion.suggestedText;
+      const fromNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+      
+      if (!fromNumber) {
+        return res.status(400).json({
+          success: false,
+          error: 'No default phone number configured'
+        });
+      }
+      
+      // Format phone numbers
+      const formattedTo = formatToE164(phoneNumber);
+      const formattedFrom = formatToE164(fromNumber);
+      
+      if (!formattedTo || !formattedFrom) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid phone number format'
+        });
+      }
+      
+      // Approve the suggestion
+      await messageAssistantService.approveSuggestion(suggestionId, req.user!.id);
+      
+      // Send the message via OpenPhone
+      const result = await openPhoneService.sendMessage(formattedTo, formattedFrom, textToSend, {
+        setInboxStatus: 'done'
+      });
+      
+      // Mark as sent
+      await messageAssistantService.markSuggestionAsSent(suggestionId);
+      
+      // Log the action
+      await db.createAuthLog({
+        user_id: req.user!.id,
+        action: 'send_ai_suggested_message',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
+      
+      logger.info('AI suggested message sent', {
+        suggestionId,
+        conversationId: suggestion.conversationId,
+        phoneNumber: anonymizePhoneNumber(phoneNumber),
+        userId: req.user!.id,
+        edited: !!editedText
+      });
+      
+      res.json({
+        success: true,
+        data: {
+          messageId: result.id,
+          suggestionId,
+          sent: true
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to send suggested message:', error);
+      next(error);
+    }
+  }
+);
+
+// Get AI assistance statistics
+router.get('/ai-stats',
+  authenticate,
+  roleGuard(['admin']),
+  async (req, res, next) => {
+    try {
+      const { days = 30 } = req.query;
+      
+      const stats = await messageAssistantService.getConversationStats(Number(days));
+      
+      res.json({
+        success: true,
+        data: {
+          ...stats,
+          period_days: Number(days)
+        }
       });
     } catch (error) {
       next(error);

@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -46,6 +46,11 @@ export default function Messages() {
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const { isSupported, permission, isSubscribed, isLoading: notificationLoading, subscribe, unsubscribe } = usePushNotifications();
   const [isClient, setIsClient] = useState(false);
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<any>(null);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const [editingSuggestion, setEditingSuggestion] = useState(false);
+  const [editedSuggestionText, setEditedSuggestionText] = useState('');
 
   // Check auth
   useEffect(() => {
@@ -240,6 +245,78 @@ export default function Messages() {
           headers: error.response.headers
         });
       }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const getAiSuggestion = async () => {
+    if (!selectedConversation || loadingSuggestion) return;
+    
+    setLoadingSuggestion(true);
+    try {
+      const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        toast.error('Please log in again');
+        return;
+      }
+      
+      const response = await axios.post(
+        `${API_URL}/messages/conversations/${selectedConversation.phone_number}/suggest-response`,
+        {},
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+      
+      if (response.data.success) {
+        setAiSuggestion(response.data.data);
+        setShowAiSuggestion(true);
+        toast.success('AI suggestion generated');
+      }
+    } catch (error: any) {
+      console.error('Failed to get AI suggestion:', error);
+      toast.error(error.response?.data?.error || 'Failed to generate suggestion');
+    } finally {
+      setLoadingSuggestion(false);
+    }
+  };
+  
+  const sendAiSuggestion = async (suggestionId: string, editedText?: string) => {
+    setSending(true);
+    try {
+      const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        toast.error('Please log in again');
+        return;
+      }
+      
+      const response = await axios.post(
+        `${API_URL}/messages/suggestions/${suggestionId}/approve-and-send`,
+        { editedText },
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success('Message sent successfully');
+        setShowAiSuggestion(false);
+        setAiSuggestion(null);
+        setEditingSuggestion(false);
+        
+        // Refresh conversations
+        loadConversations();
+      }
+    } catch (error: any) {
+      console.error('Failed to send AI suggestion:', error);
+      toast.error(error.response?.data?.error || 'Failed to send message');
     } finally {
       setSending(false);
     }
@@ -451,6 +528,73 @@ export default function Messages() {
                       <div ref={messagesEndRef} />
                     </div>
 
+                    {/* AI Suggestion */}
+                    {showAiSuggestion && aiSuggestion && (
+                      <div className="p-4 border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)]">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                            <span className="text-sm font-medium">AI Suggestion</span>
+                            <span className="text-xs text-[var(--text-muted)]">
+                              ({Math.round(aiSuggestion.confidence * 100)}% confidence)
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowAiSuggestion(false);
+                              setAiSuggestion(null);
+                            }}
+                            className="p-1 hover:bg-[var(--bg-secondary)] rounded"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        {editingSuggestion ? (
+                          <textarea
+                            value={editedSuggestionText}
+                            onChange={(e) => setEditedSuggestionText(e.target.value)}
+                            className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm mb-2"
+                            rows={3}
+                          />
+                        ) : (
+                          <p className="text-sm mb-2">{aiSuggestion.suggestedText}</p>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              if (editingSuggestion) {
+                                // Send edited suggestion
+                                await sendAiSuggestion(aiSuggestion.id, editedSuggestionText);
+                              } else {
+                                // Send original suggestion
+                                await sendAiSuggestion(aiSuggestion.id);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-1 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 text-sm"
+                            disabled={sending}
+                          >
+                            <Check className="w-3 h-3" />
+                            Send
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setEditingSuggestion(!editingSuggestion);
+                              if (!editingSuggestion) {
+                                setEditedSuggestionText(aiSuggestion.suggestedText);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-primary)] text-sm"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            {editingSuggestion ? 'Cancel Edit' : 'Edit'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Message Input */}
                     <div className="p-4 border-t border-[var(--border-secondary)]">
                       <form
@@ -468,6 +612,17 @@ export default function Messages() {
                           className="flex-1 px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg"
                           disabled={sending}
                         />
+                        <button
+                          type="button"
+                          onClick={getAiSuggestion}
+                          disabled={loadingSuggestion || !selectedConversation || messages.length === 0}
+                          className="px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50 transition-colors flex items-center gap-2"
+                          title="Get AI suggestion"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          <span className="hidden sm:inline">AI</span>
+                        </button>
+                        
                         <button
                           type="submit"
                           disabled={!newMessage.trim() || sending}
