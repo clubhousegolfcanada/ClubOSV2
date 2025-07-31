@@ -36,7 +36,10 @@ export default function DebugOpenPhone() {
       
       // Check for missing columns
       if (response.data.data?.missingColumns?.length > 0) {
-        toast.warning(`Missing columns: ${response.data.data.missingColumns.join(', ')}`);
+        toast(`⚠️ Missing columns: ${response.data.data.missingColumns.join(', ')}`, {
+          icon: '⚠️',
+          duration: 5000
+        });
       } else {
         toast.success('Database check complete');
       }
@@ -80,6 +83,24 @@ export default function DebugOpenPhone() {
       checkDatabase(); // Refresh database view
     } catch (error: any) {
       toast.error('Sync failed: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importHistory = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.post(`${API_URL}/openphone/import-history`, 
+        { daysBack: 30 }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success(response.data.message || 'Import complete');
+      checkDatabase(); // Refresh database view
+    } catch (error: any) {
+      toast.error('Import failed: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -268,7 +289,14 @@ export default function DebugOpenPhone() {
                   disabled={loading}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Sync Now
+                  Sync Recent (10)
+                </button>
+                <button
+                  onClick={importHistory}
+                  disabled={loading}
+                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 mt-2"
+                >
+                  Import History (30 days)
                 </button>
               </div>
 

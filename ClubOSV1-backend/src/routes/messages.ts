@@ -27,7 +27,23 @@ router.get('/conversations',
     try {
       const { limit = 50, offset = 0, search } = req.query;
       
-      // First check which columns exist
+      // First check if table exists
+      const tableExists = await db.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'openphone_conversations'
+        ) as exists
+      `);
+      
+      if (!tableExists.rows[0].exists) {
+        logger.warn('openphone_conversations table does not exist');
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
+      
+      // Then check which columns exist
       const columnCheck = await db.query(`
         SELECT column_name 
         FROM information_schema.columns 
@@ -64,7 +80,27 @@ router.get('/conversations',
       query += ` ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
       params.push(limit, offset);
       
-      const result = await db.query(query, params);
+      let result;
+      try {
+        result = await db.query(query, params);
+      } catch (queryError: any) {
+        logger.error('Failed to query conversations', {
+          error: queryError.message,
+          code: queryError.code,
+          detail: queryError.detail
+        });
+        
+        // If it's a column doesn't exist error, return empty array
+        if (queryError.code === '42703') {
+          return res.json({
+            success: true,
+            data: [],
+            warning: 'Database schema issue - missing columns'
+          });
+        }
+        
+        throw queryError;
+      }
       
       // Filter out conversations without valid phone numbers
       const validConversations = result.rows.filter(row => {
@@ -83,6 +119,12 @@ router.get('/conversations',
         return isValid;
       });
       
+      logger.info('Returning conversations', {
+        total: result.rows.length,
+        valid: validConversations.length,
+        filtered: result.rows.length - validConversations.length
+      });
+      
       res.json({
         success: true,
         data: validConversations.map(row => ({
@@ -94,6 +136,7 @@ router.get('/conversations',
         }))
       });
     } catch (error) {
+      logger.error('Messages route error:', error);
       next(error);
     }
   }
