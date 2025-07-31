@@ -170,6 +170,8 @@ export class AssistantService {
     userMessage: string,
     context?: Record<string, any>
   ): Promise<AssistantResponse> {
+    // Check if this is a customer-facing request (ONLY for messages/SMS)
+    const isCustomerFacing = context?.isCustomerFacing === true;
     // First, check our database for recent knowledge updates
     const dbSearch = await knowledgeSearchService.searchKnowledge(
       userMessage,
@@ -231,9 +233,18 @@ export class AssistantService {
         content: userMessage
       });
 
-      // Run the assistant
+      // Run the assistant with customer safety instructions if needed
       const run = await this.openai.beta.threads.runs.create(thread.id, {
-        assistant_id: assistantId
+        assistant_id: assistantId,
+        // ONLY add customer instructions for customer-facing messages
+        ...(isCustomerFacing ? {
+          additional_instructions: `CRITICAL: This response is for a CUSTOMER via SMS/text message.
+- Only provide public information
+- Do not mention ClubOS, internal systems, databases, or technical details
+- Do not mention employee names or internal procedures
+- Keep responses friendly and professional
+- If asked about something confidential, politely redirect to calling or visiting the facility`
+        } : {})
       });
 
       // Wait for the run to complete with timeout

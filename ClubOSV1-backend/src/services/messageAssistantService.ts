@@ -1,11 +1,7 @@
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { encrypt, decrypt } from '../utils/encryption';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+import { assistantService } from './assistantService';
 
 interface Message {
   id: string;
@@ -47,40 +43,81 @@ export class MessageAssistantService {
       // Get relevant knowledge from previous interactions
       const relevantKnowledge = await this.getRelevantKnowledge(messages[messages.length - 1].text || '');
       
-      // Generate response using GPT-4
-      const prompt = `You are a helpful customer service assistant. Based on the conversation history and any relevant knowledge, suggest an appropriate response to the customer's last message.
+      // Build context for the assistant with customer safety instructions
+      const customerMessage = messages[messages.length - 1].text || messages[messages.length - 1].body || '';
+      
+      // Determine the best route based on the message content
+      let route = 'BrandTone'; // Default to brand/marketing assistant for general inquiries
+      const lowerMessage = customerMessage.toLowerCase();
+      
+      if (lowerMessage.includes('book') || lowerMessage.includes('reserve') || lowerMessage.includes('cancel') || lowerMessage.includes('reschedule')) {
+        route = 'Booking & Access';
+      } else if (lowerMessage.includes('tech') || lowerMessage.includes('problem') || lowerMessage.includes('issue') || lowerMessage.includes('not work')) {
+        route = 'TechSupport';
+      } else if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent') || lowerMessage.includes('help')) {
+        route = 'Emergency';
+      }
+      
+      // Create the prompt with customer safety context
+      const customerContext = `CRITICAL INSTRUCTIONS - YOU ARE RESPONDING TO A CUSTOMER:
 
-Conversation History:
+1. You are generating a suggested response to a CUSTOMER text message
+2. NEVER mention:
+   - Internal systems (ClubOS, databases, etc.)
+   - Employee names or personal information
+   - Business operations details
+   - Pricing structures or discounts not publicly advertised
+   - Security procedures or access codes
+   - Any confidential business information
+
+3. ONLY provide:
+   - Public information about services and hours
+   - Help with bookings and general inquiries
+   - Friendly, professional customer service
+   - Directions to contact the facility if needed
+
+4. If the customer asks about something you cannot answer, suggest they:
+   - Call the facility directly
+   - Visit in person
+   - Check the website
+
+CONVERSATION HISTORY:
 ${conversationHistory}
 
-${relevantKnowledge ? `Relevant Knowledge from Previous Interactions:\n${relevantKnowledge}\n` : ''}
+${relevantKnowledge ? `RELEVANT PUBLIC KNOWLEDGE:\n${relevantKnowledge}\n\n` : ''}CUSTOMER'S CURRENT MESSAGE: ${customerMessage}
 
-Guidelines:
-1. Be helpful, professional, and concise
-2. Use the knowledge base to provide accurate information
-3. If you're unsure, suggest asking for clarification
-4. Keep the tone friendly but professional
-5. Address the customer's specific question or concern
+Generate a helpful, professional response for this customer.`;
 
-Suggested response:`;
+      // Use the assistant service with the appropriate route
+      const assistantResponse = await assistantService.getAssistantResponse(
+        route,
+        customerContext,
+        {
+          userId: userId,
+          isCustomerFacing: true,
+          conversationId: conversationId
+        }
+      );
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful customer service assistant. Generate appropriate responses based on conversation context.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 300
-      });
-
-      const suggestedText = response.choices[0].message.content?.trim() || '';
+      // Filter the response for customer safety
+      let suggestedText = assistantResponse.response || '';
+      
+      // Additional safety filtering - remove any accidental internal references
+      const internalTerms = [
+        'ClubOS', 'database', 'system', 'backend', 'API', 'admin',
+        'employee', 'staff', 'internal', 'confidential', 'password',
+        'login', 'access code', 'security', 'SQL', 'error log'
+      ];
+      
+      for (const term of internalTerms) {
+        const regex = new RegExp(`\\b${term}\\b`, 'gi');
+        suggestedText = suggestedText.replace(regex, '[removed]');
+      }
+      
+      // Ensure the response is appropriate
+      if (suggestedText.includes('[removed]') || suggestedText.length < 10) {
+        suggestedText = 'Thank you for your message. How may I assist you with your golf simulator booking or inquiry today?';
+      }
       
       // Calculate confidence based on various factors
       const confidence = this.calculateConfidence(messages, suggestedText, relevantKnowledge);

@@ -34,7 +34,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 - **Checklists**: Daily maintenance, auto-ticket creation, admin-only task editing
 - **Remote Control**: NinjaOne integration for simulator/TV/music control
 - **Analytics**: Usage tracking, performance metrics, cost monitoring
-- **Messages**: Two-way SMS via OpenPhone, real-time notifications, unread badges, 30 msg/min rate limit
+- **Messages**: 
+  - Two-way SMS via OpenPhone with AI suggestions
+  - Real-time notifications, unread badges
+  - International phone number support
+  - Rate limiting: 30 msg/min, 10 API calls/sec
+- **Call Transcripts**: Extract knowledge from customer calls, searchable archive
 
 #### 3. User System
 | Role | Access | Key Features |
@@ -97,6 +102,12 @@ railway logs            # Check production logs
 ## 📊 Current State (July 2025)
 
 ### Recent Changes
+- **v1.10.0**: AI-Assisted Messaging & Comprehensive Privacy
+  - AI suggestions for customer messages with safety filters
+  - OpenPhone call transcript analysis and knowledge extraction
+  - GDPR compliance: data export, deletion, retention policies
+  - AES-256 encryption for sensitive data
+  - Phone number anonymization in logs
 - **v1.9.1**: Push notification infrastructure (Phase 1 & 2 complete)
   - Database tables and migration ready
   - NotificationService with web-push integration
@@ -131,6 +142,7 @@ railway logs            # Check production logs
 - `OPENPHONE_API_KEY` - SMS messaging
 - `OPENPHONE_WEBHOOK_SECRET` - Webhook verification
 - `OPENPHONE_DEFAULT_NUMBER` - Default sending number
+- `ENCRYPTION_KEY` - Data encryption key (REQUIRED for privacy features)
 - `VAPID_PUBLIC_KEY` - Push notification public key (pending)
 - `VAPID_PRIVATE_KEY` - Push notification private key (pending)
 - `VAPID_EMAIL` - mailto: contact for push service (pending)
@@ -169,6 +181,10 @@ railway logs            # Check production logs
 - Rate limiting on all endpoints
 - Role-based access control
 - Input validation and sanitization
+- AES-256-GCM encryption for sensitive data
+- Customer safety filter for AI responses
+- Comprehensive audit logging
+- GDPR-compliant data handling
 
 ### Error Handling
 - User-friendly error messages

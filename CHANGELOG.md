@@ -2,6 +2,53 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.10.0] - 2025-07-31
+
+### Added
+- **AI-Assisted Customer Messaging**
+  - AI suggestion button in message interface for generating contextual responses
+  - Integration with ClubOS assistants for knowledge-based responses
+  - Customer safety filter ensures only public information is shared
+  - Edit suggestions before sending for personalization
+  - Confidence scores displayed for each suggestion
+  - Automatic route selection based on message content (Booking, Tech Support, etc.)
+
+- **OpenPhone API Enhancements**
+  - User ID support for proper message attribution
+  - Call transcript retrieval (requires Business plan)
+  - Call listing with transcript availability status
+  - Knowledge extraction from call transcripts using AI
+  - Rate limiting (10 requests/second) with exponential backoff
+  - Enhanced error handling for all API status codes
+  - International phone number formatting support
+
+- **Data Privacy & Security**
+  - AES-256-GCM encryption for sensitive conversation data
+  - Phone number anonymization in logs (country code + last 4 digits)
+  - Comprehensive audit logging for all data access
+  - GDPR compliance features:
+    - Data export (right to access)
+    - Data deletion/anonymization (right to erasure)
+    - Automated retention policies
+    - Consent management system
+  - Data retention policies:
+    - Conversations: 2 years
+    - Call transcripts: 1 year
+    - AI suggestions: 90 days
+    - Auth logs: 1 year
+
+### Fixed
+- CORS configuration for Vercel deployments
+- Added proper error response headers for 401/403 errors
+- React hydration errors in messages page
+- Phone number validation for E.164 format
+
+### Security
+- Customer safety filter for AI responses (no internal info shared)
+- Encrypted storage for AI-generated suggestions
+- Secure token generation for sensitive operations
+- Enhanced logging with data masking
+
 ## [1.9.2] - 2025-07-30
 
 ### Added (Push Notifications - Phase 3)

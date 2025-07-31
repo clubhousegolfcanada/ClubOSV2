@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { db } from '../utils/database';
+import { anonymizePhoneNumber } from '../utils/encryption';
 
 const router = Router();
 
@@ -346,11 +347,13 @@ router.get('/export', async (req: Request, res: Response) => {
       sopDocuments: [] as any[],
       extractedKnowledge: [] as any[],
       conversations: [] as any[],
+      callTranscripts: [] as any[],
       shadowComparisons: [] as any[],
       metrics: {
         totalDocuments: 0,
         totalKnowledge: 0,
         totalConversations: 0,
+        totalCallTranscripts: 0,
         exportStats: {} as any
       }
     };
@@ -415,7 +418,32 @@ router.get('/export', async (req: Request, res: Response) => {
         logger.error('Failed to export conversations:', error);
       }
 
-      // 4. Export Shadow Comparisons (last 7 days)
+      // 4. Export Call Transcripts and their extracted knowledge
+      try {
+        const callTranscriptsResult = await db.query(`
+          SELECT 
+            ct.id,
+            ct.call_id,
+            ct.duration,
+            ct.created_at,
+            ct.processed,
+            COUNT(ek.id) as knowledge_count
+          FROM call_transcripts ct
+          LEFT JOIN extracted_knowledge ek ON ek.source_id = ct.id AND ek.source_type = 'call_transcript'
+          GROUP BY ct.id
+          ORDER BY ct.created_at DESC
+          LIMIT 100
+        `);
+        
+        exportData.callTranscripts = callTranscriptsResult.rows;
+        exportData.metrics.totalCallTranscripts = callTranscriptsResult.rows.length;
+        
+        logger.info(`Exported ${callTranscriptsResult.rows.length} call transcripts`);
+      } catch (error) {
+        logger.error('Failed to export call transcripts:', error);
+      }
+      
+      // 5. Export Shadow Comparisons (last 7 days)
       try {
         const shadowResult = await db.query(`
           SELECT id, query, route, sop_confidence, sop_time_ms, 

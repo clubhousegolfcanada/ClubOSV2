@@ -52,6 +52,7 @@ import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
 import callTranscriptRoutes from './routes/call-transcripts';
 import privacyRoutes from './routes/privacy';
+import customerInteractionsRoutes from './routes/customer-interactions';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -75,21 +76,47 @@ app.use(helmet({
 }));
 
 // Configure CORS with explicit options
-app.use(cors({
-  origin: function (origin, callback) {
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: any) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Allow all origins in production for now
-    // You can restrict this later to specific domains
-    return callback(null, true);
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://club-osv-2-owqx-2norv2e7j-clubosv2s-projects.vercel.app',
+      'https://clubosv2.vercel.app',
+      'https://clubos.vercel.app',
+      /\.vercel\.app$/,  // Allow any Vercel preview deployments
+      /\.railway\.app$/  // Allow Railway deployments
+    ];
+    
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      // In production, you might want to restrict this
+      // For now, allow all origins but log them
+      logger.warn('CORS request from unknown origin:', origin);
+      callback(null, true);
+    }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Content-Disposition', 'X-New-Token'],
   maxAge: 86400 // Cache preflight for 24 hours
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Custom middleware to capture raw body for Slack signature verification
 app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, res, next) => {
@@ -102,8 +129,33 @@ app.use(express.json({ limit: '10mb' }));
 app.use(sanitizeMiddleware);
 app.use(requestLogger);
 
-// Handle preflight requests
-app.options('*', cors());
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+// Ensure CORS headers are added even on errors
+app.use((req: any, res: any, next: any) => {
+  // Set CORS headers on all responses
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  }
+  
+  // Intercept response to ensure headers are always set
+  const oldSend = res.send;
+  res.send = function(data: any) {
+    // Ensure CORS headers are set even if response was already started
+    if (origin && !res.headersSent) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    return oldSend.apply(res, arguments);
+  };
+  
+  next();
+});
 
 // Rate limiting
 app.use('/api/', rateLimiter);
@@ -151,6 +203,7 @@ app.use('/api/knowledge-router', knowledgeRouterRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/call-transcripts', callTranscriptRoutes);
 app.use('/api/privacy', privacyRoutes);
+app.use('/api/customer-interactions', customerInteractionsRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
