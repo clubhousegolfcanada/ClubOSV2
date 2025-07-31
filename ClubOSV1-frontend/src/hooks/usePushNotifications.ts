@@ -153,7 +153,13 @@ export const usePushNotifications = () => {
         throw new Error('Failed to get VAPID key');
       }
 
-      const { publicKey } = await vapidResponse.json();
+      const vapidData = await vapidResponse.json();
+      
+      if (!vapidData.success || !vapidData.data?.publicKey) {
+        throw new Error('No VAPID public key available');
+      }
+      
+      const publicKey = vapidData.data.publicKey;
 
       // Subscribe to push notifications
       const subscription = await registration.pushManager.subscribe({
@@ -169,12 +175,17 @@ export const usePushNotifications = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          subscription: subscription.toJSON()
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.toJSON().keys?.p256dh || '',
+            auth: subscription.toJSON().keys?.auth || ''
+          }
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save subscription');
+        const error = await response.text();
+        throw new Error(`Failed to save subscription: ${error}`);
       }
 
       setState(prev => ({
