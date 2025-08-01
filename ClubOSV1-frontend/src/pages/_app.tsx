@@ -34,8 +34,8 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   const { unreadCount } = useMessageNotifications();
 
   useEffect(() => {
-    // Register service worker for push notifications
-    if ('serviceWorker' in navigator && isAuthenticated) {
+    // Register service worker for PWA and push notifications
+    if ('serviceWorker' in navigator && typeof window !== 'undefined') {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
           console.log('Service Worker registered:', registration.scope);
