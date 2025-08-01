@@ -1,9 +1,22 @@
-// ClubOS Service Worker - Push Notifications
+// ClubOS Service Worker - Push Notifications & Offline Support
 const CACHE_NAME = 'clubos-v1';
+const OFFLINE_URL = '/offline.html';
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([
+        '/',
+        '/offline.html',
+        '/manifest.json',
+        '/clubos-icon-192.png'
+      ]);
+    })
+  );
+  
   self.skipWaiting();
 });
 
@@ -13,6 +26,23 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     clients.claim()
   );
+});
+
+// Fetch event - serve cached content when offline
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match('/offline.html');
+      })
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
+    );
+  }
 });
 
 // Push event - handle incoming push notifications
