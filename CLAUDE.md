@@ -1,5 +1,7 @@
 ## Deployment Workflow
 - Commit to github, railway, and vercel when complete tasks
+- ALWAYS commit housecleaning/cleanup work immediately
+- Check git status before starting new work
 
 ## User Preferences & Working Style
 
@@ -22,6 +24,7 @@
 - Be concise and direct
 - Show clear progress with todo lists
 - Explain what's happening but avoid over-explaining
+- Create .md files for plans/fixes BEFORE implementing
 
 ## System Architecture Notes
 
