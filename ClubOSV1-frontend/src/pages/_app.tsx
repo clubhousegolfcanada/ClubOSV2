@@ -48,7 +48,8 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     // PWA fullscreen support
     if ('standalone' in window.navigator || window.matchMedia('(display-mode: standalone)').matches) {
       // App is running in standalone mode
-      document.documentElement.classList.add('pwa-standalone');
+      console.log('Running in PWA standalone mode');
+      // Don't add any classes that might break layout
     }
     
     // iOS PWA viewport fix
