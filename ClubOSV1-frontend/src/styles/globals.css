@@ -4,6 +4,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PWA Standalone Mode Styles */
+@media all and (display-mode: standalone) {
+  /* Remove any top padding when in standalone mode */
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Ensure full height usage */
+  html, body, #__next {
+    height: 100%;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+/* iOS specific PWA fixes */
+.pwa-standalone {
+  /* Use the full screen */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS status bar in PWA */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .pwa-standalone {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 @layer base {
   /* Theme Variables */
   :root[data-theme="dark"] {

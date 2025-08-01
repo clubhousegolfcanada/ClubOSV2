@@ -44,6 +44,20 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           console.error('Service Worker registration failed:', error);
         });
     }
+    
+    // PWA fullscreen support
+    if ('standalone' in window.navigator || window.matchMedia('(display-mode: standalone)').matches) {
+      // App is running in standalone mode
+      document.documentElement.classList.add('pwa-standalone');
+    }
+    
+    // iOS PWA viewport fix
+    if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+      }
+    }
   }, [isAuthenticated]);
 
   useEffect(() => {

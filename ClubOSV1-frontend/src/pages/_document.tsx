@@ -11,10 +11,12 @@ export default function Document() {
         {/* PWA Meta Tags */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="ClubOS" />
         <meta name="application-name" content="ClubOS" />
         <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-TileColor" content="#0B3D3A" />
+        <meta name="msapplication-tap-highlight" content="no" />
         
         {/* Icons */}
         <link rel="icon" href="/favicon.ico" />
