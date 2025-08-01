@@ -655,16 +655,45 @@ export default function Messages() {
                 
                 <button
                   onClick={() => {
-                    // Try to open Splashtop app with deep link
-                    window.location.href = 'splashtop://';
-                    // Fallback to app store after a delay
-                    setTimeout(() => {
-                      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                        window.open('https://apps.apple.com/app/splashtop-business/id487398015', '_blank');
-                      } else if (/Android/.test(navigator.userAgent)) {
-                        window.open('https://play.google.com/store/apps/details?id=com.splashtop.remote.business', '_blank');
+                    // Check if on mobile device
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    
+                    if (isMobile) {
+                      // On mobile, try to open the app first
+                      const appStoreUrl = /iPhone|iPad|iPod/.test(navigator.userAgent)
+                        ? 'https://apps.apple.com/app/splashtop-business/id487398015'
+                        : 'https://play.google.com/store/apps/details?id=com.splashtop.remote.business';
+                      
+                      // Try multiple URL schemes that Splashtop might use
+                      const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
+                      let attempted = false;
+                      
+                      for (const scheme of schemes) {
+                        try {
+                          window.location.href = scheme;
+                          attempted = true;
+                          break;
+                        } catch (e) {
+                          // Continue to next scheme
+                        }
                       }
-                    }, 1500);
+                      
+                      // If no scheme worked, fallback to app store after delay
+                      if (attempted) {
+                        setTimeout(() => {
+                          // Check if still on same page (app didn't open)
+                          if (document.hasFocus()) {
+                            window.open(appStoreUrl, '_blank');
+                          }
+                        }, 1500);
+                      } else {
+                        // Go directly to app store
+                        window.open(appStoreUrl, '_blank');
+                      }
+                    } else {
+                      // On desktop, open web interface
+                      window.open('https://my.splashtop.com/computers', '_blank');
+                    }
                   }}
                   className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
                   title="Remote control simulators"
@@ -1001,16 +1030,37 @@ export default function Messages() {
                 
                 <button
                   onClick={() => {
-                    // Try to open Splashtop app with deep link
-                    window.location.href = 'splashtop://';
-                    // Fallback to app store after a delay
-                    setTimeout(() => {
-                      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                        window.open('https://apps.apple.com/app/splashtop-business/id487398015', '_blank');
-                      } else if (/Android/.test(navigator.userAgent)) {
-                        window.open('https://play.google.com/store/apps/details?id=com.splashtop.remote.business', '_blank');
+                    // On mobile, try to open the app first
+                    const appStoreUrl = /iPhone|iPad|iPod/.test(navigator.userAgent)
+                      ? 'https://apps.apple.com/app/splashtop-business/id487398015'
+                      : 'https://play.google.com/store/apps/details?id=com.splashtop.remote.business';
+                    
+                    // Try multiple URL schemes that Splashtop might use
+                    const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
+                    let attempted = false;
+                    
+                    for (const scheme of schemes) {
+                      try {
+                        window.location.href = scheme;
+                        attempted = true;
+                        break;
+                      } catch (e) {
+                        // Continue to next scheme
                       }
-                    }, 1500);
+                    }
+                    
+                    // If no scheme worked, fallback to app store after delay
+                    if (attempted) {
+                      setTimeout(() => {
+                        // Check if still on same page (app didn't open)
+                        if (document.hasFocus()) {
+                          window.open(appStoreUrl, '_blank');
+                        }
+                      }, 1500);
+                    } else {
+                      // Go directly to app store
+                      window.open(appStoreUrl, '_blank');
+                    }
                   }}
                   className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-primary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-primary)] whitespace-nowrap text-sm"
                   title="Remote control simulators"
