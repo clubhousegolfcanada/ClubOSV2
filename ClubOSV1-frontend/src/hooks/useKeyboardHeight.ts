@@ -30,8 +30,8 @@ export function useKeyboardHeight() {
         }
       };
 
-      window.visualViewport.addEventListener('resize', handleViewportChange);
-      window.visualViewport.addEventListener('scroll', handleViewportChange);
+      window.visualViewport?.addEventListener('resize', handleViewportChange);
+      window.visualViewport?.addEventListener('scroll', handleViewportChange);
 
       // Initial check
       handleViewportChange();
