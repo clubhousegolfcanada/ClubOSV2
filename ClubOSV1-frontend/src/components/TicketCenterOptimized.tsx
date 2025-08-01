@@ -366,7 +366,7 @@ const TicketCenterOptimized = () => {
               </button>
             )}
             <button 
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/?ticketMode=true')}
               className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" />

@@ -118,13 +118,13 @@ const RequestForm: React.FC = () => {
 
   // Check for ticket query parameter on mount (client-side only)
   useEffect(() => {
-    if (isMounted && router.query.ticket === 'true') {
+    if (isMounted && (router.query.ticket === 'true' || router.query.ticketMode === 'true')) {
       setIsTicketMode(true);
       setSmartAssistEnabled(false);
       // Remove the query parameter from URL without reload
       router.replace('/', undefined, { shallow: true });
     }
-  }, [router.query.ticket, router, isMounted]);
+  }, [router.query.ticket, router.query.ticketMode, router, isMounted]);
 
   // Handle demo mode
   useEffect(() => {
