@@ -1,47 +1,20 @@
-## Deployment Workflow
-- Commit to github, railway, and vercel when complete tasks
-- ALWAYS commit housecleaning/cleanup work immediately
-- Check git status before starting new work
+## CRITICAL RULES
 
-## User Preferences & Working Style
+### 1. Always Commit When Done
+- git add -A && git commit && git push
+- This auto-deploys to production
 
-### Testing & Deployment
-- ALWAYS test locally before committing to avoid long deployment times
-- Create comprehensive test scripts for new features
-- Verify database migrations and setup before deployment
+### 2. Mobile-First & Simple
+- Simple on/off switches (no percentages)
+- Mobile-first responsive design
+- Test on actual devices
 
-### UI/UX Preferences
-- Simple on/off switches preferred over percentage-based controls
-- Clear visual feedback for system states
-- Mobile-first responsive design is critical
+### 3. Test Before Deploy
+- Test locally first
+- Verify database migrations work
+- Check error handling
 
-### Code Organization
-- Keep feature flags simple and clear
-- Document all environment variables with examples
-- Create verification scripts for complex systems
-
-### Communication Style
-- Be concise and direct
-- Show clear progress with todo lists
-- Explain what's happening but avoid over-explaining
-- Create .md files for plans/fixes BEFORE implementing
-
-## System Architecture Notes
-
-### SOP Migration Strategy
-- Shadow mode first for safe testing
-- Simple on/off switch (no percentage rollout)
-- Clear monitoring and metrics
-- Zero-downtime migration approach
-
-### Database Considerations
-- Always verify tables exist before using
-- Create comprehensive migrations
-- Include rollback strategies
-- Test database operations locally first
-
-### Integration Patterns
-- Mock external services for local testing
-- Provide clear setup documentation
-- Include connection verification endpoints
-- Build import tools for historical data
+### 4. Be Direct
+- Create .md plans BEFORE implementing
+- Use TodoWrite for task tracking
+- Keep responses concise
