@@ -157,7 +157,7 @@ export default function Messages() {
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     // Use requestAnimationFrame to ensure DOM has updated
     requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior });
+      messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
       // Also scroll desktop container if it exists
       if (desktopMessagesContainerRef.current) {
         if (behavior === 'smooth') {
@@ -167,6 +167,18 @@ export default function Messages() {
           });
         } else {
           desktopMessagesContainerRef.current.scrollTop = desktopMessagesContainerRef.current.scrollHeight;
+        }
+      }
+      // For mobile, also scroll the messages container
+      if (messagesContainerRef.current) {
+        const container = messagesContainerRef.current;
+        if (behavior === 'smooth') {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          container.scrollTop = container.scrollHeight;
         }
       }
     });
@@ -820,7 +832,10 @@ export default function Messages() {
                       </div>
 
                       {/* Messages */}
-                      <div ref={desktopMessagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+                      <div ref={desktopMessagesContainerRef} className="flex-1 overflow-y-auto p-4 flex flex-col">
+                        {/* Spacer to push messages to bottom when few messages */}
+                        <div className="flex-1 min-h-0" />
+                        <div className="space-y-4">
                         {messages && messages.length > 0 ? messages.map((message, index) => (
                           <div
                             key={message.id || index}
@@ -844,6 +859,7 @@ export default function Messages() {
                             <p>No messages yet. Send a message to start the conversation.</p>
                           </div>
                         )}
+                        </div>
                         <div ref={messagesEndRef} />
                       </div>
 
@@ -1200,7 +1216,9 @@ export default function Messages() {
                   </div>
 
                   {/* Messages - Mobile optimized with better spacing */}
-                  <div className="flex-1 overflow-y-auto px-4 py-4" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                  <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                    {/* Spacer to push messages to bottom when few messages */}
+                    <div className="flex-1 min-h-0" />
                     {messages && messages.length > 0 ? (
                       <div className="space-y-3">
                         {messages.map((message, index) => (

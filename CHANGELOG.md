@@ -33,6 +33,11 @@ All notable changes to ClubOS will be documented in this file.
 - PWA feels more like a native app
 - Faster access to critical features
 
+### Fixed
+- Messages now properly align to bottom when keyboard opens
+- Fixed issue where few messages stayed at top of screen
+- Improved scroll behavior when selecting conversations
+
 ## [1.10.2] - 2025-08-01
 
 ### Fixed
