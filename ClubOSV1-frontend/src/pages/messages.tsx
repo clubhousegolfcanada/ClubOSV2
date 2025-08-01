@@ -202,10 +202,27 @@ export default function Messages() {
       
       if (response.data.success) {
         console.log('Loaded conversations:', response.data.data);
-        setConversations(response.data.data);
+        const sortedConversations = response.data.data.sort((a: any, b: any) => {
+          return new Date(b.updated_at || b.created_at).getTime() - 
+                 new Date(a.updated_at || a.created_at).getTime();
+        });
+        setConversations(sortedConversations);
+        
+        // Auto-select first conversation if none selected
+        if (!selectedConversation && sortedConversations.length > 0 && !loading) {
+          const firstConversation = sortedConversations[0];
+          setSelectedConversation(firstConversation);
+          setMessages(firstConversation.messages || []);
+          console.log('Auto-selected first conversation:', firstConversation.customer_name);
+          
+          // Scroll to bottom after a short delay
+          setTimeout(() => {
+            scrollToBottom();
+          }, 100);
+        }
         
         // Update selected conversation if it exists
-        if (selectedConversation) {
+        else if (selectedConversation) {
           // Normalize phone numbers for comparison (remove any formatting)
           const normalizePhone = (phone: string) => phone ? phone.replace(/\D/g, '') : '';
           const selectedPhone = normalizePhone(selectedConversation.phone_number);
