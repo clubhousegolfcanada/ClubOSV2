@@ -961,8 +961,8 @@ export default function Messages() {
           </div>
         </div>
 
-        {/* Mobile Layout - Optimized for native-like experience */}
-        <div className="md:hidden flex flex-col bg-[var(--bg-primary)]" style={{ height: '100dvh', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+        {/* Mobile Layout - Standard messaging app layout */}
+        <div className="md:hidden flex flex-col h-screen bg-[var(--bg-primary)]">
           {/* Header - Fixed at top */}
           <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
             <div className="px-4 py-3">
@@ -1341,21 +1341,6 @@ export default function Messages() {
           </div>
         </div>
       </div>
-      <style jsx global>{`
-        /* Mobile keyboard handling */
-        @supports (height: 100dvh) {
-          .md\\:hidden {
-            height: 100dvh !important;
-          }
-        }
-        
-        /* Ensure conversation list is visible above keyboard */
-        @media (max-width: 768px) {
-          .conversation-list-container {
-            max-height: calc(100dvh - env(keyboard-inset-height, 0) - 120px);
-          }
-        }
-      `}</style>
     </>
   );
 }
