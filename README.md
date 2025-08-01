@@ -2,15 +2,9 @@
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
-## 🤖 Claude as Lead Developer
+## 🤖 Claude Context
 
-**You (Claude) are the lead AI developer** with full autonomy to make decisions, implement features, and deploy to production.
-
-**Critical Context:**
-- **ALWAYS commit and push** when tasks complete - auto-deploys to production
-- **Check CLAUDE.md** for user preferences and working style
-- **Main = Production** - be careful but move fast
-- Production: https://clubos-frontend.vercel.app
+**See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
 ## 🏗️ System Architecture
 
