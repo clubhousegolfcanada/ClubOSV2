@@ -152,4 +152,3 @@ Since the product owner is rapidly learning Railway, Vercel, PostgreSQL, and mod
 ## License
 
 Private - ClubOSV1
-# PWA Fix deployed Fri  1 Aug 2025 07:32:55 ADT
