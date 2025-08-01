@@ -7,7 +7,7 @@ export default function ClubOSRedirect() {
 
   useEffect(() => {
     // Simply redirect to the main ClubOS application
-    window.location.href = 'https://clubos-frontend.vercel.app';
+    window.location.href = 'https://club-osv-2-owqx.vercel.app';
   }, []);
 
   return (
@@ -15,7 +15,7 @@ export default function ClubOSRedirect() {
       <Head>
         <title>ClubOS - Redirecting...</title>
         <meta name="robots" content="noindex,nofollow" />
-        <meta httpEquiv="refresh" content="0; url=https://clubos-frontend.vercel.app" />
+        <meta httpEquiv="refresh" content="0; url=https://club-osv-2-owqx.vercel.app" />
       </Head>
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
@@ -29,7 +29,7 @@ export default function ClubOSRedirect() {
             Please wait while we redirect you
           </p>
           <a 
-            href="https://clubos-frontend.vercel.app" 
+            href="https://club-osv-2-owqx.vercel.app" 
             className="text-[var(--accent)] hover:underline"
           >
             Click here if you're not redirected automatically
