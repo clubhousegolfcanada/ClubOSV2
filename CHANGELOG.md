@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.10.1] - 2025-08-01
+
+### Added
+- **PWA Support Phase 1**
+  - Valid PNG icons in multiple sizes (192x192, 512x512)
+  - Maskable icon variants for Android adaptive icons
+  - Web app manifest with full Android compliance
+  - PWA meta tags in document head
+  - Middleware updated to allow public file access
+  - All Android installability requirements met
+
+### Technical
+- Added prefer_related_applications: false for Chrome compliance
+- Icons configured with "any maskable" purpose for Android
+- Theme color set to ClubOS brand color (#0B3D3A)
+- Display mode set to standalone for app-like experience
+
 ## [1.10.0] - 2025-07-31
 
 ### Added

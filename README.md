@@ -94,9 +94,13 @@ railway logs            # Check production logs
 # Backend: https://railway.app/dashboard
 ```
 
-## 📊 Current State (July 2025)
+## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.10.1**: PWA Support Phase 1 - Icons and manifest
+  - Full Android PWA compliance with valid icons
+  - Web app manifest configured for installability
+  - Middleware updated for public file access
 - **v1.10.0**: AI-Assisted Messaging & Comprehensive Privacy
   - AI suggestions for customer messages with safety filters
   - OpenPhone call transcript analysis and knowledge extraction
