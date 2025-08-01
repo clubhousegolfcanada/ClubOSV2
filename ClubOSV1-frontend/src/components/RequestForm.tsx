@@ -509,33 +509,28 @@ const RequestForm: React.FC = () => {
       {/* Main Form Card */}
       <div className="card group">
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Mode Toggle */}
-          <div className="form-group">
-            <div className="flex items-center justify-between mb-4">
-              <label className="form-label mb-0">
-                {isTicketMode ? 'Create Support Ticket' : 'Request Description'}
+          {/* Mode Toggle - Compressed */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-muted)]">Ticket Mode</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={isTicketMode}
+                  onChange={(e) => {
+                    setIsTicketMode(e.target.checked);
+                    if (e.target.checked) {
+                      setSmartAssistEnabled(false);
+                    }
+                  }}
+                  disabled={isSubmitting || demoMode}
+                />
+                <span className="toggle-slider"></span>
               </label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[var(--text-secondary)]">Ticket Mode</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={isTicketMode}
-                    onChange={(e) => {
-                      setIsTicketMode(e.target.checked);
-                      if (e.target.checked) {
-                        setSmartAssistEnabled(false);
-                      }
-                    }}
-                    disabled={isSubmitting || demoMode}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
             </div>
           </div>
 
-          {/* Task Description */}
+          {/* Task Description - No label, just placeholder */}
           <div className="form-group">
             <textarea
               id="taskInput"
@@ -547,7 +542,7 @@ const RequestForm: React.FC = () => {
                 },
               })}
               className="form-textarea"
-              placeholder="e.g., What to do when the power is out, customer says equipment is frozen, booking cancellation request..."
+              placeholder={isTicketMode ? "Describe the issue for the support ticket..." : "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"}
               disabled={isSubmitting || demoMode}
             />
             {errors.requestDescription && (
@@ -587,15 +582,12 @@ const RequestForm: React.FC = () => {
 
           {/* Location Input */}
           <div className="form-group">
-            <label className="form-label" htmlFor="locationInput">
-              Location (optional)
-            </label>
             <input
               id="locationInput"
               {...register('location')}
               type="text"
               className="form-input"
-              placeholder="e.g., Main Floor, Bay 3, Gym Area"
+              placeholder="Location (optional) - e.g., Main Floor, Bay 3, Gym Area"
               disabled={isSubmitting || demoMode}
             />
             <div className="form-helper">
@@ -715,7 +707,7 @@ const RequestForm: React.FC = () => {
           {/* Toggle Options */}
           {!isTicketMode && (
             <div className="form-group">
-              <div className="toggle-group">
+              <div className="flex items-center justify-between">
                 <div className="toggle-item">
                   <label className="toggle-switch">
                     <input
@@ -733,23 +725,23 @@ const RequestForm: React.FC = () => {
                     />
                     <span className="toggle-slider"></span>
                   </label>
-                  <label className="toggle-label">Smart Assist (AI)</label>
+                  <label className="toggle-label text-sm">Smart Assist (AI)</label>
                   {!smartAssistEnabled && (
-                    <span className="slack-indicator">→ Slack</span>
+                    <span className="slack-indicator text-xs">→ Slack</span>
                   )}
                 </div>
-              </div>
-              <div className="form-helper mt-3">
-                <span className="text-gray-500">When Smart Assist is disabled, your message will be sent directly to Slack for human support.</span>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {smartAssistEnabled ? 'AI-powered response' : 'Human support via Slack'}
+                </span>
               </div>
             </div>
           )}
 
-          {/* Submit Buttons */}
-          <div className="button-group">
+          {/* Submit Buttons - Improved hierarchy */}
+          <div className="flex items-center gap-3">
             <button
               type="submit"
-              className={`btn btn-primary ${!smartAssistEnabled ? 'slack-mode' : ''}`}
+              className={`flex-1 sm:flex-initial btn btn-primary flex items-center justify-center gap-2 ${!smartAssistEnabled ? 'slack-mode' : ''}`}
               disabled={isProcessing || demoMode}
               onClick={() => isMounted && console.log('Button clicked!', isProcessing)}
               style={{
@@ -762,6 +754,11 @@ const RequestForm: React.FC = () => {
                 } : {})
               }}
             >
+              {!isProcessing && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )}
               {isProcessing ? (
                 <>
                   {smartAssistEnabled ? 'Processing...' : 'Sending to Slack...'}
@@ -782,7 +779,7 @@ const RequestForm: React.FC = () => {
             </button>
             <button
               type="button"
-              className="btn btn-secondary"
+              className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors underline-offset-4 hover:underline"
               onClick={handleReset}
               disabled={isSubmitting || demoMode}
               title="Clear form and start a new query (Esc)"

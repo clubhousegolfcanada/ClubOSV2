@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
-import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, User, Settings, LogOut, MessageCircle } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
 
@@ -107,14 +107,14 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
   return (
     <nav className={`bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] ${isEmbedded ? 'embedded-nav' : ''}`}>
       <div className={`${isEmbedded ? 'px-4' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}`}>
-        <div className="flex items-center justify-between h-16">
-          {/* Logo with tagline */}
+        <div className="flex items-center justify-between h-14" style={{ maxHeight: '56px' }}>
+          {/* Logo with tagline - Compressed */}
           <div className="flex items-center">
-            <div className="flex flex-col">
-              <Link href="/" className="logo text-xl font-semibold" aria-label="ClubOS Home">
+            <div className="flex items-center gap-2">
+              <Link href="/" className="logo text-lg font-semibold" aria-label="ClubOS Home">
                 ClubOS
               </Link>
-              <span className="text-[10px] text-[var(--text-muted)] -mt-1 hidden md:block">
+              <span className="text-[10px] text-[var(--text-muted)] hidden md:block">
                 v{packageJson.version}
               </span>
             </div>
@@ -146,6 +146,22 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-3">
+            {/* Messages Button - Only for admin, operator, support */}
+            {user && ['admin', 'operator', 'support'].includes(user.role) && (
+              <button
+                onClick={() => router.push('/messages')}
+                className="relative px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:opacity-90 flex items-center gap-2 text-sm font-medium transition-all smooth-transition"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Messages</span>
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                    {unreadMessages}
+                  </span>
+                )}
+              </button>
+            )}
+            
             <div 
               className={`w-2 h-2 rounded-full ${
                 sessionStatus === 'active' 

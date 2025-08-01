@@ -9,8 +9,6 @@ import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { MessageCircle } from 'lucide-react';
-import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -35,7 +33,6 @@ export default function Home() {
   const [techTicketsOpen, setTechTicketsOpen] = useState<number>(0);
   const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
-  const { unreadCount } = useMessageNotifications();
   
   // Set client flag
   useEffect(() => {
@@ -239,25 +236,7 @@ export default function Home() {
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
-        <div className="container mx-auto px-4 py-4 md:py-6 lg:py-8">
-          {/* Quick Access Button - Messages */}
-          {isClient && user && ['admin', 'operator', 'support'].includes(user.role) && (
-            <div className="mb-4">
-              <button
-                onClick={() => router.push('/messages')}
-                className="w-full sm:w-auto px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-3 shadow-lg gpu-accelerated smooth-transition hover:transform hover:-translate-y-px active:scale-[0.98]"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="font-medium">Open Messages</span>
-                {unreadCount > 0 && (
-                  <span className="bg-white text-[var(--accent)] text-sm font-bold px-2 py-0.5 rounded-full min-w-[24px] text-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
-          
+        <div className="container mx-auto px-4 py-2 md:py-3 lg:py-4">
           {/* Main Content Grid - Optimized for no-scroll */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
             {/* Request Form - Takes up 8 columns on large screens */}

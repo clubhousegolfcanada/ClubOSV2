@@ -80,9 +80,9 @@
 }
 
 @layer components {
-  /* Card Component */
+  /* Card Component - Compressed padding */
   .card {
-    @apply bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-4 sm:p-6 md:p-8 mb-6;
+    @apply bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-3 mb-3;
     @apply transition-all duration-300;
   }
 
@@ -91,9 +91,9 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
-  /* Form Elements */
+  /* Form Elements - Compressed spacing */
   .form-group {
-    @apply mb-6;
+    @apply mb-3;
   }
 
   .form-label {
@@ -169,7 +169,7 @@
 
   /* Toggle Switch */
   .toggle-group {
-    @apply flex items-center mb-6;
+    @apply flex items-center mb-3;
   }
 
   .toggle-item {
@@ -606,11 +606,11 @@
 /* Responsive */
 @media (max-width: 640px) {
   .card {
-    @apply p-4 mb-4;
+    @apply p-3 mb-3;
   }
   
   .form-group {
-    @apply mb-4;
+    @apply mb-3;
   }
   
   .form-textarea {
