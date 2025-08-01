@@ -48,6 +48,8 @@ export default function Messages() {
   const desktopMessagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [backoffDelay, setBackoffDelay] = useState(0);
   const { isSupported, permission, isSubscribed, isLoading: notificationLoading, subscribe, unsubscribe } = usePushNotifications();
   const [isClient, setIsClient] = useState(false);
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
@@ -79,20 +81,55 @@ export default function Messages() {
     }
   }, []);
 
-  // Load conversations
+  // Load conversations and handle refresh
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    let isTabVisible = true;
+    
+    // Initial load
     loadConversations();
     
-    // Set up auto-refresh every 2 seconds for more responsive updates
-    const interval = setInterval(() => {
-      loadConversations(false); // Don't show refresh indicator for auto-refresh
-    }, 2000);
-    setRefreshInterval(interval);
+    // Setup refresh interval with visibility check
+    const startRefresh = () => {
+      // Clear any existing interval first
+      if (interval) {
+        clearInterval(interval);
+      }
+      
+      // Set up auto-refresh every 5 seconds (increased from 2s to reduce rate limit issues)
+      interval = setInterval(() => {
+        // Only refresh if tab is visible and not rate limited
+        if (isTabVisible && !isRateLimited) {
+          loadConversations(false);
+        }
+      }, 5000);
+      setRefreshInterval(interval);
+    };
+    
+    // Handle visibility changes
+    const handleVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+      console.log('Tab visibility changed:', isTabVisible ? 'visible' : "hidden");
+      
+      if (isTabVisible && !isRateLimited) {
+        // Reload when tab becomes visible
+        loadConversations(false);
+      }
+    };
+    
+    // Start refresh
+    startRefresh();
+    
+    // Add visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [isRateLimited]); // Re-run when rate limit status changes
 
   // Track previous message count for new message detection
   const prevMessageCountRef = useRef(messages.length);
@@ -136,6 +173,12 @@ export default function Messages() {
   };
 
   const loadConversations = async (showRefreshIndicator = false) => {
+    // Skip if rate limited
+    if (isRateLimited) {
+      console.log('Skipping refresh - rate limited');
+      return;
+    }
+    
     if (showRefreshIndicator) {
       setRefreshing(true);
     }
@@ -216,6 +259,24 @@ export default function Messages() {
         router.push('/login');
       } else if (error.response?.status === 404) {
         toast.error('Messages API not found. Please check backend deployment.');
+      } else if (error.response?.status === 429) {
+        // Rate limited - implement exponential backoff
+        setIsRateLimited(true);
+        const delay = Math.min((backoffDelay || 5000) * 2, 60000); // Max 1 minute
+        setBackoffDelay(delay);
+        
+        console.log(`Rate limited. Backing off for ${delay/1000} seconds`);
+        
+        // Don't show toast for auto-refresh rate limits
+        if (showRefreshIndicator) {
+          toast.error(`Too many requests. Retrying in ${Math.round(delay/1000)} seconds`);
+        }
+        
+        // Reset after backoff period
+        setTimeout(() => {
+          setIsRateLimited(false);
+          setBackoffDelay(0);
+        }, delay);
       } else {
         toast.error(error.response?.data?.error || 'Failed to load conversations');
       }
