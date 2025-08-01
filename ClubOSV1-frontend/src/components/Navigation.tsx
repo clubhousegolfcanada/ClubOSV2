@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
-import { ChevronDown, User, Settings, LogOut, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
 
@@ -22,6 +22,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false);
   const [sessionStatus, setSessionStatus] = useState<'active' | 'warning' | 'expired'>('active');
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,6 +43,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setMobileUserMenuOpen(false);
   }, [router.pathname]);
 
   // Close dropdown when clicking outside
@@ -321,40 +323,62 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
           ))}
         </div>
         <div className="pt-4 pb-3 border-t border-[var(--border-secondary)]">
-          <div className="px-4 space-y-3">
-            {user && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <RoleTag showLabel={true} />
-                  <span className="ml-3 text-sm text-[var(--text-secondary)]">{user.email}</span>
-                </div>
-              </div>
-            )}
-            <button
-              onClick={toggleTheme}
-              className="block w-full text-left px-4 py-3 rounded-md text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 touch-manipulation"
-            >
-              Theme: {theme.toUpperCase()}
-            </button>
+          <div className="px-4">
             {user && (
               <>
-                <Link
-                  href="/profile"
-                  className="block px-4 py-3 rounded-md text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 touch-manipulation"
+                {/* Collapsible User Menu */}
+                <button
+                  onClick={() => setMobileUserMenuOpen(!mobileUserMenuOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-md text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 touch-manipulation"
                 >
-                  Profile
-                </Link>
-                {user.role === 'admin' && (
-                  <Link
-                    href="/settings"
-                    className="block px-4 py-3 rounded-md text-base font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 touch-manipulation"
-                  >
-                    Settings
-                  </Link>
-                )}
+                  <div className="flex items-center gap-3">
+                    <RoleTag showLabel={false} />
+                    <span>{user.name || user.email?.split('@')[0]}</span>
+                  </div>
+                  <ChevronDown 
+                    className={`w-5 h-5 transition-transform ${
+                      mobileUserMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                
+                {/* Collapsible Content */}
+                <div 
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    mobileUserMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <div className="pl-4 space-y-1 mt-2">
+                    <div className="text-xs text-[var(--text-muted)] px-4 py-1">
+                      {user.email}
+                    </div>
+                    <button
+                      onClick={toggleTheme}
+                      className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                    >
+                      Theme: {theme.toUpperCase()}
+                    </button>
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                    >
+                      Profile
+                    </Link>
+                    {user.role === 'admin' && (
+                      <Link
+                        href="/settings"
+                        className="block px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                      >
+                        Settings
+                      </Link>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Logout Button - Always visible */}
                 <button
                   onClick={logout}
-                  className="block w-full text-left px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation flex items-center gap-2"
+                  className="w-full mt-3 px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation flex items-center gap-2"
                 >
                   <LogOut className="w-5 h-5" />
                   Logout

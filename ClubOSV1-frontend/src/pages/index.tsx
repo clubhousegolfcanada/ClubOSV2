@@ -198,7 +198,7 @@ export default function Home() {
       change: '', 
       trend: 'neutral' as const,
       isButton: true,
-      onClick: () => router.push('/operations?tab=checklists'),
+      onClick: () => router.push('/checklists'),
       buttonText: 'Go to Checklists'
     },
     { 

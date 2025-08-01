@@ -29,10 +29,10 @@ export function useSwipeNavigation(config: SwipeConfig = {}) {
     const allPages = [
       { path: '/', name: 'Dashboard' },
       { path: '/messages', name: 'Messages', roles: ['admin', 'operator', 'support'] },
-      { path: '/tickets', name: 'Tickets' },
+      { path: '/commands', name: 'Commands', roles: ['admin', 'operator', 'support'] },
+      { path: '/tickets', name: 'Tickets', roles: ['admin', 'operator'] },
       { path: '/checklists', name: 'Checklists', roles: ['admin', 'operator'] },
-      { path: '/operations', name: 'Operations' },
-      { path: '/commands', name: 'Commands' },
+      { path: '/operations', name: 'Operations', roles: ['admin', 'operator'] },
     ];
 
     // Filter pages based on user role
