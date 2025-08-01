@@ -650,31 +650,28 @@ export default function Messages() {
                   title="Check booking site"
                 >
                   <Calendar className="w-4 h-4" />
-                  <span>Check Bookings</span>
+                  <span>Bookings</span>
                 </button>
                 
-                {/* Splashtop button - only show on touch devices */}
-                {isClient && 'ontouchstart' in window && (
-                  <button
-                    onClick={() => {
-                      // Try to open Splashtop app with deep link
-                      window.location.href = 'splashtop://';
-                      // Fallback to app store after a delay
-                      setTimeout(() => {
-                        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                          window.open('https://apps.apple.com/app/splashtop-business/id487398015', '_blank');
-                        } else if (/Android/.test(navigator.userAgent)) {
-                          window.open('https://play.google.com/store/apps/details?id=com.splashtop.remote.business', '_blank');
-                        }
-                      }, 1500);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
-                    title="Open Splashtop"
-                  >
-                    <Monitor className="w-4 h-4" />
-                    <span>Splashtop</span>
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    // Try to open Splashtop app with deep link
+                    window.location.href = 'splashtop://';
+                    // Fallback to app store after a delay
+                    setTimeout(() => {
+                      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                        window.open('https://apps.apple.com/app/splashtop-business/id487398015', '_blank');
+                      } else if (/Android/.test(navigator.userAgent)) {
+                        window.open('https://play.google.com/store/apps/details?id=com.splashtop.remote.business', '_blank');
+                      }
+                    }, 1500);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
+                  title="Remote control simulators"
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span>Control</span>
+                </button>
               </div>
             </div>
 
@@ -1016,10 +1013,10 @@ export default function Messages() {
                     }, 1500);
                   }}
                   className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-primary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-primary)] whitespace-nowrap text-sm"
-                  title="Open Splashtop"
+                  title="Remote control simulators"
                 >
                   <Monitor className="w-4 h-4" />
-                  <span>Splashtop</span>
+                  <span>Control</span>
                 </button>
               </div>
             </div>
