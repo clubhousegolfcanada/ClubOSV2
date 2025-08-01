@@ -3,24 +3,39 @@
   "short_name": "ClubOS",
   "description": "AI-powered golf simulator management system for Clubhouse 24/7 Golf",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0B3D3A",
   "theme_color": "#0B3D3A",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "/clubos-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/clubos-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/clubos-badge-72.png",
       "sizes": "72x72",
       "type": "image/png"
+    },
+    {
+      "src": "/clubos-icon-192.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["business", "productivity"],
   "lang": "en-US",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": []
 }
