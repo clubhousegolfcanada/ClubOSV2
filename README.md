@@ -97,10 +97,12 @@ railway logs            # Check production logs
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
-- **v1.10.1**: PWA Support Phase 1 - Icons and manifest
-  - Full Android PWA compliance with valid icons
+- **v1.10.1**: Complete PWA Support - Fully installable app
+  - Full Android/iOS PWA compliance with valid icons
   - Web app manifest configured for installability
-  - Middleware updated for public file access
+  - Service worker with offline support
+  - Push notification infrastructure ready
+  - Background sync capabilities
 - **v1.10.0**: AI-Assisted Messaging & Comprehensive Privacy
   - AI suggestions for customer messages with safety filters
   - OpenPhone call transcript analysis and knowledge extraction
