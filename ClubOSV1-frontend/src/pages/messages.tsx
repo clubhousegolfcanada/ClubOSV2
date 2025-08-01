@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
@@ -632,11 +632,55 @@ export default function Messages() {
                   )}
                 </div>
               </div>
+              
+              {/* Quick Actions Bar - Desktop */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => router.push('/tickets?create=true')}
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
+                  title="Create new ticket"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Ticket</span>
+                </button>
+                
+                <button
+                  onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
+                  title="Check booking site"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Check Bookings</span>
+                </button>
+                
+                {/* Splashtop button - only show on touch devices */}
+                {isClient && 'ontouchstart' in window && (
+                  <button
+                    onClick={() => {
+                      // Try to open Splashtop app with deep link
+                      window.location.href = 'splashtop://';
+                      // Fallback to app store after a delay
+                      setTimeout(() => {
+                        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                          window.open('https://apps.apple.com/app/splashtop-business/id487398015', '_blank');
+                        } else if (/Android/.test(navigator.userAgent)) {
+                          window.open('https://play.google.com/store/apps/details?id=com.splashtop.remote.business', '_blank');
+                        }
+                      }, 1500);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
+                    title="Open Splashtop"
+                  >
+                    <Monitor className="w-4 h-4" />
+                    <span>Splashtop</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Messages Interface */}
             <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
-              <div className="grid grid-cols-3 h-[calc(100vh-180px)]">
+              <div className="grid grid-cols-3 h-[calc(100vh-240px)]">
                 
                 {/* Conversations List */}
                 <div className="border-r border-[var(--border-secondary)] overflow-y-auto">
@@ -936,6 +980,47 @@ export default function Messages() {
                     )}
                   </button>
                 )}
+              </div>
+              
+              {/* Quick Actions Bar - Mobile */}
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                <button
+                  onClick={() => router.push('/tickets?create=true')}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-primary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-primary)] whitespace-nowrap text-sm"
+                  title="Create new ticket"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Ticket</span>
+                </button>
+                
+                <button
+                  onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-primary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-primary)] whitespace-nowrap text-sm"
+                  title="Check booking site"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Bookings</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // Try to open Splashtop app with deep link
+                    window.location.href = 'splashtop://';
+                    // Fallback to app store after a delay
+                    setTimeout(() => {
+                      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                        window.open('https://apps.apple.com/app/splashtop-business/id487398015', '_blank');
+                      } else if (/Android/.test(navigator.userAgent)) {
+                        window.open('https://play.google.com/store/apps/details?id=com.splashtop.remote.business', '_blank');
+                      }
+                    }, 1500);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-primary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-primary)] whitespace-nowrap text-sm"
+                  title="Open Splashtop"
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span>Splashtop</span>
+                </button>
               </div>
             </div>
           </div>
