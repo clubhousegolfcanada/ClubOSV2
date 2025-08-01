@@ -212,7 +212,17 @@ export default function Messages() {
         if (!selectedConversation && sortedConversations.length > 0 && !loading) {
           const firstConversation = sortedConversations[0];
           setSelectedConversation(firstConversation);
-          setMessages(firstConversation.messages || []);
+          
+          // Deduplicate messages
+          const messages = firstConversation.messages || [];
+          const uniqueMessages = messages.reduce((acc: Message[], msg: Message) => {
+            if (!acc.find(m => m.id === msg.id)) {
+              acc.push(msg);
+            }
+            return acc;
+          }, []);
+          
+          setMessages(uniqueMessages);
           console.log('Auto-selected first conversation:', firstConversation.customer_name);
           
           // Scroll to bottom after a short delay
@@ -238,7 +248,16 @@ export default function Messages() {
             
             // Always update the conversation and messages to ensure we have the latest data
             setSelectedConversation(updated);
-            setMessages(updatedMessages);
+            
+            // Deduplicate messages by ID to prevent duplicates
+            const uniqueMessages = updatedMessages.reduce((acc: Message[], msg: Message) => {
+              if (!acc.find(m => m.id === msg.id)) {
+                acc.push(msg);
+              }
+              return acc;
+            }, []);
+            
+            setMessages(uniqueMessages);
             
             // Check if there are new messages by comparing counts and checking the last message
             if (updatedMessageCount > currentMessageCount) {
@@ -305,9 +324,18 @@ export default function Messages() {
 
   const selectConversation = async (conversation: Conversation) => {
     setSelectedConversation(conversation);
-    // Ensure messages is always an array
+    // Ensure messages is always an array and deduplicate
     const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
-    setMessages(conversationMessages);
+    
+    // Deduplicate messages by ID
+    const uniqueMessages = conversationMessages.reduce((acc: Message[], msg: Message) => {
+      if (!acc.find(m => m.id === msg.id)) {
+        acc.push(msg);
+      }
+      return acc;
+    }, []);
+    
+    setMessages(uniqueMessages);
     
     // Mark as read only if we have a phone number
     if (conversation.phone_number) {
@@ -384,18 +412,8 @@ export default function Messages() {
           status: 'sent'
         };
         
-        // Add message to local state immediately
+        // Add message to local state only once
         setMessages(prev => [...prev, sentMessage]);
-        
-        // Update the selected conversation's messages too
-        setSelectedConversation(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            messages: [...(Array.isArray(prev.messages) ? prev.messages : []), sentMessage],
-            lastMessage: sentMessage
-          };
-        });
         
         // Scroll to bottom after sending
         setTimeout(scrollToBottom, 100);
@@ -498,17 +516,8 @@ export default function Messages() {
           status: 'sent'
         };
         
+        // Add message to local state only once
         setMessages(prev => [...prev, sentMessage]);
-        
-        // Update the selected conversation's messages too
-        setSelectedConversation(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            messages: [...(Array.isArray(prev.messages) ? prev.messages : []), sentMessage],
-            lastMessage: sentMessage
-          };
-        });
         
         // Scroll to bottom
         setTimeout(scrollToBottom, 100);

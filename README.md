@@ -97,6 +97,11 @@ railway logs            # Check production logs
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.10.2**: Mobile UX Improvements & Bug Fixes
+  - Redesigned ticket page for better mobile experience
+  - Fixed duplicate message display bug in messages window
+  - Improved consistency across all pages
+  - Enhanced touch targets and readability
 - **v1.10.1**: Complete PWA Support - Fully installable app
   - Full Android/iOS PWA compliance with valid icons
   - Web app manifest configured for installability

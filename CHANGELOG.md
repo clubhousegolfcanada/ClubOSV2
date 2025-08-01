@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.10.2] - 2025-08-01
+
+### Fixed
+- **Ticket Page Mobile Experience**
+  - Increased touch targets to minimum 44px for better mobile usability
+  - Improved spacing and padding throughout ticket cards
+  - Larger, more readable text sizes (16px titles, 14px body)
+  - Enhanced filter pills with better visual feedback
+  - Modal redesign with proper mobile safe areas
+  - Consistent design language matching dashboard and messages pages
+
+- **Messages Duplicate Display Bug**
+  - Fixed issue where sent messages appeared twice in the UI
+  - Added message deduplication by ID to prevent duplicates
+  - Resolved race condition between local state updates and server refresh
+  - Messages now display correctly without duplication
+
+### Improved
+- Ticket cards now have better breathing room and visual hierarchy
+- Search bar and filter controls are more touch-friendly
+- Empty states have clearer messaging and larger icons
+- Loading states are more prominent and consistent
+
 ## [1.10.1] - 2025-08-01
 
 ### Added

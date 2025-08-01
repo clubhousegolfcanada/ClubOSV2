@@ -377,34 +377,34 @@ const TicketCenterOptimized = () => {
       </div>
 
       {/* Search Bar - Mobile optimized */}
-      <div className="mb-4 relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+      <div className="mb-6 relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
         <input
           type="text"
           placeholder="Search tickets..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm"
+          className="w-full pl-10 pr-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-base focus:outline-none focus:border-[var(--accent)] transition-colors"
         />
       </div>
 
       {/* Filter Pills - Horizontal scroll on mobile */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+      <div className="flex gap-3 overflow-x-auto pb-3 mb-6 -mx-3 px-3 sm:mx-0 sm:px-0">
         {filters.map((f) => (
           <button
             key={f.value}
             onClick={() => setFilter(f.value as TicketStatus | 'all')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 min-h-[44px] ${
               filter === f.value
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                ? 'bg-[var(--accent)] text-white shadow-sm'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-secondary)]'
             }`}
           >
             {f.label}
             {f.count > 0 && (
               <span className={`text-xs ${
                 filter === f.value ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
-              } px-1.5 py-0.5 rounded-full`}>
+              } px-2 py-0.5 rounded-full min-w-[24px] text-center`}>
                 {f.count}
               </span>
             )}
@@ -415,32 +415,32 @@ const TicketCenterOptimized = () => {
       {/* Ticket List - Optimized for mobile */}
       <div>
         {loading ? (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--accent)]"></div>
-            <p className="mt-2 text-xs text-[var(--text-secondary)]">Loading tickets...</p>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
+            <p className="mt-3 text-sm text-[var(--text-secondary)]">Loading tickets...</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {filteredTickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-3 hover:border-[var(--accent)] transition-colors"
+              className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 hover:border-[var(--accent)] transition-colors shadow-sm"
             >
               {/* Mobile-optimized layout */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {/* Ticket header with ID and priority */}
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono">#{ticket.id.slice(0, 6)}</span>
-                    <div className={`w-1.5 h-1.5 rounded-full ${priorityColors[ticket.priority]}`} />
-                    <span className={`px-1.5 py-0.5 text-[10px] rounded ${getStatusColor(ticket.status)}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs text-[var(--text-muted)] font-mono">#{ticket.id.slice(0, 6)}</span>
+                    <div className={`w-2 h-2 rounded-full ${priorityColors[ticket.priority]}`} />
+                    <span className={`px-2 py-1 text-xs rounded-md font-medium ${getStatusColor(ticket.status)}`}>
                       {ticket.status.replace('-', ' ')}
                     </span>
                   </div>
                   
                   {/* Title - Clickable */}
                   <h3 
-                    className="font-medium text-xs mb-1.5 line-clamp-2 cursor-pointer hover:text-[var(--accent)]"
+                    className="font-medium text-base mb-2 line-clamp-2 cursor-pointer hover:text-[var(--accent)] transition-colors"
                     onClick={() => {
                       setSelectedTicket(ticket);
                       setShowTicketDetail(true);
@@ -450,18 +450,18 @@ const TicketCenterOptimized = () => {
                   </h3>
                   
                   {/* Meta info */}
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--text-muted)]">
-                    <span className="flex items-center gap-0.5">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
+                    <span className="flex items-center gap-1">
                       <span className="font-medium capitalize">{ticket.category}</span>
                     </span>
-                    {ticket.location && <span>{ticket.location}</span>}
-                    <span className="flex items-center gap-0.5">
-                      <Clock className="w-2.5 h-2.5" />
+                    {ticket.location && <span className="flex items-center gap-1">{ticket.location}</span>}
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
                       {formatTimeAgo(ticket.createdAt)}
                     </span>
                     {ticket.comments.length > 0 && (
-                      <span className="flex items-center gap-0.5">
-                        <MessageSquare className="w-2.5 h-2.5" />
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-3 h-3" />
                         {ticket.comments.length}
                       </span>
                     )}
@@ -469,33 +469,33 @@ const TicketCenterOptimized = () => {
                 </div>
 
                 {/* Quick actions */}
-                <div className="flex gap-0.5">
+                <div className="flex gap-1">
                   <button
                     onClick={() => {
                       setSelectedTicket(ticket);
                       setShowTicketDetail(true);
                     }}
-                    className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
+                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
                     title="View details"
                   >
-                    <ChevronRight className="w-3 h-3 text-[var(--text-secondary)]" />
+                    <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
                   </button>
                   {ticket.status === 'open' && (
                     <button
                       onClick={() => handleQuickResolve(ticket.id)}
-                      className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
                       title="Quick resolve"
                     >
-                      <Check className="w-3 h-3 text-green-500" />
+                      <Check className="w-4 h-4 text-green-500" />
                     </button>
                   )}
                   {(user?.role === 'admin' || user?.role === 'operator') && (
                     <button
                       onClick={() => deleteTicket(ticket.id)}
-                      className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
                       title="Delete ticket"
                     >
-                      <Trash2 className="w-3 h-3 text-red-500" />
+                      <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
                   )}
                 </div>
@@ -507,15 +507,15 @@ const TicketCenterOptimized = () => {
 
         {/* Empty state */}
         {!loading && filteredTickets.length === 0 && (
-          <div className="text-center py-8">
-            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-[var(--text-muted)]" />
-            <p className="text-xs text-[var(--text-secondary)]">
+          <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
+            <p className="text-base text-[var(--text-secondary)] mb-2">
               {searchTerm ? 'No tickets match your search' : 'No tickets found'}
             </p>
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="mt-2 text-xs text-[var(--accent)] hover:underline"
+                className="text-sm text-[var(--accent)] hover:underline"
               >
                 Clear search
               </button>
@@ -527,12 +527,12 @@ const TicketCenterOptimized = () => {
       {/* Ticket Detail Modal */}
       {showTicketDetail && selectedTicket && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-[var(--bg-primary)] w-full sm:max-w-2xl max-h-[90vh] rounded-t-lg sm:rounded-lg overflow-hidden flex flex-col">
+          <div className="bg-[var(--bg-primary)] w-full sm:max-w-2xl h-full sm:h-auto sm:max-h-[90vh] rounded-t-2xl sm:rounded-lg overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="p-3 border-b border-[var(--border-primary)] flex items-center justify-between">
+            <div className="p-4 border-b border-[var(--border-primary)] flex items-center justify-between bg-[var(--bg-secondary)]">
               <div>
-                <h2 className="text-sm font-semibold">Ticket Details</h2>
-                <p className="text-xs text-[var(--text-muted)]">#{selectedTicket.id.slice(0, 6)}</p>
+                <h2 className="text-lg font-semibold">Ticket Details</h2>
+                <p className="text-sm text-[var(--text-muted)]">#{selectedTicket.id.slice(0, 6)}</p>
               </div>
               <button
                 onClick={() => {
@@ -540,24 +540,24 @@ const TicketCenterOptimized = () => {
                   setSelectedTicket(null);
                   setNewComment('');
                 }}
-                className="p-1.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
+                className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
               {/* Ticket Info */}
               <div>
-                <h3 className="font-medium text-sm mb-1.5">{selectedTicket.title}</h3>
-                <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">
+                <h3 className="font-medium text-lg mb-2">{selectedTicket.title}</h3>
+                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">
                   {selectedTicket.description}
                 </p>
               </div>
 
               {/* Metadata */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-2 gap-4 text-sm bg-[var(--bg-secondary)] rounded-lg p-4">
                 <div>
                   <span className="text-[var(--text-muted)]">Category:</span>
                   <span className="ml-1 capitalize">{selectedTicket.category}</span>
@@ -570,7 +570,7 @@ const TicketCenterOptimized = () => {
                 </div>
                 <div>
                   <span className="text-[var(--text-muted)]">Status:</span>
-                  <span className={`ml-1 px-1.5 py-0.5 text-[10px] rounded ${getStatusColor(selectedTicket.status)}`}>
+                  <span className={`ml-1 px-2 py-1 text-xs rounded-md ${getStatusColor(selectedTicket.status)}`}>
                     {selectedTicket.status.replace('-', ' ')}
                   </span>
                 </div>
@@ -592,14 +592,14 @@ const TicketCenterOptimized = () => {
 
               {/* Status Update */}
               <div>
-                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">Update Status:</label>
-                <div className="flex gap-1.5 flex-wrap">
+                <label className="text-sm text-[var(--text-muted)] uppercase tracking-wider block mb-2">Update Status:</label>
+                <div className="flex gap-2 flex-wrap">
                   {(['open', 'in-progress', 'resolved', 'closed'] as TicketStatus[]).map(status => (
                     <button
                       key={status}
                       onClick={() => updateTicketStatus(selectedTicket.id, status)}
                       disabled={selectedTicket.status === status}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors min-h-[40px] ${
                         selectedTicket.status === status
                           ? 'bg-[var(--accent)] text-white'
                           : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)]'
@@ -613,20 +613,20 @@ const TicketCenterOptimized = () => {
 
               {/* Comments */}
               <div>
-                <h4 className="text-xs font-medium uppercase tracking-wider mb-1.5">Comments ({selectedTicket.comments.length})</h4>
-                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                <h4 className="text-sm font-medium uppercase tracking-wider mb-3">Comments ({selectedTicket.comments.length})</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {selectedTicket.comments.length === 0 ? (
-                    <p className="text-xs text-[var(--text-muted)]">No comments yet</p>
+                    <p className="text-sm text-[var(--text-muted)] text-center py-4">No comments yet</p>
                   ) : (
                     selectedTicket.comments.map(comment => (
-                      <div key={comment.id} className="bg-[var(--bg-tertiary)] rounded p-2">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-xs font-medium">{comment.createdBy.name}</span>
-                          <span className="text-[10px] text-[var(--text-muted)]">
+                      <div key={comment.id} className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">{comment.createdBy.name}</span>
+                          <span className="text-xs text-[var(--text-muted)]">
                             {formatTimeAgo(comment.createdAt)}
                           </span>
                         </div>
-                        <p className="text-xs">{comment.text}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">{comment.text}</p>
                       </div>
                     ))
                   )}
@@ -639,13 +639,13 @@ const TicketCenterOptimized = () => {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Add a comment..."
-                  className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs resize-none"
-                  rows={2}
+                  className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-sm resize-none focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  rows={3}
                 />
                 <button
                   onClick={() => addComment(selectedTicket.id)}
                   disabled={!newComment.trim()}
-                  className="mt-1.5 px-3 py-1.5 bg-[var(--accent)] text-white rounded text-xs disabled:opacity-50"
+                  className="mt-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
                 >
                   Add Comment
                 </button>
