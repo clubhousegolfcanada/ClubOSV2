@@ -34,24 +34,11 @@ export default function Home() {
   const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
   
-  // Set client flag and check for mobile redirect
+  // Set client flag
   useEffect(() => {
     setIsClient(true);
-    
-    // Check if mobile and redirect to messages
-    const checkMobileAndRedirect = () => {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                       window.innerWidth < 768;
-      
-      if (isMobile && user && ['admin', 'operator', 'support'].includes(user.role)) {
-        router.push('/messages');
-      }
-    };
-    
-    if (user) {
-      checkMobileAndRedirect();
-    }
-  }, [user, router]);
+    // Mobile redirect to messages disabled - now shows dashboard for all devices
+  }, []);
   
   // Fetch previous period stats for comparison - only when authenticated
   useEffect(() => {

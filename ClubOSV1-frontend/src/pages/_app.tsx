@@ -46,10 +46,23 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     }
     
     // PWA fullscreen support
-    if ('standalone' in window.navigator || window.matchMedia('(display-mode: standalone)').matches) {
-      // App is running in standalone mode
+    const isStandalone = 'standalone' in window.navigator || 
+                        window.matchMedia('(display-mode: standalone)').matches ||
+                        window.matchMedia('(display-mode: fullscreen)').matches;
+    
+    if (isStandalone) {
       console.log('Running in PWA standalone mode');
-      // Don't add any classes that might break layout
+      document.documentElement.classList.add('pwa-mode');
+      
+      // Android-specific fixes
+      if (/Android/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add('pwa-android');
+        // Force viewport update for Android
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, interactive-widget=resizes-visual');
+        }
+      }
     }
     
     // iOS PWA viewport fix
