@@ -1,7 +1,6 @@
 import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
 import DatabaseExternalTools from '@/components/DatabaseExternalTools';
-import RemoteActionsBar from '@/components/RemoteActionsBar';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useDemoMode, useAnalytics } from '@/state/hooks';
@@ -250,9 +249,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
-        {/* Remote Actions Bar */}
-        <RemoteActionsBar />
       </main>
     </>
   );

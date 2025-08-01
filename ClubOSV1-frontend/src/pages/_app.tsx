@@ -14,6 +14,7 @@ import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { SwipeIndicator } from '@/components/SwipeIndicator';
+import RemoteActionsBar from '@/components/RemoteActionsBar';
 import { performanceMonitor, updateAnimationDurations } from '@/utils/performanceMonitor';
 
 // Public routes that don't require authentication
@@ -199,6 +200,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         <AuthGuard>
           <Component {...pageProps} />
           <SwipeIndicator enabled={isAuthenticated} />
+          <RemoteActionsBar />
         </AuthGuard>
       )}
       <Notifications />
