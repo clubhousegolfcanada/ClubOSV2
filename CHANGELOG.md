@@ -5,6 +5,15 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.10.3] - 2025-08-01
 
 ### Added
+- **High Performance Animations**
+  - GPU-accelerated animations for 60fps+ performance
+  - Adaptive animation timing for 120Hz/144Hz displays
+  - Hardware acceleration using CSS transforms
+  - RequestAnimationFrame optimization
+  - Performance monitoring system
+  - Reduced motion support for accessibility
+
+### Added
 - **Quick Messages Access**
   - Prominent "Open Messages" button on dashboard
   - Shows unread message count badge

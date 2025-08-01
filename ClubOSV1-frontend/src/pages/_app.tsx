@@ -14,6 +14,7 @@ import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { SwipeIndicator } from '@/components/SwipeIndicator';
+import { performanceMonitor, updateAnimationDurations } from '@/utils/performanceMonitor';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -48,6 +49,18 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         .catch(error => {
           console.error('Service Worker registration failed:', error);
         });
+    }
+    
+    // Initialize performance monitoring and adaptive animations
+    if (typeof window !== 'undefined') {
+      performanceMonitor.start();
+      updateAnimationDurations();
+      
+      // Update animations on display change (e.g., external monitor)
+      if ('matchMedia' in window) {
+        const mediaQuery = window.matchMedia('(min-resolution: 2dppx)');
+        mediaQuery.addEventListener('change', updateAnimationDurations);
+      }
     }
     
     // PWA fullscreen support

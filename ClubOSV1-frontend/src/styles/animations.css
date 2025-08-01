@@ -1,0 +1,231 @@
+/* High Performance Animation Settings for 60fps+ */
+
+/* Enable GPU acceleration and optimize for high refresh rates */
+:root {
+  /* Animation timing for different refresh rates */
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 250ms;
+  --animation-duration-slow: 350ms;
+  
+  /* Easing functions optimized for smoothness */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Force GPU acceleration on animated elements */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimize all transitions for high refresh rates */
+* {
+  /* Remove the default 300ms transition */
+  transition: none !important;
+}
+
+/* Selective smooth transitions */
+.smooth-transition {
+  transition: transform var(--animation-duration-fast) var(--ease-out-expo),
+              opacity var(--animation-duration-fast) var(--ease-out-expo),
+              background-color var(--animation-duration-normal) ease,
+              border-color var(--animation-duration-normal) ease !important;
+}
+
+/* Page transitions */
+.page-transition {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+.page-enter {
+  opacity: 0;
+  transform: translateX(20px) translateZ(0);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateX(0) translateZ(0);
+  transition: all var(--animation-duration-fast) var(--ease-out-expo);
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateX(0) translateZ(0);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateX(-20px) translateZ(0);
+  transition: all var(--animation-duration-fast) var(--ease-out-expo);
+}
+
+/* Swipe animations */
+.swipe-indicator {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  transition: opacity var(--animation-duration-fast) var(--ease-out-expo);
+}
+
+/* Button interactions */
+button, a, .clickable {
+  transform: translateZ(0);
+  will-change: transform;
+  transition: transform 100ms var(--ease-out-expo),
+              background-color 150ms ease,
+              border-color 150ms ease,
+              box-shadow 150ms ease !important;
+}
+
+button:active, a:active, .clickable:active {
+  transform: scale(0.98) translateZ(0);
+}
+
+button:hover, a:hover, .clickable:hover {
+  transform: translateY(-1px) translateZ(0);
+}
+
+/* Card hover effects */
+.card {
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: transform var(--animation-duration-fast) var(--ease-out-expo),
+              box-shadow var(--animation-duration-fast) var(--ease-out-expo),
+              border-color var(--animation-duration-normal) ease !important;
+}
+
+.card:hover {
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* Message bubbles */
+.message-bubble {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  animation: messageSlideIn var(--animation-duration-fast) var(--ease-out-expo);
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+/* Loading states */
+.loading-spinner {
+  transform: translateZ(0);
+  will-change: transform;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg) translateZ(0);
+  }
+  to {
+    transform: rotate(360deg) translateZ(0);
+  }
+}
+
+/* Skeleton loading with GPU acceleration */
+.skeleton {
+  transform: translateZ(0);
+  will-change: opacity;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Modal animations */
+.modal-backdrop {
+  transform: translateZ(0);
+  will-change: opacity;
+  transition: opacity var(--animation-duration-fast) ease !important;
+}
+
+.modal-content {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  transition: transform var(--animation-duration-fast) var(--ease-out-expo),
+              opacity var(--animation-duration-fast) ease !important;
+}
+
+/* Notification animations */
+.notification {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  animation: slideInRight var(--animation-duration-fast) var(--ease-out-expo);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%) translateZ(0);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) translateZ(0);
+    opacity: 1;
+  }
+}
+
+/* Optimize scrolling performance */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High refresh rate optimizations */
+@media (min-resolution: 2dppx) {
+  /* Use shorter durations for high DPI displays */
+  :root {
+    --animation-duration-fast: 120ms;
+    --animation-duration-normal: 200ms;
+    --animation-duration-slow: 300ms;
+  }
+}
+
+/* 120Hz+ display optimizations */
+@media (update: fast) and (hover: hover) {
+  :root {
+    --animation-duration-fast: 100ms;
+    --animation-duration-normal: 167ms;
+    --animation-duration-slow: 250ms;
+  }
+}

@@ -245,7 +245,7 @@ export default function Home() {
             <div className="mb-4">
               <button
                 onClick={() => router.push('/messages')}
-                className="w-full sm:w-auto px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-3 shadow-lg"
+                className="w-full sm:w-auto px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 flex items-center justify-center gap-3 shadow-lg gpu-accelerated smooth-transition hover:transform hover:-translate-y-px active:scale-[0.98]"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="font-medium">Open Messages</span>

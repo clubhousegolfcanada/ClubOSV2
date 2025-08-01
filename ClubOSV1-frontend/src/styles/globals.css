@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import './animations.css';
 
 @tailwind base;
 @tailwind components;
@@ -64,9 +65,7 @@
     --status-info: #3b82f6;
   }
 
-  * {
-    @apply transition-colors duration-300;
-  }
+  /* Removed blanket transition - now handled by animations.css */
 
   html {
     font-size: 16px;
