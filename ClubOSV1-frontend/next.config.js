@@ -19,6 +19,20 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Public files should be accessible without auth
+        source: '/(manifest.json|favicon.ico|sw.js|offline.html|.*\\.png)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600'
+          },
+          {
+            key: 'X-Public-Resource',
+            value: 'true'
+          }
+        ],
+      },
+      {
         source: '/:path*',
         headers: [
           {
