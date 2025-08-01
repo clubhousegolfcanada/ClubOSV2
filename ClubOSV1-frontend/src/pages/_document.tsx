@@ -22,8 +22,8 @@ export default function Document() {
         <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/clubos-icon-192.png" />
-        <link rel="apple-touch-icon" sizes="72x72" href="/clubos-badge-72.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/clubos-icon-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/clubos-icon-512.png" />
         
         {/* iOS Splash Screens (optional but nice) */}
         <meta name="apple-mobile-web-app-capable" content="yes" />

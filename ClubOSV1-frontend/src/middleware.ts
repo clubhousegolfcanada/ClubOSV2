@@ -2,6 +2,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip middleware for public files and PWA files
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.match(/\.(png|jpg|jpeg|gif|ico|json|webmanifest|js|css|svg)$/) ||
+    pathname === '/sw.js' ||
+    pathname === '/offline.html' ||
+    pathname === '/manifest.json'
+  ) {
+    return NextResponse.next();
+  }
+
   // Clone the request headers
   const requestHeaders = new Headers(request.headers);
 
