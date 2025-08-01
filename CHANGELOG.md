@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.10.3] - 2025-08-01
+
+### Added
+- **Quick Messages Access**
+  - Prominent "Open Messages" button on dashboard
+  - Shows unread message count badge
+  - One-tap access without navigation menu
+  - Only visible for admin, operator, and support roles
+
+- **Swipe Navigation for PWA**
+  - Native-feeling swipe gestures between pages
+  - Swipe right to go back, left to go forward
+  - Visual indicators show swipe availability
+  - Bottom dots show current page position
+  - Respects user role permissions
+  - Works seamlessly with vertical scrolling
+
+### Improved
+- Mobile navigation experience
+- PWA feels more like a native app
+- Faster access to critical features
+
 ## [1.10.2] - 2025-08-01
 
 ### Fixed

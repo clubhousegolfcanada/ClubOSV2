@@ -97,6 +97,11 @@ railway logs            # Check production logs
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.10.3**: Enhanced Mobile Navigation
+  - Quick access "Open Messages" button on dashboard
+  - Native swipe navigation between pages
+  - Visual indicators for swipe gestures
+  - Unread message count badge
 - **v1.10.2**: Mobile UX Improvements & Bug Fixes
   - Redesigned ticket page for better mobile experience
   - Fixed duplicate message display bug in messages window

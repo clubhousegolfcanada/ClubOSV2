@@ -12,6 +12,8 @@ import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 import { tokenManager } from '@/utils/tokenManager';
 import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { SwipeIndicator } from '@/components/SwipeIndicator';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -32,6 +34,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   
   // Use message notifications hook
   const { unreadCount } = useMessageNotifications();
+  
+  // Enable swipe navigation for authenticated users
+  useSwipeNavigation({ enabled: isAuthenticated && !isPublicRoute });
 
   useEffect(() => {
     // Register service worker for PWA and push notifications
@@ -180,6 +185,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       ) : (
         <AuthGuard>
           <Component {...pageProps} />
+          <SwipeIndicator enabled={isAuthenticated} />
         </AuthGuard>
       )}
       <Notifications />
