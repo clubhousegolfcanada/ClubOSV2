@@ -12,7 +12,6 @@ import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 import { tokenManager } from '@/utils/tokenManager';
 import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
-import { PWAInstallBanner } from '@/components/PWAInstallBanner';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -185,7 +184,6 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       )}
       <Notifications />
       {isAuthenticated && <SessionExpiryWarning />}
-      {isAuthenticated && <PWAInstallBanner />}
       <Toaster
         position="top-right"
         toastOptions={{
