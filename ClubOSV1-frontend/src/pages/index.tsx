@@ -8,6 +8,9 @@ import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
+import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
+import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -241,6 +244,10 @@ export default function Home() {
             {/* Request Form - Takes up 8 columns on large screens */}
             <div className="lg:col-span-8">
               <RequestForm />
+              
+              {/* Desktop-only enhancements */}
+              <MiniInsightsPanel />
+              <SuggestedActions />
             </div>
             
             {/* Sidebar - Contains Quick Stats and External Tools - 4 columns */}
@@ -249,6 +256,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+        
+        {/* Command Shortcut Bar - Desktop only */}
+        <CommandShortcutBar />
       </main>
     </>
   );
