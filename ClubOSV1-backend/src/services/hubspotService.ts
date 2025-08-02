@@ -118,17 +118,17 @@ class HubSpotService {
           filters: [
             {
               propertyName: 'phone',
-              operator: 'CONTAINS',
+              operator: 'CONTAINS_TOKEN',
               value: normalized
             },
             {
               propertyName: 'mobilephone',
-              operator: 'CONTAINS',
+              operator: 'CONTAINS_TOKEN',
               value: normalized
             },
             {
               propertyName: 'work_phone',
-              operator: 'CONTAINS',
+              operator: 'CONTAINS_TOKEN',
               value: normalized
             }
           ]
