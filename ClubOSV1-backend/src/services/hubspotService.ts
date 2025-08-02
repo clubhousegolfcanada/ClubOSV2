@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { logger } from '../utils/logger';
+import { db } from '../utils/database';
 
 interface HubSpotContact {
   id: string;
@@ -18,8 +19,9 @@ interface CacheEntry {
 class HubSpotService {
   private apiKey: string | undefined;
   private baseUrl = 'https://api.hubapi.com/crm/v3';
-  private cache = new Map<string, CacheEntry>();
-  private CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private memoryCache = new Map<string, CacheEntry>(); // Keep for quick lookups
+  private MEMORY_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private DB_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
   private isConnected = false;
   private axiosInstance: AxiosInstance;
 
@@ -103,13 +105,44 @@ class HubSpotService {
         return null;
       }
 
-      // Check cache first
+      // Check memory cache first
       const cacheKey = `phone:${normalized}`;
-      const cached = this.cache.get(cacheKey);
+      const memoryCached = this.memoryCache.get(cacheKey);
       
-      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        logger.debug('Returning cached result for:', normalized);
-        return cached.data;
+      if (memoryCached && Date.now() - memoryCached.timestamp < this.MEMORY_CACHE_DURATION) {
+        logger.debug('Returning memory cached result for:', normalized);
+        return memoryCached.data;
+      }
+      
+      // Check database cache
+      try {
+        const dbCached = await db.query(
+          `SELECT * FROM hubspot_cache WHERE phone_number = $1`,
+          [phoneNumber]
+        );
+        
+        if (dbCached.rows.length > 0) {
+          const cacheEntry = dbCached.rows[0];
+          const cacheAge = Date.now() - new Date(cacheEntry.updated_at).getTime();
+          
+          if (cacheAge < this.DB_CACHE_DURATION) {
+            const result = cacheEntry.customer_name ? {
+              id: cacheEntry.hubspot_contact_id || '',
+              hubspotId: cacheEntry.hubspot_contact_id || '',
+              name: cacheEntry.customer_name,
+              phone: phoneNumber,
+              company: cacheEntry.company,
+              email: cacheEntry.email
+            } : null;
+            
+            // Update memory cache
+            this.memoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+            logger.debug('Returning database cached result for:', normalized);
+            return result;
+          }
+        }
+      } catch (error) {
+        logger.error('Error checking database cache:', error);
       }
 
       // Try multiple search strategies for better matching
@@ -176,14 +209,47 @@ class HubSpotService {
           email: properties.email
         };
         
-        // Cache the result
-        this.cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        // Cache the result in memory
+        this.memoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        
+        // Cache in database
+        try {
+          await db.query(`
+            INSERT INTO hubspot_cache (phone_number, customer_name, company, email, hubspot_contact_id, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW())
+            ON CONFLICT (phone_number) 
+            DO UPDATE SET 
+              customer_name = EXCLUDED.customer_name,
+              company = EXCLUDED.company,
+              email = EXCLUDED.email,
+              hubspot_contact_id = EXCLUDED.hubspot_contact_id,
+              updated_at = NOW()
+          `, [phoneNumber, result.name !== 'Unknown' ? result.name : null, result.company, result.email, result.hubspotId]);
+        } catch (error) {
+          logger.error('Error caching to database:', error);
+        }
+        
         logger.debug('Found HubSpot contact:', result.name);
         return result;
       }
       
       // Cache null result too (to avoid repeated lookups for unknown numbers)
-      this.cache.set(cacheKey, { data: null, timestamp: Date.now() });
+      this.memoryCache.set(cacheKey, { data: null, timestamp: Date.now() });
+      
+      // Cache "not found" in database
+      try {
+        await db.query(`
+          INSERT INTO hubspot_cache (phone_number, customer_name, updated_at)
+          VALUES ($1, NULL, NOW())
+          ON CONFLICT (phone_number) 
+          DO UPDATE SET 
+            customer_name = NULL,
+            updated_at = NOW()
+        `, [phoneNumber]);
+      } catch (error) {
+        logger.error('Error caching not-found to database:', error);
+      }
+      
       logger.debug('No HubSpot contact found for:', normalized);
       return null;
       
@@ -254,8 +320,20 @@ class HubSpotService {
    * Clear cache - useful for testing
    */
   clearCache(): void {
-    this.cache.clear();
-    logger.info('HubSpot cache cleared');
+    this.memoryCache.clear();
+    logger.info('HubSpot memory cache cleared');
+  }
+  
+  /**
+   * Clear database cache - useful for testing
+   */
+  async clearDatabaseCache(): Promise<void> {
+    try {
+      await db.query('DELETE FROM hubspot_cache');
+      logger.info('HubSpot database cache cleared');
+    } catch (error) {
+      logger.error('Error clearing database cache:', error);
+    }
   }
 
   /**
@@ -268,11 +346,21 @@ class HubSpotService {
   /**
    * Get cache statistics
    */
-  getCacheStats(): { size: number; entries: string[] } {
-    return {
-      size: this.cache.size,
-      entries: Array.from(this.cache.keys())
-    };
+  async getCacheStats(): Promise<{ memorySize: number; dbSize: number; entries: string[] }> {
+    try {
+      const dbStats = await db.query('SELECT COUNT(*) as count FROM hubspot_cache');
+      return {
+        memorySize: this.memoryCache.size,
+        dbSize: parseInt(dbStats.rows[0].count),
+        entries: Array.from(this.memoryCache.keys())
+      };
+    } catch (error) {
+      return {
+        memorySize: this.memoryCache.size,
+        dbSize: 0,
+        entries: Array.from(this.memoryCache.keys())
+      };
+    }
   }
 }
 
