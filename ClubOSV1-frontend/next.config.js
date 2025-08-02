@@ -35,6 +35,20 @@ const nextConfig = {
           }
         ],
       },
+      {
+        // Allow public access to manifest.json and icons
+        source: '/(manifest.json|clubos-icon-.*|sw.js)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600'
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          }
+        ],
+      },
     ];
   },
 }

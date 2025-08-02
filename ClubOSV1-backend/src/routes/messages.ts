@@ -27,7 +27,8 @@ router.get('/health', async (req, res) => {
       openPhone: {
         connected: openPhoneConnected,
         configured: !!process.env.OPENPHONE_API_KEY
-      }
+      },
+      hubspotConnected: hubspotService.isHubSpotConnected()
     });
   } catch (error) {
     res.json({ 
