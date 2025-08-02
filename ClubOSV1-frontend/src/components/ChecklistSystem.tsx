@@ -404,10 +404,10 @@ export const ChecklistSystem: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setActiveCategory('cleaning')}
-                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    className={`flex-1 px-3 py-1.5 rounded-md font-medium text-sm transition-all ${
                       activeCategory === 'cleaning'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     Cleaning
@@ -419,10 +419,10 @@ export const ChecklistSystem: React.FC = () => {
                         setActiveType('weekly');
                       }
                     }}
-                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    className={`flex-1 px-3 py-1.5 rounded-md font-medium text-sm transition-all ${
                       activeCategory === 'tech'
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     Tech
@@ -437,10 +437,10 @@ export const ChecklistSystem: React.FC = () => {
                   {activeCategory === 'cleaning' && (
                     <button
                       onClick={() => setActiveType('daily')}
-                      className={`flex-1 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                      className={`flex-1 px-3 py-1.5 rounded-md font-medium text-sm transition-all ${
                         activeType === 'daily'
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                          ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       Daily
@@ -448,20 +448,20 @@ export const ChecklistSystem: React.FC = () => {
                   )}
                   <button
                     onClick={() => setActiveType('weekly')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    className={`flex-1 px-3 py-1.5 rounded-md font-medium text-sm transition-all ${
                       activeType === 'weekly'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     Weekly
                   </button>
                   <button
                     onClick={() => setActiveType('quarterly')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    className={`flex-1 px-3 py-1.5 rounded-md font-medium text-sm transition-all ${
                       activeType === 'quarterly'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)]'
+                        ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     Quarterly
@@ -475,7 +475,7 @@ export const ChecklistSystem: React.FC = () => {
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)]"
+                  className="w-full px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-md text-[var(--text-primary)] text-sm"
                 >
                   {locations.map(location => (
                     <option key={location} value={location}>{location}</option>
@@ -696,30 +696,30 @@ export const ChecklistSystem: React.FC = () => {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => setTrackerPeriod('week')}
-                      className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
                         trackerPeriod === 'week'
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
+                          ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       This Week
                     </button>
                     <button
                       onClick={() => setTrackerPeriod('month')}
-                      className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
                         trackerPeriod === 'month'
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
+                          ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       This Month
                     </button>
                     <button
                       onClick={() => setTrackerPeriod('all')}
-                      className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
                         trackerPeriod === 'all'
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:bg-[var(--bg-primary)]'
+                          ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       All Time
