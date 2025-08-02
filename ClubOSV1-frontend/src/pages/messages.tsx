@@ -7,6 +7,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useRemoteActionsBar } from '@/hooks/useRemoteActionsBar';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -59,6 +60,7 @@ export default function Messages() {
   const [editedSuggestionText, setEditedSuggestionText] = useState('');
   // Removed pull-to-refresh states for better native feel
   const [isInIframe, setIsInIframe] = useState(false);
+  const remoteActionsBar = useRemoteActionsBar();
 
   // Check auth
   useEffect(() => {
@@ -583,7 +585,7 @@ export default function Messages() {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </Head>
 
-      <div className="min-h-screen bg-[var(--bg-primary)] pb-12">
+      <div className={`min-h-screen bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.className}`}>
         {/* Desktop Layout - Standard ClubOS design */}
         <div className="hidden md:block">
           <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
@@ -727,7 +729,7 @@ export default function Messages() {
 
             {/* Messages Interface */}
             <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
-              <div className="grid grid-cols-3 h-[calc(100vh-290px)]">
+              <div className={`grid grid-cols-3 transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-290px)]' : 'h-[calc(100vh-240px)]'}`}>
                 
                 {/* Conversations List */}
                 <div className="border-r border-[var(--border-secondary)] overflow-y-auto">
@@ -760,8 +762,8 @@ export default function Messages() {
                         <div
                           key={conv.id}
                           onClick={() => selectConversation(conv)}
-                          className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors ${
-                            selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
+                          className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out transform hover:translate-x-1 ${
+                            selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
                           }`}
                         >
                           <div className="flex items-start justify-between mb-1">
@@ -987,7 +989,7 @@ export default function Messages() {
         </div>
 
         {/* Mobile Layout - Standard messaging app layout */}
-        <div className="md:hidden flex flex-col h-[calc(100vh-48px)] bg-[var(--bg-primary)]">
+        <div className={`md:hidden flex flex-col bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-48px)]' : 'h-screen'}`}>
           {/* Header - Fixed at top */}
           <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
             <div className="px-4 py-3">
@@ -1143,8 +1145,8 @@ export default function Messages() {
                       <div
                         key={conv.id}
                         onClick={() => selectConversation(conv)}
-                        className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] active:bg-[var(--bg-tertiary)] transition-colors ${
-                          selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)]' : ''
+                        className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] active:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out ${
+                          selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
                         }`}
                       >
                         <div className="flex items-start justify-between mb-1">
@@ -1323,7 +1325,7 @@ export default function Messages() {
                   )}
                   
                   {/* Message Input - Mobile optimized */}
-                  <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3" style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}>
+                  <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 transition-all duration-300" style={{ paddingBottom: remoteActionsBar.isVisible ? 'calc(3rem + env(safe-area-inset-bottom))' : 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
