@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap, ClipboardList, MessageSquare, Wrench, Building } from 'lucide-react';
+import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap, ClipboardList, MessageSquare, Wrench, Building, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
 import { userSettingsApi } from '@/services/userSettings';
@@ -40,9 +40,25 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   const [isSaving, setIsSaving] = useState(false);
   const [editedUrls, setEditedUrls] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
+  const [isStatusCollapsed, setIsStatusCollapsed] = useState(true);
   
   // All users can now edit their own links
   const canEdit = !!user;
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('statusSectionCollapsed');
+    if (savedState !== null) {
+      setIsStatusCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  // Save collapsed state to localStorage
+  const toggleStatusCollapsed = () => {
+    const newState = !isStatusCollapsed;
+    setIsStatusCollapsed(newState);
+    localStorage.setItem('statusSectionCollapsed', String(newState));
+  };
 
   // Tool definitions (name and icon are locked)
   const tools = [
@@ -258,23 +274,47 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   return (
     <div className="card">
       <div className="space-y-3">
-        {/* Status Section */}
+        {/* Status Section - Collapsible */}
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3">Status</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {toggleButtons.map((button, index) => (
-              <button
-                key={index}
-                onClick={button.onClick}
-                className={`px-4 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
-                  button.active
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-secondary)] hover:border-[var(--accent)]'
-                } border`}
-              >
-                {button.label} <span className="font-bold">{button.count}</span>
-              </button>
-            ))}
+          <button
+            onClick={toggleStatusCollapsed}
+            className="w-full flex items-center justify-between text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3 hover:text-[var(--text-primary)] transition-colors"
+          >
+            <span>Status</span>
+            <div className="flex items-center gap-2">
+              {isStatusCollapsed && (
+                <div className="flex items-center gap-2 text-[10px]">
+                  <span className="bg-[var(--bg-tertiary)] px-2 py-1 rounded">
+                    {toggleButtons.reduce((sum, btn) => sum + parseInt(btn.count), 0)} total
+                  </span>
+                </div>
+              )}
+              {isStatusCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+            </div>
+          </button>
+          
+          {/* Collapsible Content */}
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            isStatusCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+          }`}>
+            <div className="grid grid-cols-2 gap-2">
+              {toggleButtons.map((button, index) => (
+                <button
+                  key={index}
+                  onClick={button.onClick}
+                  className={`px-4 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                    button.active
+                      ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-secondary)] hover:border-[var(--accent)]'
+                  } border`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{button.label}</span>
+                    <span className="font-bold">{button.count}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         

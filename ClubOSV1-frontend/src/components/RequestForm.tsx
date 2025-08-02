@@ -4,7 +4,7 @@ import { useRequestSubmission, useNotifications, useDemoMode } from '@/state/hoo
 import { useSettingsState, useAuthState } from '@/state/useStore';
 import { canAccessRoute, getRestrictedTooltip } from '@/utils/roleUtils';
 import type { UserRequest, RequestRoute } from '@/types/request';
-import { Lock, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { ResponseDisplay } from './ResponseDisplay';
@@ -70,6 +70,7 @@ const RequestForm: React.FC = () => {
   const [slackReplies, setSlackReplies] = useState<any[]>([]);
   const [isWaitingForReply, setIsWaitingForReply] = useState(false);
   const [lastSlackThreadTs, setLastSlackThreadTs] = useState<string | null>(null);
+  const [showAdvancedRouting, setShowAdvancedRouting] = useState(false);
 
   const { preferences } = useSettingsState();
   const { user } = useAuthState();
@@ -114,7 +115,19 @@ const RequestForm: React.FC = () => {
     if (preferences.defaultRoute) {
       setRoutePreference(preferences.defaultRoute);
     }
+    // Load advanced routing state
+    const savedRoutingState = localStorage.getItem('showAdvancedRouting');
+    if (savedRoutingState !== null) {
+      setShowAdvancedRouting(savedRoutingState === 'true');
+    }
   }, [preferences.defaultRoute]);
+
+  // Save advanced routing preference when it changes
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('showAdvancedRouting', String(showAdvancedRouting));
+    }
+  }, [showAdvancedRouting, isMounted]);
 
   // Check for ticket query parameter on mount (client-side only)
   useEffect(() => {
@@ -660,46 +673,66 @@ const RequestForm: React.FC = () => {
             </>
           )}
 
-          {/* Route Selector */}
-          {!isTicketMode && (
+          {/* Route Selector - Simplified */}
+          {!isTicketMode && smartAssistEnabled && (
             <div className="form-group">
-              <label className="form-label">
-                Force Bot Route (optional)
-              </label>
-              <div className="route-selector">
-                {routes.map((route) => {
-                  const isDisabled = !canAccessRoute(user?.role, routeAccessMap[route]);
-                  const tooltip = isDisabled ? getRestrictedTooltip(routeAccessMap[route]) : '';
-                  
-                  return (
-                    <React.Fragment key={route}>
-                      <input
-                        type="radio"
-                        id={`route-${route.toLowerCase()}`}
-                        name="route"
-                        value={route}
-                        checked={routePreference === route}
-                        onChange={() => {
-                          setRoutePreference(route);
-                          // Clear response when changing routes
-                          if (showResponse) {
-                            setShowResponse(false);
-                            resetRequestState();
-                          }
-                        }}
-                        disabled={isSubmitting || demoMode || isDisabled || !smartAssistEnabled}
-                      />
-                      <label
-                        htmlFor={`route-${route.toLowerCase()}`}
-                        className={`route-option ${route === 'Auto' ? 'route-auto' : ''} ${isDisabled ? 'route-disabled' : ''} ${!smartAssistEnabled ? 'opacity-50' : ''}`}
-                        title={tooltip}
-                      >
-                        {route.replace('&', ' & ')}
-                        {isDisabled && <Lock className="inline-block w-3 h-3 ml-1" />}
-                      </label>
-                    </React.Fragment>
-                  );
-                })}
+              <div className="flex items-center justify-between mb-2">
+                <label className="form-label mb-0">
+                  Bot Route: <span className="text-[var(--accent)]">{routePreference}</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors"
+                  disabled={isSubmitting || demoMode}
+                >
+                  {showAdvancedRouting ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Advanced Options
+                </button>
+              </div>
+              
+              {/* Collapsible Route Options */}
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                showAdvancedRouting ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+              }`}>
+                <div className="route-selector mt-2">
+                  {routes.map((route) => {
+                    const isDisabled = !canAccessRoute(user?.role, routeAccessMap[route]);
+                    const tooltip = isDisabled ? getRestrictedTooltip(routeAccessMap[route]) : '';
+                    
+                    return (
+                      <React.Fragment key={route}>
+                        <input
+                          type="radio"
+                          id={`route-${route.toLowerCase()}`}
+                          name="route"
+                          value={route}
+                          checked={routePreference === route}
+                          onChange={() => {
+                            setRoutePreference(route);
+                            // Clear response when changing routes
+                            if (showResponse) {
+                              setShowResponse(false);
+                              resetRequestState();
+                            }
+                          }}
+                          disabled={isSubmitting || demoMode || isDisabled}
+                        />
+                        <label
+                          htmlFor={`route-${route.toLowerCase()}`}
+                          className={`route-option ${route === 'Auto' ? 'route-auto' : ''} ${isDisabled ? 'route-disabled' : ''}`}
+                          title={tooltip}
+                        >
+                          {route.replace('&', ' & ')}
+                          {isDisabled && <Lock className="inline-block w-3 h-3 ml-1" />}
+                        </label>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+                <div className="form-helper mt-2">
+                  Auto mode intelligently selects the best bot based on your request
+                </div>
               </div>
             </div>
           )}
