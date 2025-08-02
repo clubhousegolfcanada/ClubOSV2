@@ -570,7 +570,7 @@ export default function CommandsRedesigned() {
   const { user } = useAuthState();
   const [activeTab, setActiveTab] = useState<'commands' | 'remote-actions'>('remote-actions');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Search removed for cleaner UI
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'other-systems': false
@@ -587,18 +587,14 @@ export default function CommandsRedesigned() {
   const triggers = commands.filter(cmd => cmd.category === 'resets');
   const regularCommands = commands.filter(cmd => cmd.category !== 'resets');
 
-  // Filter commands based on search and category
+  // Filter commands based on category only
   const filteredCommands = regularCommands.filter(command => {
-    const matchesSearch = command.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         command.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || command.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesCategory;
   });
 
-  const filteredTriggers = triggers.filter(trigger => {
-    return trigger.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           trigger.description.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  // No filtering for triggers - show all
+  const filteredTriggers = triggers;
 
   const handleCopyExample = (command: Command) => {
     if (command.example) {
@@ -733,19 +729,7 @@ export default function CommandsRedesigned() {
             </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="mb-8">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-              <input
-                type="text"
-                placeholder={`Search ${activeTab === 'commands' ? 'commands' : 'actions'}...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl pl-12 pr-4 py-4 text-sm font-light text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-all"
-              />
-            </div>
-          </div>
+          {/* Search removed for cleaner UI */}
 
           {activeTab === 'commands' ? (
             <>
@@ -1066,16 +1050,6 @@ export default function CommandsRedesigned() {
           )}
 
           {/* Empty State */}
-          {((activeTab === 'commands' && filteredCommands.length === 0) || 
-            (activeTab === 'remote-actions' && filteredTriggers.length === 0)) && 
-            searchTerm && (
-            <div className="text-center py-16">
-              <AlertCircle className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
-              <p className="text-[var(--text-secondary)]">
-                No {activeTab === 'commands' ? 'commands' : 'actions'} found matching "{searchTerm}".
-              </p>
-            </div>
-          )}
 
           {/* Usage Tips */}
           <div className="mt-12 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-8">

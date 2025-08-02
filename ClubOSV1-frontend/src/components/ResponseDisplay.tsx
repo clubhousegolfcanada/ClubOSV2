@@ -88,6 +88,10 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
             {displayText}
           </ReactMarkdown>
         </div>
+        {/* AI Disclosure */}
+        <div className="mt-4 pt-3 border-t border-[var(--border-secondary)]">
+          <span className="text-[10px] text-[var(--text-muted)]">ClubOS AI</span>
+        </div>
       </div>
     );
   }
@@ -211,6 +215,11 @@ export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
           <span>Follow-up required</span>
         </div>
       )}
+
+      {/* AI Disclosure */}
+      <div className="mt-4 pt-3 border-t border-[var(--border-secondary)]">
+        <span className="text-[10px] text-[var(--text-muted)]">ClubOS AI</span>
+      </div>
     </div>
   );
 };
