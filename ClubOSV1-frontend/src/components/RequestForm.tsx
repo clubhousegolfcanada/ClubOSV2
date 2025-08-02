@@ -600,7 +600,7 @@ const RequestForm: React.FC = () => {
               {...register('location')}
               type="text"
               className="form-input"
-              placeholder="Location (optional) - e.g., Main Floor, Bay 3, Gym Area"
+              placeholder="Location (Optional)"
               disabled={isSubmitting || demoMode}
             />
             <div className="form-helper">
@@ -763,9 +763,6 @@ const RequestForm: React.FC = () => {
                     <span className="slack-indicator text-xs">→ Slack</span>
                   )}
                 </div>
-                <span className="text-xs text-[var(--text-muted)]">
-                  {smartAssistEnabled ? 'AI-powered response' : 'Human support via Slack'}
-                </span>
               </div>
             </div>
           )}

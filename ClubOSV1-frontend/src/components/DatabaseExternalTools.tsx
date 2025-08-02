@@ -366,7 +366,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
         )}
       </div>
       
-        <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 sm:gap-2">
         {tools.map((tool) => {
           const Icon = tool.icon;
           const url = getToolUrl(tool.id);
@@ -409,7 +409,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
               ) : (
                 <button
                   onClick={() => handleToolClick(url)}
-                  className="w-full p-2.5 min-h-[44px] bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 group active:scale-95"
+                  className="w-full p-2 sm:p-2.5 min-h-[44px] bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 group active:scale-95"
                   disabled={!url}
                 >
                   <div className="flex items-center gap-2 w-full">
