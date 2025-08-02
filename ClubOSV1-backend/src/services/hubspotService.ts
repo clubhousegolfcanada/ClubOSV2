@@ -112,30 +112,56 @@ class HubSpotService {
         return cached.data;
       }
 
-      // Search multiple phone fields in HubSpot
-      const response = await this.axiosInstance.post('/objects/contacts/search', {
-        filterGroups: [{
-          filters: [
-            {
-              propertyName: 'phone',
-              operator: 'CONTAINS_TOKEN',
-              value: normalized
-            },
-            {
-              propertyName: 'mobilephone',
-              operator: 'CONTAINS_TOKEN',
-              value: normalized
-            },
-            {
-              propertyName: 'work_phone',
-              operator: 'CONTAINS_TOKEN',
-              value: normalized
-            }
-          ]
-        }],
-        properties: ['firstname', 'lastname', 'company', 'email', 'phone', 'mobilephone', 'work_phone'],
-        limit: 1
-      });
+      // Try multiple search strategies for better matching
+      let response = null;
+      
+      // Phone number variations to try
+      const phoneVariations = [
+        '1' + normalized,      // 19025551234
+        '+1' + normalized,     // +19025551234
+        normalized,            // 9025551234
+        normalized.slice(0, 3) + '-' + normalized.slice(3, 6) + '-' + normalized.slice(6), // 902-555-1234
+      ];
+      
+      // Try each variation until we find a match
+      for (const phoneVariation of phoneVariations) {
+        try {
+          const searchResponse = await this.axiosInstance.post('/objects/contacts/search', {
+            filterGroups: [
+              {
+                filters: [{
+                  propertyName: 'phone',
+                  operator: 'EQ',
+                  value: phoneVariation
+                }]
+              },
+              {
+                filters: [{
+                  propertyName: 'mobilephone',
+                  operator: 'EQ',
+                  value: phoneVariation
+                }]
+              }
+            ],
+            properties: ['firstname', 'lastname', 'company', 'email', 'phone', 'mobilephone', 'work_phone'],
+            limit: 1
+          });
+          
+          if (searchResponse.data.results && searchResponse.data.results.length > 0) {
+            response = searchResponse;
+            logger.debug(`Found contact with phone variation: ${phoneVariation}`);
+            break;
+          }
+        } catch (error) {
+          // Continue to next variation
+          logger.debug(`No match for variation: ${phoneVariation}`);
+        }
+      }
+      
+      // If no response, create empty response structure
+      if (!response) {
+        response = { data: { results: [] } };
+      }
       
       if (response.data.results && response.data.results.length > 0) {
         const contact = response.data.results[0];
