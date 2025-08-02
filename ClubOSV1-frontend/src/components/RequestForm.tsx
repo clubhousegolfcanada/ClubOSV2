@@ -510,7 +510,7 @@ const RequestForm: React.FC = () => {
       <div className="card group">
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Mode Toggle - Compressed */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-end mb-3">
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--text-muted)]">Ticket Mode</span>
               <label className="toggle-switch">
@@ -741,7 +741,7 @@ const RequestForm: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className={`flex-1 sm:flex-initial btn btn-primary flex items-center justify-center gap-2 ${!smartAssistEnabled ? 'slack-mode' : ''}`}
+              className={`btn btn-primary flex items-center justify-center gap-2 ${!smartAssistEnabled ? 'slack-mode' : ''}`}
               disabled={isProcessing || demoMode}
               onClick={() => isMounted && console.log('Button clicked!', isProcessing)}
               style={{
@@ -779,7 +779,7 @@ const RequestForm: React.FC = () => {
             </button>
             <button
               type="button"
-              className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors underline-offset-4 hover:underline"
+              className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all duration-200"
               onClick={handleReset}
               disabled={isSubmitting || demoMode}
               title="Clear form and start a new query (Esc)"

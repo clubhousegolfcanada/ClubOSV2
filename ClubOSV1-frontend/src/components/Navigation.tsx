@@ -148,22 +148,6 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-3">
-            {/* Messages Button - Only for admin, operator, support */}
-            {user && ['admin', 'operator', 'support'].includes(user.role) && (
-              <button
-                onClick={() => router.push('/messages')}
-                className="relative px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:opacity-90 flex items-center gap-2 text-sm font-medium transition-all smooth-transition"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Messages</span>
-                {unreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                    {unreadMessages}
-                  </span>
-                )}
-              </button>
-            )}
-            
             <div 
               className={`w-2 h-2 rounded-full ${
                 sessionStatus === 'active' 
@@ -267,7 +251,21 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden">
+          <div className="flex md:hidden items-center gap-2">
+            {/* Mobile Messages Button */}
+            {user && ['admin', 'operator', 'support'].includes(user.role) && (
+              <button
+                onClick={() => router.push('/messages')}
+                className="relative p-2 text-[var(--accent)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all"
+              >
+                <MessageCircle className="w-5 h-5" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {unreadMessages}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="inline-flex items-center justify-center p-3 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent)] transition-all duration-200 touch-manipulation"
