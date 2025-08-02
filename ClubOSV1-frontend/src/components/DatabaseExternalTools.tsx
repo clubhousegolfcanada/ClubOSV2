@@ -437,6 +437,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
             </div>
             );
           })}
+          </div>
         </div>
         
         {isEditMode && (
@@ -450,7 +451,6 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
             <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
           </div>
         )}
-        </div>
       </div>
     </div>
   );
