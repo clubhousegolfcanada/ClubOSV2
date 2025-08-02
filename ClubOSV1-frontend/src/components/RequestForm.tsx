@@ -740,47 +740,27 @@ const RequestForm: React.FC = () => {
           {/* Toggle Options */}
           {!isTicketMode && (
             <div className="form-group">
-              <div className="flex items-center justify-center">
-                <div className="relative inline-flex items-center bg-[var(--bg-secondary)] rounded-lg p-1">
-                  <span className={`absolute inset-y-1 transition-transform duration-200 ease-in-out bg-[var(--accent)] rounded-md ${
-                    smartAssistEnabled ? 'translate-x-1 w-[45px]' : 'translate-x-[49px] w-[65px]'
-                  }`}></span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmartAssistEnabled(true);
-                      if (showResponse) {
-                        setShowResponse(false);
-                        resetRequestState();
-                      }
-                    }}
-                    disabled={isSubmitting || demoMode}
-                    className={`relative z-10 px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
-                      smartAssistEnabled ? 'text-white' : 'text-[var(--text-muted)]'
-                    }`}
-                  >
-                    AI
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmartAssistEnabled(false);
-                      if (showResponse) {
-                        setShowResponse(false);
-                        resetRequestState();
-                      }
-                    }}
-                    disabled={isSubmitting || demoMode}
-                    className={`relative z-10 px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
-                      !smartAssistEnabled ? 'text-white' : 'text-[var(--text-muted)]'
-                    }`}
-                  >
-                    Human
-                  </button>
+              <div className="flex items-center justify-between">
+                <div className="toggle-item flex items-center gap-3">
+                  <span className="text-sm text-[var(--text-muted)]">AI</span>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={smartAssistEnabled}
+                      onChange={(e) => {
+                        setSmartAssistEnabled(e.target.checked);
+                        // Clear response when toggling
+                        if (showResponse) {
+                          setShowResponse(false);
+                          resetRequestState();
+                        }
+                      }}
+                      disabled={isSubmitting || demoMode}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="text-sm text-[var(--text-muted)]">Human</span>
                 </div>
-                <span className="ml-3 text-xs text-[var(--text-muted)]">
-                  {smartAssistEnabled ? 'AI processes request' : 'Sends to Slack team'}
-                </span>
               </div>
             </div>
           )}

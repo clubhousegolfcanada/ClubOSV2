@@ -11,6 +11,7 @@ import axios from 'axios';
 import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
 import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
 import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
+import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -244,6 +245,9 @@ export default function Home() {
             {/* Request Form - Takes up 8 columns on large screens */}
             <div className="lg:col-span-8">
               <RequestForm />
+              
+              {/* Mobile-only recent customers */}
+              <RecentCustomers />
               
               {/* Desktop-only enhancements */}
               <MiniInsightsPanel />
