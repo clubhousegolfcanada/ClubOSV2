@@ -41,16 +41,39 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   const [editedUrls, setEditedUrls] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
   const [isStatusCollapsed, setIsStatusCollapsed] = useState(true);
+  const [isLinksCollapsed, setIsLinksCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
-  // All users can now edit their own links
-  const canEdit = !!user;
+  // All users can now edit their own links - but not on mobile
+  const canEdit = !!user && !isMobile;
 
-  // Load collapsed state from localStorage
+  // Load collapsed state from localStorage and detect mobile
   useEffect(() => {
-    const savedState = localStorage.getItem('statusSectionCollapsed');
-    if (savedState !== null) {
-      setIsStatusCollapsed(savedState === 'true');
+    // Detect mobile
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 640; // sm breakpoint
+      setIsMobile(mobile);
+      
+      // Set initial collapsed state for links
+      const savedLinksState = localStorage.getItem('linksSectionCollapsed');
+      if (savedLinksState !== null) {
+        setIsLinksCollapsed(savedLinksState === 'true');
+      } else {
+        // Default to collapsed on mobile only
+        setIsLinksCollapsed(mobile);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // Load status collapsed state
+    const savedStatusState = localStorage.getItem('statusSectionCollapsed');
+    if (savedStatusState !== null) {
+      setIsStatusCollapsed(savedStatusState === 'true');
     }
+    
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Save collapsed state to localStorage
@@ -58,6 +81,12 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
     const newState = !isStatusCollapsed;
     setIsStatusCollapsed(newState);
     localStorage.setItem('statusSectionCollapsed', String(newState));
+  };
+  
+  const toggleLinksCollapsed = () => {
+    const newState = !isLinksCollapsed;
+    setIsLinksCollapsed(newState);
+    localStorage.setItem('linksSectionCollapsed', String(newState));
   };
 
   // Tool definitions (name and icon are locked)
@@ -323,9 +352,18 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
         
         {/* External Tools Section */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={toggleLinksCollapsed}
+            className="w-full flex items-center justify-between mb-3 text-left hover:opacity-80 transition-opacity"
+          >
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
-          {canEdit && (
+            <div className="flex items-center gap-2">
+              {isLinksCollapsed && (
+                <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-2 py-1 rounded">
+                  {tools.length} tools
+                </span>
+              )}
+              {canEdit && !isLinksCollapsed && (
             <div className="flex gap-2">
             {isEditMode ? (
               <>
@@ -364,9 +402,15 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
             )}
           </div>
         )}
-      </div>
+              {isLinksCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+            </div>
+          </button>
       
-        <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 sm:gap-2">
+        {/* Collapsible Quick Links Content */}
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isLinksCollapsed ? 'max-h-0 opacity-0' : 'max-h-[600px] opacity-100'
+        }`}>
+          <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 sm:gap-2">
         {tools.map((tool) => {
           const Icon = tool.icon;
           const url = getToolUrl(tool.id);
@@ -451,6 +495,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
             <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
           </div>
         )}
+        </div>
       </div>
     </div>
   );
