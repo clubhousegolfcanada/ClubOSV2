@@ -13,7 +13,7 @@
     "copy:assistant-instructions": "cp -r src/assistant-instructions dist/ 2>/dev/null || echo 'No assistant-instructions to copy'",
     "copy:clubos-agents": "cp -r 'src/ClubOS Agents' dist/ 2>/dev/null || echo 'No ClubOS Agents to copy'",
     "start": "node dist/index.js",
-    "start:prod": "node start-production.js",
+    "start:prod": "node dist/index.js",
     "start:safe": "NODE_ENV=production node --max-old-space-size=512 dist/index.js || npm run start:safe",
     "lint": "eslint src --ext .ts",
     "test": "jest",
