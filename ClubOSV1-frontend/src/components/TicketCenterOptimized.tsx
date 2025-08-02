@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter } from 'lucide-react';
+import { Plus, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -53,7 +53,7 @@ const TicketCenterOptimized = () => {
   
   const [activeTab, setActiveTab] = useState<'all' | 'facilities' | 'tech'>('all');
   const [filter, setFilter] = useState<TicketStatus | 'all'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Search removed for cleaner UI
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -117,7 +117,7 @@ const TicketCenterOptimized = () => {
     return counts;
   }, [tickets]);
 
-  // Filter tickets based on status and search
+  // Filter tickets based on status only
   const filteredTickets = useMemo(() => {
     let filtered = tickets;
     
@@ -125,18 +125,8 @@ const TicketCenterOptimized = () => {
       filtered = filtered.filter(ticket => ticket.status === filter);
     }
     
-    if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(ticket => 
-        ticket.title.toLowerCase().includes(search) ||
-        ticket.description.toLowerCase().includes(search) ||
-        ticket.location?.toLowerCase().includes(search) ||
-        ticket.id.toLowerCase().includes(search)
-      );
-    }
-    
     return filtered;
-  }, [tickets, filter, searchTerm]);
+  }, [tickets, filter]);
 
   const filters = [
     { value: 'all', label: 'All', count: ticketCounts.all },
@@ -376,17 +366,7 @@ const TicketCenterOptimized = () => {
         </div>
       </div>
 
-      {/* Search Bar - Mobile optimized */}
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-        <input
-          type="text"
-          placeholder="Search tickets..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-base focus:outline-none focus:border-[var(--accent)] transition-colors"
-        />
-      </div>
+      {/* Search removed for cleaner UI */}
 
       {/* Filter Pills - Horizontal scroll on mobile */}
       <div className="flex gap-3 overflow-x-auto pb-3 mb-6 -mx-3 px-3 sm:mx-0 sm:px-0">
@@ -510,16 +490,8 @@ const TicketCenterOptimized = () => {
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
             <p className="text-base text-[var(--text-secondary)] mb-2">
-              {searchTerm ? 'No tickets match your search' : 'No tickets found'}
+              No tickets found
             </p>
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')}
-                className="text-sm text-[var(--accent)] hover:underline"
-              >
-                Clear search
-              </button>
-            )}
           </div>
         )}
       </div>
