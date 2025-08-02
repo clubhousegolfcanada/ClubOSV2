@@ -9,6 +9,7 @@ import { openPhoneService } from '../services/openphoneService';
 import { notificationService } from '../services/notificationService';
 import { ensureOpenPhoneColumns } from '../utils/database-helpers';
 import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../utils/openphone-db-helpers';
+import { hubspotService } from '../services/hubspotService';
 
 const router = Router();
 
@@ -116,7 +117,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         });
         
         // Try multiple fields for contact name, fallback to phone number
-        const customerName = messageData.contactName || 
+        let customerName = messageData.contactName || 
                            data.contactName || 
                            messageData.contact?.name ||
                            data.contact?.name ||
@@ -132,6 +133,24 @@ router.post('/webhook', async (req: Request, res: Response) => {
                            messageData.user?.name ||
                            data.user?.name ||
                            'Unknown';
+
+        // HubSpot lookup for inbound messages to get real customer name
+        if ((messageData.direction === 'incoming' || messageData.direction === 'inbound') && phoneNumber) {
+          try {
+            const hubspotContact = await hubspotService.searchByPhone(phoneNumber);
+            if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
+              customerName = hubspotContact.name;
+              logger.info('HubSpot contact found for inbound message', {
+                phoneNumber,
+                customerName: hubspotContact.name,
+                company: hubspotContact.company
+              });
+            }
+          } catch (hubspotError) {
+            // Log but don't fail the webhook
+            logger.warn('HubSpot lookup failed during webhook:', hubspotError);
+          }
+        }
         
         // Use phone number as primary identifier for time-based grouping
         if (!phoneNumber) {

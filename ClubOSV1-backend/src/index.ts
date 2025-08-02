@@ -197,6 +197,7 @@ app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/openphone-v3', openphoneV3Routes);
+app.use('/api/contacts', require('./routes/contacts').default);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/debug-openphone', debugOpenphoneRoutes);
 app.use('/api/notifications', notificationsRoutes);

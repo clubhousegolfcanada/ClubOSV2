@@ -10,6 +10,7 @@ import { messageSendLimiter } from '../middleware/rateLimiter';
 import { formatToE164, isValidE164 } from '../utils/phoneNumberFormatter';
 import { messageAssistantService } from '../services/messageAssistantService';
 import { anonymizePhoneNumber } from '../utils/encryption';
+import { hubspotService } from '../services/hubspotService';
 
 const router = Router();
 
@@ -153,9 +154,30 @@ router.get('/conversations',
         filtered: result.rows.length - validConversations.length
       });
       
+      // Enrich conversations with HubSpot data if available
+      const enrichedConversations = await Promise.all(validConversations.map(async (row) => {
+        try {
+          // Only lookup if we don't already have a good name
+          if (row.phone_number && row.phone_number !== 'Unknown' && 
+              (!row.customer_name || row.customer_name === 'Unknown' || row.customer_name === row.phone_number)) {
+            const hubspotContact = await hubspotService.searchByPhone(row.phone_number);
+            if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
+              // Update the customer name with HubSpot data
+              row.customer_name = hubspotContact.name;
+              row.hubspot_company = hubspotContact.company;
+              row.hubspot_enriched = true;
+            }
+          }
+        } catch (error) {
+          // Don't let HubSpot errors break the conversation list
+          logger.debug('HubSpot enrichment failed for phone:', row.phone_number);
+        }
+        return row;
+      }));
+      
       res.json({
         success: true,
-        data: validConversations.map(row => ({
+        data: enrichedConversations.map(row => ({
           ...row,
           lastMessage: row.messages?.[row.messages.length - 1] || null,
           messageCount: row.messages?.length || 0,
