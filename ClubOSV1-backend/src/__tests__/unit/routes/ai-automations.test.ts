@@ -1,11 +1,11 @@
 import request from 'supertest';
 import { app } from '../../../index';
-import { db } from '../../../utils/db';
+import { db } from '../../../utils/database';
 import { authenticate } from '../../../middleware/auth';
 import { generateToken } from '../../../middleware/auth';
 
 // Mock dependencies
-jest.mock('../../../utils/db');
+jest.mock('../../../utils/database');
 jest.mock('../../../utils/logger');
 
 const mockDb = db as jest.Mocked<typeof db>;

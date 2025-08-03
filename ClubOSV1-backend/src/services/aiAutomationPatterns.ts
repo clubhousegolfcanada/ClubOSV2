@@ -20,6 +20,7 @@ export const automationPatterns = {
     patterns: [
       // Direct change requests
       { pattern: /(?:can|could)\s+(?:i|we)\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)/i, weight: 0.9, description: 'Can I change my booking' },
+      { pattern: /(?:can|could)\s+you\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)/i, weight: 0.9, description: 'Can you change my booking' },
       { pattern: /(?:need|want)\s+to\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)/i, weight: 0.9, description: 'Need to change booking' },
       { pattern: /(?:how|is it possible)\s+to\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation)/i, weight: 0.8, description: 'How to change booking' },
       
@@ -45,13 +46,15 @@ export const automationPatterns = {
       
       // General booking questions with change intent
       { pattern: /(?:booking|reservation).*(?:change|modify|different|reschedule)/i, weight: 0.7, description: 'Booking with change keywords' },
-      { pattern: /(?:change|modify|different|reschedule).*(?:booking|reservation)/i, weight: 0.7, description: 'Change keywords with booking' }
+      { pattern: /(?:change|modify|different|reschedule).*(?:booking|reservation)/i, weight: 0.7, description: 'Change keywords with booking' },
+      
+      // Change gift card order - might be about changing a booking for gift card purchase
+      { pattern: /(?:change|modify|update).*gift\s*card.*order/i, weight: 0.5, description: 'Change gift card order' }
     ],
     negative: [
-      { pattern: /(?:cancel|cancellation)/i, weight: -0.5, description: 'Cancel not change' },
-      { pattern: /(?:confirm|confirmation)/i, weight: -0.4, description: 'Confirmation request' },
-      { pattern: /(?:new|create|make)\s+(?:a\s+)?(?:booking|reservation)/i, weight: -0.5, description: 'New booking not change' },
-      { pattern: /(?:check|view|see)\s+(?:my|our)?\s*(?:booking|reservation)/i, weight: -0.4, description: 'Checking booking not changing' }
+      { pattern: /(?:new|first|initial)\s+(?:booking|reservation)/i, weight: -0.4, description: 'New booking request' },
+      { pattern: /(?:make|create|book)\s+(?:a\s+)?(?:booking|reservation)/i, weight: -0.4, description: 'Create booking' },
+      { pattern: /(?:cancel|delete|remove)\s+(?:my\s+)?(?:booking|reservation)/i, weight: -0.3, description: 'Cancel booking' }
     ],
     minConfidence: 0.7
   },
@@ -61,122 +64,81 @@ export const automationPatterns = {
       // Direct mentions with high confidence
       { pattern: /gift\s*cards?/i, weight: 0.4, description: 'Direct gift card mention' },
       { pattern: /gift\s*certificates?/i, weight: 0.4, description: 'Gift certificate mention' },
-      { pattern: /e-?gift\s*cards?/i, weight: 0.5, description: 'E-gift card mention' },
+      { pattern: /gift\s*vouchers?/i, weight: 0.35, description: 'Gift voucher mention' },
       
-      // Purchase intent
-      { pattern: /(?:buy|purchase|get|order)\s+(?:a\s+)?gift/i, weight: 0.6, description: 'Purchase intent with gift' },
-      { pattern: /(?:how|where)\s+(?:do|can)\s+(?:i|we)\s+(?:buy|purchase|get)\s+(?:a\s+)?gift/i, weight: 0.9, description: 'How to purchase gift' },
-      { pattern: /(?:want|need|looking\s+for)\s+(?:a\s+)?gift\s*(?:card|certificate)?/i, weight: 0.5, description: 'Want/need gift' },
+      // Purchase/buy intent
+      { pattern: /(?:buy|purchase|get)\s+(?:a\s+)?gift\s*(?:card|certificate|voucher)/i, weight: 0.9, description: 'Buy gift card' },
+      { pattern: /(?:where|how)\s+(?:can|do)\s+(?:i|we)\s+(?:buy|purchase|get)\s+(?:a\s+)?gift/i, weight: 0.8, description: 'Where to buy gift' },
+      { pattern: /(?:sell|offer|have)\s+gift\s*(?:cards?|certificates?|vouchers?)/i, weight: 0.8, description: 'Sell gift cards' },
       
-      // Questions about availability
-      { pattern: /(?:do|does)\s+(?:you|clubhouse|the club)\s+(?:have|offer|sell)\s+gift/i, weight: 0.7, description: 'Asking if we have gifts' },
-      { pattern: /(?:can|could)\s+(?:i|we|someone)\s+(?:buy|get|purchase)\s+(?:a\s+)?gift/i, weight: 0.6, description: 'Can I buy gift' },
-      { pattern: /(?:is|are)\s+(?:there|gift)\s+(?:cards?|certificates?)\s+available/i, weight: 0.7, description: 'Gift availability' },
+      // Gift-giving intent
+      { pattern: /(?:give|send)\s+(?:a\s+)?gift\s*(?:card|certificate|voucher)/i, weight: 0.7, description: 'Give gift card' },
+      { pattern: /gift\s*(?:card|certificate|voucher)\s+(?:for|as)\s+(?:a\s+)?(?:present|gift|birthday|christmas)/i, weight: 0.8, description: 'Gift card as present' },
+      { pattern: /gift\s*(?:card|certificate|voucher)\s+for\s+(?:my\s+)?(?:someone|friend|family|him|her|them)/i, weight: 0.8, description: 'Gift card for someone' },
+      { pattern: /(?:present|gift)\s+for\s+(?:someone|friend|family|him|her|them)/i, weight: 0.5, description: 'Present for someone' },
       
-      // Present/gift giving context
-      { pattern: /(?:birthday|christmas|holiday|anniversary)\s+(?:gift|present)/i, weight: 0.5, description: 'Occasion gift' },
-      { pattern: /gift\s+(?:for|to)\s+(?:my|a|someone|friend|family)/i, weight: 0.6, description: 'Gift for someone' },
-      { pattern: /present\s+for\s+(?:someone|my|a)/i, weight: 0.4, description: 'Present for someone' },
-      { pattern: /surprise\s+(?:gift|someone)/i, weight: 0.4, description: 'Surprise gift' },
+      // Questions about gift cards
+      { pattern: /(?:do|does)\s+(?:you|clubhouse)\s+(?:sell|offer|have)\s+gift/i, weight: 0.8, description: 'Do you sell gift' },
+      { pattern: /(?:can|could)\s+(?:i|we)\s+(?:buy|purchase|get)\s+(?:a\s+)?gift/i, weight: 0.8, description: 'Can I buy gift' },
+      { pattern: /gift\s*card\s+(?:options|choices|amounts|denominations)/i, weight: 0.7, description: 'Gift card options' },
       
-      // Common variations
-      { pattern: /golf\s+gift/i, weight: 0.5, description: 'Golf gift' },
-      { pattern: /simulator\s+gift/i, weight: 0.5, description: 'Simulator gift' },
-      { pattern: /bay\s+time\s+gift/i, weight: 0.6, description: 'Bay time gift' },
+      // Online/physical mentions
+      { pattern: /(?:online|website|digital|physical)\s+gift\s*(?:cards?|certificates?)/i, weight: 0.7, description: 'Online gift cards' },
+      { pattern: /gift\s*(?:cards?|certificates?)\s+(?:online|website|digital|physical)/i, weight: 0.7, description: 'Gift cards online' },
       
-      // Indirect mentions
-      { pattern: /something\s+for\s+(?:a\s+)?golfer/i, weight: 0.3, description: 'Something for golfer' },
-      { pattern: /(?:good|great|perfect)\s+(?:gift|present)\s+(?:idea|option)/i, weight: 0.4, description: 'Gift idea' }
+      // Value/amount questions
+      { pattern: /(?:how\s+much|what\s+amounts?|denominations?)\s+(?:for\s+)?gift\s*(?:cards?|certificates?)/i, weight: 0.7, description: 'Gift card amounts' },
+      { pattern: /\$\d+\s+gift\s*(?:card|certificate)/i, weight: 0.8, description: 'Dollar amount gift card' },
+      
+      // General gift inquiries
+      { pattern: /(?:looking|searching)\s+for\s+(?:a\s+)?gift/i, weight: 0.4, description: 'Looking for gift' },
+      { pattern: /(?:need|want)\s+(?:a\s+)?gift\s+(?:idea|suggestion)/i, weight: 0.3, description: 'Need gift idea' },
+      
+      // Gift card order changes/management
+      { pattern: /gift\s*card.*order/i, weight: 0.5, description: 'Gift card order' }
     ],
     negative: [
-      { pattern: /(?:received|got|have)\s+(?:a\s+)?gift\s*card/i, weight: -0.5, description: 'Already has gift card' },
-      { pattern: /(?:use|redeem|spend)\s+(?:my|a|the)\s+gift\s*card/i, weight: -0.6, description: 'Using existing card' },
-      { pattern: /gift\s*card\s+(?:balance|amount|value)/i, weight: -0.5, description: 'Checking balance' },
-      { pattern: /(?:lost|missing|stolen)\s+(?:my|a)\s+gift\s*card/i, weight: -0.4, description: 'Lost card' },
-      { pattern: /gift\s*card\s+(?:expire|expiration|expired)/i, weight: -0.4, description: 'Expiration question' }
+      { pattern: /(?:redeem|use|activate|check)\s+(?:my\s+)?gift\s*card/i, weight: -0.4, description: 'Redeem gift card' },
+      { pattern: /gift\s*card\s+(?:balance|number|code)/i, weight: -0.4, description: 'Gift card balance' },
+      { pattern: /(?:lost|stolen|expired)\s+gift\s*card/i, weight: -0.3, description: 'Lost gift card' },
+      { pattern: /gift\s*card\s+(?:not|isn't|won't)\s+work/i, weight: -0.3, description: 'Gift card not working' }
     ],
     minConfidence: 0.7
   },
   
-  hours_of_operation: {
+  trackman_reset: {
     patterns: [
-      // Direct time questions
-      { pattern: /what\s+(?:are\s+)?(?:your|the)\s+hours/i, weight: 0.9, description: 'What are your hours' },
-      { pattern: /(?:what|when)\s+(?:time|hours)\s+(?:do|are)\s+you\s+open/i, weight: 0.9, description: 'What time open' },
-      { pattern: /(?:what|when)\s+(?:time|hours)\s+(?:do|are)\s+you\s+close/i, weight: 0.9, description: 'What time close' },
+      // Direct trackman mentions with issues
+      { pattern: /trackman.*(?:frozen|stuck|freeze|hang|not\s+work|broken|issue|problem|error)/i, weight: 0.9, description: 'Trackman frozen/stuck' },
+      { pattern: /(?:frozen|stuck|freeze|hang|not\s+work|broken|issue|problem|error).*trackman/i, weight: 0.9, description: 'Issue with trackman' },
       
-      // Open/closed questions
-      { pattern: /are\s+you\s+(?:currently\s+)?open/i, weight: 0.8, description: 'Are you open' },
-      { pattern: /are\s+you\s+(?:still\s+)?closed/i, weight: 0.8, description: 'Are you closed' },
-      { pattern: /(?:is|are)\s+(?:clubhouse|you|the club)\s+open\s+(?:right\s+)?now/i, weight: 0.8, description: 'Open right now' },
+      // Reset/reboot requests
+      { pattern: /(?:reset|reboot|restart|power\s+cycle).*trackman/i, weight: 0.9, description: 'Reset trackman' },
+      { pattern: /trackman.*(?:reset|reboot|restart|power\s+cycle)/i, weight: 0.9, description: 'Trackman reset' },
       
-      // Day-specific questions
-      { pattern: /open\s+(?:on\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow|weekend)/i, weight: 0.8, description: 'Open on specific day' },
-      { pattern: /hours\s+(?:on|for)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow|weekend)/i, weight: 0.8, description: 'Hours for specific day' },
+      // Bay-specific mentions
+      { pattern: /bay\s+\d+.*trackman.*(?:frozen|stuck|not\s+work|broken)/i, weight: 0.85, description: 'Bay X trackman issue' },
+      { pattern: /trackman.*bay\s+\d+.*(?:frozen|stuck|not\s+work|broken)/i, weight: 0.85, description: 'Trackman bay X issue' },
       
-      // Time-specific questions
-      { pattern: /open\s+(?:at|until|till)\s+\d+/i, weight: 0.7, description: 'Open at/until time' },
-      { pattern: /close\s+(?:at|by)\s+\d+/i, weight: 0.7, description: 'Close at time' },
-      { pattern: /\d+\s*(?:am|pm)\s+(?:open|close)/i, weight: 0.7, description: 'Time with open/close' },
+      // General trackman problems
+      { pattern: /trackman.*(?:won't|wont|cant|can't)\s+(?:start|load|work)/i, weight: 0.8, description: 'Trackman won\'t start' },
+      { pattern: /trackman.*(?:black\s+screen|blank\s+screen|no\s+display)/i, weight: 0.8, description: 'Trackman screen issue' },
+      { pattern: /trackman.*(?:crashed|crash|freezing|hanging)/i, weight: 0.8, description: 'Trackman crashed' },
       
-      // Holiday/special hours
-      { pattern: /(?:holiday|christmas|thanksgiving|new\s+year)\s+hours/i, weight: 0.7, description: 'Holiday hours' },
-      { pattern: /special\s+hours/i, weight: 0.6, description: 'Special hours' },
+      // Help requests
+      { pattern: /(?:help|fix|check).*trackman/i, weight: 0.7, description: 'Help with trackman' },
+      { pattern: /trackman.*(?:help|fix|check)/i, weight: 0.7, description: 'Trackman help' },
       
-      // General availability
-      { pattern: /when\s+(?:can|could)\s+(?:i|we)\s+(?:come|visit|play)/i, weight: 0.5, description: 'When can I come' },
-      { pattern: /(?:latest|earliest)\s+(?:i|we)\s+can\s+(?:book|play|come)/i, weight: 0.6, description: 'Latest/earliest time' },
-      
-      // Operating/business hours
-      { pattern: /(?:operating|business|operation)\s+hours/i, weight: 0.8, description: 'Operating hours' },
-      { pattern: /schedule/i, weight: 0.4, description: 'Schedule mention' }
+      // Not responding
+      { pattern: /trackman.*(?:not|isn't|isnt)\s+(?:responding|response)/i, weight: 0.8, description: 'Trackman not responding' },
+      { pattern: /trackman.*(?:unresponsive|dead|down)/i, weight: 0.8, description: 'Trackman unresponsive' }
     ],
     negative: [
-      { pattern: /(?:book|reserve|reservation)\s+hours/i, weight: -0.3, description: 'Booking hours' },
-      { pattern: /happy\s+hour/i, weight: -0.4, description: 'Happy hour' },
-      { pattern: /peak\s+hours/i, weight: -0.3, description: 'Peak hours' }
+      { pattern: /trackman.*(?:work|fine|good|great|perfect)/i, weight: -0.8, description: 'Trackman working fine' },
+      { pattern: /love.*trackman/i, weight: -0.6, description: 'Positive trackman mention' },
+      { pattern: /trackman.*(?:accurate|amazing|awesome)/i, weight: -0.6, description: 'Positive trackman feedback' }
     ],
-    minConfidence: 0.6
-  },
-  
-  membership_info: {
-    patterns: [
-      // Direct membership questions
-      { pattern: /(?:tell\s+me\s+about|what\s+(?:is|are))\s+(?:your\s+)?membership/i, weight: 0.9, description: 'Tell about membership' },
-      { pattern: /membership\s+(?:info|information|details|options|plans)/i, weight: 0.8, description: 'Membership info' },
-      { pattern: /(?:do|does)\s+(?:you|clubhouse)\s+(?:have|offer)\s+membership/i, weight: 0.8, description: 'Do you offer membership' },
-      
-      // Benefits and perks
-      { pattern: /membership\s+(?:benefits|perks|advantages|features)/i, weight: 0.8, description: 'Membership benefits' },
-      { pattern: /(?:what\s+do|what\s+does)\s+(?:a\s+)?membership\s+(?:include|get|offer)/i, weight: 0.8, description: 'What membership includes' },
-      { pattern: /(?:member|membership)\s+(?:discount|savings|deals)/i, weight: 0.7, description: 'Member discounts' },
-      
-      // Cost and pricing
-      { pattern: /(?:membership|member)\s+(?:cost|price|pricing|fee)/i, weight: 0.8, description: 'Membership cost' },
-      { pattern: /how\s+much\s+(?:is|for)\s+(?:a\s+)?membership/i, weight: 0.9, description: 'How much membership' },
-      { pattern: /monthly\s+(?:membership|fee|cost)/i, weight: 0.7, description: 'Monthly membership' },
-      
-      // Joining/signing up
-      { pattern: /(?:how|where)\s+(?:do|can)\s+(?:i|we)\s+(?:join|sign\s+up|become\s+a\s+member)/i, weight: 0.9, description: 'How to join' },
-      { pattern: /(?:want|interested)\s+(?:to|in)\s+(?:join|joining|membership|becoming\s+a\s+member)/i, weight: 0.8, description: 'Want to join' },
-      { pattern: /(?:apply|application)\s+(?:for\s+)?membership/i, weight: 0.7, description: 'Apply for membership' },
-      
-      // Types of membership
-      { pattern: /(?:types|kinds|levels)\s+of\s+membership/i, weight: 0.7, description: 'Types of membership' },
-      { pattern: /(?:annual|yearly|monthly)\s+membership/i, weight: 0.6, description: 'Membership duration' },
-      { pattern: /(?:individual|family|corporate|group)\s+membership/i, weight: 0.6, description: 'Membership categories' },
-      
-      // General member questions
-      { pattern: /member\s+(?:rate|pricing|access)/i, weight: 0.6, description: 'Member rates' },
-      { pattern: /(?:worth|value)\s+(?:it\s+)?(?:to\s+)?(?:get|getting)\s+(?:a\s+)?membership/i, weight: 0.7, description: 'Worth getting membership' }
-    ],
-    negative: [
-      { pattern: /(?:cancel|cancell?ing)\s+(?:my\s+)?membership/i, weight: -0.5, description: 'Cancel membership' },
-      { pattern: /(?:already|current)\s+(?:a\s+)?member/i, weight: -0.4, description: 'Already member' },
-      { pattern: /(?:renew|renewal)\s+(?:my\s+)?membership/i, weight: -0.4, description: 'Renew membership' },
-      { pattern: /member\s+(?:card|number|id)/i, weight: -0.3, description: 'Member card/ID' }
-    ],
-    minConfidence: 0.6
+    minConfidence: 0.7
   }
 };
 
@@ -186,32 +148,39 @@ export const automationPatterns = {
 export function calculateConfidence(
   message: string, 
   feature: keyof typeof automationPatterns
-): { confidence: number; matches: string[]; negatives: string[] } {
-  const config = automationPatterns[feature];
-  const lowerMessage = message.toLowerCase();
+): {
+  confidence: number;
+  matches: string[];
+  negatives: string[];
+} {
+  const patterns = automationPatterns[feature];
+  const normalizedMessage = message.toLowerCase();
   
-  let totalScore = 0;
+  let totalWeight = 0;
   const matches: string[] = [];
   const negatives: string[] = [];
   
   // Check positive patterns
-  for (const { pattern, weight, description } of config.patterns) {
-    if (pattern.test(lowerMessage)) {
-      totalScore += weight;
+  patterns.patterns.forEach(({ pattern, weight, description }) => {
+    if (pattern.test(normalizedMessage)) {
+      totalWeight += weight;
       matches.push(description);
     }
-  }
+  });
   
   // Check negative patterns
-  for (const { pattern, weight, description } of config.negative) {
-    if (pattern.test(lowerMessage)) {
-      totalScore += weight; // weight is already negative
+  patterns.negative.forEach(({ pattern, weight, description }) => {
+    if (pattern.test(normalizedMessage)) {
+      totalWeight += weight; // Weight is already negative
       negatives.push(description);
     }
-  }
+  });
   
-  // Ensure confidence is between 0 and 1
-  const confidence = Math.max(0, Math.min(1, totalScore));
+  // Normalize confidence to 0-1 range
+  // For better scoring, we'll consider confidence based on the highest weighted pattern
+  // rather than the sum of all patterns (which would require matching everything)
+  const maxSingleWeight = Math.max(...patterns.patterns.map(p => p.weight));
+  const confidence = Math.max(0, Math.min(1, totalWeight));
   
   return { confidence, matches, negatives };
 }
