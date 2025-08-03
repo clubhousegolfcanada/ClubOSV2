@@ -84,11 +84,12 @@
   .card {
     @apply bg-[var(--bg-secondary)] border-2 border-[var(--border-secondary)] rounded-xl p-3 mb-3;
     @apply transition-all duration-300;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
   }
 
   .card:hover {
-    @apply border-[var(--accent)] -translate-y-0.5;
+    @apply -translate-y-0.5;
+    border-color: rgba(255, 255, 255, 0.4);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
