@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { requireRole } from '../middleware/roleAuth';
+import { roleGuard } from '../middleware/roleGuard';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 
@@ -103,7 +103,7 @@ router.get('/:featureKey', authenticate, async (req, res) => {
 });
 
 // PUT /api/ai-automations/:featureKey/toggle - Toggle feature on/off
-router.put('/:featureKey/toggle', authenticate, requireRole(['admin', 'operator']), async (req, res) => {
+router.put('/:featureKey/toggle', authenticate, roleGuard(['admin', 'operator']), async (req, res) => {
   try {
     const { featureKey } = req.params;
     const { enabled } = req.body;
@@ -224,7 +224,7 @@ router.get('/:featureKey/usage', authenticate, async (req, res) => {
 });
 
 // POST /api/ai-automations/bulk-toggle - Toggle multiple features by category
-router.post('/bulk-toggle', authenticate, requireRole(['admin']), async (req, res) => {
+router.post('/bulk-toggle', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     const { category, enabled } = req.body;
     
@@ -262,7 +262,7 @@ router.post('/bulk-toggle', authenticate, requireRole(['admin']), async (req, re
 });
 
 // GET /api/ai-automations/learning-opportunities - View potential new automations
-router.get('/learning-opportunities', authenticate, requireRole(['admin']), async (req, res) => {
+router.get('/learning-opportunities', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     const { days = 7, minOccurrences = 3 } = req.query;
     
@@ -345,7 +345,7 @@ router.get('/learning-opportunities', authenticate, requireRole(['admin']), asyn
 });
 
 // GET /api/ai-automations/:featureKey/patterns - Get learned patterns for review
-router.get('/:featureKey/patterns', authenticate, requireRole(['admin']), async (req, res) => {
+router.get('/:featureKey/patterns', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     const { featureKey } = req.params;
     const { limit = 100 } = req.query;
@@ -421,7 +421,7 @@ router.get('/:featureKey/patterns', authenticate, requireRole(['admin']), async 
 });
 
 // GET /api/ai-automations/conversation-stats - Get conversation statistics by assistant type
-router.get('/conversation-stats', authenticate, requireRole(['admin']), async (req, res) => {
+router.get('/conversation-stats', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     const { days = 30 } = req.query;
     
