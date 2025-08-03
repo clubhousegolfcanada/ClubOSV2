@@ -236,10 +236,18 @@ node scripts/generate-vapid-keys.js
 
 ## 📚 Documentation
 
+### Core Documentation
 - **CLAUDE.md** - User preferences, working style (MUST READ)
 - **CHANGELOG.md** - Version history
 - **PUBLIC_CLUBOSBOY_SETUP.md** - Public embed instructions
 - **API Docs** - `/ClubOSV1-backend/docs/`
+
+### Security Documentation
+- **ENVIRONMENT-SETUP.md** - Critical environment variable setup
+- **SECURITY-IMPLEMENTATION-GUIDE.md** - Complete security implementation steps
+- **SECURITY-QUICK-REFERENCE.md** - Security commands and procedures
+- **SECURITY-QUICK-WINS.md** - Quick security fixes
+- **TESTING-SECURITY-ROADMAP.md** - Future security enhancements
 
 ## 🆘 Troubleshooting
 
