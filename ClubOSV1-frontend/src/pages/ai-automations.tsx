@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navigation from '../components/Navigation';
-import { useAuth } from '../state/useAuth';
+import { useAuth } from '../store/useAuth';
 import { Router } from '@reach/router';
 import { RouteComponentProps } from '@reach/router';
 import axios from 'axios';
