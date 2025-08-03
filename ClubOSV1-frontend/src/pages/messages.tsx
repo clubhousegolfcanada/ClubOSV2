@@ -133,6 +133,43 @@ export default function Messages() {
     };
   }, [isRateLimited]); // Re-run when rate limit status changes
 
+  // Handle phone query parameter from URL
+  useEffect(() => {
+    if (router.query.phone && conversations.length > 0) {
+      const phoneToSelect = router.query.phone as string;
+      const normalizePhone = (phone: string) => phone ? phone.replace(/\D/g, '') : '';
+      const normalizedPhoneToSelect = normalizePhone(phoneToSelect);
+      
+      // Find the conversation with matching phone number
+      const conversationToSelect = conversations.find(conv => 
+        normalizePhone(conv.phone_number) === normalizedPhoneToSelect
+      );
+      
+      if (conversationToSelect && (!selectedConversation || selectedConversation.phone_number !== conversationToSelect.phone_number)) {
+        setSelectedConversation(conversationToSelect);
+        
+        // Deduplicate messages
+        const messages = conversationToSelect.messages || [];
+        const uniqueMessages = messages.reduce((acc: Message[], msg: Message) => {
+          if (!acc.find(m => m.id === msg.id)) {
+            acc.push(msg);
+          }
+          return acc;
+        }, []);
+        
+        setMessages(uniqueMessages);
+        
+        // Scroll to bottom after a short delay
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
+        
+        // Clear the query parameter to avoid re-selecting on refresh
+        router.replace('/messages', undefined, { shallow: true });
+      }
+    }
+  }, [router.query.phone, conversations]);
+
   // Track previous message count for new message detection
   const prevMessageCountRef = useRef(messages.length);
   
