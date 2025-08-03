@@ -163,6 +163,9 @@ Run the security verification script to check your security posture:
 - ✅ Push notifications for new messages (background notifications supported)
 
 ### Environment Variables
+
+⚠️ **IMPORTANT**: See `ENVIRONMENT-SETUP.md` for critical setup instructions!
+
 **Frontend** (.env.local):
 - `NEXT_PUBLIC_API_URL` - Backend URL
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` - Push notification public key (REQUIRED for notifications)
