@@ -1,13 +1,13 @@
--- Fix gift card automation response to use correct URL and information
+-- Remove hardcoded response template - let assistant provide the response
 UPDATE ai_automation_features 
 SET config = jsonb_set(
-  config,
-  '{response_template}',
-  '"You can purchase gift cards at clubhouse247golf.com/gift-card/purchase — direct link, no friction."'::jsonb
+  config - 'response_template',  -- Remove the response_template key
+  '{minConfidence}',
+  '0.7'::jsonb
 )
 WHERE feature_key = 'gift_cards';
 
--- Update the description to be more accurate
+-- Update the description to clarify it uses assistant knowledge
 UPDATE ai_automation_features
-SET description = 'Automatically respond to gift card purchase questions with direct link to purchase page'
+SET description = 'Automatically respond to gift card questions using assistant knowledge'
 WHERE feature_key = 'gift_cards';

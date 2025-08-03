@@ -227,20 +227,24 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      // Instead of using hardcoded response, query the Booking & Access assistant
+      // Query the Booking & Access assistant - it will check database first, then OpenAI
       try {
-        const assistantResponse = await assistantService.queryAssistant(
+        const assistantResponse = await assistantService.getAssistantResponse(
           'Booking & Access',
-          'Customer is asking about purchasing gift cards. Provide the direct response about gift card purchase.',
-          conversationId
+          message,
+          { isCustomerFacing: true, conversationId } // Mark as customer-facing for proper response formatting
         );
         
-        // Use the assistant's response if available, otherwise fall back to knowledge base
+        // Use the assistant's response and ensure it's customer-facing
         let responseText = assistantResponse.response;
         
-        // If assistant didn't provide a good response, use the knowledge from the JSON
-        if (!responseText || responseText.length < 20) {
-          responseText = 'You can purchase gift cards at clubhouse247golf.com/gift-card/purchase — direct link, no friction.';
+        // Transform response to be direct to customer if needed
+        responseText = this.ensureCustomerFacingResponse(responseText);
+        
+        // Only proceed if we got a valid response
+        if (!responseText || responseText.length < 10) {
+          logger.warn('Assistant returned empty response for gift card query');
+          return { handled: false };
         }
         
         // Log successful automation
@@ -262,25 +266,19 @@ export class AIAutomationService {
           assistantType: 'Booking & Access'
         };
       } catch (assistantError) {
-        logger.warn('Failed to get assistant response, using fallback:', assistantError);
+        logger.error('Failed to get assistant response for gift card automation:', assistantError);
         
-        // Fallback to the correct response from knowledge base
-        const fallbackResponse = 'You can purchase gift cards at clubhouse247golf.com/gift-card/purchase — direct link, no friction.';
-        
+        // Don't handle if assistant fails - let it go through normal flow
         await logAutomationUsage('gift_cards', {
           conversationId,
           triggerType: 'automatic',
           inputData: { message },
-          outputData: { response: fallbackResponse },
-          success: true,
+          success: false,
+          errorMessage: assistantError instanceof Error ? assistantError.message : 'Unknown error',
           executionTimeMs: Date.now() - startTime
         });
         
-        return {
-          handled: true,
-          response: fallbackResponse,
-          assistantType: 'Booking & Access'
-        };
+        return { handled: false };
       }
     } catch (error) {
       logger.error('Gift card automation error:', error);
@@ -327,19 +325,44 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      await logAutomationUsage('hours_of_operation', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message },
-        outputData: { response: config.response_template },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      return {
-        handled: true,
-        response: config.response_template || 'We are open Monday-Thursday 11am-10pm, Friday 11am-11pm, Saturday 10am-11pm, and Sunday 10am-9pm.'
-      };
+      // Query the BrandTone assistant for hours information
+      try {
+        const assistantResponse = await assistantService.getAssistantResponse(
+          'BrandTone',
+          message,
+          { isCustomerFacing: true, conversationId }
+        );
+        
+        let responseText = assistantResponse.response;
+        
+        // Transform response to be direct to customer
+        responseText = this.ensureCustomerFacingResponse(responseText);
+        
+        if (!responseText || responseText.length < 10) {
+          logger.warn('Assistant returned empty response for hours query');
+          return { handled: false };
+        }
+        
+        await logAutomationUsage('hours_of_operation', {
+          conversationId,
+          triggerType: 'automatic',
+          inputData: { message },
+          outputData: { response: responseText },
+          success: true,
+          executionTimeMs: Date.now() - startTime
+        });
+        
+        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'hours_of_operation');
+        
+        return {
+          handled: true,
+          response: responseText,
+          assistantType: 'BrandTone'
+        };
+      } catch (assistantError) {
+        logger.error('Failed to get assistant response for hours:', assistantError);
+        return { handled: false };
+      }
     } catch (error) {
       logger.error('Hours automation error:', error);
       return { handled: false };
@@ -375,19 +398,44 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      await logAutomationUsage('membership_info', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message },
-        outputData: { response: config.response_template },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      return {
-        handled: true,
-        response: config.response_template || 'We offer monthly memberships with benefits including priority booking, discounts on bay time, and exclusive member events. Visit our website or stop by to learn more!'
-      };
+      // Query the BrandTone assistant for membership information
+      try {
+        const assistantResponse = await assistantService.getAssistantResponse(
+          'BrandTone',
+          message,
+          { isCustomerFacing: true, conversationId }
+        );
+        
+        let responseText = assistantResponse.response;
+        
+        // Transform response to be direct to customer
+        responseText = this.ensureCustomerFacingResponse(responseText);
+        
+        if (!responseText || responseText.length < 10) {
+          logger.warn('Assistant returned empty response for membership query');
+          return { handled: false };
+        }
+        
+        await logAutomationUsage('membership_info', {
+          conversationId,
+          triggerType: 'automatic',
+          inputData: { message },
+          outputData: { response: responseText },
+          success: true,
+          executionTimeMs: Date.now() - startTime
+        });
+        
+        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'membership_info');
+        
+        return {
+          handled: true,
+          response: responseText,
+          assistantType: 'BrandTone'
+        };
+      } catch (assistantError) {
+        logger.error('Failed to get assistant response for membership:', assistantError);
+        return { handled: false };
+      }
     } catch (error) {
       logger.error('Membership automation error:', error);
       return { handled: false };
@@ -1178,6 +1226,61 @@ export class AIAutomationService {
     } catch (error) {
       logger.error('Failed to learn from interaction:', error);
     }
+  }
+  
+  /**
+   * Transform response to ensure it's direct to customer
+   * Converts "Tell them..." or "Inform the customer..." to direct speech
+   */
+  private ensureCustomerFacingResponse(response: string): string {
+    if (!response) return response;
+    
+    // Common patterns where AI might speak about the customer instead of to them
+    const transformations: Array<[RegExp, string]> = [
+      // "Tell them..." patterns
+      [/^tell (?:them|the customer|the member) (?:that )?/i, ''],
+      [/^inform (?:them|the customer|the member) (?:that )?/i, ''],
+      [/^let (?:them|the customer|the member) know (?:that )?/i, ''],
+      [/^respond with:?\s*/i, ''],
+      [/^reply with:?\s*/i, ''],
+      [/^say:?\s*/i, ''],
+      
+      // "The customer can..." → "You can..."
+      [/\b(?:the|a) (?:customer|member|user|guest|person) can\b/gi, 'You can'],
+      [/\b(?:the|a) (?:customer|member|user|guest|person) (?:is|are)\b/gi, 'You are'],
+      [/\b(?:the|a) (?:customer|member|user|guest|person) (?:has|have)\b/gi, 'You have'],
+      [/\b(?:the|a) (?:customer|member|user|guest|person) (?:will|would)\b/gi, 'You will'],
+      [/\b(?:the|a) (?:customer|member|user|guest|person) (?:should|must)\b/gi, 'You should'],
+      [/\b(?:the|a) (?:customer|member|user|guest|person) needs?\b/gi, 'You need'],
+      [/\b(?:the|a) (?:customer's|member's|user's|guest's|person's)\b/gi, 'Your'],
+      
+      // "They can..." → "You can..."
+      [/\bthey can\b/gi, 'You can'],
+      [/\bthey are\b/gi, 'You are'],
+      [/\bthey have\b/gi, 'You have'],
+      [/\bthey will\b/gi, 'You will'],
+      [/\bthey should\b/gi, 'You should'],
+      [/\bthey need\b/gi, 'You need'],
+      [/\btheir\b/gi, 'Your'],
+      [/\bthem\b/gi, 'You'],
+    ];
+    
+    let transformed = response;
+    
+    // Apply transformations
+    for (const [pattern, replacement] of transformations) {
+      transformed = transformed.replace(pattern, replacement);
+    }
+    
+    // Clean up any double spaces or weird formatting
+    transformed = transformed.trim().replace(/\s+/g, ' ');
+    
+    // Ensure first letter is capitalized
+    if (transformed.length > 0) {
+      transformed = transformed.charAt(0).toUpperCase() + transformed.slice(1);
+    }
+    
+    return transformed;
   }
 }
 
