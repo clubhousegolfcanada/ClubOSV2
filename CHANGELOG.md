@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.4] - 2025-08-03
+
+### Fixed
+- **AI Automations Module Import Error**
+  - Fixed incorrect import from 'roleAuth' to 'roleGuard' in ai-automations.ts
+  - This was preventing backend from starting with "Module not found" error
+  - All requireRole calls updated to use roleGuard middleware
+  - Production deployment should now work correctly
+
 ## [1.11.3] - 2025-08-03
 
 ### Testing Improvements
