@@ -43,9 +43,13 @@ export async function getSafeOpenPhoneInsertQuery(): Promise<{
   query: string;
   hasUnreadCount: boolean;
   hasConversationId: boolean;
+  hasAssistantType: boolean;
+  hasLastAssistantType: boolean;
 }> {
   const hasUnreadCount = await columnExists('openphone_conversations', 'unread_count');
   const hasConversationId = await columnExists('openphone_conversations', 'conversation_id');
+  const hasAssistantType = await columnExists('openphone_conversations', 'assistant_type');
+  const hasLastAssistantType = await columnExists('openphone_conversations', 'last_assistant_type');
   
   let columns = ['phone_number', 'customer_name', 'employee_name', 'messages', 'metadata'];
   let placeholders = ['$1', '$2', '$3', '$4', '$5'];
@@ -62,13 +66,23 @@ export async function getSafeOpenPhoneInsertQuery(): Promise<{
     placeholders.push(`$${columns.length}`);
   }
   
+  if (hasAssistantType) {
+    columns.push('assistant_type');
+    placeholders.push(`$${columns.length}`);
+  }
+  
+  if (hasLastAssistantType) {
+    columns.push('last_assistant_type');
+    placeholders.push(`$${columns.length}`);
+  }
+  
   const query = `
     INSERT INTO openphone_conversations 
     (${columns.join(', ')})
     VALUES (${placeholders.join(', ')})
   `;
   
-  return { query, hasUnreadCount, hasConversationId };
+  return { query, hasUnreadCount, hasConversationId, hasAssistantType, hasLastAssistantType };
 }
 
 /**
@@ -83,9 +97,13 @@ export function buildOpenPhoneInsertParams(
     messages: any;
     metadata: any;
     unreadCount?: number;
+    assistantType?: string;
+    lastAssistantType?: string;
   },
   hasConversationId: boolean,
-  hasUnreadCount: boolean
+  hasUnreadCount: boolean,
+  hasAssistantType: boolean = false,
+  hasLastAssistantType: boolean = false
 ): any[] {
   const params: any[] = [];
   
@@ -103,6 +121,14 @@ export function buildOpenPhoneInsertParams(
   
   if (hasUnreadCount) {
     params.push(data.unreadCount || 0);
+  }
+  
+  if (hasAssistantType) {
+    params.push(data.assistantType || 'BrandTone');
+  }
+  
+  if (hasLastAssistantType) {
+    params.push(data.lastAssistantType || 'BrandTone');
   }
   
   return params;

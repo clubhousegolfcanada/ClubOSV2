@@ -69,6 +69,7 @@ import privacyRoutes from './routes/privacy';
 import customerInteractionsRoutes from './routes/customer-interactions';
 import promptTemplatesRoutes from './routes/promptTemplates';
 import csrfRoutes from './routes/csrf';
+import aiAutomationsRoutes from './routes/ai-automations';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -76,7 +77,7 @@ import { trackUsage } from './middleware/usageTracking';
 import { authLimiter } from './middleware/authLimiter';
 import { sanitizeMiddleware } from './middleware/requestValidation';
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CRITICAL: Health check must be the VERY FIRST route for Railway deployment
@@ -236,6 +237,7 @@ app.use('/api/call-transcripts', callTranscriptRoutes);
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/customer-interactions', customerInteractionsRoutes);
 app.use('/api/prompt-templates', promptTemplatesRoutes);
+app.use('/api/ai-automations', aiAutomationsRoutes);
 
 
 // Root endpoint

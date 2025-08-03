@@ -177,6 +177,7 @@ export default function Operations() {
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [showKnowledge, setShowKnowledge] = useState(false);
+  const [showAIAutomations, setShowAIAutomations] = useState(false);
   const [systemConfigs, setSystemConfigs] = useState<any>({});
   const [systemMetrics, setSystemMetrics] = useState<any>({ total_documents: 0, unique_assistants: 0 });
   const [configLoading, setConfigLoading] = useState(false);
@@ -214,6 +215,12 @@ export default function Operations() {
   const [isCleaningEditMode, setIsCleaningEditMode] = useState(false);
   const [checklists, setChecklists] = useState<Checklist[]>(sampleChecklists);
   
+  // AI Automations state
+  const [aiFeatures, setAiFeatures] = useState<any[]>([]);
+  const [aiSelectedCategory, setAiSelectedCategory] = useState<string>('all');
+  const [showOnlyEnabled, setShowOnlyEnabled] = useState(false);
+  const [aiLoading, setAiLoading] = useState(true);
+  
   // Password change modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordUserId, setPasswordUserId] = useState<string | null>(null);
@@ -249,8 +256,11 @@ export default function Operations() {
       if (showAnalytics) {
         fetchAnalytics();
       }
+      if (showAIAutomations) {
+        fetchAIFeatures();
+      }
     }
-  }, [user, showKnowledge, showSystemConfig, showAnalytics]);
+  }, [user, showKnowledge, showSystemConfig, showAnalytics, showAIAutomations]);
 
   // Validate password whenever it changes
   useEffect(() => {
@@ -716,6 +726,67 @@ export default function Operations() {
     kiosk: 'bg-orange-500/20 text-orange-400 border-orange-500/30'
   };
 
+  // AI Automations functions
+  const fetchAIFeatures = async () => {
+    try {
+      setAiLoading(true);
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/ai-automations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setAiFeatures(response.data.features);
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI features:', error);
+      toast.error('Failed to load automation features');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const toggleAIFeature = async (featureKey: string, enabled: boolean) => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      await axios.put(`${API_URL}/ai-automations/${featureKey}/toggle`, 
+        { enabled },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Update local state
+      setAiFeatures(aiFeatures.map(f => 
+        f.feature_key === featureKey ? { ...f, enabled } : f
+      ));
+      
+      toast.success(`${enabled ? 'Enabled' : 'Disabled'} automation`);
+    } catch (error) {
+      console.error('Failed to toggle feature:', error);
+      toast.error('Failed to toggle feature');
+    }
+  };
+
+  const toggleAICategory = async (category: string, enabled: boolean) => {
+    if (user?.role !== 'admin') {
+      toast.error('Only administrators can bulk toggle features');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('clubos_token');
+      await axios.post(`${API_URL}/ai-automations/bulk-toggle`, 
+        { category, enabled },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Reload features
+      await fetchAIFeatures();
+      toast.success(`${enabled ? 'Enabled' : 'Disabled'} all ${category} automations`);
+    } catch (error) {
+      console.error('Failed to bulk toggle features:', error);
+      toast.error('Failed to bulk toggle features');
+    }
+  };
+
   // Cleaning functions
   const handleTaskToggle = (taskId: string) => {
     setCompletedTasks(prev => ({
@@ -1159,6 +1230,8 @@ export default function Operations() {
             <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
               {showKnowledge
                 ? 'Manage AI knowledge extraction, feedback, and SOP system.'
+                : showAIAutomations
+                ? 'Configure automated AI responses and actions for common customer inquiries.'
                 : 'Manage system users, configurations, and analytics.'}
             </p>
           </div>
@@ -1166,32 +1239,47 @@ export default function Operations() {
           {/* Tab Navigation */}
           <div className="flex items-center gap-4 mb-4 overflow-x-auto">
             <button
-              onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); }}
+              onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); setShowAIAutomations(false); }}
               className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
-                !showSystemConfig && !showAnalytics && !showKnowledge
+                !showSystemConfig && !showAnalytics && !showKnowledge && !showAIAutomations
                   ? 'text-[var(--text-primary)]' 
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`}
             >
               Settings
-              {!showSystemConfig && !showAnalytics && !showKnowledge && (
+              {!showSystemConfig && !showAnalytics && !showKnowledge && !showAIAutomations && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
               )}
             </button>
             {user?.role === 'admin' && (
-              <button
-                onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(true); }}
-                className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
-                  showKnowledge 
-                    ? 'text-[var(--text-primary)]' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                Knowledge
-                {showKnowledge && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(true); setShowAIAutomations(false); }}
+                  className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
+                    showKnowledge 
+                      ? 'text-[var(--text-primary)]' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Knowledge
+                  {showKnowledge && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setShowSystemConfig(false); setShowAnalytics(false); setShowKnowledge(false); setShowAIAutomations(true); }}
+                  className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
+                    showAIAutomations 
+                      ? 'text-[var(--text-primary)]' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  AI Automations
+                  {showAIAutomations && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+                  )}
+                </button>
+              </>
             )}
           </div>
 
@@ -1398,6 +1486,299 @@ export default function Operations() {
                     }
                   `}</style>
                 </>
+              ) : showAIAutomations ? (
+                <>
+                  {/* AI Automations Content */}
+                  <div className="space-y-6">
+                    {/* Category Filter */}
+                    <div className="flex flex-wrap gap-4 items-center">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setAiSelectedCategory('all')}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            aiSelectedCategory === 'all'
+                              ? 'bg-[var(--accent)] text-white'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          All Features
+                        </button>
+                        <button
+                          onClick={() => setAiSelectedCategory('customer_service')}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            aiSelectedCategory === 'customer_service'
+                              ? 'bg-[var(--accent)] text-white'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          Customer Service
+                        </button>
+                        <button
+                          onClick={() => setAiSelectedCategory('technical')}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            aiSelectedCategory === 'technical'
+                              ? 'bg-[var(--accent)] text-white'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          Technical
+                        </button>
+                        <button
+                          onClick={() => setAiSelectedCategory('booking')}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            aiSelectedCategory === 'booking'
+                              ? 'bg-[var(--accent)] text-white'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          Booking
+                        </button>
+                      </div>
+                      
+                      <label className="flex items-center gap-2 ml-auto">
+                        <input
+                          type="checkbox"
+                          checked={showOnlyEnabled}
+                          onChange={(e) => setShowOnlyEnabled(e.target.checked)}
+                          className="w-4 h-4 text-[var(--accent)] bg-[var(--bg-secondary)] border-[var(--border-primary)] rounded focus:ring-[var(--accent)]"
+                        />
+                        <span className="text-sm text-[var(--text-secondary)]">Show only enabled</span>
+                      </label>
+                    </div>
+
+                    {/* Features Grid */}
+                    {aiLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="flex items-center gap-3">
+                          <RefreshCw className="w-5 h-5 animate-spin text-[var(--accent)]" />
+                          <span className="text-[var(--text-secondary)]">Loading automation features...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {aiFeatures
+                          .filter(feature => {
+                            const categoryMatch = aiSelectedCategory === 'all' || feature.category === aiSelectedCategory;
+                            const enabledMatch = !showOnlyEnabled || feature.enabled;
+                            return categoryMatch && enabledMatch;
+                          })
+                          .map((feature) => {
+                            const [isExpanded, setIsExpanded] = useState(false);
+                            const [responseSource, setResponseSource] = useState(feature.config?.responseSource || 'database');
+                            const [hardcodedResponse, setHardcodedResponse] = useState(feature.config?.hardcodedResponse || '');
+                            const [maxResponses, setMaxResponses] = useState(feature.config?.maxResponses || 2);
+                            const [allowFollowUp, setAllowFollowUp] = useState(feature.allow_follow_up !== false);
+                            const [isSaving, setIsSaving] = useState(false);
+                            
+                            const saveConfig = async () => {
+                              setIsSaving(true);
+                              try {
+                                const token = localStorage.getItem('clubos_token');
+                                const updatedConfig = {
+                                  ...feature.config,
+                                  responseSource,
+                                  hardcodedResponse,
+                                  maxResponses
+                                };
+                                
+                                await axios.put(`${API_URL}/ai-automations/${feature.feature_key}/config`, {
+                                  config: updatedConfig,
+                                  allow_follow_up: allowFollowUp
+                                }, {
+                                  headers: { Authorization: `Bearer ${token}` }
+                                });
+                                
+                                toast.success('Configuration saved');
+                                fetchAIFeatures(); // Reload to get updated data
+                              } catch (error) {
+                                toast.error('Failed to save configuration');
+                              } finally {
+                                setIsSaving(false);
+                              }
+                            };
+                            
+                            return (
+                              <div key={feature.id} className="card hover:shadow-lg transition-shadow duration-200">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+                                      {feature.feature_name}
+                                    </h3>
+                                    <p className="text-sm text-[var(--text-secondary)]">
+                                      {feature.description}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => setIsExpanded(!isExpanded)}
+                                      className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                    >
+                                      <Settings className="w-4 h-4" />
+                                    </button>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={feature.enabled}
+                                        onChange={(e) => toggleAIFeature(feature.feature_key, e.target.checked)}
+                                        className="sr-only peer"
+                                      />
+                                      <div className="w-11 h-6 bg-[var(--bg-tertiary)] peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[var(--accent)]"></div>
+                                    </label>
+                                  </div>
+                                </div>
+                                
+                                {/* Stats */}
+                                {feature.stats && (
+                                  <div className="mt-4 pt-4 border-t border-[var(--border-secondary)]">
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div>
+                                        <span className="text-[var(--text-muted)]">Total Uses:</span>
+                                        <span className="ml-2 font-medium">{feature.stats.total_uses}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[var(--text-muted)]">Success Rate:</span>
+                                        <span className="ml-2 font-medium">
+                                          {feature.stats.total_uses > 0 
+                                            ? Math.round((feature.stats.successful_uses / feature.stats.total_uses) * 100) 
+                                            : 0}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {feature.stats.last_used && (
+                                      <div className="mt-2 text-xs text-[var(--text-muted)]">
+                                        Last used: {new Date(feature.stats.last_used).toLocaleString()}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Expanded Configuration */}
+                                {isExpanded && (
+                                  <div className="mt-4 pt-4 border-t border-[var(--border-secondary)] space-y-4">
+                                    {/* Max Responses */}
+                                    <div>
+                                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                                        Max Responses per Conversation
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        value={maxResponses}
+                                        onChange={(e) => setMaxResponses(parseInt(e.target.value))}
+                                        className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)]"
+                                      />
+                                      <p className="mt-1 text-xs text-[var(--text-muted)]">
+                                        e.g., Gift cards: 2 (allows follow-up if customer says thanks)
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Response Source */}
+                                    <div>
+                                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                                        Response Source
+                                      </label>
+                                      <div className="flex gap-4">
+                                        <label className="flex items-center gap-2">
+                                          <input
+                                            type="radio"
+                                            value="database"
+                                            checked={responseSource === 'database'}
+                                            onChange={(e) => setResponseSource(e.target.value)}
+                                            className="text-[var(--accent)]"
+                                          />
+                                          <span className="text-sm">Use AI Assistant</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                          <input
+                                            type="radio"
+                                            value="hardcoded"
+                                            checked={responseSource === 'hardcoded'}
+                                            onChange={(e) => setResponseSource(e.target.value)}
+                                            className="text-[var(--accent)]"
+                                          />
+                                          <span className="text-sm">Use Custom Response</span>
+                                        </label>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Hardcoded Response */}
+                                    {responseSource === 'hardcoded' && (
+                                      <div>
+                                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                                          Custom Response
+                                        </label>
+                                        <textarea
+                                          value={hardcodedResponse}
+                                          onChange={(e) => setHardcodedResponse(e.target.value)}
+                                          rows={3}
+                                          className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)] resize-none"
+                                          placeholder="Enter the response to send to customers..."
+                                        />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Allow Follow-up Toggle */}
+                                    <div>
+                                      <label className="flex items-center gap-3">
+                                        <input
+                                          type="checkbox"
+                                          checked={allowFollowUp}
+                                          onChange={(e) => setAllowFollowUp(e.target.checked)}
+                                          className="w-4 h-4 text-[var(--accent)] rounded border-[var(--border-secondary)] focus:ring-[var(--accent)]"
+                                        />
+                                        <div>
+                                          <span className="text-sm font-medium text-[var(--text-primary)]">
+                                            Allow Follow-up Questions
+                                          </span>
+                                          <p className="text-xs text-[var(--text-muted)]">
+                                            AI will respond to follow-up questions within the response limit
+                                          </p>
+                                        </div>
+                                      </label>
+                                    </div>
+                                    
+                                    {/* Save Button */}
+                                    <button
+                                      onClick={saveConfig}
+                                      disabled={isSaving}
+                                      className="w-full px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    >
+                                      {isSaving ? 'Saving...' : 'Save Configuration'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+
+                    {/* Bulk Actions */}
+                    {user?.role === 'admin' && (
+                      <div className="card bg-yellow-500/10 border-yellow-500/30">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-yellow-400" />
+                          Admin Actions
+                        </h3>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => toggleAICategory(aiSelectedCategory, true)}
+                            className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                          >
+                            Enable All {aiSelectedCategory === 'all' ? '' : aiSelectedCategory}
+                          </button>
+                          <button
+                            onClick={() => toggleAICategory(aiSelectedCategory, false)}
+                            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                          >
+                            Disable All {aiSelectedCategory === 'all' ? '' : aiSelectedCategory}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 <>
                   {/* Settings Tab Navigation */}
@@ -1464,7 +1845,7 @@ export default function Operations() {
                 </div>
               </div>
 
-              {!showSystemConfig && !showAnalytics ? (
+              {!showSystemConfig && !showAnalytics && !showAIAutomations ? (
                 <>
                   {/* User Management Section */}
                   <div className="space-y-6">
@@ -2296,7 +2677,7 @@ export default function Operations() {
               ) : null}
 
               {/* System Status - Only show when not in specific views */}
-              {!showSystemConfig && !showAnalytics && !showKnowledge && (
+              {!showSystemConfig && !showAnalytics && !showKnowledge && !showAIAutomations && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">System Status</h3>

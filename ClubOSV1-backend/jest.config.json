@@ -10,7 +10,9 @@
     "src/**/*.ts",
     "!src/**/*.d.ts",
     "!src/**/__tests__/**",
-    "!src/types/**"
+    "!src/types/**",
+    "!src/scripts/**",
+    "!src/database/migrations/**"
   ],
   "coverageDirectory": "coverage",
   "coverageReporters": ["text", "lcov", "html"],
@@ -19,5 +21,10 @@
   },
   "setupFilesAfterEnv": ["<rootDir>/src/__tests__/setup.ts"],
   "testTimeout": 30000,
-  "verbose": true
+  "verbose": true,
+  "globals": {
+    "ts-jest": {
+      "tsconfig": "./tsconfig.test.json"
+    }
+  }
 }

@@ -2,6 +2,217 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.4] - 2025-08-03
+
+### Fixed
+- **AI Automations Module Import Error**
+  - Fixed incorrect import from 'roleAuth' to 'roleGuard' in ai-automations.ts
+  - This was preventing backend from starting with "Module not found" error
+  - All requireRole calls updated to use roleGuard middleware
+  - Production deployment should now work correctly
+
+- **Messaging Module TypeScript Errors**
+  - Fixed sendMessage call to use correct parameter order (3 params not object)
+  - Changed generateResponse to generateSuggestedResponse method name
+  - Fixed OpenPhoneService method calls (checkConnection → testConnection)
+  - Updated notification payload structure (moved type field to data object)
+  - Fixed insertOpenPhoneConversation to use camelCase parameters
+  - Fixed NotificationService calls (broadcastToRole → sendToRole)
+  - Commented out non-existent HubSpot updateLastContact method
+  - Fixed SuggestedResponse property access (content → suggestedText)
+  - Backend now builds successfully without TypeScript errors
+
+### Known Issues
+- Railway only has production environment, changes need to be merged to main branch
+- Vercel has both production and refactor branch deployments
+- AI automations page may not work until backend is deployed to production
+
+## [1.11.3] - 2025-08-03
+
+### Testing Improvements
+- **Frontend Tests Added**
+  - RoleTag component test with full coverage
+  - Toggle component test with interaction testing
+  - PasswordStrengthIndicator component test (comprehensive)
+  - Improved from 0.32% baseline coverage
+
+- **Backend Tests Fixed**
+  - LLMService test updated for new route names
+  - Fixed async test issues with isConfigured method
+  - Updated expectations: 'booking' → 'Booking & Access', etc.
+  - AI Automations routes test suite added
+
+- **Test Infrastructure**
+  - Created TEST-COVERAGE-UPDATE.md with roadmap to 80% coverage
+  - Identified failing tests and created fix plan
+  - Estimated 1 week effort to reach 80% coverage target
+
+### Fixed
+- Backend test TypeScript imports and expectations
+- Frontend test mocking for next/router
+
+### Known Issues
+- Frontend store tests still failing (router.push issue)
+- Backend integration tests need module import fixes
+- Overall coverage still below target (Backend: ~4%, Frontend: <5%)
+
+## [1.11.2] - 2025-08-03
+
+### Added
+- **AI Automation Safety & Configuration**
+  - Response limit tracking (configurable 1-10 per conversation)
+  - Toggle between AI assistant knowledge and custom hardcoded responses
+  - Per-feature response limits (e.g., gift cards: 2 to allow thank you response)
+  - Response tracking table to prevent spam
+  - UI configuration panel with settings gear icon
+  - Edit custom responses directly in the interface
+  - Helper text explaining response limits use case
+
+### Enhanced
+- **Customer-Facing Response Transformation**
+  - Automatically converts "Tell them..." to direct "You..." format
+  - Ensures all automated responses speak directly to customers
+  - Proper context passing with `isCustomerFacing` flag
+
+### Simplified
+- Removed extra automations (hours, membership, simulator, TV)
+- Only keeping gift cards and trackman as originally requested
+- Gift cards can trigger from any conversation context
+- Trackman only triggers in tech support context
+
+### Fixed
+- All automations now use actual assistant knowledge (no hardcoded defaults)
+- Gift card automation pulls from Booking & Access assistant
+- Pattern matching for all automations (not just keywords)
+- Fixed method name from queryAssistant to getAssistantResponse
+
+### Technical
+- Migration `031_add_automation_response_limits.sql` adds response tracking
+- Migration `032_remove_extra_automations.sql` removes unused features
+- New API endpoint `/api/ai-automations/:featureKey/config`
+- Response count tracking per conversation and per feature
+- Advanced pattern matching in `aiAutomationPatterns.ts`
+
+## [1.11.1] - 2025-08-03
+
+### Added
+- **Conversation Categorization System**
+  - New database columns to track which assistant type handles each conversation
+  - Automatic categorization of all incoming messages (Emergency, Booking & Access, TechSupport, BrandTone)
+  - Routing history tracking to see how conversations are categorized over time
+  - API endpoint `/api/ai-automations/conversation-stats` for analytics by assistant type
+  - Enhanced learning system that tracks patterns by conversation category
+  - Migration `028_add_conversation_categorization.sql` adds necessary database fields
+
+### Enhanced
+- **AI Learning System**
+  - Now tracks assistant type for all missed automation opportunities
+  - Groups learning patterns by conversation category for better accuracy
+  - Enables category-specific automation improvements
+
+### Fixed
+- Updated OpenPhone webhook handler to store conversation types
+- Enhanced aiAutomationService to include assistant type in all responses
+
+## [1.11.0] - 2025-08-03
+
+### Added
+- **AI Automation System** - Configurable automated responses and actions
+  - New database schema for automation features and usage tracking
+  - Admin/Operator settings page at `/ai-automations`
+  - Toggle individual features or entire categories on/off
+  - Usage statistics and success rate tracking
+  - Required user confirmation for sensitive actions
+
+- **Initial Automations**
+  - **Gift Cards** - Auto-respond with purchase link when customers ask about gift cards
+  - **Hours of Operation** - Automatically provide business hours
+  - **Membership Info** - Share membership benefits and options
+  - **Trackman Reset** - Reset frozen Trackman units via NinjaOne (requires confirmation)
+  - **Simulator Reboot** - Remotely reboot simulator PCs (requires confirmation)
+  - **TV System Restart** - Fix display issues remotely (requires confirmation)
+
+- **Backend Infrastructure**
+  - `/api/ai-automations` endpoints for managing features
+  - `aiAutomationService` for processing messages and executing actions
+  - Integration with OpenPhone webhook for automatic message processing
+  - Confirmation workflow for sensitive actions
+  - Comprehensive usage logging and analytics
+
+- **Frontend Components**
+  - AI Automations settings page with toggle switches
+  - Real-time usage statistics display
+  - Category-based bulk toggle controls
+  - Mobile-responsive design
+
+### Technical Details
+- Database migration: `026_ai_automation_features.sql`
+- New routes: `ai-automations.ts`
+- New service: `aiAutomationService.ts`
+- OpenPhone webhook enhanced to process automations
+- Navigation updated to include AI Automations for admin/operator roles
+
+## [1.10.5] - 2025-08-03
+
+### Testing Infrastructure
+- **Backend Testing**
+  - Fixed TypeScript configuration issues for Jest
+  - Created separate tsconfig.test.json for test compilation
+  - Added @jest/globals imports to fix type errors
+  - Created .env.test for isolated test environment
+  - Exported app instance from index.ts for testing
+  - Backend tests now run (with some failures due to API changes)
+
+- **Frontend Testing**
+  - Set up complete Jest + React Testing Library infrastructure
+  - Created jest.config.js with Next.js configuration
+  - Added comprehensive jest.setup.js with mocks for Next.js router
+  - Created initial component tests (Button, Input)
+  - Created state management tests (useStore)
+  - Achieved basic test coverage reporting (0.32% starting point)
+
+### Security Improvements
+- **Rate Limiting**
+  - Enabled production-only rate limiting
+  - General: 100 requests/15 minutes
+  - Auth endpoints: 5 attempts/15 minutes
+  - LLM endpoints: 5 requests/minute (production)
+  - Public endpoints: 20 requests/minute
+  - Rate limiting automatically disabled in development
+
+### Documentation
+- **Testing Guide** (TESTING-GUIDE.md)
+  - Comprehensive testing instructions
+  - Backend and frontend test commands
+  - Writing test examples
+  - Known issues and solutions
+  - Coverage improvement roadmap
+
+- **Security Audit Report** (SECURITY-AUDIT-REPORT.md)
+  - Full security analysis (91% security score)
+  - Test coverage assessment
+  - Detailed findings for all security measures
+  - Recommendations for improvements
+
+### Added
+- Frontend testing dependencies (@testing-library/react, jest, etc.)
+- Test scripts in frontend package.json
+- Backend tsconfig.test.json for test compilation
+- Sample component tests for Button and Input components
+- State management tests for Zustand stores
+- Production-only rate limiting configuration
+
+### Fixed
+- Jest setup file TypeScript errors
+- Backend test compilation issues
+- Frontend router mocking for tests
+- CSRF token handling in test environment
+
+### Known Issues
+- Backend tests have some failures due to changed API routes
+- Frontend store tests have issues with dynamic router imports
+- Overall test coverage still low (needs to reach 80%)
+
 ## [1.10.4] - 2025-08-02
 
 ### Security

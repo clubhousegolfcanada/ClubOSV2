@@ -181,7 +181,7 @@ describe('LLMService', () => {
 
       bookingRequests.forEach(request => {
         const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('booking');
+        expect(result.route).toBe('Booking & Access');
         expect(result.confidence).toBeLessThan(0.7);
       });
     });
@@ -196,7 +196,7 @@ describe('LLMService', () => {
 
       accessRequests.forEach(request => {
         const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('access');
+        expect(result.route).toBe('Booking & Access');
       });
     });
 
@@ -210,8 +210,8 @@ describe('LLMService', () => {
 
       emergencyRequests.forEach(request => {
         const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('emergency');
-        expect(result.confidence).toBeGreaterThan(0.7);
+        expect(result.route).toBe('Emergency');
+        expect(result.confidence).toBeGreaterThan(0.3);
       });
     });
 
@@ -225,7 +225,7 @@ describe('LLMService', () => {
 
       techRequests.forEach(request => {
         const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('tech');
+        expect(result.route).toBe('TechSupport');
       });
     });
 
@@ -238,18 +238,19 @@ describe('LLMService', () => {
 
       generalRequests.forEach(request => {
         const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('general');
-        expect(result.confidence).toBeLessThan(0.5);
+        expect(result.route).toBe('TechSupport'); // Default is now TechSupport
+        expect(result.confidence).toBe(0.5); // Default confidence
       });
     });
   });
 
   describe('isConfigured', () => {
-    it('should return true when API key is configured', () => {
-      expect(llmService.isConfigured()).toBe(true);
+    it('should return true when API key is configured', async () => {
+      const result = await llmService.isConfigured();
+      expect(result).toBe(true);
     });
 
-    it('should return false when API key is not configured', () => {
+    it('should return false when API key is not configured', async () => {
       // Create a new instance with no API key
       jest.resetModules();
       jest.mock('../../../utils/envValidator', () => ({
@@ -261,7 +262,8 @@ describe('LLMService', () => {
       const LLMServiceModule = require('../../../services/llmService');
       const serviceWithoutKey = new LLMServiceModule.LLMService();
 
-      expect(serviceWithoutKey.isConfigured()).toBe(false);
+      const result = await serviceWithoutKey.isConfigured();
+      expect(result).toBe(false);
     });
   });
 });

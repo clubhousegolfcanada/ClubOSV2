@@ -10,6 +10,7 @@ import { notificationService } from '../services/notificationService';
 import { ensureOpenPhoneColumns } from '../utils/database-helpers';
 import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../utils/openphone-db-helpers';
 import { hubspotService } from '../services/hubspotService';
+import { aiAutomationService } from '../services/aiAutomationService';
 
 const router = Router();
 
@@ -177,16 +178,25 @@ router.post('/webhook', async (req: Request, res: Response) => {
         const conversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}`;
         
         // Check if we have an existing conversation for this phone number
+        // We'll check the timestamp of the last message to determine if it's within 1 hour
         const existingConv = await db.query(`
-          SELECT id, messages, conversation_id
+          SELECT id, messages, conversation_id, created_at, updated_at,
+            CASE 
+              WHEN jsonb_array_length(messages) > 0 
+              THEN EXTRACT(EPOCH FROM (NOW() - (messages->-1->>'createdAt')::timestamp)) / 60
+              ELSE EXTRACT(EPOCH FROM (NOW() - created_at)) / 60
+            END as minutes_since_last_message
           FROM openphone_conversations 
           WHERE phone_number = $1
-          ORDER BY created_at DESC 
+          ORDER BY updated_at DESC 
           LIMIT 1
         `, [phoneNumber]);
         
-        if (existingConv.rows.length > 0) {
-          // Append to existing conversation
+        // Group messages within 1-hour timeframe from last message
+        const ONE_HOUR_IN_MINUTES = 60;
+        
+        if (existingConv.rows.length > 0 && existingConv.rows[0].minutes_since_last_message < ONE_HOUR_IN_MINUTES) {
+          // Within 1 hour of last message - append to existing conversation
           const existingMessages = existingConv.rows[0].messages || [];
           const updatedMessages = [...existingMessages, newMessage];
           
@@ -204,11 +214,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
             employeeName
           });
           
-          logger.info('OpenPhone message appended to customer conversation', { 
+          logger.info('OpenPhone message appended to existing conversation', { 
             conversationId,
             phoneNumber,
             messageCount: updatedMessages.length,
-            direction: messageData.direction
+            direction: messageData.direction,
+            minutesSinceLastMessage: Math.round(existingConv.rows[0].minutes_since_last_message)
           });
           
           // Send push notification for inbound messages
@@ -243,6 +254,48 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 phoneNumber,
                 userCount: userIds.length
               });
+              
+              // Process AI automations for inbound messages
+              const messageText = messageData.body || messageData.text || '';
+              const automationResponse = await aiAutomationService.processMessage(
+                phoneNumber, 
+                messageText,
+                existingConv.rows[0].id
+              );
+              
+              // Update conversation with assistant type
+              const assistantType = automationResponse.assistantType || aiAutomationService.getAssistantType(messageText);
+              await db.query(`
+                UPDATE openphone_conversations
+                SET last_assistant_type = $1,
+                    assistant_type = COALESCE(assistant_type, $1)
+                WHERE id = $2
+              `, [assistantType, existingConv.rows[0].id]);
+              
+              if (automationResponse.handled && automationResponse.response) {
+                // Send automated response
+                logger.info('Sending automated response', {
+                  phoneNumber,
+                  response: automationResponse.response.substring(0, 100),
+                  assistantType
+                });
+                
+                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                if (defaultNumber) {
+                  await openPhoneService.sendMessage(
+                    phoneNumber,
+                    defaultNumber,
+                    automationResponse.response
+                  );
+                }
+              } else {
+                // Message wasn't automated - store for learning
+                await aiAutomationService.trackMissedAutomation(
+                  phoneNumber,
+                  messageText,
+                  existingConv.rows[0].id
+                );
+              }
             } catch (notifError) {
               // Don't fail webhook if notification fails
               logger.error('Failed to send push notification:', notifError);
@@ -252,9 +305,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
           break;
         }
         
-        // First message from this phone number - create new record
-        const newConversationId = conversationId;
+        // Create new conversation (either first message or > 1 hour gap)
+        // Add timestamp to conversation ID to make it unique for time-based splits
+        const timestamp = Date.now();
+        const newConversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}_${timestamp}`;
         const initialUnreadCount = (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 1 : 0;
+        
+        // Determine assistant type for new conversation
+        const messageText = messageData.body || messageData.text || '';
+        const assistantType = aiAutomationService.getAssistantType(messageText);
         
         // Use safe insert helper that handles missing columns
         await insertOpenPhoneConversation({
@@ -269,12 +328,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
             type,
             firstMessageAt: new Date().toISOString()
           },
-          unreadCount: initialUnreadCount
+          unreadCount: initialUnreadCount,
+          assistantType,
+          lastAssistantType: assistantType
         });
         
-        logger.info('OpenPhone new conversation created (time-based split)', { 
+        // Log why we created a new conversation
+        const reason = existingConv.rows.length === 0 
+          ? 'first message from customer' 
+          : `${Math.round(existingConv.rows[0].minutes_since_last_message)} minutes since last message (> 1 hour)`;
+        
+        logger.info('OpenPhone new conversation created', { 
           conversationId: newConversationId, 
-          phoneNumber 
+          phoneNumber,
+          reason,
+          assistantType
         });
         
         // Send push notification for new inbound conversation
@@ -307,6 +375,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
               phoneNumber,
               userCount: userIds.length
             });
+            
+            // Process AI automations for new inbound conversation
+            const messageText = messageData.body || messageData.text || '';
+            const automationResponse = await aiAutomationService.processMessage(
+              phoneNumber, 
+              messageText,
+              newConversationId
+            );
+            
+            if (automationResponse.handled && automationResponse.response) {
+              // Send automated response
+              logger.info('Sending automated response for new conversation', {
+                phoneNumber,
+                response: automationResponse.response.substring(0, 100)
+              });
+              
+              const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+              if (defaultNumber) {
+                await openPhoneService.sendMessage(
+                  phoneNumber,
+                  defaultNumber,
+                  automationResponse.response
+                );
+              }
+            }
           } catch (notifError) {
             logger.error('Failed to send push notification:', notifError);
           }

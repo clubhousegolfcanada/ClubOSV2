@@ -1,10 +1,20 @@
 import jwt from 'jsonwebtoken';
+import { jest } from '@jest/globals';
 
 export function generateTestToken(role: string = 'admin'): string {
   return jwt.sign(
-    { id: 'test-user', email: 'test@test.com', role },
+    { 
+      userId: 'test-user', 
+      email: 'test@test.com', 
+      role,
+      sessionId: 'test-session-id'
+    },
     process.env.JWT_SECRET || 'test-secret',
-    { expiresIn: '1h' }
+    { 
+      expiresIn: '1h',
+      issuer: 'clubosv1',
+      audience: 'clubosv1-users'
+    }
   );
 }
 
