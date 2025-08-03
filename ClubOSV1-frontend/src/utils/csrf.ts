@@ -1,6 +1,6 @@
 export async function getCSRFToken(): Promise<string> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/csrf-token`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/csrf-token`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
