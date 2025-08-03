@@ -742,7 +742,7 @@ const RequestForm: React.FC = () => {
             <div className="form-group">
               <div className="flex items-center justify-between">
                 <div className="toggle-item flex items-center gap-3">
-                  <span className="text-sm text-[var(--text-muted)]">AI</span>
+                  <span className="text-sm text-[var(--text-muted)]">Human</span>
                   <label className="toggle-switch">
                     <input
                       type="checkbox"
@@ -759,7 +759,7 @@ const RequestForm: React.FC = () => {
                     />
                     <span className="toggle-slider"></span>
                   </label>
-                  <span className="text-sm text-[var(--text-muted)]">Human</span>
+                  <span className="text-sm text-[var(--text-muted)]">AI</span>
                 </div>
               </div>
             </div>
@@ -1014,12 +1014,7 @@ const RequestForm: React.FC = () => {
         </div>
       )}
 
-      {/* Slack Conversation Panel - Show when Smart Assist is disabled but no active response */}
-      {!smartAssistEnabled && !showResponse && (
-        <div className="mt-6">
-          <SlackConversation className="w-full" />
-        </div>
-      )}
+      {/* Slack Conversation Panel - Removed as per user request */}
 
       {/* Keyboard Shortcuts Hint */}
       <div className="shortcuts-hint">

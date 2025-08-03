@@ -82,8 +82,9 @@
 @layer components {
   /* Card Component - Compressed padding */
   .card {
-    @apply bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-3 mb-3;
+    @apply bg-[var(--bg-secondary)] border-2 border-[var(--border-secondary)] rounded-xl p-3 mb-3;
     @apply transition-all duration-300;
+    border-color: rgba(255, 255, 255, 0.15);
   }
 
   .card:hover {
