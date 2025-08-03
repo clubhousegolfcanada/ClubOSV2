@@ -603,9 +603,6 @@ const RequestForm: React.FC = () => {
               placeholder="Location (Optional)"
               disabled={isSubmitting || demoMode}
             />
-            <div className="form-helper">
-              Add location context if relevant to your {isTicketMode ? 'ticket' : 'request'}
-            </div>
           </div>
 
           {/* Ticket Options */}
