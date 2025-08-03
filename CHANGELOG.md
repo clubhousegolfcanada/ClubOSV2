@@ -11,6 +11,22 @@ All notable changes to ClubOS will be documented in this file.
   - All requireRole calls updated to use roleGuard middleware
   - Production deployment should now work correctly
 
+- **Messaging Module TypeScript Errors**
+  - Fixed sendMessage call to use correct parameter order (3 params not object)
+  - Changed generateResponse to generateSuggestedResponse method name
+  - Fixed OpenPhoneService method calls (checkConnection → testConnection)
+  - Updated notification payload structure (moved type field to data object)
+  - Fixed insertOpenPhoneConversation to use camelCase parameters
+  - Fixed NotificationService calls (broadcastToRole → sendToRole)
+  - Commented out non-existent HubSpot updateLastContact method
+  - Fixed SuggestedResponse property access (content → suggestedText)
+  - Backend now builds successfully without TypeScript errors
+
+### Known Issues
+- Railway only has production environment, changes need to be merged to main branch
+- Vercel has both production and refactor branch deployments
+- AI automations page may not work until backend is deployed to production
+
 ## [1.11.3] - 2025-08-03
 
 ### Testing Improvements
