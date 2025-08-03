@@ -58,7 +58,7 @@ INSERT INTO ai_automation_features (feature_key, feature_name, description, cate
 
 -- Technical Automations  
 ('trackman_reset', 'Trackman Reset', 'Automatically reset frozen or unresponsive Trackman units via NinjaOne', 'technical', false,
-  '{"requires_confirmation": true, "confirmation_message": "I can reset the Trackman for you. This will take about 2 minutes. Please ensure no one is actively using the bay. Reply YES to proceed.", "ninjaone_script": "Restart-TrackMan"}',
+  '{"requires_confirmation": true, "confirmation_message": "If you signed in to your Trackman account before starting, I can reset the system quickly and you can pick back up through the ''My Activities'' button. Let me know and I''ll reset it.", "ninjaone_script": "Restart-TrackMan"}',
   ARRAY['admin', 'operator']),
 
 ('simulator_reboot', 'Simulator PC Reboot', 'Remotely reboot simulator PCs when experiencing issues', 'technical', false,

@@ -394,10 +394,21 @@ export class AIAutomationService {
         executionTimeMs: Date.now() - startTime
       });
       
-      const bayInfo = bayNumber ? ` on bay ${bayNumber}` : '';
+      // Create a natural response based on what the customer said
+      let response = config.confirmation_message;
+      
+      // Customize response based on the issue described
+      if (/not\s+(?:tracking|picking\s+up|detecting)\s+(?:my\s+)?balls?/i.test(message)) {
+        response = "I see the Trackman isn't detecting your shots properly. If you signed in to your Trackman account before starting, I can reset the system quickly and you can pick back up through the 'My Activities' button. Let me know and I'll reset it.";
+      } else if (/screen\s+(?:is\s+)?(?:frozen|stuck|black)/i.test(message)) {
+        response = "I understand the screen is frozen. If you signed in to your Trackman account before starting, I can reset the system quickly and you can pick back up through the 'My Activities' button. Let me know and I'll reset it.";
+      } else if (/frozen/i.test(message) && bayNumber) {
+        response = `I see bay ${bayNumber} is experiencing issues. If you signed in to your Trackman account before starting, I can reset the system quickly and you can pick back up through the 'My Activities' button. Let me know and I'll reset it.`;
+      }
+      
       return {
         handled: true,
-        response: config.confirmation_message || `I can reset the Trackman${bayInfo} for you. This will take about 2 minutes. Please ensure no one is actively using the bay. Reply YES to proceed.`,
+        response,
         requiresConfirmation: true,
         confirmationKey
       };
@@ -570,9 +581,20 @@ export class AIAutomationService {
         userConfirmed: true
       });
       
+      // Customize confirmation response based on the action type
+      let confirmationResponse = 'Action confirmed and initiated. I\'ll send you an update once it\'s complete.';
+      
+      if (confirmationToExecute.featureKey === 'trackman_reset') {
+        confirmationResponse = "Great! I'm resetting the Trackman system now. This should take about 2 minutes. Once it's back up, you can sign back in and use the 'My Activities' button to continue where you left off.";
+      } else if (confirmationToExecute.featureKey === 'simulator_reboot') {
+        confirmationResponse = "I'm rebooting the simulator PC now. This will take 5-7 minutes. I'll let you know when it's ready to use again.";
+      } else if (confirmationToExecute.featureKey === 'tv_restart') {
+        confirmationResponse = "I'm restarting the TV system now. The display should be back up in just a moment.";
+      }
+      
       return {
         handled: true,
-        response: 'Action confirmed and initiated. I\'ll send you an update once it\'s complete.'
+        response: confirmationResponse
       };
     } catch (error) {
       logger.error('Failed to execute confirmed action:', error);
