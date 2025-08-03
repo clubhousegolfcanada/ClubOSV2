@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.3] - 2025-08-03
+
+### Testing Improvements
+- **Frontend Tests Added**
+  - RoleTag component test with full coverage
+  - Toggle component test with interaction testing
+  - PasswordStrengthIndicator component test (comprehensive)
+  - Improved from 0.32% baseline coverage
+
+- **Backend Tests Fixed**
+  - LLMService test updated for new route names
+  - Fixed async test issues with isConfigured method
+  - Updated expectations: 'booking' → 'Booking & Access', etc.
+  - AI Automations routes test suite added
+
+- **Test Infrastructure**
+  - Created TEST-COVERAGE-UPDATE.md with roadmap to 80% coverage
+  - Identified failing tests and created fix plan
+  - Estimated 1 week effort to reach 80% coverage target
+
+### Fixed
+- Backend test TypeScript imports and expectations
+- Frontend test mocking for next/router
+
+### Known Issues
+- Frontend store tests still failing (router.push issue)
+- Backend integration tests need module import fixes
+- Overall coverage still below target (Backend: ~4%, Frontend: <5%)
+
 ## [1.11.2] - 2025-08-03
 
 ### Added
