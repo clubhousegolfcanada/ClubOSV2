@@ -682,37 +682,21 @@ export default function Messages() {
                     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                     
                     if (isMobile) {
-                      // On mobile, try to open the app first
-                      const appStoreUrl = /iPhone|iPad|iPod/.test(navigator.userAgent)
-                        ? 'https://apps.apple.com/app/splashtop-business/id487398015'
-                        : 'https://play.google.com/store/apps/details?id=com.splashtop.remote.business';
-                      
+                      // On mobile, try to open the app directly
                       // Try multiple URL schemes that Splashtop might use
                       const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
-                      let attempted = false;
                       
                       for (const scheme of schemes) {
                         try {
                           window.location.href = scheme;
-                          attempted = true;
                           break;
                         } catch (e) {
                           // Continue to next scheme
                         }
                       }
                       
-                      // If no scheme worked, fallback to app store after delay
-                      if (attempted) {
-                        setTimeout(() => {
-                          // Check if still on same page (app didn't open)
-                          if (document.hasFocus()) {
-                            window.open(appStoreUrl, '_blank');
-                          }
-                        }, 1500);
-                      } else {
-                        // Go directly to app store
-                        window.open(appStoreUrl, '_blank');
-                      }
+                      // If none of the schemes work, the app might not be installed
+                      // But we won't redirect to app store - just let the user know
                     } else {
                       // On desktop, open web interface
                       window.open('https://my.splashtop.com/computers', '_blank');
@@ -1057,36 +1041,28 @@ export default function Messages() {
                 
                 <button
                   onClick={() => {
-                    // On mobile, try to open the app first
-                    const appStoreUrl = /iPhone|iPad|iPod/.test(navigator.userAgent)
-                      ? 'https://apps.apple.com/app/splashtop-business/id487398015'
-                      : 'https://play.google.com/store/apps/details?id=com.splashtop.remote.business';
+                    // Check if on mobile device
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                     
-                    // Try multiple URL schemes that Splashtop might use
-                    const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
-                    let attempted = false;
-                    
-                    for (const scheme of schemes) {
-                      try {
-                        window.location.href = scheme;
-                        attempted = true;
-                        break;
-                      } catch (e) {
-                        // Continue to next scheme
-                      }
-                    }
-                    
-                    // If no scheme worked, fallback to app store after delay
-                    if (attempted) {
-                      setTimeout(() => {
-                        // Check if still on same page (app didn't open)
-                        if (document.hasFocus()) {
-                          window.open(appStoreUrl, '_blank');
+                    if (isMobile) {
+                      // On mobile, try to open the app directly
+                      // Try multiple URL schemes that Splashtop might use
+                      const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
+                      
+                      for (const scheme of schemes) {
+                        try {
+                          window.location.href = scheme;
+                          break;
+                        } catch (e) {
+                          // Continue to next scheme
                         }
-                      }, 1500);
+                      }
+                      
+                      // If none of the schemes work, the app might not be installed
+                      // But we won't redirect to app store - just let the user know
                     } else {
-                      // Go directly to app store
-                      window.open(appStoreUrl, '_blank');
+                      // On desktop, open web interface
+                      window.open('https://my.splashtop.com/computers', '_blank');
                     }
                   }}
                   className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-primary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-primary)] whitespace-nowrap text-sm"
