@@ -9,6 +9,7 @@ interface AutomationResponse {
   response?: string;
   requiresConfirmation?: boolean;
   confirmationKey?: string;
+  assistantType?: string;
 }
 
 interface PendingConfirmation {
@@ -39,34 +40,41 @@ export class AIAutomationService {
     // First, determine which assistant would handle this query
     const route = this.determineRoute(lowerMessage);
     
+    // Log the routing decision
+    logger.info('AI Automation routing decision', {
+      phoneNumber: phoneNumber.slice(-4),
+      route,
+      messagePreview: message.substring(0, 50)
+    });
+    
     // Only process automations for the appropriate assistant type
     switch (route) {
       case 'BrandTone':
         // Check gift card automation
         const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
-        if (giftCardResponse.handled) return giftCardResponse;
+        if (giftCardResponse.handled) return { ...giftCardResponse, assistantType: route };
         
         // Check hours automation
         const hoursResponse = await this.checkHoursAutomation(lowerMessage, conversationId);
-        if (hoursResponse.handled) return hoursResponse;
+        if (hoursResponse.handled) return { ...hoursResponse, assistantType: route };
         
         // Check membership automation
         const membershipResponse = await this.checkMembershipAutomation(lowerMessage, conversationId);
-        if (membershipResponse.handled) return membershipResponse;
+        if (membershipResponse.handled) return { ...membershipResponse, assistantType: route };
         break;
         
       case 'TechSupport':
         // Check trackman reset automation
         const trackmanResponse = await this.checkTrackmanResetAutomation(lowerMessage, phoneNumber, conversationId);
-        if (trackmanResponse.handled) return trackmanResponse;
+        if (trackmanResponse.handled) return { ...trackmanResponse, assistantType: route };
         
         // Check simulator reboot automation
         const simulatorResponse = await this.checkSimulatorRebootAutomation(lowerMessage, phoneNumber, conversationId);
-        if (simulatorResponse.handled) return simulatorResponse;
+        if (simulatorResponse.handled) return { ...simulatorResponse, assistantType: route };
         
         // Check TV restart automation
         const tvResponse = await this.checkTVRestartAutomation(lowerMessage, phoneNumber, conversationId);
-        if (tvResponse.handled) return tvResponse;
+        if (tvResponse.handled) return { ...tvResponse, assistantType: route };
         break;
         
       case 'Booking & Access':
@@ -78,7 +86,14 @@ export class AIAutomationService {
         break;
     }
     
-    return { handled: false };
+    return { handled: false, assistantType: route };
+  }
+  
+  /**
+   * Get the assistant type for a message (public method for external use)
+   */
+  getAssistantType(message: string): string {
+    return this.determineRoute(message);
   }
   
   /**
@@ -788,6 +803,207 @@ export class AIAutomationService {
       ]);
     } catch (error) {
       logger.debug('Failed to log pattern analysis:', error);
+    }
+  }
+  
+  /**
+   * Track messages that weren't automated (for learning opportunities)
+   */
+  async trackMissedAutomation(
+    phoneNumber: string,
+    message: string,
+    conversationId?: string
+  ): Promise<void> {
+    try {
+      // Determine assistant type for learning
+      const assistantType = this.determineRoute(message);
+      
+      // Store the unanswered query
+      await db.query(`
+        INSERT INTO ai_automation_rules 
+        (feature_id, rule_type, rule_data, priority, enabled)
+        VALUES (
+          (SELECT id FROM ai_automation_features WHERE feature_key = 'learning_tracker'),
+          'missed_automation',
+          $1,
+          50,
+          false
+        )
+      `, [
+        JSON.stringify({
+          phoneNumber,
+          message: message.substring(0, 500),
+          assistantType,
+          conversationId,
+          timestamp: new Date().toISOString(),
+          awaitingResponse: true
+        })
+      ]);
+    } catch (error) {
+      logger.debug('Failed to track missed automation:', error);
+    }
+  }
+  
+  /**
+   * Learn from staff responses to messages we didn't automate
+   */
+  async learnFromStaffResponse(
+    phoneNumber: string,
+    staffResponse: string,
+    staffUserId?: string
+  ): Promise<void> {
+    try {
+      // Find recent unanswered queries from this phone number
+      const recentQueries = await db.query(`
+        SELECT id, rule_data
+        FROM ai_automation_rules
+        WHERE rule_type = 'missed_automation'
+        AND rule_data->>'phoneNumber' = $1
+        AND rule_data->>'awaitingResponse' = 'true'
+        AND created_at > NOW() - INTERVAL '1 hour'
+        ORDER BY created_at DESC
+        LIMIT 5
+      `, [phoneNumber]);
+      
+      if (recentQueries.rows.length === 0) return;
+      
+      // Check if staff response contains key automation triggers
+      const lowerResponse = staffResponse.toLowerCase();
+      let detectedFeature: string | null = null;
+      let extractedInfo: any = {};
+      
+      // Check for gift card response
+      if (lowerResponse.includes('clubhouse247golf.com/giftcard') || 
+          lowerResponse.includes('gift card') && lowerResponse.includes('purchase')) {
+        detectedFeature = 'gift_cards';
+        extractedInfo = {
+          url: 'www.clubhouse247golf.com/giftcard/purchase',
+          pattern: 'gift card purchase'
+        };
+      }
+      // Check for Trackman reset response
+      else if (lowerResponse.includes('reset') && 
+               (lowerResponse.includes('trackman') || lowerResponse.includes('my activities'))) {
+        detectedFeature = 'trackman_reset';
+        extractedInfo = {
+          pattern: 'trackman reset with activities recovery'
+        };
+      }
+      // Check for hours response
+      else if (lowerResponse.match(/\d{1,2}(am|pm)\s*-\s*\d{1,2}(am|pm)/i)) {
+        detectedFeature = 'hours_of_operation';
+        extractedInfo = {
+          hours: lowerResponse.match(/\d{1,2}(am|pm)\s*-\s*\d{1,2}(am|pm)/gi)
+        };
+      }
+      
+      if (detectedFeature) {
+        // Mark queries as responded
+        for (const query of recentQueries.rows) {
+          const data = query.rule_data;
+          data.awaitingResponse = false;
+          data.staffResponse = staffResponse.substring(0, 500);
+          data.detectedFeature = detectedFeature;
+          data.extractedInfo = extractedInfo;
+          data.respondedAt = new Date().toISOString();
+          
+          await db.query(
+            'UPDATE ai_automation_rules SET rule_data = $1 WHERE id = $2',
+            [JSON.stringify(data), query.id]
+          );
+          
+          // Log this as a learning opportunity
+          logger.info('Detected learning opportunity', {
+            feature: detectedFeature,
+            originalQuery: data.message,
+            staffResponse: staffResponse.substring(0, 100)
+          });
+          
+          // Update the feature's learned patterns
+          await this.addLearnedPattern(detectedFeature, data.message, staffResponse);
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to learn from staff response:', error);
+    }
+  }
+  
+  /**
+   * Add a learned pattern from staff interaction
+   */
+  private async addLearnedPattern(
+    featureKey: string,
+    customerMessage: string,
+    staffResponse: string
+  ): Promise<void> {
+    try {
+      const featureResult = await db.query(
+        'SELECT id, config FROM ai_automation_features WHERE feature_key = $1',
+        [featureKey]
+      );
+      
+      if (featureResult.rows.length === 0) return;
+      
+      const feature = featureResult.rows[0];
+      const config = feature.config || {};
+      
+      // Initialize learned conversations if not exists
+      if (!config.learnedConversations) {
+        config.learnedConversations = [];
+      }
+      
+      // Add this conversation
+      config.learnedConversations.push({
+        customerMessage: customerMessage.substring(0, 200),
+        staffResponse: staffResponse.substring(0, 200),
+        learnedAt: new Date().toISOString()
+      });
+      
+      // Keep only last 100 learned conversations
+      if (config.learnedConversations.length > 100) {
+        config.learnedConversations = config.learnedConversations.slice(-100);
+      }
+      
+      // Extract common phrases from customer messages
+      const allCustomerMessages = config.learnedConversations.map(c => c.customerMessage.toLowerCase());
+      const phraseFrequency = new Map<string, number>();
+      
+      // Count 2-3 word phrases
+      allCustomerMessages.forEach(msg => {
+        const words = msg.split(/\s+/);
+        for (let i = 0; i < words.length - 1; i++) {
+          const phrase2 = words.slice(i, i + 2).join(' ');
+          const phrase3 = i < words.length - 2 ? words.slice(i, i + 3).join(' ') : null;
+          
+          if (phrase2.length > 4) {
+            phraseFrequency.set(phrase2, (phraseFrequency.get(phrase2) || 0) + 1);
+          }
+          if (phrase3 && phrase3.length > 6) {
+            phraseFrequency.set(phrase3, (phraseFrequency.get(phrase3) || 0) + 1);
+          }
+        }
+      });
+      
+      // Store frequent phrases (seen 3+ times)
+      config.frequentPhrases = Array.from(phraseFrequency.entries())
+        .filter(([_, count]) => count >= 3)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20) // Top 20 phrases
+        .map(([phrase, count]) => ({ phrase, count }));
+      
+      // Update config
+      await db.query(
+        'UPDATE ai_automation_features SET config = $1 WHERE id = $2',
+        [JSON.stringify(config), feature.id]
+      );
+      
+      logger.info('Updated learned patterns', {
+        featureKey,
+        totalConversations: config.learnedConversations.length,
+        frequentPhrases: config.frequentPhrases.length
+      });
+    } catch (error) {
+      logger.error('Failed to add learned pattern:', error);
     }
   }
   

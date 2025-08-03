@@ -253,11 +253,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 existingConv.rows[0].id
               );
               
+              // Update conversation with assistant type
+              const assistantType = automationResponse.assistantType || aiAutomationService.getAssistantType(messageText);
+              await db.query(`
+                UPDATE openphone_conversations
+                SET last_assistant_type = $1,
+                    assistant_type = COALESCE(assistant_type, $1)
+                WHERE id = $2
+              `, [assistantType, existingConv.rows[0].id]);
+              
               if (automationResponse.handled && automationResponse.response) {
                 // Send automated response
                 logger.info('Sending automated response', {
                   phoneNumber,
-                  response: automationResponse.response.substring(0, 100)
+                  response: automationResponse.response.substring(0, 100),
+                  assistantType
                 });
                 
                 const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
@@ -268,6 +278,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     automationResponse.response
                   );
                 }
+              } else {
+                // Message wasn't automated - store for learning
+                await aiAutomationService.trackMissedAutomation(
+                  phoneNumber,
+                  messageText,
+                  existingConv.rows[0].id
+                );
               }
             } catch (notifError) {
               // Don't fail webhook if notification fails
@@ -282,6 +299,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
         const newConversationId = conversationId;
         const initialUnreadCount = (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 1 : 0;
         
+        // Determine assistant type for new conversation
+        const messageText = messageData.body || messageData.text || '';
+        const assistantType = aiAutomationService.getAssistantType(messageText);
+        
         // Use safe insert helper that handles missing columns
         await insertOpenPhoneConversation({
           conversationId: newConversationId,
@@ -295,7 +316,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
             type,
             firstMessageAt: new Date().toISOString()
           },
-          unreadCount: initialUnreadCount
+          unreadCount: initialUnreadCount,
+          assistantType,
+          lastAssistantType: assistantType
         });
         
         logger.info('OpenPhone new conversation created (time-based split)', { 

@@ -13,17 +13,21 @@ export async function insertOpenPhoneConversation(data: {
   messages: any;
   metadata: any;
   unreadCount?: number;
+  assistantType?: string;
+  lastAssistantType?: string;
 }) {
   try {
-    const { query, hasUnreadCount, hasConversationId } = await getSafeOpenPhoneInsertQuery();
-    const params = buildOpenPhoneInsertParams(data, hasConversationId, hasUnreadCount);
+    const { query, hasUnreadCount, hasConversationId, hasAssistantType, hasLastAssistantType } = await getSafeOpenPhoneInsertQuery();
+    const params = buildOpenPhoneInsertParams(data, hasConversationId, hasUnreadCount, hasAssistantType, hasLastAssistantType);
     
     await db.query(query, params);
     
     logger.info('OpenPhone conversation inserted successfully', {
       phoneNumber: data.phoneNumber,
       hasConversationId,
-      hasUnreadCount
+      hasUnreadCount,
+      hasAssistantType,
+      assistantType: data.assistantType
     });
   } catch (error: any) {
     // If it still fails, try without the problematic columns

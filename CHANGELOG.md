@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.1] - 2025-08-03
+
+### Added
+- **Conversation Categorization System**
+  - New database columns to track which assistant type handles each conversation
+  - Automatic categorization of all incoming messages (Emergency, Booking & Access, TechSupport, BrandTone)
+  - Routing history tracking to see how conversations are categorized over time
+  - API endpoint `/api/ai-automations/conversation-stats` for analytics by assistant type
+  - Enhanced learning system that tracks patterns by conversation category
+  - Migration `028_add_conversation_categorization.sql` adds necessary database fields
+
+### Enhanced
+- **AI Learning System**
+  - Now tracks assistant type for all missed automation opportunities
+  - Groups learning patterns by conversation category for better accuracy
+  - Enables category-specific automation improvements
+
+### Fixed
+- Updated OpenPhone webhook handler to store conversation types
+- Enhanced aiAutomationService to include assistant type in all responses
+
 ## [1.11.0] - 2025-08-03
 
 ### Added

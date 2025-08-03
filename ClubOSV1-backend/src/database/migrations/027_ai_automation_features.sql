@@ -85,7 +85,12 @@ INSERT INTO ai_automation_features (feature_key, feature_name, description, cate
 
 ('membership_info', 'Membership Information', 'Provide membership options and benefits', 'customer_service', false,
   '{"response_template": "We offer monthly memberships starting at $X. Benefits include priority booking, discounts on bay time, and exclusive member events. Visit our website or stop by to learn more!", "keywords": ["membership", "member", "monthly", "benefits"]}',
-  ARRAY['admin', 'operator', 'support']);
+  ARRAY['admin', 'operator', 'support']),
+
+-- Learning System
+('learning_tracker', 'Learning Tracker', 'System feature that tracks unanswered queries and learns from staff responses', 'system', true,
+  '{"description": "Automatically tracks customer messages that were not automated and learns when staff provides responses that could be automated in the future"}',
+  ARRAY['admin']);
 
 -- Add trigger for updating the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_ai_features_updated_at()

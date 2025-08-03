@@ -11,6 +11,7 @@ import { formatToE164, isValidE164 } from '../utils/phoneNumberFormatter';
 import { messageAssistantService } from '../services/messageAssistantService';
 import { anonymizePhoneNumber } from '../utils/encryption';
 import { hubspotService } from '../services/hubspotService';
+import { aiAutomationService } from '../services/aiAutomationService';
 
 const router = Router();
 
@@ -296,6 +297,13 @@ router.post('/send',
         setInboxStatus: 'done' // Mark conversation as done after sending
       });
       
+      // Track staff response for learning
+      await aiAutomationService.learnFromStaffResponse(
+        formattedTo,
+        text,
+        req.user?.id
+      );
+      
       // Log the action
       logger.info('Message sent via OpenPhone', {
         to: formattedTo,
@@ -548,6 +556,13 @@ router.post('/suggestions/:suggestionId/approve-and-send',
       const result = await openPhoneService.sendMessage(formattedTo, formattedFrom, textToSend, {
         setInboxStatus: 'done'
       });
+      
+      // Track staff response for learning (even AI-assisted responses)
+      await aiAutomationService.learnFromStaffResponse(
+        formattedTo,
+        textToSend,
+        req.user?.id
+      );
       
       // Mark as sent
       await messageAssistantService.markSuggestionAsSent(suggestionId);

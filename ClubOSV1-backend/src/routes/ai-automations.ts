@@ -303,6 +303,89 @@ router.post('/bulk-toggle', authenticate, requireRole(['admin']), async (req, re
   }
 });
 
+// GET /api/ai-automations/learning-opportunities - View potential new automations
+router.get('/learning-opportunities', authenticate, requireRole(['admin']), async (req, res) => {
+  try {
+    const { days = 7, minOccurrences = 3 } = req.query;
+    
+    // Get learning data from the last N days
+    const learningData = await db.query(`
+      SELECT 
+        rule_data->>'detectedFeature' as feature,
+        rule_data->>'message' as customer_message,
+        rule_data->>'staffResponse' as staff_response,
+        COUNT(*) OVER (PARTITION BY rule_data->>'detectedFeature') as feature_count,
+        created_at
+      FROM ai_automation_rules
+      WHERE rule_type = 'missed_automation'
+      AND rule_data->>'detectedFeature' IS NOT NULL
+      AND created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      ORDER BY created_at DESC
+    `);
+    
+    // Group by detected feature
+    const opportunities = new Map<string, any>();
+    
+    learningData.rows.forEach(row => {
+      if (!opportunities.has(row.feature)) {
+        opportunities.set(row.feature, {
+          feature: row.feature,
+          occurrences: row.feature_count,
+          examples: []
+        });
+      }
+      
+      const opp = opportunities.get(row.feature);
+      if (opp.examples.length < 10) { // Keep up to 10 examples
+        opp.examples.push({
+          customerMessage: row.customer_message,
+          staffResponse: row.staff_response,
+          timestamp: row.created_at
+        });
+      }
+    });
+    
+    // Get patterns that aren't automated yet
+    const unautomatedPatterns = await db.query(`
+      SELECT 
+        rule_data,
+        COUNT(*) as occurrence_count
+      FROM ai_automation_rules
+      WHERE rule_type = 'missed_automation'
+      AND rule_data->>'awaitingResponse' = 'false'
+      AND rule_data->>'detectedFeature' IS NULL
+      AND created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      GROUP BY rule_data
+      HAVING COUNT(*) >= $1
+      ORDER BY occurrence_count DESC
+      LIMIT 20
+    `, [parseInt(minOccurrences as string)]);
+    
+    res.json({
+      success: true,
+      data: {
+        detectedOpportunities: Array.from(opportunities.values()),
+        undetectedPatterns: unautomatedPatterns.rows.map(row => ({
+          pattern: row.rule_data.message,
+          staffResponse: row.rule_data.staffResponse,
+          occurrences: row.occurrence_count
+        })),
+        summary: {
+          totalMissedAutomations: learningData.rows.length,
+          uniqueFeatures: opportunities.size,
+          dateRange: `Last ${days} days`
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get learning opportunities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get learning opportunities'
+    });
+  }
+});
+
 // GET /api/ai-automations/:featureKey/patterns - Get learned patterns for review
 router.get('/:featureKey/patterns', authenticate, requireRole(['admin']), async (req, res) => {
   try {
@@ -375,6 +458,67 @@ router.get('/:featureKey/patterns', authenticate, requireRole(['admin']), async 
     res.status(500).json({
       success: false,
       message: 'Failed to get patterns'
+    });
+  }
+});
+
+// GET /api/ai-automations/conversation-stats - Get conversation statistics by assistant type
+router.get('/conversation-stats', authenticate, requireRole(['admin']), async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    
+    // Get conversation distribution by assistant type
+    const typeDistribution = await db.query(`
+      SELECT 
+        COALESCE(assistant_type, 'Uncategorized') as assistant_type,
+        COUNT(*) as conversation_count,
+        COUNT(DISTINCT phone_number) as unique_customers,
+        SUM(jsonb_array_length(messages)) as total_messages
+      FROM openphone_conversations
+      WHERE created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      GROUP BY assistant_type
+      ORDER BY conversation_count DESC
+    `);
+    
+    // Get automation performance by assistant type
+    const automationStats = await db.query(`
+      SELECT 
+        rule_data->>'assistantType' as assistant_type,
+        COUNT(*) as missed_automations,
+        COUNT(CASE WHEN rule_data->>'detectedFeature' IS NOT NULL THEN 1 END) as learned_patterns
+      FROM ai_automation_rules
+      WHERE rule_type = 'missed_automation'
+      AND created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      GROUP BY rule_data->>'assistantType'
+    `);
+    
+    // Get daily trends
+    const dailyTrends = await db.query(`
+      SELECT 
+        DATE(created_at) as date,
+        assistant_type,
+        COUNT(*) as conversations
+      FROM openphone_conversations
+      WHERE created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      AND assistant_type IS NOT NULL
+      GROUP BY DATE(created_at), assistant_type
+      ORDER BY date DESC, assistant_type
+    `);
+    
+    res.json({
+      success: true,
+      data: {
+        distribution: typeDistribution.rows,
+        automationPerformance: automationStats.rows,
+        dailyTrends: dailyTrends.rows,
+        period: `Last ${days} days`
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get conversation stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get conversation statistics'
     });
   }
 });
