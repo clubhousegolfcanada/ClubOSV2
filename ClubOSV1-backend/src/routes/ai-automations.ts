@@ -156,49 +156,7 @@ router.put('/:featureKey/toggle', authenticate, requireRole(['admin', 'operator'
   }
 });
 
-// PUT /api/ai-automations/:featureKey/config - Update feature configuration
-router.put('/:featureKey/config', authenticate, requireRole(['admin']), async (req, res) => {
-  try {
-    const { featureKey } = req.params;
-    const { config } = req.body;
-    
-    // Validate config is an object
-    if (typeof config !== 'object') {
-      return res.status(400).json({
-        success: false,
-        message: 'Config must be an object'
-      });
-    }
-    
-    const result = await db.query(
-      'UPDATE ai_automation_features SET config = $1, updated_at = NOW() WHERE feature_key = $2 RETURNING *',
-      [JSON.stringify(config), featureKey]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Feature not found'
-      });
-    }
-    
-    logger.info('AI automation config updated', {
-      featureKey,
-      updatedBy: req.user?.email
-    });
-    
-    res.json({
-      success: true,
-      feature: result.rows[0]
-    });
-  } catch (error) {
-    logger.error('Failed to update config:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update configuration'
-    });
-  }
-});
+// Removed duplicate config route - using the one at line ~590
 
 // GET /api/ai-automations/:featureKey/usage - Get usage statistics
 router.get('/:featureKey/usage', authenticate, async (req, res) => {
@@ -591,7 +549,7 @@ export async function logAutomationUsage(
 router.put('/:featureKey/config', authenticate, roleGuard(['admin', 'operator']), async (req, res) => {
   try {
     const { featureKey } = req.params;
-    const { config } = req.body;
+    const { config, allow_follow_up } = req.body;
     
     if (!config || typeof config !== 'object') {
       return res.status(400).json({
@@ -600,11 +558,19 @@ router.put('/:featureKey/config', authenticate, roleGuard(['admin', 'operator'])
       });
     }
     
-    // Update the feature configuration
-    const result = await db.query(
-      'UPDATE ai_automation_features SET config = $1, updated_at = NOW() WHERE feature_key = $2 RETURNING *',
-      [JSON.stringify(config), featureKey]
-    );
+    // Update the feature configuration and allow_follow_up if provided
+    let query = 'UPDATE ai_automation_features SET config = $1, updated_at = NOW()';
+    let params = [JSON.stringify(config)];
+    
+    if (allow_follow_up !== undefined) {
+      query += ', allow_follow_up = $3';
+      params.push(allow_follow_up);
+    }
+    
+    query += ' WHERE feature_key = $2 RETURNING *';
+    params.splice(params.length - 1, 0, featureKey); // Insert featureKey at correct position
+    
+    const result = await db.query(query, params);
     
     if (result.rows.length === 0) {
       return res.status(404).json({

@@ -16,6 +16,46 @@ interface NegativePattern {
 }
 
 export const automationPatterns = {
+  booking_change: {
+    patterns: [
+      // Direct change requests
+      { pattern: /(?:can|could)\s+(?:i|we)\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)/i, weight: 0.9, description: 'Can I change my booking' },
+      { pattern: /(?:need|want)\s+to\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)/i, weight: 0.9, description: 'Need to change booking' },
+      { pattern: /(?:how|is it possible)\s+to\s+(?:change|modify|update|move)\s+(?:my|our|the)?\s*(?:booking|reservation)/i, weight: 0.8, description: 'How to change booking' },
+      
+      // Reschedule mentions
+      { pattern: /(?:reschedule|re-schedule)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)?/i, weight: 0.9, description: 'Reschedule booking' },
+      { pattern: /(?:can|could)\s+(?:i|we)\s+reschedule/i, weight: 0.9, description: 'Can I reschedule' },
+      
+      // Time/date change requests
+      { pattern: /(?:change|move)\s+(?:it|this|that)\s+to\s+(?:a\s+)?(?:different|another|new)\s+(?:time|date|day)/i, weight: 0.8, description: 'Change to different time' },
+      { pattern: /(?:different|another|new)\s+(?:time|date|day)\s+(?:for|instead)/i, weight: 0.7, description: 'Different time request' },
+      
+      // Modification requests
+      { pattern: /(?:modify|adjustment|alteration)\s+(?:to\s+)?(?:my|our|the)?\s*(?:booking|reservation)/i, weight: 0.8, description: 'Modify booking' },
+      { pattern: /(?:make|need)\s+(?:a\s+)?(?:change|modification|adjustment)\s+to\s+(?:my|our|the)?\s*(?:booking|reservation)/i, weight: 0.8, description: 'Make change to booking' },
+      
+      // Switch/swap mentions
+      { pattern: /(?:switch|swap)\s+(?:my|our|the)?\s*(?:booking|reservation|time|slot)/i, weight: 0.8, description: 'Switch booking' },
+      { pattern: /(?:move|change)\s+(?:my|our|the)?\s*(?:booking|reservation)\s+(?:from|to)/i, weight: 0.8, description: 'Move booking from/to' },
+      
+      // Earlier/later requests
+      { pattern: /(?:earlier|later|sooner)\s+(?:time|slot|booking|reservation)/i, weight: 0.7, description: 'Earlier/later time' },
+      { pattern: /(?:push|move)\s+(?:back|forward|up)\s+(?:my|our|the)?\s*(?:booking|reservation|time)/i, weight: 0.8, description: 'Push booking back/forward' },
+      
+      // General booking questions with change intent
+      { pattern: /(?:booking|reservation).*(?:change|modify|different|reschedule)/i, weight: 0.7, description: 'Booking with change keywords' },
+      { pattern: /(?:change|modify|different|reschedule).*(?:booking|reservation)/i, weight: 0.7, description: 'Change keywords with booking' }
+    ],
+    negative: [
+      { pattern: /(?:cancel|cancellation)/i, weight: -0.5, description: 'Cancel not change' },
+      { pattern: /(?:confirm|confirmation)/i, weight: -0.4, description: 'Confirmation request' },
+      { pattern: /(?:new|create|make)\s+(?:a\s+)?(?:booking|reservation)/i, weight: -0.5, description: 'New booking not change' },
+      { pattern: /(?:check|view|see)\s+(?:my|our)?\s*(?:booking|reservation)/i, weight: -0.4, description: 'Checking booking not changing' }
+    ],
+    minConfidence: 0.7
+  },
+  
   gift_cards: {
     patterns: [
       // Direct mentions with high confidence

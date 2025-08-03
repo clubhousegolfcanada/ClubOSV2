@@ -1567,11 +1567,13 @@ export default function Operations() {
                             const [responseSource, setResponseSource] = useState(feature.config?.responseSource || 'database');
                             const [hardcodedResponse, setHardcodedResponse] = useState(feature.config?.hardcodedResponse || '');
                             const [maxResponses, setMaxResponses] = useState(feature.config?.maxResponses || 2);
+                            const [allowFollowUp, setAllowFollowUp] = useState(feature.allow_follow_up !== false);
                             const [isSaving, setIsSaving] = useState(false);
                             
                             const saveConfig = async () => {
                               setIsSaving(true);
                               try {
+                                const token = localStorage.getItem('clubos_token');
                                 const updatedConfig = {
                                   ...feature.config,
                                   responseSource,
@@ -1579,14 +1581,15 @@ export default function Operations() {
                                   maxResponses
                                 };
                                 
-                                await axios.put(`/api/ai-automations/${feature.feature_key}/config`, {
-                                  config: updatedConfig
+                                await axios.put(`${API_URL}/ai-automations/${feature.feature_key}/config`, {
+                                  config: updatedConfig,
+                                  allow_follow_up: allowFollowUp
                                 }, {
                                   headers: { Authorization: `Bearer ${token}` }
                                 });
                                 
                                 toast.success('Configuration saved');
-                                loadAIFeatures(); // Reload to get updated data
+                                fetchAIFeatures(); // Reload to get updated data
                               } catch (error) {
                                 toast.error('Failed to save configuration');
                               } finally {
@@ -1714,6 +1717,26 @@ export default function Operations() {
                                         />
                                       </div>
                                     )}
+                                    
+                                    {/* Allow Follow-up Toggle */}
+                                    <div>
+                                      <label className="flex items-center gap-3">
+                                        <input
+                                          type="checkbox"
+                                          checked={allowFollowUp}
+                                          onChange={(e) => setAllowFollowUp(e.target.checked)}
+                                          className="w-4 h-4 text-[var(--accent)] rounded border-[var(--border-secondary)] focus:ring-[var(--accent)]"
+                                        />
+                                        <div>
+                                          <span className="text-sm font-medium text-[var(--text-primary)]">
+                                            Allow Follow-up Questions
+                                          </span>
+                                          <p className="text-xs text-[var(--text-muted)]">
+                                            AI will respond to follow-up questions within the response limit
+                                          </p>
+                                        </div>
+                                      </label>
+                                    </div>
                                     
                                     {/* Save Button */}
                                     <button

@@ -61,6 +61,10 @@ export class AIAutomationService {
       if (trackmanResponse.handled) return { ...trackmanResponse, assistantType: route };
     }
     
+    // 3. Booking change automation - can come up in any context
+    const bookingChangeResponse = await this.checkBookingChangeAutomation(lowerMessage, conversationId);
+    if (bookingChangeResponse.handled) return { ...bookingChangeResponse, assistantType: route };
+    
     return { handled: false, assistantType: route };
   }
   
@@ -270,6 +274,133 @@ export class AIAutomationService {
       logger.error('Gift card automation error:', error);
       
       await logAutomationUsage('gift_cards', {
+        conversationId,
+        triggerType: 'automatic',
+        inputData: { message },
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        executionTimeMs: Date.now() - startTime
+      });
+      
+      return { handled: false };
+    }
+  }
+  
+  /**
+   * Check if message is asking about changing a booking
+   */
+  private async checkBookingChangeAutomation(message: string, conversationId?: string): Promise<AutomationResponse> {
+    const startTime = Date.now();
+    
+    try {
+      if (!await isAutomationEnabled('booking_change')) {
+        return { handled: false };
+      }
+      
+      // Check response limit
+      const responseCount = await this.getResponseCount(conversationId || '', 'booking_change');
+      const maxResponses = await this.getMaxResponses('booking_change');
+      
+      if (responseCount >= maxResponses) {
+        logger.info('Response limit reached for booking_change', { conversationId, responseCount, maxResponses });
+        return { handled: false };
+      }
+      
+      // Get feature config
+      const featureResult = await db.query(
+        'SELECT config, allow_follow_up FROM ai_automation_features WHERE feature_key = $1',
+        ['booking_change']
+      );
+      
+      if (featureResult.rows.length === 0) {
+        return { handled: false };
+      }
+      
+      const config = featureResult.rows[0].config;
+      const allowFollowUp = featureResult.rows[0].allow_follow_up;
+      
+      // Use pattern matching from aiAutomationPatterns
+      const { confidence, matches, negatives } = calculateConfidence(message, 'booking_change');
+      
+      // Log the analysis for learning
+      await this.logPatternAnalysis('booking_change', message, matches, confidence);
+      
+      // Only respond if confidence is high enough
+      const minConfidence = config.minConfidence || 0.7;
+      if (confidence < minConfidence) {
+        logger.info('Booking change automation confidence too low', { confidence, minConfidence, matches, negatives });
+        return { handled: false };
+      }
+      
+      // Get response based on configured source
+      let responseText: string;
+      const responseSource = config.responseSource || 'database';
+      
+      if (responseSource === 'hardcoded' && config.hardcodedResponse) {
+        // Use the hardcoded response from config
+        responseText = config.hardcodedResponse;
+        logger.info('Using hardcoded response for booking_change');
+      } else {
+        // Query the Booking & Access assistant
+        try {
+          const assistantResponse = await assistantService.getAssistantResponse(
+            'Booking & Access',
+            message,
+            { isCustomerFacing: true, conversationId }
+          );
+          
+          responseText = assistantResponse.response;
+          
+          if (!responseText || responseText.length < 10) {
+            logger.warn('Assistant returned empty response for booking change query');
+            // Fall back to hardcoded response if available
+            if (config.hardcodedResponse) {
+              responseText = config.hardcodedResponse;
+            } else {
+              return { handled: false };
+            }
+          }
+        } catch (assistantError) {
+          logger.error('Failed to get assistant response for booking change:', assistantError);
+          // Fall back to hardcoded response if available
+          if (config.hardcodedResponse) {
+            responseText = config.hardcodedResponse;
+          } else {
+            return { handled: false };
+          }
+        }
+      }
+      
+      // Transform response to be direct to customer
+      responseText = this.ensureCustomerFacingResponse(responseText);
+      
+      // Log successful automation and increment response count
+      await logAutomationUsage('booking_change', {
+        conversationId,
+        triggerType: 'automatic',
+        inputData: { message },
+        outputData: { response: responseText, allowFollowUp },
+        success: true,
+        executionTimeMs: Date.now() - startTime
+      });
+      
+      // Increment response count
+      await this.incrementResponseCount(conversationId || '', 'booking_change');
+      
+      // Store in assistant knowledge for learning (only if from assistant)
+      if (responseSource !== 'hardcoded') {
+        await this.storeInAssistantKnowledge('Booking & Access', message, responseText, 'booking_change');
+      }
+      
+      return {
+        handled: true,
+        response: responseText,
+        assistantType: 'Booking & Access'
+      };
+    } catch (error) {
+      logger.error('Booking change automation error:', error);
+      
+      await logAutomationUsage('booking_change', {
         conversationId,
         triggerType: 'automatic',
         inputData: { message },
