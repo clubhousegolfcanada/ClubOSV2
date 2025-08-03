@@ -3,6 +3,7 @@ import { db } from '../utils/database';
 import { openPhoneService } from './openphoneService';
 import ninjaoneService from './ninjaone';
 import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automations';
+import { assistantService } from './assistantService';
 
 interface AutomationResponse {
   handled: boolean;
@@ -226,25 +227,61 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      const responseText = config.response_template || 'You can purchase gift cards at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages.';
-      
-      // Log successful automation
-      await logAutomationUsage('gift_cards', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message },
-        outputData: { response: responseText },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      // Store in assistant knowledge for learning
-      await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'gift_cards');
-      
-      return {
-        handled: true,
-        response: responseText
-      };
+      // Instead of using hardcoded response, query the Booking & Access assistant
+      try {
+        const assistantResponse = await assistantService.queryAssistant(
+          'Booking & Access',
+          'Customer is asking about purchasing gift cards. Provide the direct response about gift card purchase.',
+          conversationId
+        );
+        
+        // Use the assistant's response if available, otherwise fall back to knowledge base
+        let responseText = assistantResponse.response;
+        
+        // If assistant didn't provide a good response, use the knowledge from the JSON
+        if (!responseText || responseText.length < 20) {
+          responseText = 'You can purchase gift cards at clubhouse247golf.com/gift-card/purchase — direct link, no friction.';
+        }
+        
+        // Log successful automation
+        await logAutomationUsage('gift_cards', {
+          conversationId,
+          triggerType: 'automatic',
+          inputData: { message },
+          outputData: { response: responseText },
+          success: true,
+          executionTimeMs: Date.now() - startTime
+        });
+        
+        // Store in assistant knowledge for learning
+        await this.storeInAssistantKnowledge('Booking & Access', message, responseText, 'gift_cards');
+        
+        return {
+          handled: true,
+          response: responseText,
+          assistantType: 'Booking & Access'
+        };
+      } catch (assistantError) {
+        logger.warn('Failed to get assistant response, using fallback:', assistantError);
+        
+        // Fallback to the correct response from knowledge base
+        const fallbackResponse = 'You can purchase gift cards at clubhouse247golf.com/gift-card/purchase — direct link, no friction.';
+        
+        await logAutomationUsage('gift_cards', {
+          conversationId,
+          triggerType: 'automatic',
+          inputData: { message },
+          outputData: { response: fallbackResponse },
+          success: true,
+          executionTimeMs: Date.now() - startTime
+        });
+        
+        return {
+          handled: true,
+          response: fallbackResponse,
+          assistantType: 'Booking & Access'
+        };
+      }
     } catch (error) {
       logger.error('Gift card automation error:', error);
       
