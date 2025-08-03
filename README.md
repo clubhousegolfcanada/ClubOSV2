@@ -21,6 +21,11 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 - **4 Assistants**: Emergency, Booking, Tech Support, Brand Tone
 - **Knowledge System**: GPT-4o natural language updates, database-first search
 - **OpenPhone**: Webhook integration, conversation extraction, statistics
+- **AI Automations**: Configurable automated responses and actions
+  - Gift card inquiries → Direct to purchase page
+  - Trackman/Simulator issues → Remote reset via NinjaOne
+  - Hours/Membership questions → Instant automated responses
+  - Toggle features on/off, track usage statistics
 - **Slack Fallback**: Human handoff when AI confidence low
 
 #### 2. Operations Management

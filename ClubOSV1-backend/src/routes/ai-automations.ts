@@ -303,6 +303,82 @@ router.post('/bulk-toggle', authenticate, requireRole(['admin']), async (req, re
   }
 });
 
+// GET /api/ai-automations/:featureKey/patterns - Get learned patterns for review
+router.get('/:featureKey/patterns', authenticate, requireRole(['admin']), async (req, res) => {
+  try {
+    const { featureKey } = req.params;
+    const { limit = 100 } = req.query;
+    
+    // Get feature
+    const featureResult = await db.query(
+      'SELECT id, config FROM ai_automation_features WHERE feature_key = $1',
+      [featureKey]
+    );
+    
+    if (featureResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feature not found'
+      });
+    }
+    
+    const feature = featureResult.rows[0];
+    
+    // Get recent pattern analyses
+    const patternsResult = await db.query(`
+      SELECT 
+        rule_data,
+        priority,
+        created_at
+      FROM ai_automation_rules
+      WHERE feature_id = $1
+      AND rule_type = 'pattern_analysis'
+      ORDER BY created_at DESC
+      LIMIT $2
+    `, [feature.id, parseInt(limit as string)]);
+    
+    // Aggregate patterns by confidence
+    const patternMap = new Map<string, { count: number; avgConfidence: number; examples: string[] }>();
+    
+    patternsResult.rows.forEach(row => {
+      const data = row.rule_data;
+      data.matchedPatterns?.forEach((pattern: string) => {
+        if (!patternMap.has(pattern)) {
+          patternMap.set(pattern, { count: 0, avgConfidence: 0, examples: [] });
+        }
+        const stats = patternMap.get(pattern)!;
+        stats.count++;
+        stats.avgConfidence = (stats.avgConfidence * (stats.count - 1) + data.confidenceScore) / stats.count;
+        if (stats.examples.length < 3) {
+          stats.examples.push(data.message);
+        }
+      });
+    });
+    
+    // Convert to array and sort by frequency
+    const patterns = Array.from(patternMap.entries())
+      .map(([pattern, stats]) => ({ pattern, ...stats }))
+      .sort((a, b) => b.count - a.count);
+    
+    res.json({
+      success: true,
+      feature: {
+        featureKey,
+        config: feature.config,
+        learnedPatterns: feature.config.learnedPatterns || {}
+      },
+      recentPatterns: patterns,
+      totalAnalyses: patternsResult.rows.length
+    });
+  } catch (error) {
+    logger.error('Failed to get patterns:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get patterns'
+    });
+  }
+});
+
 // Helper function to check if a feature is enabled
 export async function isAutomationEnabled(featureKey: string): Promise<boolean> {
   try {

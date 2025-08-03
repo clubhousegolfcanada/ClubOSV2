@@ -2,6 +2,44 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.0] - 2025-08-03
+
+### Added
+- **AI Automation System** - Configurable automated responses and actions
+  - New database schema for automation features and usage tracking
+  - Admin/Operator settings page at `/ai-automations`
+  - Toggle individual features or entire categories on/off
+  - Usage statistics and success rate tracking
+  - Required user confirmation for sensitive actions
+
+- **Initial Automations**
+  - **Gift Cards** - Auto-respond with purchase link when customers ask about gift cards
+  - **Hours of Operation** - Automatically provide business hours
+  - **Membership Info** - Share membership benefits and options
+  - **Trackman Reset** - Reset frozen Trackman units via NinjaOne (requires confirmation)
+  - **Simulator Reboot** - Remotely reboot simulator PCs (requires confirmation)
+  - **TV System Restart** - Fix display issues remotely (requires confirmation)
+
+- **Backend Infrastructure**
+  - `/api/ai-automations` endpoints for managing features
+  - `aiAutomationService` for processing messages and executing actions
+  - Integration with OpenPhone webhook for automatic message processing
+  - Confirmation workflow for sensitive actions
+  - Comprehensive usage logging and analytics
+
+- **Frontend Components**
+  - AI Automations settings page with toggle switches
+  - Real-time usage statistics display
+  - Category-based bulk toggle controls
+  - Mobile-responsive design
+
+### Technical Details
+- Database migration: `026_ai_automation_features.sql`
+- New routes: `ai-automations.ts`
+- New service: `aiAutomationService.ts`
+- OpenPhone webhook enhanced to process automations
+- Navigation updated to include AI Automations for admin/operator roles
+
 ## [1.10.5] - 2025-08-03
 
 ### Testing Infrastructure

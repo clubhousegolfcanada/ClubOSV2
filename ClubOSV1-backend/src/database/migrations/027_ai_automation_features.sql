@@ -53,7 +53,7 @@ CREATE INDEX idx_ai_rules_feature ON ai_automation_rules(feature_id);
 INSERT INTO ai_automation_features (feature_key, feature_name, description, category, enabled, config, required_permissions) VALUES
 -- Customer Service Automations
 ('gift_cards', 'Gift Card Inquiries', 'Automatically respond to gift card purchase questions with link to purchase page', 'customer_service', false, 
-  '{"response_template": "You can purchase gift cards at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages.", "keywords": ["gift card", "giftcard", "gift certificate", "present", "gift"]}',
+  '{"response_template": "You can purchase gift cards at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages.", "minConfidence": 0.7}',
   ARRAY['admin', 'operator']),
 
 -- Technical Automations  

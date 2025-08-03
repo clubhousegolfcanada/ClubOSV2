@@ -10,6 +10,7 @@ import { notificationService } from '../services/notificationService';
 import { ensureOpenPhoneColumns } from '../utils/database-helpers';
 import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../utils/openphone-db-helpers';
 import { hubspotService } from '../services/hubspotService';
+import { aiAutomationService } from '../services/aiAutomationService';
 
 const router = Router();
 
@@ -243,6 +244,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 phoneNumber,
                 userCount: userIds.length
               });
+              
+              // Process AI automations for inbound messages
+              const messageText = messageData.body || messageData.text || '';
+              const automationResponse = await aiAutomationService.processMessage(
+                phoneNumber, 
+                messageText,
+                existingConv.rows[0].id
+              );
+              
+              if (automationResponse.handled && automationResponse.response) {
+                // Send automated response
+                logger.info('Sending automated response', {
+                  phoneNumber,
+                  response: automationResponse.response.substring(0, 100)
+                });
+                
+                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                if (defaultNumber) {
+                  await openPhoneService.sendMessage(
+                    phoneNumber,
+                    defaultNumber,
+                    automationResponse.response
+                  );
+                }
+              }
             } catch (notifError) {
               // Don't fail webhook if notification fails
               logger.error('Failed to send push notification:', notifError);
@@ -307,6 +333,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
               phoneNumber,
               userCount: userIds.length
             });
+            
+            // Process AI automations for new inbound conversation
+            const messageText = messageData.body || messageData.text || '';
+            const automationResponse = await aiAutomationService.processMessage(
+              phoneNumber, 
+              messageText,
+              newConversationId
+            );
+            
+            if (automationResponse.handled && automationResponse.response) {
+              // Send automated response
+              logger.info('Sending automated response for new conversation', {
+                phoneNumber,
+                response: automationResponse.response.substring(0, 100)
+              });
+              
+              const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+              if (defaultNumber) {
+                await openPhoneService.sendMessage(
+                  phoneNumber,
+                  defaultNumber,
+                  automationResponse.response
+                );
+              }
+            }
           } catch (notifError) {
             logger.error('Failed to send push notification:', notifError);
           }
