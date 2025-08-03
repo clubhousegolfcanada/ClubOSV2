@@ -224,12 +224,18 @@ export const applySecurityMiddleware = (app: Express) => {
   app.use(sanitizeRequest);
   
   // Rate limiting - apply to all routes
-  // DISABLED FOR DEVELOPMENT
-  // app.use('/api/', generalLimiter);
-  
-  // Strict rate limiting for sensitive endpoints
-  // app.use('/api/llm/', strictLimiter);
-  // app.use('/api/auth/', authLimiter);
+  if (config.NODE_ENV === 'production') {
+    app.use('/api/', generalLimiter);
+    
+    // Strict rate limiting for sensitive endpoints
+    app.use('/api/llm/', strictLimiter);
+    app.use('/api/auth/', authLimiter);
+    app.use('/api/public/', publicLimiter);
+    
+    logger.info('Rate limiting enabled for production environment');
+  } else {
+    logger.info('Rate limiting disabled for development environment');
+  }
   
   // CSRF protection
   app.use(csrfProtection);

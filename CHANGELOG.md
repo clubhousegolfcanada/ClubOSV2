@@ -2,6 +2,67 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.10.5] - 2025-08-03
+
+### Testing Infrastructure
+- **Backend Testing**
+  - Fixed TypeScript configuration issues for Jest
+  - Created separate tsconfig.test.json for test compilation
+  - Added @jest/globals imports to fix type errors
+  - Created .env.test for isolated test environment
+  - Exported app instance from index.ts for testing
+  - Backend tests now run (with some failures due to API changes)
+
+- **Frontend Testing**
+  - Set up complete Jest + React Testing Library infrastructure
+  - Created jest.config.js with Next.js configuration
+  - Added comprehensive jest.setup.js with mocks for Next.js router
+  - Created initial component tests (Button, Input)
+  - Created state management tests (useStore)
+  - Achieved basic test coverage reporting (0.32% starting point)
+
+### Security Improvements
+- **Rate Limiting**
+  - Enabled production-only rate limiting
+  - General: 100 requests/15 minutes
+  - Auth endpoints: 5 attempts/15 minutes
+  - LLM endpoints: 5 requests/minute (production)
+  - Public endpoints: 20 requests/minute
+  - Rate limiting automatically disabled in development
+
+### Documentation
+- **Testing Guide** (TESTING-GUIDE.md)
+  - Comprehensive testing instructions
+  - Backend and frontend test commands
+  - Writing test examples
+  - Known issues and solutions
+  - Coverage improvement roadmap
+
+- **Security Audit Report** (SECURITY-AUDIT-REPORT.md)
+  - Full security analysis (91% security score)
+  - Test coverage assessment
+  - Detailed findings for all security measures
+  - Recommendations for improvements
+
+### Added
+- Frontend testing dependencies (@testing-library/react, jest, etc.)
+- Test scripts in frontend package.json
+- Backend tsconfig.test.json for test compilation
+- Sample component tests for Button and Input components
+- State management tests for Zustand stores
+- Production-only rate limiting configuration
+
+### Fixed
+- Jest setup file TypeScript errors
+- Backend test compilation issues
+- Frontend router mocking for tests
+- CSRF token handling in test environment
+
+### Known Issues
+- Backend tests have some failures due to changed API routes
+- Frontend store tests have issues with dynamic router imports
+- Overall test coverage still low (needs to reach 80%)
+
 ## [1.10.4] - 2025-08-02
 
 ### Security

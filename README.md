@@ -87,7 +87,13 @@ git push origin main
 # Backend
 npm run create:admin     # Create admin user
 npm run test            # Run tests
+npm run test:coverage   # Run tests with coverage report
 railway logs            # Check production logs
+
+# Frontend
+npm test                # Run tests
+npm run test:coverage   # Run tests with coverage report
+npm run test:watch      # Run tests in watch mode
 
 # Check deployment status
 # Frontend: https://vercel.com/dashboard
@@ -241,6 +247,8 @@ node scripts/generate-vapid-keys.js
 - **CHANGELOG.md** - Version history
 - **PUBLIC_CLUBOSBOY_SETUP.md** - Public embed instructions
 - **API Docs** - `/ClubOSV1-backend/docs/`
+- **TESTING-GUIDE.md** - Comprehensive testing instructions
+- **SECURITY-AUDIT-REPORT.md** - Latest security audit findings
 
 ### Security Documentation
 - **ENVIRONMENT-SETUP.md** - Critical environment variable setup
