@@ -36,31 +36,98 @@ export class AIAutomationService {
       }
     }
     
-    // Check gift card automation
-    const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
-    if (giftCardResponse.handled) return giftCardResponse;
+    // First, determine which assistant would handle this query
+    const route = this.determineRoute(lowerMessage);
     
-    // Check hours automation
-    const hoursResponse = await this.checkHoursAutomation(lowerMessage, conversationId);
-    if (hoursResponse.handled) return hoursResponse;
-    
-    // Check membership automation
-    const membershipResponse = await this.checkMembershipAutomation(lowerMessage, conversationId);
-    if (membershipResponse.handled) return membershipResponse;
-    
-    // Check trackman reset automation
-    const trackmanResponse = await this.checkTrackmanResetAutomation(lowerMessage, phoneNumber, conversationId);
-    if (trackmanResponse.handled) return trackmanResponse;
-    
-    // Check simulator reboot automation
-    const simulatorResponse = await this.checkSimulatorRebootAutomation(lowerMessage, phoneNumber, conversationId);
-    if (simulatorResponse.handled) return simulatorResponse;
-    
-    // Check TV restart automation
-    const tvResponse = await this.checkTVRestartAutomation(lowerMessage, phoneNumber, conversationId);
-    if (tvResponse.handled) return tvResponse;
+    // Only process automations for the appropriate assistant type
+    switch (route) {
+      case 'BrandTone':
+        // Check gift card automation
+        const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
+        if (giftCardResponse.handled) return giftCardResponse;
+        
+        // Check hours automation
+        const hoursResponse = await this.checkHoursAutomation(lowerMessage, conversationId);
+        if (hoursResponse.handled) return hoursResponse;
+        
+        // Check membership automation
+        const membershipResponse = await this.checkMembershipAutomation(lowerMessage, conversationId);
+        if (membershipResponse.handled) return membershipResponse;
+        break;
+        
+      case 'TechSupport':
+        // Check trackman reset automation
+        const trackmanResponse = await this.checkTrackmanResetAutomation(lowerMessage, phoneNumber, conversationId);
+        if (trackmanResponse.handled) return trackmanResponse;
+        
+        // Check simulator reboot automation
+        const simulatorResponse = await this.checkSimulatorRebootAutomation(lowerMessage, phoneNumber, conversationId);
+        if (simulatorResponse.handled) return simulatorResponse;
+        
+        // Check TV restart automation
+        const tvResponse = await this.checkTVRestartAutomation(lowerMessage, phoneNumber, conversationId);
+        if (tvResponse.handled) return tvResponse;
+        break;
+        
+      case 'Booking & Access':
+        // Future: Add booking-related automations here
+        break;
+        
+      case 'Emergency':
+        // Never automate emergency responses
+        break;
+    }
     
     return { handled: false };
+  }
+  
+  /**
+   * Determine which assistant route this message belongs to
+   * (Matches logic from llmService.ts)
+   */
+  private determineRoute(description: string): string {
+    const lowerDescription = description.toLowerCase();
+    
+    // Emergency - highest priority
+    if (lowerDescription.includes('emergency') || lowerDescription.includes('fire') || 
+        lowerDescription.includes('injury') || lowerDescription.includes('hurt') || 
+        lowerDescription.includes('accident') || lowerDescription.includes('smoke') ||
+        lowerDescription.includes('security') || lowerDescription.includes('threat')) {
+      return 'Emergency';
+    } 
+    // Booking & Access
+    else if (lowerDescription.includes('unlock') || lowerDescription.includes('door') || 
+             lowerDescription.includes('access') || lowerDescription.includes('locked') || 
+             lowerDescription.includes('key') || lowerDescription.includes('book') || 
+             lowerDescription.includes('reservation') || lowerDescription.includes('cancel') || 
+             lowerDescription.includes('reschedule') || lowerDescription.includes('return') || 
+             lowerDescription.includes('refund') || lowerDescription.includes('card won') ||
+             lowerDescription.includes('can\'t get in') || lowerDescription.includes('payment')) {
+      return 'Booking & Access';
+    } 
+    // TechSupport
+    else if (lowerDescription.includes('trackman') || lowerDescription.includes('frozen') || 
+             lowerDescription.includes('technical') || lowerDescription.includes('screen') || 
+             lowerDescription.includes('equipment') || lowerDescription.includes('tech') || 
+             lowerDescription.includes('support') || lowerDescription.includes('issue') || 
+             lowerDescription.includes('problem') || lowerDescription.includes('fix') || 
+             lowerDescription.includes('broken') || lowerDescription.includes('restart') || 
+             lowerDescription.includes('reboot') || lowerDescription.includes('simulator') ||
+             lowerDescription.includes('how do i use') || lowerDescription.includes('not working') ||
+             lowerDescription.includes('ball') || lowerDescription.includes('tracking') ||
+             lowerDescription.includes('sensor') || lowerDescription.includes('calibrat')) {
+      return 'TechSupport';
+    } 
+    // BrandTone
+    else if ((lowerDescription.includes('member') && (lowerDescription.includes('ship') || lowerDescription.includes('become'))) || 
+             (lowerDescription.includes('price') || lowerDescription.includes('cost') || lowerDescription.includes('how much')) || 
+             lowerDescription.includes('gift card') || lowerDescription.includes('promotion') ||
+             lowerDescription.includes('hours') || lowerDescription.includes('loyalty')) {
+      return 'BrandTone';
+    }
+    
+    // Default to TechSupport
+    return 'TechSupport';
   }
   
   /**
@@ -144,19 +211,24 @@ export class AIAutomationService {
         return { handled: false };
       }
       
+      const responseText = config.response_template || 'You can purchase gift cards at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages.';
+      
       // Log successful automation
       await logAutomationUsage('gift_cards', {
         conversationId,
         triggerType: 'automatic',
         inputData: { message },
-        outputData: { response: config.response_template },
+        outputData: { response: responseText },
         success: true,
         executionTimeMs: Date.now() - startTime
       });
       
+      // Store in assistant knowledge for learning
+      await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'gift_cards');
+      
       return {
         handled: true,
-        response: config.response_template || 'You can purchase gift cards at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages.'
+        response: responseText
       };
     } catch (error) {
       logger.error('Gift card automation error:', error);
@@ -716,6 +788,75 @@ export class AIAutomationService {
       ]);
     } catch (error) {
       logger.debug('Failed to log pattern analysis:', error);
+    }
+  }
+  
+  /**
+   * Store automation response in assistant knowledge for future reference
+   */
+  private async storeInAssistantKnowledge(
+    route: string, 
+    query: string, 
+    response: string,
+    featureKey: string
+  ): Promise<void> {
+    try {
+      // Map route to assistant ID
+      const assistantMap: Record<string, string> = {
+        'Emergency': 'asst_jOWRzC9eOMRsupRqMWR5hc89',
+        'Booking & Access': 'asst_E2CrYEtb5CKJGPZYdE7z7VAq',
+        'TechSupport': 'asst_Xax6THdGRHYJwPbRi9OoQrRF',
+        'BrandTone': 'asst_1vMUEQ7oTIYrCFG1BhgpwMkw'
+      };
+      
+      const assistantId = assistantMap[route];
+      if (!assistantId) return;
+      
+      // Check if assistant knowledge exists
+      const existing = await db.query(
+        'SELECT knowledge FROM assistant_knowledge WHERE assistant_id = $1',
+        [assistantId]
+      );
+      
+      let knowledge = existing.rows[0]?.knowledge || {};
+      
+      // Add automation response to knowledge
+      if (!knowledge.automatedResponses) {
+        knowledge.automatedResponses = {};
+      }
+      
+      if (!knowledge.automatedResponses[featureKey]) {
+        knowledge.automatedResponses[featureKey] = [];
+      }
+      
+      // Store the Q&A pair
+      knowledge.automatedResponses[featureKey].push({
+        query: query.substring(0, 200), // Truncate for privacy
+        response,
+        timestamp: new Date().toISOString(),
+        confidence: 'high'
+      });
+      
+      // Keep only last 50 examples per feature
+      if (knowledge.automatedResponses[featureKey].length > 50) {
+        knowledge.automatedResponses[featureKey] = 
+          knowledge.automatedResponses[featureKey].slice(-50);
+      }
+      
+      // Update or insert
+      if (existing.rows.length > 0) {
+        await db.query(
+          'UPDATE assistant_knowledge SET knowledge = $1, updated_at = NOW() WHERE assistant_id = $2',
+          [JSON.stringify(knowledge), assistantId]
+        );
+      } else {
+        await db.query(
+          'INSERT INTO assistant_knowledge (assistant_id, route, knowledge) VALUES ($1, $2, $3)',
+          [assistantId, route, JSON.stringify(knowledge)]
+        );
+      }
+    } catch (error) {
+      logger.debug('Failed to store in assistant knowledge:', error);
     }
   }
   
