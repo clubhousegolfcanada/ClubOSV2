@@ -1665,6 +1665,9 @@ export default function Operations() {
                                         onChange={(e) => setMaxResponses(parseInt(e.target.value))}
                                         className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)]"
                                       />
+                                      <p className="mt-1 text-xs text-[var(--text-muted)]">
+                                        e.g., Gift cards: 2 (allows follow-up if customer says thanks)
+                                      </p>
                                     </div>
                                     
                                     {/* Response Source */}

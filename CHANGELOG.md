@@ -6,12 +6,13 @@ All notable changes to ClubOS will be documented in this file.
 
 ### Added
 - **AI Automation Safety & Configuration**
-  - Response limit tracking (max 2 responses per conversation)
+  - Response limit tracking (configurable 1-10 per conversation)
   - Toggle between AI assistant knowledge and custom hardcoded responses
-  - Per-feature response limits (gift cards: 1, technical: 2)
+  - Per-feature response limits (e.g., gift cards: 2 to allow thank you response)
   - Response tracking table to prevent spam
   - UI configuration panel with settings gear icon
   - Edit custom responses directly in the interface
+  - Helper text explaining response limits use case
 
 ### Enhanced
 - **Customer-Facing Response Transformation**
@@ -19,17 +20,24 @@ All notable changes to ClubOS will be documented in this file.
   - Ensures all automated responses speak directly to customers
   - Proper context passing with `isCustomerFacing` flag
 
+### Simplified
+- Removed extra automations (hours, membership, simulator, TV)
+- Only keeping gift cards and trackman as originally requested
+- Gift cards can trigger from any conversation context
+- Trackman only triggers in tech support context
+
 ### Fixed
 - All automations now use actual assistant knowledge (no hardcoded defaults)
-- Gift card automation uses correct URL from database
-- Hours and membership info pulled from BrandTone assistant
+- Gift card automation pulls from Booking & Access assistant
+- Pattern matching for all automations (not just keywords)
 - Fixed method name from queryAssistant to getAssistantResponse
 
 ### Technical
 - Migration `031_add_automation_response_limits.sql` adds response tracking
+- Migration `032_remove_extra_automations.sql` removes unused features
 - New API endpoint `/api/ai-automations/:featureKey/config`
-- Response count tracking per conversation
-- Source toggle: database vs hardcoded responses
+- Response count tracking per conversation and per feature
+- Advanced pattern matching in `aiAutomationPatterns.ts`
 
 ## [1.11.1] - 2025-08-03
 
