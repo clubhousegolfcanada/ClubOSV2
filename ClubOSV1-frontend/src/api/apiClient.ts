@@ -39,7 +39,12 @@ apiClient.interceptors.request.use(
       
       // Add CSRF token for non-GET requests
       if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
-        config.headers = addCSRFToRequest(config.headers || {});
+        const csrfHeaders = addCSRFToRequest({});
+        Object.entries(csrfHeaders).forEach(([key, value]) => {
+          if (config.headers && typeof value === 'string') {
+            config.headers[key] = value;
+          }
+        });
         console.log('[Axios Interceptor] Added CSRF token');
       }
     }

@@ -3,7 +3,6 @@ const { withSentryConfig } = require('@sentry/nextjs');
 
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   images: {
     domains: ['clubhouse247golf.com'],
     formats: ['image/avif', 'image/webp'],

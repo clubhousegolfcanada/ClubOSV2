@@ -163,25 +163,12 @@ export function validateEnvironmentSecurity(): void {
 
 // Additional helper to generate secure secrets
 export function generateSecureSecret(length: number = 32): string {
+  const crypto = require('crypto');
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
   let secret = '';
   
-  if (typeof window !== 'undefined' && window.crypto) {
-    // Browser environment
-    const array = new Uint8Array(length);
-    window.crypto.getRandomValues(array);
-    
-    for (let i = 0; i < length; i++) {
-      secret += chars[array[i] % chars.length];
-    }
-  } else if (typeof global !== 'undefined' && global.crypto) {
-    // Node.js environment
-    const crypto = require('crypto');
-    for (let i = 0; i < length; i++) {
-      secret += chars[crypto.randomInt(0, chars.length)];
-    }
-  } else {
-    throw new Error('Crypto API not available');
+  for (let i = 0; i < length; i++) {
+    secret += chars[crypto.randomInt(0, chars.length)];
   }
   
   return secret;
