@@ -2,6 +2,36 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.10.4] - 2025-08-02
+
+### Security
+- **Critical Security Updates**
+  - Updated Next.js from 14.0.4 to 15.4.5 fixing multiple critical vulnerabilities (SSRF, cache poisoning, DoS)
+  - Changed X-Frame-Options from ALLOWALL to SAMEORIGIN to prevent clickjacking attacks
+  - Implemented proper CSRF protection with custom token generation and validation
+  - Added comprehensive security test suite covering SQL injection, XSS, authentication, and more
+  - Created environment security validator to ensure secure configuration
+  - Added security verification script for automated security checks
+  - Removed deprecated csurf package, using custom CSRF implementation
+
+### Added
+- Security test directory with comprehensive test utilities
+- Environment security validation on startup
+- CSRF token generation and validation system
+- Security verification script (verify-security.sh)
+- Cookie-parser middleware for CSRF token handling
+
+### Improved
+- Security headers now properly restrict iframe embedding
+- Frontend axios client configured for CSRF token inclusion
+- All POST/PUT/DELETE requests now require CSRF validation
+- Environment variables validated for security on startup
+
+### Fixed
+- All npm vulnerabilities resolved (0 vulnerabilities in both frontend and backend)
+- Next.js critical security vulnerabilities patched
+- X-Frame-Options header properly configured
+
 ## [1.10.3] - 2025-08-01
 
 ### Added

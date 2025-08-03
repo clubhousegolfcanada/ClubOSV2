@@ -7,39 +7,58 @@ import morgan from 'morgan';
 import { Express, Request, Response, NextFunction } from 'express';
 import { logger, stream } from '../utils/logger';
 import { config } from '../utils/envValidator';
+import { generateCSRFToken, validateCSRFToken, getSessionId, addCSRFToken } from '../utils/csrf';
 
 // Custom CSRF token middleware
 export const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
   // Skip CSRF for public endpoints
-  const publicPaths = ['/health', '/api/slack/webhook'];
-  if (publicPaths.includes(req.path)) {
+  const publicPaths = ['/health', '/api/slack/webhook', '/api/public/', '/api/auth/login', '/api/auth/register', '/api/csrf-token'];
+  if (publicPaths.some(path => req.path.startsWith(path))) {
     return next();
   }
 
-  // Skip CSRF check for GET requests
-  if (req.method === 'GET') {
+  // Skip CSRF check for GET and OPTIONS requests
+  if (req.method === 'GET' || req.method === 'OPTIONS') {
+    // Add CSRF token to response for GET requests
+    if (req.method === 'GET') {
+      addCSRFToken(req, res);
+    }
     return next();
   }
 
-  // Check for CSRF token in headers
-  const token = req.headers['x-csrf-token'];
-  const sessionToken = req.headers['x-session-token'];
+  // Get CSRF token from headers or cookies
+  const headerToken = req.headers['x-csrf-token'] as string;
+  const cookieToken = req.cookies?.['csrf-token'];
+  const token = headerToken || cookieToken;
 
-return next(); // Temporarily disable CSRF
-
-  // In production, implement proper CSRF validation
-  if (config.NODE_ENV === 'production' && !token) {
+  // Check if token exists
+  if (!token) {
+    logger.warn('CSRF token missing', {
+      ip: req.ip,
+      path: req.path,
+      method: req.method
+    });
     return res.status(403).json({
       error: 'CSRF token missing',
-      message: 'Security validation failed'
+      message: 'Security validation failed. Please refresh the page and try again.'
     });
   }
 
-  // Skip CSRF in development/demo mode for now
-  if (config.NODE_ENV === 'development') {
-    return next();
+  // Validate CSRF token
+  const sessionId = getSessionId(req);
+  if (!validateCSRFToken(sessionId, token)) {
+    logger.warn('Invalid CSRF token', {
+      ip: req.ip,
+      path: req.path,
+      method: req.method
+    });
+    return res.status(403).json({
+      error: 'Invalid CSRF token',
+      message: 'Security validation failed. Please refresh the page and try again.'
+    });
   }
 
+  // Token is valid, continue
   next();
 };
 

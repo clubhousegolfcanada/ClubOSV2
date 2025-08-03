@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { UserRequest, ApiResponse } from "@/types/request";
+import { addCSRFToRequest } from "@/utils/csrf";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -9,18 +10,20 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Send cookies with requests
 });
 
 // Export the axios instance for use in other API modules
 export default apiClient;
 
-// Add auth token to requests
+// Add auth token and CSRF token to requests
 apiClient.interceptors.request.use(
   (config) => {
     console.log('[Axios Interceptor] Processing request to:', config.url);
     
-    // Only access localStorage on client side
+    // Only access localStorage and cookies on client side
     if (typeof window !== 'undefined') {
+      // Add auth token
       const token = localStorage.getItem('clubos_token');
       console.log('[Axios Interceptor] Token found:', !!token);
       console.log('[Axios Interceptor] Token value:', token ? token.substring(0, 20) + '...' : 'null');
@@ -30,9 +33,14 @@ apiClient.interceptors.request.use(
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
         console.log('[Axios Interceptor] Added auth header:', config.headers.Authorization?.substring(0, 30) + '...');
-        console.log('[Axios Interceptor] Full config headers:', config.headers);
       } else {
         console.log('[Axios Interceptor] No token found, request will be sent without auth');
+      }
+      
+      // Add CSRF token for non-GET requests
+      if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+        config.headers = addCSRFToRequest(config.headers || {});
+        console.log('[Axios Interceptor] Added CSRF token');
       }
     }
     

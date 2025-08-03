@@ -94,9 +94,31 @@ railway logs            # Check production logs
 # Backend: https://railway.app/dashboard
 ```
 
+## 🔐 Security
+
+### Security Features
+- **Next.js 15.4.5**: Latest version with all security patches
+- **CSRF Protection**: Custom implementation with token validation
+- **Security Headers**: X-Frame-Options, CSP, HSTS enabled
+- **Input Sanitization**: XSS prevention on all user inputs
+- **Rate Limiting**: Configurable limits on all endpoints
+- **Environment Validation**: Secure configuration checks on startup
+- **Security Tests**: Comprehensive test suite for common vulnerabilities
+
+### Security Verification
+Run the security verification script to check your security posture:
+```bash
+./verify-security.sh
+```
+
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.10.4**: Critical Security Updates
+  - Updated Next.js to 15.4.5 (fixed critical vulnerabilities)
+  - Implemented CSRF protection
+  - Enhanced security headers and input validation
+  - Added security test suite and verification tools
 - **v1.10.3**: Enhanced Mobile Navigation
   - Quick access "Open Messages" button on dashboard
   - Native swipe navigation between pages

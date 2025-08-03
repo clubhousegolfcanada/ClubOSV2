@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { join } from 'path';
 
@@ -10,9 +11,22 @@ dotenv.config();
 import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler, setupSentryErrorHandler } from './utils/sentry';
 import { logger } from './utils/logger';
 import { db } from './utils/database';
+import { validateEnvironmentSecurity } from './utils/env-security';
 
 // Initialize Sentry before anything else
 initSentry();
+
+// Validate environment security on startup (skip in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    validateEnvironmentSecurity();
+  } catch (error) {
+    logger.error('Environment security validation failed', error);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1); // Exit in production if security checks fail
+    }
+  }
+}
 import authRoutes from './routes/auth';
 import bookingsRoutes from './routes/bookings';
 import ticketsRoutes from './routes/tickets';
@@ -54,6 +68,7 @@ import callTranscriptRoutes from './routes/call-transcripts';
 import privacyRoutes from './routes/privacy';
 import customerInteractionsRoutes from './routes/customer-interactions';
 import promptTemplatesRoutes from './routes/promptTemplates';
+import csrfRoutes from './routes/csrf';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -139,6 +154,7 @@ app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, re
 });
 
 app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
 app.use(sanitizeMiddleware);
 app.use(requestLogger);
 
@@ -179,6 +195,7 @@ app.use('/api/public', publicRoutes);
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api', csrfRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/feedback', feedbackRoutes);

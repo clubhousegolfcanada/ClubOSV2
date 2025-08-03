@@ -16,6 +16,7 @@ import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { SwipeIndicator } from '@/components/SwipeIndicator';
 import RemoteActionsBar from '@/components/RemoteActionsBar';
 import { performanceMonitor, updateAnimationDurations } from '@/utils/performanceMonitor';
+import { initializeCSRF } from '@/utils/csrf';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -41,6 +42,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   useSwipeNavigation({ enabled: isAuthenticated && !isPublicRoute });
 
   useEffect(() => {
+    // Initialize CSRF token
+    if (typeof window !== 'undefined' && isAuthenticated) {
+      initializeCSRF().catch(console.error);
+    }
+    
     // Register service worker for PWA and push notifications
     if ('serviceWorker' in navigator && typeof window !== 'undefined') {
       navigator.serviceWorker.register('/sw.js')

@@ -26,9 +26,9 @@ export function middleware(request: NextRequest) {
     },
   });
 
-  // Set permissive headers for iframe embedding
-  response.headers.set('X-Frame-Options', 'ALLOWALL');
-  response.headers.set('Content-Security-Policy', 'frame-ancestors *;');
+  // Set security headers to prevent clickjacking
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('Content-Security-Policy', 'frame-ancestors \'self\';');
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
