@@ -579,7 +579,17 @@ CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(category);
 CREATE INDEX IF NOT EXISTS idx_tickets_created_by_id ON tickets(created_by_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
-CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at);
+-- Create index on tickets timestamp column (handle both naming conventions)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns 
+               WHERE table_name = 'tickets' AND column_name = 'created_at') THEN
+        CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at);
+    ELSIF EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'tickets' AND column_name = 'createdAt') THEN
+        CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets("createdAt");
+    END IF;
+END $$;
 
 -- Ticket comments indexes
 CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
