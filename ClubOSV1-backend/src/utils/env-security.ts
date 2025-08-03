@@ -16,8 +16,13 @@ const securityChecks: EnvSecurityCheck[] = [
   },
   {
     key: 'ENCRYPTION_KEY',
-    validator: (val) => !!val && val !== 'your-32-character-encryption-key' && val.length === 32,
-    message: 'ENCRYPTION_KEY must be exactly 32 characters and not default',
+    validator: (val) => {
+      if (!val) return false;
+      if (val === 'your-32-character-encryption-key') return false;
+      if (val.length !== 32) return false;
+      return true;
+    },
+    message: `ENCRYPTION_KEY must be exactly 32 characters and not default (current length: ${process.env.ENCRYPTION_KEY?.length || 0})`,
     critical: true
   },
   {
