@@ -19,10 +19,18 @@ const securityChecks: EnvSecurityCheck[] = [
     validator: (val) => {
       if (!val) return false;
       if (val === 'your-32-character-encryption-key') return false;
-      if (val.length !== 32) return false;
+      if (val.length !== 32) {
+        // If it's 64 chars (common base64 mistake), suggest trimming
+        if (val.length === 64) {
+          console.log(`\n💡 TIP: Your ENCRYPTION_KEY is 64 characters (base64 encoded?).`);
+          console.log(`   You can use the first 32 characters: ${val.substring(0, 32)}`);
+          console.log(`   Or generate a new one with: node scripts/generate-encryption-key.js\n`);
+        }
+        return false;
+      }
       return true;
     },
-    message: `ENCRYPTION_KEY must be exactly 32 characters and not default (current length: ${process.env.ENCRYPTION_KEY?.length || 0})`,
+    message: `ENCRYPTION_KEY must be exactly 32 characters (current: ${process.env.ENCRYPTION_KEY?.length || 0} chars)`,
     critical: true
   },
   {
