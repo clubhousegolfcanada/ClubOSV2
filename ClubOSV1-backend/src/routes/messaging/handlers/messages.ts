@@ -69,11 +69,11 @@ export async function sendMessage(req: Request, res: Response) {
 
   try {
     // Send via OpenPhone
-    const result = await openPhoneService.sendMessage({
+    const result = await openPhoneService.sendMessage(
       to,
       body,
-      from: process.env.OPENPHONE_DEFAULT_NUMBER
-    });
+      process.env.OPENPHONE_DEFAULT_NUMBER
+    );
 
     // Update conversation if provided
     if (conversationId) {
@@ -187,16 +187,18 @@ export async function getAISuggestion(req: Request, res: Response) {
     }
 
     // Get AI suggestion
-    const suggestion = await messageAssistantService.generateResponse({
-      conversation: conversation.rows[0],
-      context,
-      userId: req.user!.id
-    });
+    const conversationData = conversation.rows[0];
+    const suggestion = await messageAssistantService.generateSuggestedResponse(
+      conversationData.conversation_id,
+      conversationData.phone_number,
+      conversationData.messages || [],
+      req.user!.id
+    );
 
     res.json({
-      suggestion: suggestion.content,
+      suggestion: suggestion.suggestedText,
       confidence: suggestion.confidence,
-      alternatives: suggestion.alternatives || []
+      alternatives: []
     });
   } catch (error) {
     if (error instanceof AppError) throw error;
@@ -243,8 +245,8 @@ export async function getDebugStatus(req: Request, res: Response) {
       },
       userStats: userStats.rows,
       services: {
-        openphone: await openPhoneService.checkConnection(),
-        notifications: notificationService.isEnabled()
+        openphone: await openPhoneService.testConnection(),
+        notifications: (notificationService as any).initialized || false
       }
     });
   } catch (error) {

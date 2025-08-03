@@ -145,8 +145,8 @@ export async function sendTestNotification(req: Request, res: Response) {
     await notificationService.sendToUser(req.user!.id, {
       title: 'Test Notification',
       body: 'This is a test notification from ClubOS',
-      type: 'test',
       data: {
+        type: 'test',
         timestamp: new Date().toISOString()
       }
     });

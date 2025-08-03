@@ -118,11 +118,14 @@ async function handleMessageCreated(data: any) {
     if (existing.rows.length === 0) {
       // Create new conversation
       await insertOpenPhoneConversation({
-        conversation_id: conversationId,
-        phone_number: direction === 'incoming' ? from : to,
-        customer_name: data.contactName || null,
+        conversationId: conversationId,
+        phoneNumber: direction === 'incoming' ? from : to,
+        customerName: data.contactName || null,
+        employeeName: 'System',
         messages: [message],
-        last_message_at: createdAt
+        metadata: {},
+        unreadCount: direction === 'incoming' ? 1 : 0,
+        lastAssistantType: null
       });
     } else {
       // Add message to existing conversation
@@ -143,11 +146,24 @@ async function handleMessageCreated(data: any) {
 
     // Send push notification for incoming messages
     if (direction === 'incoming') {
-      await notificationService.broadcastToRole(['admin', 'operator'], {
+      // Send to admins
+      await notificationService.sendToRole('admin', {
         title: 'New Message',
         body: `${data.contactName || from}: ${body.substring(0, 50)}${body.length > 50 ? '...' : ''}`,
-        type: 'new_message',
         data: {
+          type: 'new_message',
+          conversationId,
+          from,
+          preview: body.substring(0, 100)
+        }
+      });
+      
+      // Send to operators
+      await notificationService.sendToRole('operator', {
+        title: 'New Message',
+        body: `${data.contactName || from}: ${body.substring(0, 50)}${body.length > 50 ? '...' : ''}`,
+        data: {
+          type: 'new_message',
           conversationId,
           from,
           preview: body.substring(0, 100)
@@ -155,16 +171,17 @@ async function handleMessageCreated(data: any) {
       });
 
       // Update HubSpot if enabled
-      if (hubspotService && data.contactName) {
-        try {
-          await hubspotService.updateLastContact(from, {
-            lastMessageDate: createdAt,
-            lastMessagePreview: body.substring(0, 100)
-          });
-        } catch (hubspotError) {
-          logger.warn('Failed to update HubSpot', { error: hubspotError });
-        }
-      }
+      // TODO: Implement HubSpot contact update
+      // if (hubspotService && data.contactName) {
+      //   try {
+      //     await hubspotService.updateLastContact(from, {
+      //       lastMessageDate: createdAt,
+      //       lastMessagePreview: body.substring(0, 100)
+      //     });
+      //   } catch (hubspotError) {
+      //     logger.warn('Failed to update HubSpot', { error: hubspotError });
+      //   }
+      // }
     }
 
     logger.info('Message processed', {
@@ -195,11 +212,14 @@ async function handleConversationCreated(data: any) {
 
   try {
     await insertOpenPhoneConversation({
-      conversation_id: id,
-      phone_number: phoneNumber,
-      customer_name: data.contactName || null,
+      conversationId: id,
+      phoneNumber: phoneNumber,
+      customerName: data.contactName || null,
+      employeeName: 'System',
       messages: [],
-      created_at: createdAt
+      metadata: {},
+      unreadCount: 0,
+      lastAssistantType: null
     });
 
     logger.info('Conversation created', {
@@ -219,10 +239,12 @@ async function handleConversationUpdated(data: any) {
   const { id, status, assignedTo } = data;
 
   try {
-    await updateOpenPhoneConversation(id, {
+    // Note: Our schema doesn't track status or assignedTo fields
+    // We could extend the schema if needed
+    logger.info('Conversation status update received (not stored)', {
+      conversationId: id,
       status,
-      assigned_to: assignedTo,
-      updated_at: new Date()
+      assignedTo
     });
 
     logger.info('Conversation updated', {
