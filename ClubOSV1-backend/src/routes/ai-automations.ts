@@ -587,4 +587,53 @@ export async function logAutomationUsage(
   }
 }
 
+// PUT /api/ai-automations/:featureKey/config - Update feature configuration
+router.put('/:featureKey/config', authenticate, roleGuard(['admin', 'operator']), async (req, res) => {
+  try {
+    const { featureKey } = req.params;
+    const { config } = req.body;
+    
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid configuration data'
+      });
+    }
+    
+    // Update the feature configuration
+    const result = await db.query(
+      'UPDATE ai_automation_features SET config = $1, updated_at = NOW() WHERE feature_key = $2 RETURNING *',
+      [JSON.stringify(config), featureKey]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feature not found'
+      });
+    }
+    
+    logger.info('AI automation config updated', {
+      featureKey,
+      updatedBy: req.user?.email,
+      changes: {
+        responseSource: config.responseSource,
+        maxResponses: config.maxResponses,
+        hasHardcodedResponse: !!config.hardcodedResponse
+      }
+    });
+    
+    res.json({
+      success: true,
+      feature: result.rows[0]
+    });
+  } catch (error) {
+    logger.error('Failed to update automation config:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update configuration'
+    });
+  }
+});
+
 export default router;

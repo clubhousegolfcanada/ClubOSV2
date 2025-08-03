@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.2] - 2025-08-03
+
+### Added
+- **AI Automation Safety & Configuration**
+  - Response limit tracking (max 2 responses per conversation)
+  - Toggle between AI assistant knowledge and custom hardcoded responses
+  - Per-feature response limits (gift cards: 1, technical: 2)
+  - Response tracking table to prevent spam
+  - UI configuration panel with settings gear icon
+  - Edit custom responses directly in the interface
+
+### Enhanced
+- **Customer-Facing Response Transformation**
+  - Automatically converts "Tell them..." to direct "You..." format
+  - Ensures all automated responses speak directly to customers
+  - Proper context passing with `isCustomerFacing` flag
+
+### Fixed
+- All automations now use actual assistant knowledge (no hardcoded defaults)
+- Gift card automation uses correct URL from database
+- Hours and membership info pulled from BrandTone assistant
+- Fixed method name from queryAssistant to getAssistantResponse
+
+### Technical
+- Migration `031_add_automation_response_limits.sql` adds response tracking
+- New API endpoint `/api/ai-automations/:featureKey/config`
+- Response count tracking per conversation
+- Source toggle: database vs hardcoded responses
+
 ## [1.11.1] - 2025-08-03
 
 ### Added

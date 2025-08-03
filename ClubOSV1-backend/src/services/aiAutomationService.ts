@@ -157,6 +157,15 @@ export class AIAutomationService {
         return { handled: false };
       }
       
+      // Check response limit
+      const responseCount = await this.getResponseCount(conversationId || '', 'gift_cards');
+      const maxResponses = await this.getMaxResponses('gift_cards');
+      
+      if (responseCount >= maxResponses) {
+        logger.info('Response limit reached for gift_cards', { conversationId, responseCount, maxResponses });
+        return { handled: false };
+      }
+      
       // Get feature config
       const featureResult = await db.query(
         'SELECT config FROM ai_automation_features WHERE feature_key = $1',
@@ -227,59 +236,62 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      // Query the Booking & Access assistant - it will check database first, then OpenAI
-      try {
-        const assistantResponse = await assistantService.getAssistantResponse(
-          'Booking & Access',
-          message,
-          { isCustomerFacing: true, conversationId } // Mark as customer-facing for proper response formatting
-        );
-        
-        // Use the assistant's response and ensure it's customer-facing
-        let responseText = assistantResponse.response;
-        
-        // Transform response to be direct to customer if needed
-        responseText = this.ensureCustomerFacingResponse(responseText);
-        
-        // Only proceed if we got a valid response
-        if (!responseText || responseText.length < 10) {
-          logger.warn('Assistant returned empty response for gift card query');
+      // Get response based on configured source
+      let responseText: string;
+      const responseSource = config.responseSource || 'database';
+      
+      if (responseSource === 'hardcoded' && config.hardcodedResponse) {
+        // Use the hardcoded response from config
+        responseText = config.hardcodedResponse;
+        logger.info('Using hardcoded response for gift_cards');
+      } else {
+        // Query the Booking & Access assistant - it will check database first, then OpenAI
+        try {
+          const assistantResponse = await assistantService.getAssistantResponse(
+            'Booking & Access',
+            message,
+            { isCustomerFacing: true, conversationId } // Mark as customer-facing for proper response formatting
+          );
+          
+          responseText = assistantResponse.response;
+          
+          // Only proceed if we got a valid response
+          if (!responseText || responseText.length < 10) {
+            logger.warn('Assistant returned empty response for gift card query');
+            return { handled: false };
+          }
+        } catch (assistantError) {
+          logger.error('Failed to get assistant response for gift card automation:', assistantError);
           return { handled: false };
         }
-        
-        // Log successful automation
-        await logAutomationUsage('gift_cards', {
-          conversationId,
-          triggerType: 'automatic',
-          inputData: { message },
-          outputData: { response: responseText },
-          success: true,
-          executionTimeMs: Date.now() - startTime
-        });
-        
-        // Store in assistant knowledge for learning
-        await this.storeInAssistantKnowledge('Booking & Access', message, responseText, 'gift_cards');
-        
-        return {
-          handled: true,
-          response: responseText,
-          assistantType: 'Booking & Access'
-        };
-      } catch (assistantError) {
-        logger.error('Failed to get assistant response for gift card automation:', assistantError);
-        
-        // Don't handle if assistant fails - let it go through normal flow
-        await logAutomationUsage('gift_cards', {
-          conversationId,
-          triggerType: 'automatic',
-          inputData: { message },
-          success: false,
-          errorMessage: assistantError instanceof Error ? assistantError.message : 'Unknown error',
-          executionTimeMs: Date.now() - startTime
-        });
-        
-        return { handled: false };
       }
+      
+      // Transform response to be direct to customer
+      responseText = this.ensureCustomerFacingResponse(responseText);
+      
+      // Log successful automation and increment response count
+      await logAutomationUsage('gift_cards', {
+        conversationId,
+        triggerType: 'automatic',
+        inputData: { message },
+        outputData: { response: responseText },
+        success: true,
+        executionTimeMs: Date.now() - startTime
+      });
+      
+      // Increment response count
+      await this.incrementResponseCount(conversationId || '', 'gift_cards');
+      
+      // Store in assistant knowledge for learning (only if from assistant)
+      if (responseSource !== 'hardcoded') {
+        await this.storeInAssistantKnowledge('Booking & Access', message, responseText, 'gift_cards');
+      }
+      
+      return {
+        handled: true,
+        response: responseText,
+        assistantType: 'Booking & Access'
+      };
     } catch (error) {
       logger.error('Gift card automation error:', error);
       
@@ -307,6 +319,15 @@ export class AIAutomationService {
         return { handled: false };
       }
       
+      // Check response limit
+      const responseCount = await this.getResponseCount(conversationId || '', 'hours_of_operation');
+      const maxResponses = await this.getMaxResponses('hours_of_operation');
+      
+      if (responseCount >= maxResponses) {
+        logger.info('Response limit reached for hours_of_operation', { conversationId, responseCount, maxResponses });
+        return { handled: false };
+      }
+      
       const featureResult = await db.query(
         'SELECT config FROM ai_automation_features WHERE feature_key = $1',
         ['hours_of_operation']
@@ -325,44 +346,56 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      // Query the BrandTone assistant for hours information
-      try {
-        const assistantResponse = await assistantService.getAssistantResponse(
-          'BrandTone',
-          message,
-          { isCustomerFacing: true, conversationId }
-        );
-        
-        let responseText = assistantResponse.response;
-        
-        // Transform response to be direct to customer
-        responseText = this.ensureCustomerFacingResponse(responseText);
-        
-        if (!responseText || responseText.length < 10) {
-          logger.warn('Assistant returned empty response for hours query');
+      // Get response based on configured source
+      let responseText: string;
+      const responseSource = config.responseSource || 'database';
+      
+      if (responseSource === 'hardcoded' && config.hardcodedResponse) {
+        responseText = config.hardcodedResponse;
+        logger.info('Using hardcoded response for hours_of_operation');
+      } else {
+        try {
+          const assistantResponse = await assistantService.getAssistantResponse(
+            'BrandTone',  // Hours info is handled by BrandTone assistant
+            message,
+            { isCustomerFacing: true, conversationId }
+          );
+          
+          responseText = assistantResponse.response;
+          
+          if (!responseText || responseText.length < 10) {
+            logger.warn('Assistant returned empty response for hours query');
+            return { handled: false };
+          }
+        } catch (assistantError) {
+          logger.error('Failed to get assistant response for hours:', assistantError);
           return { handled: false };
         }
-        
-        await logAutomationUsage('hours_of_operation', {
-          conversationId,
-          triggerType: 'automatic',
-          inputData: { message },
-          outputData: { response: responseText },
-          success: true,
-          executionTimeMs: Date.now() - startTime
-        });
-        
-        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'hours_of_operation');
-        
-        return {
-          handled: true,
-          response: responseText,
-          assistantType: 'BrandTone'
-        };
-      } catch (assistantError) {
-        logger.error('Failed to get assistant response for hours:', assistantError);
-        return { handled: false };
       }
+      
+      // Transform response to be direct to customer
+      responseText = this.ensureCustomerFacingResponse(responseText);
+      
+      await logAutomationUsage('hours_of_operation', {
+        conversationId,
+        triggerType: 'automatic',
+        inputData: { message },
+        outputData: { response: responseText },
+        success: true,
+        executionTimeMs: Date.now() - startTime
+      });
+      
+      await this.incrementResponseCount(conversationId || '', 'hours_of_operation');
+      
+      if (responseSource !== 'hardcoded') {
+        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'hours_of_operation');
+      }
+      
+      return {
+        handled: true,
+        response: responseText,
+        assistantType: 'BrandTone'
+      };
     } catch (error) {
       logger.error('Hours automation error:', error);
       return { handled: false };
@@ -377,6 +410,15 @@ export class AIAutomationService {
     
     try {
       if (!await isAutomationEnabled('membership_info')) {
+        return { handled: false };
+      }
+      
+      // Check response limit
+      const responseCount = await this.getResponseCount(conversationId || '', 'membership_info');
+      const maxResponses = await this.getMaxResponses('membership_info');
+      
+      if (responseCount >= maxResponses) {
+        logger.info('Response limit reached for membership_info', { conversationId, responseCount, maxResponses });
         return { handled: false };
       }
       
@@ -398,44 +440,56 @@ export class AIAutomationService {
         return { handled: false };
       }
       
-      // Query the BrandTone assistant for membership information
-      try {
-        const assistantResponse = await assistantService.getAssistantResponse(
-          'BrandTone',
-          message,
-          { isCustomerFacing: true, conversationId }
-        );
-        
-        let responseText = assistantResponse.response;
-        
-        // Transform response to be direct to customer
-        responseText = this.ensureCustomerFacingResponse(responseText);
-        
-        if (!responseText || responseText.length < 10) {
-          logger.warn('Assistant returned empty response for membership query');
+      // Get response based on configured source
+      let responseText: string;
+      const responseSource = config.responseSource || 'database';
+      
+      if (responseSource === 'hardcoded' && config.hardcodedResponse) {
+        responseText = config.hardcodedResponse;
+        logger.info('Using hardcoded response for membership_info');
+      } else {
+        try {
+          const assistantResponse = await assistantService.getAssistantResponse(
+            'BrandTone',  // Hours info is handled by BrandTone assistant
+            message,
+            { isCustomerFacing: true, conversationId }
+          );
+          
+          responseText = assistantResponse.response;
+          
+          if (!responseText || responseText.length < 10) {
+            logger.warn('Assistant returned empty response for membership query');
+            return { handled: false };
+          }
+        } catch (assistantError) {
+          logger.error('Failed to get assistant response for membership:', assistantError);
           return { handled: false };
         }
-        
-        await logAutomationUsage('membership_info', {
-          conversationId,
-          triggerType: 'automatic',
-          inputData: { message },
-          outputData: { response: responseText },
-          success: true,
-          executionTimeMs: Date.now() - startTime
-        });
-        
-        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'membership_info');
-        
-        return {
-          handled: true,
-          response: responseText,
-          assistantType: 'BrandTone'
-        };
-      } catch (assistantError) {
-        logger.error('Failed to get assistant response for membership:', assistantError);
-        return { handled: false };
       }
+      
+      // Transform response to be direct to customer
+      responseText = this.ensureCustomerFacingResponse(responseText);
+      
+      await logAutomationUsage('membership_info', {
+        conversationId,
+        triggerType: 'automatic',
+        inputData: { message },
+        outputData: { response: responseText },
+        success: true,
+        executionTimeMs: Date.now() - startTime
+      });
+      
+      await this.incrementResponseCount(conversationId || '', 'membership_info');
+      
+      if (responseSource !== 'hardcoded') {
+        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'membership_info');
+      }
+      
+      return {
+        handled: true,
+        response: responseText,
+        assistantType: 'BrandTone'
+      };
     } catch (error) {
       logger.error('Membership automation error:', error);
       return { handled: false };
@@ -1281,6 +1335,64 @@ export class AIAutomationService {
     }
     
     return transformed;
+  }
+  
+  /**
+   * Get response count for a conversation and feature
+   */
+  private async getResponseCount(conversationId: string, featureKey: string): Promise<number> {
+    try {
+      const result = await db.query(
+        `SELECT response_count FROM ai_automation_response_tracking 
+         WHERE conversation_id = $1 AND feature_key = $2`,
+        [conversationId, featureKey]
+      );
+      
+      return result.rows[0]?.response_count || 0;
+    } catch (error) {
+      logger.error('Failed to get response count:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Increment response count for a conversation and feature
+   */
+  private async incrementResponseCount(conversationId: string, featureKey: string): Promise<void> {
+    try {
+      await db.query(
+        `INSERT INTO ai_automation_response_tracking 
+         (conversation_id, phone_number, feature_key, response_count, last_response_at)
+         VALUES ($1, '', $2, 1, NOW())
+         ON CONFLICT (conversation_id, feature_key)
+         DO UPDATE SET 
+           response_count = ai_automation_response_tracking.response_count + 1,
+           last_response_at = NOW()`,
+        [conversationId, featureKey]
+      );
+    } catch (error) {
+      logger.error('Failed to increment response count:', error);
+    }
+  }
+  
+  /**
+   * Get max responses allowed for a feature
+   */
+  private async getMaxResponses(featureKey: string): Promise<number> {
+    try {
+      const result = await db.query(
+        `SELECT config->>'maxResponses' as max_responses 
+         FROM ai_automation_features 
+         WHERE feature_key = $1`,
+        [featureKey]
+      );
+      
+      const maxResponses = parseInt(result.rows[0]?.max_responses || '2');
+      return maxResponses;
+    } catch (error) {
+      logger.error('Failed to get max responses:', error);
+      return 2; // Default to 2
+    }
   }
 }
 
