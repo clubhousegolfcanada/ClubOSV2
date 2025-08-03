@@ -449,7 +449,11 @@ export class AIAutomationService {
       const config = featureResult.rows[0].config;
       
       // Use pattern matching from aiAutomationPatterns
-      const { confidence, matches, negatives } = calculateConfidence(message, 'hours_of_operation');
+      // COMMENTED OUT - hours_of_operation no longer exists in patterns
+      // const { confidence, matches, negatives } = calculateConfidence(message, 'hours_of_operation');
+      const confidence = 0;
+      const matches: string[] = [];
+      const negatives: string[] = [];
       
       // Log the analysis for learning
       await this.logPatternAnalysis('hours_of_operation', message, matches, confidence);
@@ -549,7 +553,11 @@ export class AIAutomationService {
       const config = featureResult.rows[0].config;
       
       // Use pattern matching from aiAutomationPatterns
-      const { confidence, matches, negatives } = calculateConfidence(message, 'membership_info');
+      // COMMENTED OUT - membership_info no longer exists in patterns
+      // const { confidence, matches, negatives } = calculateConfidence(message, 'membership_info');
+      const confidence = 0;
+      const matches: string[] = [];
+      const negatives: string[] = [];
       
       // Log the analysis for learning
       await this.logPatternAnalysis('membership_info', message, matches, confidence);
@@ -1149,13 +1157,7 @@ export class AIAutomationService {
           pattern: 'trackman reset with activities recovery'
         };
       }
-      // Check for hours response
-      else if (lowerResponse.match(/\d{1,2}(am|pm)\s*-\s*\d{1,2}(am|pm)/i)) {
-        detectedFeature = 'hours_of_operation';
-        extractedInfo = {
-          hours: lowerResponse.match(/\d{1,2}(am|pm)\s*-\s*\d{1,2}(am|pm)/gi)
-        };
-      }
+      // REMOVED: hours_of_operation detection - pattern no longer exists
       
       if (detectedFeature) {
         // Mark queries as responded
