@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navigation from '../components/Navigation';
 import { useAuthState } from '@/state/useStore';
-import { Router } from '@reach/router';
-import { RouteComponentProps } from '@reach/router';
 import axios from 'axios';
 
 interface AutomationFeature {
@@ -22,7 +20,7 @@ interface AutomationFeature {
   };
 }
 
-const AIAutomationsPage: React.FC<RouteComponentProps> = () => {
+const AIAutomationsPage: React.FC = () => {
   const { checkPermission } = useAuthState();
   const [features, setFeatures] = useState<AutomationFeature[]>([]);
   const [loading, setLoading] = useState(true);
