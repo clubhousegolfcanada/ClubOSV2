@@ -4,6 +4,7 @@ import { openPhoneService } from './openphoneService';
 import ninjaoneService from './ninjaone';
 import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automations';
 import { assistantService } from './assistantService';
+import { calculateConfidence, findBestAutomation } from './aiAutomationPatterns';
 
 interface AutomationResponse {
   handled: boolean;
@@ -48,43 +49,16 @@ export class AIAutomationService {
       messagePreview: message.substring(0, 50)
     });
     
-    // Only process automations for the appropriate assistant type
-    switch (route) {
-      case 'BrandTone':
-        // Check gift card automation
-        const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
-        if (giftCardResponse.handled) return { ...giftCardResponse, assistantType: route };
-        
-        // Check hours automation
-        const hoursResponse = await this.checkHoursAutomation(lowerMessage, conversationId);
-        if (hoursResponse.handled) return { ...hoursResponse, assistantType: route };
-        
-        // Check membership automation
-        const membershipResponse = await this.checkMembershipAutomation(lowerMessage, conversationId);
-        if (membershipResponse.handled) return { ...membershipResponse, assistantType: route };
-        break;
-        
-      case 'TechSupport':
-        // Check trackman reset automation
-        const trackmanResponse = await this.checkTrackmanResetAutomation(lowerMessage, phoneNumber, conversationId);
-        if (trackmanResponse.handled) return { ...trackmanResponse, assistantType: route };
-        
-        // Check simulator reboot automation
-        const simulatorResponse = await this.checkSimulatorRebootAutomation(lowerMessage, phoneNumber, conversationId);
-        if (simulatorResponse.handled) return { ...simulatorResponse, assistantType: route };
-        
-        // Check TV restart automation
-        const tvResponse = await this.checkTVRestartAutomation(lowerMessage, phoneNumber, conversationId);
-        if (tvResponse.handled) return { ...tvResponse, assistantType: route };
-        break;
-        
-      case 'Booking & Access':
-        // Future: Add booking-related automations here
-        break;
-        
-      case 'Emergency':
-        // Never automate emergency responses
-        break;
+    // Only check the two automations we actually have
+    
+    // 1. Gift card automation - check for any route (gift cards could come up in any context)
+    const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
+    if (giftCardResponse.handled) return { ...giftCardResponse, assistantType: route };
+    
+    // 2. Trackman reset automation - only for tech support
+    if (route === 'TechSupport') {
+      const trackmanResponse = await this.checkTrackmanResetAutomation(lowerMessage, phoneNumber, conversationId);
+      if (trackmanResponse.handled) return { ...trackmanResponse, assistantType: route };
     }
     
     return { handled: false, assistantType: route };
@@ -308,10 +282,14 @@ export class AIAutomationService {
     }
   }
   
+  // REMOVED: Hours automation - not needed per requirements
+  // REMOVED: Membership automation - not needed per requirements
+  // REMOVED: Simulator/TV automations - not needed per requirements
+  
   /**
-   * Check if message is asking about hours of operation
+   * [REMOVED - Keeping only gift cards and trackman]
    */
-  private async checkHoursAutomation(message: string, conversationId?: string): Promise<AutomationResponse> {
+  private async checkHoursAutomationREMOVED(message: string, conversationId?: string): Promise<AutomationResponse> {
     const startTime = Date.now();
     
     try {
@@ -338,11 +316,17 @@ export class AIAutomationService {
       }
       
       const config = featureResult.rows[0].config;
-      const keywords = config.keywords || ['hours', 'open', 'close', 'when are you'];
       
-      const hasKeyword = keywords.some((keyword: string) => message.includes(keyword.toLowerCase()));
+      // Use pattern matching from aiAutomationPatterns
+      const { confidence, matches, negatives } = calculateConfidence(message, 'hours_of_operation');
       
-      if (!hasKeyword) {
+      // Log the analysis for learning
+      await this.logPatternAnalysis('hours_of_operation', message, matches, confidence);
+      
+      // Only respond if confidence is high enough
+      const minConfidence = config.minConfidence || 0.6;
+      if (confidence < minConfidence) {
+        logger.info('Hours automation confidence too low', { confidence, minConfidence, matches, negatives });
         return { handled: false };
       }
       
@@ -432,11 +416,17 @@ export class AIAutomationService {
       }
       
       const config = featureResult.rows[0].config;
-      const keywords = config.keywords || ['membership', 'member', 'monthly', 'benefits'];
       
-      const hasKeyword = keywords.some((keyword: string) => message.includes(keyword.toLowerCase()));
+      // Use pattern matching from aiAutomationPatterns
+      const { confidence, matches, negatives } = calculateConfidence(message, 'membership_info');
       
-      if (!hasKeyword) {
+      // Log the analysis for learning
+      await this.logPatternAnalysis('membership_info', message, matches, confidence);
+      
+      // Only respond if confidence is high enough
+      const minConfidence = config.minConfidence || 0.6;
+      if (confidence < minConfidence) {
+        logger.info('Membership automation confidence too low', { confidence, minConfidence, matches, negatives });
         return { handled: false };
       }
       
