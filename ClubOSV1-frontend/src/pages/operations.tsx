@@ -9,6 +9,7 @@ import { UserDebugCheck } from '@/components/UserDebugCheck';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { AIFeatureCard } from '@/components/AIFeatureCard';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -1562,195 +1563,14 @@ export default function Operations() {
                             const enabledMatch = !showOnlyEnabled || feature.enabled;
                             return categoryMatch && enabledMatch;
                           })
-                          .map((feature) => {
-                            const [isExpanded, setIsExpanded] = useState(false);
-                            const [responseSource, setResponseSource] = useState(feature.config?.responseSource || 'database');
-                            const [hardcodedResponse, setHardcodedResponse] = useState(feature.config?.hardcodedResponse || '');
-                            const [maxResponses, setMaxResponses] = useState(feature.config?.maxResponses || 2);
-                            const [allowFollowUp, setAllowFollowUp] = useState(feature.allow_follow_up !== false);
-                            const [isSaving, setIsSaving] = useState(false);
-                            
-                            const saveConfig = async () => {
-                              setIsSaving(true);
-                              try {
-                                const token = localStorage.getItem('clubos_token');
-                                const updatedConfig = {
-                                  ...feature.config,
-                                  responseSource,
-                                  hardcodedResponse,
-                                  maxResponses
-                                };
-                                
-                                await axios.put(`${API_URL}/ai-automations/${feature.feature_key}/config`, {
-                                  config: updatedConfig,
-                                  allow_follow_up: allowFollowUp
-                                }, {
-                                  headers: { Authorization: `Bearer ${token}` }
-                                });
-                                
-                                toast.success('Configuration saved');
-                                fetchAIFeatures(); // Reload to get updated data
-                              } catch (error) {
-                                toast.error('Failed to save configuration');
-                              } finally {
-                                setIsSaving(false);
-                              }
-                            };
-                            
-                            return (
-                              <div key={feature.id} className="card hover:shadow-lg transition-shadow duration-200">
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex-1">
-                                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
-                                      {feature.feature_name}
-                                    </h3>
-                                    <p className="text-sm text-[var(--text-secondary)]">
-                                      {feature.description}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => setIsExpanded(!isExpanded)}
-                                      className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                                    >
-                                      <Settings className="w-4 h-4" />
-                                    </button>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={feature.enabled}
-                                        onChange={(e) => toggleAIFeature(feature.feature_key, e.target.checked)}
-                                        className="sr-only peer"
-                                      />
-                                      <div className="w-11 h-6 bg-[var(--bg-tertiary)] peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[var(--accent)]"></div>
-                                    </label>
-                                  </div>
-                                </div>
-                                
-                                {/* Stats */}
-                                {feature.stats && (
-                                  <div className="mt-4 pt-4 border-t border-[var(--border-secondary)]">
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                      <div>
-                                        <span className="text-[var(--text-muted)]">Total Uses:</span>
-                                        <span className="ml-2 font-medium">{feature.stats.total_uses}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-[var(--text-muted)]">Success Rate:</span>
-                                        <span className="ml-2 font-medium">
-                                          {feature.stats.total_uses > 0 
-                                            ? Math.round((feature.stats.successful_uses / feature.stats.total_uses) * 100) 
-                                            : 0}%
-                                        </span>
-                                      </div>
-                                    </div>
-                                    {feature.stats.last_used && (
-                                      <div className="mt-2 text-xs text-[var(--text-muted)]">
-                                        Last used: {new Date(feature.stats.last_used).toLocaleString()}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Expanded Configuration */}
-                                {isExpanded && (
-                                  <div className="mt-4 pt-4 border-t border-[var(--border-secondary)] space-y-4">
-                                    {/* Max Responses */}
-                                    <div>
-                                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                                        Max Responses per Conversation
-                                      </label>
-                                      <input
-                                        type="number"
-                                        min="1"
-                                        max="10"
-                                        value={maxResponses}
-                                        onChange={(e) => setMaxResponses(parseInt(e.target.value))}
-                                        className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)]"
-                                      />
-                                      <p className="mt-1 text-xs text-[var(--text-muted)]">
-                                        e.g., Gift cards: 2 (allows follow-up if customer says thanks)
-                                      </p>
-                                    </div>
-                                    
-                                    {/* Response Source */}
-                                    <div>
-                                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                                        Response Source
-                                      </label>
-                                      <div className="flex gap-4">
-                                        <label className="flex items-center gap-2">
-                                          <input
-                                            type="radio"
-                                            value="database"
-                                            checked={responseSource === 'database'}
-                                            onChange={(e) => setResponseSource(e.target.value)}
-                                            className="text-[var(--accent)]"
-                                          />
-                                          <span className="text-sm">Use AI Assistant</span>
-                                        </label>
-                                        <label className="flex items-center gap-2">
-                                          <input
-                                            type="radio"
-                                            value="hardcoded"
-                                            checked={responseSource === 'hardcoded'}
-                                            onChange={(e) => setResponseSource(e.target.value)}
-                                            className="text-[var(--accent)]"
-                                          />
-                                          <span className="text-sm">Use Custom Response</span>
-                                        </label>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Hardcoded Response */}
-                                    {responseSource === 'hardcoded' && (
-                                      <div>
-                                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                                          Custom Response
-                                        </label>
-                                        <textarea
-                                          value={hardcodedResponse}
-                                          onChange={(e) => setHardcodedResponse(e.target.value)}
-                                          rows={3}
-                                          className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)] resize-none"
-                                          placeholder="Enter the response to send to customers..."
-                                        />
-                                      </div>
-                                    )}
-                                    
-                                    {/* Allow Follow-up Toggle */}
-                                    <div>
-                                      <label className="flex items-center gap-3">
-                                        <input
-                                          type="checkbox"
-                                          checked={allowFollowUp}
-                                          onChange={(e) => setAllowFollowUp(e.target.checked)}
-                                          className="w-4 h-4 text-[var(--accent)] rounded border-[var(--border-secondary)] focus:ring-[var(--accent)]"
-                                        />
-                                        <div>
-                                          <span className="text-sm font-medium text-[var(--text-primary)]">
-                                            Allow Follow-up Questions
-                                          </span>
-                                          <p className="text-xs text-[var(--text-muted)]">
-                                            AI will respond to follow-up questions within the response limit
-                                          </p>
-                                        </div>
-                                      </label>
-                                    </div>
-                                    
-                                    {/* Save Button */}
-                                    <button
-                                      onClick={saveConfig}
-                                      disabled={isSaving}
-                                      className="w-full px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                                    >
-                                      {isSaving ? 'Saving...' : 'Save Configuration'}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                          .map((feature) => (
+                            <AIFeatureCard
+                              key={feature.id}
+                              feature={feature}
+                              onToggle={toggleAIFeature}
+                              onUpdate={fetchAIFeatures}
+                            />
+                          ))}
                       </div>
                     )}
 
