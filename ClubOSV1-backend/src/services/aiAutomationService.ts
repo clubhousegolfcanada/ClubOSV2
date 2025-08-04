@@ -28,7 +28,7 @@ export class AIAutomationService {
   /**
    * Process incoming message and check if it matches any automation patterns
    */
-  async processMessage(phoneNumber: string, message: string, conversationId?: string): Promise<AutomationResponse> {
+  async processMessage(phoneNumber: string, message: string, conversationId?: string, isInitialMessage: boolean = false): Promise<AutomationResponse> {
     const lowerMessage = message.toLowerCase().trim();
     
     // Check for confirmation responses first
@@ -46,10 +46,17 @@ export class AIAutomationService {
     logger.info('AI Automation routing decision', {
       phoneNumber: phoneNumber.slice(-4),
       route,
-      messagePreview: message.substring(0, 50)
+      messagePreview: message.substring(0, 50),
+      isInitialMessage
     });
     
-    // Only check the two automations we actually have
+    // Check if we should use LLM for all initial messages
+    if (isInitialMessage && await this.shouldUseLLMForInitial()) {
+      const llmResponse = await this.analyzewithLLM(message, phoneNumber, conversationId, route);
+      if (llmResponse.handled) return llmResponse;
+    }
+    
+    // Otherwise, use pattern matching
     
     // 1. Gift card automation - check for any route (gift cards could come up in any context)
     const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
@@ -66,6 +73,126 @@ export class AIAutomationService {
     if (bookingChangeResponse.handled) return { ...bookingChangeResponse, assistantType: route };
     
     return { handled: false, assistantType: route };
+  }
+  
+  /**
+   * Check if we should use LLM for initial message analysis
+   */
+  private async shouldUseLLMForInitial(): Promise<boolean> {
+    try {
+      // Check if the LLM initial analysis feature is enabled
+      return await isAutomationEnabled('llm_initial_analysis');
+    } catch (error) {
+      logger.error('Failed to check LLM initial analysis setting:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Analyze message with LLM to determine if it needs an automated response
+   */
+  private async analyzewithLLM(
+    message: string, 
+    phoneNumber: string, 
+    conversationId: string | undefined,
+    route: string
+  ): Promise<AutomationResponse> {
+    try {
+      logger.info('Analyzing initial message with LLM', {
+        message: message.substring(0, 100),
+        route
+      });
+      
+      // Import llmService dynamically
+      const { llmService } = await import('./llmService');
+      
+      // Ask the LLM to analyze if this message needs an automated response
+      const analysis = await llmService.analyzeForAutomation(message);
+      
+      if (!analysis.shouldRespond) {
+        logger.info('LLM determined no automated response needed', {
+          reason: analysis.reason
+        });
+        return { handled: false, assistantType: route };
+      }
+      
+      // If LLM says we should respond, check which automation it matches
+      if (analysis.detectedIntent === 'gift_card') {
+        return await this.handleGiftCardWithLLM(message, conversationId, route);
+      }
+      
+      // For other intents, query the appropriate assistant
+      if (analysis.shouldRespond && analysis.response) {
+        logger.info('LLM provided automated response', {
+          intent: analysis.detectedIntent,
+          confidence: analysis.confidence
+        });
+        
+        return {
+          handled: true,
+          response: this.ensureCustomerFacingResponse(analysis.response),
+          assistantType: route
+        };
+      }
+      
+      return { handled: false, assistantType: route };
+    } catch (error) {
+      logger.error('LLM analysis failed:', error);
+      // Fall back to pattern matching
+      return { handled: false, assistantType: route };
+    }
+  }
+  
+  /**
+   * Handle gift card inquiry detected by LLM
+   */
+  private async handleGiftCardWithLLM(
+    message: string,
+    conversationId: string | undefined,
+    route: string
+  ): Promise<AutomationResponse> {
+    try {
+      // Check response limits
+      const responseCount = await this.getResponseCount(conversationId || '', 'gift_cards');
+      const maxResponses = await this.getMaxResponses('gift_cards');
+      
+      if (responseCount >= maxResponses) {
+        logger.info('Response limit reached for gift_cards', { conversationId, responseCount, maxResponses });
+        return { handled: false, assistantType: route };
+      }
+      
+      // Query the assistant for gift card knowledge
+      const assistantResponse = await assistantService.getAssistantResponse(
+        'Booking & Access',
+        message,
+        { isCustomerFacing: true, conversationId }
+      );
+      
+      if (assistantResponse.response && assistantResponse.response.length > 10) {
+        // Log usage and increment count
+        await logAutomationUsage('gift_cards', {
+          conversationId,
+          triggerType: 'llm_detected',
+          inputData: { message },
+          outputData: { response: assistantResponse.response },
+          success: true,
+          executionTimeMs: 0
+        });
+        
+        await this.incrementResponseCount(conversationId || '', 'gift_cards');
+        
+        return {
+          handled: true,
+          response: this.ensureCustomerFacingResponse(assistantResponse.response),
+          assistantType: route
+        };
+      }
+      
+      return { handled: false, assistantType: route };
+    } catch (error) {
+      logger.error('Failed to handle gift card with LLM:', error);
+      return { handled: false, assistantType: route };
+    }
   }
   
   /**

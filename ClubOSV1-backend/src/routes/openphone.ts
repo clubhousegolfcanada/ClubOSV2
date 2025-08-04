@@ -260,7 +260,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
               const automationResponse = await aiAutomationService.processMessage(
                 phoneNumber, 
                 messageText,
-                existingConv.rows[0].id
+                existingConv.rows[0].id,
+                false // Not initial message - continuing conversation
               );
               
               // Update conversation with assistant type
@@ -381,7 +382,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
             const automationResponse = await aiAutomationService.processMessage(
               phoneNumber, 
               messageText,
-              newConversationId
+              newConversationId,
+              true // This is an initial message
             );
             
             if (automationResponse.handled && automationResponse.response) {

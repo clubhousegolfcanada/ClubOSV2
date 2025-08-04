@@ -96,6 +96,78 @@ export class LLMService {
       throw new Error('Failed to process request with LLM');
     }
   }
+  
+  /**
+   * Analyze a message to determine if it should trigger an automated response
+   */
+  async analyzeForAutomation(message: string): Promise<{
+    shouldRespond: boolean;
+    detectedIntent?: string;
+    confidence: number;
+    reason?: string;
+    response?: string;
+  }> {
+    try {
+      const systemPrompt = `You are analyzing customer messages to determine if they should receive an automated response.
+      
+Analyze the message and determine:
+1. If it's a simple inquiry that can be answered automatically
+2. What the customer's intent is
+3. If we have knowledge to respond
+
+Common automated responses include:
+- Gift card inquiries (how to purchase, availability)
+- Hours of operation
+- Location/directions
+- Membership information
+- Basic pricing questions
+
+DO NOT automate:
+- Complex technical issues
+- Complaints or concerns
+- Requests that need human judgment
+- Emergencies
+
+Respond with JSON: {
+  "shouldRespond": true/false,
+  "detectedIntent": "gift_card|hours|location|membership|pricing|other",
+  "confidence": 0.0-1.0,
+  "reason": "why or why not to respond",
+  "suggestedTopic": "what to search for in knowledge base"
+}`;
+
+      // Use the router's OpenAI provider directly for speed
+      const openaiProvider = this.router.providers.find(p => p.name === 'openai')?.provider;
+      if (!openaiProvider) {
+        throw new Error('OpenAI provider not available');
+      }
+      
+      const response = await openaiProvider.complete(systemPrompt, message);
+      
+      try {
+        const analysis = JSON.parse(response);
+        logger.info('Automation analysis result', {
+          message: message.substring(0, 50),
+          ...analysis
+        });
+        return analysis;
+      } catch (parseError) {
+        logger.error('Failed to parse automation analysis:', parseError);
+        return {
+          shouldRespond: false,
+          confidence: 0,
+          reason: 'Failed to analyze message'
+        };
+      }
+    } catch (error) {
+      logger.error('Failed to analyze message for automation:', error);
+      return {
+        shouldRespond: false,
+        confidence: 0,
+        reason: 'Analysis error'
+      };
+    }
+  }
 
   /**
    * Route without LLM (backward compatibility)

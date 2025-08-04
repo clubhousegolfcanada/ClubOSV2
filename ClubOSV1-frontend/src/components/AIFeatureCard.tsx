@@ -28,6 +28,7 @@ interface AIFeatureCardProps {
 }
 
 export const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ feature, onToggle, onUpdate }) => {
+  const isLLMInitial = feature.feature_key === 'llm_initial_analysis';
   const [isExpanded, setIsExpanded] = useState(false);
   const [responseSource, setResponseSource] = useState(feature.config?.responseSource || 'database');
   const [hardcodedResponse, setHardcodedResponse] = useState(feature.config?.hardcodedResponse || '');
@@ -63,15 +64,21 @@ export const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ feature, onToggle,
   };
   
   return (
-    <div className="card hover:shadow-lg transition-shadow duration-200">
+    <div className={`card hover:shadow-lg transition-shadow duration-200 ${isLLMInitial ? 'border-2 border-[var(--accent)]' : ''}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
             {feature.feature_name}
+            {isLLMInitial && <span className="text-xs px-2 py-1 bg-[var(--accent)] text-white rounded">RECOMMENDED</span>}
           </h3>
           <p className="text-sm text-[var(--text-secondary)]">
             {feature.description}
           </p>
+          {isLLMInitial && (
+            <p className="text-xs text-[var(--accent)] mt-2">
+              ✨ This uses AI to understand ALL initial messages, not just keyword matching
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
