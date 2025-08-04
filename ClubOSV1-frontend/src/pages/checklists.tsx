@@ -27,7 +27,7 @@ export default function Checklists() {
         <meta name="description" content="Complete cleaning and tech maintenance checklists" />
       </Head>
 
-      <div className="min-h-screen bg-[var(--bg-primary)]">
+      <div className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {/* Header Section */}
           <div className="mb-4">

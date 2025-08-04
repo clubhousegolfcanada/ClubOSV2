@@ -148,7 +148,7 @@ export default function AIPrompts() {
         <title>ClubOS - AI Prompt Templates</title>
       </Head>
 
-      <div className="min-h-screen bg-[var(--bg-primary)]">
+      <div className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
           {/* Header */}
           <div className="mb-6">

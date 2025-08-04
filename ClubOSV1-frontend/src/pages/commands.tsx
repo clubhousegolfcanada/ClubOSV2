@@ -687,7 +687,7 @@ export default function CommandsRedesigned() {
         <title>Commands & Actions - ClubOS</title>
       </Head>
       
-      <main className="min-h-screen bg-[var(--bg-primary)]">
+      <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {/* Header Section */}
           <div className="mb-4">

@@ -97,7 +97,7 @@ const Knowledge: React.FC = () => {
         <meta name="description" content="Manage AI knowledge, feedback, and SOP system" />
       </Head>
 
-      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           
           {/* Header */}

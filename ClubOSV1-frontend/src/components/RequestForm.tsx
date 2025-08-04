@@ -1012,14 +1012,6 @@ const RequestForm: React.FC = () => {
       )}
 
       {/* Slack Conversation Panel - Removed as per user request */}
-
-      {/* Keyboard Shortcuts Hint */}
-      <div className="shortcuts-hint">
-        <strong>Keyboard Shortcuts:</strong>{' '}
-        <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Submit •{' '}
-        <kbd>Esc</kbd> Reset •{' '}
-        <kbd>Ctrl</kbd>+<kbd>D</kbd> Demo
-      </div>
     </div>
   );
 };
