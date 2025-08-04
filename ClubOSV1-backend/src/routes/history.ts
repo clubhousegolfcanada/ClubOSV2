@@ -36,7 +36,7 @@ router.get('/', authenticate, async (req, res) => {
       `SELECT * FROM tickets 
        WHERE created_by_id = $1 
        ORDER BY "createdAt" DESC 
-       LIMIT $3 OFFSET $4`,
+       LIMIT $2 OFFSET $3`,
       [userId, Number(limit), Number(offset)]
     );
     

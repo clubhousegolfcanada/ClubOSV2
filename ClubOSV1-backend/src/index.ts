@@ -284,6 +284,10 @@ async function startServer() {
     await db.initialize();
     logger.info('✅ Database initialized successfully');
     
+    // Ensure critical tables exist
+    const { ensureCriticalTables } = await import('./utils/ensure-critical-tables');
+    await ensureCriticalTables();
+    
     // Initialize system configurations
     const { initializeSystemConfigs } = await import('./routes/system-config');
     await initializeSystemConfigs();
