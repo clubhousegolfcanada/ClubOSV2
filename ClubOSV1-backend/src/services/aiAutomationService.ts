@@ -130,8 +130,14 @@ export class AIAutomationService {
   private async checkGiftCardAutomation(message: string, conversationId?: string): Promise<AutomationResponse> {
     const startTime = Date.now();
     
+    logger.info('Checking gift card automation', {
+      message: message.substring(0, 100),
+      conversationId
+    });
+    
     try {
       if (!await isAutomationEnabled('gift_cards')) {
+        logger.info('Gift card automation is disabled');
         return { handled: false };
       }
       
@@ -158,17 +164,20 @@ export class AIAutomationService {
       
       // Multiple patterns for gift card detection
       const giftCardPatterns = [
-        // Direct mentions
-        /gift\s*card/i,
+        // Direct mentions (with or without space)
+        /gift\s*cards?/i,
+        /giftcards?/i,
         /gift\s*certificate/i,
         /gift\s*cert/i,
         // Questions about gifts
         /(?:buy|purchase|get)\s+(?:a\s+)?gift/i,
         /gift\s+for\s+(?:my|a|someone)/i,
         /present\s+for/i,
-        // Common phrasings
-        /(?:do|does)\s+(?:you|clubhouse)\s+(?:have|offer|sell)\s+gift/i,
-        /(?:can|could)\s+(?:i|we)\s+(?:buy|get|purchase)\s+(?:a\s+)?gift/i,
+        // Common phrasings (with giftcard as one word)
+        /(?:do|does)\s+(?:you|clubhouse)\s+(?:have|offer|sell)\s+gift\s*cards?/i,
+        /(?:do|does)\s+(?:you|clubhouse)\s+(?:have|offer|sell)\s+giftcards?/i,
+        /(?:can|could)\s+(?:i|we)\s+(?:buy|get|purchase)\s+(?:a\s+)?gift\s*cards?/i,
+        /(?:can|could)\s+(?:i|we)\s+(?:buy|get|purchase)\s+(?:a\s+)?giftcards?/i,
         /looking\s+for\s+(?:a\s+)?gift/i,
         /need\s+(?:a\s+)?gift/i,
         // Holiday/occasion related
@@ -208,9 +217,17 @@ export class AIAutomationService {
       // Log the analysis for learning
       await this.logPatternAnalysis('gift_cards', message, matchedPatterns, confidenceScore);
       
+      logger.info('Gift card pattern matching results', {
+        message: message.substring(0, 100),
+        matchedPatterns,
+        confidenceScore,
+        minConfidence: config.minConfidence || 0.7
+      });
+      
       // Only respond if confidence is high enough
       const minConfidence = config.minConfidence || 0.7;
       if (confidenceScore < minConfidence) {
+        logger.info('Gift card confidence too low', { confidenceScore, minConfidence });
         return { handled: false };
       }
       
