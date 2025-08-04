@@ -111,7 +111,8 @@ export class KnowledgeSearchService {
     // Remove common words and extract meaningful terms
     const stopWords = new Set([
       'what', 'is', 'the', 'a', 'an', 'how', 'do', 'i', 'can', 
-      'where', 'when', 'why', 'which', 'to', 'for', 'of', 'in'
+      'where', 'when', 'why', 'which', 'to', 'for', 'of', 'in',
+      'we', 'you', 'are', 'there', 'any', 'does', 'have'
     ]);
     
     const words = query.toLowerCase()
@@ -119,12 +120,30 @@ export class KnowledgeSearchService {
       .split(/\s+/)
       .filter(word => word.length > 2 && !stopWords.has(word));
     
+    // Add variations for common terms
+    const variations: string[] = [];
+    words.forEach(word => {
+      // Handle gift card variations
+      if (word === 'giftcard' || word === 'giftcards') {
+        variations.push('gift', 'card', 'gift card', 'giftcard');
+      } else if (word === 'gift' || word === 'card') {
+        variations.push('gift', 'card', 'gift card', 'giftcard');
+      }
+      // Handle purchase variations
+      else if (word === 'buy' || word === 'purchase' || word === 'get') {
+        variations.push('buy', 'purchase', 'sell', 'available', 'offer');
+      }
+    });
+    
+    // Combine all terms
+    const allTerms = [...words, ...variations];
+    
     // Also include the full query for exact matches
     if (query.length < 50) {
-      words.push(query.toLowerCase());
+      allTerms.push(query.toLowerCase());
     }
     
-    return [...new Set(words)];
+    return [...new Set(allTerms)];
   }
 
   /**
@@ -134,19 +153,38 @@ export class KnowledgeSearchService {
     const queryLower = query.toLowerCase();
     const valueLower = (match.new_value || match.solution || '').toLowerCase();
     const keyLower = (match.key || '').toLowerCase();
+    const categoryLower = (match.category || '').toLowerCase();
     
     // Exact match
     if (valueLower.includes(queryLower) || keyLower === queryLower) {
       return 0.95;
     }
     
-    // All key terms found
-    const terms = this.extractKeyTerms(query);
-    const foundTerms = terms.filter(term => 
-      valueLower.includes(term) || keyLower.includes(term)
+    // Check for semantic matches
+    let score = 0;
+    
+    // Gift card specific matching
+    const giftCardPatterns = ['gift card', 'giftcard', 'gift certificate', 'voucher'];
+    const hasGiftCardQuery = giftCardPatterns.some(pattern => queryLower.includes(pattern));
+    const hasGiftCardMatch = giftCardPatterns.some(pattern => 
+      valueLower.includes(pattern) || keyLower.includes(pattern) || categoryLower.includes(pattern)
     );
     
-    return Math.min(0.9, foundTerms.length / terms.length);
+    if (hasGiftCardQuery && hasGiftCardMatch) {
+      score = 0.85; // High confidence for gift card matches
+    }
+    
+    // Key term matching
+    const terms = this.extractKeyTerms(query);
+    const foundTerms = terms.filter(term => 
+      valueLower.includes(term) || keyLower.includes(term) || categoryLower.includes(term)
+    );
+    
+    // Calculate term match ratio
+    const termMatchRatio = terms.length > 0 ? foundTerms.length / terms.length : 0;
+    
+    // Use the higher of semantic score or term match score
+    return Math.max(score, Math.min(0.9, termMatchRatio * 1.2)); // Boost by 20% to be more forgiving
   }
 
   /**

@@ -4,6 +4,7 @@ import { config } from '../utils/envValidator';
 import { db } from '../utils/database';
 import { assistantFileManager } from './assistantFileManager';
 import { knowledgeSearchService } from './knowledgeSearchService';
+import { improvedKnowledgeSearch } from './improvedKnowledgeSearch';
 // Intelligent SOP Module disabled - using OpenAI Assistants directly
 
 interface AssistantResponse {
@@ -173,12 +174,14 @@ export class AssistantService {
     // Check if this is a customer-facing request (ONLY for messages/SMS)
     const isCustomerFacing = context?.isCustomerFacing === true;
     // First, check our database for recent knowledge updates
-    const dbSearch = await knowledgeSearchService.searchKnowledge(
+    // Use improved search for better matching
+    const dbSearch = await improvedKnowledgeSearch.searchKnowledge(
       userMessage,
       route.toLowerCase()
     );
     
-    if (dbSearch.found && dbSearch.confidence > 0.8) {
+    // Lowered confidence threshold for more flexible matching
+    if (dbSearch.found && dbSearch.confidence > 0.6) {
       logger.info('Using knowledge from database', {
         route,
         source: dbSearch.source,
