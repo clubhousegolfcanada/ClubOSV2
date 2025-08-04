@@ -5,6 +5,99 @@ import { db } from '../utils/database';
 
 const router = Router();
 
+// GET /api/history - Get combined history (for backward compatibility)
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+    
+    const userId = req.user?.id;
+    const userEmail = req.user?.email;
+    
+    // Get feedback entries
+    const feedback = await db.query(
+      `SELECT * FROM feedback 
+       WHERE user_id = $1 OR user_email = $2 
+       ORDER BY "createdAt" DESC 
+       LIMIT $3 OFFSET $4`,
+      [userId, userEmail, Number(limit), Number(offset)]
+    );
+    
+    // Get customer interactions
+    const interactions = await db.query(
+      `SELECT * FROM customer_interactions 
+       WHERE user_id = $1 OR user_email = $2 
+       ORDER BY "createdAt" DESC 
+       LIMIT $3 OFFSET $4`,
+      [userId, userEmail, Number(limit), Number(offset)]
+    );
+    
+    // Get recent tickets
+    const tickets = await db.query(
+      `SELECT * FROM tickets 
+       WHERE created_by_id = $1 
+       ORDER BY "createdAt" DESC 
+       LIMIT $3 OFFSET $4`,
+      [userId, Number(limit), Number(offset)]
+    );
+    
+    // Combine and sort by date
+    const combined = [
+      ...feedback.rows.map(f => ({
+        type: 'feedback',
+        id: f.id,
+        timestamp: f.createdAt,
+        request: f.request_description,
+        response: f.response,
+        route: f.route,
+        confidence: f.confidence,
+        isUseful: f.is_useful,
+        metadata: {
+          location: f.location,
+          feedbackType: f.feedback_type
+        }
+      })),
+      ...interactions.rows.map(i => ({
+        type: 'interaction',
+        id: i.id,
+        timestamp: i.createdAt,
+        request: i.request_text,
+        response: i.response_text,
+        route: i.route,
+        confidence: i.confidence,
+        metadata: i.metadata
+      })),
+      ...tickets.rows.map(t => ({
+        type: 'ticket',
+        id: t.id,
+        timestamp: t.createdAt,
+        title: t.title,
+        description: t.description,
+        category: t.category,
+        status: t.status,
+        priority: t.priority,
+        location: t.location
+      }))
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+     .slice(0, Number(limit));
+    
+    res.json({
+      success: true,
+      data: combined,
+      pagination: {
+        limit: Number(limit),
+        offset: Number(offset),
+        total: combined.length
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve history'
+    });
+  }
+});
+
 // GET /api/history/interactions - Get user's interaction history
 router.get('/interactions', authenticate, async (req, res) => {
   try {
