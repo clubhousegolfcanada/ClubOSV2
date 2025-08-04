@@ -173,6 +173,49 @@ router.get('/subscription-status',
   }
 );
 
+// Get notification preferences
+router.get('/preferences',
+  authenticate,
+  async (req: Request, res: Response, next) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get preferences or return defaults
+      const result = await db.query(
+        `SELECT 
+          messages_enabled,
+          tickets_enabled,
+          system_enabled,
+          quiet_hours_enabled,
+          quiet_hours_start,
+          quiet_hours_end,
+          created_at,
+          updated_at
+         FROM notification_preferences
+         WHERE user_id = $1`,
+        [userId]
+      );
+      
+      const preferences = result.rows[0] || {
+        messages_enabled: true,
+        tickets_enabled: true,
+        system_enabled: true,
+        quiet_hours_enabled: false,
+        quiet_hours_start: '22:00',
+        quiet_hours_end: '08:00'
+      };
+      
+      res.json({
+        success: true,
+        data: preferences
+      });
+    } catch (error) {
+      logger.error('Error fetching notification preferences:', error);
+      next(error);
+    }
+  }
+);
+
 // Update notification preferences
 router.put('/preferences',
   authenticate,
