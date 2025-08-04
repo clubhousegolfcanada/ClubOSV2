@@ -1573,30 +1573,6 @@ export default function Operations() {
                           ))}
                       </div>
                     )}
-
-                    {/* Bulk Actions */}
-                    {user?.role === 'admin' && (
-                      <div className="card bg-yellow-500/10 border-yellow-500/30">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5 text-yellow-400" />
-                          Admin Actions
-                        </h3>
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            onClick={() => toggleAICategory(aiSelectedCategory, true)}
-                            className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
-                          >
-                            Enable All {aiSelectedCategory === 'all' ? '' : aiSelectedCategory}
-                          </button>
-                          <button
-                            onClick={() => toggleAICategory(aiSelectedCategory, false)}
-                            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
-                          >
-                            Disable All {aiSelectedCategory === 'all' ? '' : aiSelectedCategory}
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </>
               ) : (
