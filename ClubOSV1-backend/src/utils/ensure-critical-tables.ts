@@ -63,7 +63,7 @@ export async function ensureCriticalTables(): Promise<void> {
       INSERT INTO ai_automation_features (feature_key, feature_name, description, category, enabled, config, required_permissions) 
       SELECT * FROM (VALUES
         ('gift_cards', 'Gift Card Inquiries', 'Automatically respond to gift card purchase questions with link to purchase page', 'customer_service', false, 
-          '{"minConfidence": 0.7, "responseSource": "database", "maxResponses": 2}'::jsonb,
+          '{"response_template": "You can purchase gift cards at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages.", "minConfidence": 0.7}'::jsonb,
           ARRAY['admin', 'operator']),
         
         ('trackman_reset', 'Trackman Reset', 'Automatically reset frozen or unresponsive Trackman units via NinjaOne', 'technical', false,
@@ -88,42 +88,6 @@ export async function ensureCriticalTables(): Promise<void> {
         updated_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(category, type, task_id)
       )
-    `);
-    
-    // Create assistant_knowledge table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS assistant_knowledge (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        assistant_type VARCHAR(100) NOT NULL,
-        question TEXT NOT NULL,
-        answer TEXT NOT NULL,
-        source VARCHAR(50) DEFAULT 'manual',
-        confidence DECIMAL(3,2) DEFAULT 0.95,
-        usage_count INTEGER DEFAULT 0,
-        last_used_at TIMESTAMP,
-        created_by VARCHAR(100),
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-        automation_key VARCHAR(100),
-        metadata JSONB DEFAULT '{}',
-        UNIQUE(assistant_type, question)
-      )
-    `);
-    
-    // Create indexes for assistant_knowledge
-    await db.query('CREATE INDEX IF NOT EXISTS idx_assistant_knowledge_type ON assistant_knowledge(assistant_type)');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_assistant_knowledge_active ON assistant_knowledge(is_active)');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_assistant_knowledge_automation ON assistant_knowledge(automation_key)');
-    
-    // Insert gift card knowledge
-    await db.query(`
-      INSERT INTO assistant_knowledge (assistant_type, question, answer, source, confidence, created_by, automation_key) VALUES
-      ('booking & access', 'How can I purchase a gift card?', 'You can purchase gift cards online at www.clubhouse247golf.com/giftcard/purchase. Gift cards are available in various denominations and can be used for bay time, food, and beverages at any Clubhouse 24/7 Golf location.', 'system', 0.99, 'system', 'gift_cards'),
-      ('booking & access', 'Do you sell gift cards?', 'Yes! We offer gift cards that make perfect gifts for golf enthusiasts. You can purchase them online at www.clubhouse247golf.com/giftcard/purchase. They''re available in various amounts and can be used for bay time, food, and beverages.', 'system', 0.99, 'system', 'gift_cards')
-      ON CONFLICT (assistant_type, question) DO UPDATE 
-      SET answer = EXCLUDED.answer,
-          updated_at = NOW()
     `);
     
     // Add any missing columns
