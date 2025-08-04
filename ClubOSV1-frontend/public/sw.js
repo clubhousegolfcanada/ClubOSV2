@@ -30,6 +30,11 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve cached content when offline
 self.addEventListener('fetch', (event) => {
+  // Skip caching for API requests
+  if (event.request.url.includes('/api/')) {
+    return;
+  }
+  
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
