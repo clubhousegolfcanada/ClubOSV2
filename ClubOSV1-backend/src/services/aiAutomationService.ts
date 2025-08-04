@@ -172,7 +172,7 @@ export class AIAutomationService {
         // Log usage and increment count
         await logAutomationUsage('gift_cards', {
           conversationId,
-          triggerType: 'llm_detected',
+          triggerType: 'automatic',
           inputData: { message },
           outputData: { response: assistantResponse.response },
           success: true,

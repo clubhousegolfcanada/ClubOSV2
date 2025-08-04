@@ -136,16 +136,27 @@ Respond with JSON: {
   "suggestedTopic": "what to search for in knowledge base"
 }`;
 
-      // Use the router's OpenAI provider directly for speed
-      const openaiProvider = this.router.providers.find(p => p.name === 'openai')?.provider;
-      if (!openaiProvider) {
-        throw new Error('OpenAI provider not available');
-      }
+      // Create a simplified request for automation analysis
+      const analysisPrompt = `${systemPrompt}\n\nMessage to analyze: "${message}"`;
       
-      const response = await openaiProvider.complete(systemPrompt, message);
+      // Import OpenAI client directly
+      const { OpenAI } = await import('openai');
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+      
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' }
+      });
       
       try {
-        const analysis = JSON.parse(response);
+        const analysis = JSON.parse(completion.choices[0].message.content || '{}');
         logger.info('Automation analysis result', {
           message: message.substring(0, 50),
           ...analysis
