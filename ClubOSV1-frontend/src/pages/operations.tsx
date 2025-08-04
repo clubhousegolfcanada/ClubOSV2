@@ -1493,32 +1493,34 @@ export default function Operations() {
                   <div className="space-y-6">
                     {/* LLM Initial Message Analysis Toggle - Featured at Top */}
                     {aiFeatures.find(f => f.feature_key === 'llm_initial_analysis') && (
-                      <div className="bg-gradient-to-r from-[var(--accent)] to-purple-600 rounded-lg p-6 text-white">
-                        <div className="flex items-start justify-between">
+                      <div className="card p-6 border-2 border-[var(--accent)] bg-[var(--bg-secondary)]">
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-                              <Sparkles className="w-6 h-6" />
-                              AI-Powered Initial Message Analysis
-                              <span className="text-xs px-2 py-1 bg-white/20 rounded-full">RECOMMENDED</span>
-                            </h3>
-                            <p className="text-white/90 mb-3">
+                            <div className="flex items-center gap-3 mb-3">
+                              <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+                              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                                AI-Powered Initial Message Analysis
+                              </h3>
+                              <span className="text-xs px-2 py-1 bg-[var(--accent)] text-white rounded-full font-medium">
+                                RECOMMENDED
+                              </span>
+                            </div>
+                            <p className="text-[var(--text-secondary)] text-sm mb-4">
                               Enable AI to understand and respond to ALL initial customer messages automatically. 
                               No more keyword matching - the AI understands context, typos, and variations.
                             </p>
-                            <div className="flex items-center gap-4">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={aiFeatures.find(f => f.feature_key === 'llm_initial_analysis')?.enabled || false}
-                                  onChange={(e) => toggleAIFeature('llm_initial_analysis', e.target.checked)}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-14 h-7 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-400"></div>
-                              </label>
-                              <span className="font-medium">
-                                {aiFeatures.find(f => f.feature_key === 'llm_initial_analysis')?.enabled ? 'Enabled' : 'Disabled'}
-                              </span>
-                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={aiFeatures.find(f => f.feature_key === 'llm_initial_analysis')?.enabled || false}
+                                onChange={(e) => toggleAIFeature('llm_initial_analysis', e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-[var(--bg-tertiary)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--accent)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent)]"></div>
+                            </label>
+                          </div>
                           </div>
                         </div>
                       </div>

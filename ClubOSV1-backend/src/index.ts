@@ -115,8 +115,10 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:3001',
       'https://club-osv-2-owqx-2norv2e7j-clubosv2s-projects.vercel.app',
+      'https://club-osv-2-owqx.vercel.app',
       'https://clubosv2.vercel.app',
       'https://clubos.vercel.app',
+      'https://clubos-frontend.vercel.app',
       /\.vercel\.app$/,  // Allow any Vercel preview deployments
       /\.railway\.app$/  // Allow Railway deployments
     ];
