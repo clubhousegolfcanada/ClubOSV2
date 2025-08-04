@@ -5,7 +5,7 @@ import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
 type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';

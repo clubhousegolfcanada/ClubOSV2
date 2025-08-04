@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export function useMessageNotifications() {
   const { user } = useAuthState();

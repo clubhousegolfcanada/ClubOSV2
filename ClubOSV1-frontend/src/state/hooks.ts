@@ -14,7 +14,7 @@ type HistoryEntry = {
   status: 'completed' | 'failed' | 'processing';
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Hook for request submission
 export const useRequestSubmission = () => {

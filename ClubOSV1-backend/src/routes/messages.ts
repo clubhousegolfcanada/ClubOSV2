@@ -82,57 +82,39 @@ router.get('/conversations',
       const hasLastReadAt = existingColumns.includes('last_read_at');
       const hasUpdatedAt = existingColumns.includes('updated_at');
       
-      // Modified query to group conversations by phone number
-      // This merges all conversations for the same phone number into one
+      // Simpler query that uses DISTINCT ON to get the most recent conversation per phone number
       let query = `
-        WITH grouped_conversations AS (
-          SELECT 
-            phone_number,
-            MAX(customer_name) as customer_name,
-            MAX(employee_name) as employee_name,
-            ARRAY_AGG(id ORDER BY created_at DESC) as conversation_ids,
-            JSONB_AGG(messages ORDER BY created_at DESC) as all_messages,
-            ${hasUnreadCount ? 'SUM(unread_count) as unread_count,' : '0 as unread_count,'}
-            ${hasLastReadAt ? 'MAX(last_read_at) as last_read_at,' : 'NULL as last_read_at,'}
-            MIN(created_at) as created_at${hasUpdatedAt ? ',\n            MAX(updated_at) as updated_at' : ''}
-          FROM openphone_conversations
-          WHERE phone_number IS NOT NULL 
-            AND phone_number != ''
-            AND phone_number != 'Unknown'
-          GROUP BY phone_number
-        )
-        SELECT 
-          conversation_ids[1] as id,  -- Use the most recent conversation ID
+        SELECT DISTINCT ON (phone_number)
+          id,
           phone_number,
           customer_name,
           employee_name,
-          (
-            SELECT JSONB_AGG(elem ORDER BY (elem->>'createdAt')::timestamp DESC)
-            FROM (
-              SELECT DISTINCT ON ((elem->>'id')) elem
-              FROM grouped_conversations gc2,
-              LATERAL (
-                SELECT jsonb_array_elements(msg) as elem
-                FROM unnest(gc2.all_messages) as msg
-              ) messages
-              WHERE gc2.phone_number = grouped_conversations.phone_number
-            ) unique_messages
-          ) as messages,
-          unread_count,
-          last_read_at,
+          messages,
+          ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+          ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
           created_at${hasUpdatedAt ? ',\n          updated_at' : ''}
-        FROM grouped_conversations
+        FROM openphone_conversations
+        WHERE phone_number IS NOT NULL 
+          AND phone_number != ''
+          AND phone_number != 'Unknown'
       `;
       
       const params: any[] = [];
       
       if (search) {
-        query += ` WHERE phone_number LIKE $1 OR customer_name ILIKE $1`;
+        query += ` AND (phone_number LIKE $1 OR customer_name ILIKE $1)`;
         params.push(`%${search}%`);
       }
       
-      // Order by updated_at if it exists, otherwise by created_at
-      query += ` ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      // For DISTINCT ON, we need to order by phone_number first, then by the timestamp
+      query += ` ORDER BY phone_number, ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
+      
+      // Wrap in a subquery to apply our desired ordering and pagination
+      query = `
+        SELECT * FROM (${query}) as distinct_conversations
+        ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC 
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
       params.push(limit, offset);
       
       let result;

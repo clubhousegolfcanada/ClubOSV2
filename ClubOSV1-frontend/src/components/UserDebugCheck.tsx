@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { AlertCircle, CheckCircle, XCircle, Database } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const UserDebugCheck: React.FC = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);

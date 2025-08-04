@@ -12,7 +12,7 @@ import { SlackConversation } from './SlackConversation';
 
 // Ensure API URL is properly formatted
 const getApiUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   // Remove any trailing slashes
   return url.replace(/\/$/, '');
 };

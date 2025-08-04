@@ -7,7 +7,7 @@ import { Download, AlertCircle, RefreshCw, Brain, MessageSquare, BarChart3, Sett
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type FeedbackItem = {
   id: string;

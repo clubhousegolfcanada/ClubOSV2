@@ -10,7 +10,7 @@ import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type User = {
   id: string;

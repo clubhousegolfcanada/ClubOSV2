@@ -6,7 +6,7 @@ import { Database, Phone, RefreshCw, Send, AlertCircle, CheckCircle } from 'luci
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function DebugOpenPhone() {
   const { user } = useAuthState();
