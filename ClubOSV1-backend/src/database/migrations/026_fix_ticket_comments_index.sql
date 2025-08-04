@@ -24,7 +24,7 @@ BEGIN
     ) THEN
         -- Column is snake_case, create index with that
         CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_at ON ticket_comments(created_at DESC);
-    ELSIF EXISTS (
+    ELSEIF EXISTS (
         SELECT 1 FROM information_schema.columns 
         WHERE table_name = 'ticket_comments' 
         AND column_name = 'createdAt'

@@ -585,7 +585,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns 
                WHERE table_name = 'tickets' AND column_name = 'created_at') THEN
         CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at);
-    ELSIF EXISTS (SELECT 1 FROM information_schema.columns 
+    ELSEIF EXISTS (SELECT 1 FROM information_schema.columns 
                   WHERE table_name = 'tickets' AND column_name = 'createdAt') THEN
         CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets("createdAt");
     END IF;
