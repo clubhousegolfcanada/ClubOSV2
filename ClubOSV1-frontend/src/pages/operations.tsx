@@ -1491,6 +1491,39 @@ export default function Operations() {
                 <>
                   {/* AI Automations Content */}
                   <div className="space-y-6">
+                    {/* LLM Initial Message Analysis Toggle - Featured at Top */}
+                    {aiFeatures.find(f => f.feature_key === 'llm_initial_analysis') && (
+                      <div className="bg-gradient-to-r from-[var(--accent)] to-purple-600 rounded-lg p-6 text-white">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                              <Sparkles className="w-6 h-6" />
+                              AI-Powered Initial Message Analysis
+                              <span className="text-xs px-2 py-1 bg-white/20 rounded-full">RECOMMENDED</span>
+                            </h3>
+                            <p className="text-white/90 mb-3">
+                              Enable AI to understand and respond to ALL initial customer messages automatically. 
+                              No more keyword matching - the AI understands context, typos, and variations.
+                            </p>
+                            <div className="flex items-center gap-4">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={aiFeatures.find(f => f.feature_key === 'llm_initial_analysis')?.enabled || false}
+                                  onChange={(e) => toggleAIFeature('llm_initial_analysis', e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-14 h-7 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-400"></div>
+                              </label>
+                              <span className="font-medium">
+                                {aiFeatures.find(f => f.feature_key === 'llm_initial_analysis')?.enabled ? 'Enabled' : 'Disabled'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Category Filter */}
                     <div className="flex flex-wrap gap-4 items-center">
                       <div className="flex flex-wrap gap-2">
@@ -1559,6 +1592,8 @@ export default function Operations() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {aiFeatures
                           .filter(feature => {
+                            // Don't show llm_initial_analysis in the grid since it's featured at the top
+                            if (feature.feature_key === 'llm_initial_analysis') return false;
                             const categoryMatch = aiSelectedCategory === 'all' || feature.category === aiSelectedCategory;
                             const enabledMatch = !showOnlyEnabled || feature.enabled;
                             return categoryMatch && enabledMatch;

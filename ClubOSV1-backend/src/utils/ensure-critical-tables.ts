@@ -68,6 +68,10 @@ export async function ensureCriticalTables(): Promise<void> {
         
         ('trackman_reset', 'Trackman Reset', 'Automatically reset frozen or unresponsive Trackman units via NinjaOne', 'technical', false,
           '{"requires_confirmation": true, "confirmation_message": "If you signed in to your Trackman account before starting, I can reset the system quickly and you can pick back up through the ''My Activities'' button. Let me know and I''ll reset it.", "ninjaone_script": "Restart-TrackMan"}'::jsonb,
+          ARRAY['admin', 'operator']),
+          
+        ('llm_initial_analysis', 'LLM Initial Message Analysis', 'Use AI to understand and respond to all initial customer messages', 'customer_service', false,
+          '{"minConfidence": 0.7, "responseSource": "database", "maxResponses": 1, "analyzeAllInitial": true}'::jsonb,
           ARRAY['admin', 'operator'])
       ) AS new_features(feature_key, feature_name, description, category, enabled, config, required_permissions)
       WHERE NOT EXISTS (
