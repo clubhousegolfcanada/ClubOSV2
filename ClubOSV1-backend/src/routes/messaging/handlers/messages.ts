@@ -71,8 +71,8 @@ export async function sendMessage(req: Request, res: Response) {
     // Send via OpenPhone
     const result = await openPhoneService.sendMessage(
       to,
-      body,
-      process.env.OPENPHONE_DEFAULT_NUMBER
+      process.env.OPENPHONE_DEFAULT_NUMBER || '',
+      body
     );
 
     // Update conversation if provided

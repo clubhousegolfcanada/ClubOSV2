@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.5] - 2025-08-04
+
+### Fixed
+- **Messaging Module Backend Error**
+  - Fixed incorrect parameter order in sendMessage call in messaging/handlers/messages.ts
+  - Was passing (to, body, from) instead of correct order (to, from, body)
+  - This was causing messages to fail when sent through certain endpoints
+  - Backend now compiles and runs without errors
+
+### Verified
+- All other reported TypeScript errors in the changelog were already correct in the code
+- AI automations feature is integrated into operations.tsx page (not a separate page)
+- Backend builds successfully with `npm run build`
+- Both frontend and backend servers start without critical errors
+
 ## [1.11.4] - 2025-08-03
 
 ### Fixed
