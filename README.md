@@ -125,6 +125,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.7**: Enhanced Push Notifications
+  - Support role now receives OpenPhone message notifications
+  - Improved notification formatting and deep linking
+  - Direct navigation to messages page on notification click
+  - Test script for verifying push notification flow
 - **v1.10.4**: Critical Security Updates
   - Updated Next.js to 15.4.5 (fixed critical vulnerabilities)
   - Implemented CSRF protection

@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.7] - 2025-08-05
+
+### Enhanced
+- **Push Notifications for OpenPhone Messages**
+  - Added support role to receive push notifications (previously only admin/operator)
+  - Improved notification formatting with clearer title "New OpenPhone Message"
+  - Enhanced message preview with sender name and truncated body
+  - Added deep link data to navigate directly to /messages page on click
+  - Notifications now include conversation ID for future direct navigation
+  - Created test script `test-openphone-push.js` to simulate incoming messages
+  - Full documentation in `push-notify-openphone.md`
+
+### Technical
+- Updated OpenPhone webhook handler to send notifications to all relevant roles
+- Notification payload includes proper PWA deep linking with `url: '/messages'`
+- Service worker already handles click navigation to messages page
+- Push notifications work on Android, iOS (16.4+ PWA), and desktop browsers
+
 ## [1.11.6] - 2025-08-04
 
 ### Added

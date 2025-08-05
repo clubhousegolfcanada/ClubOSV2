@@ -172,38 +172,41 @@ CREATE TABLE IF NOT EXISTS remote_actions_log (
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  endpoint TEXT NOT NULL UNIQUE,
+  endpoint TEXT NOT NULL,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
   user_agent TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  last_used TIMESTAMP
+  created_at TIMESTAMP DEFAULT NOW(),
+  last_used_at TIMESTAMP DEFAULT NOW(),
+  failed_attempts INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  UNIQUE(user_id, endpoint)
 );
 
 CREATE TABLE IF NOT EXISTS notification_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   subscription_id UUID REFERENCES push_subscriptions(id) ON DELETE SET NULL,
-  type VARCHAR(50) NOT NULL,
-  title VARCHAR(255) NOT NULL,
+  type VARCHAR(50) NOT NULL, -- 'message', 'ticket', 'system'
+  title TEXT NOT NULL,
   body TEXT NOT NULL,
-  data JSONB DEFAULT '{}',
-  status VARCHAR(50) NOT NULL DEFAULT 'pending',
+  data JSONB,
+  status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'sent', 'failed', 'clicked'
   error TEXT,
-  sent_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  sent_at TIMESTAMP DEFAULT NOW(),
+  clicked_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS notification_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  new_messages BOOLEAN DEFAULT true,
-  ticket_updates BOOLEAN DEFAULT true,
-  system_alerts BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(user_id)
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  messages_enabled BOOLEAN DEFAULT true,
+  tickets_enabled BOOLEAN DEFAULT true,
+  system_enabled BOOLEAN DEFAULT true,
+  quiet_hours_enabled BOOLEAN DEFAULT false,
+  quiet_hours_start TIME DEFAULT '22:00',
+  quiet_hours_end TIME DEFAULT '08:00',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- =====================================================
@@ -628,9 +631,10 @@ CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_applied ON extracted_knowledg
 CREATE INDEX IF NOT EXISTS idx_sop_embeddings_assistant ON sop_embeddings(assistant);
 
 -- Push notification indexes
-CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_notification_history_user_id ON notification_history(user_id);
-CREATE INDEX IF NOT EXISTS idx_notification_history_status ON notification_history(status);
+CREATE INDEX IF NOT EXISTS idx_push_subs_user_active ON push_subscriptions(user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_push_subs_endpoint ON push_subscriptions(endpoint);
+CREATE INDEX IF NOT EXISTS idx_notification_history_user_date ON notification_history(user_id, sent_at);
+CREATE INDEX IF NOT EXISTS idx_notification_history_status ON notification_history(status, sent_at);
 
 -- Logging indexes
 CREATE INDEX IF NOT EXISTS idx_access_logs_user_id ON access_logs(user_id);
