@@ -12,11 +12,11 @@ CREATE TABLE IF NOT EXISTS checklist_submissions (
 );
 
 -- Create indexes for efficient querying
-CREATE INDEX idx_checklist_submissions_user_id ON checklist_submissions(user_id);
-CREATE INDEX idx_checklist_submissions_category ON checklist_submissions(category);
-CREATE INDEX idx_checklist_submissions_type ON checklist_submissions(type);
-CREATE INDEX idx_checklist_submissions_location ON checklist_submissions(location);
-CREATE INDEX idx_checklist_submissions_completion_time ON checklist_submissions(completion_time DESC);
+CREATE INDEX IF NOT EXISTS idx_checklist_submissions_user_id ON checklist_submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_checklist_submissions_category ON checklist_submissions(category);
+CREATE INDEX IF NOT EXISTS idx_checklist_submissions_type ON checklist_submissions(type);
+CREATE INDEX IF NOT EXISTS idx_checklist_submissions_location ON checklist_submissions(location);
+CREATE INDEX IF NOT EXISTS idx_checklist_submissions_completion_time ON checklist_submissions(completion_time DESC);
 
 -- Create a view for easy reporting
 CREATE OR REPLACE VIEW checklist_submission_summary AS
