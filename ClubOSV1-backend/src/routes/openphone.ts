@@ -229,7 +229,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
               const users = await db.query(
                 `SELECT id FROM users 
                  WHERE role IN ('admin', 'operator', 'support') 
-                 AND active = true`
+                 AND is_active = true`
               );
               
               const userIds = users.rows.map(u => u.id);
@@ -352,7 +352,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
             const users = await db.query(
               `SELECT id FROM users 
                WHERE role IN ('admin', 'operator', 'support') 
-               AND active = true`
+               AND is_active = true`
             );
             
             const userIds = users.rows.map(u => u.id);

@@ -255,7 +255,7 @@ class NotificationService {
   async sendToRole(role: string, notification: NotificationPayload): Promise<void> {
     try {
       const users = await db.query(
-        `SELECT id FROM users WHERE role = $1 AND active = true`,
+        `SELECT id FROM users WHERE role = $1 AND is_active = true`,
         [role]
       );
 
