@@ -31,29 +31,16 @@ export class AssistantService {
   private isEnabled: boolean;
 
   constructor() {
-    // Store creation time and config snapshot for debugging
-    (global as any).assistantServiceStatus = {
-      createdAt: new Date().toISOString(),
-      enabled: false
-    };
-    (global as any).configSnapshot = { ...config };
-    (global as any).configCreatedAt = new Date().toISOString();
-    
-    this.isEnabled = !!config.OPENAI_API_KEY;
-    
-    logger.info('AssistantService constructor', {
-      configHasKey: !!config.OPENAI_API_KEY,
-      envHasKey: !!process.env.OPENAI_API_KEY,
-      isEnabled: this.isEnabled
-    });
+    // Use process.env directly instead of config to avoid timing issues with Railway
+    this.isEnabled = !!process.env.OPENAI_API_KEY;
     
     if (this.isEnabled) {
       this.openai = new OpenAI({
-        apiKey: config.OPENAI_API_KEY,
+        apiKey: process.env.OPENAI_API_KEY,
         organization: process.env.OPENAI_ORGANIZATION,
         project: process.env.OPENAI_PROJECT_ID
       });
-      (global as any).assistantServiceStatus.enabled = true;
+      logger.info('AssistantService: OpenAI API key configured, assistant features enabled');
     } else {
       this.openai = null;
       logger.warn('AssistantService: OpenAI API key not configured, assistant features disabled');

@@ -24,9 +24,9 @@ export class KnowledgeRouterService {
   private assistantIds: Record<string, string>;
 
   constructor() {
-    if (config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'sk-demo-key-not-for-production') {
+    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'sk-demo-key-not-for-production') {
       this.openai = new OpenAI({
-        apiKey: config.OPENAI_API_KEY
+        apiKey: process.env.OPENAI_API_KEY
       });
     } else {
       logger.warn('OpenAI API key not configured - knowledge router will not be able to parse updates');

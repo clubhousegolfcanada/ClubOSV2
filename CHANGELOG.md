@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.6] - 2025-08-04
+
+### Fixed
+- **Gift Card Automation Not Working**
+  - Fixed assistant service initialization to use process.env directly instead of config object
+  - This resolves timing issues with Railway where environment variables weren't available at module load time
+  - Changed OPENAI_API_KEY checks from config.OPENAI_API_KEY to process.env.OPENAI_API_KEY
+  - Applied same fix to llmService and knowledgeRouter services
+  - Gift card automation should now properly detect API keys and respond to customer messages
+
 ## [1.11.5] - 2025-08-04
 
 ### Fixed

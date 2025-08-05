@@ -24,10 +24,10 @@ export class LLMService {
     });
 
     // Add OpenAI provider if configured
-    if (config.OPENAI_API_KEY) {
+    if (process.env.OPENAI_API_KEY) {
       // Check if we're in demo mode
       const isDemoMode = process.env.ENABLE_DEMO_MODE === 'true' && 
-                        config.OPENAI_API_KEY === 'sk-demo-key-for-testing-only';
+                        process.env.OPENAI_API_KEY === 'sk-demo-key-for-testing-only';
       
       if (isDemoMode) {
         logger.info('🎮 Running in DEMO MODE - Using local provider instead of OpenAI');
@@ -36,7 +36,7 @@ export class LLMService {
         this.router.addProvider('openai', localProvider, 100, true);
       } else {
         const openAIProvider = new OpenAIProvider({
-          apiKey: config.OPENAI_API_KEY,
+          apiKey: process.env.OPENAI_API_KEY,
           model: config.OPENAI_MODEL,
           maxTokens: parseInt(config.OPENAI_MAX_TOKENS || '500'),
           temperature: parseFloat(config.OPENAI_TEMPERATURE || '0.3'),

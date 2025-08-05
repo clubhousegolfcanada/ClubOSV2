@@ -16,8 +16,8 @@ const router = Router();
  */
 router.get('/test-config',
   asyncHandler(async (req, res) => {
-    const hasApiKey = !!config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'sk-demo-key-not-for-production';
-    const keyPrefix = config.OPENAI_API_KEY ? config.OPENAI_API_KEY.substring(0, 7) + '...' : 'NOT SET';
+    const hasApiKey = !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'sk-demo-key-not-for-production';
+    const keyPrefix = process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 7) + '...' : 'NOT SET';
     
     res.json({
       success: true,
