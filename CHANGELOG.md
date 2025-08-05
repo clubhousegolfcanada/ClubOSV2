@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.8] - 2025-08-05
+
+### Fixed
+- **Gift Card Automation**
+  - Fixed AssistantService initialization timing issue with Railway environment variables
+  - Implemented lazy loading pattern using JavaScript Proxy for on-demand initialization
+  - Fixed database column references from `active` to `is_active` in OpenPhone routes
+  - Lowered confidence threshold from 0.7 to 0.5 for gift card pattern matching
+  - Enabled LLM analysis for all messages, not just initial conversations
+  - Added missing `ai_automation_response_tracking` table for response counting
+  - Added missing `assistant_type` columns to `openphone_conversations` table
+  - Fixed migration 010 execution order by wrapping in DO blocks with existence checks
+
+### Technical
+- Fixed migration runner to handle DO blocks and complex SQL statements properly
+- Added proper table/index existence checks before creation in migrations
+- Ensured triggers are only created when target tables exist
+- Gift card automation now fully functional with proper confidence scoring
+
 ## [1.11.7] - 2025-08-05
 
 ### Enhanced
