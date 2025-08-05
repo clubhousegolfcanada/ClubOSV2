@@ -197,8 +197,10 @@ export class ImprovedKnowledgeSearchService {
       let { sql, params } = strategy;
       
       if (category) {
-        sql += ` AND assistant_target = $${params.length + 1}`;
-        params.push(category);
+        // Handle route name variations (e.g., 'Booking & Access' vs 'booking')
+        const categoryVariations = this.getCategoryVariations(category);
+        sql += ` AND assistant_target = ANY($${params.length + 1})`;
+        params.push(categoryVariations);
       }
 
       const result = await db.query(sql, params);
@@ -256,6 +258,30 @@ export class ImprovedKnowledgeSearchService {
     // 2. Search using cosine similarity in pg_vector
     // For now, return not found
     return { found: false, source: 'none', confidence: 0 };
+  }
+
+  /**
+   * Get category variations to handle different naming conventions
+   */
+  private getCategoryVariations(category: string): string[] {
+    const variations: string[] = [category];
+    const lowerCategory = category.toLowerCase();
+    
+    // Add base category
+    variations.push(lowerCategory);
+    
+    // Handle specific route variations
+    if (lowerCategory === 'booking & access') {
+      variations.push('booking', 'access', 'booking_access');
+    } else if (lowerCategory === 'techsupport') {
+      variations.push('tech', 'tech_support', 'technical');
+    } else if (lowerCategory === 'brandtone') {
+      variations.push('brand', 'marketing', 'brand_tone');
+    } else if (lowerCategory === 'emergency') {
+      variations.push('urgent', 'safety');
+    }
+    
+    return [...new Set(variations)];
   }
 
   /**

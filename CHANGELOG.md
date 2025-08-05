@@ -10,7 +10,9 @@ All notable changes to ClubOS will be documented in this file.
   - This resolves timing issues with Railway where environment variables weren't available at module load time
   - Changed OPENAI_API_KEY checks from config.OPENAI_API_KEY to process.env.OPENAI_API_KEY
   - Applied same fix to llmService and knowledgeRouter services
-  - Gift card automation should now properly detect API keys and respond to customer messages
+  - Fixed knowledge search to handle route name variations (e.g., 'Booking & Access' vs 'booking')
+  - Gift card knowledge stored as 'booking' will now be found when querying 'Booking & Access' assistant
+  - Gift card automation should now properly detect API keys and respond to customer messages with the stored knowledge
 
 ## [1.11.5] - 2025-08-04
 
