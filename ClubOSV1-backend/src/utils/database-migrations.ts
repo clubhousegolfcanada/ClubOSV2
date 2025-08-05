@@ -85,14 +85,26 @@ export async function runMigrations() {
         `);
         
         if (checkResult.rows.length > 0) {
-          logger.info(`Renaming ${tableName}.created_at to "createdAt"...`);
-          
-          await query(`
-            ALTER TABLE ${tableName} 
-            RENAME COLUMN created_at TO "createdAt"
+          // Also check if createdAt already exists
+          const checkCamelCase = await query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = '${tableName}' 
+            AND column_name = 'createdAt'
           `);
           
-          logger.info(`✅ Migration: ${tableName}.created_at renamed to "createdAt"`);
+          if (checkCamelCase.rows.length === 0) {
+            logger.info(`Renaming ${tableName}.created_at to "createdAt"...`);
+            
+            await query(`
+              ALTER TABLE ${tableName} 
+              RENAME COLUMN created_at TO "createdAt"
+            `);
+            
+            logger.info(`✅ Migration: ${tableName}.created_at renamed to "createdAt"`);
+          } else {
+            logger.info(`✅ ${tableName}.createdAt already exists, skipping rename`);
+          }
         }
         
         // Also check for updated_at column
@@ -104,14 +116,26 @@ export async function runMigrations() {
         `);
         
         if (checkUpdatedResult.rows.length > 0) {
-          logger.info(`Renaming ${tableName}.updated_at to "updatedAt"...`);
-          
-          await query(`
-            ALTER TABLE ${tableName} 
-            RENAME COLUMN updated_at TO "updatedAt"
+          // Also check if updatedAt already exists
+          const checkUpdatedCamelCase = await query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = '${tableName}' 
+            AND column_name = 'updatedAt'
           `);
           
-          logger.info(`✅ Migration: ${tableName}.updated_at renamed to "updatedAt"`);
+          if (checkUpdatedCamelCase.rows.length === 0) {
+            logger.info(`Renaming ${tableName}.updated_at to "updatedAt"...`);
+            
+            await query(`
+              ALTER TABLE ${tableName} 
+              RENAME COLUMN updated_at TO "updatedAt"
+            `);
+            
+            logger.info(`✅ Migration: ${tableName}.updated_at renamed to "updatedAt"`);
+          } else {
+            logger.info(`✅ ${tableName}.updatedAt already exists, skipping rename`);
+          }
         }
       } catch (error: any) {
         if (!error.message.includes('does not exist') && !error.message.includes('already exists')) {
