@@ -146,29 +146,33 @@ async function handleMessageCreated(data: any) {
 
     // Send push notification for incoming messages
     if (direction === 'incoming') {
-      // Send to admins
-      await notificationService.sendToRole('admin', {
-        title: 'New Message',
-        body: `${data.contactName || from}: ${body.substring(0, 50)}${body.length > 50 ? '...' : ''}`,
-        data: {
-          type: 'new_message',
-          conversationId,
-          from,
-          preview: body.substring(0, 100)
-        }
-      });
+      // Format sender name
+      const senderName = data.contactName || from;
+      const messagePreview = body.substring(0, 100);
+      const truncatedBody = body.substring(0, 50) + (body.length > 50 ? '...' : '');
       
-      // Send to operators
-      await notificationService.sendToRole('operator', {
-        title: 'New Message',
-        body: `${data.contactName || from}: ${body.substring(0, 50)}${body.length > 50 ? '...' : ''}`,
+      // Notification payload
+      const notificationPayload = {
+        title: 'New OpenPhone Message',
+        body: `From ${senderName}: "${truncatedBody}"`,
+        icon: '/logo-192.png',
+        badge: '/badge-72.png',
+        tag: `message-${conversationId}`,
+        requireInteraction: false,
         data: {
-          type: 'new_message',
+          type: 'messages',
+          url: '/messages',
           conversationId,
           from,
-          preview: body.substring(0, 100)
+          preview: messagePreview
         }
-      });
+      };
+      
+      // Send to all relevant roles
+      const roles = ['admin', 'operator', 'support'];
+      await Promise.allSettled(
+        roles.map(role => notificationService.sendToRole(role, notificationPayload))
+      );
 
       // Update HubSpot if enabled
       // TODO: Implement HubSpot contact update
