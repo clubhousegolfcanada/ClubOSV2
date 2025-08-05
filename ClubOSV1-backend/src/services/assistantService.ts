@@ -31,7 +31,21 @@ export class AssistantService {
   private isEnabled: boolean;
 
   constructor() {
+    // Store creation time and config snapshot for debugging
+    (global as any).assistantServiceStatus = {
+      createdAt: new Date().toISOString(),
+      enabled: false
+    };
+    (global as any).configSnapshot = { ...config };
+    (global as any).configCreatedAt = new Date().toISOString();
+    
     this.isEnabled = !!config.OPENAI_API_KEY;
+    
+    logger.info('AssistantService constructor', {
+      configHasKey: !!config.OPENAI_API_KEY,
+      envHasKey: !!process.env.OPENAI_API_KEY,
+      isEnabled: this.isEnabled
+    });
     
     if (this.isEnabled) {
       this.openai = new OpenAI({
@@ -39,6 +53,7 @@ export class AssistantService {
         organization: process.env.OPENAI_ORGANIZATION,
         project: process.env.OPENAI_PROJECT_ID
       });
+      (global as any).assistantServiceStatus.enabled = true;
     } else {
       this.openai = null;
       logger.warn('AssistantService: OpenAI API key not configured, assistant features disabled');
