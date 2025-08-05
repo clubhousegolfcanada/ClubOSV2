@@ -1,6 +1,9 @@
 -- Remote Actions Logging Migration
 -- Run this after deploying the NinjaOne integration
 
+-- Note: This migration might conflict with baseline schema
+-- Using CREATE TABLE IF NOT EXISTS to handle existing tables
+
 -- Create remote actions log table
 CREATE TABLE IF NOT EXISTS remote_actions_log (
   id SERIAL PRIMARY KEY,
@@ -25,16 +28,14 @@ CREATE TABLE IF NOT EXISTS remote_actions_log (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_remote_actions_created ON remote_actions_log(created_at DESC);
-CREATE INDEX idx_remote_actions_user ON remote_actions_log(initiated_by);
-CREATE INDEX idx_remote_actions_location ON remote_actions_log(location);
-CREATE INDEX idx_remote_actions_job ON remote_actions_log(ninja_job_id);
-CREATE INDEX idx_remote_actions_status ON remote_actions_log(status);
-CREATE INDEX idx_remote_actions_device ON remote_actions_log(device_id);
+CREATE INDEX IF NOT EXISTS idx_remote_actions_created ON remote_actions_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_remote_actions_user ON remote_actions_log(initiated_by);
+CREATE INDEX IF NOT EXISTS idx_remote_actions_location ON remote_actions_log(location);
+CREATE INDEX IF NOT EXISTS idx_remote_actions_job ON remote_actions_log(ninja_job_id);
+CREATE INDEX IF NOT EXISTS idx_remote_actions_status ON remote_actions_log(status);
+CREATE INDEX IF NOT EXISTS idx_remote_actions_device ON remote_actions_log(device_id);
 
--- Add remote action data to system_events for unified logging
-ALTER TABLE system_events 
-ADD COLUMN IF NOT EXISTS remote_action_data JSONB;
+-- Note: Removed system_events table reference as it doesn't exist in baseline schema
 
 -- Create view for quick stats
 CREATE OR REPLACE VIEW remote_actions_stats AS
