@@ -540,13 +540,52 @@ This knowledge has been added to your knowledge file. You can now reference this
   }
 }
 
-// Only create instance if we have an API key
+// Lazy-loaded singleton to handle Railway environment variable timing
 let assistantServiceInstance: AssistantService | null = null;
+let initializationAttempted = false;
 
-try {
-  assistantServiceInstance = new AssistantService();
-} catch (error) {
-  logger.error('Failed to initialize AssistantService:', error);
-}
-
-export const assistantService = assistantServiceInstance;
+// Create a proxy that initializes the service on first use
+export const assistantService = new Proxy({} as AssistantService, {
+  get(target, prop, receiver) {
+    // Initialize on first access
+    if (!initializationAttempted) {
+      initializationAttempted = true;
+      
+      logger.info('Lazy-initializing AssistantService', {
+        hasApiKey: !!process.env.OPENAI_API_KEY,
+        apiKeyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+        hasBookingAssistant: !!process.env.BOOKING_ACCESS_GPT_ID,
+        hasEmergencyAssistant: !!process.env.EMERGENCY_GPT_ID,
+        hasTechAssistant: !!process.env.TECH_SUPPORT_GPT_ID,
+        hasBrandAssistant: !!process.env.BRAND_MARKETING_GPT_ID
+      });
+      
+      try {
+        assistantServiceInstance = new AssistantService();
+      } catch (error) {
+        logger.error('Failed to initialize AssistantService:', error);
+      }
+    }
+    
+    // If no instance, return a function that returns an error
+    if (!assistantServiceInstance) {
+      if (typeof prop === 'string' && ['getAssistantResponse', 'updateAssistantKnowledge'].includes(prop)) {
+        return async () => {
+          logger.error('AssistantService not available - API key may be missing');
+          return {
+            response: 'Assistant service is currently unavailable. Please check configuration.',
+            assistantId: 'unavailable',
+            threadId: 'unavailable',
+            confidence: 0,
+            success: false,
+            message: 'Assistant service not initialized'
+          };
+        };
+      }
+      return undefined;
+    }
+    
+    // Return the actual method/property from the instance
+    return Reflect.get(assistantServiceInstance, prop, receiver);
+  }
+});
