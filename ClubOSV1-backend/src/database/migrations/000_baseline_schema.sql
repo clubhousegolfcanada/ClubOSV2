@@ -587,8 +587,18 @@ CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at);
 -- This will fail silently if created_at doesn't exist
 
 -- Ticket comments indexes
-CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
-CREATE INDEX IF NOT EXISTS idx_ticket_comments_user_id ON ticket_comments(user_id);
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns 
+             WHERE table_name = 'ticket_comments' AND column_name = 'ticket_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.columns 
+             WHERE table_name = 'ticket_comments' AND column_name = 'user_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_ticket_comments_user_id ON ticket_comments(user_id);
+  END IF;
+END $$;
 
 -- Feedback indexes
 CREATE INDEX IF NOT EXISTS idx_feedback_is_useful ON feedback(is_useful);
