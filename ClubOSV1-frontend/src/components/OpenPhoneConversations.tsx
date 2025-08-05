@@ -47,6 +47,26 @@ export const OpenPhoneConversations: React.FC = () => {
       setExporting(true);
       const token = localStorage.getItem('clubos_token');
       
+      // Handle AI Processing differently
+      if (format === 'llm') {
+        const response = await axios.post(`${API_URL}/openphone-processing/process-conversations`, 
+          { limit: 50 }, // Process up to 50 conversations at a time
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (response.data.success) {
+          const { processed, knowledgeExtracted, errors } = response.data.results;
+          toast.success(`Processed ${processed} conversations, extracted ${knowledgeExtracted} knowledge items`);
+          
+          // Refresh stats after processing
+          await fetchStats();
+        } else {
+          toast.error('Failed to process conversations');
+        }
+        setExporting(false);
+        return;
+      }
+      
       const endpoint = format === 'csv' ? '/openphone/export/csv' : '/openphone/export/all';
       const params = format === 'csv' ? {} : { format };
       

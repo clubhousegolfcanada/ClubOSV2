@@ -4,6 +4,16 @@ All notable changes to ClubOS will be documented in this file.
 
 ## [1.11.6] - 2025-08-04
 
+### Added
+- **AI Processing for OpenPhone Conversations**
+  - Created new endpoint `/api/openphone-processing/process-conversations` to extract knowledge from unprocessed conversations
+  - Added support for processing up to 50 conversations at a time using GPT-4
+  - Extracts common questions, solutions, and reusable knowledge with confidence scoring
+  - Stores extracted knowledge in `extracted_knowledge` table for future reference
+  - Updated frontend "AI Processing" button to call the new endpoint
+  - Added `processed_at` timestamp column to track when conversations were processed
+  - Knowledge extraction focuses on: gift cards, booking, access, technical issues, hours, membership
+
 ### Fixed
 - **Gift Card Automation Not Working**
   - Fixed assistant service initialization to use process.env directly instead of config object
