@@ -16,7 +16,5 @@ BEGIN
     
     INSERT INTO migrations (filename) VALUES ('000_baseline_schema.sql')
     ON CONFLICT (filename) DO NOTHING;
-    
-    RAISE NOTICE 'Database already has schema, skipping baseline migration';
   END IF;
 END $$;
