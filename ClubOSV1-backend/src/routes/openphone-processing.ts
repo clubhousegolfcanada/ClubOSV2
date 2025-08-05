@@ -76,23 +76,44 @@ router.post('/process-conversations',
           // Store extracted knowledge
           if (knowledge.length > 0) {
             for (const item of knowledge) {
-              await db.query(`
-                INSERT INTO extracted_knowledge 
-                (source_id, source_type, category, problem, solution, confidence, metadata, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-              `, [
-                conversation.id,
-                'openphone_conversation',
-                item.category,
-                item.problem,
-                item.solution,
-                item.confidence,
-                JSON.stringify({
-                  phoneNumber: item.phoneNumber,
-                  conversationId: item.conversationId,
-                  context: item.context
-                })
-              ]);
+              // Try with metadata first, fall back to without if column doesn't exist
+              try {
+                await db.query(`
+                  INSERT INTO extracted_knowledge 
+                  (source_id, source_type, category, problem, solution, confidence, metadata, created_at)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                `, [
+                  conversation.id,
+                  'openphone_conversation',
+                  item.category,
+                  item.problem,
+                  item.solution,
+                  item.confidence,
+                  JSON.stringify({
+                    phoneNumber: item.phoneNumber,
+                    conversationId: item.conversationId,
+                    context: item.context
+                  })
+                ]);
+              } catch (err: any) {
+                if (err.code === '42703') { // Column doesn't exist
+                  // Fall back to insert without metadata
+                  await db.query(`
+                    INSERT INTO extracted_knowledge 
+                    (source_id, source_type, category, problem, solution, confidence, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                  `, [
+                    conversation.id,
+                    'openphone_conversation',
+                    item.category,
+                    item.problem,
+                    item.solution,
+                    item.confidence
+                  ]);
+                } else {
+                  throw err; // Re-throw other errors
+                }
+              }
               
               results.knowledge.push(item);
             }
