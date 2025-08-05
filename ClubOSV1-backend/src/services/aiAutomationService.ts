@@ -50,8 +50,11 @@ export class AIAutomationService {
       isInitialMessage
     });
     
-    // Check if we should use LLM for all initial messages
-    if (isInitialMessage && await this.shouldUseLLMForInitial()) {
+    // Check if we should use LLM for message analysis
+    const useLLMForAll = await this.shouldUseLLMForAll();
+    const useLLMForInitial = await this.shouldUseLLMForInitial();
+    
+    if ((isInitialMessage && useLLMForInitial) || useLLMForAll) {
       const llmResponse = await this.analyzewithLLM(message, phoneNumber, conversationId, route);
       if (llmResponse.handled) return llmResponse;
     }
@@ -84,6 +87,19 @@ export class AIAutomationService {
       return await isAutomationEnabled('llm_initial_analysis');
     } catch (error) {
       logger.error('Failed to check LLM initial analysis setting:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Check if we should use LLM for all messages
+   */
+  private async shouldUseLLMForAll(): Promise<boolean> {
+    try {
+      // Check if the LLM all messages feature is enabled
+      return await isAutomationEnabled('llm_all_messages');
+    } catch (error) {
+      logger.error('Failed to check LLM all messages setting:', error);
       return false;
     }
   }
