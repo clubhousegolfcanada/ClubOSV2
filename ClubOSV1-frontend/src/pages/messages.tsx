@@ -262,24 +262,9 @@ export default function Messages() {
         // Auto-select first conversation if none selected
         if (!selectedConversation && sortedConversations.length > 0 && !loading) {
           const firstConversation = sortedConversations[0];
-          setSelectedConversation(firstConversation);
-          
-          // Deduplicate messages
-          const messages = firstConversation.messages || [];
-          const uniqueMessages = messages.reduce((acc: Message[], msg: Message) => {
-            if (!acc.find(m => m.id === msg.id)) {
-              acc.push(msg);
-            }
-            return acc;
-          }, []);
-          
-          setMessages(uniqueMessages);
+          // Use selectConversation to fetch full history
+          selectConversation(firstConversation);
           console.log('Auto-selected first conversation:', firstConversation.customer_name);
-          
-          // Scroll to bottom after a short delay
-          setTimeout(() => {
-            scrollToBottom();
-          }, 100);
         }
         
         // Update selected conversation if it exists
@@ -375,39 +360,67 @@ export default function Messages() {
 
   const selectConversation = async (conversation: Conversation) => {
     setSelectedConversation(conversation);
-    // Ensure messages is always an array and deduplicate
-    const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
+    setMessages([]); // Clear messages while loading
     
-    // Deduplicate messages by ID
-    const uniqueMessages = conversationMessages.reduce((acc: Message[], msg: Message) => {
-      if (!acc.find(m => m.id === msg.id)) {
-        acc.push(msg);
-      }
-      return acc;
-    }, []);
-    
-    setMessages(uniqueMessages);
-    
-    // Mark as read only if we have a phone number
+    // Fetch full conversation history
     if (conversation.phone_number) {
       try {
         const token = localStorage.getItem('clubos_token');
         if (token) {
-          await axios.put(
-            `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
-            {},
+          // Fetch complete history for this phone number
+          const historyResponse = await axios.get(
+            `${API_URL}/messages/conversations/${conversation.phone_number}/full-history`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
+          
+          if (historyResponse.data.success) {
+            const { messages, total_conversations, first_contact, last_contact } = historyResponse.data.data;
+            
+            // Update selected conversation with full history info
+            setSelectedConversation({
+              ...conversation,
+              total_conversations,
+              first_contact,
+              last_contact
+            });
+            
+            // Set all messages including conversation separators
+            setMessages(messages);
+            
+            // Mark as read
+            await axios.put(
+              `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
+              {},
+              { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            
+            // Update local state
+            setConversations(prev => prev.map(c => 
+              c.id === conversation.id ? { ...c, unread_count: 0 } : c
+            ));
+            
+            // Scroll to bottom after messages load
+            setTimeout(() => {
+              scrollToBottom();
+            }, 100);
+          }
         }
-        
-        // Update local state
-        setConversations(prev => prev.map(c => 
-          c.id === conversation.id ? { ...c, unread_count: 0 } : c
-        ));
       } catch (error) {
-        console.error('Failed to mark as read:', error);
+        console.error('Error fetching conversation history:', error);
+        toast.error('Failed to load conversation history');
+        
+        // Fallback to local messages if API fails
+        const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
+        const uniqueMessages = conversationMessages.reduce((acc: Message[], msg: Message) => {
+          if (!acc.find(m => m.id === msg.id)) {
+            acc.push(msg);
+          }
+          return acc;
+        }, []);
+        setMessages(uniqueMessages);
       }
     }
+  };
     
     // Scroll to bottom to show most recent messages
     setTimeout(() => {
@@ -839,6 +852,11 @@ export default function Messages() {
                               <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
                               <p className="text-sm text-[var(--text-muted)]">
                                 {selectedConversation.phone_number || 'No phone number'}
+                                {selectedConversation.total_conversations > 1 && (
+                                  <span className="ml-2 text-xs bg-[var(--bg-tertiary)] px-2 py-0.5 rounded-full">
+                                    {selectedConversation.total_conversations} conversations
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -859,25 +877,41 @@ export default function Messages() {
                         {/* Spacer to push messages to bottom when few messages */}
                         <div className="flex-1 min-h-0" />
                         <div className="space-y-4">
-                        {messages && messages.length > 0 ? messages.map((message, index) => (
-                          <div
-                            key={message.id || index}
-                            className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                          >
-                            <div className={`max-w-[70%] ${
-                              message.direction === 'outbound'
-                                ? 'bg-[var(--accent)] text-white'
-                                : 'bg-[var(--bg-tertiary)]'
-                            } rounded-lg px-4 py-2`}>
-                              <p className="text-sm">{message.text || message.body || ''}</p>
-                              <p className={`text-xs mt-1 ${
-                                message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
-                              }`}>
-                                {isClient && message.createdAt ? format(new Date(message.createdAt), 'h:mm a') : ''}
-                              </p>
+                        {messages && messages.length > 0 ? messages.map((message, index) => {
+                          // Handle conversation separators
+                          if (message.type === 'conversation_separator') {
+                            return (
+                              <div key={message.id || `separator-${index}`} className="flex items-center gap-3 py-4">
+                                <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+                                <div className="text-xs text-[var(--text-muted)] px-3 py-1 bg-[var(--bg-secondary)] rounded-full">
+                                  New conversation • {message.timeSinceLastMessage} min later
+                                </div>
+                                <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+                              </div>
+                            );
+                          }
+                          
+                          // Regular message rendering
+                          return (
+                            <div
+                              key={message.id || index}
+                              className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div className={`max-w-[70%] ${
+                                message.direction === 'outbound'
+                                  ? 'bg-[var(--accent)] text-white'
+                                  : 'bg-[var(--bg-tertiary)]'
+                              } rounded-lg px-4 py-2`}>
+                                <p className="text-sm">{message.text || message.body || ''}</p>
+                                <p className={`text-xs mt-1 ${
+                                  message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
+                                }`}>
+                                  {isClient && message.createdAt ? format(new Date(message.createdAt), 'h:mm a') : ''}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        )) : (
+                          );
+                        }) : (
                           <div className="text-center text-[var(--text-muted)] py-8">
                             <p>No messages yet. Send a message to start the conversation.</p>
                           </div>
@@ -1217,6 +1251,11 @@ export default function Messages() {
                           </h3>
                           <p className="text-xs text-[var(--text-muted)]">
                             {selectedConversation.phone_number}
+                            {selectedConversation.total_conversations > 1 && (
+                              <span className="ml-1 bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded text-[10px]">
+                                {selectedConversation.total_conversations} chats
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1236,27 +1275,43 @@ export default function Messages() {
                     <div className="flex-1 min-h-0" />
                     {messages && messages.length > 0 ? (
                       <div className="space-y-3">
-                        {messages.map((message, index) => (
-                          <div
-                            key={message.id || index}
-                            className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                          >
-                            <div className={`max-w-[85%] ${
-                              message.direction === 'outbound'
-                                ? 'bg-[var(--accent)] text-white rounded-2xl rounded-br-sm'
-                                : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-2xl rounded-bl-sm'
-                            } px-4 py-2 shadow-sm`}>
-                              <p className="text-sm whitespace-pre-wrap break-words">
-                                {message.text || message.body || ''}
-                              </p>
-                              <p className={`text-xs mt-1 ${
-                                message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
-                              }`}>
-                                {isClient && message.createdAt ? formatMessageDate(message.createdAt) : ''}
-                              </p>
+                        {messages.map((message, index) => {
+                          // Handle conversation separators
+                          if (message.type === 'conversation_separator') {
+                            return (
+                              <div key={message.id || `separator-${index}`} className="flex items-center gap-2 py-3">
+                                <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+                                <div className="text-xs text-[var(--text-muted)] px-2 py-1 bg-[var(--bg-primary)] rounded-full whitespace-nowrap">
+                                  New chat • {message.timeSinceLastMessage}m later
+                                </div>
+                                <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+                              </div>
+                            );
+                          }
+                          
+                          // Regular message rendering
+                          return (
+                            <div
+                              key={message.id || index}
+                              className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div className={`max-w-[85%] ${
+                                message.direction === 'outbound'
+                                  ? 'bg-[var(--accent)] text-white rounded-2xl rounded-br-sm'
+                                  : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-2xl rounded-bl-sm'
+                              } px-4 py-2 shadow-sm`}>
+                                <p className="text-sm whitespace-pre-wrap break-words">
+                                  {message.text || message.body || ''}
+                                </p>
+                                <p className={`text-xs mt-1 ${
+                                  message.direction === 'outbound' ? 'text-white/70' : 'text-[var(--text-muted)]'
+                                }`}>
+                                  {isClient && message.createdAt ? formatMessageDate(message.createdAt) : ''}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="flex items-center justify-center h-full text-center text-[var(--text-muted)] px-8">

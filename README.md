@@ -36,6 +36,7 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 - **Analytics**: Usage tracking, performance metrics, cost monitoring
 - **Messages**: 
   - Two-way SMS via OpenPhone with AI suggestions
+  - Complete conversation history across all sessions
   - Real-time notifications, unread badges
   - International phone number support
   - Rate limiting: 30 msg/min, 10 API calls/sec

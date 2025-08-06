@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.10] - 2025-08-06
+
+### Added
+- **Complete Conversation History**
+  - New `/conversations/:phoneNumber/full-history` endpoint fetches all conversations
+  - Messages page now shows complete customer history across all conversations
+  - Visual separators indicate when new conversations started (after 1-hour gaps)
+  - Header shows total conversation count for customers with multiple sessions
+  - Preserves context from all previous interactions for better support
+
+### Enhanced
+- **Message Display**
+  - Conversation separators show time gap between sessions
+  - Both desktop and mobile views support full history
+  - Auto-loads complete history when selecting a conversation
+  - Maintains chronological order across all conversations
+
 ## [1.11.9] - 2025-08-06
 
 ### Fixed

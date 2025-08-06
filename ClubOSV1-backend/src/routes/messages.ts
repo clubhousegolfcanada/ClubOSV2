@@ -251,6 +251,118 @@ router.get('/conversations/:phoneNumber',
   }
 );
 
+// Get full conversation history for a phone number (all conversations merged)
+router.get('/conversations/:phoneNumber/full-history',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  async (req, res, next) => {
+    try {
+      const { phoneNumber } = req.params;
+      
+      // Get ALL conversations for this phone number, ordered by creation time
+      const allConversations = await db.query(
+        `SELECT * FROM openphone_conversations 
+         WHERE phone_number = $1 
+         ORDER BY created_at ASC`,
+        [phoneNumber]
+      );
+      
+      if (allConversations.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'No conversations found for this phone number'
+        });
+      }
+      
+      // Merge all messages with conversation markers
+      const allMessages: any[] = [];
+      let totalMessageCount = 0;
+      
+      for (let i = 0; i < allConversations.rows.length; i++) {
+        const conv = allConversations.rows[i];
+        const messages = conv.messages || [];
+        
+        // Add conversation separator for subsequent conversations
+        if (i > 0) {
+          const previousConv = allConversations.rows[i - 1];
+          const lastMessageTime = previousConv.messages?.[previousConv.messages.length - 1]?.createdAt;
+          const timeSinceLastMessage = lastMessageTime 
+            ? new Date(conv.created_at).getTime() - new Date(lastMessageTime).getTime()
+            : 0;
+          
+          allMessages.push({
+            id: `separator_${conv.id}`,
+            type: 'conversation_separator',
+            timestamp: conv.created_at,
+            reason: 'New conversation started',
+            timeSinceLastMessage: Math.round(timeSinceLastMessage / 1000 / 60), // minutes
+            conversationId: conv.id
+          });
+        }
+        
+        // Add all messages from this conversation
+        messages.forEach((msg: any) => {
+          allMessages.push({
+            ...msg,
+            conversationId: conv.id,
+            conversationIndex: i
+          });
+        });
+        
+        totalMessageCount += messages.length;
+      }
+      
+      // Get the most recent conversation data for display
+      const mostRecentConv = allConversations.rows[allConversations.rows.length - 1];
+      
+      // Mark all conversations as read
+      try {
+        await db.query(
+          `UPDATE openphone_conversations 
+           SET unread_count = 0, last_read_at = NOW() 
+           WHERE phone_number = $1`,
+          [phoneNumber]
+        );
+      } catch (error: any) {
+        logger.warn('Could not update unread_count/last_read_at', {
+          error: error.message,
+          phoneNumber
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          phone_number: phoneNumber,
+          customer_name: mostRecentConv.customer_name,
+          employee_name: mostRecentConv.employee_name,
+          total_conversations: allConversations.rows.length,
+          total_messages: totalMessageCount,
+          messages: allMessages,
+          first_contact: allConversations.rows[0].created_at,
+          last_contact: mostRecentConv.updated_at || mostRecentConv.created_at,
+          conversations: allConversations.rows.map(conv => ({
+            id: conv.id,
+            created_at: conv.created_at,
+            updated_at: conv.updated_at,
+            message_count: conv.messages?.length || 0
+          }))
+        }
+      });
+      
+      logger.info('Fetched full conversation history', {
+        phoneNumber: anonymizePhoneNumber(phoneNumber),
+        totalConversations: allConversations.rows.length,
+        totalMessages: totalMessageCount
+      });
+      
+    } catch (error) {
+      logger.error('Failed to fetch full conversation history:', error);
+      next(error);
+    }
+  }
+);
+
 // Send a message
 router.post('/send',
   authenticate,
