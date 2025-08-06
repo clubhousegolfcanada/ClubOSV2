@@ -20,6 +20,8 @@ interface Message {
   direction: 'inbound' | 'outbound';
   createdAt: string;
   status?: string;
+  type?: 'conversation_separator';
+  timeSinceLastMessage?: number;
 }
 
 interface Conversation {
@@ -31,6 +33,9 @@ interface Conversation {
   updated_at: string;
   lastMessage?: Message;
   _debug_invalid_phone?: boolean;
+  total_conversations?: number;
+  first_contact?: string;
+  last_contact?: string;
 }
 
 export default function Messages() {
