@@ -127,6 +127,13 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.12**: Critical Security Improvements & Dashboard Updates
+  - Fixed hardcoded admin password vulnerability
+  - Removed sensitive data logging from frontend
+  - Implemented proper session validation
+  - Enabled CSP and HSTS security headers
+  - Added compact Messages card to desktop dashboard
+  - See SECURITY-AUDIT-2025-08.md for security details
 - **v1.11.11**: RemoteActionsBar Mobile Visibility
   - Enhanced visual contrast with darker background when expanded
   - Added accent border and shadow effects for prominence

@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.12] - 2025-08-06
+
+### Security
+- **Critical Security Improvements**
+  - Removed hardcoded admin password - now generates cryptographically secure random password
+  - Admin credentials saved to gitignored file on first run
+  - Removed all token logging from frontend to prevent exposure in browser console
+  - Implemented proper session validation with user existence checks
+  - Enabled Content Security Policy (CSP) headers with comprehensive directives
+  - Added HSTS headers for secure transport enforcement
+  - Created comprehensive security audit report (SECURITY-AUDIT-2025-08.md)
+
+### Added
+- **Desktop Dashboard Messages Card**
+  - Compact Messages card showing 2 most recent conversations
+  - Positioned under Request form on desktop
+  - Moved Suggested Actions to sidebar for better layout
+
+### Fixed
+- TypeScript compilation errors in messages.tsx
+- Removed duplicate mobile title bar in RemoteActionsBar
+
 ## [1.11.11] - 2025-08-06
 
 ### Enhanced
