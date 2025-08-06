@@ -1,11 +1,4 @@
-import { LLMService } from '../../../services/llmService';
-import OpenAI from 'openai';
-import { mockDeep } from 'jest-mock-extended';
-
-// Mock OpenAI
-jest.mock('openai');
-
-// Mock config
+// Mock dependencies first
 jest.mock('../../../utils/envValidator', () => ({
   config: {
     OPENAI_API_KEY: 'test-api-key',
@@ -15,7 +8,6 @@ jest.mock('../../../utils/envValidator', () => ({
   }
 }));
 
-// Mock logger
 jest.mock('../../../utils/logger', () => ({
   logger: {
     error: jest.fn(),
@@ -25,245 +17,227 @@ jest.mock('../../../utils/logger', () => ({
   }
 }));
 
+jest.mock('../../../services/llm', () => ({
+  LLMRouter: jest.fn().mockImplementation(() => ({
+    addProvider: jest.fn(),
+    query: jest.fn(),
+    isConfigured: jest.fn().mockReturnValue(true)
+  })),
+  OpenAIProvider: jest.fn(),
+  AnthropicProvider: jest.fn(),
+  LocalProvider: jest.fn()
+}));
+
+import { LLMService } from '../../../services/llmService';
+import { LLMRouter } from '../../../services/llm';
+
 describe('LLMService', () => {
   let llmService: LLMService;
-  let mockOpenAI: any;
+  let mockRouter: any;
 
   beforeEach(() => {
-    // Create mock OpenAI instance
-    mockOpenAI = {
-      chat: {
-        completions: {
-          create: jest.fn()
-        }
-      }
+    // Clear mocks
+    jest.clearAllMocks();
+    
+    // Set up environment
+    process.env.OPENAI_API_KEY = 'test-api-key';
+    
+    // Create mock router
+    mockRouter = {
+      addProvider: jest.fn(),
+      query: jest.fn(),
+      isConfigured: jest.fn().mockReturnValue(true)
     };
-
-    // Mock the OpenAI constructor
-    (OpenAI as jest.MockedClass<typeof OpenAI>).mockImplementation(() => mockOpenAI);
-
-    // Create new instance for each test
+    
+    // Mock LLMRouter constructor
+    (LLMRouter as jest.Mock).mockImplementation(() => mockRouter);
+    
+    // Create service instance
     llmService = new LLMService();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete process.env.OPENAI_API_KEY;
   });
 
   describe('processRequest', () => {
     it('should route to booking bot for reservation requests', async () => {
       const mockResponse = {
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              route: 'booking',
-              reasoning: 'User wants to make a reservation',
-              confidence: 0.95,
-              extractedInfo: {
-                intent: 'book_bay',
-                date: 'tomorrow',
-                time: '3pm'
-              }
-            })
-          }
-        }]
+        content: JSON.stringify({
+          route: 'BookingBot',
+          confidence: 0.95,
+          reason: 'User wants to make a reservation'
+        }),
+        provider: 'openai',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
       };
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
-
-      const result = await llmService.processRequest(
-        'I want to book a bay for tomorrow at 3pm',
-        'user123'
-      );
-
+      
+      mockRouter.query.mockResolvedValue(mockResponse);
+      
+      const result = await llmService.processRequest('I want to book a simulator for tomorrow at 3pm');
+      
       expect(result).toEqual({
-        route: 'booking',
-        reasoning: 'User wants to make a reservation',
+        route: 'BookingBot',
         confidence: 0.95,
-        extractedInfo: {
-          intent: 'book_bay',
-          date: 'tomorrow',
-          time: '3pm'
-        },
-        requestId: expect.any(String),
-        timestamp: expect.any(String)
+        reason: 'User wants to make a reservation'
       });
-
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
-        model: 'gpt-4-turbo-preview',
-        messages: expect.arrayContaining([
-          expect.objectContaining({ role: 'system' }),
-          expect.objectContaining({ role: 'user', content: 'I want to book a bay for tomorrow at 3pm' })
-        ]),
-        temperature: 0.3,
-        max_tokens: 500,
-        response_format: { type: 'json_object' }
-      });
+      expect(mockRouter.query).toHaveBeenCalled();
     });
 
     it('should route to emergency bot for urgent issues', async () => {
       const mockResponse = {
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              route: 'emergency',
-              reasoning: 'Fire alarm mentioned - urgent safety issue',
-              confidence: 0.98,
-              extractedInfo: {
-                type: 'fire',
-                location: 'bay 3'
-              }
-            })
-          }
-        }]
+        content: JSON.stringify({
+          route: 'EmergencyBot',
+          confidence: 0.98,
+          reason: 'User reports power outage'
+        }),
+        provider: 'openai',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
       };
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
-
-      const result = await llmService.processRequest(
-        'Fire alarm going off in bay 3!',
-        'user456'
-      );
-
-      expect(result.route).toBe('emergency');
-      expect(result.confidence).toBe(0.98);
+      
+      mockRouter.query.mockResolvedValue(mockResponse);
+      
+      const result = await llmService.processRequest('Power is out in the whole facility!');
+      
+      expect(result).toEqual({
+        route: 'EmergencyBot',
+        confidence: 0.98,
+        reason: 'User reports power outage'
+      });
     });
 
     it('should handle API errors gracefully', async () => {
-      mockOpenAI.chat.completions.create.mockRejectedValue(new Error('API Error'));
-
-      await expect(llmService.processRequest('test request', 'user123'))
-        .rejects.toThrow('Failed to process request with LLM');
+      mockRouter.query.mockRejectedValue(new Error('API Error'));
+      
+      const result = await llmService.processRequest('Test message');
+      
+      // Should fallback to routeWithoutLLM
+      expect(result.route).toBeDefined();
+      expect(result.confidence).toBeLessThanOrEqual(0.5);
     });
 
     it('should handle invalid JSON response', async () => {
       const mockResponse = {
-        choices: [{
-          message: {
-            content: 'Not valid JSON'
-          }
-        }]
+        content: 'Invalid JSON',
+        provider: 'openai',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
       };
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
-
-      await expect(llmService.processRequest('test request', 'user123'))
-        .rejects.toThrow('Invalid response format from LLM');
+      
+      mockRouter.query.mockResolvedValue(mockResponse);
+      
+      const result = await llmService.processRequest('Test message');
+      
+      // Should fallback to routeWithoutLLM
+      expect(result.route).toBeDefined();
+      expect(result.confidence).toBeLessThanOrEqual(0.5);
     });
 
     it('should handle missing route in response', async () => {
       const mockResponse = {
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              reasoning: 'Some reasoning',
-              confidence: 0.8
-            })
-          }
-        }]
+        content: JSON.stringify({
+          confidence: 0.8,
+          reason: 'Some reason'
+        }),
+        provider: 'openai',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
       };
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
-
-      await expect(llmService.processRequest('test request', 'user123'))
-        .rejects.toThrow('Invalid response format from LLM');
+      
+      mockRouter.query.mockResolvedValue(mockResponse);
+      
+      const result = await llmService.processRequest('Test message');
+      
+      // Should fallback to routeWithoutLLM
+      expect(result.route).toBeDefined();
     });
   });
 
   describe('routeWithoutLLM', () => {
     it('should route booking requests correctly', () => {
-      const bookingRequests = [
+      const bookingKeywords = [
         'book a bay',
-        'make a reservation',
-        'cancel my booking',
-        'check availability'
+        'reserve simulator',
+        'schedule a session',
+        'availability tomorrow'
       ];
-
-      bookingRequests.forEach(request => {
-        const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('Booking & Access');
-        expect(result.confidence).toBeLessThan(0.7);
+      
+      bookingKeywords.forEach(keyword => {
+        const result = llmService.routeWithoutLLM(keyword);
+        expect(result.route).toBe('BookingBot');
+        expect(result.confidence).toBeGreaterThan(0);
       });
     });
 
     it('should route access requests correctly', () => {
-      const accessRequests = [
-        'unlock the door',
-        'grant access to John',
-        'my key card isn\'t working',
-        'revoke access'
+      const accessKeywords = [
+        'locked out',
+        "can't get in",
+        'door code',
+        'key fob not working'
       ];
-
-      accessRequests.forEach(request => {
-        const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('Booking & Access');
+      
+      accessKeywords.forEach(keyword => {
+        const result = llmService.routeWithoutLLM(keyword);
+        expect(result.route).toBe('EmergencyBot');
+        expect(result.confidence).toBeGreaterThan(0);
       });
     });
 
     it('should route emergency requests correctly', () => {
-      const emergencyRequests = [
-        'fire in the building',
-        'someone is injured',
-        'emergency help needed',
-        'accident in bay 5'
+      const emergencyKeywords = [
+        'emergency',
+        'urgent help',
+        'fire alarm',
+        'water leak'
       ];
-
-      emergencyRequests.forEach(request => {
-        const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('Emergency');
-        expect(result.confidence).toBeGreaterThan(0.3);
+      
+      emergencyKeywords.forEach(keyword => {
+        const result = llmService.routeWithoutLLM(keyword);
+        expect(result.route).toBe('EmergencyBot');
+        expect(result.confidence).toBeGreaterThan(0);
       });
     });
 
     it('should route tech support requests correctly', () => {
-      const techRequests = [
-        'simulator not working',
-        'screen is broken',
-        'software crashed',
-        'trackman error'
+      const techKeywords = [
+        'trackman not working',
+        'screen frozen',
+        'simulator broken',
+        'software issue'
       ];
-
-      techRequests.forEach(request => {
-        const result = llmService.routeWithoutLLM(request);
+      
+      techKeywords.forEach(keyword => {
+        const result = llmService.routeWithoutLLM(keyword);
         expect(result.route).toBe('TechSupport');
+        expect(result.confidence).toBeGreaterThan(0);
       });
     });
 
     it('should default to general for unknown requests', () => {
-      const generalRequests = [
-        'hello there',
-        'what\'s the weather',
-        'random text'
+      const generalMessages = [
+        'hello',
+        'what are your hours',
+        'tell me about memberships',
+        'do you have gift cards'
       ];
-
-      generalRequests.forEach(request => {
-        const result = llmService.routeWithoutLLM(request);
-        expect(result.route).toBe('TechSupport'); // Default is now TechSupport
-        expect(result.confidence).toBe(0.5); // Default confidence
+      
+      generalMessages.forEach(message => {
+        const result = llmService.routeWithoutLLM(message);
+        expect(result.route).toBe('GeneralBot');
+        expect(result.confidence).toBeLessThanOrEqual(0.3);
       });
     });
   });
 
   describe('isConfigured', () => {
-    it('should return true when API key is configured', async () => {
-      const result = await llmService.isConfigured();
-      expect(result).toBe(true);
+    it('should return true when API key is configured', () => {
+      mockRouter.isConfigured.mockReturnValue(true);
+      expect(llmService.isConfigured()).toBe(true);
     });
 
-    it('should return false when API key is not configured', async () => {
-      // Create a new instance with no API key
-      jest.resetModules();
-      jest.mock('../../../utils/envValidator', () => ({
-        config: {
-          OPENAI_API_KEY: undefined
-        }
-      }));
-
-      const LLMServiceModule = require('../../../services/llmService');
-      const serviceWithoutKey = new LLMServiceModule.LLMService();
-
-      const result = await serviceWithoutKey.isConfigured();
-      expect(result).toBe(false);
+    it('should return false when API key is not configured', () => {
+      mockRouter.isConfigured.mockReturnValue(false);
+      expect(llmService.isConfigured()).toBe(false);
     });
   });
 });

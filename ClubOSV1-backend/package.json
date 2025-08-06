@@ -1,6 +1,6 @@
 {
   "name": "clubos-backend",
-  "version": "1.11.16",
+  "version": "1.11.17",
   "description": "ClubOS Backend - AI-powered golf simulator management with NinjaOne integration",
   "main": "dist/index.js",
   "scripts": {

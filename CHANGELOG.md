@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.17] - 2025-08-06
+
+### Testing Infrastructure - Phase 3
+- **Integration Tests Created**
+  - Complete message flow integration test suite
+  - End-to-end testing from webhook to response
+  - Conversation history and context handling tests
+  - Error handling and fallback scenarios
+  - Multi-message conversation grouping tests
+
+- **Test Fixes**
+  - Fixed LLMService tests for new router pattern
+  - Updated AssistantService test mocking
+  - Improved middleware mock patterns
+  - Better test isolation and cleanup
+
+### Added
+- 16 total test files now in the codebase
+- Integration test suite for message processing flow
+- Enhanced mock patterns for service singletons
+
+### Improved
+- Test structure and organization
+- Mock dependency management
+- Test coverage documentation
+
 ## [1.11.16] - 2025-08-06
 
 ### Testing Infrastructure - Phase 2

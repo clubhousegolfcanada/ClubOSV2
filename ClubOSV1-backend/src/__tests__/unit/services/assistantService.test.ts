@@ -15,7 +15,11 @@ jest.mock('../../../utils/envValidator', () => ({
   }
 }));
 jest.mock('../../../utils/database');
-jest.mock('../../../services/assistantFileManager');
+jest.mock('../../../services/assistantFileManager', () => ({
+  assistantFileManager: {
+    updateKnowledge: jest.fn().mockResolvedValue({ success: true })
+  }
+}));
 jest.mock('../../../services/knowledgeSearchService');
 
 const mockedOpenAI = OpenAI as jest.MockedClass<typeof OpenAI>;
@@ -207,9 +211,6 @@ describe('AssistantService', () => {
     });
 
     it('should update assistant knowledge', async () => {
-      assistantFileManager.updateKnowledge = jest.fn()
-        .mockResolvedValue({ success: true });
-
       const knowledge = {
         fact: 'Updated booking process',
         tags: ['booking', 'procedure'],
