@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { config } from '../utils/envValidator';
 import { logger } from '../utils/logger';
 import { UserRole, JWTPayload as IJWTPayload } from '../types';
+import { db } from '../utils/database';
 
 // Extend Express Request type to include user
 declare global {
