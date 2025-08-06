@@ -217,17 +217,40 @@ export const validateSession = async (req: Request, res: Response, next: NextFun
     return next();
   }
 
-  // In a real application, check if session is still valid in database/cache
-  const sessionValid = true; // Placeholder
-
-  if (!sessionValid) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Session expired'
+  try {
+    // Check if user still exists and is active
+    const user = await db.findUserById(req.user.id);
+    
+    if (!user) {
+      logger.warn('Session validation failed: User not found', { userId: req.user.id });
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Session invalid'
+      });
+    }
+    
+    // Check if user is deactivated (if we add this field in future)
+    // if (user.isDeactivated) {
+    //   return res.status(401).json({
+    //     error: 'Unauthorized',
+    //     message: 'Account deactivated'
+    //   });
+    // }
+    
+    // Additional session checks can be added here:
+    // - Check session ID in Redis/cache
+    // - Check last activity timestamp
+    // - Check IP address changes
+    // - Check device fingerprint
+    
+    next();
+  } catch (error) {
+    logger.error('Session validation error:', error);
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Session validation failed'
     });
   }
-
-  next();
 };
 
 // API Key authentication (alternative to JWT)

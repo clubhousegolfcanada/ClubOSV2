@@ -128,8 +128,49 @@ export const publicLimiter = createRateLimiter(
 
 // Security headers configuration
 export const securityHeaders = helmet({
-  contentSecurityPolicy: false, // Disable CSP to avoid conflicts with CORS
-  crossOriginEmbedderPolicy: false, // Disable COEP for CORS compatibility
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'", // Required for React
+        "'unsafe-eval'", // Required for some bundlers in dev
+        "https://cdn.jsdelivr.net", // For any CDN scripts
+        "https://vercel.live" // Vercel analytics
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'", // Required for inline styles
+        "https://fonts.googleapis.com"
+      ],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: [
+        "'self'",
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
+        "https://api.openai.com",
+        "https://api.stripe.com",
+        "https://api.openphone.com",
+        "wss:", // WebSocket connections
+        "https:" // General HTTPS APIs
+      ],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      childSrc: ["'self'"],
+      frameSrc: ["'self'", "https://js.stripe.com"], // Stripe checkout
+      workerSrc: ["'self'", "blob:"],
+      formAction: ["'self'"],
+      baseUri: ["'self'"],
+      manifestSrc: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+    }
+  },
+  crossOriginEmbedderPolicy: false, // Still disabled for CORS compatibility
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 });
 
 // Request sanitization

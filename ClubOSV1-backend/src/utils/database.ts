@@ -596,13 +596,31 @@ class DatabaseService {
   async ensureDefaultAdmin(): Promise<void> {
     const admin = await this.findUserByEmail('admin@clubhouse247golf.com');
     if (!admin) {
+      // Generate a secure random password
+      const crypto = require('crypto');
+      const randomPassword = crypto.randomBytes(12).toString('base64').slice(0, 16);
+      
       await this.createUser({
         email: 'admin@clubhouse247golf.com',
-        password: 'admin123',
+        password: randomPassword,
         name: 'Admin User',
         role: 'admin'
       });
+      
       logger.info('Default admin user created');
+      logger.info('==================================================');
+      logger.info('ADMIN CREDENTIALS:');
+      logger.info(`Email: admin@clubhouse247golf.com`);
+      logger.info(`Password: ${randomPassword}`);
+      logger.info('IMPORTANT: Save this password and change it after first login!');
+      logger.info('==================================================');
+      
+      // Also write to a secure file that should be deleted after reading
+      const fs = require('fs');
+      const path = require('path');
+      const credFile = path.join(process.cwd(), 'admin-credentials.txt');
+      fs.writeFileSync(credFile, `ClubOS Admin Credentials\n========================\nEmail: admin@clubhouse247golf.com\nPassword: ${randomPassword}\n\nIMPORTANT: Delete this file after saving the password!\n`);
+      logger.info(`Admin credentials also written to: ${credFile}`);
     }
   }
 

@@ -79,3 +79,6 @@ fix-openphone-local.sh
 
 # SQL files with credentials  
 *-with-creds.sql
+
+# Admin credentials file (auto-generated)
+admin-credentials.txt

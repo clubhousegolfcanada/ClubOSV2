@@ -19,22 +19,21 @@ export default apiClient;
 // Add auth token and CSRF token to requests
 apiClient.interceptors.request.use(
   (config) => {
-    console.log('[Axios Interceptor] Processing request to:', config.url);
+    // Debug logging removed for security
     
     // Only access localStorage and cookies on client side
     if (typeof window !== 'undefined') {
       // Add auth token
       const token = localStorage.getItem('clubos_token');
-      console.log('[Axios Interceptor] Token found:', !!token);
-      console.log('[Axios Interceptor] Token value:', token ? token.substring(0, 20) + '...' : 'null');
+      // Security: Never log tokens
       
       if (token) {
         // Ensure headers object exists
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('[Axios Interceptor] Added auth header:', config.headers.Authorization?.substring(0, 30) + '...');
+        // Auth header added successfully
       } else {
-        console.log('[Axios Interceptor] No token found, request will be sent without auth');
+        // No auth token available
       }
       
       // Add CSRF token for non-GET requests
@@ -45,7 +44,7 @@ apiClient.interceptors.request.use(
             config.headers[key] = value;
           }
         });
-        console.log('[Axios Interceptor] Added CSRF token');
+        // CSRF token added
       }
     }
     
@@ -86,9 +85,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
       user: userInfo // Include user info if available
     };
     
-    console.log('Submitting request to:', `${API_URL}${endpoint}`);
-    console.log('Payload:', payload);
-    console.log('SmartAssist enabled:', request.smartAssistEnabled);
+    // Request submission - logging removed for security
     
     const response = await apiClient.post(endpoint, payload);
     
@@ -101,11 +98,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
       response.data.data.processingTime = totalProcessingTime; // Use total time
     }
     
-    console.log('Request timing:', {
-      totalTime: totalProcessingTime,
-      serverTime: response.data.data?.serverProcessingTime,
-      networkOverhead: totalProcessingTime - (response.data.data?.serverProcessingTime || 0)
-    });
+    // Performance metrics available in response.data.data.processingTime
     
     return {
       success: true,
