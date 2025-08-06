@@ -426,14 +426,6 @@ export default function Messages() {
       }
     }
   };
-    
-    // Scroll to bottom to show most recent messages
-    setTimeout(() => {
-      scrollToBottom('instant');
-      // Focus input on mobile
-      inputRef.current?.focus();
-    }, 100);
-  };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !selectedConversation.phone_number || sending) {
