@@ -120,6 +120,22 @@ button:hover, a:hover, .clickable:hover {
   }
 }
 
+/* Slide up animation for bottom panels */
+.animate-slideUp {
+  animation: slideUp var(--animation-duration-normal) var(--ease-out-expo);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%) translateZ(0);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) translateZ(0);
+    opacity: 1;
+  }
+}
+
 /* Loading states */
 .loading-spinner {
   transform: translateZ(0);

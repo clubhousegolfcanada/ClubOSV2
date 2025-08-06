@@ -82,12 +82,16 @@ const RemoteActionsBar: React.FC = () => {
   }
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
+    <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ease-out ${
       isExpanded ? 'h-auto max-h-[70vh] overflow-hidden' : 'h-12'
     }`}>
       {/* Collapsed Bar */}
       <div 
-        className="bg-[var(--bg-secondary)] border-t border-[var(--border-secondary)] cursor-pointer h-12"
+        className={`border-t cursor-pointer h-12 transition-all duration-200 ${
+          isExpanded 
+            ? 'bg-[var(--bg-primary)] border-[var(--accent)] shadow-lg' 
+            : 'bg-[var(--bg-secondary)] border-[var(--border-secondary)] hover:border-[var(--accent)] hover:shadow-md sm:hover:bg-[var(--bg-primary)]'
+        }`}
         onClick={toggleExpanded}
       >
         <div className="container mx-auto px-4 h-full flex items-center justify-between">
@@ -100,15 +104,20 @@ const RemoteActionsBar: React.FC = () => {
               </span>
             )}
           </div>
-          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+            <ChevronUp className="w-4 h-4" />
+          </div>
         </div>
       </div>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="bg-[var(--bg-secondary)] overflow-y-auto" style={{ maxHeight: 'calc(70vh - 3rem)' }}>
+        <div 
+          className="bg-[var(--bg-primary)] overflow-y-auto border-l border-r border-[var(--accent)] animate-slideUp shadow-2xl" 
+          style={{ maxHeight: 'calc(70vh - 3rem)' }}
+        >
           {/* Mobile Close Button */}
-          <div className="sm:hidden sticky top-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-2 flex justify-between items-center z-10">
+          <div className="sm:hidden sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--accent)] px-4 py-2 flex justify-between items-center z-10 shadow-sm">
             <span className="text-sm font-medium">Remote Actions</span>
             <button
               onClick={toggleExpanded}
