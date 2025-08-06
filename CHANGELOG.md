@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.9] - 2025-08-06
+
+### Fixed
+- **Gift Card Automation Database Issues**
+  - Removed incorrect phone_number column reference in incrementResponseCount
+  - Created force migration (051) to ensure missing tables are created
+  - Fixed ai_automation_response_tracking table creation
+  - Fixed assistant_type columns in openphone_conversations
+  - Migrations now handle cases where previous migrations failed
+
 ## [1.11.8] - 2025-08-05
 
 ### Fixed
