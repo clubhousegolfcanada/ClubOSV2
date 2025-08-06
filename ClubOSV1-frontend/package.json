@@ -1,6 +1,6 @@
 {
   "name": "clubos-frontend",
-  "version": "1.9.2",
+  "version": "1.11.15",
   "private": true,
   "scripts": {
     "dev": "next dev",

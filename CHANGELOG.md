@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.15] - 2025-08-06
+
+### Testing Infrastructure
+- **Phase 1 Testing Improvements Completed**
+  - Fixed Jest configuration with coverage reporting and open handle detection
+  - Created comprehensive test environment setup with .env.test
+  - Improved test cleanup to prevent resource leaks
+  - Added proper mocking for all external services
+  - Set initial coverage thresholds at 40%
+
+### Added
+- **OpenPhone Webhook Test Suite**
+  - Complete test coverage for webhook v3 format processing
+  - Phone number extraction from multiple fields
+  - Message grouping within 1-hour time windows
+  - Incoming vs outgoing message handling
+  - Webhook signature verification
+  - HubSpot integration during message processing
+  - Debug endpoint testing
+
+### Fixed
+- Auth route tests updated to use correct HTTP methods (POST vs PUT)
+- Test module import paths corrected
+- Mock service configurations aligned with actual service names
+- Test database setup and teardown issues resolved
+
+### Documentation
+- Created comprehensive TESTING-IMPROVEMENT-PLAN.md
+- Defined 4-phase testing improvement strategy
+- Established testing goals: 80% coverage target
+
 ## [1.11.14] - 2025-08-06
 
 ### Fixed
