@@ -27,6 +27,20 @@ function verifyOpenPhoneSignature(payload: string, signature: string, secret: st
   );
 }
 
+// Debug endpoint to capture raw webhook data
+router.post('/webhook-debug', async (req: Request, res: Response) => {
+  logger.info('=== RAW OPENPHONE WEBHOOK DEBUG ===', {
+    headers: req.headers,
+    bodyKeys: Object.keys(req.body || {}),
+    body: JSON.stringify(req.body, null, 2).substring(0, 3000)
+  });
+  
+  console.log('=== RAW WEBHOOK BODY ===');
+  console.log(JSON.stringify(req.body, null, 2));
+  
+  res.status(200).json({ received: true, debug: true });
+});
+
 // OpenPhone webhook handler
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
@@ -64,14 +78,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // Check if this is the v3 wrapped format
     if (req.body.object && req.body.object.type) {
       // V3 format: { object: { type, data, ... } }
-      // The entire message content is in the object field
       type = req.body.object.type;
-      // In v3, the message data is directly in object, not in object.data
-      data = req.body.object;
+      // Check if data is nested in object.data or directly in object
+      data = req.body.object.data || req.body.object;
     } else if (req.body.type) {
       // Direct format: { type, data, ... }
       type = req.body.type;
-      data = req.body.data || req.body; // Use entire body if no data field
+      data = req.body.data || req.body;
     } else {
       logger.warn('Unknown webhook format', { body: req.body });
       return res.status(200).json({ received: true });
@@ -94,8 +107,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'message.delivered':
       case 'message.updated':
       case 'conversation.updated':
-        // The message data is already in 'data' after our extraction above
-        const messageData = data || {};
+        // The message data might be nested in data.object for some webhook versions
+        let messageData = data || {};
+        
+        // Check if the actual message data is nested inside a data.object property
+        if (data && data.object && (data.object.from || data.object.to || data.object.body)) {
+          messageData = data.object;
+        }
         
         // Debug log the entire messageData structure
         logger.info('Message data structure:', {
@@ -190,11 +208,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
             direction: messageData.direction,
             from: messageData.from,
             to: messageData.to,
-            fullWebhook: JSON.stringify(req.body).substring(0, 1000)
+            fullWebhook: JSON.stringify(req.body).substring(0, 2000),
+            dataStructure: JSON.stringify(data).substring(0, 1000)
           });
           // Don't break - still try to process with 'Unknown' to not lose messages
           phoneNumber = phoneNumber || 'Unknown';
         }
+        
+        // Log what we're about to save
+        logger.info('Preparing to save conversation data:', {
+          phoneNumber,
+          customerName,
+          employeeName,
+          messageDirection: messageData.direction,
+          hasMessageBody: !!messageData.body || !!messageData.text
+        });
         
         // Build message object (body is the field from webhook)
         const newMessage = {
