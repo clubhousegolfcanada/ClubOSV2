@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -116,17 +116,6 @@ const RemoteActionsBar: React.FC = () => {
           className="bg-[var(--bg-primary)] overflow-y-auto border-l border-r border-[var(--accent)] animate-slideUp shadow-2xl" 
           style={{ maxHeight: 'calc(70vh - 3rem)' }}
         >
-          {/* Mobile Close Button */}
-          <div className="sm:hidden sticky top-0 bg-[var(--bg-primary)] border-b border-[var(--accent)] px-4 py-2 flex justify-between items-center z-10 shadow-sm">
-            <span className="text-sm font-medium">Remote Actions</span>
-            <button
-              onClick={toggleExpanded}
-              className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
           <div className="container mx-auto px-4 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {locations.map((location) => (
