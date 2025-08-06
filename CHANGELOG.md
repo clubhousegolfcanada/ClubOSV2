@@ -2,6 +2,39 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.16] - 2025-08-06
+
+### Testing Infrastructure - Phase 2
+- **Messages API Test Suite**
+  - Comprehensive test coverage for /api/messages endpoints
+  - Tests for conversations list with pagination and search
+  - Single conversation and full history endpoint tests
+  - AI response suggestion endpoint testing
+  - Message sending with validation tests
+  - Unread count tracking tests
+  - HubSpot enrichment testing
+  - Snake_case format preservation verification
+
+- **AI Automation Service Tests**
+  - Assistant type detection tests (booking, emergency, tech support)
+  - Pattern matching for gift cards, trackman issues, hours info
+  - Confidence scoring and threshold testing
+  - Feature flag respecting tests
+  - Statistics tracking verification
+  - Slack fallback handling tests
+
+### Improved
+- **Test Infrastructure**
+  - Fixed middleware mocking issues (authenticate, roleGuard)
+  - Improved service singleton mocking patterns
+  - Better test isolation with proper cleanup
+  - Updated test coverage from ~40% to ~45%
+
+### Fixed
+- OpenPhone test HubSpot contact mock to include required fields
+- Messages test proper middleware mocking order
+- AI Automation service mock imports
+
 ## [1.11.15] - 2025-08-06
 
 ### Testing Infrastructure

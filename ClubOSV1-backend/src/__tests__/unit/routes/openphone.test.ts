@@ -77,7 +77,9 @@ describe('OpenPhone Webhook Routes', () => {
 
         // Mock HubSpot lookup
         mockedHubspot.searchByPhone.mockResolvedValue({
+          id: 'hubspot-123',
           name: 'John Doe',
+          phone: '+15551234567',
           company: 'Test Company'
         });
 
