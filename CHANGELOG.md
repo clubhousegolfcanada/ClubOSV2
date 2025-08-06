@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.14] - 2025-08-06
+
+### Fixed
+- **OpenPhone Integration Critical Fixes**
+  - Fixed webhook data extraction for OpenPhone v3 format
+  - Properly handle webhook structure where data is in `object` field directly
+  - Added comprehensive fallback fields for phone number extraction
+  - Fixed snake_case/camelCase conversion issue that broke conversations display
+  - Restored proper phone number and customer name display in Messages
+  - All conversations now show correct data instead of "Unknown"
+
+### Added
+- **OpenAI API Key Handling**
+  - Made OpenAI API key optional for application startup
+  - Created centralized OpenAI client utility with lazy initialization
+  - Application can now run without AI features when key is missing
+  - Fixed startup "Overloaded" API errors
+
+### Technical
+- Added webhook-debug endpoint for troubleshooting OpenPhone webhooks
+- Enhanced logging for webhook data extraction debugging
+- Fixed environment validation to allow missing OPENAI_API_KEY and ENCRYPTION_KEY
+
 ## [1.11.13] - 2025-08-06
 
 ### Performance & Monitoring

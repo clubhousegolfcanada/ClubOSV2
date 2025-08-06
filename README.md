@@ -127,6 +127,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.14**: OpenPhone Integration Fixes
+  - Fixed critical webhook data extraction for OpenPhone v3
+  - Restored phone number and customer name display in Messages
+  - Made OpenAI API key optional for application startup
+  - Fixed snake_case/camelCase conversion issue breaking conversations
 - **v1.11.13**: Performance & Monitoring Improvements
   - Consolidated database connections with performance tracking
   - Added comprehensive performance logging middleware
