@@ -313,7 +313,7 @@ describe('Auth Routes', () => {
       mockedDb.createAuthLog = jest.fn().mockResolvedValue({});
 
       const response = await request(app)
-        .put('/auth/change-password')
+        .post('/auth/change-password')
         .set('Authorization', 'Bearer test-token')
         .send({
           currentPassword: 'oldPassword',
@@ -343,7 +343,7 @@ describe('Auth Routes', () => {
       (bcryptjs.compare as jest.Mock).mockResolvedValue(false);
 
       const response = await request(app)
-        .put('/auth/change-password')
+        .post('/auth/change-password')
         .set('Authorization', 'Bearer test-token')
         .send({
           currentPassword: 'wrongPassword',

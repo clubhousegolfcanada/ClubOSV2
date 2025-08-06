@@ -12,16 +12,27 @@
     "!src/**/__tests__/**",
     "!src/types/**",
     "!src/scripts/**",
-    "!src/database/migrations/**"
+    "!src/database/migrations/**",
+    "!src/index.ts"
   ],
   "coverageDirectory": "coverage",
-  "coverageReporters": ["text", "lcov", "html"],
+  "coverageReporters": ["text", "lcov", "html", "text-summary"],
+  "coverageThreshold": {
+    "global": {
+      "branches": 40,
+      "functions": 40,
+      "lines": 40,
+      "statements": 40
+    }
+  },
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/src/$1"
   },
   "setupFilesAfterEnv": ["<rootDir>/src/__tests__/setup.ts"],
   "testTimeout": 30000,
   "verbose": true,
+  "detectOpenHandles": true,
+  "forceExit": true,
   "globals": {
     "ts-jest": {
       "tsconfig": "./tsconfig.test.json"
