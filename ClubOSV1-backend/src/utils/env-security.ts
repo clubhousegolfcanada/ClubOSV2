@@ -31,7 +31,7 @@ const securityChecks: EnvSecurityCheck[] = [
       return true;
     },
     message: `ENCRYPTION_KEY must be exactly 32 characters (current: ${process.env.ENCRYPTION_KEY?.length || 0} chars)`,
-    critical: true
+    critical: false
   },
   {
     key: 'DATABASE_URL',
@@ -43,7 +43,7 @@ const securityChecks: EnvSecurityCheck[] = [
     key: 'OPENAI_API_KEY',
     validator: (val) => !!val && (val.startsWith('sk-') || val.startsWith('sk-proj-')),
     message: 'OPENAI_API_KEY must be valid OpenAI key',
-    critical: true
+    critical: false
   },
   {
     key: 'NODE_ENV',

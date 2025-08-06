@@ -2,9 +2,20 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Create OpenAI instance lazily
+let openai: OpenAI | null = null;
+
+function getOpenAI(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+  return openai;
+}
 
 interface TranscriptDialogue {
   content: string;
@@ -69,7 +80,13 @@ For each piece of knowledge extracted, provide:
 
 Return as JSON array of objects with these fields. Only include clear, actionable knowledge that could help resolve similar issues in the future.`;
 
-      const response = await openai.chat.completions.create({
+      const openaiClient = getOpenAI();
+      if (!openaiClient) {
+        logger.warn('OpenAI not available for knowledge extraction');
+        return [];
+      }
+
+      const response = await openaiClient.chat.completions.create({
         model: 'gpt-4-turbo-preview',
         messages: [
           {

@@ -4,12 +4,15 @@ import { db } from '../utils/database';
 import { v4 as uuidv4 } from 'uuid';
 
 export class DocumentReprocessorService {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!
-    });
+    // Only initialize OpenAI if API key is available
+    if (process.env.OPENAI_API_KEY) {
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+    }
   }
 
   /**
@@ -56,6 +59,12 @@ export class DocumentReprocessorService {
    * Improve a single document's title and metadata
    */
   private async improveDocument(doc: any): Promise<boolean> {
+    // Check if OpenAI is available
+    if (!this.openai) {
+      logger.warn('OpenAI not available for document reprocessing');
+      return false;
+    }
+    
     // Skip if already has a good title
     if (doc.title.includes(' - ') && doc.title.length > 30) {
       return false;

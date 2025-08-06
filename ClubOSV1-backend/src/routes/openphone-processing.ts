@@ -3,13 +3,9 @@ import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
-import OpenAI from 'openai';
+import { getOpenAIClient } from '../utils/openaiClient';
 
 const router = Router();
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
 
 interface ExtractedKnowledge {
   category: string;
@@ -182,6 +178,12 @@ For each piece of knowledge, determine:
 
 Focus on concrete, reusable information. Skip small talk or one-off specific issues.
 Return as JSON: {"knowledge": [...]}`;
+
+    const openai = getOpenAIClient();
+    if (!openai) {
+      logger.warn('OpenAI not available for knowledge extraction');
+      return [];
+    }
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
