@@ -849,7 +849,7 @@ export default function Messages() {
                               <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
                               <p className="text-sm text-[var(--text-muted)]">
                                 {selectedConversation.phone_number || 'No phone number'}
-                                {selectedConversation.total_conversations > 1 && (
+                                {selectedConversation.total_conversations && selectedConversation.total_conversations > 1 && (
                                   <span className="ml-2 text-xs bg-[var(--bg-tertiary)] px-2 py-0.5 rounded-full">
                                     {selectedConversation.total_conversations} conversations
                                   </span>
@@ -1248,7 +1248,7 @@ export default function Messages() {
                           </h3>
                           <p className="text-xs text-[var(--text-muted)]">
                             {selectedConversation.phone_number}
-                            {selectedConversation.total_conversations > 1 && (
+                            {selectedConversation.total_conversations && selectedConversation.total_conversations > 1 && (
                               <span className="ml-1 bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded text-[10px]">
                                 {selectedConversation.total_conversations} chats
                               </span>
