@@ -255,12 +255,12 @@ export default function Home() {
               
               {/* Desktop-only enhancements */}
               <MiniInsightsPanel />
-              <SuggestedActions />
             </div>
             
             {/* Sidebar - Contains Quick Stats and External Tools - 4 columns */}
             <div className="lg:col-span-4">
               <DatabaseExternalTools quickStats={quickStats} />
+              <SuggestedActions />
             </div>
           </div>
         </div>

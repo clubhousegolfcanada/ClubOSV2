@@ -30,7 +30,7 @@ export const MessagesCard: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
+        const response = await axios.get(`${API_URL}/messages/conversations?limit=2`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -89,11 +89,11 @@ export const MessagesCard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="hidden sm:block mt-4">
-        <div className="card p-6 animate-pulse">
-          <div className="h-6 bg-[var(--bg-tertiary)] rounded w-32 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-16 bg-[var(--bg-tertiary)] rounded"></div>
-            <div className="h-16 bg-[var(--bg-tertiary)] rounded"></div>
+        <div className="card p-4 animate-pulse">
+          <div className="h-5 bg-[var(--bg-tertiary)] rounded w-24 mb-3"></div>
+          <div className="space-y-2">
+            <div className="h-12 bg-[var(--bg-tertiary)] rounded"></div>
+            <div className="h-12 bg-[var(--bg-tertiary)] rounded"></div>
           </div>
         </div>
       </div>
@@ -102,64 +102,56 @@ export const MessagesCard: React.FC = () => {
 
   return (
     <div className="hidden sm:block mt-4">
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-medium text-[var(--text-primary)]">
               Messages
             </h3>
             {totalUnread > 0 && (
-              <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-[var(--accent)] text-white rounded-full">
-                {totalUnread} new
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-medium bg-[var(--accent)] text-white rounded-full">
+                {totalUnread}
               </span>
             )}
           </div>
           <button
             onClick={() => router.push('/messages')}
-            className="flex items-center gap-1 text-sm text-[var(--accent)] hover:underline"
+            className="text-sm text-[var(--accent)] hover:underline"
           >
             View all
-            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
         
         {conversations.length === 0 ? (
-          <div className="text-center py-8">
-            <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
-            <p className="text-[var(--text-muted)]">No recent conversations</p>
-            <button
-              onClick={() => router.push('/messages')}
-              className="mt-3 text-sm text-[var(--accent)] hover:underline"
-            >
-              Go to Messages
-            </button>
+          <div className="text-center py-6">
+            <MessageSquare className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--text-muted)]">No recent conversations</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {conversations.map((conv) => (
               <button
                 key={conv.phoneNumber}
                 onClick={() => router.push(`/messages?phone=${encodeURIComponent(conv.phoneNumber)}`)}
-                className="w-full text-left p-4 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-all duration-200 hover:translate-x-1"
+                className="w-full text-left p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-all duration-200 hover:translate-x-1"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="w-4 h-4 text-[var(--text-muted)]" />
-                      <span className="font-medium text-[var(--text-primary)]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm text-[var(--text-primary)]">
                         {conv.customerName}
                       </span>
                       {conv.unreadCount > 0 && (
-                        <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium bg-[var(--accent)] text-white rounded-full">
+                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-medium bg-[var(--accent)] text-white rounded-full">
                           {conv.unreadCount}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[var(--text-muted)] line-clamp-1">
+                    <p className="text-xs text-[var(--text-muted)] line-clamp-1 mt-1">
                       {truncateMessage(conv.lastMessage)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] ml-3 flex-shrink-0">
+                  <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] ml-2 flex-shrink-0">
                     <Clock className="w-3 h-3" />
                     <span>{formatTimestamp(conv.timestamp)}</span>
                   </div>
