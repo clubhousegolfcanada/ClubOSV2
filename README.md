@@ -127,6 +127,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.11**: RemoteActionsBar Mobile Visibility
+  - Enhanced visual contrast with darker background when expanded
+  - Added accent border and shadow effects for prominence
+  - Smooth animations for expanding/collapsing
+- **v1.11.10**: Complete Conversation History
+  - Shows all customer conversations across sessions
+  - Visual separators between conversation sessions
+  - Conversation count indicators
 - **v1.11.7**: Enhanced Push Notifications
   - Support role now receives OpenPhone message notifications
   - Improved notification formatting and deep linking

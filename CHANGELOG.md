@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.11] - 2025-08-06
+
+### Enhanced
+- **RemoteActionsBar Mobile Visibility**
+  - Added darker background (bg-primary) when expanded for better contrast
+  - Added accent border color and shadow effects for visual prominence
+  - Implemented chevron rotation animation when expanding/collapsing
+  - Applied slideUp animation for smooth panel opening
+  - Enhanced hover states for better interactivity on desktop
+  - Improved mobile user experience with clearer visual feedback
+
 ## [1.11.10] - 2025-08-06
 
 ### Added
