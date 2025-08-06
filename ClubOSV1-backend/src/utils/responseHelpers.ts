@@ -229,3 +229,41 @@ export async function tryCatch<T>(
     throw error;
   }
 }
+
+/**
+ * Create a success response object (for use without res object)
+ */
+export function successResponse<T = any>(
+  data: T,
+  message?: string,
+  metadata?: any
+): SuccessResponse<T> {
+  return {
+    success: true,
+    data,
+    message,
+    metadata: {
+      timestamp: new Date().toISOString(),
+      ...metadata
+    }
+  };
+}
+
+/**
+ * Create an error response object (for use without res object)
+ */
+export function errorResponse(
+  message: string,
+  statusCode: number = 500,
+  code?: string,
+  details?: any
+): ErrorResponse {
+  return {
+    success: false,
+    error: code || 'ERROR',
+    message,
+    code,
+    details: process.env.NODE_ENV === 'development' ? details : undefined,
+    timestamp: new Date().toISOString()
+  };
+}
