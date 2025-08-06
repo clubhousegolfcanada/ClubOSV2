@@ -64,12 +64,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // Check if this is the v3 wrapped format
     if (req.body.object && req.body.object.type) {
       // V3 format: { object: { type, data, ... } }
+      // The entire message content is in the object field
       type = req.body.object.type;
-      data = req.body.object.data;
+      // In v3, the message data is directly in object, not in object.data
+      data = req.body.object;
     } else if (req.body.type) {
       // Direct format: { type, data, ... }
       type = req.body.type;
-      data = req.body.data;
+      data = req.body.data || req.body; // Use entire body if no data field
     } else {
       logger.warn('Unknown webhook format', { body: req.body });
       return res.status(200).json({ received: true });
@@ -92,8 +94,19 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'message.delivered':
       case 'message.updated':
       case 'conversation.updated':
-        // OpenPhone v3 API has data nested in data.object
-        const messageData = data.object || data;
+        // The message data is already in 'data' after our extraction above
+        const messageData = data || {};
+        
+        // Debug log the entire messageData structure
+        logger.info('Message data structure:', {
+          hasDirection: !!messageData.direction,
+          hasFrom: !!messageData.from,
+          hasTo: !!messageData.to,
+          hasBody: !!messageData.body,
+          hasText: !!messageData.text,
+          messageDataKeys: Object.keys(messageData).slice(0, 20), // First 20 keys
+          sampleData: JSON.stringify(messageData).substring(0, 500)
+        });
         
         // Extract phone number based on direction
         let phoneNumber;
@@ -107,14 +120,30 @@ router.post('/webhook', async (req: Request, res: Response) => {
         }
         
         // Fallback to other fields if needed
-        phoneNumber = phoneNumber || messageData.phoneNumber;
+        phoneNumber = phoneNumber || 
+                     messageData.phoneNumber || 
+                     messageData.phone ||
+                     messageData.conversationPhoneNumber ||
+                     messageData.participant?.phoneNumber;
+        
+        // If still no phone number, try to extract from conversation or participants
+        if (!phoneNumber && messageData.conversation) {
+          phoneNumber = messageData.conversation.phoneNumber || 
+                       messageData.conversation.participant?.phoneNumber;
+        }
         
         // Log extraction for debugging
         logger.info('Phone number extraction:', {
           direction: messageData.direction,
           from: messageData.from,
           to: messageData.to,
-          extracted: phoneNumber
+          extracted: phoneNumber,
+          allFields: {
+            phoneNumber: messageData.phoneNumber,
+            phone: messageData.phone,
+            conversationPhoneNumber: messageData.conversationPhoneNumber,
+            participantPhone: messageData.participant?.phoneNumber
+          }
         });
         
         // Try multiple fields for contact name, fallback to phone number
@@ -154,9 +183,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
         }
         
         // Use phone number as primary identifier for time-based grouping
-        if (!phoneNumber) {
-          logger.warn('No phone number in webhook data', { type, data });
-          break;
+        if (!phoneNumber || phoneNumber === 'Unknown') {
+          logger.error('Failed to extract phone number from webhook', { 
+            type, 
+            messageDataKeys: Object.keys(messageData),
+            direction: messageData.direction,
+            from: messageData.from,
+            to: messageData.to,
+            fullWebhook: JSON.stringify(req.body).substring(0, 1000)
+          });
+          // Don't break - still try to process with 'Unknown' to not lose messages
+          phoneNumber = phoneNumber || 'Unknown';
         }
         
         // Build message object (body is the field from webhook)
