@@ -183,19 +183,23 @@ router.get('/conversations',
         return row;
       }));
       
+      // Don't transform - frontend expects snake_case for OpenPhone data
       const transformedConversations = enrichedConversations.map(row => {
-        const transformed = dbToApi(row, {
-          ...COMMON_DB_TO_API_OPTIONS,
-          excludeFields: ['password', 'password_hash', 'messages']
-        });
         return {
-          ...transformed,
+          id: row.id,
+          phone_number: row.phone_number,
+          customer_name: row.customer_name,
+          employee_name: row.employee_name,
           messages: row.messages,
+          unread_count: row.unread_count || 0,
+          last_read_at: row.last_read_at,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
           lastMessage: row.messages?.[row.messages.length - 1] || null,
           messageCount: row.messages?.length || 0,
-          updatedAt: transformed.updatedAt || transformed.createdAt,
           hubspotCompany: row.hubspot_company,
-          hubspotEnriched: row.hubspot_enriched
+          hubspotEnriched: row.hubspot_enriched,
+          _debug_invalid_phone: row._debug_invalid_phone
         };
       });
       
@@ -240,7 +244,8 @@ router.get('/conversations/:phoneNumber',
         });
       }
       
-      const conversation = dbToApi(result.rows[0], COMMON_DB_TO_API_OPTIONS);
+      // Don't transform - frontend expects snake_case
+      const conversation = result.rows[0];
       res.json(successResponse(conversation));
     } catch (error) {
       next(error);
@@ -324,7 +329,8 @@ router.get('/conversations/:phoneNumber/full-history',
         });
       }
       
-      const responseData = dbToApi({
+      // Don't transform - frontend expects snake_case
+      const responseData = {
         phone_number: phoneNumber,
         customer_name: mostRecentConv.customer_name,
         employee_name: mostRecentConv.employee_name,
@@ -332,17 +338,17 @@ router.get('/conversations/:phoneNumber/full-history',
         total_messages: totalMessageCount,
         first_contact: allConversations.rows[0].created_at,
         last_contact: mostRecentConv.updated_at || mostRecentConv.created_at
-      }, COMMON_DB_TO_API_OPTIONS);
+      };
       
       res.json(successResponse({
         ...responseData,
         messages: allMessages,
-        conversations: allConversations.rows.map(conv => dbToApi({
+        conversations: allConversations.rows.map(conv => ({
           id: conv.id,
           created_at: conv.created_at,
           updated_at: conv.updated_at,
           message_count: conv.messages?.length || 0
-        }, COMMON_DB_TO_API_OPTIONS))
+        }))
       }));
       
       logger.info('Fetched full conversation history', {
