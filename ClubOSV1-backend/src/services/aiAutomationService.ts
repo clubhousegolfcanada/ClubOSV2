@@ -1645,8 +1645,8 @@ export class AIAutomationService {
     try {
       await db.query(
         `INSERT INTO ai_automation_response_tracking 
-         (conversation_id, phone_number, feature_key, response_count, last_response_at)
-         VALUES ($1, '', $2, 1, NOW())
+         (conversation_id, feature_key, response_count, last_response_at)
+         VALUES ($1, $2, 1, NOW())
          ON CONFLICT (conversation_id, feature_key)
          DO UPDATE SET 
            response_count = ai_automation_response_tracking.response_count + 1,
