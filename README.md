@@ -127,6 +127,12 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.13**: Performance & Monitoring Improvements
+  - Consolidated database connections with performance tracking
+  - Added comprehensive performance logging middleware
+  - Created frontend logging service with production error tracking
+  - New /api/admin/performance endpoint for system monitoring
+  - Memory leak detection and slow query analysis
 - **v1.11.12**: Critical Security Improvements & Dashboard Updates
   - Fixed hardcoded admin password vulnerability
   - Removed sensitive data logging from frontend

@@ -2,6 +2,36 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.13] - 2025-08-06
+
+### Performance & Monitoring
+- **Database Connection Consolidation**
+  - Unified pool configuration with optimized settings (max 20 connections)
+  - Query performance tracking with slow query detection (>1s warnings)
+  - Transaction helper with automatic rollback support
+  - Database health check and graceful shutdown
+  - Eliminated duplicate connection patterns
+
+- **Performance Logging Middleware**
+  - Request duration tracking for all endpoints
+  - System metrics monitoring (CPU, memory usage)
+  - Database query statistics and slow query analysis
+  - Memory leak detection with growth monitoring
+  - New `/api/admin/performance` endpoint for real-time metrics
+
+- **Frontend Logging Service**
+  - Professional logging with debug/info/warn/error levels
+  - Environment-aware (debug logs only in development)
+  - Remote error logging capability for production
+  - Console.log override to capture all logs in production
+  - Helper script for bulk console.log replacement
+
+### Technical Improvements
+- Performance metrics collection with 1000-entry history
+- Endpoint performance analytics with failure rates
+- System resource monitoring (memory, CPU, uptime)
+- Query performance insights with average duration tracking
+
 ## [1.11.12] - 2025-08-06
 
 ### Security
