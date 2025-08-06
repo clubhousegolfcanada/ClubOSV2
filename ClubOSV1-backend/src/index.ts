@@ -77,6 +77,9 @@ import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
 import { trackUsage } from './middleware/usageTracking';
 import { authLimiter } from './middleware/authLimiter';
 import { sanitizeMiddleware } from './middleware/requestValidation';
+import { performanceLogger, getPerformanceStats } from './middleware/performance';
+import { authenticate } from './middleware/auth';
+import { roleGuard } from './middleware/roleGuard';
 
 export const app = express();
 const PORT = process.env.PORT || 3001;
@@ -161,6 +164,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(sanitizeMiddleware);
 app.use(requestLogger);
+app.use(performanceLogger);
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
@@ -237,6 +241,9 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/knowledge-enhance', knowledgeEnhanceRoutes);
 app.use('/api/knowledge-router', knowledgeRouterRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Performance monitoring endpoint (admin only)
+app.get('/api/admin/performance', authenticate, roleGuard(['admin']), getPerformanceStats);
 app.use('/api/call-transcripts', callTranscriptRoutes);
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/customer-interactions', customerInteractionsRoutes);

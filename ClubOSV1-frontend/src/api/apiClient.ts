@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { UserRequest, ApiResponse } from "@/types/request";
 import { addCSRFToRequest } from "@/utils/csrf";
+import logger from "@/services/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
