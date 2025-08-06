@@ -12,6 +12,8 @@ import { messageAssistantService } from '../services/messageAssistantService';
 import { anonymizePhoneNumber } from '../utils/encryption';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
+import { dbToApi, COMMON_DB_TO_API_OPTIONS } from '../utils/caseConverters';
+import { successResponse, errorResponse } from '../utils/responseHelpers';
 
 const router = Router();
 
@@ -21,7 +23,7 @@ router.get('/health', async (req, res) => {
     // Test OpenPhone connection
     const openPhoneConnected = await openPhoneService.testConnection();
     
-    res.json({ 
+    res.json(successResponse({ 
       status: 'ok', 
       service: 'messages',
       timestamp: new Date().toISOString(),
@@ -30,7 +32,7 @@ router.get('/health', async (req, res) => {
         configured: !!process.env.OPENPHONE_API_KEY
       },
       hubspotConnected: hubspotService.isHubSpotConnected()
-    });
+    }));
   } catch (error) {
     res.json({ 
       status: 'degraded', 
@@ -63,10 +65,7 @@ router.get('/conversations',
       
       if (!tableExists.rows[0].exists) {
         logger.warn('openphone_conversations table does not exist');
-        return res.json({
-          success: true,
-          data: []
-        });
+        return res.json(successResponse([]));
       }
       
       // Then check which columns exist
@@ -129,11 +128,7 @@ router.get('/conversations',
         
         // If it's a column doesn't exist error, return empty array
         if (queryError.code === '42703') {
-          return res.json({
-            success: true,
-            data: [],
-            warning: 'Database schema issue - missing columns'
-          });
+          return res.json(successResponse([], 'Database schema issue - missing columns'));
         }
         
         throw queryError;
@@ -188,16 +183,23 @@ router.get('/conversations',
         return row;
       }));
       
-      res.json({
-        success: true,
-        data: enrichedConversations.map(row => ({
-          ...row,
+      const transformedConversations = enrichedConversations.map(row => {
+        const transformed = dbToApi(row, {
+          ...COMMON_DB_TO_API_OPTIONS,
+          excludeFields: ['password', 'password_hash', 'messages']
+        });
+        return {
+          ...transformed,
+          messages: row.messages,
           lastMessage: row.messages?.[row.messages.length - 1] || null,
           messageCount: row.messages?.length || 0,
-          // Ensure we always have updated_at for frontend
-          updated_at: row.updated_at || row.created_at
-        }))
+          updatedAt: transformed.updatedAt || transformed.createdAt,
+          hubspotCompany: row.hubspot_company,
+          hubspotEnriched: row.hubspot_enriched
+        };
       });
+      
+      res.json(successResponse(transformedConversations));
     } catch (error) {
       logger.error('Messages route error:', error);
       next(error);
@@ -219,10 +221,7 @@ router.get('/conversations/:phoneNumber',
       );
       
       if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Conversation not found'
-        });
+        return res.status(404).json(errorResponse('Conversation not found', 404));
       }
       
       // Mark as read (check if columns exist first)
@@ -241,10 +240,8 @@ router.get('/conversations/:phoneNumber',
         });
       }
       
-      res.json({
-        success: true,
-        data: result.rows[0]
-      });
+      const conversation = dbToApi(result.rows[0], COMMON_DB_TO_API_OPTIONS);
+      res.json(successResponse(conversation));
     } catch (error) {
       next(error);
     }
@@ -268,10 +265,7 @@ router.get('/conversations/:phoneNumber/full-history',
       );
       
       if (allConversations.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'No conversations found for this phone number'
-        });
+        return res.status(404).json(errorResponse('No conversations found for this phone number', 404));
       }
       
       // Merge all messages with conversation markers
@@ -330,25 +324,26 @@ router.get('/conversations/:phoneNumber/full-history',
         });
       }
       
-      res.json({
-        success: true,
-        data: {
-          phone_number: phoneNumber,
-          customer_name: mostRecentConv.customer_name,
-          employee_name: mostRecentConv.employee_name,
-          total_conversations: allConversations.rows.length,
-          total_messages: totalMessageCount,
-          messages: allMessages,
-          first_contact: allConversations.rows[0].created_at,
-          last_contact: mostRecentConv.updated_at || mostRecentConv.created_at,
-          conversations: allConversations.rows.map(conv => ({
-            id: conv.id,
-            created_at: conv.created_at,
-            updated_at: conv.updated_at,
-            message_count: conv.messages?.length || 0
-          }))
-        }
-      });
+      const responseData = dbToApi({
+        phone_number: phoneNumber,
+        customer_name: mostRecentConv.customer_name,
+        employee_name: mostRecentConv.employee_name,
+        total_conversations: allConversations.rows.length,
+        total_messages: totalMessageCount,
+        first_contact: allConversations.rows[0].created_at,
+        last_contact: mostRecentConv.updated_at || mostRecentConv.created_at
+      }, COMMON_DB_TO_API_OPTIONS);
+      
+      res.json(successResponse({
+        ...responseData,
+        messages: allMessages,
+        conversations: allConversations.rows.map(conv => dbToApi({
+          id: conv.id,
+          created_at: conv.created_at,
+          updated_at: conv.updated_at,
+          message_count: conv.messages?.length || 0
+        }, COMMON_DB_TO_API_OPTIONS))
+      }));
       
       logger.info('Fetched full conversation history', {
         phoneNumber: anonymizePhoneNumber(phoneNumber),
@@ -379,27 +374,18 @@ router.post('/send',
     
     try {
       if (!fromNumber) {
-        return res.status(400).json({
-          success: false,
-          error: 'No from number configured'
-        });
+        return res.status(400).json(errorResponse('No from number configured', 400));
       }
       
       // Format phone numbers to E.164
       const formattedTo = formatToE164(to, countryCode);
       if (!formattedTo || !isValidE164(formattedTo)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid recipient phone number format. Please use E.164 format (e.g., +1234567890) or provide a country code.'
-        });
+        return res.status(400).json(errorResponse('Invalid recipient phone number format. Please use E.164 format (e.g., +1234567890) or provide a country code.', 400));
       }
       
       const formattedFrom = formatToE164(fromNumber, countryCode);
       if (!formattedFrom || !isValidE164(formattedFrom)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid sender phone number format'
-        });
+        return res.status(400).json(errorResponse('Invalid sender phone number format', 400));
       }
       
       // Try to get OpenPhone user ID for the from number
@@ -435,10 +421,7 @@ router.post('/send',
         messageId: result.id
       });
       
-      res.json({
-        success: true,
-        data: result
-      });
+      res.json(successResponse(result));
     } catch (error: any) {
       logger.error('Failed to send message:', {
         error: error.message,
@@ -464,20 +447,21 @@ router.post('/send',
           responseStatus = 503;
         }
         
-        return res.status(responseStatus).json({
-          success: false,
-          error: userMessage,
-          code: error.response?.data?.code,
-          details: process.env.NODE_ENV === 'development' ? error.response?.data : undefined
-        });
+        return res.status(responseStatus).json(errorResponse(
+          userMessage,
+          responseStatus,
+          error.response?.data?.code,
+          process.env.NODE_ENV === 'development' ? error.response?.data : undefined
+        ));
       }
       
       // Other errors
-      return res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to send message',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
+      return res.status(500).json(errorResponse(
+        error.message || 'Failed to send message',
+        500,
+        undefined,
+        process.env.NODE_ENV === 'development' ? error.stack : undefined
+      ));
     }
   }
 );
@@ -503,7 +487,7 @@ router.put('/conversations/:phoneNumber/read',
         });
       }
       
-      res.json({ success: true });
+      res.json(successResponse(null));
     } catch (error) {
       next(error);
     }
@@ -534,10 +518,7 @@ router.get('/unread-count',
         totalUnread = parseInt(result.rows[0].total_unread) || 0;
       }
       
-      res.json({
-        success: true,
-        data: { totalUnread }
-      });
+      res.json(successResponse({ totalUnread }));
     } catch (error) {
       next(error);
     }
@@ -559,20 +540,14 @@ router.post('/conversations/:phoneNumber/suggest-response',
       );
       
       if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Conversation not found'
-        });
+        return res.status(404).json(errorResponse('Conversation not found', 404));
       }
       
       const conversation = result.rows[0];
       const messages = conversation.messages || [];
       
       if (messages.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'No messages in conversation'
-        });
+        return res.status(400).json(errorResponse('No messages in conversation', 400));
       }
       
       // Generate suggestion
@@ -600,10 +575,7 @@ router.post('/conversations/:phoneNumber/suggest-response',
         confidence: suggestion.confidence
       });
       
-      res.json({
-        success: true,
-        data: suggestion
-      });
+      res.json(successResponse(suggestion));
     } catch (error) {
       logger.error('Failed to generate suggestion:', error);
       next(error);
@@ -624,17 +596,11 @@ router.post('/suggestions/:suggestionId/approve-and-send',
       const suggestion = await messageAssistantService.getSuggestion(suggestionId);
       
       if (!suggestion) {
-        return res.status(404).json({
-          success: false,
-          error: 'Suggestion not found'
-        });
+        return res.status(404).json(errorResponse('Suggestion not found', 404));
       }
       
       if (suggestion.sent) {
-        return res.status(400).json({
-          success: false,
-          error: 'This suggestion has already been sent'
-        });
+        return res.status(400).json(errorResponse('This suggestion has already been sent', 400));
       }
       
       // Get conversation to get phone number
@@ -644,10 +610,7 @@ router.post('/suggestions/:suggestionId/approve-and-send',
       );
       
       if (convResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Conversation not found'
-        });
+        return res.status(404).json(errorResponse('Conversation not found', 404));
       }
       
       const phoneNumber = convResult.rows[0].phone_number;
@@ -655,10 +618,7 @@ router.post('/suggestions/:suggestionId/approve-and-send',
       const fromNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
       
       if (!fromNumber) {
-        return res.status(400).json({
-          success: false,
-          error: 'No default phone number configured'
-        });
+        return res.status(400).json(errorResponse('No default phone number configured', 400));
       }
       
       // Format phone numbers
@@ -666,10 +626,7 @@ router.post('/suggestions/:suggestionId/approve-and-send',
       const formattedFrom = formatToE164(fromNumber);
       
       if (!formattedTo || !formattedFrom) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid phone number format'
-        });
+        return res.status(400).json(errorResponse('Invalid phone number format', 400));
       }
       
       // Approve the suggestion
@@ -707,14 +664,11 @@ router.post('/suggestions/:suggestionId/approve-and-send',
         edited: !!editedText
       });
       
-      res.json({
-        success: true,
-        data: {
-          messageId: result.id,
-          suggestionId,
-          sent: true
-        }
-      });
+      res.json(successResponse({
+        messageId: result.id,
+        suggestionId,
+        sent: true
+      }));
     } catch (error) {
       logger.error('Failed to send suggested message:', error);
       next(error);
@@ -732,13 +686,10 @@ router.get('/ai-stats',
       
       const stats = await messageAssistantService.getConversationStats(Number(days));
       
-      res.json({
-        success: true,
-        data: {
-          ...stats,
-          period_days: Number(days)
-        }
-      });
+      res.json(successResponse({
+        ...stats,
+        periodDays: Number(days)
+      }));
     } catch (error) {
       next(error);
     }
