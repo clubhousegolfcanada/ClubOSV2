@@ -127,6 +127,8 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.19**: Mobile Navigation Enhancement
+  - Added booking icon to mobile dashboard for quick access to Skedda
 - **v1.11.18**: Testing Infrastructure Phase 4
   - Added HubSpot integration tests (12 test cases)
   - Added Push Notification service tests (14 test cases)

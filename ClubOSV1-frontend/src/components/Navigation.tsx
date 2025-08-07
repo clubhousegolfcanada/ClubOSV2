@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
-import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
 
@@ -252,6 +252,16 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center gap-2">
+            {/* Mobile Booking Button */}
+            {user && (
+              <button
+                onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
+                className="p-2 text-[var(--accent)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all"
+                title="Book a simulator"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
+            )}
             {/* Mobile Messages Button */}
             {user && ['admin', 'operator', 'support'].includes(user.role) && (
               <button

@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.19] - 2025-08-07
+
+### Added
+- **Mobile Navigation Enhancement**
+  - Added booking icon (Calendar) to mobile navigation bar on dashboard
+  - Quick access to Skedda booking system directly from mobile dashboard
+  - Icon positioned next to Messages for easy thumb reach
+  - Opens booking site in new tab to preserve app state
+
 ## [1.11.18] - 2025-08-06
 
 ### Testing Infrastructure - Phase 4
