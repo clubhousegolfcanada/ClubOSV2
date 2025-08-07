@@ -258,6 +258,14 @@ Please provide a helpful response to the customer's current message based on the
       });
 
       // Run the assistant with customer safety instructions if needed
+      logger.info('Creating assistant run', {
+        route,
+        assistantId,
+        threadId: thread.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      const runStartTime = Date.now();
       const run = await this.openai.beta.threads.runs.create(thread.id, {
         assistant_id: assistantId,
         // ONLY add customer instructions for customer-facing messages
@@ -270,56 +278,82 @@ Please provide a helpful response to the customer's current message based on the
 - If asked about something confidential, politely redirect to email booking@clubhouse247golf.com`
         } : {})
       });
+      
+      logger.info('Assistant run created', {
+        route,
+        runId: run.id,
+        timeToCreate: Date.now() - runStartTime,
+        timestamp: new Date().toISOString()
+      });
 
-      // Wait for the run to complete with timeout
+      // Wait for the run to complete - NO TIMEOUT to ensure we get the response
       const startTime = Date.now();
-      const timeout = 15000; // 15 seconds
-      const pollInterval = 500; // Poll every 500ms instead of 250ms
+      const pollInterval = 500; // Poll every 500ms
       let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
       
-      logger.info('Assistant run started', {
+      logger.info('Initial run status', {
         route,
         runId: run.id,
         threadId: thread.id,
-        status: runStatus.status
+        status: runStatus.status,
+        timestamp: new Date().toISOString()
       });
+      
+      let pollCount = 0;
+      let statusChanges: Array<{status: string, time: number}> = [{status: runStatus.status, time: 0}];
       
       while (runStatus.status !== 'completed' && runStatus.status !== 'failed' && runStatus.status !== 'cancelled') {
         const elapsedTime = Date.now() - startTime;
+        pollCount++;
         
-        if (elapsedTime > timeout) {
-          logger.warn('Assistant response timeout - cancelling run', {
+        // Log warning for slow responses but don't timeout
+        if (elapsedTime > 15000 && elapsedTime % 5000 < pollInterval) {
+          logger.warn('Assistant taking longer than expected', {
             route,
             runId: run.id,
-            elapsedTime,
-            timeout
+            status: runStatus.status,
+            elapsedSeconds: Math.round(elapsedTime / 1000),
+            pollCount
           });
-          
-          try {
-            await this.openai.beta.threads.runs.cancel(thread.id, run.id);
-          } catch (cancelError) {
-            logger.error('Failed to cancel run', { error: cancelError });
-          }
-          
-          throw new Error(`Assistant response timeout after ${Math.round(elapsedTime / 1000)}s`);
         }
         
         await new Promise(resolve => setTimeout(resolve, pollInterval));
         
+        const pollStartTime = Date.now();
         try {
           runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
         } catch (retrieveError) {
           logger.error('Failed to retrieve run status', { error: retrieveError });
           throw new Error('Failed to check assistant status');
         }
+        const pollTime = Date.now() - pollStartTime;
         
-        // Log status periodically
+        // Track status changes
+        if (statusChanges[statusChanges.length - 1].status !== runStatus.status) {
+          statusChanges.push({
+            status: runStatus.status,
+            time: Date.now() - startTime
+          });
+          logger.info('Run status changed', {
+            route,
+            runId: run.id,
+            oldStatus: statusChanges[statusChanges.length - 2].status,
+            newStatus: runStatus.status,
+            elapsedTime: Date.now() - startTime,
+            pollTime
+          });
+        }
+        
+        // Log detailed status every 5 seconds
         if (elapsedTime > 5000 && elapsedTime % 5000 < pollInterval) {
-          logger.info('Still waiting for assistant', {
+          logger.info('Detailed assistant status', {
             route,
             runId: run.id,
             status: runStatus.status,
-            elapsedSeconds: Math.round(elapsedTime / 1000)
+            elapsedSeconds: Math.round(elapsedTime / 1000),
+            pollCount,
+            statusChanges,
+            lastPollTime: pollTime
           });
         }
         
@@ -401,22 +435,43 @@ Please provide a helpful response to the customer's current message based on the
       // Shadow comparison removed - using OpenAI Assistants directly
       
       const totalTime = Date.now() - startTime;
-      logger.info('Assistant response completed', {
+      const fullProcessingTime = Date.now() - runStartTime;
+      
+      logger.info('Assistant response completed - DETAILED TIMING', {
         route,
         assistantId,
         threadId: thread.id,
-        totalTimeMs: totalTime,
-        totalTimeSeconds: Math.round(totalTime / 1000),
+        runId: run.id,
+        timings: {
+          threadCreation: runStartTime - startTime,
+          runCreation: Date.now() - runStartTime - totalTime,
+          runExecution: totalTime,
+          totalTime: fullProcessingTime
+        },
+        timingsInSeconds: {
+          threadCreation: Math.round((runStartTime - startTime) / 1000),
+          runExecution: Math.round(totalTime / 1000),
+          total: Math.round(fullProcessingTime / 1000)
+        },
+        pollCount,
+        statusChanges,
         responseLength: responseText.length
       });
       
       // Log warning if response took too long
       if (totalTime > 20000) {
-        logger.warn('Slow assistant response detected', {
+        logger.warn('SLOW ASSISTANT RESPONSE DETECTED', {
           route,
           assistantId,
           totalTimeMs: totalTime,
-          totalTimeSeconds: Math.round(totalTime / 1000)
+          totalTimeSeconds: Math.round(totalTime / 1000),
+          statusChanges,
+          possibleCauses: [
+            'OpenAI API is slow',
+            'Assistant is processing complex instructions',
+            'Network latency',
+            'Large knowledge base search'
+          ]
         });
       }
       
