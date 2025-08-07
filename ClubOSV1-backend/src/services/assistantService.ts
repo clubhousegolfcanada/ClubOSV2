@@ -23,6 +23,7 @@ interface AssistantResponse {
   }>;
   metadata?: any;
   escalation?: any;
+  processingTime?: number; // Time taken to process the request in milliseconds
 }
 
 export class AssistantService {
