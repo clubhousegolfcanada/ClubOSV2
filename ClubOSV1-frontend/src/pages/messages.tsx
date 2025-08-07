@@ -729,21 +729,30 @@ export default function Messages() {
                     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                     
                     if (isMobile) {
-                      // On mobile, try to open the app directly
-                      // Try multiple URL schemes that Splashtop might use
-                      const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
+                      // On mobile, try to open the Splashtop app
+                      // Using a hidden iframe method which is more reliable
+                      const tryOpenApp = (scheme: string) => {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = scheme;
+                        document.body.appendChild(iframe);
+                        
+                        // Clean up after a short delay
+                        setTimeout(() => {
+                          document.body.removeChild(iframe);
+                        }, 1000);
+                      };
                       
-                      for (const scheme of schemes) {
-                        try {
-                          window.location.href = scheme;
-                          break;
-                        } catch (e) {
-                          // Continue to next scheme
+                      // Try the main Splashtop Business scheme first
+                      tryOpenApp('splashtopbusiness://');
+                      
+                      // Fallback: After a short delay, if user is still here, open web version
+                      setTimeout(() => {
+                        // Check if page is still visible (app didn't open)
+                        if (!document.hidden) {
+                          window.open('https://my.splashtop.com/computers', '_blank');
                         }
-                      }
-                      
-                      // If none of the schemes work, the app might not be installed
-                      // But we won't redirect to app store - just let the user know
+                      }, 1500);
                     } else {
                       // On desktop, open web interface
                       window.open('https://my.splashtop.com/computers', '_blank');
@@ -1113,21 +1122,30 @@ export default function Messages() {
                     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                     
                     if (isMobile) {
-                      // On mobile, try to open the app directly
-                      // Try multiple URL schemes that Splashtop might use
-                      const schemes = ['splashtop://', 'splashtopbusiness://', 'com.splashtop.remote.business://'];
+                      // On mobile, try to open the Splashtop app
+                      // Using a hidden iframe method which is more reliable
+                      const tryOpenApp = (scheme: string) => {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = scheme;
+                        document.body.appendChild(iframe);
+                        
+                        // Clean up after a short delay
+                        setTimeout(() => {
+                          document.body.removeChild(iframe);
+                        }, 1000);
+                      };
                       
-                      for (const scheme of schemes) {
-                        try {
-                          window.location.href = scheme;
-                          break;
-                        } catch (e) {
-                          // Continue to next scheme
+                      // Try the main Splashtop Business scheme first
+                      tryOpenApp('splashtopbusiness://');
+                      
+                      // Fallback: After a short delay, if user is still here, open web version
+                      setTimeout(() => {
+                        // Check if page is still visible (app didn't open)
+                        if (!document.hidden) {
+                          window.open('https://my.splashtop.com/computers', '_blank');
                         }
-                      }
-                      
-                      // If none of the schemes work, the app might not be installed
-                      // But we won't redirect to app store - just let the user know
+                      }, 1500);
                     } else {
                       // On desktop, open web interface
                       window.open('https://my.splashtop.com/computers', '_blank');

@@ -11,6 +11,13 @@ All notable changes to ClubOS will be documented in this file.
   - Icon positioned next to Messages for easy thumb reach
   - Opens booking site in new tab to preserve app state
 
+### Fixed
+- **Splashtop Control Button**
+  - Fixed Control button in Messages page not opening Splashtop app on mobile
+  - Implemented iframe-based URL scheme launching for better reliability
+  - Added automatic fallback to web interface if app doesn't open
+  - Works with Splashtop Business app (splashtopbusiness:// scheme)
+
 ## [1.11.18] - 2025-08-06
 
 ### Testing Infrastructure - Phase 4
