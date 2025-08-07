@@ -307,6 +307,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 icon: '/logo-192.png',
                 badge: '/badge-72.png',
                 tag: `message-${phoneNumber}`,
+                vibrate: [200, 100, 200, 100, 200], // Enhanced vibration pattern
+                sound: 'default',
+                actions: [
+                  { action: 'view-message', title: 'View' },
+                  { action: 'mark-read', title: 'Mark Read' }
+                ],
+                requireInteraction: true, // Keep notification visible
                 data: {
                   type: 'messages',
                   phoneNumber: phoneNumber,
@@ -429,6 +436,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
               icon: '/logo-192.png',
               badge: '/badge-72.png',
               tag: `message-${phoneNumber}`,
+              vibrate: [200, 100, 200, 100, 200], // Enhanced vibration pattern
+              sound: 'default',
+              actions: [
+                { action: 'view-message', title: 'View' },
+                { action: 'mark-read', title: 'Mark Read' }
+              ],
+              requireInteraction: true, // Keep notification visible
               data: {
                 type: 'messages',
                 phoneNumber: phoneNumber,

@@ -69,14 +69,16 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: notification.body || 'New notification from ClubOS',
-    icon: '/clubos-icon-192.png',
-    badge: '/clubos-badge-72.png',
-    vibrate: [200, 100, 200],
+    icon: notification.icon || '/clubos-icon-192.png',
+    badge: notification.badge || '/clubos-badge-72.png',
+    vibrate: notification.vibrate || [200, 100, 200, 100, 200], // Enhanced default vibration
     data: notification.data || {},
-    requireInteraction: notification.requireInteraction || false,
+    requireInteraction: notification.requireInteraction !== undefined ? notification.requireInteraction : true,
     actions: notification.actions || [],
     tag: notification.tag || 'clubos-notification',
-    renotify: true
+    renotify: true,
+    silent: notification.silent || false,
+    sound: notification.sound || 'default'
   };
 
   event.waitUntil(

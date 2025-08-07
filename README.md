@@ -127,6 +127,9 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.20**: Push Notification Enhancements
+  - Fixed vibration not working on mobile devices
+  - Added action buttons and sound to notifications
 - **v1.11.19**: Mobile Navigation & Messaging System Fixes
   - Added booking icon to mobile dashboard for quick access to Skedda
   - Fixed Splashtop Control button to properly open the app on mobile devices

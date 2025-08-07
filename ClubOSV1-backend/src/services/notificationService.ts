@@ -11,6 +11,14 @@ interface NotificationPayload {
   tag?: string;
   data?: any;
   requireInteraction?: boolean;
+  vibrate?: number[];
+  sound?: string;
+  silent?: boolean;
+  actions?: Array<{
+    action: string;
+    title: string;
+    icon?: string;
+  }>;
 }
 
 interface PushSubscription {

@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.20] - 2025-08-07
+
+### Fixed
+- **Push Notification Improvements**
+  - Added vibration patterns to push notifications (200ms pattern)
+  - Notifications now include action buttons (View, Mark Read)
+  - Added requireInteraction flag to keep notifications visible
+  - Included sound configuration for notifications
+  - Enhanced notification payload from backend with all options
+  - Service worker now properly handles vibration and sound
+  - Test notifications now include vibration for testing
+
 ## [1.11.19] - 2025-08-07
 
 ### Added
