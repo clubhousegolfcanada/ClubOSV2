@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import { MessageSquare, Clock, ArrowRight } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
+import { useMessages } from '@/contexts/MessagesContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,9 +18,9 @@ interface RecentConversation {
 export const MessagesCard: React.FC = () => {
   const router = useRouter();
   const { user } = useAuthState();
+  const { unreadCount } = useMessages();
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalUnread, setTotalUnread] = useState(0);
 
   useEffect(() => {
     const fetchRecentConversations = async () => {
@@ -46,10 +47,6 @@ export const MessagesCard: React.FC = () => {
             };
           });
           setConversations(conversations);
-          
-          // Calculate total unread count
-          const total = response.data.data.reduce((sum: number, conv: any) => sum + (conv.unread_count || 0), 0);
-          setTotalUnread(total);
         }
         setIsLoading(false);
       } catch (error) {
@@ -59,8 +56,8 @@ export const MessagesCard: React.FC = () => {
     };
 
     fetchRecentConversations();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchRecentConversations, 30000);
+    // Refresh every 60 seconds (reduced frequency to prevent rate limiting)
+    const interval = setInterval(fetchRecentConversations, 60000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -108,9 +105,9 @@ export const MessagesCard: React.FC = () => {
             <h3 className="text-base font-medium text-[var(--text-primary)]">
               Messages
             </h3>
-            {totalUnread > 0 && (
+            {unreadCount > 0 && (
               <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-medium bg-[var(--accent)] text-white rounded-full">
-                {totalUnread}
+                {unreadCount}
               </span>
             )}
           </div>

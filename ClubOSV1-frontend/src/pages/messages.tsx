@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useRemoteActionsBar } from '@/hooks/useRemoteActionsBar';
+import { useMessages } from '@/contexts/MessagesContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -66,6 +67,7 @@ export default function Messages() {
   // Removed pull-to-refresh states for better native feel
   const [isInIframe, setIsInIframe] = useState(false);
   const remoteActionsBar = useRemoteActionsBar();
+  const { markConversationAsRead, refreshUnreadCount } = useMessages();
 
   // Check auth
   useEffect(() => {
@@ -103,13 +105,13 @@ export default function Messages() {
         clearInterval(interval);
       }
       
-      // Set up auto-refresh every 5 seconds (increased from 2s to reduce rate limit issues)
+      // Set up auto-refresh every 15 seconds (increased from 5s to reduce rate limit issues)
       interval = setInterval(() => {
         // Only refresh if tab is visible and not rate limited
         if (isTabVisible && !isRateLimited) {
           loadConversations(false);
         }
-      }, 5000);
+      }, 15000);
       setRefreshInterval(interval);
     };
     
@@ -151,23 +153,8 @@ export default function Messages() {
       );
       
       if (conversationToSelect && (!selectedConversation || selectedConversation.phone_number !== conversationToSelect.phone_number)) {
-        setSelectedConversation(conversationToSelect);
-        
-        // Deduplicate messages
-        const messages = conversationToSelect.messages || [];
-        const uniqueMessages = messages.reduce((acc: Message[], msg: Message) => {
-          if (!acc.find(m => m.id === msg.id)) {
-            acc.push(msg);
-          }
-          return acc;
-        }, []);
-        
-        setMessages(uniqueMessages);
-        
-        // Scroll to bottom after a short delay
-        setTimeout(() => {
-          scrollToBottom();
-        }, 100);
+        // Use selectConversation to properly load full history and mark as read
+        selectConversation(conversationToSelect);
         
         // Clear the query parameter to avoid re-selecting on refresh
         router.replace('/messages', undefined, { shallow: true });
@@ -392,12 +379,8 @@ export default function Messages() {
             // Set all messages including conversation separators
             setMessages(messages);
             
-            // Mark as read
-            await axios.put(
-              `${API_URL}/messages/conversations/${conversation.phone_number}/read`,
-              {},
-              { headers: { 'Authorization': `Bearer ${token}` } }
-            );
+            // Mark as read using shared context
+            await markConversationAsRead(conversation.phone_number);
             
             // Update local state
             setConversations(prev => prev.map(c => 

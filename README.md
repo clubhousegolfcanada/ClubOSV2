@@ -127,9 +127,12 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
-- **v1.11.19**: Mobile Navigation Enhancement & Splashtop Fix
+- **v1.11.19**: Mobile Navigation & Messaging System Fixes
   - Added booking icon to mobile dashboard for quick access to Skedda
   - Fixed Splashtop Control button to properly open the app on mobile devices
+  - Fixed message history not loading when selecting from dashboard
+  - Fixed notification badges not clearing properly
+  - Reduced polling frequencies to prevent rate limiting
 - **v1.11.18**: Testing Infrastructure Phase 4
   - Added HubSpot integration tests (12 test cases)
   - Added Push Notification service tests (14 test cases)

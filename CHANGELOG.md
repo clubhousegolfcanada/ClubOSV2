@@ -18,6 +18,17 @@ All notable changes to ClubOS will be documented in this file.
   - Added automatic fallback to web interface if app doesn't open
   - Works with Splashtop Business app (splashtopbusiness:// scheme)
 
+- **Messaging System Improvements**
+  - Fixed dashboard message selection not loading full conversation history
+  - Dashboard now properly calls selectConversation to fetch complete history
+  - Fixed notification badge not clearing when conversations are marked as read
+  - Implemented centralized MessagesContext for consistent unread count management
+  - Badge now updates immediately when marking conversations as read
+  - Reduced polling frequencies to prevent rate limiting:
+    - Messages page: 5s → 15s
+    - Unread count check: 30s → 60s
+    - MessagesCard refresh: 30s → 60s
+
 ## [1.11.18] - 2025-08-06
 
 ### Testing Infrastructure - Phase 4

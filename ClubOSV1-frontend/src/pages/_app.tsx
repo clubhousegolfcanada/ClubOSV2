@@ -11,7 +11,7 @@ import { useAuthState } from '@/state/useStore';
 import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 import { tokenManager } from '@/utils/tokenManager';
 import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
-import { useMessageNotifications } from '@/hooks/useMessageNotifications';
+import { MessagesProvider, useMessages } from '@/contexts/MessagesContext';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { SwipeIndicator } from '@/components/SwipeIndicator';
 import RemoteActionsBar from '@/components/RemoteActionsBar';
@@ -35,8 +35,8 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   // Use kiosk redirect hook
   useKioskRedirect();
   
-  // Use message notifications hook
-  const { unreadCount } = useMessageNotifications();
+  // Use message context for unread count
+  const { unreadCount } = useMessages();
   
   // Enable swipe navigation for authenticated users
   useSwipeNavigation({ enabled: isAuthenticated && !isPublicRoute });
@@ -241,7 +241,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider>
-      <AppContent Component={Component} pageProps={pageProps} />
+      <MessagesProvider>
+        <AppContent Component={Component} pageProps={pageProps} />
+      </MessagesProvider>
     </ThemeProvider>
   );
 }
