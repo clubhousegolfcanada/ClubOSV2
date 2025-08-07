@@ -66,6 +66,9 @@ export default function Messages() {
   const [editedSuggestionText, setEditedSuggestionText] = useState('');
   // Removed pull-to-refresh states for better native feel
   const [isInIframe, setIsInIframe] = useState(false);
+  const [fullMessageHistory, setFullMessageHistory] = useState<Message[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const remoteActionsBar = useRemoteActionsBar();
   const { markConversationAsRead, refreshUnreadCount } = useMessages();
 
@@ -353,8 +356,10 @@ export default function Messages() {
   const selectConversation = async (conversation: Conversation) => {
     setSelectedConversation(conversation);
     setMessages([]); // Clear messages while loading
+    setFullMessageHistory([]); // Clear full history
+    setHasMoreMessages(false); // Reset load more state
     
-    // Fetch full conversation history
+    // Fetch conversation history
     if (conversation.phone_number) {
       try {
         const token = localStorage.getItem('clubos_token');
@@ -376,8 +381,19 @@ export default function Messages() {
               last_contact
             });
             
-            // Set all messages including conversation separators
-            setMessages(messages);
+            // For better UX, only show recent messages initially (last 30-50 messages)
+            // This prevents long scroll animations on conversations with extensive history
+            const INITIAL_MESSAGE_COUNT = 30;
+            const recentMessages = messages.length > INITIAL_MESSAGE_COUNT 
+              ? messages.slice(-INITIAL_MESSAGE_COUNT) 
+              : messages;
+            
+            // Set recent messages only
+            setMessages(recentMessages);
+            
+            // Store full history and track if there are more messages
+            setFullMessageHistory(messages);
+            setHasMoreMessages(messages.length > INITIAL_MESSAGE_COUNT);
             
             // Mark as read using shared context
             await markConversationAsRead(conversation.phone_number);
@@ -387,10 +403,10 @@ export default function Messages() {
               c.id === conversation.id ? { ...c, unread_count: 0 } : c
             ));
             
-            // Scroll to bottom after messages load
+            // Instantly jump to bottom (no animation for initial load)
             setTimeout(() => {
-              scrollToBottom();
-            }, 100);
+              scrollToBottom('instant');
+            }, 50);
           }
         }
       } catch (error) {
@@ -408,6 +424,31 @@ export default function Messages() {
         setMessages(uniqueMessages);
       }
     }
+  };
+
+  const loadMoreMessages = () => {
+    if (!hasMoreMessages || loadingMoreMessages) return;
+    
+    setLoadingMoreMessages(true);
+    
+    // Calculate how many messages to load
+    const currentMessageCount = messages.length;
+    const LOAD_MORE_COUNT = 20;
+    const totalAvailable = fullMessageHistory.length;
+    const remainingCount = totalAvailable - currentMessageCount;
+    const toLoadCount = Math.min(LOAD_MORE_COUNT, remainingCount);
+    
+    // Get the older messages
+    const startIndex = totalAvailable - currentMessageCount - toLoadCount;
+    const endIndex = totalAvailable - currentMessageCount;
+    const olderMessages = fullMessageHistory.slice(startIndex, endIndex);
+    
+    // Prepend older messages to current messages
+    setMessages([...olderMessages, ...messages]);
+    
+    // Check if there are still more messages
+    setHasMoreMessages(startIndex > 0);
+    setLoadingMoreMessages(false);
   };
 
   const sendMessage = async () => {
@@ -863,6 +904,29 @@ export default function Messages() {
 
                       {/* Messages */}
                       <div ref={desktopMessagesContainerRef} className="flex-1 overflow-y-auto p-4 flex flex-col">
+                        {/* Load More Messages Button */}
+                        {hasMoreMessages && (
+                          <div className="text-center mb-4">
+                            <button
+                              onClick={loadMoreMessages}
+                              disabled={loadingMoreMessages}
+                              className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-colors inline-flex items-center gap-2"
+                            >
+                              {loadingMoreMessages ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-4 h-4" />
+                                  Load earlier messages
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                        
                         {/* Spacer to push messages to bottom when few messages */}
                         <div className="flex-1 min-h-0" />
                         <div className="space-y-4">
@@ -1269,6 +1333,29 @@ export default function Messages() {
 
                   {/* Messages - Mobile optimized with better spacing */}
                   <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                    {/* Load More Messages Button - Mobile */}
+                    {hasMoreMessages && (
+                      <div className="text-center mb-3">
+                        <button
+                          onClick={loadMoreMessages}
+                          disabled={loadingMoreMessages}
+                          className="px-3 py-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded-full inline-flex items-center gap-2 active:scale-95 transition-transform"
+                        >
+                          {loadingMoreMessages ? (
+                            <>
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3" />
+                              Load earlier messages
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                    
                     {/* Spacer to push messages to bottom when few messages */}
                     <div className="flex-1 min-h-0" />
                     {messages && messages.length > 0 ? (

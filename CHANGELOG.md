@@ -28,6 +28,11 @@ All notable changes to ClubOS will be documented in this file.
     - Messages page: 5s → 15s
     - Unread count check: 30s → 60s
     - MessagesCard refresh: 30s → 60s
+  - **Improved Message Loading UX**:
+    - Only loads last 30 messages initially (standard messaging app behavior)
+    - No more scrolling animation through entire conversation history
+    - Added "Load earlier messages" button for viewing older messages
+    - Instant scroll to bottom on conversation selection (no animation)
 
 ## [1.11.18] - 2025-08-06
 
