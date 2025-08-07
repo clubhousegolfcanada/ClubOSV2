@@ -39,11 +39,10 @@ export class AssistantService {
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
         organization: process.env.OPENAI_ORGANIZATION,
-        project: process.env.OPENAI_PROJECT_ID,
-        timeout: 20000, // 20 second timeout for all API calls
-        maxRetries: 1 // Only retry once on failure
+        project: process.env.OPENAI_PROJECT_ID
+        // Using OpenAI SDK defaults for timeout and retries
       });
-      logger.info('AssistantService: OpenAI API key configured with 20s timeout, assistant features enabled');
+      logger.info('AssistantService: OpenAI API key configured, assistant features enabled');
     } else {
       this.openai = null;
       logger.warn('AssistantService: OpenAI API key not configured, assistant features disabled');
