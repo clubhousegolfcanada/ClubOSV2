@@ -178,25 +178,6 @@ export class AssistantService {
   ): Promise<AssistantResponse> {
     // Check if this is a customer-facing request (ONLY for messages/SMS)
     const isCustomerFacing = context?.isCustomerFacing === true;
-    
-    // Quick responses for common BrandTone queries to avoid slow API calls
-    if (route === 'BrandTone' || route === 'brand') {
-      const quickResponse = this.getQuickBrandResponse(userMessage);
-      if (quickResponse) {
-        logger.info('Using quick brand response', {
-          route,
-          query: userMessage.substring(0, 50)
-        });
-        return {
-          response: quickResponse,
-          assistantId: 'quick-brand',
-          threadId: `quick-${Date.now()}`,
-          confidence: 0.95,
-          processingTime: 50
-        };
-      }
-    }
-    
     // First, check our database for recent knowledge updates
     // Use improved search for better matching
     const dbSearch = await improvedKnowledgeSearch.searchKnowledge(
@@ -523,65 +504,6 @@ Please provide a helpful response to the customer's current message based on the
         confidence: 0.3
       };
     }
-  }
-
-  private getQuickBrandResponse(userMessage: string): string | null {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Quick responses for common brand queries
-    if (lowerMessage.includes('color') || lowerMessage.includes('clubhouse green') || lowerMessage.includes('brand color')) {
-      return `The branding colors for Clubhouse 24/7 Golf are:
-
-**Primary Color:** Clubhouse Green (#0B3D3A)
-**Accent Palette:** White, Black, Off-White, Soft Greys
-
-These colors reflect our professional yet welcoming atmosphere.`;
-    }
-    
-    if (lowerMessage.includes('hours') || lowerMessage.includes('open') || lowerMessage.includes('close')) {
-      return `Clubhouse 24/7 Golf is open 24 hours a day, 7 days a week! 
-
-We're always here for you - day or night. Book your session anytime at clubhouse247golf.com or through the Skedda app.`;
-    }
-    
-    if (lowerMessage.includes('membership') || lowerMessage.includes('member') || lowerMessage.includes('join')) {
-      return `We offer flexible membership options:
-
-**Monthly Unlimited:** $349/month - Unlimited golf, anytime access
-**10-Hour Package:** $299 - Use anytime, never expires
-**Pay-As-You-Go:** Starting at $49/hour
-
-Sign up at clubhouse247golf.com or visit us in person!`;
-    }
-    
-    if (lowerMessage.includes('invitational') || lowerMessage.includes('event')) {
-      return `**The Invitational** is our signature event celebrating the transition from outdoor to indoor golf season.
-
-Date: October 29, 2025
-Purpose: Season send-off and community celebration
-
-We also host corporate events, birthday parties, and golf leagues. Contact us at events@clubhouse247golf.com for more information!`;
-    }
-    
-    if (lowerMessage.includes('gift card')) {
-      return `Gift cards are available for any amount and make perfect gifts for golf enthusiasts!
-
-Purchase online at: clubhouse247golf.com/giftcards
-Or visit us in person at any location.
-
-Gift cards never expire and can be used for simulator time or merchandise.`;
-    }
-    
-    if (lowerMessage.includes('location') || lowerMessage.includes('address') || lowerMessage.includes('where')) {
-      return `Clubhouse 24/7 Golf has multiple locations across Calgary:
-
-Visit clubhouse247golf.com/locations for addresses and directions to your nearest facility.
-
-All locations feature state-of-the-art TrackMan simulators and are open 24/7!`;
-    }
-    
-    // Return null to fall back to OpenAI Assistant for complex queries
-    return null;
   }
 
   private getFallbackResponse(route: string, userMessage: string): string {
