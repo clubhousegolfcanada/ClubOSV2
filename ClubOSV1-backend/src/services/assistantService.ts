@@ -38,9 +38,11 @@ export class AssistantService {
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
         organization: process.env.OPENAI_ORGANIZATION,
-        project: process.env.OPENAI_PROJECT_ID
+        project: process.env.OPENAI_PROJECT_ID,
+        timeout: 20000, // 20 second timeout for all API calls
+        maxRetries: 1 // Only retry once on failure
       });
-      logger.info('AssistantService: OpenAI API key configured, assistant features enabled');
+      logger.info('AssistantService: OpenAI API key configured with 20s timeout, assistant features enabled');
     } else {
       this.openai = null;
       logger.warn('AssistantService: OpenAI API key not configured, assistant features disabled');
@@ -271,16 +273,54 @@ Please provide a helpful response to the customer's current message based on the
       // Wait for the run to complete with timeout
       const startTime = Date.now();
       const timeout = 15000; // 15 seconds
+      const pollInterval = 500; // Poll every 500ms instead of 250ms
       let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
       
-      while (runStatus.status !== 'completed' && runStatus.status !== 'failed') {
-        if (Date.now() - startTime > timeout) {
-          await this.openai.beta.threads.runs.cancel(thread.id, run.id).catch(() => {});
-          throw new Error('Assistant response timeout');
+      logger.info('Assistant run started', {
+        route,
+        runId: run.id,
+        threadId: thread.id,
+        status: runStatus.status
+      });
+      
+      while (runStatus.status !== 'completed' && runStatus.status !== 'failed' && runStatus.status !== 'cancelled') {
+        const elapsedTime = Date.now() - startTime;
+        
+        if (elapsedTime > timeout) {
+          logger.warn('Assistant response timeout - cancelling run', {
+            route,
+            runId: run.id,
+            elapsedTime,
+            timeout
+          });
+          
+          try {
+            await this.openai.beta.threads.runs.cancel(thread.id, run.id);
+          } catch (cancelError) {
+            logger.error('Failed to cancel run', { error: cancelError });
+          }
+          
+          throw new Error(`Assistant response timeout after ${Math.round(elapsedTime / 1000)}s`);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 250));
-        runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        
+        try {
+          runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+        } catch (retrieveError) {
+          logger.error('Failed to retrieve run status', { error: retrieveError });
+          throw new Error('Failed to check assistant status');
+        }
+        
+        // Log status periodically
+        if (elapsedTime > 5000 && elapsedTime % 5000 < pollInterval) {
+          logger.info('Still waiting for assistant', {
+            route,
+            runId: run.id,
+            status: runStatus.status,
+            elapsedSeconds: Math.round(elapsedTime / 1000)
+          });
+        }
         
         // Handle function calls if needed
         if (runStatus.status === 'requires_action') {
@@ -359,6 +399,26 @@ Please provide a helpful response to the customer's current message based on the
 
       // Shadow comparison removed - using OpenAI Assistants directly
       
+      const totalTime = Date.now() - startTime;
+      logger.info('Assistant response completed', {
+        route,
+        assistantId,
+        threadId: thread.id,
+        totalTimeMs: totalTime,
+        totalTimeSeconds: Math.round(totalTime / 1000),
+        responseLength: responseText.length
+      });
+      
+      // Log warning if response took too long
+      if (totalTime > 20000) {
+        logger.warn('Slow assistant response detected', {
+          route,
+          assistantId,
+          totalTimeMs: totalTime,
+          totalTimeSeconds: Math.round(totalTime / 1000)
+        });
+      }
+      
       return {
         response: responseText,
         assistantId,
@@ -369,7 +429,8 @@ Please provide a helpful response to the customer's current message based on the
         priority,
         actions,
         metadata,
-        escalation
+        escalation,
+        processingTime: totalTime
       };
 
     } catch (error: any) {

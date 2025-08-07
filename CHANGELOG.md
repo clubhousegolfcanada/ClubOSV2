@@ -18,6 +18,15 @@ All notable changes to ClubOS will be documented in this file.
   - Fixed COALESCE logic preventing name updates from overwriting phone numbers
   - Names now properly update when received from OpenPhone webhooks
 
+### Improved
+- **AI Assistant Performance**
+  - Fixed slow BrandTone assistant responses (was taking 53+ seconds)
+  - Added 20-second hard timeout on OpenAI API calls
+  - Improved timeout handling with proper run cancellation
+  - Added detailed logging for response times and slow responses
+  - Reduced API retry attempts from default to 1
+  - Increased polling interval from 250ms to 500ms for better efficiency
+
 ## [1.11.20] - 2025-08-07
 
 ### Fixed
