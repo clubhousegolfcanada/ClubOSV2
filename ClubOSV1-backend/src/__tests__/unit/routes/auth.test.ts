@@ -64,12 +64,14 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
         success: true,
-        token: 'test-token',
-        user: {
-          id: 'user-123',
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'operator'
+        data: {
+          token: 'test-token',
+          user: {
+            id: 'user-123',
+            email: 'test@example.com',
+            name: 'Test User',
+            role: 'operator'
+          }
         }
       });
       expect(mockedDb.findUserByEmail).toHaveBeenCalledWith('test@example.com');
@@ -96,8 +98,8 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(401);
       expect(response.body).toMatchObject({
-        success: false,
-        error: 'Invalid credentials'
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid email or password'
       });
     });
 
@@ -114,8 +116,8 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(401);
       expect(response.body).toMatchObject({
-        success: false,
-        error: 'Invalid credentials'
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid email or password'
       });
     });
 
@@ -352,8 +354,8 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(401);
       expect(response.body).toMatchObject({
-        success: false,
-        error: 'Current password is incorrect'
+        code: 'INVALID_PASSWORD',
+        message: 'Current password is incorrect'
       });
     });
   });
