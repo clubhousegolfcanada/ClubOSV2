@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.21] - 2025-08-07
+
+### Fixed
+- **Duplicate Messages Issue**
+  - Fixed duplicate messages appearing when only one was sent
+  - Added message ID deduplication in OpenPhone webhook handler
+  - Prevents processing the same message multiple times from webhook retries
+  - Checks for existing message IDs before adding to conversations
+  - Added logging for webhook retry headers (x-openphone-delivery-attempt)
+
+- **Customer Name Display**
+  - Fixed customer names showing as phone numbers instead of actual names
+  - Removed phone number fallback when customer name is not available
+  - Fixed COALESCE logic preventing name updates from overwriting phone numbers
+  - Names now properly update when received from OpenPhone webhooks
+
 ## [1.11.20] - 2025-08-07
 
 ### Fixed

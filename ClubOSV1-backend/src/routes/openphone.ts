@@ -67,7 +67,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
     logger.info('Webhook received - checking structure', {
       hasObject: !!req.body.object,
       bodyKeys: Object.keys(req.body),
-      objectKeys: req.body.object ? Object.keys(req.body.object) : []
+      objectKeys: req.body.object ? Object.keys(req.body.object) : [],
+      headers: {
+        'x-openphone-signature': !!req.headers['x-openphone-signature'],
+        'x-openphone-delivery-attempt': req.headers['x-openphone-delivery-attempt'],
+        'x-openphone-webhook-id': req.headers['x-openphone-webhook-id']
+      }
     });
     
     // Handle OpenPhone v3 webhook structure
@@ -164,7 +169,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           }
         });
         
-        // Try multiple fields for contact name, fallback to phone number
+        // Try multiple fields for contact name, but DON'T use phone number as name
         let customerName = messageData.contactName || 
                            data.contactName || 
                            messageData.contact?.name ||
@@ -173,8 +178,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                            data.conversationPhoneNumberName ||
                            messageData.name ||
                            data.name ||
-                           phoneNumber || // Use phone number as fallback
-                           'Unknown';
+                           'Unknown'; // Don't use phone number as name
                            
         const employeeName = messageData.userName || 
                            data.userName || 
@@ -263,6 +267,19 @@ router.post('/webhook', async (req: Request, res: Response) => {
         if (existingConv.rows.length > 0 && existingConv.rows[0].minutes_since_last_message < ONE_HOUR_IN_MINUTES) {
           // Within 1 hour of last message - append to existing conversation
           const existingMessages = existingConv.rows[0].messages || [];
+          
+          // Check if this message already exists (prevent duplicates)
+          const messageAlreadyExists = existingMessages.some(msg => msg.id === messageData.id);
+          
+          if (messageAlreadyExists) {
+            logger.info('Duplicate message detected, skipping', {
+              messageId: messageData.id,
+              phoneNumber,
+              direction: messageData.direction
+            });
+            return res.json({ success: true, message: 'Duplicate message ignored' });
+          }
+          
           const updatedMessages = [...existingMessages, newMessage];
           
           // Update conversation and increment unread count if inbound
@@ -379,6 +396,23 @@ router.post('/webhook', async (req: Request, res: Response) => {
         }
         
         // Create new conversation (either first message or > 1 hour gap)
+        // But first check if this exact message was already processed in a recent conversation
+        // (in case of webhook retries that arrive after the 1-hour window)
+        if (existingConv.rows.length > 0) {
+          const existingMessages = existingConv.rows[0].messages || [];
+          const messageAlreadyExists = existingMessages.some(msg => msg.id === messageData.id);
+          
+          if (messageAlreadyExists) {
+            logger.info('Duplicate message detected in recent conversation, skipping', {
+              messageId: messageData.id,
+              phoneNumber,
+              direction: messageData.direction,
+              minutesSinceLastMessage: Math.round(existingConv.rows[0].minutes_since_last_message)
+            });
+            return res.json({ success: true, message: 'Duplicate message ignored' });
+          }
+        }
+        
         // Add timestamp to conversation ID to make it unique for time-based splits
         const timestamp = Date.now();
         const newConversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}_${timestamp}`;

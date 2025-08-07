@@ -127,6 +127,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.21**: Critical Messaging Fixes
+  - Fixed duplicate messages showing when only one was sent
+  - Fixed customer names displaying as phone numbers
+  - Added message deduplication in webhook handler
 - **v1.11.20**: Push Notification Enhancements
   - Fixed vibration not working on mobile devices
   - Added action buttons and sound to notifications
