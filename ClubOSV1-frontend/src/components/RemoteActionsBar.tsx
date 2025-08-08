@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
+import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
@@ -15,6 +16,8 @@ interface LocationConfig {
 const RemoteActionsBar: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [executingActions, setExecutingActions] = useState<Set<string>>(new Set());
+  const [doorStatuses, setDoorStatuses] = useState<Record<string, DoorStatus[]>>({});
+  const [loadingDoors, setLoadingDoors] = useState<Set<string>>(new Set());
   const { notify } = useNotifications();
   const { user } = useAuthState();
   
@@ -25,6 +28,22 @@ const RemoteActionsBar: React.FC = () => {
       setIsExpanded(true);
     }
   }, []);
+
+  // Load door statuses when expanded
+  useEffect(() => {
+    if (isExpanded) {
+      locations.forEach(location => {
+        loadDoorStatus(location.name);
+      });
+      // Refresh every 30 seconds
+      const interval = setInterval(() => {
+        locations.forEach(location => {
+          loadDoorStatus(location.name);
+        });
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isExpanded]);
 
   // Save state to localStorage
   const toggleExpanded = () => {
@@ -40,6 +59,64 @@ const RemoteActionsBar: React.FC = () => {
     { name: 'Stratford', bays: [1, 2, 3], hasMusic: true, hasTv: false },
     { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false }
   ];
+
+  // Load door status for a location
+  const loadDoorStatus = async (location: string) => {
+    if (loadingDoors.has(location)) return;
+    
+    setLoadingDoors(prev => new Set(prev).add(location));
+    try {
+      const response = await doorAccessAPI.getStatus(location);
+      setDoorStatuses(prev => ({ ...prev, [location]: response.doors }));
+    } catch (error) {
+      console.error(`Failed to load door status for ${location}:`, error);
+    } finally {
+      setLoadingDoors(prev => {
+        const next = new Set(prev);
+        next.delete(location);
+        return next;
+      });
+    }
+  };
+
+  // Execute door action
+  const executeDoorAction = async (action: 'unlock' | 'lock' | 'emergency', location: string, doorKey?: string) => {
+    const actionKey = `door-${location}-${action}-${doorKey || 'all'}`;
+    
+    if (executingActions.has(actionKey)) return;
+    
+    setExecutingActions(prev => new Set(prev).add(actionKey));
+    
+    try {
+      let response;
+      
+      if (action === 'emergency') {
+        // Confirm emergency action
+        if (!confirm(`Are you sure you want to UNLOCK ALL DOORS at ${location}? This is an emergency action.`)) {
+          return;
+        }
+        response = await doorAccessAPI.emergency({ action: 'unlock_all', location });
+        notify('warning', `Emergency unlock initiated for all doors at ${location}`);
+      } else if (action === 'unlock' && doorKey) {
+        response = await doorAccessAPI.unlock({ location, doorKey, duration: 30 });
+        notify('success', `${doorKey.replace('-', ' ')} unlocked for 30 seconds`);
+      } else if (action === 'lock' && doorKey) {
+        response = await doorAccessAPI.lock({ location, doorKey });
+        notify('success', `${doorKey.replace('-', ' ')} locked`);
+      }
+      
+      // Refresh door status
+      loadDoorStatus(location);
+    } catch (error: any) {
+      notify('error', error.response?.data?.message || 'Door action failed');
+    } finally {
+      setExecutingActions(prev => {
+        const next = new Set(prev);
+        next.delete(actionKey);
+        return next;
+      });
+    }
+  };
 
   // Execute remote action
   const executeAction = async (action: string, location: string, bayNumber?: string) => {
@@ -188,6 +265,76 @@ const RemoteActionsBar: React.FC = () => {
                         </button>
                       )}
                     </div>
+                  </div>
+
+                  {/* Door Access Section */}
+                  <div className="space-y-2 mt-3 pt-3 border-t border-[var(--border-secondary)]">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
+                      <Shield className="w-3 h-3" />
+                      Door Access
+                    </p>
+                    
+                    {/* Individual Door Controls */}
+                    <div className="space-y-1.5">
+                      {doorStatuses[location.name]?.map((door) => (
+                        <div key={door.doorId} className="flex items-center justify-between p-1.5 bg-[var(--bg-tertiary)] rounded text-xs">
+                          <div className="flex items-center gap-1.5">
+                            {door.online ? (
+                              door.locked ? (
+                                <Lock className="w-3 h-3 text-[var(--text-muted)]" />
+                              ) : (
+                                <Unlock className="w-3 h-3 text-[var(--accent)]" />
+                              )
+                            ) : (
+                              <AlertTriangle className="w-3 h-3 text-yellow-500" />
+                            )}
+                            <span className={door.online ? '' : 'text-[var(--text-muted)]'}>
+                              {door.name}
+                            </span>
+                          </div>
+                          
+                          {door.online && (
+                            <button
+                              onClick={() => executeDoorAction(
+                                door.locked ? 'unlock' : 'lock',
+                                location.name,
+                                door.name.toLowerCase().replace(' ', '-')
+                              )}
+                              disabled={executingActions.has(`door-${location.name}-${door.locked ? 'unlock' : 'lock'}-${door.name.toLowerCase().replace(' ', '-')}`)}
+                              className="px-2 py-0.5 bg-[var(--bg-primary)] hover:bg-[var(--accent)] hover:text-white border border-[var(--border-secondary)] rounded transition-all text-xs disabled:opacity-50"
+                            >
+                              {executingActions.has(`door-${location.name}-${door.locked ? 'unlock' : 'lock'}-${door.name.toLowerCase().replace(' ', '-')}`) ? (
+                                <Loader className="w-3 h-3 animate-spin" />
+                              ) : (
+                                door.locked ? 'Unlock' : 'Lock'
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      )) || (
+                        <div className="text-xs text-[var(--text-muted)] text-center py-2">
+                          {loadingDoors.has(location.name) ? 'Loading doors...' : 'No doors configured'}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Emergency Unlock All */}
+                    {user && hasMinimumRole(user.role, 'admin') && doorStatuses[location.name]?.length > 0 && (
+                      <button
+                        onClick={() => executeDoorAction('emergency', location.name)}
+                        disabled={executingActions.has(`door-${location.name}-emergency-all`)}
+                        className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {executingActions.has(`door-${location.name}-emergency-all`) ? (
+                          <Loader className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <AlertTriangle className="w-3 h-3" />
+                            Emergency Unlock All
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

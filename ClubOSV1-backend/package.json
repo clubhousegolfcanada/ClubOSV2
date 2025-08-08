@@ -82,6 +82,7 @@
     "pg-hstore": "^2.3.4",
     "rate-limiter-flexible": "^3.0.6",
     "sequelize": "^6.37.7",
+    "unifi-access": "^1.3.2",
     "uuid": "^9.0.1",
     "web-push": "^3.6.7",
     "winston": "^3.11.0"
