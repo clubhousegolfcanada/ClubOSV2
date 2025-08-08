@@ -21,9 +21,13 @@ import {
   Check,
   Music,
   Tv,
-  MapPin
+  MapPin,
+  Lock,
+  Unlock,
+  DoorOpen
 } from 'lucide-react';
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
+import { doorAccessAPI } from '@/api/doorAccess';
 
 interface Command {
   id: string;
@@ -575,6 +579,7 @@ export default function CommandsRedesigned() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'other-systems': false
   });
+  const [executingDoorAction, setExecutingDoorAction] = useState<Set<string>>(new Set());
 
   // Check authentication
   useEffect(() => {
@@ -853,30 +858,151 @@ export default function CommandsRedesigned() {
                         if (!locationData) return null;
                         
                         return (
-                          <div key={location} className="card group p-4 sm:p-6">
+                          <div key={location} className="card group p-3 sm:p-4">
                             {/* Location Header */}
-                            <div className="flex items-center gap-2 mb-4">
-                              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
-                              <h3 className="text-base sm:text-lg font-medium text-[var(--text-primary)]">{location}</h3>
+                            <div className="flex items-center gap-2 mb-3">
+                              <MapPin className="w-4 h-4 text-[var(--accent)]" />
+                              <h3 className="text-base font-medium text-[var(--text-primary)]">{location}</h3>
+                            </div>
+                            
+                            {/* Door Access Controls - NEW */}
+                            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2.5 mb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-1.5">
+                                  <DoorOpen className="w-3.5 h-3.5 text-blue-500" />
+                                  <span className="text-xs font-medium text-blue-500">Door Access</span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <button
+                                  onClick={async () => {
+                                    const actionKey = `door-${location}-main`;
+                                    if (executingDoorAction.has(actionKey)) return;
+                                    
+                                    setExecutingDoorAction(prev => new Set(prev).add(actionKey));
+                                    const toastId = toast.loading('Unlocking main door...');
+                                    
+                                    try {
+                                      await doorAccessAPI.unlock({
+                                        location,
+                                        doorKey: 'main-entrance',
+                                        duration: 30
+                                      });
+                                      toast.success('Main door unlocked for 30 seconds', { id: toastId });
+                                    } catch (error: any) {
+                                      toast.error(error.response?.data?.message || 'Failed to unlock door', { id: toastId });
+                                    } finally {
+                                      setExecutingDoorAction(prev => {
+                                        const next = new Set(prev);
+                                        next.delete(actionKey);
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  disabled={executingDoorAction.has(`door-${location}-main`)}
+                                  className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-primary)] hover:bg-blue-500 hover:text-white border border-blue-500/50 rounded text-xs transition-all disabled:opacity-50"
+                                >
+                                  {executingDoorAction.has(`door-${location}-main`) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Unlock className="w-3 h-3" />
+                                  )}
+                                  <span className="text-[10px]">Main</span>
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const actionKey = `door-${location}-staff`;
+                                    if (executingDoorAction.has(actionKey)) return;
+                                    
+                                    setExecutingDoorAction(prev => new Set(prev).add(actionKey));
+                                    const toastId = toast.loading('Unlocking staff door...');
+                                    
+                                    try {
+                                      await doorAccessAPI.unlock({
+                                        location,
+                                        doorKey: 'staff-door',
+                                        duration: 30
+                                      });
+                                      toast.success('Staff door unlocked for 30 seconds', { id: toastId });
+                                    } catch (error: any) {
+                                      toast.error(error.response?.data?.message || 'Failed to unlock door', { id: toastId });
+                                    } finally {
+                                      setExecutingDoorAction(prev => {
+                                        const next = new Set(prev);
+                                        next.delete(actionKey);
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  disabled={executingDoorAction.has(`door-${location}-staff`)}
+                                  className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-primary)] hover:bg-blue-500 hover:text-white border border-blue-500/50 rounded text-xs transition-all disabled:opacity-50"
+                                >
+                                  {executingDoorAction.has(`door-${location}-staff`) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Unlock className="w-3 h-3" />
+                                  )}
+                                  <span className="text-[10px]">Staff</span>
+                                </button>
+                                {(location === 'Dartmouth' || location === 'Bayers Lake' || location === 'Truro') && (
+                                  <button
+                                    onClick={async () => {
+                                      const doorKey = location === 'Dartmouth' ? 'bay-access' : location === 'Truro' ? 'emergency-exit' : 'loading-door';
+                                      const doorName = location === 'Dartmouth' ? 'Bay' : location === 'Truro' ? 'Emergency' : 'Loading';
+                                      const actionKey = `door-${location}-${doorKey}`;
+                                      if (executingDoorAction.has(actionKey)) return;
+                                      
+                                      setExecutingDoorAction(prev => new Set(prev).add(actionKey));
+                                      const toastId = toast.loading(`Unlocking ${doorName.toLowerCase()} door...`);
+                                      
+                                      try {
+                                        await doorAccessAPI.unlock({
+                                          location,
+                                          doorKey,
+                                          duration: 30
+                                        });
+                                        toast.success(`${doorName} door unlocked for 30 seconds`, { id: toastId });
+                                      } catch (error: any) {
+                                        toast.error(error.response?.data?.message || 'Failed to unlock door', { id: toastId });
+                                      } finally {
+                                        setExecutingDoorAction(prev => {
+                                          const next = new Set(prev);
+                                          next.delete(actionKey);
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                    disabled={executingDoorAction.has(`door-${location}-${location === 'Dartmouth' ? 'bay-access' : location === 'Truro' ? 'emergency-exit' : 'loading-door'}`)}
+                                    className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-primary)] hover:bg-blue-500 hover:text-white border border-blue-500/50 rounded text-xs transition-all disabled:opacity-50"
+                                  >
+                                    {executingDoorAction.has(`door-${location}-${location === 'Dartmouth' ? 'bay-access' : location === 'Truro' ? 'emergency-exit' : 'loading-door'}`) ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Unlock className="w-3 h-3" />
+                                    )}
+                                    <span className="text-[10px]">{location === 'Dartmouth' ? 'Bay' : location === 'Truro' ? 'Emrg' : 'Load'}</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             
                             {/* Bay Controls */}
                             {locationData.bays.length > 0 && (
-                              <div className="space-y-3 mb-4">
+                              <div className="space-y-2 mb-3">
                                 <p className="text-xs text-[var(--text-secondary)] font-light">Bay Controls</p>
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                   {locationData.bays.sort((a, b) => parseInt(a.bayNumber!) - parseInt(b.bayNumber!)).map((trigger) => (
-                                    <div key={trigger.id} className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-3">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-[var(--text-primary)]">Bay {trigger.bayNumber}</span>
+                                    <div key={trigger.id} className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-2">
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs font-medium text-[var(--text-primary)]">Bay {trigger.bayNumber}</span>
                                       </div>
-                                      <div className="grid grid-cols-3 gap-2">
+                                      <div className="grid grid-cols-3 gap-1.5">
                                         <button
                                           onClick={() => handleExecuteReset(trigger)}
-                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-orange-500 border-2 border-orange-500/50 hover:border-orange-500 rounded transition-all group/btn"
+                                          className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-orange-500 border border-orange-500/50 hover:border-orange-500 rounded transition-all group/btn text-xs"
                                         >
-                                          <RefreshCw className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                          <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Sim</span>
+                                          <RefreshCw className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Sim</span>
                                         </button>
                                         <button
                                           onClick={async () => {
@@ -898,10 +1024,10 @@ export default function CommandsRedesigned() {
                                               toast.error('Failed to reboot PC', { id: toastId });
                                             }
                                           }}
-                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-red-500 border-2 border-red-500/50 hover:border-red-500 rounded transition-all group/btn"
+                                          className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-red-500 border border-red-500/50 hover:border-red-500 rounded transition-all group/btn text-xs"
                                         >
-                                          <Power className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                          <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">PC</span>
+                                          <Power className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">PC</span>
                                         </button>
                                         <button
                                           onClick={async () => {
@@ -925,10 +1051,10 @@ export default function CommandsRedesigned() {
                                               toast.error('Failed to execute other actions', { id: toastId });
                                             }
                                           }}
-                                          className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-secondary)] hover:bg-green-500 border-2 border-green-500/50 hover:border-green-500 rounded transition-all group/btn"
+                                          className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-green-500 border border-green-500/50 hover:border-green-500 rounded transition-all group/btn text-xs"
                                         >
-                                          <AlertCircle className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                          <span className="text-xs text-[var(--text-secondary)] group-hover/btn:text-white">Other</span>
+                                          <AlertCircle className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Other</span>
                                         </button>
                                       </div>
                                     </div>
@@ -939,17 +1065,17 @@ export default function CommandsRedesigned() {
                             
                             {/* System Controls Card */}
                             {(locationData.music || locationData.tv) && (
-                              <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-3">
-                                <p className="text-xs text-[var(--text-secondary)] font-light mb-2">System Controls</p>
-                                <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-2">
+                                <p className="text-xs text-[var(--text-secondary)] font-light mb-1.5">System Controls</p>
+                                <div className="grid grid-cols-2 gap-1.5">
                                   {/* Music Reset */}
                                   {locationData.music && (
                                     <button
                                       onClick={() => handleExecuteReset(locationData.music!)}
-                                      className="flex items-center justify-center gap-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded p-2 transition-all group/btn"
+                                      className="flex items-center justify-center gap-1 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded p-1.5 transition-all group/btn text-xs"
                                     >
-                                      <Music className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                      <span className="text-xs font-medium text-[var(--text-primary)] group-hover/btn:text-white">Music</span>
+                                      <Music className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                      <span className="text-[10px] font-medium text-[var(--text-primary)] group-hover/btn:text-white">Music</span>
                                     </button>
                                   )}
                                   
@@ -957,10 +1083,10 @@ export default function CommandsRedesigned() {
                                   {locationData.tv && (
                                     <button
                                       onClick={() => handleExecuteReset(locationData.tv!)}
-                                      className="flex items-center justify-center gap-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded p-2 transition-all group/btn"
+                                      className="flex items-center justify-center gap-1 bg-[var(--bg-secondary)] hover:bg-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] rounded p-1.5 transition-all group/btn text-xs"
                                     >
-                                      <Tv className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                      <span className="text-xs font-medium text-[var(--text-primary)] group-hover/btn:text-white">TV</span>
+                                      <Tv className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                      <span className="text-[10px] font-medium text-[var(--text-primary)] group-hover/btn:text-white">TV</span>
                                     </button>
                                   )}
                                 </div>

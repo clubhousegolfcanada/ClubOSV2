@@ -11,6 +11,14 @@ All notable changes to ClubOS will be documented in this file.
   - Service now properly handles ES module loading asynchronously
   - Backend can now start successfully with UniFi Access integration
 
+### Added
+- **Door Access Controls in Commands Page**
+  - Added prominent door unlock buttons for all locations
+  - Main entrance, staff door, and location-specific doors (bay/loading/emergency)
+  - Blue-themed door access section for easy visibility
+  - 30-second unlock duration for all doors
+  - Condensed layout to fit door controls alongside existing bay controls
+
 ## [1.11.21] - 2025-08-07
 
 ### Fixed
