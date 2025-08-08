@@ -49,7 +49,10 @@ const SCRIPT_MAP: Record<string, string> = {
   'restart-all': 'DEMO-SCRIPT-RESTART-ALL-SOFTWARE',
   'restart-music': 'DEMO-SCRIPT-RESTART-MUSIC',
   'restart-tv': 'DEMO-SCRIPT-RESTART-TV',
-  'other': 'DEMO-SCRIPT-OTHER-ACTIONS'
+  'other': 'DEMO-SCRIPT-OTHER-ACTIONS',
+  'projector-power': 'DEMO-SCRIPT-PROJECTOR-POWER',
+  'projector-input': 'DEMO-SCRIPT-PROJECTOR-INPUT',
+  'projector-autosize': 'DEMO-SCRIPT-PROJECTOR-AUTOSIZE'
 };
 
 // Execute remote action
@@ -68,7 +71,8 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
     }
     
     // Bay number required for non-system actions
-    if (!['restart-music', 'restart-tv'].includes(action) && !bayNumber) {
+    const systemActions = ['restart-music', 'restart-tv', 'projector-power', 'projector-input', 'projector-autosize'];
+    if (!systemActions.includes(action) && !bayNumber) {
       return res.status(400).json({ 
         error: 'Missing bay number',
         message: 'Bay number is required for this action' 

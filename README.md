@@ -127,10 +127,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
-- **v1.11.22**: UniFi Access Integration & Door Controls
+- **v1.11.22**: UniFi Access Integration & Remote Controls
   - Fixed backend startup error with unifi-access ES module
   - Added door unlock buttons to Commands page for all locations
   - Integrated Ubiquiti UniFi Access for remote door control
+  - Added projector control buttons (power, input, auto-size) for each bay
 - **v1.11.21**: Critical Messaging Fixes
   - Fixed duplicate messages showing when only one was sent
   - Fixed customer names displaying as phone numbers
@@ -323,6 +324,7 @@ node scripts/generate-vapid-keys.js
 - **CLAUDE.md** - User preferences, working style (MUST READ)
 - **CHANGELOG.md** - Version history
 - **PUBLIC_CLUBOSBOY_SETUP.md** - Public embed instructions
+- **UNIFI-ACCESS-SETUP.md** - UniFi door control setup guide
 - **API Docs** - `/ClubOSV1-backend/docs/`
 - **TESTING-GUIDE.md** - Comprehensive testing instructions
 - **SECURITY-AUDIT-REPORT.md** - Latest security audit findings

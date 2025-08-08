@@ -18,6 +18,13 @@ All notable changes to ClubOS will be documented in this file.
   - Blue-themed door access section for easy visibility
   - 30-second unlock duration for all doors
   - Condensed layout to fit door controls alongside existing bay controls
+  - Full UniFi Access setup documentation (UNIFI-ACCESS-SETUP.md)
+  
+- **Projector Control Buttons**
+  - Added compact projector controls to each bay (Power, Input, Auto-size)
+  - Purple-themed mini buttons to save space
+  - Integrated with NinjaOne for remote projector control
+  - Positioned below main bay controls with projector icon
 
 ## [1.11.21] - 2025-08-07
 

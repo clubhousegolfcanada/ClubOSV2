@@ -24,7 +24,10 @@ import {
   MapPin,
   Lock,
   Unlock,
-  DoorOpen
+  DoorOpen,
+  Projector,
+  Monitor as MonitorIcon,
+  Maximize2
 } from 'lucide-react';
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
@@ -1056,6 +1059,71 @@ export default function CommandsRedesigned() {
                                           <AlertCircle className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
                                           <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Other</span>
                                         </button>
+                                      </div>
+                                      {/* Projector Controls - Compact Row */}
+                                      <div className="mt-1.5 pt-1.5 border-t border-[var(--border-secondary)]">
+                                        <div className="flex items-center gap-1">
+                                          <Projector className="w-3 h-3 text-[var(--text-muted)]" />
+                                          <div className="flex-1 grid grid-cols-3 gap-1">
+                                            <button
+                                              onClick={async () => {
+                                                const toastId = toast.loading('Toggling projector power...');
+                                                try {
+                                                  await remoteActionsAPI.execute({
+                                                    action: 'projector-power',
+                                                    location: trigger.location!,
+                                                    bayNumber: trigger.bayNumber || ''
+                                                  });
+                                                  toast.success('Projector power command sent', { id: toastId });
+                                                } catch (error) {
+                                                  toast.error('Failed to control projector', { id: toastId });
+                                                }
+                                              }}
+                                              className="px-1 py-0.5 bg-[var(--bg-primary)] hover:bg-purple-500 hover:text-white border border-purple-500/30 rounded text-[9px] transition-all"
+                                              title="Projector Power"
+                                            >
+                                              Pwr
+                                            </button>
+                                            <button
+                                              onClick={async () => {
+                                                const toastId = toast.loading('Switching projector input...');
+                                                try {
+                                                  await remoteActionsAPI.execute({
+                                                    action: 'projector-input',
+                                                    location: trigger.location!,
+                                                    bayNumber: trigger.bayNumber || ''
+                                                  });
+                                                  toast.success('Projector input switched', { id: toastId });
+                                                } catch (error) {
+                                                  toast.error('Failed to switch input', { id: toastId });
+                                                }
+                                              }}
+                                              className="px-1 py-0.5 bg-[var(--bg-primary)] hover:bg-purple-500 hover:text-white border border-purple-500/30 rounded text-[9px] transition-all"
+                                              title="Switch Input"
+                                            >
+                                              Input
+                                            </button>
+                                            <button
+                                              onClick={async () => {
+                                                const toastId = toast.loading('Auto-sizing projector...');
+                                                try {
+                                                  await remoteActionsAPI.execute({
+                                                    action: 'projector-autosize',
+                                                    location: trigger.location!,
+                                                    bayNumber: trigger.bayNumber || ''
+                                                  });
+                                                  toast.success('Projector auto-size adjusted', { id: toastId });
+                                                } catch (error) {
+                                                  toast.error('Failed to auto-size', { id: toastId });
+                                                }
+                                              }}
+                                              className="px-1 py-0.5 bg-[var(--bg-primary)] hover:bg-purple-500 hover:text-white border border-purple-500/30 rounded text-[9px] transition-all"
+                                              title="Auto Size"
+                                            >
+                                              Auto
+                                            </button>
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
