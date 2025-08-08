@@ -169,16 +169,49 @@ router.post('/webhook', async (req: Request, res: Response) => {
           }
         });
         
-        // Try multiple fields for contact name, but DON'T use phone number as name
+        // Log the webhook data structure to understand what fields are available
+        logger.info('OpenPhone webhook data fields:', {
+          hasContactName: !!messageData.contactName,
+          hasDataContactName: !!data.contactName,
+          hasContactObject: !!messageData.contact,
+          contactFields: messageData.contact ? Object.keys(messageData.contact) : [],
+          hasConversation: !!messageData.conversation,
+          conversationFields: messageData.conversation ? Object.keys(messageData.conversation) : [],
+          allMessageDataKeys: Object.keys(messageData || {}),
+          allDataKeys: Object.keys(data || {})
+        });
+
+        // Try multiple fields for contact name, including conversation participant info
         let customerName = messageData.contactName || 
                            data.contactName || 
                            messageData.contact?.name ||
+                           messageData.contact?.firstName ||
+                           messageData.contact?.lastName ||
+                           messageData.contact?.displayName ||
                            data.contact?.name ||
+                           data.contact?.firstName ||
+                           data.contact?.lastName ||
+                           data.contact?.displayName ||
+                           messageData.conversation?.participant?.name ||
+                           messageData.conversation?.participant?.firstName ||
+                           messageData.conversation?.participant?.lastName ||
                            messageData.conversationPhoneNumberName ||
                            data.conversationPhoneNumberName ||
                            messageData.name ||
-                           data.name ||
-                           'Unknown'; // Don't use phone number as name
+                           data.name;
+        
+        // Combine first and last name if available
+        if (!customerName && (messageData.contact?.firstName || messageData.contact?.lastName)) {
+          customerName = `${messageData.contact.firstName || ''} ${messageData.contact.lastName || ''}`.trim();
+        }
+        if (!customerName && (data.contact?.firstName || data.contact?.lastName)) {
+          customerName = `${data.contact.firstName || ''} ${data.contact.lastName || ''}`.trim();
+        }
+        
+        // Default to Unknown if no name found
+        if (!customerName || customerName === '') {
+          customerName = 'Unknown';
+        }
                            
         const employeeName = messageData.userName || 
                            data.userName || 
@@ -186,17 +219,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
                            data.user?.name ||
                            'Unknown';
 
-        // HubSpot lookup for inbound messages to get real customer name
-        if ((messageData.direction === 'incoming' || messageData.direction === 'inbound') && phoneNumber) {
+        // HubSpot lookup for ALL messages to get real customer name (not just inbound)
+        // This ensures we get names for all contacts that exist in HubSpot
+        if (phoneNumber && customerName === 'Unknown') {
           try {
             const hubspotContact = await hubspotService.searchByPhone(phoneNumber);
             if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
               customerName = hubspotContact.name;
-              logger.info('HubSpot contact found for inbound message', {
+              logger.info('HubSpot contact found - updating customer name', {
                 phoneNumber,
-                customerName: hubspotContact.name,
+                previousName: 'Unknown',
+                newName: hubspotContact.name,
                 company: hubspotContact.company
               });
+            } else {
+              logger.debug('No HubSpot contact found for phone:', phoneNumber);
             }
           } catch (hubspotError) {
             // Log but don't fail the webhook
@@ -1167,6 +1204,39 @@ router.get('/export/csv', authenticate, roleGuard(['admin']), async (req: Reques
     res.status(500).json({
       success: false,
       error: 'Failed to export CSV'
+    });
+  }
+});
+
+// Manual sync endpoint for customer names
+router.post('/sync-names', authenticate, authorize(['admin']), async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    
+    if (phoneNumber) {
+      // Sync specific phone number
+      const { customerNameSyncService } = await import('../services/syncCustomerNames');
+      const success = await customerNameSyncService.syncPhoneNumber(phoneNumber);
+      
+      res.json({
+        success,
+        message: success ? `Name synced for ${phoneNumber}` : `No HubSpot contact found for ${phoneNumber}`
+      });
+    } else {
+      // Trigger full sync
+      const { customerNameSyncService } = await import('../services/syncCustomerNames');
+      customerNameSyncService.syncCustomerNames();
+      
+      res.json({
+        success: true,
+        message: 'Full name sync started in background'
+      });
+    }
+  } catch (error: any) {
+    logger.error('Name sync error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

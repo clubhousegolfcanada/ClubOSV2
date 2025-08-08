@@ -3,7 +3,7 @@ import api from './apiClient';
 // API client for PC/software remote actions
 
 export interface RemoteActionParams {
-  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'restart-all' | 'restart-music' | 'restart-tv' | 'other';
+  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'restart-all' | 'restart-music' | 'restart-tv' | 'other' | 'projector-power' | 'projector-input' | 'projector-autosize';
   location: string;
   bayNumber: string;
 }

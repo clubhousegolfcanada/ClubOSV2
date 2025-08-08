@@ -127,6 +127,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.23**: Fixed Customer Names in Messages
+  - Enhanced OpenPhone webhook to extract names from more fields
+  - Added automatic HubSpot name sync service (runs every 5 min)
+  - Fixed database update logic for customer names
 - **v1.11.22**: UniFi Access Integration & Remote Controls
   - Fixed backend startup error with unifi-access ES module
   - Added door unlock buttons to Commands page for all locations

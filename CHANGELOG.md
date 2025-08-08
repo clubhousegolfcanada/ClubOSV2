@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.23] - 2025-08-08
+
+### Fixed
+- **Customer Names Not Displaying in Messages**
+  - Enhanced OpenPhone webhook data extraction to check more contact fields
+  - Added comprehensive logging to identify available name fields
+  - Fixed database update logic that was preventing name updates
+  - HubSpot lookup now runs for all messages (not just inbound)
+  - Added automatic name sync service that runs every 5 minutes
+  - Syncs names from HubSpot for conversations showing "Unknown" or phone numbers
+  - Added manual sync endpoint for admins at `/api/openphone/sync-names`
+  - Fixed TypeScript types for projector control actions
+
 ## [1.11.22] - 2025-08-08
 
 ### Fixed

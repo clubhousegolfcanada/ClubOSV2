@@ -306,6 +306,11 @@ async function startServer() {
     await initializeSystemConfigs();
     logger.info('✅ System configurations initialized');
     
+    // Start customer name sync service
+    const { customerNameSyncService } = await import('./services/syncCustomerNames');
+    customerNameSyncService.start();
+    logger.info('✅ Customer name sync service started');
+    
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
     

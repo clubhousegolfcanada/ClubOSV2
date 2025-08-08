@@ -82,14 +82,17 @@ export async function updateOpenPhoneConversation(
     setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
     
     if (updates.customerName !== undefined) {
-      // Always update customer name if provided and not a phone number
-      // This allows updating from 'Unknown' or phone number to real name
+      // Update customer name if we have a better one (not Unknown and not a phone number)
+      // Priority: Real name > current value > 'Unknown'
       setClauses.push(`customer_name = CASE 
         WHEN $${++paramCount} != 'Unknown' 
+        AND $${paramCount} != ''
         AND $${paramCount} NOT LIKE '+%' 
-        AND $${paramCount} !~ '^[0-9]+$' 
-        THEN $${paramCount} 
-        ELSE COALESCE(customer_name, $${paramCount}) 
+        AND $${paramCount} !~ '^[0-9()-]+$'
+        THEN $${paramCount}
+        WHEN customer_name IS NULL OR customer_name = 'Unknown' OR customer_name ~ '^[0-9()-]+$'
+        THEN $${paramCount}
+        ELSE customer_name
       END`);
       params.push(updates.customerName);
     }
