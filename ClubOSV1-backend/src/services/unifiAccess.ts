@@ -1,5 +1,7 @@
-import { AccessApi } from 'unifi-access';
 import { logger } from '../utils/logger';
+
+// Dynamic import for ES module
+let AccessApi: any;
 
 interface DoorConfig {
   doorId: string;
@@ -24,7 +26,7 @@ interface UnlockResult {
 }
 
 class UnifiAccessService {
-  private access: AccessApi | null = null;
+  private access: any | null = null;
   private isConnected: boolean = false;
   private connectionAttempts: number = 0;
   private maxRetries: number = 3;
@@ -129,11 +131,18 @@ class UnifiAccessService {
   };
 
   constructor() {
-    this.initialize();
+    // Initialize asynchronously
+    this.initialize().catch(error => {
+      logger.error('Failed to initialize UnifiAccessService:', error);
+    });
   }
 
   private async initialize(): Promise<void> {
     try {
+      // Dynamically import the ES module
+      const unifiModule = await import('unifi-access');
+      AccessApi = unifiModule.AccessApi;
+
       const address = process.env.UNIFI_CONTROLLER_URL || '';
       const username = process.env.UNIFI_USERNAME || '';
       const password = process.env.UNIFI_PASSWORD || '';

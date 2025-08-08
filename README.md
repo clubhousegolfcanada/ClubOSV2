@@ -127,6 +127,9 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.22**: UniFi Access ESM Module Fix
+  - Fixed backend startup error with unifi-access ES module
+  - Converted to dynamic import for proper module loading
 - **v1.11.21**: Critical Messaging Fixes
   - Fixed duplicate messages showing when only one was sent
   - Fixed customer names displaying as phone numbers

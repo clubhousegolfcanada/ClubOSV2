@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.22] - 2025-08-08
+
+### Fixed
+- **UniFi Access Module Import Error**
+  - Fixed ESM module import error preventing backend startup
+  - Converted static import to dynamic import for unifi-access package
+  - Service now properly handles ES module loading asynchronously
+  - Backend can now start successfully with UniFi Access integration
+
 ## [1.11.21] - 2025-08-07
 
 ### Fixed
