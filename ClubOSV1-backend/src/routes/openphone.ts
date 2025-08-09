@@ -3,7 +3,7 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/errorHandler';
 import crypto from 'crypto';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { openPhoneService } from '../services/openphoneService';
 import { notificationService } from '../services/notificationService';

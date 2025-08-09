@@ -7,7 +7,7 @@
 
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
-import hubspotService from './hubspotService';
+import { hubspotService } from './hubspotService';
 
 export class CustomerNameSyncService {
   private isRunning = false;
