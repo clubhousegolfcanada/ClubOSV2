@@ -34,17 +34,33 @@ export async function insertOpenPhoneConversation(data: {
     if (error.code === '42703') { // column does not exist
       logger.warn('Column missing error, trying minimal insert', error.message);
       
-      // Fallback to minimal insert
+      // Fallback to minimal insert with timestamps from messages
+      let createdAt = new Date();
+      let updatedAt = new Date();
+      
+      if (data.messages && data.messages.length > 0) {
+        const firstMsg = data.messages[0];
+        const lastMsg = data.messages[data.messages.length - 1];
+        
+        const firstTime = firstMsg.timestamp || firstMsg.createdAt || firstMsg.created_at || firstMsg.date;
+        const lastTime = lastMsg.timestamp || lastMsg.createdAt || lastMsg.created_at || lastMsg.date;
+        
+        if (firstTime) createdAt = new Date(firstTime);
+        if (lastTime) updatedAt = new Date(lastTime);
+      }
+      
       await db.query(`
         INSERT INTO openphone_conversations 
-        (phone_number, customer_name, employee_name, messages, metadata)
-        VALUES ($1, $2, $3, $4, $5)
+        (phone_number, customer_name, employee_name, messages, metadata, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
       `, [
         data.phoneNumber,
         data.customerName,
         data.employeeName,
         JSON.stringify(data.messages),
-        JSON.stringify(data.metadata)
+        JSON.stringify(data.metadata),
+        createdAt,
+        updatedAt
       ]);
       
       logger.info('OpenPhone conversation inserted with minimal columns');

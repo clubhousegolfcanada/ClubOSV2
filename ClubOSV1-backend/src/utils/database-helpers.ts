@@ -39,7 +39,7 @@ export async function columnExists(tableName: string, columnName: string): Promi
  * Get safe INSERT query for openphone_conversations table
  * that handles missing columns gracefully
  */
-export async function getSafeOpenPhoneInsertQuery(): Promise<{
+export async function getSafeOpenPhoneInsertQuery(messageTimestamp?: Date): Promise<{
   query: string;
   hasUnreadCount: boolean;
   hasConversationId: boolean;
@@ -51,9 +51,9 @@ export async function getSafeOpenPhoneInsertQuery(): Promise<{
   const hasAssistantType = await columnExists('openphone_conversations', 'assistant_type');
   const hasLastAssistantType = await columnExists('openphone_conversations', 'last_assistant_type');
   
-  let columns = ['phone_number', 'customer_name', 'employee_name', 'messages', 'metadata'];
-  let placeholders = ['$1', '$2', '$3', '$4', '$5'];
-  let paramOffset = 5;
+  let columns = ['phone_number', 'customer_name', 'employee_name', 'messages', 'metadata', 'created_at', 'updated_at'];
+  let placeholders = ['$1', '$2', '$3', '$4', '$5', '$6', '$7'];
+  let paramOffset = 7;
   
   if (hasConversationId) {
     columns.unshift('conversation_id');
@@ -99,6 +99,8 @@ export function buildOpenPhoneInsertParams(
     unreadCount?: number;
     assistantType?: string;
     lastAssistantType?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
   },
   hasConversationId: boolean,
   hasUnreadCount: boolean,
@@ -106,6 +108,30 @@ export function buildOpenPhoneInsertParams(
   hasLastAssistantType: boolean = false
 ): any[] {
   const params: any[] = [];
+  
+  // Extract timestamp from first message if not provided
+  let createdAt = data.createdAt;
+  let updatedAt = data.updatedAt;
+  
+  if (!createdAt && data.messages && data.messages.length > 0) {
+    const firstMsg = data.messages[0];
+    const msgTime = firstMsg.timestamp || firstMsg.createdAt || firstMsg.created_at || firstMsg.date;
+    if (msgTime) {
+      createdAt = new Date(msgTime);
+    }
+  }
+  
+  if (!updatedAt && data.messages && data.messages.length > 0) {
+    const lastMsg = data.messages[data.messages.length - 1];
+    const msgTime = lastMsg.timestamp || lastMsg.createdAt || lastMsg.created_at || lastMsg.date;
+    if (msgTime) {
+      updatedAt = new Date(msgTime);
+    }
+  }
+  
+  // Default to NOW() if no timestamps found
+  if (!createdAt) createdAt = new Date();
+  if (!updatedAt) updatedAt = new Date();
   
   if (hasConversationId) {
     params.push(data.conversationId || null);
@@ -116,7 +142,9 @@ export function buildOpenPhoneInsertParams(
     data.customerName,
     data.employeeName,
     JSON.stringify(data.messages),
-    JSON.stringify(data.metadata)
+    JSON.stringify(data.metadata),
+    createdAt,
+    updatedAt
   );
   
   if (hasUnreadCount) {
