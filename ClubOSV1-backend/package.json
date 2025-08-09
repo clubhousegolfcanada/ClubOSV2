@@ -28,6 +28,8 @@
     "typecheck": "tsc --noEmit",
     "check": "node scripts/check-config.js",
     "check:env": "node scripts/check-config.js",
+    "setup:unifi": "./scripts/setup-unifi-access.sh",
+    "test:unifi": "tsx scripts/test-unifi-connection.ts",
     "consolidate:migrations": "tsx src/scripts/consolidate-migrations.ts",
     "consolidate:migrations:dry": "tsx src/scripts/consolidate-migrations.ts --dry-run",
     "migrate": "tsx src/scripts/migrate.ts",

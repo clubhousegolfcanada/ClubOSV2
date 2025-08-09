@@ -15,6 +15,9 @@ All notable changes to ClubOS will be documented in this file.
   - Slack notifications for non-main door unlocks
   - Emergency unlock all doors function for admins
   - Demo mode when UniFi not configured for testing
+  - Interactive setup script (`npm run setup:unifi`) for easy configuration
+  - Connection test script (`npm run test:unifi`) to verify setup
+  - Quick setup guide for 5-minute deployment
   - Comprehensive setup documentation (UBIQUITI-DOOR-ACCESS-SETUP.md)
   - Foundation laid for future customer self-service door access
 
