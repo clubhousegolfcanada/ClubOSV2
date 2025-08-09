@@ -11,6 +11,7 @@ Local-first Node.js backend for the ClubOSV1 golf simulator management system wi
   - TechSupportBot: Equipment and technical issue resolution
   - BrandToneBot: Marketing and brand-related queries
 - **Slack Integration**: Direct messaging and fallback when LLM fails
+- **UniFi Access Integration**: Remote door control and access management
 - **File-Based Storage**: Local JSON storage with Google Drive sync support
 - **Request History**: Complete audit trail and analytics
 - **RESTful API**: Well-structured endpoints for all operations
@@ -97,6 +98,13 @@ The server will start on `http://localhost:3001`
 - `GET /api/access/check/:userId` - Check access status
 - `POST /api/access/revoke/:id` - Revoke access
 
+### UniFi Door Control
+
+- `GET /api/unifi/doors` - List configured doors
+- `POST /api/unifi/doors/:doorId/unlock` - Unlock specific door
+- `GET /api/unifi/doors/:doorId/status` - Get door status
+- `GET /api/unifi/access-logs` - View door access history
+
 ### System Status
 
 - `GET /api/llm/status` - LLM service status
@@ -114,6 +122,18 @@ The server will start on `http://localhost:3001`
 - `SLACK_CHANNEL` - Default Slack channel
 - `LOG_LEVEL` - Logging level (info, debug, error)
 - `DATA_RETENTION_DAYS` - How long to keep logs
+
+#### UniFi Access Configuration
+
+- `UNIFI_CONTROLLER_URL` - UniFi Controller URL
+- `UNIFI_CONTROLLER_PORT` - Controller port (default: 8443)
+- `UNIFI_USERNAME` - UniFi admin username
+- `UNIFI_PASSWORD` - UniFi admin password
+- `UNIFI_SITE_ID` - Site ID (default: 'default')
+- `UNIFI_DOOR_*` - Door MAC addresses for each location
+- `UNIFI_UNLOCK_DURATION` - Default unlock duration in seconds
+- `UNIFI_MAX_UNLOCK_DURATION` - Maximum allowed unlock duration
+- `UNIFI_EMERGENCY_UNLOCK_DURATION` - Duration for emergency unlocks
 
 ### Data Storage
 
@@ -135,6 +155,7 @@ Files in `src/data/sync/` are mirrored for Google Drive sync.
 - `npm run lint` - Run ESLint
 - `npm test` - Run tests
 - `npm run typecheck` - Check TypeScript types
+- `npm run setup:unifi` - Configure UniFi Access integration
 
 ### Adding New Routes
 
