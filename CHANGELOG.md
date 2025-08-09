@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.24] - 2025-08-09
+
+### Added
+- **Ubiquiti UniFi Access Door Control**
+  - Staff doors now fully operational at Bedford and Dartmouth locations
+  - Remote unlock capability for all configured doors (30-second default)
+  - Real-time door status monitoring (locked/unlocked, online/offline)
+  - Door access integrated into Remote Actions bar at bottom of screen
+  - Role-based access: Operators can unlock staff doors, Admins have full control
+  - Audit logging for all door access operations
+  - Slack notifications for non-main door unlocks
+  - Emergency unlock all doors function for admins
+  - Demo mode when UniFi not configured for testing
+  - Comprehensive setup documentation (UBIQUITI-DOOR-ACCESS-SETUP.md)
+  - Foundation laid for future customer self-service door access
+
 ## [1.11.23] - 2025-08-08
 
 ### Fixed

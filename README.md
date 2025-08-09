@@ -32,7 +32,9 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 #### 2. Operations Management
 - **Tickets**: Tech/Facilities categories, priority workflow, Slack integration
 - **Checklists**: Daily maintenance, auto-ticket creation, admin-only task editing
-- **Remote Control**: NinjaOne integration for simulator/TV/music control
+- **Remote Control**: 
+  - NinjaOne integration for simulator/TV/music control
+  - Ubiquiti UniFi Access for door control (staff & future customer access)
 - **Analytics**: Usage tracking, performance metrics, cost monitoring
 - **Messages**: 
   - Two-way SMS via OpenPhone with AI suggestions
