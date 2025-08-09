@@ -46,9 +46,17 @@ class HubSpotService {
    * Phone number normalization for reliable matching
    * Handles formats like: (902) 555-1234, 9025551234, +19025551234, 902-555-1234
    */
-  private normalizePhone(phone: string): string {
+  private normalizePhone(phone: string | null | undefined): string {
+    // Handle null/undefined phone numbers
+    if (!phone) {
+      return '';
+    }
+    
+    // Convert to string if not already
+    const phoneStr = String(phone);
+    
     // Remove all non-digits
-    const digits = phone.replace(/\D/g, '');
+    const digits = phoneStr.replace(/\D/g, '');
     
     // For North American numbers, use last 10 digits
     if (digits.length >= 10) {
@@ -90,7 +98,13 @@ class HubSpotService {
   /**
    * Search for a contact by phone number
    */
-  async searchByPhone(phoneNumber: string): Promise<HubSpotContact | null> {
+  async searchByPhone(phoneNumber: string | null | undefined): Promise<HubSpotContact | null> {
+    // Skip if no phone number provided
+    if (!phoneNumber) {
+      logger.debug('No phone number provided for HubSpot lookup');
+      return null;
+    }
+    
     // Skip if not connected
     if (!this.isConnected) {
       logger.debug('HubSpot not connected, skipping lookup');
