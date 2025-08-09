@@ -43,11 +43,70 @@ async function runMigration(filepath: string, filename: string): Promise<void> {
   try {
     const sql = await readFile(filepath, 'utf-8');
     
-    // Split by semicolons but be careful about semicolons in strings
-    const statements = sql
-      .split(/;\s*$/gm)
-      .filter(stmt => stmt.trim().length > 0)
-      .map(stmt => stmt.trim() + ';');
+    // Use a better SQL statement splitter that handles:
+    // - Functions with semicolons inside
+    // - CHECK constraints
+    // - String literals
+    // - Comments
+    const statements: string[] = [];
+    let currentStatement = '';
+    let inString = false;
+    let stringDelimiter = '';
+    let inDollarQuote = false;
+    let dollarTag = '';
+    
+    const lines = sql.split('\n');
+    
+    for (const line of lines) {
+      // Skip comment-only lines
+      if (line.trim().startsWith('--')) {
+        continue;
+      }
+      
+      // Track dollar quotes (PostgreSQL function bodies)
+      const dollarMatch = line.match(/\$([^$]*)\$/g);
+      if (dollarMatch) {
+        for (const match of dollarMatch) {
+          if (!inDollarQuote) {
+            inDollarQuote = true;
+            dollarTag = match;
+          } else if (match === dollarTag) {
+            inDollarQuote = false;
+            dollarTag = '';
+          }
+        }
+      }
+      
+      // Track regular strings
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (!inDollarQuote && (char === "'" || char === '"') && (i === 0 || line[i-1] !== '\\')) {
+          if (!inString) {
+            inString = true;
+            stringDelimiter = char;
+          } else if (char === stringDelimiter) {
+            inString = false;
+            stringDelimiter = '';
+          }
+        }
+      }
+      
+      currentStatement += line + '\n';
+      
+      // Check if line ends with semicolon and we're not inside a string or function
+      if (line.trim().endsWith(';') && !inString && !inDollarQuote) {
+        const stmt = currentStatement.trim();
+        if (stmt.length > 0) {
+          statements.push(stmt);
+        }
+        currentStatement = '';
+      }
+    }
+    
+    // Add any remaining statement
+    if (currentStatement.trim().length > 0) {
+      statements.push(currentStatement.trim());
+    }
     
     logger.info(`Total statements found: ${statements.length}`);
     statements.forEach((stmt, idx) => {
