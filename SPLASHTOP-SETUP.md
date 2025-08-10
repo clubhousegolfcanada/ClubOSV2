@@ -1,5 +1,21 @@
 # Splashtop Bay-Specific Remote Desktop Setup
 
+## Quick Setup Guide (5 Minutes)
+
+### The Easy Way - Using PowerShell Script
+
+1. **Download the setup script** to each bay computer
+2. **Run PowerShell as Administrator** on each bay computer
+3. **Execute the script**: 
+   ```powershell
+   .\getMacAddress.ps1
+   ```
+4. **Answer the prompts** (location and bay number)
+5. **Copy the output** to your `.env.local` file
+6. **Restart the ClubOS frontend**
+
+That's it! The Remote Desktop buttons will now work for that bay.
+
 ## Overview
 ClubOS now supports direct remote desktop connections to specific bay computers using Splashtop Business. This allows operators to quickly connect to any bay's computer directly from the Commands page or RemoteActionsBar.
 
@@ -20,20 +36,25 @@ ClubOS now supports direct remote desktop connections to specific bay computers 
 2. **MAC Addresses for Each Bay Computer**
    - You need the MAC address of each computer's primary network adapter
 
-#### How to Find MAC Addresses:
+#### Method 1: Quick Command (Easiest)
 
-**On Windows (Bay Computers):**
+**On each bay computer, open Command Prompt and run:**
 ```cmd
-ipconfig /all
+getmac /v | findstr /i "ethernet wi-fi"
 ```
-Look for "Physical Address" under your active network adapter (usually Ethernet).
-Example: `C0-4A-00-1C-72-EC`
+This will show the MAC address like: `C0-4A-00-1C-72-EC`
 
-**From Splashtop Web Console:**
-1. Log into my.splashtop.com
-2. Go to Computers tab
-3. Click on each computer's info
-4. Note the MAC address
+#### Method 2: From Splashtop (If Available)
+
+Unfortunately, Splashtop doesn't show MAC addresses in the web console, only device names like "DESKTOP-Q4Q4KE3".
+
+#### Method 3: Using PowerShell Script (Automated)
+
+We've included a PowerShell script that automatically gets both the device name and MAC address:
+```powershell
+.\getMacAddress.ps1
+```
+This script will output the exact environment variables you need to add.
 
 ### Step 2: Configure Environment Variables
 

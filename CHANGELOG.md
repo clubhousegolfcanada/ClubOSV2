@@ -13,6 +13,8 @@ All notable changes to ClubOS will be documented in this file.
   - Configuration via environment variables for each bay's MAC address
   - Automatic fallback to web portal with helpful computer selection message
   - Created comprehensive setup documentation (SPLASHTOP-SETUP.md)
+  - Added PowerShell and Batch scripts for easy MAC address collection
+  - Quick 5-minute setup process with automated helper scripts
 
 ### Improved
 - **Complete Splashtop Integration for All Platforms**

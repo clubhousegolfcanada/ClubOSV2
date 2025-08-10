@@ -1,31 +1,40 @@
 // Splashtop Bay Computer Configuration
-// MAC addresses should be obtained from each computer and stored securely
+// Uses device names from Splashtop (e.g., DESKTOP-Q4Q4KE3)
 
 export interface BayComputer {
-  mac: string;
-  name: string;
-  splashtopId?: string;
+  deviceName?: string;  // Device name shown in Splashtop (e.g., DESKTOP-Q4Q4KE3)
+  mac?: string;         // Optional: MAC address for deep linking
+  name: string;         // Friendly name for display
+  splashtopId?: string; // Optional: Splashtop computer ID
 }
 
 // Configuration for bay computers at each location
-// Replace XX:XX:XX:XX:XX:XX with actual MAC addresses
+// Use device names from Splashtop (visible in Computer Info as "Device Name")
 export const BAY_COMPUTERS: Record<string, Record<string, BayComputer>> = {
   'Bedford': {
     '1': { 
+      deviceName: process.env.NEXT_PUBLIC_BEDFORD_BAY1_DEVICE || '',
       mac: process.env.NEXT_PUBLIC_BEDFORD_BAY1_MAC || '', 
       name: 'Bedford Bay 1 PC' 
     },
     '2': { 
+      deviceName: process.env.NEXT_PUBLIC_BEDFORD_BAY2_DEVICE || '',
       mac: process.env.NEXT_PUBLIC_BEDFORD_BAY2_MAC || '', 
       name: 'Bedford Bay 2 PC' 
     },
     '3': { 
+      deviceName: process.env.NEXT_PUBLIC_BEDFORD_BAY3_DEVICE || '',
       mac: process.env.NEXT_PUBLIC_BEDFORD_BAY3_MAC || '', 
       name: 'Bedford Bay 3 PC' 
     },
     '4': { 
+      deviceName: process.env.NEXT_PUBLIC_BEDFORD_BAY4_DEVICE || '',
       mac: process.env.NEXT_PUBLIC_BEDFORD_BAY4_MAC || '', 
       name: 'Bedford Bay 4 PC' 
+    },
+    'backwall': { 
+      deviceName: process.env.NEXT_PUBLIC_BEDFORD_BACKWALL_DEVICE || 'DESKTOP-Q4Q4KE3',
+      name: 'Bedford Backwall Sign' 
     }
   },
   'Dartmouth': {
