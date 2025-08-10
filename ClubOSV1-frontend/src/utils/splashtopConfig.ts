@@ -163,7 +163,8 @@ export function openSplashtopForBay(location: string, bayNumber: string) {
       
     } else if (isAndroid) {
       // Android: Try intent with the deep link
-      const intentUrl = `intent://open#Intent;scheme=st-business;S.account=${encodeURIComponent(SPLASHTOP_ACCOUNT_EMAIL)};S.mac=${computer?.mac.replace(/[:-]/g, '').toUpperCase()};S.browser_fallback_url=${encodeURIComponent(webPortalUrl)};end`;
+      const macFormatted = computer?.mac?.replace(/[:-]/g, '').toUpperCase() || '';
+      const intentUrl = `intent://open#Intent;scheme=st-business;S.account=${encodeURIComponent(SPLASHTOP_ACCOUNT_EMAIL)};S.mac=${macFormatted};S.browser_fallback_url=${encodeURIComponent(webPortalUrl)};end`;
       window.location.href = intentUrl;
       
     } else {
