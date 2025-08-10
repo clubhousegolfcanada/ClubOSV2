@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splashtop Link Testing</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        h1 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #3a3a3a;
+        }
+        button, a.button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        button:hover, a.button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .info {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        code {
+            background: #444;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+            min-height: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Splashtop Deep Link Testing</h1>
+    
+    <div class="info">
+        <strong>Testing Date:</strong> <span id="date"></span><br>
+        <strong>User Agent:</strong> <span id="userAgent"></span><br>
+        <strong>Platform:</strong> <span id="platform"></span><br>
+        <strong>PWA Mode:</strong> <span id="pwaMode"></span>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Standard Web URL (Current Implementation)</h2>
+        <p>Opens Splashtop web portal in new browser tab/window</p>
+        <button onclick="testWebUrl()">Open Web Portal</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Custom URL Schemes (All Platforms)</h2>
+        <p>Attempt to open native Splashtop app using various URL schemes</p>
+        <h3>Mobile & Desktop Schemes:</h3>
+        <button onclick="testSplashtopScheme()">Try splashtop://</button>
+        <button onclick="testSplashtopBusinessScheme()">Try splashtopbusiness://</button>
+        <button onclick="testStBusinessScheme()">Try stbusiness://</button>
+        <button onclick="testStRemoteScheme()">Try stremote://</button>
+        <h3>Test with iframe (iOS/Desktop):</h3>
+        <button onclick="testIframeScheme('splashtopbusiness://')">iframe: splashtopbusiness://</button>
+        <button onclick="testIframeScheme('splashtop://')">iframe: splashtop://</button>
+        <div id="result2" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Intent URLs (Android)</h2>
+        <p>Android-specific intent URLs for app launching</p>
+        <button onclick="testAndroidIntent()">Android Intent</button>
+        <button onclick="testAndroidPackage()">Package Intent</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Universal Links (iOS)</h2>
+        <p>iOS-specific app association links</p>
+        <button onclick="testIOSUniversal()">iOS Universal Link</button>
+        <button onclick="testIOSAppStore()">App Store Link</button>
+        <div id="result4" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Hybrid Approach</h2>
+        <p>Smart detection with fallback</p>
+        <button onclick="testSmartOpen()">Smart Open (Auto-detect)</button>
+        <div id="result5" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Alternative Methods</h2>
+        <p>Other approaches for app launching</p>
+        <button onclick="testIframe()">Hidden iframe Method</button>
+        <button onclick="testLocationReplace()">Location Replace</button>
+        <a href="splashtop://" class="button">Direct Link</a>
+        <div id="result6" class="result"></div>
+    </div>
+
+    <script>
+        // Display system info
+        document.getElementById('date').textContent = new Date().toLocaleString();
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('platform').textContent = navigator.platform;
+        document.getElementById('pwaMode').textContent = 
+            window.matchMedia('(display-mode: standalone)').matches ? 'Yes (Standalone)' : 
+            window.matchMedia('(display-mode: minimal-ui)').matches ? 'Yes (Minimal UI)' : 
+            window.matchMedia('(display-mode: fullscreen)').matches ? 'Yes (Fullscreen)' : 
+            'No (Browser)';
+
+        function logResult(elementId, message) {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML = `<strong>[${timestamp}]</strong> ${message}<br>` + element.innerHTML;
+        }
+
+        // Test functions
+        function testWebUrl() {
+            const url = 'https://my.splashtop.com/computers';
+            logResult('result1', `Opening: ${url}`);
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        function testSplashtopScheme() {
+            const url = 'splashtop://';
+            logResult('result2', `Attempting: ${url}`);
+            window.location.href = url;
+        }
+
+        function testSplashtopBusinessScheme() {
+            const url = 'splashtopbusiness://';
+            logResult('result2', `Attempting: ${url}`);
+            window.location.href = url;
+        }
+
+        function testStBusinessScheme() {
+            const url = 'stbusiness://';
+            logResult('result2', `Attempting: ${url}`);
+            window.location.href = url;
+        }
+
+        function testStRemoteScheme() {
+            const url = 'stremote://';
+            logResult('result2', `Attempting: ${url}`);
+            window.location.href = url;
+        }
+
+        function testAndroidIntent() {
+            const url = 'intent://open#Intent;scheme=splashtopbusiness;package=com.splashtop.remote.business;S.browser_fallback_url=https%3A%2F%2Fmy.splashtop.com%2Fcomputers;end';
+            logResult('result3', `Attempting Android Business intent with fallback: ${url}`);
+            window.location.href = url;
+        }
+
+        function testAndroidPackage() {
+            const url = 'intent://open#Intent;package=com.splashtop.remote.business;end';
+            logResult('result3', `Attempting package intent (Business): ${url}`);
+            window.location.href = url;
+        }
+        
+        function testIframeScheme(scheme) {
+            logResult('result2', `Testing iframe method with ${scheme}`);
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = scheme;
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                if (document.hidden || document.webkitHidden) {
+                    logResult('result2', `✅ App appears to have opened with ${scheme}`);
+                } else {
+                    logResult('result2', `❌ ${scheme} did not open app`);
+                }
+            }, 500);
+        }
+
+        function testIOSUniversal() {
+            const url = 'https://app.splashtop.com/open';
+            logResult('result4', `Attempting iOS universal link: ${url}`);
+            window.location.href = url;
+        }
+
+        function testIOSAppStore() {
+            const url = 'https://apps.apple.com/app/splashtop-business/id1147130587';
+            logResult('result4', `Opening App Store: ${url}`);
+            window.open(url, '_blank');
+        }
+
+        function testSmartOpen() {
+            const userAgent = navigator.userAgent;
+            const isIOS = /iPhone|iPad|iPod/.test(userAgent) && !/Mac/.test(userAgent);
+            const isAndroid = /Android/.test(userAgent);
+            const isMac = /Mac/.test(userAgent) && !isIOS;
+            const isWindows = /Windows/.test(userAgent);
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+            
+            let platform = isIOS ? 'iOS' : isAndroid ? 'Android' : isMac ? 'Mac' : isWindows ? 'Windows' : 'Unknown';
+            let message = `Platform: ${platform}, PWA: ${isPWA}. `;
+            
+            if (isIOS) {
+                message += 'Trying iOS schemes (splashtopbusiness://, splashtop://, stbusiness://)...';
+                logResult('result5', message);
+                
+                // Try multiple schemes
+                const schemes = ['splashtopbusiness://', 'splashtop://', 'stbusiness://'];
+                let schemeIndex = 0;
+                
+                const tryNextScheme = () => {
+                    if (schemeIndex < schemes.length) {
+                        const scheme = schemes[schemeIndex];
+                        logResult('result5', `Trying ${scheme}...`);
+                        
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = scheme;
+                        document.body.appendChild(iframe);
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(iframe);
+                            schemeIndex++;
+                            
+                            if (!document.hidden && schemeIndex < schemes.length) {
+                                tryNextScheme();
+                            } else if (!document.hidden && schemeIndex >= schemes.length) {
+                                logResult('result5', 'No iOS app found, opening web portal...');
+                                window.open('https://my.splashtop.com/computers', '_blank');
+                            } else {
+                                logResult('result5', '✅ App opened successfully!');
+                            }
+                        }, 500);
+                    }
+                };
+                
+                tryNextScheme();
+                
+            } else if (isAndroid) {
+                message += 'Trying Android Business intent...';
+                logResult('result5', message);
+                
+                // Try Android Business intent
+                window.location.href = 'intent://open#Intent;scheme=splashtopbusiness;package=com.splashtop.remote.business;S.browser_fallback_url=https%3A%2F%2Fmy.splashtop.com%2Fcomputers;end';
+                
+            } else if (isMac || isWindows) {
+                message += `Desktop ${isMac ? 'Mac' : 'Windows'} detected, trying desktop app...`;
+                logResult('result5', message);
+                
+                // Try desktop app
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'splashtopbusiness://';
+                document.body.appendChild(iframe);
+                
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    logResult('result5', 'Opening web portal as fallback/primary...');
+                    window.open('https://my.splashtop.com/computers', '_blank');
+                }, 1000);
+                
+            } else {
+                message += 'Unknown platform, opening web portal...';
+                logResult('result5', message);
+                window.open('https://my.splashtop.com/computers', '_blank');
+            }
+        }
+
+        function testIframe() {
+            logResult('result6', 'Attempting iframe method...');
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = 'splashtop://';
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                if (document.hidden || document.webkitHidden) {
+                    logResult('result6', 'App may have opened via iframe');
+                } else {
+                    logResult('result6', 'Iframe method failed, opening web fallback...');
+                    window.open('https://my.splashtop.com/computers', '_blank');
+                }
+            }, 1000);
+        }
+
+        function testLocationReplace() {
+            logResult('result6', 'Attempting location.replace...');
+            window.location.replace('splashtop://');
+        }
+
+        // Add visibility change listener for app detection
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('Page became hidden - app may have opened');
+            }
+        });
+    </script>
+</body>
+</html>

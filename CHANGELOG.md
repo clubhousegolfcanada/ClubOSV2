@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.25] - 2025-08-10
+
+### Improved
+- **Complete Splashtop Integration for All Platforms**
+  - Implemented smart deep linking for Splashtop Business app across all platforms
+  - **iOS**: Attempts multiple URL schemes (`splashtopbusiness://`, `splashtop://`, `stbusiness://`) using iframe method
+  - **Android**: Uses intent URL for Splashtop Business app (`com.splashtop.remote.business`) with automatic web fallback
+  - **Mac/Windows Desktop**: Attempts to open Splashtop Business desktop app before falling back to web portal
+  - Automatic fallback to web portal if native app is not installed on any platform
+  - Added comprehensive platform detection (iOS vs iPad vs Mac, Windows, Android)
+  - Added PWA detection to optimize for installed app experience
+  - Works in both ExternalTools and DatabaseExternalTools components
+  - Created comprehensive test page for validating URL schemes across all platforms
+
 ## [1.11.24] - 2025-08-09
 
 ### Added

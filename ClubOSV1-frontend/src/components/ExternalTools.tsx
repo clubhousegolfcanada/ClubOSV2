@@ -65,8 +65,99 @@ const ExternalTools: React.FC = () => {
     }
   ];
 
-  const handleToolClick = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const handleToolClick = (url: string, toolName?: string) => {
+    // Special handling for Splashtop on all platforms
+    if (toolName === 'Remote Desktop') {
+      const userAgent = navigator.userAgent;
+      const isIOS = /iPhone|iPad|iPod/.test(userAgent) && !/Mac/.test(userAgent);
+      const isAndroid = /Android/.test(userAgent);
+      const isMac = /Mac/.test(userAgent) && !isIOS;
+      const isWindows = /Windows/.test(userAgent);
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.matchMedia('(display-mode: minimal-ui)').matches ||
+                    window.matchMedia('(display-mode: fullscreen)').matches;
+      
+      console.log(`Platform detection - iOS: ${isIOS}, Android: ${isAndroid}, Mac: ${isMac}, Windows: ${isWindows}, PWA: ${isPWA}`);
+      
+      if (isIOS) {
+        // iOS: Try multiple URL schemes for Splashtop Business app
+        console.log('iOS detected - attempting to open Splashtop Business app...');
+        
+        // Try different URL schemes
+        const schemes = [
+          'splashtopbusiness://',  // Splashtop Business specific
+          'splashtop://',          // Generic Splashtop
+          'stbusiness://'          // Alternative Business scheme
+        ];
+        
+        let schemeIndex = 0;
+        const tryNextScheme = () => {
+          if (schemeIndex < schemes.length) {
+            const scheme = schemes[schemeIndex];
+            console.log(`Trying iOS scheme: ${scheme}`);
+            
+            // Create invisible iframe to attempt app launch
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = scheme;
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              schemeIndex++;
+              
+              // Check if page is still visible (app didn't open)
+              if (!document.hidden && schemeIndex < schemes.length) {
+                tryNextScheme();
+              } else if (!document.hidden && schemeIndex >= schemes.length) {
+                // All schemes failed, fallback to web
+                console.log('No iOS app found, opening web portal...');
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }
+            }, 500);
+          }
+        };
+        
+        tryNextScheme();
+        
+      } else if (isAndroid) {
+        // Android: Use intent for Splashtop Business app
+        console.log('Android detected - attempting to open Splashtop Business app...');
+        
+        // Try Splashtop Business package first
+        const businessIntent = `intent://open#Intent;scheme=splashtopbusiness;package=com.splashtop.remote.business;S.browser_fallback_url=${encodeURIComponent(url)};end`;
+        window.location.href = businessIntent;
+        
+      } else if (isMac || isWindows) {
+        // Desktop: Try to open desktop app first, then fallback to web
+        console.log(`Desktop ${isMac ? 'Mac' : 'Windows'} detected - attempting to open Splashtop Business desktop app...`);
+        
+        // Try desktop URL schemes
+        const desktopScheme = 'splashtopbusiness://';
+        
+        // Create invisible iframe to attempt desktop app launch
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = desktopScheme;
+        document.body.appendChild(iframe);
+        
+        // Set up fallback to web portal
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          // Always open web portal as backup on desktop
+          console.log('Opening web portal as fallback/primary option...');
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }, 1000);
+        
+      } else {
+        // Unknown platform: Open web portal
+        console.log('Unknown platform - opening web portal...');
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      // For all other tools, use standard web opening
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -78,7 +169,7 @@ const ExternalTools: React.FC = () => {
           return (
             <button
               key={tool.name}
-              onClick={() => handleToolClick(tool.url)}
+              onClick={() => handleToolClick(tool.url, tool.name)}
               className="w-full p-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg hover:border-[var(--accent)] transition-all duration-200 group"
             >
               <div className="flex items-center gap-3 w-full">
