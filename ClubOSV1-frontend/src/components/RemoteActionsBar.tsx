@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
+import { openSplashtopForBay } from '@/utils/splashtopConfig';
 
 interface LocationConfig {
   name: string;
@@ -204,25 +205,38 @@ const RemoteActionsBar: React.FC = () => {
                   {/* Bay Actions */}
                   <div className="space-y-2 mb-3">
                     <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Simulators</p>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="space-y-1.5">
                       {location.bays.map((bay) => {
                         const isExecuting = executingActions.has(`${location.name}-restart-trackman-${bay}`);
                         return (
-                          <button
-                            key={bay}
-                            onClick={() => {
-                              executeAction('restart-trackman', location.name, String(bay));
-                            }}
-                            disabled={isExecuting}
-                            className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50"
-                          >
-                            {isExecuting ? (
-                              <Loader className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Monitor className="w-3 h-3" />
-                            )}
-                            Bay {bay}
-                          </button>
+                          <div key={bay} className="flex items-center gap-1">
+                            <span className="text-xs text-[var(--text-muted)] w-10">B{bay}:</span>
+                            <button
+                              onClick={() => {
+                                executeAction('restart-trackman', location.name, String(bay));
+                              }}
+                              disabled={isExecuting}
+                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50"
+                              title={`Reset TrackMan Bay ${bay}`}
+                            >
+                              {isExecuting ? (
+                                <Loader className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <RefreshCw className="w-3 h-3" />
+                              )}
+                              Reset
+                            </button>
+                            <button
+                              onClick={() => {
+                                openSplashtopForBay(location.name, String(bay));
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-blue-500 hover:text-white border border-[var(--border-secondary)] rounded transition-all active:scale-95"
+                              title={`Remote Desktop to Bay ${bay}`}
+                            >
+                              <MonitorSmartphone className="w-3 h-3" />
+                              Remote
+                            </button>
+                          </div>
                         );
                       })}
                     </div>

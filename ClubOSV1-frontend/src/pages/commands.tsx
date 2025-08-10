@@ -27,10 +27,12 @@ import {
   DoorOpen,
   Projector,
   Monitor as MonitorIcon,
-  Maximize2
+  Maximize2,
+  MonitorSmartphone
 } from 'lucide-react';
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
+import { openSplashtopForBay, isSplashtopConfigured } from '@/utils/splashtopConfig';
 
 interface Command {
   id: string;
@@ -1033,31 +1035,14 @@ export default function CommandsRedesigned() {
                                           <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">PC</span>
                                         </button>
                                         <button
-                                          onClick={async () => {
-                                            if (!confirm(`Run other system actions for ${trigger.location} Bay ${trigger.bayNumber}? This will clear temp files, reset network adapters, and perform other maintenance tasks.`)) {
-                                              return;
-                                            }
-                                            const toastId = toast.loading(`Executing other system actions...`);
-                                            try {
-                                              const result = await remoteActionsAPI.execute({
-                                                action: 'other',
-                                                location: trigger.location!,
-                                                bayNumber: trigger.bayNumber || ''
-                                              });
-                                              toast.success(result.message, { id: toastId });
-                                              
-                                              // Start polling for job status if not simulated
-                                              if (result.jobId && !result.simulated) {
-                                                pollJobStatus(result.jobId, result.device);
-                                              }
-                                            } catch (error) {
-                                              toast.error('Failed to execute other actions', { id: toastId });
-                                            }
+                                          onClick={() => {
+                                            openSplashtopForBay(trigger.location!, trigger.bayNumber!);
                                           }}
-                                          className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-green-500 border border-green-500/50 hover:border-green-500 rounded transition-all group/btn text-xs"
+                                          className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-blue-500 border border-blue-500/50 hover:border-blue-500 rounded transition-all group/btn text-xs"
+                                          title={`Remote desktop to ${trigger.location} Bay ${trigger.bayNumber}`}
                                         >
-                                          <AlertCircle className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
-                                          <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Other</span>
+                                          <MonitorSmartphone className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Remote</span>
                                         </button>
                                       </div>
                                       {/* Projector Controls - Compact Row */}

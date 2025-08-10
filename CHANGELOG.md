@@ -4,6 +4,16 @@ All notable changes to ClubOS will be documented in this file.
 
 ## [1.11.25] - 2025-08-10
 
+### Added
+- **Bay-Specific Splashtop Remote Desktop Integration**
+  - Added "Remote" button for each bay in Commands page (replaced "Other" button)
+  - Added "Remote" button for each bay in RemoteActionsBar
+  - Direct connection to specific computers using MAC address deep linking
+  - URL format: `st-business://com.splashtop.business?account=EMAIL&mac=MACADDRESS`
+  - Configuration via environment variables for each bay's MAC address
+  - Automatic fallback to web portal with helpful computer selection message
+  - Created comprehensive setup documentation (SPLASHTOP-SETUP.md)
+
 ### Improved
 - **Complete Splashtop Integration for All Platforms**
   - Implemented smart deep linking for Splashtop Business app across all platforms
