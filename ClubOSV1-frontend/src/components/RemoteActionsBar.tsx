@@ -5,7 +5,7 @@ import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
-import { openSplashtopForBay } from '@/utils/splashtopConfig';
+import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
 
 interface LocationConfig {
   name: string;
@@ -228,7 +228,7 @@ const RemoteActionsBar: React.FC = () => {
                             </button>
                             <button
                               onClick={() => {
-                                openSplashtopForBay(location.name, String(bay));
+                                openRemoteDesktopForBay(location.name, String(bay));
                               }}
                               className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-blue-500 hover:text-white border border-[var(--border-secondary)] rounded transition-all active:scale-95"
                               title={`Remote Desktop to Bay ${bay}`}

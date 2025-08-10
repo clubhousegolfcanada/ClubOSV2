@@ -5,10 +5,23 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.11.25] - 2025-08-10
 
 ### Added
-- **Bay-Specific Splashtop Remote Desktop Integration**
+- **NinjaOne-Ready Remote Desktop Integration**
+  - Created unified remote desktop system supporting both NinjaOne and Splashtop
+  - Added NinjaOne remote session API endpoint (`/api/ninjaone-remote`)
+  - Integrated with existing NinjaOne device registry for bay computers
+  - Smart provider selection: tries NinjaOne first, falls back to Splashtop
+  - Configuration via `NEXT_PUBLIC_REMOTE_DESKTOP_PROVIDER` environment variable
+  - Automatic fallback chain: NinjaOne session → NinjaOne console → Splashtop portal
+
+- **Bay-Specific Remote Desktop Buttons**
   - Added "Remote" button for each bay in Commands page (replaced "Other" button)
   - Added "Remote" button for each bay in RemoteActionsBar
-  - Direct connection to specific computers using MAC address deep linking
+  - Direct connection to specific bay computers
+  - Loading indicators and success/error toasts for better UX
+  - Works with both NinjaOne and Splashtop providers
+
+- **Splashtop Fallback Support**
+  - Direct connection using MAC address deep linking (when configured)
   - URL format: `st-business://com.splashtop.business?account=EMAIL&mac=MACADDRESS`
   - Configuration via environment variables for each bay's MAC address
   - Automatic fallback to web portal with helpful computer selection message

@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
-import { openSplashtopForBay, isSplashtopConfigured } from '@/utils/splashtopConfig';
+import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
 
 interface Command {
   id: string;
@@ -1036,7 +1036,7 @@ export default function CommandsRedesigned() {
                                         </button>
                                         <button
                                           onClick={() => {
-                                            openSplashtopForBay(trigger.location!, trigger.bayNumber!);
+                                            openRemoteDesktopForBay(trigger.location!, trigger.bayNumber!);
                                           }}
                                           className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-blue-500 border border-blue-500/50 hover:border-blue-500 rounded transition-all group/btn text-xs"
                                           title={`Remote desktop to ${trigger.location} Bay ${trigger.bayNumber}`}
