@@ -31,13 +31,19 @@ export class KnowledgeSearchService {
 
       // If we don't have enough results, search other tables
       if (results.length < limit) {
-        // 2. Search assistant_knowledge
+        // 2. Search knowledge_audit_log (recent uploads)
+        const auditResults = await this.searchKnowledgeAuditLog(query, assistantType, limit - results.length);
+        results.push(...auditResults);
+      }
+
+      if (results.length < limit) {
+        // 3. Search assistant_knowledge
         const assistantResults = await this.searchAssistantKnowledge(query, assistantType, limit - results.length);
         results.push(...assistantResults);
       }
 
       if (results.length < limit) {
-        // 3. Search extracted_knowledge
+        // 4. Search extracted_knowledge
         const extractedResults = await this.searchExtractedKnowledge(query, limit - results.length);
         results.push(...extractedResults);
       }
@@ -111,6 +117,84 @@ export class KnowledgeSearchService {
   }
 
   /**
+   * Search the knowledge_audit_log table (recent uploads)
+   */
+  private async searchKnowledgeAuditLog(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
+    if (!db.initialized) return [];
+
+    try {
+      const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+      
+      let sql = `
+        SELECT 
+          action,
+          category,
+          key,
+          new_value,
+          assistant_target,
+          timestamp
+        FROM knowledge_audit_log
+        WHERE 1=1
+      `;
+
+      const params: any[] = [];
+
+      // Add search conditions
+      if (searchTerms.length > 0) {
+        const searchConditions = searchTerms.map((_, index) => {
+          params.push(`%${searchTerms[index]}%`);
+          return `(LOWER(new_value) LIKE $${params.length} OR LOWER(key) LIKE $${params.length} OR LOWER(category) LIKE $${params.length})`;
+        });
+        sql += ` AND (${searchConditions.join(' OR ')})`;
+      }
+
+      // Filter by assistant type
+      if (assistantType) {
+        const assistantMap: Record<string, string> = {
+          'emergency': 'emergency',
+          'booking': 'booking',
+          'booking & access': 'booking',
+          'techsupport': 'tech',
+          'tech': 'tech',
+          'brandtone': 'brand',
+          'brand': 'brand'
+        };
+        const mappedType = assistantMap[assistantType.toLowerCase()] || assistantType;
+        params.push(mappedType);
+        sql += ` AND assistant_target = $${params.length}`;
+      }
+
+      sql += ` ORDER BY timestamp DESC LIMIT $${params.length + 1}`;
+      params.push(limit);
+
+      const result = await db.query(sql, params);
+
+      return result.rows.map((row: any) => {
+        // Calculate relevance
+        const contentLower = `${row.new_value} ${row.key || ''} ${row.category}`.toLowerCase();
+        const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
+        const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.5;
+
+        return {
+          key: `audit.${row.assistant_target}.${row.category}`,
+          value: {
+            content: row.new_value,
+            category: row.category,
+            action: row.action,
+            key: row.key
+          },
+          confidence: 0.9, // High confidence for recent uploads
+          relevance,
+          source: 'knowledge_audit_log'
+        };
+      });
+    } catch (error) {
+      logger.error('Error searching knowledge_audit_log:', error);
+      return [];
+    }
+  }
+
+  /**
    * Search the assistant_knowledge table
    */
   private async searchAssistantKnowledge(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
@@ -122,8 +206,7 @@ export class KnowledgeSearchService {
       let sql = `
         SELECT 
           route,
-          fact,
-          tags,
+          knowledge,
           1.0 as confidence
         FROM assistant_knowledge
         WHERE 1=1
@@ -135,7 +218,7 @@ export class KnowledgeSearchService {
       if (searchTerms.length > 0) {
         const searchConditions = searchTerms.map((_, index) => {
           params.push(`%${searchTerms[index]}%`);
-          return `(LOWER(fact) LIKE $${params.length} OR LOWER(tags::text) LIKE $${params.length})`;
+          return `LOWER(knowledge::text) LIKE $${params.length}`;
         });
         sql += ` AND (${searchConditions.join(' OR ')})`;
       }
@@ -152,16 +235,31 @@ export class KnowledgeSearchService {
       const result = await db.query(sql, params);
 
       return result.rows.map((row: any) => {
+        // Extract content from the knowledge JSON
+        const knowledge = row.knowledge || {};
+        let content = '';
+        
+        // Try to extract meaningful content from the knowledge object
+        if (typeof knowledge === 'string') {
+          content = knowledge;
+        } else if (knowledge.automatedResponses) {
+          // Extract automated responses
+          const responses = Object.values(knowledge.automatedResponses).flat();
+          content = responses.map((r: any) => r.response || r).join(' ');
+        } else {
+          content = JSON.stringify(knowledge);
+        }
+        
         // Calculate relevance based on how many search terms match
-        const factLower = row.fact.toLowerCase();
-        const matchCount = searchTerms.filter(term => factLower.includes(term)).length;
+        const contentLower = content.toLowerCase();
+        const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
         const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.5;
 
         return {
           key: `${row.route}.assistant_knowledge`,
           value: {
-            content: row.fact,
-            tags: row.tags,
+            content,
+            knowledge: row.knowledge,
             assistant: row.route
           },
           confidence: 1.0, // Admin-uploaded knowledge has high confidence
