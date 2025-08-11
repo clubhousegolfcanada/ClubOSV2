@@ -101,8 +101,8 @@ router.get('/health', (req: Request, res: Response) => {
 
 // Optimized request processing with single API call
 router.post('/request', 
-  // authenticate,  // Commented out for demo
-  // adminOrOperator,  // Commented out for demo
+  authenticate,  // Re-enabled authentication
+  adminOrOperator,  // Re-enabled role check
   debugMiddleware, // Log before validation
   // strictLimiter, // TEMPORARILY DISABLED due to Railway proxy issues
   // validate(requestValidation.llmRequest), // TEMPORARILY DISABLED for debugging
