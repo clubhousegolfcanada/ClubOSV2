@@ -954,7 +954,17 @@ const RequestForm: React.FC = () => {
                 {(lastResponse.botRoute || lastResponse.processingTime) && (
                   <div className="response-metadata">
                     {lastResponse.botRoute && (
-                      <div>Route Used: <span className="text-gray-400">{lastResponse.botRoute}</span></div>
+                      <div>
+                        Route Used: <span className="text-gray-400">{lastResponse.botRoute}</span>
+                        {lastResponse.llmResponse?.isLocalKnowledge && (
+                          <span className="ml-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                            ✓ Internal Database
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {lastResponse.llmResponse?.dataSource && (
+                      <div>Data Source: <span className="text-gray-400">{lastResponse.llmResponse.dataSource}</span></div>
                     )}
                     {lastResponse.processingTime && (
                       <div>Processing Time: <span className="text-gray-400">{lastResponse.processingTime}ms</span></div>

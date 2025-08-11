@@ -467,25 +467,33 @@ router.post('/request',
         }
       }).catch(err => logger.error('Failed to import database', err));
 
+      // Check if response came from local knowledge
+      const isLocalKnowledge = processedRequest.llmResponse?.assistantId?.startsWith('LOCAL-KNOWLEDGE-');
+      const displayRoute = isLocalKnowledge 
+        ? `Local Knowledge (${processedRequest.botRoute})`
+        : processedRequest.botRoute;
+      
       res.json({
         success: true,
         data: {
           requestId: processedRequest.id,
-          botRoute: processedRequest.botRoute,
+          botRoute: displayRoute,
           llmResponse: {
-            route: processedRequest.botRoute,
+            route: displayRoute,
             response: processedRequest.llmResponse?.response || 'I\'m having trouble understanding your request. Please try rephrasing or contact support.',
             confidence: processedRequest.llmResponse?.confidence || 0.5,
             suggestedActions: processedRequest.llmResponse?.suggestedActions || [],
             reasoning: processedRequest.llmResponse?.reasoning,
             // extractedInfo: processedRequest.llmResponse?.extractedInfo,
             isAssistantResponse: !!processedRequest.llmResponse?.response,
+            isLocalKnowledge: isLocalKnowledge,
+            dataSource: isLocalKnowledge ? 'LOCAL_DATABASE' : 'OPENAI_API',
             // Include structured response data if available (future features)
-            // structured: processedRequest.llmResponse?.structuredResponse,
+            structured: processedRequest.llmResponse?.structured,
             // category: processedRequest.llmResponse?.category,
             // priority: processedRequest.llmResponse?.priority,
             // actions: processedRequest.llmResponse?.actions,
-            // metadata: processedRequest.llmResponse?.metadata,
+            metadata: processedRequest.llmResponse?.metadata,
             // escalation: processedRequest.llmResponse?.escalation
           },
           processingTime: processedRequest.processingTime,

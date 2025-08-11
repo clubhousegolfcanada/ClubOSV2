@@ -192,13 +192,15 @@ export class AssistantService {
       
       // Use local knowledge if we have a good match (lowered threshold)
       if (combinedScore > 0.5) {
-        logger.info('Using knowledge from knowledge_store', {
+        logger.info('✅ USING LOCAL KNOWLEDGE DATABASE (NOT OpenAI)', {
           route,
           source: topResult.source,
           key: topResult.key,
           confidence: topResult.confidence,
           relevance: topResult.relevance,
-          combinedScore
+          combinedScore,
+          threshold: 0.5,
+          USING_LOCAL: true
         });
         
         // Format the response from knowledge
@@ -210,13 +212,20 @@ export class AssistantService {
           
           return {
             response: formattedResponse,
-            assistantId: `knowledge-${route}`,
+            assistantId: `LOCAL-KNOWLEDGE-${route}`,
             threadId: `kb-${Date.now()}`,
             confidence: combinedScore,
             structured: {
-              source: 'knowledge_store',
+              source: 'LOCAL_KNOWLEDGE_DATABASE',
               key: topResult.key,
-              knowledgeSource: topResult.source
+              knowledgeSource: topResult.source,
+              openAiUsed: false,
+              responseTime: 'instant'
+            },
+            metadata: {
+              dataSource: 'LOCAL_DATABASE',
+              apiCallsUsed: 0,
+              knowledgeKey: topResult.key
             }
           };
         }
