@@ -190,8 +190,8 @@ export class AssistantService {
       const topResult = searchResults[0];
       const combinedScore = topResult.confidence * topResult.relevance;
       
-      // Use local knowledge if we have a good match
-      if (combinedScore > 0.6) {
+      // Use local knowledge if we have a good match (lowered threshold)
+      if (combinedScore > 0.5) {
         logger.info('Using knowledge from knowledge_store', {
           route,
           source: topResult.source,
