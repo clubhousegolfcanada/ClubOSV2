@@ -1,5 +1,6 @@
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
+import { intelligentSearchService } from './intelligentSearchService';
 
 interface SearchResult {
   key: string;
@@ -20,14 +21,33 @@ export class KnowledgeSearchService {
   async searchKnowledge(
     query: string,
     assistantType?: string,
-    limit: number = 5
+    limit: number = 5,
+    userRole?: string
   ): Promise<SearchResult[]> {
     const results: SearchResult[] = [];
 
     try {
-      // 1. Search knowledge_store with full-text search
-      const knowledgeStoreResults = await this.searchKnowledgeStore(query, assistantType, limit);
-      results.push(...knowledgeStoreResults);
+      // Use intelligent search to understand query better
+      const intelligentAnalysis = intelligentSearchService.intelligentSearch(query, userRole);
+      
+      // Log the intelligent analysis for debugging
+      logger.info('Intelligent search analysis', {
+        originalQuery: query,
+        expandedQueries: intelligentAnalysis.expandedQueries.slice(0, 5),
+        intents: intelligentAnalysis.intents,
+        priority: intelligentAnalysis.priority
+      });
+      
+      // Search with expanded queries for better matching
+      const searchQueries = [query, ...intelligentAnalysis.expandedQueries.slice(0, 3)];
+      
+      for (const searchQuery of searchQueries) {
+        if (results.length >= limit) break;
+        
+        // 1. Search knowledge_store with full-text search
+        const knowledgeStoreResults = await this.searchKnowledgeStore(searchQuery, assistantType, limit - results.length);
+        results.push(...knowledgeStoreResults);
+      }
 
       // If we don't have enough results, search other tables
       if (results.length < limit) {
@@ -179,10 +199,19 @@ export class KnowledgeSearchService {
       const result = await db.query(sql, params);
 
       return result.rows.map((row: any) => {
-        // Calculate relevance
+        // Calculate relevance using both traditional and semantic similarity
         const contentLower = `${row.new_value} ${row.key || ''} ${row.category}`.toLowerCase();
         const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
-        const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.5;
+        const basicRelevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.5;
+        
+        // Also calculate semantic similarity
+        const semanticRelevance = intelligentSearchService.calculateSemanticSimilarity(
+          query,
+          row.new_value
+        );
+        
+        // Combine both relevance scores (weighted average)
+        const relevance = (basicRelevance * 0.4) + (semanticRelevance * 0.6);
 
         return {
           key: `audit.${row.assistant_target}.${row.category}`,
