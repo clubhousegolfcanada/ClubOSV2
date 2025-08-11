@@ -36,7 +36,7 @@ const nextConfig = {
       },
       {
         // Allow public access to manifest.json and icons
-        source: '/(manifest.json|clubos-icon-.*|sw.js)',
+        source: '/manifest.json',
         headers: [
           {
             key: 'Cache-Control',
@@ -45,8 +45,48 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Origin',
             value: '*'
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/manifest+json'
           }
         ],
+      },
+      {
+        // Allow public access to PWA icons
+        source: '/clubos-icon-:size*.png',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400'
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          }
+        ],
+      },
+      {
+        // Allow public access to service worker
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0'
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/'
+          }
+        ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/manifest.json',
+        destination: '/api/manifest',
       },
     ];
   },
