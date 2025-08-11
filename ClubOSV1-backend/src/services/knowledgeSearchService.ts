@@ -182,16 +182,30 @@ export class KnowledgeSearchService {
     if (!db.initialized) return [];
 
     try {
+      // First check if the table exists and what columns it has
+      const tableCheck = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'extracted_knowledge'
+        LIMIT 1
+      `);
+
+      if (tableCheck.rows.length === 0) {
+        // Table doesn't exist
+        return [];
+      }
+
       const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
       
+      // Use simpler query that works with actual table structure
       let sql = `
         SELECT 
-          knowledge_type,
-          knowledge_content,
-          confidence_score,
-          source_conversation_id
+          problem,
+          solution,
+          confidence,
+          category
         FROM extracted_knowledge
-        WHERE is_active = true
+        WHERE applied_to_sop = false
       `;
 
       const params: any[] = [];
@@ -200,26 +214,30 @@ export class KnowledgeSearchService {
       if (searchTerms.length > 0) {
         const searchConditions = searchTerms.map((_, index) => {
           params.push(`%${searchTerms[index]}%`);
-          return `LOWER(knowledge_content::text) LIKE $${params.length}`;
+          return `(LOWER(problem) LIKE $${params.length} OR LOWER(solution) LIKE $${params.length})`;
         });
         sql += ` AND (${searchConditions.join(' OR ')})`;
       }
 
-      sql += ` ORDER BY confidence_score DESC, created_at DESC LIMIT $${params.length + 1}`;
+      sql += ` ORDER BY confidence DESC, created_at DESC LIMIT $${params.length + 1}`;
       params.push(limit);
 
       const result = await db.query(sql, params);
 
       return result.rows.map((row: any) => {
         // Calculate relevance
-        const contentLower = JSON.stringify(row.knowledge_content).toLowerCase();
+        const contentLower = `${row.problem} ${row.solution}`.toLowerCase();
         const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
         const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.3;
 
         return {
-          key: `extracted.${row.knowledge_type}`,
-          value: row.knowledge_content,
-          confidence: row.confidence_score || 0.5,
+          key: `extracted.${row.category || 'general'}`,
+          value: {
+            problem: row.problem,
+            solution: row.solution,
+            content: row.solution
+          },
+          confidence: row.confidence || 0.5,
           relevance,
           source: 'extracted_knowledge'
         };
