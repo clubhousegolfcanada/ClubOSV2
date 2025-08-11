@@ -56,8 +56,8 @@ export const MessagesCard: React.FC = () => {
     };
 
     fetchRecentConversations();
-    // Refresh every 60 seconds (reduced frequency to prevent rate limiting)
-    const interval = setInterval(fetchRecentConversations, 60000);
+    // Refresh every 2 minutes to prevent rate limiting (was 60 seconds)
+    const interval = setInterval(fetchRecentConversations, 120000);
     return () => clearInterval(interval);
   }, [user]);
 

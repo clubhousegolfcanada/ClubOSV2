@@ -19,7 +19,7 @@ const keyGenerator = (req: Request): string => {
 // Different rate limits for different endpoints
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 300 : 500, // Increased for testing
+  max: process.env.NODE_ENV === 'production' ? 1000 : 500, // Temporarily increased to prevent lockouts
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

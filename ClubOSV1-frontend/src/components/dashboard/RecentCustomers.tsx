@@ -19,6 +19,13 @@ export const RecentCustomers: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // TEMPORARILY DISABLED to prevent duplicate API calls
+    // The MessagesCard component already fetches the same data
+    // This was causing rate limit exhaustion
+    setIsLoading(false);
+    setCustomers([]);
+    
+    /* Original code - re-enable after implementing proper caching
     const fetchRecentCustomers = async () => {
       try {
         const token = localStorage.getItem('clubos_token');
@@ -55,6 +62,7 @@ export const RecentCustomers: React.FC = () => {
     // Refresh every 30 seconds
     const interval = setInterval(fetchRecentCustomers, 30000);
     return () => clearInterval(interval);
+    */
   }, []);
 
   const handleCustomerClick = (phoneNumber: string) => {
