@@ -56,6 +56,7 @@ import adminKnowledgeRoutes from './routes/admin-knowledge';
 import knowledgeDebugRoutes from './routes/knowledge-debug';
 import systemCheckRoutes from './routes/system-check';
 import assistantRoutes from './routes/assistant';
+import knowledgeStoreRoutes from './routes/knowledge-store';
 // SOP routes disabled - using OpenAI Assistants directly
 // import sopCheckRoutes from './routes/sop-check';
 // import sopDebugRoutes from './routes/sop-debug';
@@ -243,6 +244,7 @@ app.use('/api/assistant', assistantRoutes);
 // app.use('/api/intelligent-search', intelligentSearchRoutes);
 app.use('/api/knowledge-enhance', knowledgeEnhanceRoutes);
 app.use('/api/knowledge-router', knowledgeRouterRoutes);
+app.use('/api/knowledge-store', knowledgeStoreRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Performance monitoring endpoint (admin only)

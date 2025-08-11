@@ -1,6 +1,6 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth';
-import { hasMinimumRole } from '../utils/roleUtils';
+import { authenticate } from '../middleware/auth';
+import { roleGuard } from '../middleware/roleGuard';
 import { DEVICE_REGISTRY } from '../config/ninjaDevices';
 import axios from 'axios';
 
@@ -45,15 +45,9 @@ async function getNinjaOneToken(): Promise<string> {
 }
 
 // Get remote desktop session URL for a specific device
-router.post('/session', authenticateToken, async (req, res) => {
+router.post('/session', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
-    // Check permissions
-    if (!hasMinimumRole(req.user!.role, 'operator')) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Insufficient permissions' 
-      });
-    }
+    // Permissions already checked by middleware
 
     const { location, bayNumber } = req.body;
 
@@ -146,15 +140,9 @@ router.post('/session', authenticateToken, async (req, res) => {
 });
 
 // Get device information for a bay
-router.get('/device-info', authenticateToken, async (req, res) => {
+router.get('/device-info', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
-    // Check permissions
-    if (!hasMinimumRole(req.user!.role, 'operator')) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Insufficient permissions' 
-      });
-    }
+    // Permissions already checked by middleware
 
     const { location, bayNumber } = req.query;
 
