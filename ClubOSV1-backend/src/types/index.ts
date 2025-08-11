@@ -30,6 +30,10 @@ export interface LLMResponse {
   reasoning: string;
   suggestedActions: string[];
   response: string;
+  assistantId?: string;
+  threadId?: string;
+  structured?: any;
+  metadata?: any;
 }
 
 export interface SlackMessage {
