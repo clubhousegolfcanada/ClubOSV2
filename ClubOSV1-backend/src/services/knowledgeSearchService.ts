@@ -437,13 +437,152 @@ export class KnowledgeSearchService {
     const highConfidenceResults = results.filter(r => r.confidence >= 0.7);
     if (highConfidenceResults.length === 0) return '';
 
-    // Format the top results
-    const formattedResults = highConfidenceResults.slice(0, 3).map(result => {
-      const content = result.value.content || result.value.answer || result.value;
-      return content;
-    });
-
-    return formattedResults.join('\n\n');
+    // Deduplicate and clean up results
+    const seenContent = new Set<string>();
+    const uniqueResults: string[] = [];
+    
+    for (const result of highConfidenceResults.slice(0, 5)) {
+      let content = result.value.content || result.value.answer || result.value;
+      
+      // Clean up content
+      if (typeof content === 'string') {
+        // Fix common issues
+        content = content
+          .replace(/\bYou\b(?=\s+(on|at|through))/g, 'them') // Fix "You on our website" -> "them on our website"
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .trim();
+        
+        // Create a normalized version for deduplication (lowercase, no punctuation)
+        const normalized = content.toLowerCase().replace(/[^\w\s]/g, '').trim();
+        
+        // Skip if we've seen very similar content
+        const isDuplicate = Array.from(seenContent).some(seen => {
+          const similarity = this.calculateStringSimilarity(normalized, seen);
+          return similarity > 0.8; // 80% similar = duplicate
+        });
+        
+        if (!isDuplicate && content.length > 20) { // Skip very short snippets
+          seenContent.add(normalized);
+          uniqueResults.push(content);
+        }
+      }
+    }
+    
+    // If we have multiple results, pick the best one or combine intelligently
+    if (uniqueResults.length === 0) return '';
+    
+    // For gift cards, use the most concise, clear response
+    if (uniqueResults.some(r => r.toLowerCase().includes('gift'))) {
+      // Find the result with the URL (most actionable)
+      const withUrl = uniqueResults.find(r => r.includes('clubhouse247golf.com'));
+      if (withUrl) {
+        return `Yes, we offer gift cards! You can purchase them online at ${this.extractUrl(withUrl)}`;
+      }
+    }
+    
+    // For single result, return as-is
+    if (uniqueResults.length === 1) {
+      return uniqueResults[0];
+    }
+    
+    // For multiple unique results, combine them intelligently
+    // Start with the most comprehensive one (usually the longest)
+    const primary = uniqueResults.sort((a, b) => b.length - a.length)[0];
+    
+    // Add any unique information from other results
+    const additionalInfo = uniqueResults.slice(1)
+      .map(r => this.extractUniqueInfo(r, primary))
+      .filter(info => info.length > 0);
+    
+    if (additionalInfo.length > 0) {
+      return `${primary}\n\nAdditional information: ${additionalInfo.join('. ')}`;
+    }
+    
+    return primary;
+  }
+  
+  /**
+   * Calculate string similarity (simple Levenshtein-based)
+   */
+  private calculateStringSimilarity(str1: string, str2: string): number {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const editDistance = this.levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+  }
+  
+  /**
+   * Calculate Levenshtein distance between two strings
+   */
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix: number[][] = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  }
+  
+  /**
+   * Extract URL from text
+   */
+  private extractUrl(text: string): string {
+    const urlMatch = text.match(/(?:www\.|https?:\/\/)?clubhouse247golf\.com[^\s]*/i);
+    if (urlMatch) {
+      let url = urlMatch[0];
+      // Ensure it starts with https://
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      return url;
+    }
+    return 'https://clubhouse247golf.com/giftcard/purchase';
+  }
+  
+  /**
+   * Extract unique information from a result that's not in the primary result
+   */
+  private extractUniqueInfo(result: string, primary: string): string {
+    const primaryLower = primary.toLowerCase();
+    const words = result.split(/\s+/);
+    
+    // Look for unique facts not in primary
+    const uniqueFacts: string[] = [];
+    
+    // Check for expiry information
+    if (result.toLowerCase().includes('expir') && !primaryLower.includes('expir')) {
+      const expiryMatch = result.match(/[^.]*expir[^.]*/i);
+      if (expiryMatch) uniqueFacts.push(expiryMatch[0].trim());
+    }
+    
+    // Check for digital/physical distinction
+    if (result.toLowerCase().includes('digital') && !primaryLower.includes('digital')) {
+      uniqueFacts.push('Digital gift cards available');
+    }
+    
+    return uniqueFacts.join('. ');
   }
 
   /**
