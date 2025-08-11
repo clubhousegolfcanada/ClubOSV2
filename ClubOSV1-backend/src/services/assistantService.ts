@@ -4,7 +4,6 @@ import { config } from '../utils/envValidator';
 import { db } from '../utils/database';
 import { assistantFileManager } from './assistantFileManager';
 import { knowledgeSearchService } from './knowledgeSearchService';
-import { improvedKnowledgeSearch } from './improvedKnowledgeSearch';
 // Intelligent SOP Module disabled - using OpenAI Assistants directly
 
 interface AssistantResponse {
@@ -177,35 +176,55 @@ export class AssistantService {
   ): Promise<AssistantResponse> {
     // Check if this is a customer-facing request (ONLY for messages/SMS)
     const isCustomerFacing = context?.isCustomerFacing === true;
-    // First, check our database for recent knowledge updates
-    // Use improved search for better matching
-    const dbSearch = await improvedKnowledgeSearch.searchKnowledge(
+    
+    // IMPORTANT: Search our knowledge store FIRST before hitting OpenAI
+    const searchResults = await knowledgeSearchService.searchKnowledge(
       userMessage,
-      route.toLowerCase()
+      route.toLowerCase(),
+      5 // Get top 5 results
     );
     
-    // Lowered confidence threshold for more flexible matching
-    if (dbSearch.found && dbSearch.confidence > 0.6) {
-      logger.info('Using knowledge from database', {
-        route,
-        source: dbSearch.source,
-        confidence: dbSearch.confidence
-      });
+    // Check if we have high-confidence results
+    if (searchResults.length > 0) {
+      const topResult = searchResults[0];
+      const combinedScore = topResult.confidence * topResult.relevance;
       
-      // Format the database response
-      const formattedResponse = this.formatDatabaseResponse(dbSearch.data, route);
-      
-      return {
-        response: formattedResponse,
-        assistantId: `db-${route}`,
-        threadId: `db-${Date.now()}`,
-        confidence: dbSearch.confidence,
-        structured: {
-          source: 'database',
-          category: dbSearch.data.category,
-          lastUpdated: dbSearch.data.lastUpdated
+      // Use local knowledge if we have a good match
+      if (combinedScore > 0.6) {
+        logger.info('Using knowledge from knowledge_store', {
+          route,
+          source: topResult.source,
+          key: topResult.key,
+          confidence: topResult.confidence,
+          relevance: topResult.relevance,
+          combinedScore
+        });
+        
+        // Format the response from knowledge
+        const formattedResponse = knowledgeSearchService.formatResultsForResponse(searchResults);
+        
+        if (formattedResponse) {
+          // Track successful usage
+          await knowledgeSearchService.trackUsage(topResult.key, true);
+          
+          return {
+            response: formattedResponse,
+            assistantId: `knowledge-${route}`,
+            threadId: `kb-${Date.now()}`,
+            confidence: combinedScore,
+            structured: {
+              source: 'knowledge_store',
+              key: topResult.key,
+              knowledgeSource: topResult.source
+            }
+          };
         }
-      };
+      } else {
+        logger.info('Knowledge found but confidence too low', {
+          combinedScore,
+          topResult: topResult.key
+        });
+      }
     }
     
     if (!this.isEnabled || !this.openai) {

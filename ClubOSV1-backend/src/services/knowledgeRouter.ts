@@ -198,12 +198,13 @@ Respond with valid JSON only.`;
   }
 
   /**
-   * Log knowledge update for audit trail
+   * Log knowledge update for audit trail and store in knowledge_store
    */
   private async logKnowledgeUpdate(update: KnowledgeUpdate, userId?: string): Promise<void> {
     if (!db.initialized) return;
 
     try {
+      // Save to audit log (existing functionality)
       await db.query(`
         INSERT INTO knowledge_audit_log 
         (action, category, key, new_value, user_id, assistant_target, metadata)
@@ -218,6 +219,9 @@ Respond with valid JSON only.`;
         JSON.stringify(update.metadata || {})
       ]);
 
+      // IMPORTANT: Also save to knowledge_store for searching
+      await this.saveToKnowledgeStore(update, userId);
+
       // Check if we need to send Slack notification
       if (update.intent === 'overwrite' || 
           update.category === 'Pricing' || 
@@ -226,6 +230,78 @@ Respond with valid JSON only.`;
       }
     } catch (error) {
       logger.error('Failed to log knowledge update:', error);
+    }
+  }
+
+  /**
+   * Save knowledge to the searchable knowledge_store table
+   */
+  private async saveToKnowledgeStore(update: KnowledgeUpdate, userId?: string): Promise<void> {
+    try {
+      // Create a structured key using dot notation
+      const storeKey = `${update.target_assistant}.${update.category.toLowerCase()}${update.key ? '.' + update.key.toLowerCase().replace(/\s+/g, '_') : ''}`;
+      
+      // Structure the value as searchable JSON
+      const storeValue = {
+        title: update.key || update.category,
+        content: update.value,
+        category: update.category,
+        assistant: update.target_assistant,
+        intent: update.intent,
+        metadata: update.metadata || {}
+      };
+
+      // Determine confidence based on intent
+      const confidence = update.intent === 'overwrite' ? 1.0 : 0.8;
+
+      if (update.intent === 'add') {
+        // Insert new knowledge
+        await db.query(`
+          INSERT INTO knowledge_store (key, value, confidence, verification_status, source_type, created_by)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (key) DO UPDATE SET
+            value = EXCLUDED.value,
+            confidence = GREATEST(knowledge_store.confidence, EXCLUDED.confidence),
+            verification_status = CASE 
+              WHEN EXCLUDED.confidence > knowledge_store.confidence THEN EXCLUDED.verification_status
+              ELSE knowledge_store.verification_status
+            END,
+            source_count = knowledge_store.source_count + 1,
+            updated_at = NOW()
+        `, [storeKey, JSON.stringify(storeValue), confidence, 'verified', 'manual', userId]);
+      } else if (update.intent === 'update') {
+        // Update existing knowledge
+        await db.query(`
+          INSERT INTO knowledge_store (key, value, confidence, verification_status, source_type, created_by)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (key) DO UPDATE SET
+            value = EXCLUDED.value,
+            confidence = EXCLUDED.confidence,
+            verification_status = EXCLUDED.verification_status,
+            updated_at = NOW()
+        `, [storeKey, JSON.stringify(storeValue), confidence, 'verified', 'manual', userId]);
+      } else if (update.intent === 'overwrite') {
+        // Overwrite - mark old entries as superseded and insert new
+        await db.query(`
+          UPDATE knowledge_store 
+          SET superseded_by = gen_random_uuid()
+          WHERE key LIKE $1 || '%' AND superseded_by IS NULL
+        `, [update.target_assistant + '.' + update.category.toLowerCase()]);
+
+        await db.query(`
+          INSERT INTO knowledge_store (key, value, confidence, verification_status, source_type, created_by)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `, [storeKey, JSON.stringify(storeValue), confidence, 'verified', 'manual', userId]);
+      }
+
+      logger.info('Knowledge saved to knowledge_store:', {
+        key: storeKey,
+        intent: update.intent,
+        assistant: update.target_assistant,
+        category: update.category
+      });
+    } catch (error) {
+      logger.error('Failed to save to knowledge_store:', error);
     }
   }
 
