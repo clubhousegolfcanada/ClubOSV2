@@ -89,8 +89,8 @@ export class KnowledgeSearchService {
    * Search the knowledge_store table using full-text search
    */
   private async searchKnowledgeStore(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
-    if (!db.initialized) return [];
-
+    // Don't check db.initialized here - just try the query
+    // The database should be initialized by the time any search happens
     try {
       // Build the search query
       const searchQuery = query.toLowerCase().replace(/[^\w\s]/g, ' ').trim();
@@ -140,8 +140,7 @@ export class KnowledgeSearchService {
    * Search the knowledge_audit_log table (recent uploads)
    */
   private async searchKnowledgeAuditLog(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
-    if (!db.initialized) return [];
-
+    // Don't check db.initialized here - just try the query
     try {
       // Common stop words to filter out for better relevance scoring
       const stopWords = new Set(['does', 'do', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'again', 'further', 'then', 'once', 'we', 'you', 'your', 'them', 'their', 'what', 'which', 'who', 'when', 'where', 'why', 'how', 'all', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just', 'should', 'now', 'offer', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'would', 'could', 'ought', 'may', 'might', 'must', 'shall', 'should', 'would', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being']);
@@ -236,8 +235,7 @@ export class KnowledgeSearchService {
    * Search the assistant_knowledge table
    */
   private async searchAssistantKnowledge(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
-    if (!db.initialized) return [];
-
+    // Don't check db.initialized here - just try the query
     try {
       // Use same stop word filtering as audit log search
       const stopWords = new Set(['does', 'do', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'again', 'further', 'then', 'once', 'we', 'you', 'your', 'them', 'their', 'what', 'which', 'who', 'when', 'where', 'why', 'how', 'all', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just', 'should', 'now', 'offer', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'would', 'could', 'ought', 'may', 'might', 'must', 'shall', 'should', 'would', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being']);
@@ -322,8 +320,7 @@ export class KnowledgeSearchService {
    * Search the extracted_knowledge table
    */
   private async searchExtractedKnowledge(query: string, limit: number): Promise<SearchResult[]> {
-    if (!db.initialized) return [];
-
+    // Don't check db.initialized here - just try the query
     try {
       // First check if the table exists and what columns it has
       const tableCheck = await db.query(`
