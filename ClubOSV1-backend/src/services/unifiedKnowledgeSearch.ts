@@ -263,7 +263,7 @@ export class UnifiedKnowledgeSearchService {
     try {
       // Import knowledge loader
       const { knowledgeLoader } = await import('../knowledge-base/knowledgeLoader');
-      const knowledgeBases = knowledgeLoader.getAllKnowledge();
+      const knowledgeBases = knowledgeLoader.getAllKnowledgeBases();
       
       const searchTerms = this.extractSearchTerms(searchQuery);
       let bestMatch: KnowledgeSearchResult = { 
