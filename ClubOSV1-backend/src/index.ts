@@ -52,18 +52,18 @@ import notificationsRoutes from './routes/notifications';
 import knowledgeRoutes from './routes/knowledge';
 import debugOpenphoneRoutes from './routes/debug-openphone';
 // import sopMonitoringRoutes from './routes/sop-monitoring'; // SOP disabled
-import adminKnowledgeRoutes from './routes/admin-knowledge';
-import knowledgeDebugRoutes from './routes/knowledge-debug';
+// import adminKnowledgeRoutes from './routes/admin-knowledge'; // Disabled - not used
+// import knowledgeDebugRoutes from './routes/knowledge-debug'; // Disabled - not used
 import systemCheckRoutes from './routes/system-check';
 import assistantRoutes from './routes/assistant';
-import knowledgeStoreRoutes from './routes/knowledge-store';
+import knowledgeStoreRoutes from './routes/knowledge-store'; // Used internally by knowledgeSearchService
 // SOP routes disabled - using OpenAI Assistants directly
 // import sopCheckRoutes from './routes/sop-check';
 // import sopDebugRoutes from './routes/sop-debug';
 // import sopDataCheckRoutes from './routes/sop-data-check';
 // import intelligentSearchRoutes from './routes/intelligent-search';
-import knowledgeEnhanceRoutes from './routes/knowledge-enhance';
-import knowledgeRouterRoutes from './routes/knowledge-router';
+// import knowledgeEnhanceRoutes from './routes/knowledge-enhance'; // Disabled - not used
+import knowledgeRouterRoutes from './routes/knowledge-router'; // Used by KnowledgeRouterPanel
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
 import callTranscriptRoutes from './routes/call-transcripts';
@@ -233,18 +233,24 @@ app.use('/api/debug-openphone', debugOpenphoneRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 // app.use('/api/sop-monitoring', sopMonitoringRoutes); // SOP disabled
-app.use('/api/admin-knowledge', adminKnowledgeRoutes);
-app.use('/api/knowledge-debug', knowledgeDebugRoutes);
+
+// Knowledge routes - only knowledge-router and knowledge-store are actively used
+app.use('/api/knowledge-router', knowledgeRouterRoutes); // Used by KnowledgeRouterPanel in Operations
+app.use('/api/knowledge-store', knowledgeStoreRoutes); // Used internally by knowledgeSearchService
+
+// Disabled knowledge routes - not actively used in frontend
+// app.use('/api/admin-knowledge', adminKnowledgeRoutes);
+// app.use('/api/knowledge-debug', knowledgeDebugRoutes);
+// app.use('/api/knowledge-enhance', knowledgeEnhanceRoutes);
+
 app.use('/api/system', systemCheckRoutes);
 app.use('/api/assistant', assistantRoutes);
+
 // SOP routes disabled - using OpenAI Assistants directly
 // app.use('/api/sop-check', sopCheckRoutes);
 // app.use('/api/sop-debug', sopDebugRoutes);
 // app.use('/api/sop-data-check', sopDataCheckRoutes);
 // app.use('/api/intelligent-search', intelligentSearchRoutes);
-app.use('/api/knowledge-enhance', knowledgeEnhanceRoutes);
-app.use('/api/knowledge-router', knowledgeRouterRoutes);
-app.use('/api/knowledge-store', knowledgeStoreRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Performance monitoring endpoint (admin only)
