@@ -178,9 +178,10 @@ export class AssistantService {
     const isCustomerFacing = context?.isCustomerFacing === true;
     
     // IMPORTANT: Search our knowledge store FIRST before hitting OpenAI
+    // Don't filter by route - search ALL knowledge to find the best answer
     const searchResults = await knowledgeSearchService.searchKnowledge(
       userMessage,
-      route.toLowerCase(),
+      undefined, // Search across ALL assistants, not just current route
       5 // Get top 5 results
     );
     
