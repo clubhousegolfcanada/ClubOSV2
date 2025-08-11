@@ -131,18 +131,9 @@ router.post('/request',
         } catch (err) {
           logger.warn('Failed to fetch user info', { userId: req.user.id, error: err });
         }
-      } else {
-        // In demo mode or when not authenticated, try to get user info from request body
-        if (req.body.user) {
-          fullUser = {
-            id: req.body.user.id || 'demo-user',
-            name: req.body.user.name || 'Demo User',
-            email: req.body.user.email || 'demo@example.com',
-            phone: req.body.user.phone,
-            role: req.body.user.role || 'support'
-          };
-        }
       }
+      // REMOVED: Demo mode bypass that allowed unauthenticated requests
+      // Authentication is now strictly required
 
       // Log raw request body first
       logger.info('Raw request body received:', {
