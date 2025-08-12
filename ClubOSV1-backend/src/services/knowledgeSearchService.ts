@@ -49,7 +49,10 @@ export class KnowledgeSearchService {
         results.push(...knowledgeStoreResults);
       }
 
-      // If we don't have enough results, search other tables
+      // DISABLED: Only use knowledge_store for now
+      // The other tables have inconsistent confidence scores and poor relevance
+      // This was causing wrong results to be prioritized
+      /*
       if (results.length < limit) {
         // 2. Search knowledge_audit_log (recent uploads)
         const auditResults = await this.searchKnowledgeAuditLog(query, assistantType, limit - results.length);
@@ -67,6 +70,7 @@ export class KnowledgeSearchService {
         const extractedResults = await this.searchExtractedKnowledge(query, limit - results.length);
         results.push(...extractedResults);
       }
+      */
 
       // Sort by relevance and confidence
       results.sort((a, b) => {
