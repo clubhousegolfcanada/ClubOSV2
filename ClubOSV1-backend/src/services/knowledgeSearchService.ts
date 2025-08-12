@@ -80,7 +80,13 @@ export class KnowledgeSearchService {
 
       return results.slice(0, limit);
     } catch (error) {
-      logger.error('Knowledge search error:', error);
+      logger.error('❌ CRITICAL: Knowledge search failed completely:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        query,
+        assistantType
+      });
+      // Still return empty array but now we'll see the error in logs
       return [];
     }
   }

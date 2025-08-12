@@ -179,11 +179,26 @@ export class AssistantService {
     
     // IMPORTANT: Search our knowledge store FIRST before hitting OpenAI
     // Don't filter by route - search ALL knowledge to find the best answer
+    logger.info('🔍 Searching knowledge store for:', {
+      query: userMessage.substring(0, 50),
+      route
+    });
+    
     const searchResults = await knowledgeSearchService.searchKnowledge(
       userMessage,
       undefined, // Search across ALL assistants, not just current route
       5 // Get top 5 results
     );
+    
+    logger.info('📊 Knowledge search results:', {
+      resultCount: searchResults.length,
+      topResult: searchResults[0] ? {
+        key: searchResults[0].key,
+        confidence: searchResults[0].confidence,
+        relevance: searchResults[0].relevance,
+        combinedScore: searchResults[0].confidence * searchResults[0].relevance
+      } : null
+    });
     
     // Check if we have high-confidence results
     if (searchResults.length > 0) {
