@@ -206,7 +206,7 @@ export class AssistantService {
       const combinedScore = topResult.confidence * topResult.relevance;
       
       // Use local knowledge if we have a good match (lowered threshold)
-      if (combinedScore > 0.5) {
+      if (combinedScore >= 0.5) {
         logger.info('✅ USING LOCAL KNOWLEDGE DATABASE (NOT OpenAI)', {
           route,
           source: topResult.source,
