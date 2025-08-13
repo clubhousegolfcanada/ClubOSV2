@@ -59,7 +59,9 @@ export const OperationsUsers: React.FC = () => {
       const response = await axios.get(`${API_URL}/api/auth/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data);
+      // Handle both response formats
+      const userData = response.data.data || response.data;
+      setUsers(Array.isArray(userData) ? userData : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
