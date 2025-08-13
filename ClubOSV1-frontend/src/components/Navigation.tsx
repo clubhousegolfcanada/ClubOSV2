@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
-import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar, CreditCard } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
 
@@ -260,6 +260,16 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                 title="Book a simulator"
               >
                 <Calendar className="w-5 h-5" />
+              </button>
+            )}
+            {/* Mobile Payment/Returns Button */}
+            {user && ['admin', 'operator'].includes(user.role) && (
+              <button
+                onClick={() => window.open('https://dashboard.stripe.com', '_blank')}
+                className="p-2 text-[var(--accent)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all"
+                title="Process returns"
+              >
+                <CreditCard className="w-5 h-5" />
               </button>
             )}
             {/* Mobile Messages Button */}
