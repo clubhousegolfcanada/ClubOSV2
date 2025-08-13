@@ -287,15 +287,9 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                         }
                       }, 2000);
                     } else if (isAndroid) {
-                      // Android: Use intent URL for better reliability
-                      window.location.href = 'intent://dashboard#Intent;scheme=stripe;package=com.stripe.android.dashboard;end';
-                      
-                      // Fallback
-                      setTimeout(() => {
-                        if (!document.hidden) {
-                          window.location.href = 'https://dashboard.stripe.com';
-                        }
-                      }, 2000);
+                      // Android: Use intent URL with browser fallback to avoid Play Store
+                      // S.browser_fallback_url tells Android to go to web if app isn't installed
+                      window.location.href = 'intent://dashboard#Intent;scheme=stripe;package=com.stripe.android.dashboard;S.browser_fallback_url=https://dashboard.stripe.com;end';
                     } else {
                       // Unknown mobile OS, try generic approach
                       window.location.href = 'stripe://dashboard';
