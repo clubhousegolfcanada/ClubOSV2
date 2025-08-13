@@ -265,7 +265,51 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
             {/* Mobile Payment/Returns Button */}
             {user && ['admin', 'operator'].includes(user.role) && (
               <button
-                onClick={() => window.open('https://dashboard.stripe.com', '_blank')}
+                onClick={() => {
+                  // Detect if on mobile device
+                  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                  
+                  if (isMobile) {
+                    // Try to open Stripe Dashboard app using URL scheme
+                    // For iOS, Stripe uses stripe:// scheme
+                    // For Android, we can try intent URL
+                    const isAndroid = /Android/i.test(navigator.userAgent);
+                    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    
+                    if (isIOS) {
+                      // iOS: Try to open Stripe app directly
+                      window.location.href = 'stripe://dashboard';
+                      
+                      // Fallback to web after delay if app doesn't open
+                      setTimeout(() => {
+                        if (!document.hidden) {
+                          window.location.href = 'https://dashboard.stripe.com';
+                        }
+                      }, 2000);
+                    } else if (isAndroid) {
+                      // Android: Use intent URL for better reliability
+                      window.location.href = 'intent://dashboard#Intent;scheme=stripe;package=com.stripe.android.dashboard;end';
+                      
+                      // Fallback
+                      setTimeout(() => {
+                        if (!document.hidden) {
+                          window.location.href = 'https://dashboard.stripe.com';
+                        }
+                      }, 2000);
+                    } else {
+                      // Unknown mobile OS, try generic approach
+                      window.location.href = 'stripe://dashboard';
+                      setTimeout(() => {
+                        if (!document.hidden) {
+                          window.location.href = 'https://dashboard.stripe.com';
+                        }
+                      }, 2000);
+                    }
+                  } else {
+                    // On desktop, open web dashboard
+                    window.open('https://dashboard.stripe.com', '_blank');
+                  }
+                }}
                 className="p-2 text-[var(--accent)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all"
                 title="Process returns"
               >

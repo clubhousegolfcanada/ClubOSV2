@@ -755,20 +755,9 @@ export default function Messages() {
                     if (isMobile) {
                       // On mobile, try to open the Splashtop app
                       // Using a hidden iframe method which is more reliable
-                      const tryOpenApp = (scheme: string) => {
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = scheme;
-                        document.body.appendChild(iframe);
-                        
-                        // Clean up after a short delay
-                        setTimeout(() => {
-                          document.body.removeChild(iframe);
-                        }, 1000);
-                      };
-                      
-                      // Try the main Splashtop Business scheme first
-                      tryOpenApp('splashtopbusiness://');
+                      // Use window.location.href for better reliability on mobile
+                      // st-business:// is the correct scheme for Splashtop Business app
+                      window.location.href = 'st-business://com.splashtop.business';
                       
                       // Fallback: After a short delay, if user is still here, open web version
                       setTimeout(() => {
@@ -1171,20 +1160,9 @@ export default function Messages() {
                     if (isMobile) {
                       // On mobile, try to open the Splashtop app
                       // Using a hidden iframe method which is more reliable
-                      const tryOpenApp = (scheme: string) => {
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = scheme;
-                        document.body.appendChild(iframe);
-                        
-                        // Clean up after a short delay
-                        setTimeout(() => {
-                          document.body.removeChild(iframe);
-                        }, 1000);
-                      };
-                      
-                      // Try the main Splashtop Business scheme first
-                      tryOpenApp('splashtopbusiness://');
+                      // Use window.location.href for better reliability on mobile
+                      // st-business:// is the correct scheme for Splashtop Business app
+                      window.location.href = 'st-business://com.splashtop.business';
                       
                       // Fallback: After a short delay, if user is still here, open web version
                       setTimeout(() => {
