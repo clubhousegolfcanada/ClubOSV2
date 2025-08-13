@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.0] - 2025-08-13 (In Progress)
+
+### Major Refactor - Operations Page Consolidation
+
+#### Added
+- **AI Automation Message Sending** (Completed)
+  - AI can now actually send messages via OpenPhone (not just suggest)
+  - Added `sendAutomaticResponse()` and `executeAction()` methods
+  - Migration 056 enables auto-send for gift cards (safe starting point)
+  - Full action logging to `ai_automation_actions` table for audit trail
+
+#### Changed
+- **Operations Page Refactor** (In Progress)
+  - Consolidating complex multi-level navigation into 5 clean tabs
+  - Merging Knowledge + AI Automations into single "AI Center" tab
+  - Moving all integrations (Slack, OpenPhone, Push) to "Integrations" tab
+  - Creating unified Dashboard for system overview
+  - Removing redundant sub-tabs and navigation levels
+
+#### Documentation
+- Created comprehensive Operations Audit & Consolidation Plan
+- Created detailed Implementation Plan with 9 phases
+- Archived old planning documents to `/archive` folder
+
 ## [1.11.25] - 2025-08-10
 
 ### Added
