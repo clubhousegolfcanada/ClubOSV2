@@ -271,34 +271,16 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                   
                   if (isMobile) {
                     // Try to open Stripe Dashboard app using URL scheme
-                    // For iOS, Stripe uses stripe:// scheme
-                    // For Android, we can try intent URL
-                    const isAndroid = /Android/i.test(navigator.userAgent);
-                    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    // Use simple URL scheme for all mobile platforms
+                    // This avoids Play Store prompts on Android
+                    window.location.href = 'stripe://dashboard';
                     
-                    if (isIOS) {
-                      // iOS: Try to open Stripe app directly
-                      window.location.href = 'stripe://dashboard';
-                      
-                      // Fallback to web after delay if app doesn't open
-                      setTimeout(() => {
-                        if (!document.hidden) {
-                          window.location.href = 'https://dashboard.stripe.com';
-                        }
-                      }, 2000);
-                    } else if (isAndroid) {
-                      // Android: Use intent URL with browser fallback to avoid Play Store
-                      // S.browser_fallback_url tells Android to go to web if app isn't installed
-                      window.location.href = 'intent://dashboard#Intent;scheme=stripe;package=com.stripe.android.dashboard;S.browser_fallback_url=https://dashboard.stripe.com;end';
-                    } else {
-                      // Unknown mobile OS, try generic approach
-                      window.location.href = 'stripe://dashboard';
-                      setTimeout(() => {
-                        if (!document.hidden) {
-                          window.location.href = 'https://dashboard.stripe.com';
-                        }
-                      }, 2000);
-                    }
+                    // Fallback to web after delay if app doesn't open
+                    setTimeout(() => {
+                      if (!document.hidden) {
+                        window.location.href = 'https://dashboard.stripe.com';
+                      }
+                    }, 2500);
                   } else {
                     // On desktop, open web dashboard
                     window.open('https://dashboard.stripe.com', '_blank');

@@ -755,25 +755,17 @@ export default function Messages() {
                     if (isMobile) {
                       // On mobile, try to open the Splashtop app
                       // Using a hidden iframe method which is more reliable
-                      // Check if Android or iOS
-                      const isAndroid = /Android/i.test(navigator.userAgent);
-                      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                      // Use simple URL scheme for all mobile platforms
+                      // st-business:// is the correct scheme for Splashtop Business app
+                      window.location.href = 'st-business://com.splashtop.business';
                       
-                      if (isAndroid) {
-                        // Android: Use intent URL with browser fallback
-                        window.location.href = 'intent://launch#Intent;scheme=splashtop;package=com.splashtop.remote.business;S.browser_fallback_url=https://my.splashtop.com/computers;end';
-                      } else {
-                        // iOS and other mobile: Use URL scheme with fallback
-                        window.location.href = 'st-business://com.splashtop.business';
-                        
-                        // Fallback: After a short delay, if user is still here, open web version
-                        setTimeout(() => {
-                          // Check if page is still visible (app didn't open)
-                          if (!document.hidden) {
-                            window.location.href = 'https://my.splashtop.com/computers';
-                          }
-                        }, 2000);
-                      }
+                      // Fallback: After a short delay, if user is still here, open web version
+                      setTimeout(() => {
+                        // Check if page is still visible (app didn't open)
+                        if (!document.hidden) {
+                          window.location.href = 'https://my.splashtop.com/computers';
+                        }
+                      }, 2500);
                     } else {
                       // On desktop, open web interface
                       window.open('https://my.splashtop.com/computers', '_blank');
@@ -1168,25 +1160,17 @@ export default function Messages() {
                     if (isMobile) {
                       // On mobile, try to open the Splashtop app
                       // Using a hidden iframe method which is more reliable
-                      // Check if Android or iOS
-                      const isAndroid = /Android/i.test(navigator.userAgent);
-                      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                      // Use simple URL scheme for all mobile platforms
+                      // st-business:// is the correct scheme for Splashtop Business app
+                      window.location.href = 'st-business://com.splashtop.business';
                       
-                      if (isAndroid) {
-                        // Android: Use intent URL with browser fallback
-                        window.location.href = 'intent://launch#Intent;scheme=splashtop;package=com.splashtop.remote.business;S.browser_fallback_url=https://my.splashtop.com/computers;end';
-                      } else {
-                        // iOS and other mobile: Use URL scheme with fallback
-                        window.location.href = 'st-business://com.splashtop.business';
-                        
-                        // Fallback: After a short delay, if user is still here, open web version
-                        setTimeout(() => {
-                          // Check if page is still visible (app didn't open)
-                          if (!document.hidden) {
-                            window.location.href = 'https://my.splashtop.com/computers';
-                          }
-                        }, 2000);
-                      }
+                      // Fallback: After a short delay, if user is still here, open web version
+                      setTimeout(() => {
+                        // Check if page is still visible (app didn't open)
+                        if (!document.hidden) {
+                          window.location.href = 'https://my.splashtop.com/computers';
+                        }
+                      }, 2500);
                     } else {
                       // On desktop, open web interface
                       window.open('https://my.splashtop.com/computers', '_blank');
