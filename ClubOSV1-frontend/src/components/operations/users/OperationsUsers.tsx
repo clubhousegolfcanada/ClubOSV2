@@ -55,6 +55,11 @@ export const OperationsUsers: React.FC = () => {
   }, []);
 
   const fetchUsers = async () => {
+    if (!token) {
+      console.log('No token available, skipping users fetch');
+      return;
+    }
+    
     try {
       const response = await axios.get(`${API_URL}/api/auth/users`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -62,9 +67,15 @@ export const OperationsUsers: React.FC = () => {
       // Handle both response formats
       const userData = response.data.data || response.data;
       setUsers(Array.isArray(userData) ? userData : []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        // Optionally redirect to login
+        // window.location.href = '/login';
+      } else {
+        toast.error('Failed to load users');
+      }
     }
   };
 

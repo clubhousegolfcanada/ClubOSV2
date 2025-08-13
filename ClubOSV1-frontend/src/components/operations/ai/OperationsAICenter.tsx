@@ -60,54 +60,72 @@ export const OperationsAICenter: React.FC = () => {
   const token = user?.token || localStorage.getItem('clubos_token');
 
   useEffect(() => {
-    fetchAIFeatures();
-    fetchSystemMetrics();
-    fetchFeedback();
-    fetchOpenPhoneConversations();
-    fetchPromptTemplates();
-  }, []);
+    if (token) {
+      fetchAIFeatures();
+      fetchSystemMetrics();
+      fetchFeedback();
+      fetchOpenPhoneConversations();
+      fetchPromptTemplates();
+    }
+  }, [token]);
 
   const fetchAIFeatures = async () => {
+    if (!token) return;
+    
     try {
       const response = await axios.get(`${API_URL}/api/ai-automations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setAIFeatures(response.data);
-    } catch (error) {
+      setAIFeatures(response.data || []);
+    } catch (error: any) {
       console.error('Error fetching AI features:', error);
+      if (error.response?.status !== 401) {
+        // Only show error if not auth issue
+        // toast.error('Failed to load AI features');
+      }
+      setAIFeatures([]);
     }
   };
 
   const fetchSystemMetrics = async () => {
+    if (!token) return;
+    
     try {
       const response = await axios.get(`${API_URL}/api/knowledge/metrics`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSystemMetrics(response.data);
+      setSystemMetrics(response.data || { total_documents: 0, unique_assistants: 0 });
     } catch (error) {
       console.error('Error fetching system metrics:', error);
+      setSystemMetrics({ total_documents: 0, unique_assistants: 0 });
     }
   };
 
   const fetchFeedback = async () => {
+    if (!token) return;
+    
     try {
       const response = await axios.get(`${API_URL}/api/llm/feedback`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setFeedback(response.data.filter((f: any) => !f.helpful));
+      setFeedback(response.data?.filter((f: any) => !f.helpful) || []);
     } catch (error) {
       console.error('Error fetching feedback:', error);
+      setFeedback([]);
     }
   };
 
   const fetchOpenPhoneConversations = async () => {
+    if (!token) return;
+    
     try {
       const response = await axios.get(`${API_URL}/api/openphone/recent`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setOpenPhoneConversations(response.data);
+      setOpenPhoneConversations(response.data || []);
     } catch (error) {
       console.error('Error fetching OpenPhone conversations:', error);
+      setOpenPhoneConversations([]);
     }
   };
 
