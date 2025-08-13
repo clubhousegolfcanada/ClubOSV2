@@ -85,7 +85,7 @@ export const MessagesCard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="hidden sm:block mt-4">
+      <div className="mt-4">
         <div className="card p-4 animate-pulse">
           <div className="h-5 bg-[var(--bg-tertiary)] rounded w-24 mb-3"></div>
           <div className="space-y-2">
@@ -98,7 +98,7 @@ export const MessagesCard: React.FC = () => {
   }
 
   return (
-    <div className="hidden sm:block mt-4">
+    <div className="mt-4">
       <div className="card p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">

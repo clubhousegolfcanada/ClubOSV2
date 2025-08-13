@@ -21,7 +21,7 @@ export const authLimiter = rateLimit({
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true,
+  skipSuccessfulRequests: false, // Changed from true - successful logins now reset the rate limit counter
   keyGenerator,
   validate: false, // Disable trust proxy validation for Railway
   handler: (req, res) => {
