@@ -134,11 +134,11 @@ export const OperationsIntegrations: React.FC = () => {
       // Features endpoint might not exist yet
       // await axios.put(
       //   `${API_URL}/api/system/features/${featureKey}`,
-        { enabled: !feature.enabled },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      //   { enabled: !feature.enabled },
+      //   {
+      //     headers: { Authorization: `Bearer ${token}` }
+      //   }
+      // );
       
       setSystemFeatures(prev => prev.map(f => 
         f.key === featureKey ? { ...f, enabled: !f.enabled } : f
@@ -275,6 +275,17 @@ export const OperationsIntegrations: React.FC = () => {
             </div>
             
             <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
+                <input
+                  type="text"
+                  value={slackConfig.webhook_url}
+                  onChange={(e) => setSlackConfig(prev => ({ ...prev, webhook_url: e.target.value }))}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Notifications</span>
                 <button
@@ -299,6 +310,20 @@ export const OperationsIntegrations: React.FC = () => {
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     slackConfig.notify_on_error ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Ticket Notifications</span>
+                <button
+                  onClick={() => setSlackConfig(prev => ({ ...prev, notify_on_ticket: !prev.notify_on_ticket }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    slackConfig.notify_on_ticket ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    slackConfig.notify_on_ticket ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
               </div>
@@ -342,6 +367,28 @@ export const OperationsIntegrations: React.FC = () => {
             </div>
             
             <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                <input
+                  type="password"
+                  value={openPhoneConfig.api_key}
+                  onChange={(e) => setOpenPhoneConfig(prev => ({ ...prev, api_key: e.target.value }))}
+                  placeholder="Enter OpenPhone API key"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Number</label>
+                <input
+                  type="text"
+                  value={openPhoneConfig.default_number}
+                  onChange={(e) => setOpenPhoneConfig(prev => ({ ...prev, default_number: e.target.value }))}
+                  placeholder="+1234567890"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Two-way SMS</span>
                 <button

@@ -51,7 +51,7 @@ export function OperationsDashboard() {
       const token = localStorage.getItem('clubos_token');
       
       // Fetch system status
-      const healthResponse = await axios.get(`${API_URL}/health`, {
+      const healthResponse = await axios.get(`${API_URL}/api/health`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
