@@ -26,6 +26,142 @@ const pendingConfirmations = new Map<string, PendingConfirmation>();
 
 export class AIAutomationService {
   /**
+   * Send an automatic response to the customer via OpenPhone
+   */
+  private async sendAutomaticResponse(
+    phoneNumber: string,
+    message: string,
+    conversationId: string,
+    featureKey: string
+  ): Promise<boolean> {
+    try {
+      // Check if we can send automatic responses for this feature
+      const feature = await db.query(
+        'SELECT can_send_responses, enabled FROM ai_automation_features WHERE feature_key = $1',
+        [featureKey]
+      );
+      
+      if (!feature.rows[0]?.can_send_responses || !feature.rows[0]?.enabled) {
+        logger.info('Automatic response disabled for feature', { featureKey });
+        return false;
+      }
+      
+      // Actually send the message via OpenPhone
+      await openPhoneService.sendMessage(
+        phoneNumber,
+        process.env.OPENPHONE_DEFAULT_NUMBER || '',
+        message
+      );
+      
+      // Log the action to the database
+      await db.query(`
+        INSERT INTO ai_automation_actions (
+          feature_id,
+          conversation_id,
+          phone_number,
+          action_type,
+          action_details,
+          status,
+          executed_at,
+          executed_by,
+          response_text
+        ) VALUES (
+          (SELECT id FROM ai_automation_features WHERE feature_key = $1),
+          $2, $3, 'send_message', $4, 'completed', NOW(), 'ai_auto', $5
+        )`,
+        [featureKey, conversationId, phoneNumber, { message }, message]
+      );
+      
+      logger.info('Sent automatic response', {
+        phoneNumber: phoneNumber.slice(-4),
+        featureKey,
+        messageLength: message.length
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error('Failed to send automatic response:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Execute an action (like resetting trackman or unlocking door)
+   */
+  private async executeAction(
+    action: any,
+    phoneNumber: string,
+    conversationId: string,
+    featureKey: string
+  ): Promise<boolean> {
+    try {
+      // Check if we can execute actions for this feature
+      const feature = await db.query(
+        'SELECT can_execute_actions, enabled FROM ai_automation_features WHERE feature_key = $1',
+        [featureKey]
+      );
+      
+      if (!feature.rows[0]?.can_execute_actions || !feature.rows[0]?.enabled) {
+        logger.info('Automatic action execution disabled for feature', { featureKey });
+        return false;
+      }
+      
+      let success = false;
+      let responseText = '';
+      
+      // Execute the action based on type
+      switch (action.type) {
+        case 'trackman_reset':
+          if (action.bayNumber) {
+            success = await ninjaoneService.resetTrackman(action.bayNumber);
+            responseText = success 
+              ? `I've reset the Trackman in Bay ${action.bayNumber}. It should be working now! If you were signed in, you can resume through 'My Activities'.`
+              : `I couldn't reset the Trackman automatically. A staff member has been notified and will help you shortly.`;
+          }
+          break;
+          
+        case 'door_unlock':
+          // Future implementation for door unlocking
+          logger.info('Door unlock requested but not yet implemented');
+          break;
+          
+        default:
+          logger.warn('Unknown action type:', action.type);
+      }
+      
+      // Send response to customer if we have one
+      if (responseText && success) {
+        await this.sendAutomaticResponse(phoneNumber, responseText, conversationId, featureKey);
+      }
+      
+      // Log the action
+      await db.query(`
+        INSERT INTO ai_automation_actions (
+          feature_id,
+          conversation_id,
+          phone_number,
+          action_type,
+          action_details,
+          status,
+          executed_at,
+          executed_by,
+          response_text
+        ) VALUES (
+          (SELECT id FROM ai_automation_features WHERE feature_key = $1),
+          $2, $3, $4, $5, $6, NOW(), 'ai_auto', $7
+        )`,
+        [featureKey, conversationId, phoneNumber, action.type, action, 
+         success ? 'completed' : 'failed', responseText]
+      );
+      
+      return success;
+    } catch (error) {
+      logger.error('Failed to execute action:', error);
+      return false;
+    }
+  }
+
+  /**
    * Process incoming message and check if it matches any automation patterns
    */
   async processMessage(phoneNumber: string, message: string, conversationId?: string, isInitialMessage: boolean = false): Promise<AutomationResponse> {
@@ -423,6 +559,24 @@ export class AIAutomationService {
       // Store in assistant knowledge for learning (only if from assistant)
       if (responseSource !== 'hardcoded') {
         await this.storeInAssistantKnowledge('Booking & Access', message, responseText, 'gift_cards');
+      }
+      
+      // Check if we should automatically send the response
+      const autoSendEnabled = await db.query(
+        'SELECT can_send_responses FROM ai_automation_features WHERE feature_key = $1',
+        ['gift_cards']
+      );
+      
+      if (autoSendEnabled.rows[0]?.can_send_responses && conversationId) {
+        // Actually send the message to the customer
+        const sent = await this.sendAutomaticResponse(phoneNumber, responseText, conversationId, 'gift_cards');
+        
+        if (sent) {
+          logger.info('Automatically sent gift card response', {
+            phoneNumber: phoneNumber.slice(-4),
+            conversationId
+          });
+        }
       }
       
       return {
