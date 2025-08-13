@@ -113,10 +113,16 @@ export class AIAutomationService {
       switch (action.type) {
         case 'trackman_reset':
           if (action.bayNumber) {
-            success = await ninjaoneService.resetTrackman(action.bayNumber);
-            responseText = success 
-              ? `I've reset the Trackman in Bay ${action.bayNumber}. It should be working now! If you were signed in, you can resume through 'My Activities'.`
-              : `I couldn't reset the Trackman automatically. A staff member has been notified and will help you shortly.`;
+            // NinjaOne service method needs to be implemented or use existing method
+            try {
+              // For now, log the intent - actual implementation depends on NinjaOne service
+              logger.info('Trackman reset requested', { bayNumber: action.bayNumber });
+              success = false; // Set to false until NinjaOne method is available
+              responseText = `I've noted the Trackman issue in Bay ${action.bayNumber}. A staff member will assist you shortly.`;
+            } catch (err) {
+              success = false;
+              responseText = `I couldn't reset the Trackman automatically. A staff member has been notified and will help you shortly.`;
+            }
           }
           break;
           
@@ -198,7 +204,7 @@ export class AIAutomationService {
     // Otherwise, use pattern matching
     
     // 1. Gift card automation - check for any route (gift cards could come up in any context)
-    const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId);
+    const giftCardResponse = await this.checkGiftCardAutomation(lowerMessage, conversationId, phoneNumber);
     if (giftCardResponse.handled) return { ...giftCardResponse, assistantType: route };
     
     // 2. Trackman reset automation - only for tech support
@@ -406,7 +412,7 @@ export class AIAutomationService {
   /**
    * Check if message is asking about gift cards
    */
-  private async checkGiftCardAutomation(message: string, conversationId?: string): Promise<AutomationResponse> {
+  private async checkGiftCardAutomation(message: string, conversationId?: string, phoneNumber?: string): Promise<AutomationResponse> {
     const startTime = Date.now();
     
     logger.info('Checking gift card automation', {
@@ -567,7 +573,7 @@ export class AIAutomationService {
         ['gift_cards']
       );
       
-      if (autoSendEnabled.rows[0]?.can_send_responses && conversationId) {
+      if (autoSendEnabled.rows[0]?.can_send_responses && conversationId && phoneNumber) {
         // Actually send the message to the customer
         const sent = await this.sendAutomaticResponse(phoneNumber, responseText, conversationId, 'gift_cards');
         
