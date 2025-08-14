@@ -183,12 +183,23 @@ const TicketCenterOptimized = () => {
       
       if (response.data.success) {
         notify('success', 'Ticket status updated');
-        loadTickets();
+        
+        // Update the ticket in the tickets array
+        setTickets(prevTickets => 
+          prevTickets.map(ticket => 
+            ticket.id === ticketId 
+              ? { ...ticket, status: newStatus, updatedAt: new Date().toISOString() }
+              : ticket
+          )
+        );
+        
+        // Update the selected ticket if it's the one being updated
         if (selectedTicket?.id === ticketId) {
-          setSelectedTicket({ ...selectedTicket, status: newStatus });
+          setSelectedTicket(prev => prev ? { ...prev, status: newStatus, updatedAt: new Date().toISOString() } : null);
         }
       }
     } catch (error) {
+      console.error('Failed to update ticket status:', error);
       notify('error', 'Failed to update ticket status');
     }
   };
