@@ -121,10 +121,35 @@ export const OperationsIntegrations: React.FC = () => {
   }, []);
 
   const fetchConfigurations = async () => {
+    if (!token) return;
+    
     try {
-      // System config endpoint might not exist yet
-      // Will use local state for now
-      console.log('Using local configuration state');
+      // Fetch Slack config
+      const slackResponse = await axios.get(
+        `${API_URL}/api/integrations/slack/config`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (slackResponse.data.success) {
+        setSlackConfig(prev => ({ ...prev, ...slackResponse.data.data }));
+      }
+      
+      // Fetch OpenPhone config
+      const openphoneResponse = await axios.get(
+        `${API_URL}/api/integrations/openphone/config`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (openphoneResponse.data.success) {
+        setOpenPhoneConfig(prev => ({ ...prev, ...openphoneResponse.data.data }));
+      }
+      
+      // Fetch system features
+      const featuresResponse = await axios.get(
+        `${API_URL}/api/integrations/features`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (featuresResponse.data.success) {
+        setSystemFeatures(featuresResponse.data.data);
+      }
     } catch (error) {
       console.error('Error fetching configurations:', error);
     }
@@ -135,14 +160,13 @@ export const OperationsIntegrations: React.FC = () => {
     if (!feature) return;
 
     try {
-      // Features endpoint might not exist yet
-      // await axios.put(
-      //   `${API_URL}/api/system/features/${featureKey}`,
-      //   { enabled: !feature.enabled },
-      //   {
-      //     headers: { Authorization: `Bearer ${token}` }
-      //   }
-      // );
+      await axios.put(
+        `${API_URL}/api/integrations/features/${featureKey}`,
+        { enabled: !feature.enabled },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
       
       setSystemFeatures(prev => prev.map(f => 
         f.key === featureKey ? { ...f, enabled: !f.enabled } : f
@@ -158,18 +182,30 @@ export const OperationsIntegrations: React.FC = () => {
   const handleTestConnection = async (service: string) => {
     setTestingService(service);
     try {
-      // Test connection endpoints might not exist yet
-      // Simulate test for now
-      setTimeout(() => {
-        toast.success(`${service} connection successful`);
+      const response = await axios.post(
+        `${API_URL}/api/integrations/${service.toLowerCase()}/test`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        toast.success(response.data.message || `${service} connection successful`);
         setIntegrations(prev => prev.map(i => 
           i.service === service ? { ...i, status: 'connected', lastSync: new Date().toISOString() } : i
         ));
-        setTestingService(null);
-      }, 1000);
+      } else {
+        toast.error(response.data.message || `${service} connection failed`);
+        setIntegrations(prev => prev.map(i => 
+          i.service === service ? { ...i, status: 'error' } : i
+        ));
+      }
     } catch (error) {
       console.error('Error testing connection:', error);
       toast.error(`Failed to test ${service} connection`);
+      setIntegrations(prev => prev.map(i => 
+        i.service === service ? { ...i, status: 'error' } : i
+      ));
+    } finally {
       setTestingService(null);
     }
   };

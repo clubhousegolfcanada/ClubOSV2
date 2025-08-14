@@ -73,6 +73,7 @@ import promptTemplatesRoutes from './routes/promptTemplates';
 import csrfRoutes from './routes/csrf';
 import aiAutomationsRoutes from './routes/ai-automations';
 import openphoneProcessingRoutes from './routes/openphone-processing';
+import integrationsRoutes from './routes/integrations';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -261,6 +262,7 @@ app.use('/api/privacy', privacyRoutes);
 app.use('/api/customer-interactions', customerInteractionsRoutes);
 app.use('/api/prompt-templates', promptTemplatesRoutes);
 app.use('/api/ai-automations', aiAutomationsRoutes);
+app.use('/api/integrations', integrationsRoutes);
 
 
 // Root endpoint
