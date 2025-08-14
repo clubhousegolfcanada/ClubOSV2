@@ -12,7 +12,7 @@ import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
 import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
 import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
-import { MessagesCard } from '@/components/dashboard/MessagesCard';
+import { MessagesCardEnhanced } from '@/components/dashboard/MessagesCardEnhanced';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -248,7 +248,7 @@ export default function Home() {
               <RequestForm />
               
               {/* Messages Card - Desktop only */}
-              <MessagesCard />
+              <MessagesCardEnhanced />
               
               {/* Mobile-only recent customers */}
               <RecentCustomers />
