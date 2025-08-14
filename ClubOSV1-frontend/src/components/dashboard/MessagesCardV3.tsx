@@ -104,11 +104,7 @@ export default function MessagesCardV3() {
             }
           });
           
-          // Auto-populate the reply field with the suggestion
-          setReplyText({
-            ...replyText,
-            [convId]: suggestion.suggestedText || ''
-          });
+          // Don't auto-populate - let user decide
         }
       } catch (error: any) {
         console.error('Failed to get AI suggestion:', error);
@@ -122,11 +118,7 @@ export default function MessagesCardV3() {
               confidence: 30
             }
           });
-          // Still populate with fallback
-          setReplyText({
-            ...replyText,
-            [convId]: fallbackMessage
-          });
+          // Don't auto-populate
         }
       } finally {
         setLoadingAi({ ...loadingAi, [convId]: false });
@@ -263,25 +255,32 @@ export default function MessagesCardV3() {
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50 p-3">
-                    {/* AI Suggestion Status - Compact */}
+                    {/* AI Suggestion - Small text above input */}
                     {isLoadingAi ? (
                       <div className="flex items-center gap-2 mb-2">
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
                         <span className="text-xs text-gray-500">Getting AI suggestion...</span>
                       </div>
                     ) : suggestion && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
-                          AI pre-filled
-                        </span>
-                        <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
-                          {Math.round(suggestion.confidence)}% confidence
-                        </span>
-                        {suggestion.confidence < 50 && (
-                          <span className="text-xs text-orange-600" style={{ fontWeight: 500 }}>
-                            Review recommended
-                          </span>
-                        )}
+                      <div className="mb-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
+                              AI suggestion
+                            </span>
+                            <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
+                              {Math.round(suggestion.confidence)}%
+                            </span>
+                            {suggestion.confidence < 50 && (
+                              <span className="text-xs text-orange-600" style={{ fontWeight: 400 }}>
+                                • Review recommended
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 italic mb-2" style={{ fontWeight: 400 }}>
+                          "{suggestion.text}"
+                        </div>
                       </div>
                     )}
 
@@ -297,7 +296,7 @@ export default function MessagesCardV3() {
                             handleSend(conv);
                           }
                         }}
-                        placeholder="Type your reply or use the AI suggestion..."
+                        placeholder="Type your reply..."
                         className="w-full pl-3 pr-36 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                         style={{ fontWeight: 400 }}
                       />
