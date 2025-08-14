@@ -11,7 +11,14 @@ export class SlackFallbackService {
 
   constructor() {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL || '';
-    const botToken = process.env.SLACK_BOT_TOKEN || '';
+    let botToken = process.env.SLACK_BOT_TOKEN || '';
+    
+    // Check for placeholder token and treat as not configured
+    if (botToken && (botToken === 'xoxb-placeholder-token' || botToken.includes('placeholder'))) {
+      logger.warn('Slack bot token is a placeholder, treating as not configured');
+      botToken = '';
+    }
+    
     this.enabled = Boolean(webhookUrl);
     
     if (this.enabled) {
@@ -22,7 +29,8 @@ export class SlackFallbackService {
         hasWebhook: Boolean(webhookUrl),
         hasWebClient: Boolean(this.webClient),
         botTokenPrefix: botToken ? botToken.substring(0, 10) + '...' : 'None',
-        willUseWebAPI: Boolean(this.webClient)
+        willUseWebAPI: Boolean(this.webClient),
+        isPlaceholder: process.env.SLACK_BOT_TOKEN?.includes('placeholder')
       });
     } else {
       this.webClient = null;

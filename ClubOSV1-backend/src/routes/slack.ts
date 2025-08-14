@@ -531,7 +531,21 @@ router.post('/reply',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { thread_ts, text } = req.body;
-      const botToken = process.env.SLACK_BOT_TOKEN;
+      let botToken = process.env.SLACK_BOT_TOKEN;
+      
+      // Check for placeholder token
+      if (botToken && (botToken === 'xoxb-placeholder-token' || botToken.includes('placeholder'))) {
+        logger.warn('Slack bot token is a placeholder, treating as not configured');
+        botToken = '';
+      }
+      
+      logger.info('Slack reply request received', {
+        thread_ts,
+        textLength: text?.length,
+        hasBotToken: !!botToken,
+        isPlaceholder: process.env.SLACK_BOT_TOKEN?.includes('placeholder'),
+        user: req.user?.email
+      });
       
       if (!thread_ts || !text) {
         return res.status(400).json({
@@ -545,17 +559,18 @@ router.post('/reply',
         logger.warn('Cannot reply to webhook-generated thread', { thread_ts });
         return res.status(400).json({
           success: false,
-          error: 'Two-way communication requires Slack Bot Token configuration. Replies are not available for webhook-only messages.',
+          error: 'Two-way communication requires a valid Slack Bot Token. Please configure SLACK_BOT_TOKEN in Railway with a real token (not placeholder).',
           isWebhookThread: true
         });
       }
       
       if (!botToken) {
-        logger.error('Slack bot token not configured for reply functionality');
+        logger.error('Slack bot token not configured or is placeholder');
         return res.status(503).json({
           success: false,
-          error: 'Slack Bot Token not configured. Two-way communication is not available.',
-          configurationNeeded: 'SLACK_BOT_TOKEN'
+          error: 'Slack Bot Token not configured or is a placeholder. Please add a real bot token to enable two-way communication.',
+          configurationNeeded: 'SLACK_BOT_TOKEN',
+          currentValue: process.env.SLACK_BOT_TOKEN?.includes('placeholder') ? 'placeholder detected' : 'not set'
         });
       }
       
@@ -646,9 +661,19 @@ router.post('/reply',
           message: 'Reply sent successfully'
         }
       });
-    } catch (error) {
-      logger.error('Failed to send reply to Slack:', error);
-      next(error);
+    } catch (error: any) {
+      logger.error('Failed to send reply to Slack:', {
+        error: error.message,
+        response: error.response?.data,
+        stack: error.stack
+      });
+      
+      // Return a proper error response instead of passing to next
+      return res.status(500).json({
+        success: false,
+        error: error.response?.data?.error || error.message || 'Failed to send reply to Slack',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   }
 );
