@@ -7,6 +7,31 @@ import { routingOptimizer } from '../services/routingOptimizer';
 
 const router = Router();
 
+// Helper function to parse date range
+function parseDateRange(range: string) {
+  const now = new Date();
+  let startDate = new Date();
+  
+  switch(range) {
+    case 'day':
+      startDate.setDate(now.getDate() - 1);
+      break;
+    case 'week':
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case 'month':
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+    case 'year':
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      startDate.setDate(now.getDate() - 7); // Default to week
+  }
+  
+  return { startDate, endDate: now };
+}
+
 // GET /api/analytics/routing - Get routing analytics
 router.get('/routing', authenticate, roleGuard(['admin', 'operator']), async (req, res) => {
   try {
@@ -439,6 +464,216 @@ router.delete('/clear-old-data', authenticate, roleGuard(['admin']), async (req,
     res.status(500).json({ 
       success: false, 
       message: 'Failed to clear old data' 
+    });
+  }
+});
+
+// GET /api/analytics/ai - Get AI performance analytics
+router.get('/ai', authenticate, roleGuard(['admin', 'operator']), async (req, res) => {
+  try {
+    const { range = 'week' } = req.query;
+    const { startDate, endDate } = parseDateRange(range as string);
+    
+    // LLM usage metrics
+    const llmMetrics = await db.query(`
+      SELECT 
+        COUNT(*) as total_requests,
+        AVG(response_time_ms) as avg_response_time,
+        COUNT(CASE WHEN success = true THEN 1 END) as successful_requests,
+        COUNT(CASE WHEN cached = true THEN 1 END) as cached_responses
+      FROM llm_logs
+      WHERE created_at >= $1 AND created_at <= $2
+    `, [startDate, endDate]);
+    
+    // AI automations performance
+    const automationMetrics = await db.query(`
+      SELECT 
+        feature_key,
+        COUNT(*) as execution_count,
+        COUNT(CASE WHEN status = 'success' THEN 1 END) as success_count,
+        AVG(CASE WHEN execution_time_ms IS NOT NULL THEN execution_time_ms END) as avg_execution_time
+      FROM ai_automation_logs
+      WHERE created_at >= $1 AND created_at <= $2
+      GROUP BY feature_key
+    `, [startDate, endDate]);
+    
+    // Knowledge base usage
+    const knowledgeMetrics = await db.query(`
+      SELECT 
+        COUNT(*) as total_searches,
+        AVG(confidence_score) as avg_confidence,
+        COUNT(DISTINCT query) as unique_queries
+      FROM knowledge_searches
+      WHERE created_at >= $1 AND created_at <= $2
+    `, [startDate, endDate]);
+    
+    res.json({
+      success: true,
+      data: {
+        llm: llmMetrics.rows[0] || {
+          total_requests: 0,
+          avg_response_time: 0,
+          successful_requests: 0,
+          cached_responses: 0
+        },
+        automations: automationMetrics.rows || [],
+        knowledge: knowledgeMetrics.rows[0] || {
+          total_searches: 0,
+          avg_confidence: 0,
+          unique_queries: 0
+        },
+        period: { startDate, endDate }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching AI analytics:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch AI analytics' 
+    });
+  }
+});
+
+// GET /api/analytics/usage - Get system usage analytics
+router.get('/usage', authenticate, roleGuard(['admin', 'operator']), async (req, res) => {
+  try {
+    const { range = 'week' } = req.query;
+    const { startDate, endDate } = parseDateRange(range as string);
+    
+    // User activity
+    const userActivity = await db.query(`
+      SELECT 
+        u.name,
+        u.email,
+        u.role,
+        COUNT(al.id) as login_count,
+        MAX(al.created_at) as last_login
+      FROM users u
+      LEFT JOIN auth_logs al ON u.id = al.user_id 
+        AND al.action = 'login' 
+        AND al.success = true
+        AND al.created_at >= $1 
+        AND al.created_at <= $2
+      GROUP BY u.id, u.name, u.email, u.role
+      ORDER BY login_count DESC
+    `, [startDate, endDate]);
+    
+    // Feature usage
+    const featureUsage = await db.query(`
+      SELECT 
+        'tickets' as feature,
+        COUNT(*) as usage_count
+      FROM tickets
+      WHERE created_at >= $1 AND created_at <= $2
+      UNION ALL
+      SELECT 
+        'messages' as feature,
+        COUNT(*) as usage_count
+      FROM messages
+      WHERE created_at >= $1 AND created_at <= $2
+      UNION ALL
+      SELECT 
+        'checklists' as feature,
+        COUNT(*) as usage_count
+      FROM checklist_submissions
+      WHERE created_at >= $1 AND created_at <= $2
+    `, [startDate, endDate]);
+    
+    // System health
+    const systemHealth = await db.query(`
+      SELECT 
+        COUNT(CASE WHEN level = 'error' THEN 1 END) as error_count,
+        COUNT(CASE WHEN level = 'warn' THEN 1 END) as warning_count,
+        COUNT(*) as total_logs
+      FROM system_logs
+      WHERE created_at >= $1 AND created_at <= $2
+    `, [startDate, endDate]);
+    
+    res.json({
+      success: true,
+      data: {
+        users: userActivity.rows || [],
+        features: featureUsage.rows || [],
+        health: systemHealth.rows[0] || {
+          error_count: 0,
+          warning_count: 0,
+          total_logs: 0
+        },
+        period: { startDate, endDate }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching usage analytics:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch usage analytics' 
+    });
+  }
+});
+
+// GET /api/analytics/export - Export analytics data
+router.get('/export', authenticate, roleGuard(['admin']), async (req, res) => {
+  try {
+    const { format = 'json', range = 'week' } = req.query;
+    const { startDate, endDate } = parseDateRange(range as string);
+    
+    // Gather all analytics data
+    const [routing, ai, usage] = await Promise.all([
+      // Routing data
+      db.query(`
+        SELECT * FROM customer_interactions
+        WHERE "createdAt" >= $1 AND "createdAt" <= $2
+        ORDER BY "createdAt" DESC
+      `, [startDate, endDate]),
+      
+      // AI data
+      db.query(`
+        SELECT * FROM llm_logs
+        WHERE created_at >= $1 AND created_at <= $2
+        ORDER BY created_at DESC
+      `, [startDate, endDate]),
+      
+      // Usage data
+      db.query(`
+        SELECT * FROM auth_logs
+        WHERE created_at >= $1 AND created_at <= $2
+        ORDER BY created_at DESC
+      `, [startDate, endDate])
+    ]);
+    
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      period: { startDate, endDate },
+      data: {
+        routing: routing.rows,
+        ai: ai.rows,
+        usage: usage.rows
+      }
+    };
+    
+    if (format === 'csv') {
+      // Convert to CSV format
+      const csvContent = [
+        'Type,Data',
+        `Routing,${routing.rows.length} records`,
+        `AI,${ai.rows.length} records`,
+        `Usage,${usage.rows.length} records`
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=analytics-${Date.now()}.csv`);
+      res.send(csvContent);
+    } else {
+      // Default to JSON
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=analytics-${Date.now()}.json`);
+      res.json(exportData);
+    }
+  } catch (error) {
+    logger.error('Error exporting analytics:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to export analytics' 
     });
   }
 });
