@@ -8,10 +8,13 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.match(/\.(png|jpg|jpeg|gif|ico|json|webmanifest|js|css|svg)$/) ||
+    pathname.startsWith('/public') ||
+    pathname.match(/\.(png|jpg|jpeg|gif|ico|json|webmanifest|js|css|svg|webp)$/) ||
     pathname === '/sw.js' ||
     pathname === '/offline.html' ||
-    pathname === '/manifest.json'
+    pathname === '/manifest.json' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml'
   ) {
     return NextResponse.next();
   }
@@ -37,5 +40,14 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/:path*',
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, manifest.json, robots.txt (public files)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sw.js|offline.html|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$|.*\\.webp$).*)',
+  ],
 };

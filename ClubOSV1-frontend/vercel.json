@@ -58,8 +58,17 @@
   ],
   "rewrites": [
     {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/sw.js", 
+      "destination": "/sw.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/$1"
     }
-  ]
+  ],
+  "public": true
 }

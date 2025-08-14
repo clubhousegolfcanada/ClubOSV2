@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://clubos.vercel.app/sitemap.xml
