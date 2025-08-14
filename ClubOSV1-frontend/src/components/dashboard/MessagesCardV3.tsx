@@ -81,9 +81,9 @@ export default function MessagesCardV3() {
 
     setExpandedId(convId);
     
-    // Get AI suggestion when expanding
+    // Always get fresh AI suggestion when expanding
     const conv = conversations.find(c => c.id === convId);
-    if (conv && !aiSuggestions[convId]) {
+    if (conv) {
       setLoadingAi({ ...loadingAi, [convId]: true });
       
       try {
@@ -94,25 +94,40 @@ export default function MessagesCardV3() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        if (response.data.success) {
+        if (response.data.success && response.data.data) {
+          const suggestion = response.data.data;
           setAiSuggestions({
             ...aiSuggestions,
             [convId]: {
-              text: response.data.data?.suggestedText || 'I can help you with that. Let me check and get back to you shortly.',
-              confidence: (response.data.data?.confidence || 0.6) * 100
+              text: suggestion.suggestedText || 'I\'ll check on that and get back to you shortly.',
+              confidence: Math.round((suggestion.confidence || 0.6) * 100)
             }
           });
+          
+          // Auto-populate the reply field with the suggestion
+          setReplyText({
+            ...replyText,
+            [convId]: suggestion.suggestedText || ''
+          });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to get AI suggestion:', error);
-        // Fallback suggestion
-        setAiSuggestions({
-          ...aiSuggestions,
-          [convId]: {
-            text: 'I can help you with that. Let me check and get back to you shortly.',
-            confidence: 60
-          }
-        });
+        // Only show error if it's not a 404 (no conversation)
+        if (error.response?.status !== 404) {
+          const fallbackMessage = 'I\'ll check on that and get back to you shortly.';
+          setAiSuggestions({
+            ...aiSuggestions,
+            [convId]: {
+              text: fallbackMessage,
+              confidence: 30
+            }
+          });
+          // Still populate with fallback
+          setReplyText({
+            ...replyText,
+            [convId]: fallbackMessage
+          });
+        }
       } finally {
         setLoadingAi({ ...loadingAi, [convId]: false });
       }
@@ -248,27 +263,25 @@ export default function MessagesCardV3() {
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50 p-3">
-                    {/* AI Suggestion - Compact */}
+                    {/* AI Suggestion Status - Compact */}
                     {isLoadingAi ? (
                       <div className="flex items-center gap-2 mb-2">
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
                         <span className="text-xs text-gray-500">Getting AI suggestion...</span>
                       </div>
                     ) : suggestion && (
-                      <div className="mb-2">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
-                            AI Suggestion
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
+                          AI pre-filled
+                        </span>
+                        <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
+                          {Math.round(suggestion.confidence)}% confidence
+                        </span>
+                        {suggestion.confidence < 50 && (
+                          <span className="text-xs text-orange-600" style={{ fontWeight: 500 }}>
+                            Review recommended
                           </span>
-                          <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
-                            {Math.round(suggestion.confidence)}%
-                          </span>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-2 border border-gray-100">
-                          <p className="text-sm text-gray-700" style={{ fontWeight: 400 }}>
-                            {suggestion.text}
-                          </p>
-                        </div>
+                        )}
                       </div>
                     )}
 
