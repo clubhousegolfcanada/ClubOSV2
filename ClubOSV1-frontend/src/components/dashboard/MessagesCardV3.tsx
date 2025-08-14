@@ -184,10 +184,22 @@ export default function MessagesCardV3() {
         return newSuggestions;
       });
       
-      // Update conversation
+      // Update conversation with the new message
       setConversations(prev => prev.map(c => 
-        c.id === conv.id ? { ...c, unreadCount: 0 } : c
+        c.id === conv.id 
+          ? { 
+              ...c, 
+              lastMessage: message,
+              timestamp: new Date().toISOString(),
+              unreadCount: 0 
+            } 
+          : c
       ));
+      
+      // Refresh conversations after a short delay to get server state
+      setTimeout(() => {
+        fetchConversations();
+      }, 1000);
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
