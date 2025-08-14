@@ -9,9 +9,7 @@ import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
 import toast from 'react-hot-toast';
 
-// Ensure API_URL is properly set
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-console.log('MessagesCardEnhanced API_URL:', API_URL);
 
 interface RecentConversation {
   id: string;
@@ -49,9 +47,7 @@ export const MessagesCardEnhanced: React.FC = () => {
           return;
         }
 
-        const url = `${API_URL}/api/messages/conversations?limit=3`;
-        console.log('Fetching conversations from:', url);
-        const response = await axios.get(url, {
+        const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -101,7 +97,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/api/llm/suggest-response`,
+        `${API_URL}/llm/suggest-response`,
         {
           conversationId: conv.conversationId,
           context: conv.lastMessage
@@ -139,7 +135,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/api/messages/send`,
+        `${API_URL}/messages/send`,
         {
           to: conv.phoneNumber,
           content: expandedConv.replyText,
