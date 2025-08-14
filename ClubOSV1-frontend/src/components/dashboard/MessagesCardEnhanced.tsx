@@ -9,7 +9,9 @@ import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
 import toast from 'react-hot-toast';
 
+// Ensure API_URL is properly set
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+console.log('MessagesCardEnhanced API_URL:', API_URL);
 
 interface RecentConversation {
   id: string;
@@ -47,7 +49,9 @@ export const MessagesCardEnhanced: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/api/messages/conversations?limit=3`, {
+        const url = `${API_URL}/api/messages/conversations?limit=3`;
+        console.log('Fetching conversations from:', url);
+        const response = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
