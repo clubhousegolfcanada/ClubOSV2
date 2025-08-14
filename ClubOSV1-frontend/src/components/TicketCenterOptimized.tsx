@@ -51,7 +51,7 @@ const TicketCenterOptimized = () => {
   const { notify } = useNotifications();
   const { user } = useAuthState();
   
-  const [activeTab, setActiveTab] = useState<'all' | 'facilities' | 'tech'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'facilities' | 'tech' | 'old'>('all');
   const [filter, setFilter] = useState<TicketStatus | 'all'>('all');
   // Search removed for cleaner UI
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -82,7 +82,8 @@ const TicketCenterOptimized = () => {
       const token = localStorage.getItem('clubos_token');
       const params = new URLSearchParams();
       
-      if (activeTab !== 'all') {
+      // For old tickets, we load all tickets and filter client-side
+      if (activeTab !== 'all' && activeTab !== 'old') {
         params.append('category', activeTab);
       }
       
@@ -117,16 +118,27 @@ const TicketCenterOptimized = () => {
     return counts;
   }, [tickets]);
 
-  // Filter tickets based on status only
+  // Filter tickets based on status and tab
   const filteredTickets = useMemo(() => {
     let filtered = tickets;
+    
+    // Filter for old tickets tab (resolved or closed older than 7 days)
+    if (activeTab === 'old') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      filtered = filtered.filter(ticket => {
+        const isOldStatus = ticket.status === 'resolved' || ticket.status === 'closed';
+        const isOldDate = new Date(ticket.updatedAt || ticket.createdAt) < sevenDaysAgo;
+        return isOldStatus && isOldDate;
+      });
+    }
     
     if (filter !== 'all') {
       filtered = filtered.filter(ticket => ticket.status === filter);
     }
     
     return filtered;
-  }, [tickets, filter]);
+  }, [tickets, filter, activeTab]);
 
   const filters = [
     { value: 'all', label: 'All', count: ticketCounts.all },
@@ -233,8 +245,8 @@ const TicketCenterOptimized = () => {
     }
   };
 
-  const handleQuickResolve = (ticketId: string) => {
-    updateTicketStatus(ticketId, 'resolved');
+  const handleQuickResolve = async (ticketId: string) => {
+    await updateTicketStatus(ticketId, 'resolved');
   };
 
   const addComment = async (ticketId: string) => {
@@ -344,6 +356,19 @@ const TicketCenterOptimized = () => {
             >
               Tech Support
               {activeTab === 'tech' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('old')}
+              className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+                activeTab === 'old'
+                  ? 'text-[var(--text-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Old Tickets
+              {activeTab === 'old' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
               )}
             </button>
@@ -501,7 +526,9 @@ const TicketCenterOptimized = () => {
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
             <p className="text-base text-[var(--text-secondary)] mb-2">
-              No tickets found
+              {activeTab === 'old' 
+                ? 'No old tickets (resolved/closed tickets older than 7 days)'
+                : 'No tickets found'}
             </p>
           </div>
         )}
