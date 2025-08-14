@@ -1,6 +1,6 @@
 {
   "name": "clubosv1",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "private": true,
   "scripts": {
     "dev": "concurrently \"cd ClubOSV1-backend && npm run dev\" \"cd ClubOSV1-frontend && npm run dev\"",

@@ -2,6 +2,51 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.7.0] - 2025-08-14
+
+### Fixed
+- **Messages UI Improvements**
+  - Fixed AI response handling for Trackman and technical issues
+  - Added debug logging to trace assistant responses
+  - Prevented over-aggressive filtering that replaced good technical responses
+  - Improved routing detection for Trackman, frozen, stuck, error keywords
+
+- **API Endpoint Corrections**
+  - Fixed 404 errors in Operations Users tab by correcting API endpoint URLs
+  - Removed duplicate /api prefix from auth endpoints
+
+- **Ticket System Updates**
+  - Fixed ticket status update not reflecting in UI immediately
+  - Added "Old Tickets" tab for resolved/closed tickets older than 7 days
+  - Fixed checkbox quick resolve functionality
+  - Improved comment persistence and display with latest comment preview
+
+- **UI/UX Enhancements**
+  - Updated Messages card styling to match consistent design with border-2 and rounded-xl
+  - Changed AI suggestion to manual trigger instead of auto-fetch
+  - Added caching for AI suggestions to avoid redundant API calls
+  - Replaced person icons with minimal location/bay badges (B1, B2, GEN, etc.)
+  - Changed AI suggestion button icon from sparkles to robot head
+  - Made design more minimal and text-based without colorful icons
+
+### Added
+- **Comment System Improvements**
+  - Latest comment preview in main ticket list (desktop only)
+  - Better state management for comments
+  - Instant updates without full reload
+
+- **Old Tickets Management**
+  - New tab for viewing archived tickets (resolved/closed > 7 days)
+  - Client-side filtering for better performance
+  - Clear empty state messaging
+
+### Changed
+- **AI Suggestions Behavior**
+  - Now manual with "Get AI Suggestion" button
+  - Suggestions cached per conversation
+  - Clear on message send or new incoming messages
+  - Better performance with reduced API calls
+
 ## [1.12.0] - 2025-08-13 (Completed)
 
 ### Major Refactor - Operations Page Consolidation
