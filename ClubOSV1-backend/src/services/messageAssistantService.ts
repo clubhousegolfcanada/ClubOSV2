@@ -53,7 +53,8 @@ export class MessageAssistantService {
       
       if (lowerMessage.includes('book') || lowerMessage.includes('reserve') || lowerMessage.includes('cancel') || lowerMessage.includes('reschedule')) {
         route = 'Booking & Access';
-      } else if (lowerMessage.includes('tech') || lowerMessage.includes('problem') || lowerMessage.includes('issue') || lowerMessage.includes('not work')) {
+      } else if (lowerMessage.includes('tech') || lowerMessage.includes('problem') || lowerMessage.includes('issue') || lowerMessage.includes('not work') || 
+                 lowerMessage.includes('trackman') || lowerMessage.includes('frozen') || lowerMessage.includes('stuck') || lowerMessage.includes('error')) {
         route = 'TechSupport';
       } else if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent') || lowerMessage.includes('help')) {
         route = 'Emergency';
@@ -127,6 +128,16 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
         }
       );
 
+      // Log the raw assistant response for debugging
+      logger.info('Assistant raw response for debugging', {
+        route,
+        customerMessage: customerMessage.substring(0, 100),
+        rawResponse: assistantResponse.response?.substring(0, 500),
+        responseLength: assistantResponse.response?.length,
+        assistantId: assistantResponse.assistantId,
+        confidence: assistantResponse.confidence
+      });
+
       // Filter the response for customer safety
       let suggestedText = assistantResponse.response || '';
       
@@ -137,13 +148,31 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
         'login', 'access code', 'security', 'SQL', 'error log'
       ];
       
+      let hadInternalTerms = false;
       for (const term of internalTerms) {
         const regex = new RegExp(`\\b${term}\\b`, 'gi');
-        suggestedText = suggestedText.replace(regex, '[removed]');
+        if (regex.test(suggestedText)) {
+          hadInternalTerms = true;
+          suggestedText = suggestedText.replace(regex, '[removed]');
+        }
+      }
+      
+      // Log if internal terms were found
+      if (hadInternalTerms) {
+        logger.warn('Internal terms found and removed from response', {
+          route,
+          originalLength: assistantResponse.response?.length,
+          filteredLength: suggestedText.length
+        });
       }
       
       // Ensure the response is appropriate
       if (suggestedText.includes('[removed]') || suggestedText.length < 10) {
+        logger.info('Response too short or contains removed terms, using fallback', {
+          route,
+          responseLength: suggestedText.length,
+          hasRemoved: suggestedText.includes('[removed]')
+        });
         suggestedText = "I'll need to check on that and get back to you shortly.";
       }
       
@@ -162,14 +191,37 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
       const lowerResponse = suggestedText.toLowerCase();
       const isGeneric = genericPhrases.some(phrase => lowerResponse.includes(phrase));
       
+      // Log if generic phrase detected
+      if (isGeneric) {
+        const foundPhrases = genericPhrases.filter(phrase => lowerResponse.includes(phrase));
+        logger.info('Generic phrases detected in response', {
+          route,
+          foundPhrases,
+          responsePreview: suggestedText.substring(0, 200)
+        });
+      }
+      
       // Calculate confidence based on various factors
       let confidence = this.calculateConfidence(messages, suggestedText, relevantKnowledge);
       
-      if (isGeneric) {
-        // If the response is too generic, indicate human handoff needed
+      // Only use fallback for truly generic responses, not for Trackman/technical issues
+      if (isGeneric && !lowerMessage.includes('trackman') && !lowerMessage.includes('frozen')) {
+        // If the response is too generic and NOT about technical issues, indicate human handoff needed
+        logger.info('Using fallback for generic non-technical response', {
+          route,
+          customerMessage: customerMessage.substring(0, 100)
+        });
         suggestedText = "I'll need to check on that and get back to you shortly.";
         // Reduce confidence significantly
         confidence = Math.min(confidence, 0.3);
+      } else if (lowerMessage.includes('trackman') || lowerMessage.includes('frozen')) {
+        // For Trackman/technical issues, ensure we keep the assistant's response
+        logger.info('Keeping assistant response for Trackman/technical issue', {
+          route,
+          responseLength: suggestedText.length,
+          isGeneric,
+          confidence
+        });
       }
       
       // Store the suggestion (encrypted)
