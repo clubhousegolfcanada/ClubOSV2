@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { MessageSquare, Clock, Send, Phone, User, Bot } from 'lucide-react';
+import { MessageSquare, Clock, Send, Phone, MapPin, Bot } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,8 @@ interface Conversation {
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
+  location?: string;
+  bay?: string;
 }
 
 interface AiSuggestion {
@@ -62,7 +64,9 @@ export default function MessagesCardV3() {
             customerName: conv.customer_name || 'Unknown',
             lastMessage: lastMsg?.body || lastMsg?.text || 'No messages',
             timestamp: lastMsg?.createdAt || conv.updated_at,
-            unreadCount: conv.unread_count || 0
+            unreadCount: conv.unread_count || 0,
+            location: conv.location || null,
+            bay: conv.bay || null
           };
         });
         
@@ -252,8 +256,10 @@ export default function MessagesCardV3() {
                   className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-gray-500" />
+                    <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 border border-gray-300 rounded-lg">
+                      <span className="text-xs font-medium text-gray-600">
+                        {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">

@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, User, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
@@ -37,6 +37,8 @@ interface Conversation {
   total_conversations?: number;
   first_contact?: string;
   last_contact?: string;
+  location?: string;
+  bay?: string;
 }
 
 export default function Messages() {
@@ -821,7 +823,9 @@ export default function Messages() {
                         >
                           <div className="flex items-start justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-[var(--text-muted)]" />
+                              <div className="px-2 py-0.5 border border-gray-300 rounded text-xs font-medium text-gray-600">
+                                {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
+                              </div>
                               <span className="font-medium text-sm">
                                 {conv.customer_name || 'Unknown'}
                               </span>
@@ -867,6 +871,11 @@ export default function Messages() {
                       <div className="p-4 border-b border-[var(--border-secondary)]">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
+                            <div className="px-3 py-1.5 border border-gray-300 rounded-lg">
+                              <span className="text-sm font-medium text-gray-600">
+                                {selectedConversation.bay ? `Bay ${selectedConversation.bay}` : selectedConversation.location ? selectedConversation.location : 'General'}
+                              </span>
+                            </div>
                             <div>
                               <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
                               <p className="text-sm text-[var(--text-muted)]">
@@ -1285,6 +1294,9 @@ export default function Messages() {
                         >
                           <ChevronLeft className="w-6 h-6" />
                         </button>
+                        <div className="px-2 py-0.5 border border-gray-300 rounded text-xs font-medium text-gray-600 mr-2">
+                          {selectedConversation.bay ? `B${selectedConversation.bay}` : selectedConversation.location ? selectedConversation.location.substring(0, 3).toUpperCase() : 'GEN'}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="font-semibold text-[var(--text-primary)] truncate">
                             {selectedConversation.customer_name || 'Unknown'}
