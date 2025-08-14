@@ -210,7 +210,7 @@ export default function MessagesCardV3() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200" style={{ fontFamily: 'Poppins, -apple-system, sans-serif' }}>
+    <div className="card" style={{ fontFamily: 'Poppins, -apple-system, sans-serif' }}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-900" style={{ fontWeight: 600 }}>
