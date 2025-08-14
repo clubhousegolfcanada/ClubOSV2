@@ -65,7 +65,27 @@ export default function MessagesCardV3() {
             unreadCount: conv.unread_count || 0
           };
         });
-        setConversations(convs);
+        
+        // Clear AI suggestions for conversations that have new messages
+        setConversations(prevConvs => {
+          const updatedConvIds = new Set<string>();
+          convs.forEach((newConv: Conversation) => {
+            const oldConv = prevConvs.find(c => c.id === newConv.id);
+            if (oldConv && oldConv.lastMessage !== newConv.lastMessage) {
+              updatedConvIds.add(newConv.id);
+            }
+          });
+          
+          if (updatedConvIds.size > 0) {
+            setAiSuggestions(prev => {
+              const newSuggestions = { ...prev };
+              updatedConvIds.forEach(id => delete newSuggestions[id]);
+              return newSuggestions;
+            });
+          }
+          
+          return convs;
+        });
       }
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
@@ -77,22 +97,22 @@ export default function MessagesCardV3() {
   const handleExpand = (convId: string) => {
     if (expandedId === convId) {
       setExpandedId(null);
-      // Clear AI suggestion when collapsing
-      setAiSuggestions(prev => {
-        const newSuggestions = { ...prev };
-        delete newSuggestions[convId];
-        return newSuggestions;
-      });
+      // Don't clear AI suggestion - keep it cached
       return;
     }
 
     setExpandedId(convId);
-    // Don't auto-fetch AI suggestion anymore
+    // AI suggestion will persist if it was already fetched
   };
   
   const fetchAiSuggestion = async (convId: string) => {
     const conv = conversations.find(c => c.id === convId);
     if (!conv) return;
+    
+    // If we already have a suggestion cached, don't fetch again
+    if (aiSuggestions[convId]) {
+      return;
+    }
     
     setLoadingAi({ ...loadingAi, [convId]: true });
     
@@ -152,6 +172,13 @@ export default function MessagesCardV3() {
       toast.success('Message sent');
       setReplyText({ ...replyText, [conv.id]: '' });
       setExpandedId(null);
+      
+      // Clear AI suggestion for this conversation since context has changed
+      setAiSuggestions(prev => {
+        const newSuggestions = { ...prev };
+        delete newSuggestions[conv.id];
+        return newSuggestions;
+      });
       
       // Update conversation
       setConversations(prev => prev.map(c => 
