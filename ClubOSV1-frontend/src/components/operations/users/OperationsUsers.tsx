@@ -55,26 +55,41 @@ export const OperationsUsers: React.FC = () => {
   }, []);
 
   const fetchUsers = async () => {
-    if (!token) {
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    if (!authToken) {
       console.log('No token available, skipping users fetch');
+      toast.error('Please login to view users');
       return;
     }
     
     try {
+      console.log('Fetching users from:', `${API_URL}/api/auth/users`);
       const response = await axios.get(`${API_URL}/api/auth/users`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${authToken}` }
       });
+      
+      console.log('Users response:', response.data);
+      
       // Handle both response formats
-      const userData = response.data.data || response.data;
-      setUsers(Array.isArray(userData) ? userData : []);
+      if (response.data.success && response.data.data) {
+        setUsers(Array.isArray(response.data.data) ? response.data.data : []);
+      } else if (Array.isArray(response.data)) {
+        setUsers(response.data);
+      } else {
+        console.error('Unexpected users response format:', response.data);
+        setUsers([]);
+      }
     } catch (error: any) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching users:', error.response || error);
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
         // Optionally redirect to login
         // window.location.href = '/login';
+      } else if (error.response?.status === 403) {
+        toast.error('Admin access required');
       } else {
-        toast.error('Failed to load users');
+        toast.error(`Failed to load users: ${error.response?.data?.message || error.message}`);
       }
     }
   };

@@ -89,7 +89,11 @@ export const OperationsIntegrations: React.FC = () => {
     webhook_url: '',
     notifications_enabled: true,
     notify_on_error: true,
-    notify_on_ticket: true
+    notify_on_ticket: true,
+    sendOnLLMSuccess: false,
+    sendOnLLMFailure: true,
+    sendDirectRequests: false,
+    sendUnhelpfulFeedback: true
   });
 
   const [openPhoneConfig, setOpenPhoneConfig] = useState({
@@ -324,6 +328,62 @@ export const OperationsIntegrations: React.FC = () => {
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     slackConfig.notify_on_ticket ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">LLM Success</span>
+                <button
+                  onClick={() => setSlackConfig(prev => ({ ...prev, sendOnLLMSuccess: !prev.sendOnLLMSuccess }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    slackConfig.sendOnLLMSuccess ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    slackConfig.sendOnLLMSuccess ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">LLM Failure</span>
+                <button
+                  onClick={() => setSlackConfig(prev => ({ ...prev, sendOnLLMFailure: !prev.sendOnLLMFailure }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    slackConfig.sendOnLLMFailure ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    slackConfig.sendOnLLMFailure ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Direct Requests</span>
+                <button
+                  onClick={() => setSlackConfig(prev => ({ ...prev, sendDirectRequests: !prev.sendDirectRequests }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    slackConfig.sendDirectRequests ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    slackConfig.sendDirectRequests ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Unhelpful Feedback</span>
+                <button
+                  onClick={() => setSlackConfig(prev => ({ ...prev, sendUnhelpfulFeedback: !prev.sendUnhelpfulFeedback }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    slackConfig.sendUnhelpfulFeedback ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    slackConfig.sendUnhelpfulFeedback ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
               </div>
