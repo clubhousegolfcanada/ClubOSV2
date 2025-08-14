@@ -531,19 +531,13 @@ router.post('/reply',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { thread_ts, text } = req.body;
-      let botToken = process.env.SLACK_BOT_TOKEN;
-      
-      // Check for placeholder token
-      if (botToken && (botToken === 'xoxb-placeholder-token' || botToken.includes('placeholder'))) {
-        logger.warn('Slack bot token is a placeholder, treating as not configured');
-        botToken = '';
-      }
+      const botToken = process.env.SLACK_BOT_TOKEN;
       
       logger.info('Slack reply request received', {
         thread_ts,
         textLength: text?.length,
         hasBotToken: !!botToken,
-        isPlaceholder: process.env.SLACK_BOT_TOKEN?.includes('placeholder'),
+        botTokenPrefix: botToken ? botToken.substring(0, 10) + '...' : 'None',
         user: req.user?.email
       });
       
@@ -559,18 +553,18 @@ router.post('/reply',
         logger.warn('Cannot reply to webhook-generated thread', { thread_ts });
         return res.status(400).json({
           success: false,
-          error: 'Two-way communication requires a valid Slack Bot Token. Please configure SLACK_BOT_TOKEN in Railway with a real token (not placeholder).',
-          isWebhookThread: true
+          error: 'This message was sent via webhook which doesn\'t support replies. The Slack Web API needs to be working for the initial message.',
+          isWebhookThread: true,
+          hint: 'Check logs - the Web API might be failing to find the channel'
         });
       }
       
       if (!botToken) {
-        logger.error('Slack bot token not configured or is placeholder');
+        logger.error('Slack bot token not configured');
         return res.status(503).json({
           success: false,
-          error: 'Slack Bot Token not configured or is a placeholder. Please add a real bot token to enable two-way communication.',
-          configurationNeeded: 'SLACK_BOT_TOKEN',
-          currentValue: process.env.SLACK_BOT_TOKEN?.includes('placeholder') ? 'placeholder detected' : 'not set'
+          error: 'Slack Bot Token not configured. Two-way communication is not available.',
+          configurationNeeded: 'SLACK_BOT_TOKEN'
         });
       }
       

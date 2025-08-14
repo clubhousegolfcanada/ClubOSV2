@@ -11,13 +11,7 @@ export class SlackFallbackService {
 
   constructor() {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL || '';
-    let botToken = process.env.SLACK_BOT_TOKEN || '';
-    
-    // Check for placeholder token and treat as not configured
-    if (botToken && (botToken === 'xoxb-placeholder-token' || botToken.includes('placeholder'))) {
-      logger.warn('Slack bot token is a placeholder, treating as not configured');
-      botToken = '';
-    }
+    const botToken = process.env.SLACK_BOT_TOKEN || '';
     
     this.enabled = Boolean(webhookUrl);
     
@@ -29,8 +23,7 @@ export class SlackFallbackService {
         hasWebhook: Boolean(webhookUrl),
         hasWebClient: Boolean(this.webClient),
         botTokenPrefix: botToken ? botToken.substring(0, 10) + '...' : 'None',
-        willUseWebAPI: Boolean(this.webClient),
-        isPlaceholder: process.env.SLACK_BOT_TOKEN?.includes('placeholder')
+        willUseWebAPI: Boolean(this.webClient)
       });
     } else {
       this.webClient = null;
@@ -252,39 +245,54 @@ export class SlackFallbackService {
     // Use Web API if available to get real thread timestamp
     if (this.webClient) {
       try {
-        // Get channel ID first - use same logic as test endpoint
-        const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
-        logger.info('Attempting to get channel ID for Web API (message sending)', { 
-          channelName,
-          webClientExists: !!this.webClient,
-          botToken: process.env.SLACK_BOT_TOKEN ? process.env.SLACK_BOT_TOKEN.substring(0, 10) + '...' : 'Not set'
-        });
+        let channelId = process.env.SLACK_CHANNEL_ID;
         
-        const channelsResponse = await this.webClient.conversations.list();
-        logger.info('Slack channels response during message send', { 
-          ok: channelsResponse.ok, 
-          channelCount: channelsResponse.channels?.length,
-          channels: channelsResponse.channels?.map(ch => ch.name),
-          error: channelsResponse.error
-        });
-        
-        if (!channelsResponse.ok) {
-          throw new Error(`Slack API error: ${channelsResponse.error}`);
+        // If no channel ID configured, try to find it
+        if (!channelId) {
+          const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
+          logger.info('No SLACK_CHANNEL_ID configured, attempting to find channel', { 
+            channelName,
+            webClientExists: !!this.webClient,
+            botToken: process.env.SLACK_BOT_TOKEN ? process.env.SLACK_BOT_TOKEN.substring(0, 10) + '...' : 'Not set'
+          });
+          
+          const channelsResponse = await this.webClient.conversations.list();
+          logger.info('Slack channels response during message send', { 
+            ok: channelsResponse.ok, 
+            channelCount: channelsResponse.channels?.length,
+            channels: channelsResponse.channels?.map(ch => ch.name),
+            error: channelsResponse.error
+          });
+          
+          if (!channelsResponse.ok) {
+            throw new Error(`Slack API error: ${channelsResponse.error}`);
+          }
+          
+          const channel = channelsResponse.channels?.find((ch: any) => ch.name === channelName);
+          
+          if (channel?.id) {
+            channelId = channel.id;
+            logger.info('Found channel by name', { channelId, channelName });
+          } else {
+            throw new Error(`Channel '${channelName}' not found. Available channels: ${channelsResponse.channels?.map(ch => ch.name).join(', ')}`);
+          }
+        } else {
+          logger.info('Using configured SLACK_CHANNEL_ID', { channelId });
         }
         
-        const channel = channelsResponse.channels?.find((ch: any) => ch.name === channelName);
-        
-        if (channel?.id) {
-          logger.info('Found channel, sending via Web API', { channelId: channel.id, channelName });
-          const { ts } = await this.sendMessageWithWebAPI(message, channel.id);
+        if (channelId) {
+          logger.info('Sending message via Web API', { channelId });
+          const { ts } = await this.sendMessageWithWebAPI(message, channelId);
           logger.info('Web API message sent successfully with REAL thread timestamp', { threadTs: ts });
           threadTs = ts;
         } else {
-          throw new Error(`Channel '${channelName}' not found. Available channels: ${channelsResponse.channels?.map(ch => ch.name).join(', ')}`);
+          throw new Error('Could not determine channel ID');
         }
-      } catch (webApiError) {
-        logger.error('Web API failed during actual message sending (but test endpoint works!)', { 
+      } catch (webApiError: any) {
+        logger.error('Web API failed during actual message sending', { 
           error: webApiError instanceof Error ? webApiError.message : webApiError,
+          errorDetails: webApiError.data || webApiError.response?.data,
+          stack: webApiError.stack,
           errorStack: webApiError instanceof Error ? webApiError.stack : undefined,
           hasWebClient: !!this.webClient,
           channelName: (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', ''),
