@@ -4,7 +4,7 @@ import { useAuthState } from '@/state/useStore';
 import { LayoutDashboard, Users, Brain, Zap, BarChart3 } from 'lucide-react';
 
 // Import new operation components
-import { OperationsDashboard } from '@/components/operations/dashboard/OperationsDashboard';
+import { OperationsDashboardEnhanced } from '@/components/operations/dashboard/OperationsDashboardEnhanced';
 import { OperationsUsers } from '@/components/operations/users/OperationsUsers';
 import { OperationsAICenter } from '@/components/operations/ai/OperationsAICenter';
 import { OperationsIntegrations } from '@/components/operations/integrations/OperationsIntegrations';
@@ -65,7 +65,7 @@ export default function Operations() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <OperationsDashboard />;
+        return <OperationsDashboardEnhanced />;
       case 'users':
         return user.role === 'admin' ? <OperationsUsers /> : null;
       case 'ai':
@@ -75,7 +75,7 @@ export default function Operations() {
       case 'analytics':
         return <OperationsAnalytics />;
       default:
-        return <OperationsDashboard />;
+        return <OperationsDashboardEnhanced />;
     }
   };
 

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { validate } from '../middleware/validation';
@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import { openPhoneService } from '../services/openphoneService';
 import { messageSendLimiter } from '../middleware/rateLimiter';
 import { formatToE164, isValidE164 } from '../utils/phoneNumberFormatter';
+import axios from 'axios';
 import { messageAssistantService } from '../services/messageAssistantService';
 import { anonymizePhoneNumber } from '../utils/encryption';
 import { hubspotService } from '../services/hubspotService';
@@ -701,5 +702,186 @@ router.get('/ai-stats',
     }
   }
 );
+
+// GET /api/messages/recent - Get recent messages for dashboard
+router.get('/recent', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { limit = 5 } = req.query;
+    
+    // Get recent messages - prioritize unread and unanswered
+    const messages = await db.query(`
+      SELECT 
+        m.id,
+        m.conversation_id,
+        m.from_number,
+        m.to_number,
+        m.body,
+        m.direction,
+        m.status,
+        m.created_at,
+        c.name as customer_name,
+        c.email as customer_email,
+        COUNT(m2.id) as message_count
+      FROM messages m
+      LEFT JOIN customers c ON c.phone = m.from_number
+      LEFT JOIN messages m2 ON m2.conversation_id = m.conversation_id 
+        AND m2.created_at < m.created_at
+      WHERE m.direction = 'inbound'
+        AND m.created_at > NOW() - INTERVAL '24 hours'
+      GROUP BY m.id, c.name, c.email
+      ORDER BY 
+        CASE WHEN m.status = 'unread' THEN 0 ELSE 1 END,
+        m.created_at DESC
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({
+      success: true,
+      data: messages.rows
+    });
+  } catch (error) {
+    logger.error('Error fetching recent messages:', error);
+    next(error);
+  }
+});
+
+// GET /api/messages/conversation/:id - Get conversation history
+router.get('/conversation/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    
+    const messages = await db.query(`
+      SELECT 
+        id,
+        conversation_id,
+        from_number,
+        to_number,
+        body,
+        direction,
+        status,
+        created_at
+      FROM messages
+      WHERE conversation_id = $1
+      ORDER BY created_at ASC
+    `, [id]);
+    
+    res.json({
+      success: true,
+      data: messages.rows
+    });
+  } catch (error) {
+    logger.error('Error fetching conversation:', error);
+    next(error);
+  }
+});
+
+// POST /api/messages/send - Send a message
+router.post('/send', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { to, content, conversationId, isAiGenerated } = req.body;
+    
+    if (!to || !content) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recipient and content are required'
+      });
+    }
+    
+    // Check if OpenPhone API key exists
+    const openphoneKey = process.env.OPENPHONE_API_KEY;
+    if (!openphoneKey) {
+      // Store locally without sending
+      await db.query(`
+        INSERT INTO messages (
+          conversation_id, from_number, to_number, body, 
+          direction, status, is_ai_generated, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `, [
+        conversationId || require('uuid').v4(),
+        'ClubOS',
+        to,
+        content,
+        'outbound',
+        'pending',
+        isAiGenerated || false
+      ]);
+      
+      return res.json({
+        success: true,
+        message: 'Message queued (OpenPhone not configured)'
+      });
+    }
+    
+    try {
+      // Send via OpenPhone API
+      const openphoneResponse = await axios.post(
+        'https://api.openphone.com/v1/messages',
+        {
+          to: [to],
+          text: content
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${openphoneKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Store message in database
+      await db.query(`
+        INSERT INTO messages (
+          conversation_id, from_number, to_number, body, 
+          direction, status, is_ai_generated, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `, [
+        conversationId || openphoneResponse.data.conversationId,
+        'ClubOS',
+        to,
+        content,
+        'outbound',
+        'sent',
+        isAiGenerated || false
+      ]);
+    } catch (apiError) {
+      logger.error('OpenPhone API error:', apiError);
+      // Store message as failed
+      await db.query(`
+        INSERT INTO messages (
+          conversation_id, from_number, to_number, body, 
+          direction, status, is_ai_generated, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `, [
+        conversationId || require('uuid').v4(),
+        'ClubOS',
+        to,
+        content,
+        'outbound',
+        'failed',
+        isAiGenerated || false
+      ]);
+    }
+    
+    // Update conversation status if exists
+    if (conversationId) {
+      await db.query(`
+        UPDATE messages 
+        SET status = 'replied' 
+        WHERE conversation_id = $1 AND direction = 'inbound'
+      `, [conversationId]);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Message sent successfully'
+    });
+  } catch (error) {
+    logger.error('Error sending message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send message'
+    });
+  }
+});
 
 export default router;

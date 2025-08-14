@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
+import { db } from '../utils/database';
 import { llmService } from '../services/llmService';
 import { assistantService } from '../services/assistantService';
 import { slackFallback } from '../services/slackFallback';
@@ -12,6 +13,11 @@ import { body } from 'express-validator';
 import { strictLimiter } from '../middleware/security';
 import { authenticate } from '../middleware/auth';
 import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 const router = Router();
 
@@ -773,5 +779,95 @@ router.post('/debug-assistant',
     }
   }
 );
+
+// POST /api/llm/suggest-response - Generate AI response suggestion for dashboard
+router.post('/suggest-response', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { conversationId, context } = req.body;
+    
+    if (!context) {
+      return res.status(400).json({
+        success: false,
+        message: 'Context is required'
+      });
+    }
+
+    // Get relevant knowledge base entries
+    const knowledgeQuery = await db.query(`
+      SELECT content, confidence_score 
+      FROM knowledge_store 
+      WHERE to_tsvector('english', content) @@ plainto_tsquery('english', $1)
+      ORDER BY confidence_score DESC
+      LIMIT 3
+    `, [context]);
+
+    // Build enhanced context with knowledge base
+    let enhancedContext = context;
+    if (knowledgeQuery.rows.length > 0) {
+      enhancedContext += '\n\nRelevant Information:\n';
+      knowledgeQuery.rows.forEach((row: any) => {
+        enhancedContext += `- ${row.content}\n`;
+      });
+    }
+
+    // Generate response using OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful assistant for a golf club. Generate a friendly, professional response to the customer's message. 
+          Use the provided context and knowledge base information to give an accurate, helpful response.
+          Keep responses concise (2-3 sentences max) and conversational.
+          If you're not sure about something, suggest they contact the club directly.`
+        },
+        {
+          role: 'user',
+          content: enhancedContext
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 150
+    });
+
+    const suggestion = completion.choices[0]?.message?.content || '';
+    
+    // Calculate confidence based on knowledge base matches
+    const confidence = knowledgeQuery.rows.length > 0 
+      ? Math.min(95, 70 + (knowledgeQuery.rows.length * 8))
+      : 60;
+
+    // Log the suggestion
+    await db.query(`
+      INSERT INTO llm_logs (
+        user_id, prompt, response, model, tokens_used, 
+        response_time_ms, success, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+    `, [
+      req.user?.id,
+      context,
+      suggestion,
+      'gpt-4-turbo-preview',
+      completion.usage?.total_tokens || 0,
+      0, // Response time would need to be calculated
+      true
+    ]);
+
+    res.json({
+      success: true,
+      suggestion,
+      confidence,
+      knowledgeMatches: knowledgeQuery.rows.length
+    });
+  } catch (error) {
+    logger.error('Error generating response suggestion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate suggestion',
+      suggestion: 'I can help you with that. Let me check our information and get back to you shortly.',
+      confidence: 50
+    });
+  }
+});
 
 export default router;
