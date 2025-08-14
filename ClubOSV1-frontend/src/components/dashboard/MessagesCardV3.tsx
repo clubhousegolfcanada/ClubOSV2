@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { MessageSquare, Clock, Send, Phone, User, Sparkles } from 'lucide-react';
+import { MessageSquare, Clock, Send, Phone, User, Bot } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 
@@ -295,7 +295,7 @@ export default function MessagesCardV3() {
                         className="flex items-center gap-1.5 px-2.5 py-1 mb-2 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                         style={{ fontWeight: 500 }}
                       >
-                        <Sparkles className="w-3 h-3 text-blue-500" />
+                        <Bot className="w-3 h-3 text-blue-500" />
                         Get AI Suggestion
                       </button>
                     ) : isLoadingAi ? (
