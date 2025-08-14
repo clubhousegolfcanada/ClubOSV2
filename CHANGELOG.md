@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.7.1] - 2025-08-14
+
+### Added
+- **Two-Way Slack Communication**
+  - Integrated Slack conversation directly into RequestForm card
+  - Added ability to reply to Slack threads from within ClubOS
+  - Real-time polling for new Slack replies (5-second intervals)
+  - Clean message bubble UI with sender distinction
+  - Thread conversation history display
+  - Reply input field with send button
+  - Backend `/slack/reply` endpoint for sending messages to Slack threads
+  - Authentication-protected reply functionality
+
+### Changed
+- **UI Improvements**
+  - Slack conversation now integrated into main response area instead of separate card
+  - Messages use clean bubble design matching Messages card style
+  - Staff messages left-aligned, ClubOS user messages right-aligned with accent color
+  - Expandable/collapsible conversation view
+
+### Removed
+- Removed unused SlackConversation component
+- Cleaned up redundant imports
+
 ## [1.7.0] - 2025-08-14
 
 ### Fixed

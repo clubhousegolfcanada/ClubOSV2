@@ -525,6 +525,123 @@ router.get('/thread-replies/:threadTs', async (req: Request, res: Response, next
   }
 });
 
+// Send reply to Slack thread
+router.post('/reply', 
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thread_ts, text } = req.body;
+      const botToken = process.env.SLACK_BOT_TOKEN;
+      
+      if (!thread_ts || !text) {
+        return res.status(400).json({
+          success: false,
+          error: 'Thread timestamp and text are required'
+        });
+      }
+      
+      if (!botToken) {
+        logger.error('Slack bot token not configured');
+        return res.status(500).json({
+          success: false,
+          error: 'Slack bot token not configured'
+        });
+      }
+      
+      // Get channel ID
+      let channelId = process.env.SLACK_CHANNEL_ID;
+      
+      if (!channelId) {
+        // Try to get channel ID from channel name
+        const channelName = (process.env.SLACK_CHANNEL || '#clubos-assistants').replace('#', '');
+        const channelsResponse = await axios.get('https://slack.com/api/conversations.list', {
+          headers: {
+            'Authorization': `Bearer ${botToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (channelsResponse.data.ok) {
+          const channel = channelsResponse.data.channels.find((ch: any) => ch.name === channelName);
+          if (channel) {
+            channelId = channel.id;
+          }
+        }
+      }
+      
+      if (!channelId) {
+        throw new Error('Could not determine Slack channel ID');
+      }
+      
+      logger.info('Sending reply to Slack thread', { 
+        channelId, 
+        thread_ts,
+        textLength: text.length,
+        user: req.user?.name || req.user?.email
+      });
+      
+      // Send reply to Slack thread using Web API
+      const slackResponse = await axios.post('https://slack.com/api/chat.postMessage', {
+        channel: channelId,
+        thread_ts: thread_ts,
+        text: `[ClubOS ${req.user?.name || 'User'}]: ${text}`,
+        as_user: false,
+        username: 'ClubOS',
+        icon_emoji: ':robot_face:'
+      }, {
+        headers: {
+          'Authorization': `Bearer ${botToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!slackResponse.data.ok) {
+        logger.error('Failed to send reply to Slack', { 
+          error: slackResponse.data.error,
+          response: slackResponse.data 
+        });
+        throw new Error(`Slack API error: ${slackResponse.data.error}`);
+      }
+      
+      logger.info('Reply sent to Slack successfully', { 
+        ts: slackResponse.data.ts,
+        thread_ts
+      });
+      
+      // Store the reply in database (optional)
+      try {
+        await db.query(
+          `INSERT INTO slack_replies 
+           (thread_ts, user_name, user_id, text, timestamp)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            thread_ts,
+            req.user?.name || 'ClubOS User',
+            req.user?.id || 'clubos',
+            text,
+            new Date()
+          ]
+        );
+      } catch (dbError) {
+        logger.error('Failed to store reply in database:', dbError);
+        // Don't fail the request if database storage fails
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          ts: slackResponse.data.ts,
+          thread_ts: thread_ts,
+          message: 'Reply sent successfully'
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to send reply to Slack:', error);
+      next(error);
+    }
+  }
+);
+
 // Get all recent Slack conversations with replies
 router.get('/conversations', async (req: Request, res: Response, next: NextFunction) => {
   try {
