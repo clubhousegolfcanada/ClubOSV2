@@ -279,7 +279,7 @@ export default function MessagesCardV3() {
                           <p className="font-medium text-gray-900" style={{ fontWeight: 500 }}>
                             {conv.customerName}
                           </p>
-                          <p className="text-sm text-gray-600 truncate mt-0.5" style={{ fontWeight: 400 }}>
+                          <p className="text-sm text-gray-600 mt-0.5 break-words" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                             {conv.lastMessage}
                           </p>
                           <div className="flex items-center gap-3 mt-1">
