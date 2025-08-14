@@ -384,9 +384,21 @@ const RequestForm: React.FC = () => {
       } else {
         notify('error', 'Failed to send reply');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending reply to Slack:', error);
-      notify('error', 'Failed to send reply to Slack');
+      
+      // Check for specific error types
+      if (error.response?.data?.isWebhookThread) {
+        notify('error', 'Replies not available for webhook-only messages. Slack Bot Token required.');
+        // Hide the reply input since it won't work
+        setLastSlackThreadTs(null);
+      } else if (error.response?.data?.configurationNeeded) {
+        notify('error', 'Two-way communication not available. Slack configuration required.');
+        // Hide the reply input since it won't work
+        setLastSlackThreadTs(null);
+      } else {
+        notify('error', error.response?.data?.error || 'Failed to send reply to Slack');
+      }
     } finally {
       setSendingReply(false);
     }
@@ -1019,7 +1031,7 @@ const RequestForm: React.FC = () => {
                         </div>
                         
                         {/* Reply Input */}
-                        {lastSlackThreadTs && (
+                        {lastSlackThreadTs && !lastSlackThreadTs.startsWith('thread_') ? (
                           <div className="flex gap-2">
                             <input
                               type="text"
@@ -1050,7 +1062,11 @@ const RequestForm: React.FC = () => {
                               )}
                             </button>
                           </div>
-                        )}
+                        ) : lastSlackThreadTs?.startsWith('thread_') ? (
+                          <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-tertiary)] p-2 rounded">
+                            ℹ️ Two-way replies require Slack Bot Token configuration. Staff can still reply in Slack.
+                          </div>
+                        ) : null}
                       </>
                     )}
                   </div>

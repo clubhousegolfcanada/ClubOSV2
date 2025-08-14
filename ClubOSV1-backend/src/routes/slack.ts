@@ -540,11 +540,22 @@ router.post('/reply',
         });
       }
       
-      if (!botToken) {
-        logger.error('Slack bot token not configured');
-        return res.status(500).json({
+      // Check if this is a fake thread timestamp from webhook fallback
+      if (thread_ts.startsWith('thread_')) {
+        logger.warn('Cannot reply to webhook-generated thread', { thread_ts });
+        return res.status(400).json({
           success: false,
-          error: 'Slack bot token not configured'
+          error: 'Two-way communication requires Slack Bot Token configuration. Replies are not available for webhook-only messages.',
+          isWebhookThread: true
+        });
+      }
+      
+      if (!botToken) {
+        logger.error('Slack bot token not configured for reply functionality');
+        return res.status(503).json({
+          success: false,
+          error: 'Slack Bot Token not configured. Two-way communication is not available.',
+          configurationNeeded: 'SLACK_BOT_TOKEN'
         });
       }
       
