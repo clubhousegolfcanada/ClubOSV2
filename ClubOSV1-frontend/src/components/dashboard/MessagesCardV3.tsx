@@ -156,8 +156,8 @@ export default function MessagesCardV3() {
     }
   };
 
-  const handleSend = async (conv: Conversation) => {
-    const message = replyText[conv.id]?.trim();
+  const handleSend = async (conv: Conversation, messageOverride?: string) => {
+    const message = messageOverride || replyText[conv.id]?.trim();
     if (!message) return;
 
     setSending({ ...sending, [conv.id]: true });
@@ -294,94 +294,127 @@ export default function MessagesCardV3() {
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50 p-3">
-                    {/* AI Suggestion Button or Result */}
+                    {/* AI Suggestion OR Manual Reply Input */}
                     {!suggestion && !isLoadingAi ? (
+                      // Show Get AI Suggestion button
                       <button
                         onClick={() => fetchAiSuggestion(conv.id)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 mb-2 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                         style={{ fontWeight: 500 }}
                       >
                         <Bot className="w-3 h-3 text-blue-500" />
                         Get AI Suggestion
                       </button>
                     ) : isLoadingAi ? (
-                      <div className="flex items-center gap-2 mb-2">
+                      // Loading state
+                      <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
                         <span className="text-xs text-gray-500">Getting AI suggestion...</span>
                       </div>
-                    ) : suggestion && (
-                      <div className="mb-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
-                              AI suggestion
+                    ) : suggestion ? (
+                      // Show AI Suggestion with inline send button
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Bot className="w-3 h-3 text-blue-500" />
+                          <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
+                            AI suggestion
+                          </span>
+                          <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
+                            {Math.round(suggestion.confidence)}%
+                          </span>
+                          {suggestion.confidence < 50 && (
+                            <span className="text-xs text-orange-600" style={{ fontWeight: 400 }}>
+                              • Review recommended
                             </span>
-                            <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
-                              {Math.round(suggestion.confidence)}%
-                            </span>
-                            {suggestion.confidence < 50 && (
-                              <span className="text-xs text-orange-600" style={{ fontWeight: 400 }}>
-                                • Review recommended
-                              </span>
-                            )}
+                          )}
+                        </div>
+                        
+                        {/* AI Suggestion Text with Action Buttons */}
+                        <div className="relative">
+                          <div className="pr-20 py-1.5 px-3 bg-white border border-gray-200 rounded-lg">
+                            <p className="text-sm text-gray-700" style={{ fontWeight: 400 }}>
+                              {suggestion.text}
+                            </p>
+                          </div>
+                          <div className="absolute right-1 top-1 flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                // Send the AI suggestion directly
+                                handleSend(conv, suggestion.text);
+                              }}
+                              disabled={isSending}
+                              className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                              style={{ fontWeight: 500 }}
+                            >
+                              {isSending ? (
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                              ) : (
+                                'Send'
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Clear suggestion to show manual input
+                                setAiSuggestions(prev => {
+                                  const newSuggestions = { ...prev };
+                                  delete newSuggestions[conv.id];
+                                  return newSuggestions;
+                                });
+                              }}
+                              className="px-2 py-0.5 text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                              style={{ fontWeight: 400 }}
+                            >
+                              Edit
+                            </button>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-600 italic mb-2" style={{ fontWeight: 400 }}>
-                          "{suggestion.text}"
+                      </div>
+                    ) : null}
+
+                    {/* Manual Reply Input - Only show if no suggestion */}
+                    {!suggestion && !isLoadingAi && (
+                      <div className="relative mt-2">
+                        <input
+                          type="text"
+                          value={reply}
+                          onChange={(e) => setReplyText({ ...replyText, [conv.id]: e.target.value })}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSend(conv);
+                            }
+                          }}
+                          placeholder="Type your reply..."
+                          className="w-full pl-3 pr-20 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          style={{ fontWeight: 400 }}
+                        />
+                        <div className="absolute right-1 top-1 flex items-center gap-1">
+                          <button
+                            onClick={() => handleSend(conv)}
+                            disabled={!reply.trim() || isSending}
+                            className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            style={{ fontWeight: 500 }}
+                          >
+                            {isSending ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                            ) : (
+                              'Send'
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedId(null);
+                              setReplyText({ ...replyText, [conv.id]: '' });
+                            }}
+                            className="px-2 py-0.5 text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                            style={{ fontWeight: 400 }}
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
                     )}
-
-                    {/* Reply Input with inline actions - More compact */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={reply}
-                        onChange={(e) => setReplyText({ ...replyText, [conv.id]: e.target.value })}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSend(conv);
-                          }
-                        }}
-                        placeholder="Type your reply..."
-                        className="w-full pl-3 pr-36 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        style={{ fontWeight: 400 }}
-                      />
-                      <div className="absolute right-1 top-1 flex items-center gap-1">
-                        {suggestion && (
-                          <button
-                            onClick={() => setReplyText({ ...replyText, [conv.id]: suggestion.text })}
-                            className="px-2 py-0.5 bg-gray-900 text-white text-xs rounded hover:bg-gray-800 transition-colors"
-                            style={{ fontWeight: 500 }}
-                          >
-                            Use
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedId(null);
-                            setReplyText({ ...replyText, [conv.id]: '' });
-                          }}
-                          className="px-2 py-0.5 text-gray-400 text-xs hover:text-gray-600 transition-colors"
-                          style={{ fontWeight: 400 }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleSend(conv)}
-                          disabled={!reply.trim() || isSending}
-                          className="p-0.5 text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {isSending ? (
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
-                          ) : (
-                            <Send className="w-3 h-3" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
