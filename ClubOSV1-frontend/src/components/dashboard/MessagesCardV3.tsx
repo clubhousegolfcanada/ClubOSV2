@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { MessageSquare, Clock, Send, Phone, User } from 'lucide-react';
+import { MessageSquare, Clock, Send, Phone, User, Sparkles } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 
@@ -74,56 +74,61 @@ export default function MessagesCardV3() {
     }
   };
 
-  const handleExpand = async (convId: string) => {
+  const handleExpand = (convId: string) => {
     if (expandedId === convId) {
       setExpandedId(null);
+      // Clear AI suggestion when collapsing
+      setAiSuggestions(prev => {
+        const newSuggestions = { ...prev };
+        delete newSuggestions[convId];
+        return newSuggestions;
+      });
       return;
     }
 
     setExpandedId(convId);
-    
-    // Always get fresh AI suggestion when expanding
+    // Don't auto-fetch AI suggestion anymore
+  };
+  
+  const fetchAiSuggestion = async (convId: string) => {
     const conv = conversations.find(c => c.id === convId);
-    if (conv) {
-      setLoadingAi({ ...loadingAi, [convId]: true });
-      
-      try {
-        const token = localStorage.getItem('clubos_token');
-        const response = await axios.post(
-          `${API_URL}/messages/conversations/${conv.phoneNumber}/suggest-response`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+    if (!conv) return;
+    
+    setLoadingAi({ ...loadingAi, [convId]: true });
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.post(
+        `${API_URL}/messages/conversations/${conv.phoneNumber}/suggest-response`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        if (response.data.success && response.data.data) {
-          const suggestion = response.data.data;
-          setAiSuggestions({
-            ...aiSuggestions,
-            [convId]: {
-              text: suggestion.suggestedText || 'I\'ll check on that and get back to you shortly.',
-              confidence: Math.round((suggestion.confidence || 0.6) * 100)
-            }
-          });
-          
-          // Don't auto-populate - let user decide
-        }
-      } catch (error: any) {
-        console.error('Failed to get AI suggestion:', error);
-        // Only show error if it's not a 404 (no conversation)
-        if (error.response?.status !== 404) {
-          const fallbackMessage = 'I\'ll check on that and get back to you shortly.';
-          setAiSuggestions({
-            ...aiSuggestions,
-            [convId]: {
-              text: fallbackMessage,
-              confidence: 30
-            }
-          });
-          // Don't auto-populate
-        }
-      } finally {
-        setLoadingAi({ ...loadingAi, [convId]: false });
+      if (response.data.success && response.data.data) {
+        const suggestion = response.data.data;
+        setAiSuggestions({
+          ...aiSuggestions,
+          [convId]: {
+            text: suggestion.suggestedText || 'I\'ll check on that and get back to you shortly.',
+            confidence: Math.round((suggestion.confidence || 0.6) * 100)
+          }
+        });
       }
+    } catch (error: any) {
+      console.error('Failed to get AI suggestion:', error);
+      // Only show error if it's not a 404 (no conversation)
+      if (error.response?.status !== 404) {
+        const fallbackMessage = 'I\'ll check on that and get back to you shortly.';
+        setAiSuggestions({
+          ...aiSuggestions,
+          [convId]: {
+            text: fallbackMessage,
+            confidence: 30
+          }
+        });
+      }
+    } finally {
+      setLoadingAi({ ...loadingAi, [convId]: false });
     }
   };
 
@@ -256,8 +261,17 @@ export default function MessagesCardV3() {
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50 p-3">
-                    {/* AI Suggestion - Small text above input */}
-                    {isLoadingAi ? (
+                    {/* AI Suggestion Button or Result */}
+                    {!suggestion && !isLoadingAi ? (
+                      <button
+                        onClick={() => fetchAiSuggestion(conv.id)}
+                        className="flex items-center gap-1.5 px-2.5 py-1 mb-2 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        style={{ fontWeight: 500 }}
+                      >
+                        <Sparkles className="w-3 h-3 text-blue-500" />
+                        Get AI Suggestion
+                      </button>
+                    ) : isLoadingAi ? (
                       <div className="flex items-center gap-2 mb-2">
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
                         <span className="text-xs text-gray-500">Getting AI suggestion...</span>
