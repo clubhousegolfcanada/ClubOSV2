@@ -262,18 +262,29 @@ const TicketCenterOptimized = () => {
       
       if (response.data.success) {
         notify('success', 'Comment added');
+        const newCommentData = response.data.data;
         setNewComment('');
-        // Reload tickets to get updated comments
-        loadTickets();
+        
+        // Update the tickets array with the new comment
+        setTickets(prevTickets => 
+          prevTickets.map(ticket => 
+            ticket.id === ticketId 
+              ? { 
+                  ...ticket, 
+                  comments: [...(ticket.comments || []), newCommentData],
+                  updatedAt: new Date().toISOString()
+                }
+              : ticket
+          )
+        );
+        
         // Update selected ticket if it's the same one
         if (selectedTicket?.id === ticketId) {
-          const updatedTicket = tickets.find(t => t.id === ticketId);
-          if (updatedTicket) {
-            setSelectedTicket({
-              ...updatedTicket,
-              comments: [...(updatedTicket.comments || []), response.data.data]
-            });
-          }
+          setSelectedTicket(prev => prev ? {
+            ...prev,
+            comments: [...(prev.comments || []), newCommentData],
+            updatedAt: new Date().toISOString()
+          } : null);
         }
       }
     } catch (error) {
@@ -482,6 +493,28 @@ const TicketCenterOptimized = () => {
                       </span>
                     )}
                   </div>
+                  
+                  {/* Latest comment preview - Desktop only */}
+                  {ticket.comments.length > 0 && (
+                    <div className="hidden md:block mt-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="w-3 h-3 text-[var(--text-muted)] mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium text-[var(--text-secondary)]">
+                              {ticket.comments[ticket.comments.length - 1].createdBy.name}
+                            </span>
+                            <span className="text-xs text-[var(--text-muted)]">
+                              {formatTimeAgo(ticket.comments[ticket.comments.length - 1].createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                            {ticket.comments[ticket.comments.length - 1].text}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Quick actions */}
