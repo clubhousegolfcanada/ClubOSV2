@@ -36,7 +36,8 @@ export default function MessagesCardV3() {
 
   useEffect(() => {
     fetchConversations();
-    const interval = setInterval(fetchConversations, 120000);
+    // Poll every 10 seconds for new messages
+    const interval = setInterval(fetchConversations, 10000);
     return () => clearInterval(interval);
   }, [user]);
 
