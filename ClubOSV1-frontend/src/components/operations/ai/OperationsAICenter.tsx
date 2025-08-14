@@ -131,12 +131,10 @@ export const OperationsAICenter: React.FC = () => {
 
   const fetchPromptTemplates = async () => {
     try {
-      // Prompts endpoint might not exist yet, using empty array
-      // const response = await axios.get(`${API_URL}/api/prompts`, {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      // setPromptTemplates(response.data);
-      setPromptTemplates([]);
+      const response = await axios.get(`${API_URL}/api/prompts`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPromptTemplates(response.data.data || []);
     } catch (error) {
       console.error('Error fetching prompt templates:', error);
     }

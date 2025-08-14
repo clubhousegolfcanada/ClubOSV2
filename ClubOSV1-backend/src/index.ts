@@ -70,6 +70,7 @@ import callTranscriptRoutes from './routes/call-transcripts';
 import privacyRoutes from './routes/privacy';
 import customerInteractionsRoutes from './routes/customer-interactions';
 import promptTemplatesRoutes from './routes/promptTemplates';
+import promptsRoutes from './routes/prompts';
 import csrfRoutes from './routes/csrf';
 import aiAutomationsRoutes from './routes/ai-automations';
 import openphoneProcessingRoutes from './routes/openphone-processing';
@@ -261,6 +262,7 @@ app.use('/api/call-transcripts', callTranscriptRoutes);
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/customer-interactions', customerInteractionsRoutes);
 app.use('/api/prompt-templates', promptTemplatesRoutes);
+app.use('/api/prompts', promptsRoutes);
 app.use('/api/ai-automations', aiAutomationsRoutes);
 app.use('/api/integrations', integrationsRoutes);
 
