@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Users, MessageSquare, Brain, AlertCircle, CheckCircle, WifiOff, RefreshCw, Download, FileText, TrendingUp } from 'lucide-react';
+import { Activity, Users, MessageSquare, Brain, AlertCircle, CheckCircle, WifiOff, RefreshCw, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 import { format } from 'date-fns';
 
@@ -61,9 +61,24 @@ export function OperationsDashboard() {
         });
       }
       
-      // Fetch metrics (mock for now - replace with real endpoints)
+      // Fetch real user count
+      let activeUserCount = 0;
+      if (token) {
+        try {
+          const userCountResponse = await axios.get(`${API_URL}/api/auth/users/count`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (userCountResponse.data.success) {
+            activeUserCount = userCountResponse.data.data.active;
+          }
+        } catch (error) {
+          console.error('Failed to fetch user count:', error);
+        }
+      }
+      
+      // Fetch metrics (using real user count)
       setMetrics({
-        activeUsers: Math.floor(Math.random() * 10) + 1,
+        activeUsers: activeUserCount,
         messagesProcessed: Math.floor(Math.random() * 100) + 50,
         aiResponses: Math.floor(Math.random() * 50) + 20,
         systemUptime: '99.9%'
@@ -244,10 +259,10 @@ export function OperationsDashboard() {
         <div className="bg-[var(--bg-secondary)] rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-[var(--accent)]" />
-            <span className="text-sm text-[var(--text-secondary)]">Active Users</span>
+            <span className="text-sm text-[var(--text-secondary)]">Total Users</span>
           </div>
           <div className="text-2xl font-bold">{metrics.activeUsers}</div>
-          <div className="text-xs text-[var(--text-muted)] mt-1">Online now</div>
+          <div className="text-xs text-[var(--text-muted)] mt-1">Active accounts</div>
         </div>
 
         <div className="bg-[var(--bg-secondary)] rounded-lg p-4">
@@ -308,34 +323,6 @@ export function OperationsDashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="px-4 py-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg flex flex-col items-center gap-2 transition-colors">
-            <Download className="w-5 h-5 text-[var(--accent)]" />
-            <span className="text-sm">Export Data</span>
-          </button>
-          
-          <button className="px-4 py-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg flex flex-col items-center gap-2 transition-colors">
-            <FileText className="w-5 h-5 text-[var(--accent)]" />
-            <span className="text-sm">View Reports</span>
-          </button>
-          
-          <button className="px-4 py-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg flex flex-col items-center gap-2 transition-colors">
-            <MessageSquare className="w-5 h-5 text-[var(--accent)]" />
-            <span className="text-sm">Send Announcement</span>
-          </button>
-          
-          <button 
-            onClick={() => fetchDashboardData()}
-            className="px-4 py-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg flex flex-col items-center gap-2 transition-colors"
-          >
-            <RefreshCw className="w-5 h-5 text-[var(--accent)]" />
-            <span className="text-sm">Refresh All</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

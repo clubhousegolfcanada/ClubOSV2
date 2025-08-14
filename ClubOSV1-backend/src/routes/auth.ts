@@ -256,6 +256,30 @@ router.get('/users',
   }
 );
 
+// Get user count (for dashboard metrics)
+router.get('/users/count',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const users = await db.getAllUsers();
+      const activeUsers = users.filter(user => user.status === 'active').length;
+      const totalUsers = users.length;
+      
+      res.json({
+        success: true,
+        data: {
+          total: totalUsers,
+          active: activeUsers
+        }
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Change password
 router.post('/change-password',
   authenticate,

@@ -14,6 +14,7 @@ interface Conversation {
   phoneNumber: string;
   customerName: string;
   lastMessage: string;
+  lastMessageDirection?: 'inbound' | 'outbound';
   timestamp: string;
   unreadCount: number;
   location?: string;
@@ -63,6 +64,7 @@ export default function MessagesCardV3() {
             phoneNumber: conv.phone_number,
             customerName: conv.customer_name || 'Unknown',
             lastMessage: lastMsg?.body || lastMsg?.text || 'No messages',
+            lastMessageDirection: lastMsg?.direction || conv.last_message_direction,
             timestamp: lastMsg?.createdAt || conv.updated_at,
             unreadCount: conv.unread_count || 0,
             location: conv.location || null,
@@ -276,10 +278,16 @@ export default function MessagesCardV3() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900" style={{ fontWeight: 500 }}>
+                          <p className="font-medium text-gray-900 flex items-center gap-2" style={{ fontWeight: 500 }}>
                             {conv.customerName}
+                            {conv.lastMessageDirection === 'outbound' && (
+                              <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded" style={{ fontWeight: 400 }}>
+                                You
+                              </span>
+                            )}
                           </p>
                           <p className="text-sm text-gray-600 mt-0.5 break-words" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                            {conv.lastMessageDirection === 'outbound' && '↗ '}
                             {conv.lastMessage}
                           </p>
                           <div className="flex items-center gap-3 mt-1">
