@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { MessageSquare, Clock, Send, Sparkles, Phone, User } from 'lucide-react';
+import { MessageSquare, Clock, Send, Phone, User } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 
@@ -245,45 +245,35 @@ export default function MessagesCardV3() {
                   </div>
                 </div>
 
-                {/* Expanded Reply Section */}
+                {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 bg-gray-50 p-4">
-                    {/* AI Suggestion */}
+                  <div className="border-t border-gray-100 bg-gray-50 p-3">
+                    {/* AI Suggestion - Compact */}
                     {isLoadingAi ? (
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500"></div>
-                        <span className="text-sm text-gray-600">Getting AI suggestion...</span>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
+                        <span className="text-xs text-gray-500">Getting AI suggestion...</span>
                       </div>
                     ) : suggestion && (
-                      <div className="mb-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4 text-yellow-500" />
-                          <span className="text-sm font-medium text-gray-700" style={{ fontWeight: 500 }}>
+                      <div className="mb-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-gray-500" style={{ fontWeight: 400 }}>
                             AI Suggestion
                           </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            suggestion.confidence >= 70 
-                              ? 'bg-green-100 text-green-700' 
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`} style={{ fontWeight: 500 }}>
+                          <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
                             {Math.round(suggestion.confidence)}%
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 bg-white rounded-lg p-3 border border-gray-200" style={{ fontWeight: 400 }}>
-                          {suggestion.text}
-                        </p>
-                        <button
-                          onClick={() => setReplyText({ ...replyText, [conv.id]: suggestion.text })}
-                          className="mt-2 px-3 py-1.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors"
-                          style={{ fontWeight: 500 }}
-                        >
-                          Use
-                        </button>
+                        <div className="bg-gray-50 rounded-lg p-2 border border-gray-100">
+                          <p className="text-sm text-gray-700" style={{ fontWeight: 400 }}>
+                            {suggestion.text}
+                          </p>
+                        </div>
                       </div>
                     )}
 
-                    {/* Reply Input */}
-                    <div className="flex gap-2">
+                    {/* Reply Input with inline actions - More compact */}
+                    <div className="relative">
                       <input
                         type="text"
                         value={reply}
@@ -295,36 +285,43 @@ export default function MessagesCardV3() {
                           }
                         }}
                         placeholder="Type your reply or use the AI suggestion..."
-                        className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-3 pr-36 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                         style={{ fontWeight: 400 }}
                       />
-                      <button
-                        onClick={() => handleSend(conv)}
-                        disabled={!reply.trim() || isSending}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm"
-                        style={{ fontWeight: 500 }}
-                      >
-                        {isSending ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <Send className="w-4 h-4" />
+                      <div className="absolute right-1 top-1 flex items-center gap-1">
+                        {suggestion && (
+                          <button
+                            onClick={() => setReplyText({ ...replyText, [conv.id]: suggestion.text })}
+                            className="px-2 py-0.5 bg-gray-900 text-white text-xs rounded hover:bg-gray-800 transition-colors"
+                            style={{ fontWeight: 500 }}
+                          >
+                            Use
+                          </button>
                         )}
-                        Send
-                      </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedId(null);
+                            setReplyText({ ...replyText, [conv.id]: '' });
+                          }}
+                          className="px-2 py-0.5 text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                          style={{ fontWeight: 400 }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSend(conv)}
+                          disabled={!reply.trim() || isSending}
+                          className="p-0.5 text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isSending ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+                          ) : (
+                            <Send className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-
-                    {/* Cancel Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedId(null);
-                        setReplyText({ ...replyText, [conv.id]: '' });
-                      }}
-                      className="mt-2 text-sm text-gray-500 hover:text-gray-700"
-                      style={{ fontWeight: 400 }}
-                    >
-                      Cancel
-                    </button>
                   </div>
                 )}
               </div>
