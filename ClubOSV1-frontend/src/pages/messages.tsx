@@ -257,7 +257,7 @@ export default function Messages() {
         setConversations(sortedConversations);
         
         // Auto-select first conversation if none selected
-        if (!selectedConversation && sortedConversations.length > 0 && !loading) {
+        if (!selectedConversation && sortedConversations.length > 0) {
           const firstConversation = sortedConversations[0];
           // Use selectConversation to fetch full history
           selectConversation(firstConversation);
@@ -360,6 +360,14 @@ export default function Messages() {
     setMessages([]); // Clear messages while loading
     setFullMessageHistory([]); // Clear full history
     setHasMoreMessages(false); // Reset load more state
+    
+    // Focus input field after selecting conversation (desktop only)
+    setTimeout(() => {
+      const desktopInput = document.querySelector('.md\\:block input[placeholder="Type a message..."]') as HTMLInputElement;
+      if (desktopInput && window.innerWidth >= 768) {
+        desktopInput.focus();
+      }
+    }, 100);
     
     // Fetch conversation history
     if (conversation.phone_number) {
