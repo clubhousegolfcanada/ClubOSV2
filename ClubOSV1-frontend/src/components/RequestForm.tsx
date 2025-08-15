@@ -918,7 +918,7 @@ const RequestForm: React.FC = () => {
                   }} />
                 </>
               ) : (
-                isTicketMode ? 'Create' : (smartAssistEnabled ? 'Process' : 'Send')
+                isTicketMode ? 'Create' : (smartAssistEnabled ? 'Process' : 'Send to Clubhouse Team')
               )}
             </button>
             <button
