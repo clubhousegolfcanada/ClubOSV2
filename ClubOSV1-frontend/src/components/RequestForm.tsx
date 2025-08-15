@@ -175,9 +175,7 @@ const RequestForm: React.FC = () => {
     
     const matchedPatterns = commonPatterns.filter(p => p.pattern.test(requestDescription));
     if (matchedPatterns.length > 0) {
-      // Use Array.from for better TypeScript compatibility
-      const allSuggestions = matchedPatterns.map(p => p.suggestion);
-      const uniqueSuggestions = Array.from(new Set(allSuggestions)).slice(0, 3);
+      const uniqueSuggestions = Array.from(new Set(matchedPatterns.map(p => p.suggestion))).slice(0, 3);
       setSuggestions(uniqueSuggestions);
       setShowSuggestions(true);
     } else {
@@ -649,8 +647,59 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Task Description */}
-          <div className="form-group">
+          {/* Condensed Input Panel */}
+          <div className="space-y-2">
+            {/* Inline Controls */}
+            <div className="flex gap-2">
+              {/* Location Input */}
+              <input
+                id="locationInput"
+                {...register('location')}
+                type="text"
+                className="form-input w-32"
+                placeholder="Location"
+                disabled={isSubmitting || demoMode}
+              />
+              
+              {/* Bot Route Selector - Inline */}
+              {!isTicketMode && smartAssistEnabled && (
+                <select
+                  value={routePreference}
+                  onChange={(e) => setRoutePreference(e.target.value as RequestRoute)}
+                  className="form-input w-36 text-sm"
+                  disabled={isSubmitting || demoMode}
+                >
+                  <option value="Auto">Auto Route</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Booking">Booking</option>
+                  <option value="Tech">Tech Support</option>
+                  <option value="Brand">Brand Tone</option>
+                </select>
+              )}
+              
+              {/* AI Toggle - Compact */}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs text-[var(--text-muted)]">AI</span>
+                <label className="toggle-switch small">
+                  <input
+                    type="checkbox"
+                    checked={smartAssistEnabled}
+                    onChange={(e) => {
+                      setSmartAssistEnabled(e.target.checked);
+                      if (!e.target.checked) {
+                        setShowResponse(false);
+                        resetRequestState();
+                      }
+                    }}
+                    disabled={isSubmitting || demoMode || isTicketMode}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            
+            {/* Task Description with Suggestions */}
+            <div className="form-group mb-0 relative">
               <textarea
                 id="taskInput"
                 {...register('requestDescription', {
@@ -663,7 +712,7 @@ const RequestForm: React.FC = () => {
                 className="form-textarea"
                 placeholder={isTicketMode ? "Describe the issue for the support ticket..." : "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"}
                 disabled={isSubmitting || demoMode}
-                rows={3}
+                rows={2}
               />
               
               {/* AI Suggestions */}
@@ -701,44 +750,6 @@ const RequestForm: React.FC = () => {
                 <p className="error-message">{errors.requestDescription.message}</p>
               )}
             </div>
-          
-          {/* Location and Route - Below textarea */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Location Input */}
-            <div className="form-group">
-              <label className="form-label text-xs" htmlFor="locationInput">
-                Location (Optional)
-              </label>
-              <input
-                id="locationInput"
-                {...register('location')}
-                type="text"
-                className="form-input"
-                placeholder="e.g., Bedford Bay 2"
-                disabled={isSubmitting || demoMode}
-              />
-            </div>
-            
-            {/* Bot Route Selector */}
-            {!isTicketMode && smartAssistEnabled && (
-              <div className="form-group">
-                <label className="form-label text-xs">
-                  AI Route: <span className="text-[var(--accent)]">{routePreference}</span>
-                </label>
-                <select
-                  value={routePreference}
-                  onChange={(e) => setRoutePreference(e.target.value as RequestRoute)}
-                  className="form-input"
-                  disabled={isSubmitting || demoMode}
-                >
-                  <option value="Auto">🔄 Auto Select</option>
-                  <option value="Emergency">🚨 Emergency</option>
-                  <option value="Booking&Access">📅 Booking</option>
-                  <option value="TechSupport">🔧 Tech Support</option>
-                  <option value="BrandTone">✨ Brand Tone</option>
-                </select>
-              </div>
-            )}
           </div>
 
           {/* Tone Conversion Input - HIDDEN FOR NOW */}
@@ -838,8 +849,8 @@ const RequestForm: React.FC = () => {
           )}
 
 
-          {/* Toggle Options */}
-          {!isTicketMode && (
+          {/* Toggle Options - Removed, AI toggle moved inline */}
+          {!isTicketMode && false && (
             <div className="form-group">
               <div className="flex items-center justify-between">
                 <div className="toggle-item flex items-center gap-3">
