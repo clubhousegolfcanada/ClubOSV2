@@ -4,7 +4,7 @@ import { useRequestSubmission, useNotifications, useDemoMode } from '@/state/hoo
 import { useSettingsState, useAuthState } from '@/state/useStore';
 import { canAccessRoute, getRestrictedTooltip } from '@/utils/roleUtils';
 import type { UserRequest, RequestRoute } from '@/types/request';
-import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { ResponseDisplay } from './ResponseDisplay';
@@ -70,6 +70,9 @@ const RequestForm: React.FC = () => {
   const [isWaitingForReply, setIsWaitingForReply] = useState(false);
   const [lastSlackThreadTs, setLastSlackThreadTs] = useState<string | null>(null);
   const [showAdvancedRouting, setShowAdvancedRouting] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [conversationExpanded, setConversationExpanded] = useState(true);
 
   const { preferences } = useSettingsState();
   const { user } = useAuthState();
@@ -347,6 +350,58 @@ const RequestForm: React.FC = () => {
     
     // Start polling after a short delay
     setTimeout(poll, 2000);
+  };
+
+  // Send reply to Slack thread
+  const sendReplyToSlack = async () => {
+    if (!replyText.trim() || !lastSlackThreadTs || sendingReply) return;
+    
+    setSendingReply(true);
+    try {
+      const token = isMounted ? localStorage.getItem('clubos_token') : null;
+      const response = await axios.post(`${API_URL}/slack/reply`, {
+        thread_ts: lastSlackThreadTs,
+        text: replyText.trim()
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success) {
+        // Add the reply to the conversation
+        const newReply = {
+          ts: Date.now().toString(),
+          user_name: 'You',
+          user: user?.name || 'ClubOS User',
+          text: replyText.trim(),
+          timestamp: new Date().toISOString(),
+          is_from_clubos: true
+        };
+        setSlackReplies([...slackReplies, newReply]);
+        setReplyText('');
+        notify('success', 'Reply sent to Slack');
+      } else {
+        notify('error', 'Failed to send reply');
+      }
+    } catch (error: any) {
+      console.error('Error sending reply to Slack:', error);
+      
+      // Check for specific error types
+      if (error.response?.data?.isWebhookThread) {
+        notify('error', 'Replies not available for webhook-only messages. Slack Bot Token required.');
+        // Hide the reply input since it won't work
+        setLastSlackThreadTs(null);
+      } else if (error.response?.data?.configurationNeeded) {
+        notify('error', 'Two-way communication not available. Slack configuration required.');
+        // Hide the reply input since it won't work
+        setLastSlackThreadTs(null);
+      } else {
+        notify('error', error.response?.data?.error || 'Failed to send reply to Slack');
+      }
+    } finally {
+      setSendingReply(false);
+    }
   };
 
   const handleReset = () => {
@@ -908,37 +963,111 @@ const RequestForm: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Slack Replies */}
-                {slackReplies.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    <div className="border-t border-[var(--border-secondary)] pt-3">
-                      <strong className="text-[var(--accent)]">Staff Response:</strong>
-                    </div>
-                    {slackReplies.map((reply, index) => (
-                      <div key={reply.ts || index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
-                        <div className="flex items-center gap-2 mb-2 text-sm text-[var(--text-secondary)]">
-                          <span className="font-medium text-[var(--text-primary)]">
-                            {reply.user_name || reply.user || 'Staff Member'}
+                {/* Integrated Slack Conversation - Using Messages Card Style */}
+                {(slackReplies.length > 0 || isWaitingForReply) && (
+                  <div className="mt-4 border-t border-[var(--border-secondary)] pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-[var(--accent)]" />
+                        <span className="text-sm font-medium text-[var(--text-primary)]">Slack Conversation</span>
+                        {slackReplies.length > 0 && (
+                          <span className="px-2 py-0.5 bg-[var(--bg-tertiary)] text-xs rounded-full">
+                            {slackReplies.length} {slackReplies.length === 1 ? 'reply' : 'replies'}
                           </span>
-                          <span>•</span>
-                          <span>{new Date(reply.timestamp).toLocaleString()}</span>
-                        </div>
-                        <p className="text-[var(--text-primary)]">
-                          {reply.text}
-                        </p>
+                        )}
                       </div>
-                    ))}
+                      <button
+                        onClick={() => setConversationExpanded(!conversationExpanded)}
+                        className="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                      >
+                        <ChevronDown className={`w-4 h-4 transition-transform ${conversationExpanded ? '' : '-rotate-90'}`} />
+                      </button>
+                    </div>
                     
-                    {/* Still checking for new replies indicator */}
-                    {isWaitingForReply && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-[var(--text-secondary)]">
-                        <div className="flex gap-1">
-                          <div className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse"></div>
-                          <div className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                          <div className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    {conversationExpanded && (
+                      <>
+                        {/* Messages Container */}
+                        <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
+                          {slackReplies.map((reply, index) => (
+                            <div key={reply.ts || index} className={`flex ${reply.is_from_clubos ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[80%] ${reply.is_from_clubos ? 'order-2' : ''}`}>
+                                <div className={`p-3 rounded-lg ${
+                                  reply.is_from_clubos 
+                                    ? 'bg-[var(--accent)] text-white' 
+                                    : 'bg-[var(--bg-tertiary)] border border-[var(--border-secondary)]'
+                                }`}>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-xs font-medium ${reply.is_from_clubos ? 'text-white/90' : 'text-[var(--text-secondary)]'}`}>
+                                      {reply.user_name || reply.user || 'Staff'}
+                                    </span>
+                                    <span className={`text-xs ${reply.is_from_clubos ? 'text-white/70' : 'text-[var(--text-muted)]'}`}>
+                                      <Clock className="w-3 h-3 inline mr-1" />
+                                      {new Date(reply.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  <p className={`text-sm ${reply.is_from_clubos ? 'text-white' : 'text-[var(--text-primary)]'}`}>
+                                    {reply.text}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* Waiting for reply indicator */}
+                          {isWaitingForReply && slackReplies.length === 0 && (
+                            <div className="flex justify-start">
+                              <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex gap-1">
+                                    <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></div>
+                                    <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                    <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                                  </div>
+                                  <span className="text-xs text-[var(--text-secondary)]">Staff is typing...</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <span className="text-xs">Checking for new replies...</span>
-                      </div>
+                        
+                        {/* Reply Input */}
+                        {lastSlackThreadTs && !lastSlackThreadTs.startsWith('thread_') ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  sendReplyToSlack();
+                                }
+                              }}
+                              placeholder="Type your reply..."
+                              className="flex-1 px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors"
+                              disabled={sendingReply}
+                            />
+                            <button
+                              onClick={sendReplyToSlack}
+                              disabled={!replyText.trim() || sendingReply}
+                              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity flex items-center gap-2"
+                            >
+                              {sendingReply ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                <>
+                                  <Send className="w-4 h-4" />
+                                  Send
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : lastSlackThreadTs?.startsWith('thread_') ? (
+                          <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-tertiary)] p-2 rounded">
+                            ℹ️ Two-way replies require Slack Bot Token configuration. Staff can still reply in Slack.
+                          </div>
+                        ) : null}
+                      </>
                     )}
                   </div>
                 )}
@@ -1019,8 +1148,6 @@ const RequestForm: React.FC = () => {
           )}
         </div>
       )}
-
-      {/* Slack Conversation Panel - Removed as per user request */}
     </div>
   );
 };
