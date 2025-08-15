@@ -234,13 +234,16 @@ const RemoteActionsBar: React.FC = () => {
                         return (
                           <div key={bay} className="flex items-center gap-1">
                             <div className="flex items-center gap-1 w-16">
-                              <Circle 
-                                className={`w-2 h-2 ${isOnline ? (hasIssue ? 'text-yellow-500' : 'text-green-500') : 'text-red-500'} fill-current`}
-                                title={isOnline ? (hasIssue ? 'Online with issue' : 'Online') : 'Offline'}
-                              />
+                              <span title={isOnline ? (hasIssue ? 'Online with issue' : 'Online') : 'Offline'}>
+                                <Circle 
+                                  className={`w-2 h-2 ${isOnline ? (hasIssue ? 'text-yellow-500' : 'text-green-500') : 'text-red-500'} fill-current`}
+                                />
+                              </span>
                               <span className="text-xs text-[var(--text-muted)]">B{bay}</span>
                               {isOccupied && (
-                                <Users className="w-3 h-3 text-blue-500" title={bayStatus?.bookingInfo?.customerName || 'Occupied'} />
+                                <span title={bayStatus?.bookingInfo?.customerName || 'Occupied'}>
+                                  <Users className="w-3 h-3 text-blue-500" />
+                                </span>
                               )}
                             </div>
                             <button

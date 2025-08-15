@@ -102,7 +102,9 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
                     <span className="text-xs">{stats.occupancyRate}%</span>
                   </div>
                   {stats.issuesBays > 0 && (
-                    <AlertTriangle className="w-3 h-3 text-yellow-500" title={`${stats.issuesBays} bay(s) with issues`} />
+                    <span title={`${stats.issuesBays} bay(s) with issues`}>
+                      <AlertTriangle className="w-3 h-3 text-yellow-500" />
+                    </span>
                   )}
                 </div>
               </div>
