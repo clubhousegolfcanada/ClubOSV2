@@ -13,6 +13,15 @@ export interface BayStatus {
   lastSeen?: string;
   hasIssue?: boolean;
   issueType?: string;
+  // NinjaOne detection
+  hasNinjaOneAlert?: boolean;
+  ninjaOneError?: {
+    type: 'trackman_not_running' | 'pc_offline' | 'app_crashed';
+    detectedAt: string;
+    wasOperatorReset: boolean;
+    duringBooking: boolean;
+  };
+  criticalError?: boolean; // True when error during active booking
 }
 
 export interface LocationStatus {
@@ -68,20 +77,34 @@ function getMockStatus(): LocationStatus[] {
   
   return locations.map(location => ({
     location,
-    bays: Array.from({ length: location === 'Dartmouth' ? 4 : location === 'Bayers Lake' ? 4 : location === 'Stratford' ? 3 : 2 }, (_, i) => ({
-      location,
-      bayNumber: i + 1,
-      isOnline: Math.random() > 0.1, // 90% online
-      isOccupied: Math.random() > 0.4, // 60% occupied
-      bookingInfo: Math.random() > 0.4 ? {
-        customerName: `Customer ${Math.floor(Math.random() * 100)}`,
-        startTime: new Date(now.getTime() - Math.random() * 3600000).toISOString(),
-        endTime: new Date(now.getTime() + Math.random() * 3600000).toISOString()
-      } : undefined,
-      lastSeen: new Date(now.getTime() - Math.random() * 300000).toISOString(),
-      hasIssue: Math.random() > 0.9, // 10% have issues
-      issueType: Math.random() > 0.5 ? 'frozen' : 'black-screen'
-    })),
+    bays: Array.from({ length: location === 'Dartmouth' ? 4 : location === 'Bayers Lake' ? 4 : location === 'Stratford' ? 3 : 2 }, (_, i) => {
+      const isOccupied = Math.random() > 0.4;
+      const hasNinjaAlert = Math.random() > 0.85; // 15% chance
+      const hasIssue = hasNinjaAlert || Math.random() > 0.9;
+      
+      return {
+        location,
+        bayNumber: i + 1,
+        isOnline: Math.random() > 0.1, // 90% online
+        isOccupied,
+        bookingInfo: isOccupied ? {
+          customerName: `Customer ${Math.floor(Math.random() * 100)}`,
+          startTime: new Date(now.getTime() - Math.random() * 3600000).toISOString(),
+          endTime: new Date(now.getTime() + Math.random() * 3600000).toISOString()
+        } : undefined,
+        lastSeen: new Date(now.getTime() - Math.random() * 300000).toISOString(),
+        hasIssue,
+        issueType: Math.random() > 0.5 ? 'frozen' : 'black-screen',
+        hasNinjaOneAlert: hasNinjaAlert,
+        ninjaOneError: hasNinjaAlert ? {
+          type: Math.random() > 0.6 ? 'trackman_not_running' : Math.random() > 0.3 ? 'pc_offline' : 'app_crashed',
+          detectedAt: new Date(now.getTime() - Math.random() * 600000).toISOString(),
+          wasOperatorReset: false, // Not an operator reset
+          duringBooking: isOccupied // Error during active booking
+        } : undefined,
+        criticalError: hasNinjaAlert && isOccupied && !false // Critical when error + booking + not operator reset
+      };
+    }),
     systemStatus: {
       music: Math.random() > 0.05,
       tv: Math.random() > 0.05,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone, Users, Circle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone, Users, Circle, AlertCircle } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { unifiDoorsAPI } from '@/api/unifiDoors';
@@ -194,9 +194,21 @@ const RemoteActionsBar: React.FC = () => {
             <Zap className="w-4 h-4 text-[var(--accent)]" />
             <span className="text-sm font-medium">Remote Actions</span>
             {!isExpanded && (
-              <span className="text-xs text-[var(--text-muted)] ml-2 hidden sm:inline">
-                {locations.map(l => l.name).join(' • ')}
-              </span>
+              <>
+                <span className="text-xs text-[var(--text-muted)] ml-2 hidden sm:inline">
+                  {locations.map(l => l.name).join(' • ')}
+                </span>
+                {(() => {
+                  const criticalCount = locationStatuses.reduce((acc, loc) => 
+                    acc + loc.bays.filter(b => b.criticalError).length, 0
+                  );
+                  return criticalCount > 0 ? (
+                    <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full animate-pulse">
+                      {criticalCount} Critical {criticalCount === 1 ? 'Error' : 'Errors'}
+                    </span>
+                  ) : null;
+                })()}
+              </>
             )}
           </div>
           <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
@@ -230,9 +242,20 @@ const RemoteActionsBar: React.FC = () => {
                         const isOnline = bayStatus?.isOnline ?? true;
                         const isOccupied = bayStatus?.isOccupied ?? false;
                         const hasIssue = bayStatus?.hasIssue ?? false;
+                        const hasCriticalError = bayStatus?.criticalError ?? false;
+                        const ninjaOneError = bayStatus?.ninjaOneError;
                         
                         return (
-                          <div key={bay} className="flex items-center gap-1">
+                          <div 
+                            key={bay} 
+                            className={`flex items-center gap-1 p-1 rounded transition-all ${
+                              hasCriticalError ? 'ring-2 ring-red-500 bg-red-500/10' : ''
+                            }`}
+                            title={hasCriticalError && ninjaOneError ? 
+                              `CRITICAL: ${ninjaOneError.type.replace(/_/g, ' ')} detected during active booking` : 
+                              undefined
+                            }
+                          >
                             <span className="text-xs text-[var(--text-muted)] w-10">Bay {bay}:</span>
                             <button
                               onClick={() => {
@@ -259,16 +282,22 @@ const RemoteActionsBar: React.FC = () => {
                               <MonitorSmartphone className="w-3 h-3" />
                               Remote
                             </button>
-                            {/* Status indicator dot - subtle */}
+                            {/* Status indicator - enhanced for critical errors */}
                             <div className="flex items-center gap-1">
-                              {!isOnline && (
-                                <span title="Offline" className="w-2 h-2 bg-red-500 rounded-full" />
-                              )}
-                              {isOnline && hasIssue && (
-                                <span title={bayStatus?.issueType || 'Issue'} className="w-2 h-2 bg-yellow-500 rounded-full" />
-                              )}
-                              {isOccupied && (
-                                <span title={bayStatus?.bookingInfo?.customerName || 'Occupied'} className="w-2 h-2 bg-blue-500 rounded-full" />
+                              {hasCriticalError ? (
+                                <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />
+                              ) : (
+                                <>
+                                  {!isOnline && (
+                                    <span title="Offline" className="w-2 h-2 bg-red-500 rounded-full" />
+                                  )}
+                                  {isOnline && hasIssue && !hasCriticalError && (
+                                    <span title={bayStatus?.issueType || 'Issue'} className="w-2 h-2 bg-yellow-500 rounded-full" />
+                                  )}
+                                  {isOccupied && !hasCriticalError && (
+                                    <span title={bayStatus?.bookingInfo?.customerName || 'Occupied'} className="w-2 h-2 bg-blue-500 rounded-full" />
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
