@@ -741,26 +741,35 @@ const RequestForm: React.FC = () => {
                         Advanced
                       </button>
                     ) : (
-                      <div className="ml-2 flex items-center gap-2">
-                        <select
-                          value={routePreference}
-                          onChange={(e) => {
-                            setRoutePreference(e.target.value as RequestRoute);
-                            setShowAdvancedRouting(false);
-                          }}
-                          className="text-xs px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          <option value="Auto">Auto</option>
-                          <option value="Emergency">Emergency</option>
-                          <option value="Booking&Access">Booking</option>
-                          <option value="TechSupport">Tech</option>
-                          <option value="BrandTone">Brand</option>
-                        </select>
+                      <div className="ml-2 flex items-center gap-1">
+                        <span className="text-xs text-[var(--text-muted)]">Bot:</span>
+                        <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
+                          {routes.map((route, index) => (
+                            <button
+                              key={route}
+                              type="button"
+                              onClick={() => {
+                                setRoutePreference(route);
+                                setShowAdvancedRouting(false);
+                              }}
+                              className={`px-2 py-0.5 text-xs transition-all rounded-full ${
+                                routePreference === route
+                                  ? 'bg-[var(--accent)] text-white'
+                                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                              }`}
+                              disabled={isSubmitting || demoMode}
+                            >
+                              {route === 'Auto' ? 'Auto' : 
+                               route === 'Emergency' ? 'Emrg' :
+                               route === 'Booking&Access' ? 'Book' :
+                               route === 'TechSupport' ? 'Tech' : 'Tone'}
+                            </button>
+                          ))}
+                        </div>
                         <button
                           type="button"
                           onClick={() => setShowAdvancedRouting(false)}
-                          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                          className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                         >
                           ✕
                         </button>
@@ -840,20 +849,32 @@ const RequestForm: React.FC = () => {
           {/* Route Selector for Mobile - Below toggle */}
           {smartAssistEnabled && !isTicketMode && showAdvancedRouting && (
             <div className="sm:hidden mb-3">
-              <select
-                value={routePreference}
-                onChange={(e) => {
-                  setRoutePreference(e.target.value as RequestRoute);
-                  setShowAdvancedRouting(false);
-                }}
-                className="w-full text-sm px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-              >
-                <option value="Auto">Auto Select Bot</option>
-                <option value="Emergency">Emergency Bot</option>
-                <option value="Booking&Access">Booking Bot</option>
-                <option value="TechSupport">Tech Support Bot</option>
-                <option value="BrandTone">Brand Tone Bot</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--text-muted)]">Bot:</span>
+                <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5 flex-1 overflow-x-auto">
+                  {routes.map((route) => (
+                    <button
+                      key={route}
+                      type="button"
+                      onClick={() => {
+                        setRoutePreference(route);
+                        setShowAdvancedRouting(false);
+                      }}
+                      className={`px-3 py-1 text-xs transition-all rounded-full whitespace-nowrap ${
+                        routePreference === route
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'text-[var(--text-secondary)]'
+                      }`}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      {route === 'Auto' ? 'Auto' : 
+                       route === 'Emergency' ? 'Emergency' :
+                       route === 'Booking&Access' ? 'Booking' :
+                       route === 'TechSupport' ? 'Tech' : 'Brand'}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
