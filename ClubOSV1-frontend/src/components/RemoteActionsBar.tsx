@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
+import { unifiDoorsAPI } from '@/api/unifiDoors';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
@@ -288,7 +289,48 @@ const RemoteActionsBar: React.FC = () => {
                       Door Access
                     </p>
                     
-                    {/* Individual Door Controls */}
+                    {/* Dartmouth Office Door - UniFi API */}
+                    {location.name === 'Dartmouth' && (
+                      <div className="space-y-1.5 mb-2">
+                        <button
+                          onClick={async () => {
+                            const actionKey = `door-dartmouth-office-unlock`;
+                            if (executingActions.has(actionKey)) return;
+                            
+                            setExecutingActions(prev => new Set(prev).add(actionKey));
+                            try {
+                              await unifiDoorsAPI.unlock({
+                                location: 'dartmouth',
+                                doorKey: 'office',
+                                duration: 30
+                              });
+                              notify('success', 'Office door unlocked for 30 seconds');
+                            } catch (error: any) {
+                              notify('error', error.response?.data?.error || 'Failed to unlock door');
+                            } finally {
+                              setExecutingActions(prev => {
+                                const next = new Set(prev);
+                                next.delete(actionKey);
+                                return next;
+                              });
+                            }
+                          }}
+                          disabled={executingActions.has('door-dartmouth-office-unlock')}
+                          className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-blue-500 hover:text-white border border-blue-500/30 rounded transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {executingActions.has('door-dartmouth-office-unlock') ? (
+                            <Loader className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Unlock className="w-3 h-3" />
+                              Unlock Office Door
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Individual Door Controls - Legacy */}
                     <div className="space-y-1.5">
                       {doorStatuses[location.name]?.map((door) => (
                         <div key={door.doorId} className="flex items-center justify-between p-1.5 bg-[var(--bg-tertiary)] rounded text-xs">

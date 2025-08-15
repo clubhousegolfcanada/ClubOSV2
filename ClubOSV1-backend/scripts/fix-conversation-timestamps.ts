@@ -5,16 +5,25 @@
  * This resolves the issue where all conversations appear to have the same time
  */
 
-import { pool } from '../src/utils/db';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+import { db } from '../src/utils/database';
 import { logger } from '../src/utils/logger';
 
 async function fixConversationTimestamps() {
   console.log('=== Fixing Conversation Timestamps ===\n');
   
   try {
+    // Initialize database connection
+    await db.initialize();
+    
     // Get all conversations
-    const conversations = await pool.query(`
-      SELECT id, phone_number, messages, created_at, updated_at
+    const conversations = await db.query(`
+      SELECT id, phone_number, messages, created_at, updated_at, customer_name
       FROM openphone_conversations
       ORDER BY created_at DESC
     `);
@@ -67,14 +76,18 @@ async function fixConversationTimestamps() {
         const createdDiff = Math.abs(currentCreatedAt.getTime() - earliestTimestamp.getTime());
         const updatedDiff = Math.abs(currentUpdatedAt.getTime() - latestTimestamp.getTime());
         
-        if (createdDiff > 60000 || updatedDiff > 60000) {
-          console.log(`Updating conversation ${conv.phone_number}:`);
+        // Also check if updated_at is way ahead of the latest message (sync issue)
+        const updatedAheadOfLatest = currentUpdatedAt.getTime() - latestTimestamp.getTime();
+        
+        if (createdDiff > 60000 || updatedDiff > 60000 || updatedAheadOfLatest > 3600000) {
+          console.log(`Updating conversation ${conv.customer_name || conv.phone_number}:`);
           console.log(`  Old created_at: ${currentCreatedAt.toISOString()}`);
           console.log(`  New created_at: ${earliestTimestamp.toISOString()}`);
           console.log(`  Old updated_at: ${currentUpdatedAt.toISOString()}`);
-          console.log(`  New updated_at: ${latestTimestamp.toISOString()}\n`);
+          console.log(`  New updated_at: ${latestTimestamp.toISOString()}`);
+          console.log(`  Time difference: ${Math.round(updatedAheadOfLatest / 86400000)} days ahead\n`);
           
-          await pool.query(`
+          await db.query(`
             UPDATE openphone_conversations
             SET created_at = $1, updated_at = $2
             WHERE id = $3
@@ -96,7 +109,7 @@ async function fixConversationTimestamps() {
     
     // Verify the fix
     console.log('\n=== Verifying Fix ===');
-    const verification = await pool.query(`
+    const verification = await db.query(`
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as conversations,
@@ -121,11 +134,13 @@ async function fixConversationTimestamps() {
 
 // Run the fix
 fixConversationTimestamps()
-  .then(() => {
+  .then(async () => {
     console.log('\n✅ Timestamp fix complete');
+    await db.end();
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(async (error) => {
     console.error('❌ Fix failed:', error);
+    await db.end();
     process.exit(1);
   });

@@ -83,7 +83,7 @@ export class CustomerNameSyncService {
             // Update all conversations for this phone number
             const updateResult = await db.query(`
               UPDATE openphone_conversations
-              SET customer_name = $1, updated_at = CURRENT_TIMESTAMP
+              SET customer_name = $1
               WHERE phone_number = $2
                 AND (customer_name IS NULL 
                   OR customer_name = 'Unknown' 
@@ -132,7 +132,7 @@ export class CustomerNameSyncService {
       if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
         const updateResult = await db.query(`
           UPDATE openphone_conversations
-          SET customer_name = $1, updated_at = CURRENT_TIMESTAMP
+          SET customer_name = $1
           WHERE phone_number = $2
         `, [hubspotContact.name, phoneNumber]);
         

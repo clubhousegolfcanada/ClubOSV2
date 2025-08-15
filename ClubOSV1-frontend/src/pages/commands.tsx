@@ -906,7 +906,7 @@ export default function CommandsRedesigned() {
                                           duration: 30
                                         });
                                       }
-                                      toast.success('Main door unlocked for 30 seconds', { id: toastId });
+                                      toast.success(location === 'Dartmouth' ? 'Office door unlocked for 30 seconds' : 'Main door unlocked for 30 seconds', { id: toastId });
                                     } catch (error: any) {
                                       toast.error(error.response?.data?.message || error.response?.data?.error || 'Failed to unlock door', { id: toastId });
                                     } finally {
@@ -952,7 +952,7 @@ export default function CommandsRedesigned() {
                                       });
                                     }
                                   }}
-                                  disabled={executingDoorAction.has(`door-${location}-staff`)}
+                                  disabled={executingDoorAction.has(`door-${location}-staff`) || location === 'Dartmouth'}
                                   className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-primary)] hover:bg-blue-500 hover:text-white border border-blue-500/50 rounded text-xs transition-all disabled:opacity-50"
                                 >
                                   {executingDoorAction.has(`door-${location}-staff`) ? (
