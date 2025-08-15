@@ -635,13 +635,13 @@ const RequestForm: React.FC = () => {
 
           {/* Location and Mode Toggle Row */}
           <div className="flex items-center gap-3 mb-3">
-            {/* Location Input - Shorter width */}
+            {/* Location Input - Shorter width and height */}
             <div className="w-48">
               <input
                 id="locationInput"
                 {...register('location')}
                 type="text"
-                className="form-input"
+                className="form-input py-1.5 text-sm"
                 placeholder="Location (Optional)"
                 disabled={isSubmitting || demoMode}
               />
@@ -702,20 +702,47 @@ const RequestForm: React.FC = () => {
               </div>
               <span className="text-xs text-[var(--text-muted)]">Ticket</span>
               
-              {/* Advanced Button - Always visible but only active in AI mode */}
-              <button
-                type="button"
-                onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
-                className={`ml-2 text-xs transition-colors ${
-                  smartAssistEnabled && !isTicketMode 
-                    ? 'text-[var(--text-muted)] hover:text-[var(--accent)]' 
-                    : 'text-[var(--text-muted)]/30 cursor-default'
-                }`}
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-                disabled={isSubmitting || demoMode || !smartAssistEnabled || isTicketMode}
-              >
-                Advanced
-              </button>
+              {/* Advanced Button or Bot Options */}
+              {smartAssistEnabled && !isTicketMode && (
+                <>
+                  {!showAdvancedRouting ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedRouting(true)}
+                      className="ml-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      Advanced
+                    </button>
+                  ) : (
+                    <div className="ml-2 flex items-center gap-2">
+                      <select
+                        value={routePreference}
+                        onChange={(e) => {
+                          setRoutePreference(e.target.value as RequestRoute);
+                          setShowAdvancedRouting(false);
+                        }}
+                        className="text-xs px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <option value="Auto">Auto</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Booking&Access">Booking</option>
+                        <option value="TechSupport">Tech</option>
+                        <option value="BrandTone">Brand</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedRouting(false)}
+                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -784,46 +811,7 @@ const RequestForm: React.FC = () => {
             </>
           )}
 
-          {/* Route Selector - Collapsible Options */}
-          {!isTicketMode && smartAssistEnabled && showAdvancedRouting && (
-            <div className="mb-3">
-              <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
-                  <div className="text-xs text-[var(--text-muted)] mb-2">Select AI Bot:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {routes.map((route) => {
-                      const isDisabled = !canAccessRoute(user?.role, routeAccessMap[route]);
-                      
-                      return (
-                        <button
-                          key={route}
-                          type="button"
-                          onClick={() => {
-                            setRoutePreference(route);
-                            setShowAdvancedRouting(false);
-                            if (showResponse) {
-                              setShowResponse(false);
-                              resetRequestState();
-                            }
-                          }}
-                          disabled={isSubmitting || demoMode || isDisabled}
-                          className={`px-3 py-1 text-xs rounded-full transition-all ${
-                            routePreference === route 
-                              ? 'bg-[var(--accent)] text-white' 
-                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]'
-                          } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          {route.replace('&', ' & ')}
-                          {isDisabled && <Lock className="inline-block w-3 h-3 ml-1" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="text-xs text-[var(--text-muted)] mt-2">
-                    Current: <span className="text-[var(--accent)]">{routePreference}</span>
-                  </div>
-                </div>
-            </div>
-          )}
+          {/* Route Selector - Removed, now inline */}
 
           {/* Toggle Options - Removed, now in header */}
 
