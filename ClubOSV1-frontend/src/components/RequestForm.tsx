@@ -575,27 +575,77 @@ const RequestForm: React.FC = () => {
       
       {/* Main Form Card */}
       <div className="card group">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Mode Toggle - Compressed */}
-          <div className="flex items-center justify-end mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">Ticket Mode</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={isTicketMode}
-                  onChange={(e) => {
-                    setIsTicketMode(e.target.checked);
-                    if (e.target.checked) {
-                      setSmartAssistEnabled(false);
-                    }
-                  }}
-                  disabled={isSubmitting || demoMode}
-                />
-                <span className="toggle-slider"></span>
-              </label>
+        {/* Title and Controls Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
+          
+          {/* 3-Way Toggle and Advanced */}
+          <div className="flex items-center gap-3">
+            {/* 3-Way Toggle */}
+            <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSmartAssistEnabled(false);
+                  setIsTicketMode(false);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-all ${
+                  !smartAssistEnabled && !isTicketMode
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                disabled={isSubmitting || demoMode}
+              >
+                Human
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSmartAssistEnabled(true);
+                  setIsTicketMode(false);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-all ${
+                  smartAssistEnabled && !isTicketMode
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                disabled={isSubmitting || demoMode}
+              >
+                AI
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTicketMode(true);
+                  setSmartAssistEnabled(false);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-all ${
+                  isTicketMode
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                disabled={isSubmitting || demoMode}
+              >
+                Ticket
+              </button>
             </div>
+            
+            {/* Advanced Button - Only show in AI mode */}
+            {smartAssistEnabled && !isTicketMode && (
+              <button
+                type="button"
+                onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+                disabled={isSubmitting || demoMode}
+              >
+                Advanced
+              </button>
+            )}
           </div>
+        </div>
+        
+        <form onSubmit={handleSubmit(onSubmit)}>
 
           {/* Task Description - No label, just placeholder */}
           <div className="form-group">
@@ -725,22 +775,10 @@ const RequestForm: React.FC = () => {
             </>
           )}
 
-          {/* Route Selector - Simple Advanced Link */}
-          {!isTicketMode && smartAssistEnabled && (
+          {/* Route Selector - Collapsible Options */}
+          {!isTicketMode && smartAssistEnabled && showAdvancedRouting && (
             <div className="mb-3">
-              <button
-                type="button"
-                onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
-                className="text-xs hover:text-[var(--accent)] transition-colors"
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-                disabled={isSubmitting || demoMode}
-              >
-                Advanced
-              </button>
-              
-              {/* Collapsible Route Options */}
-              {showAdvancedRouting && (
-                <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+              <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
                   <div className="text-xs text-[var(--text-muted)] mb-2">Select AI Bot:</div>
                   <div className="flex flex-wrap gap-2">
                     {routes.map((route) => {
@@ -775,37 +813,10 @@ const RequestForm: React.FC = () => {
                     Current: <span className="text-[var(--accent)]">{routePreference}</span>
                   </div>
                 </div>
-              )}
             </div>
           )}
 
-          {/* Toggle Options */}
-          {!isTicketMode && (
-            <div className="form-group">
-              <div className="flex items-center justify-between">
-                <div className="toggle-item flex items-center gap-3">
-                  <span className="text-sm text-[var(--text-muted)]">Human</span>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={smartAssistEnabled}
-                      onChange={(e) => {
-                        setSmartAssistEnabled(e.target.checked);
-                        // Clear response when toggling
-                        if (showResponse) {
-                          setShowResponse(false);
-                          resetRequestState();
-                        }
-                      }}
-                      disabled={isSubmitting || demoMode}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                  <span className="text-sm text-[var(--text-muted)]">AI</span>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Toggle Options - Removed, now in header */}
 
           {/* Submit Buttons - Improved hierarchy */}
           <div className="flex items-center gap-3">
