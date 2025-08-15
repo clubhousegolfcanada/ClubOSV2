@@ -667,7 +667,7 @@ const RequestForm: React.FC = () => {
               {!isTicketMode && smartAssistEnabled && (
                 <select
                   value={routePreference}
-                  onChange={(e) => setRoutePreference(e.target.value)}
+                  onChange={(e) => setRoutePreference(e.target.value as RequestRoute)}
                   className="form-input w-36 text-sm"
                   disabled={isSubmitting || demoMode}
                 >
