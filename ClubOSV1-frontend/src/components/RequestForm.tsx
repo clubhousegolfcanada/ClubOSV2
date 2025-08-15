@@ -575,74 +575,9 @@ const RequestForm: React.FC = () => {
       
       {/* Main Form Card */}
       <div className="card group">
-        {/* Title and Controls Header */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Title Header */}
+        <div className="mb-4">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
-          
-          {/* 3-Way Toggle and Advanced */}
-          <div className="flex items-center gap-3">
-            {/* 3-Way Toggle */}
-            <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSmartAssistEnabled(false);
-                  setIsTicketMode(false);
-                }}
-                className={`px-3 py-1 text-xs rounded transition-all ${
-                  !smartAssistEnabled && !isTicketMode
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-                disabled={isSubmitting || demoMode}
-              >
-                Human
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSmartAssistEnabled(true);
-                  setIsTicketMode(false);
-                }}
-                className={`px-3 py-1 text-xs rounded transition-all ${
-                  smartAssistEnabled && !isTicketMode
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-                disabled={isSubmitting || demoMode}
-              >
-                AI
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsTicketMode(true);
-                  setSmartAssistEnabled(false);
-                }}
-                className={`px-3 py-1 text-xs rounded transition-all ${
-                  isTicketMode
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-                disabled={isSubmitting || demoMode}
-              >
-                Ticket
-              </button>
-            </div>
-            
-            {/* Advanced Button - Only show in AI mode */}
-            {smartAssistEnabled && !isTicketMode && (
-              <button
-                type="button"
-                onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-                disabled={isSubmitting || demoMode}
-              >
-                Advanced
-              </button>
-            )}
-          </div>
         </div>
         
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -698,16 +633,90 @@ const RequestForm: React.FC = () => {
             )}
           </div> */}
 
-          {/* Location Input */}
-          <div className="form-group">
-            <input
-              id="locationInput"
-              {...register('location')}
-              type="text"
-              className="form-input"
-              placeholder="Location (Optional)"
-              disabled={isSubmitting || demoMode}
-            />
+          {/* Location and Mode Toggle Row */}
+          <div className="flex items-center gap-3">
+            {/* Location Input */}
+            <div className="flex-1">
+              <input
+                id="locationInput"
+                {...register('location')}
+                type="text"
+                className="form-input"
+                placeholder="Location (Optional)"
+                disabled={isSubmitting || demoMode}
+              />
+            </div>
+            
+            {/* Mode Toggle - Classic Style */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-muted)]">Human</span>
+              <div className="relative inline-block w-32">
+                <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
+                  <div 
+                    className="absolute inset-y-0.5 transition-all duration-200 bg-[var(--accent)] rounded-full"
+                    style={{
+                      width: '33.33%',
+                      left: isTicketMode ? '66.66%' : smartAssistEnabled ? '33.33%' : '0%'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmartAssistEnabled(false);
+                      setIsTicketMode(false);
+                    }}
+                    className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                    disabled={isSubmitting || demoMode}
+                  >
+                    <span className={!smartAssistEnabled && !isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                      •
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmartAssistEnabled(true);
+                      setIsTicketMode(false);
+                    }}
+                    className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                    disabled={isSubmitting || demoMode}
+                  >
+                    <span className={smartAssistEnabled && !isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                      AI
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTicketMode(true);
+                      setSmartAssistEnabled(false);
+                    }}
+                    className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                    disabled={isSubmitting || demoMode}
+                  >
+                    <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                      •
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <span className="text-xs text-[var(--text-muted)]">Ticket</span>
+              
+              {/* Advanced Button - Always visible but only active in AI mode */}
+              <button
+                type="button"
+                onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
+                className={`ml-2 text-xs transition-colors ${
+                  smartAssistEnabled && !isTicketMode 
+                    ? 'text-[var(--text-muted)] hover:text-[var(--accent)]' 
+                    : 'text-[var(--text-muted)]/30 cursor-default'
+                }`}
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+                disabled={isSubmitting || demoMode || !smartAssistEnabled || isTicketMode}
+              >
+                Advanced
+              </button>
+            </div>
           </div>
 
           {/* Ticket Options */}
