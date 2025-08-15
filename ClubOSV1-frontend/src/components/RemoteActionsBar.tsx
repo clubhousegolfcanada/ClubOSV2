@@ -233,19 +233,7 @@ const RemoteActionsBar: React.FC = () => {
                         
                         return (
                           <div key={bay} className="flex items-center gap-1">
-                            <div className="flex items-center gap-1 w-16">
-                              <span title={isOnline ? (hasIssue ? 'Online with issue' : 'Online') : 'Offline'}>
-                                <Circle 
-                                  className={`w-2 h-2 ${isOnline ? (hasIssue ? 'text-yellow-500' : 'text-green-500') : 'text-red-500'} fill-current`}
-                                />
-                              </span>
-                              <span className="text-xs text-[var(--text-muted)]">B{bay}</span>
-                              {isOccupied && (
-                                <span title={bayStatus?.bookingInfo?.customerName || 'Occupied'}>
-                                  <Users className="w-3 h-3 text-blue-500" />
-                                </span>
-                              )}
-                            </div>
+                            <span className="text-xs text-[var(--text-muted)] w-10">Bay {bay}:</span>
                             <button
                               onClick={() => {
                                 executeAction('restart-trackman', location.name, String(bay));
@@ -271,12 +259,18 @@ const RemoteActionsBar: React.FC = () => {
                               <MonitorSmartphone className="w-3 h-3" />
                               Remote
                             </button>
-                            {/* Show issue type if present */}
-                            {hasIssue && bayStatus?.issueType && (
-                              <span className="text-[10px] text-yellow-500 ml-1" title={bayStatus.issueType}>
-                                {bayStatus.issueType === 'frozen' ? '❄️' : '⚫'}
-                              </span>
-                            )}
+                            {/* Status indicator dot - subtle */}
+                            <div className="flex items-center gap-1">
+                              {!isOnline && (
+                                <span title="Offline" className="w-2 h-2 bg-red-500 rounded-full" />
+                              )}
+                              {isOnline && hasIssue && (
+                                <span title={bayStatus?.issueType || 'Issue'} className="w-2 h-2 bg-yellow-500 rounded-full" />
+                              )}
+                              {isOccupied && (
+                                <span title={bayStatus?.bookingInfo?.customerName || 'Occupied'} className="w-2 h-2 bg-blue-500 rounded-full" />
+                              )}
+                            </div>
                           </div>
                         );
                       })}

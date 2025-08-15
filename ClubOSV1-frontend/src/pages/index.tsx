@@ -254,9 +254,6 @@ export default function Home() {
               {/* Mobile-only recent customers */}
               <RecentCustomers />
               
-              {/* Live Occupancy Map */}
-              <OccupancyMap compact />
-              
               {/* Desktop-only enhancements */}
               <MiniInsightsPanel />
             </div>
@@ -264,6 +261,7 @@ export default function Home() {
             {/* Sidebar - Contains Quick Stats and External Tools - 4 columns */}
             <div className="lg:col-span-4">
               <DatabaseExternalTools quickStats={quickStats} />
+              <OccupancyMap compact />
               <SuggestedActions />
             </div>
           </div>

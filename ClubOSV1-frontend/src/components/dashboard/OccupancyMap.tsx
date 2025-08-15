@@ -72,15 +72,12 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
   if (compact) {
     // Compact view for dashboard
     return (
-      <div className="card p-4">
+      <div className="card p-4 mt-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <Activity className="w-4 h-4 text-[var(--accent)]" />
-            Live Occupancy
+            Bay Status
           </h3>
-          <span className="text-[10px] text-[var(--text-muted)]">
-            Updated {lastUpdate.toLocaleTimeString()}
-          </span>
         </div>
         
         <div className="space-y-2">
@@ -93,13 +90,13 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
                   <span className="text-xs font-medium">{location.location}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3 text-blue-500" />
-                    <span className="text-xs">{stats.occupiedBays}/{stats.totalBays}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full ${stats.occupancyRate > 75 ? 'bg-red-500' : stats.occupancyRate > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} />
-                    <span className="text-xs">{stats.occupancyRate}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {stats.occupiedBays}/{stats.totalBays}
+                    </span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${stats.occupancyRate > 75 ? 'bg-red-500/20 text-red-500' : stats.occupancyRate > 50 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-green-500/20 text-green-500'}`}>
+                      {stats.occupancyRate}%
+                    </span>
                   </div>
                   {stats.issuesBays > 0 && (
                     <span title={`${stats.issuesBays} bay(s) with issues`}>
