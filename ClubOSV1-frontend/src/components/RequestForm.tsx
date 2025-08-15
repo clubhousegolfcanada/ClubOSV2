@@ -701,7 +701,6 @@ const RequestForm: React.FC = () => {
                 <p className="error-message">{errors.requestDescription.message}</p>
               )}
             </div>
-          </div>
           
           {/* Location and Route - Below textarea */}
           <div className="grid grid-cols-2 gap-3">
