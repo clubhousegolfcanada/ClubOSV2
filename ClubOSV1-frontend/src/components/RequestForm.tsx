@@ -634,9 +634,9 @@ const RequestForm: React.FC = () => {
           </div> */}
 
           {/* Location and Mode Toggle Row */}
-          <div className="flex items-center gap-3">
-            {/* Location Input */}
-            <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
+            {/* Location Input - Shorter width */}
+            <div className="w-48">
               <input
                 id="locationInput"
                 {...register('location')}
@@ -648,7 +648,7 @@ const RequestForm: React.FC = () => {
             </div>
             
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
@@ -831,7 +831,7 @@ const RequestForm: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className={`btn btn-primary flex items-center justify-center gap-2 ${!smartAssistEnabled ? 'slack-mode' : ''}`}
+              className={`btn btn-primary flex-1 flex items-center justify-center gap-2 ${!smartAssistEnabled ? 'slack-mode' : ''}`}
               disabled={isProcessing || demoMode}
               onClick={() => isMounted && console.log('Button clicked!', isProcessing)}
               style={{
@@ -851,7 +851,7 @@ const RequestForm: React.FC = () => {
               )}
               {isProcessing ? (
                 <>
-                  {smartAssistEnabled ? 'Processing...' : 'Sending to Slack...'}
+                  {smartAssistEnabled ? 'Processing...' : 'Sending...'}
                   <div style={{
                     position: 'absolute',
                     top: 0,
@@ -864,7 +864,7 @@ const RequestForm: React.FC = () => {
                   }} />
                 </>
               ) : (
-                isTicketMode ? 'Create Ticket' : (smartAssistEnabled ? 'Process Request' : 'Send to Slack')
+                isTicketMode ? 'Create' : (smartAssistEnabled ? 'Process' : 'Send')
               )}
             </button>
             <button
