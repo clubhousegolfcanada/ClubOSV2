@@ -575,9 +575,33 @@ const RequestForm: React.FC = () => {
       
       {/* Main Form Card */}
       <div className="card group">
-        {/* Title Header */}
-        <div className="mb-4">
+        {/* Title Header with Advanced button on mobile */}
+        <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
+          {/* Advanced button for mobile - top right */}
+          {smartAssistEnabled && !isTicketMode && (
+            <div className="sm:hidden">
+              {!showAdvancedRouting ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedRouting(true)}
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                  disabled={isSubmitting || demoMode}
+                >
+                  Advanced
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedRouting(false)}
+                  className="text-xs text-[var(--text-primary)]"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
         </div>
         
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -633,22 +657,22 @@ const RequestForm: React.FC = () => {
             )}
           </div> */}
 
-          {/* Location and Mode Toggle Row */}
-          <div className="flex items-center gap-3 mb-3">
-            {/* Location Input - Shorter width and height */}
-            <div className="w-48">
+          {/* Location and Mode Toggle Row - Responsive */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-3">
+            {/* Location Input - Full width on mobile */}
+            <div className="w-full sm:w-48">
               <input
                 id="locationInput"
                 {...register('location')}
                 type="text"
-                className="form-input py-1.5 text-sm"
+                className="form-input py-1.5 text-sm w-full"
                 placeholder="Location (Optional)"
                 disabled={isSubmitting || demoMode}
               />
             </div>
             
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
@@ -702,47 +726,49 @@ const RequestForm: React.FC = () => {
               </div>
               <span className="text-xs text-[var(--text-muted)]">Ticket</span>
               
-              {/* Advanced Button or Bot Options */}
-              {smartAssistEnabled && !isTicketMode && (
-                <>
-                  {!showAdvancedRouting ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedRouting(true)}
-                      className="ml-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                      disabled={isSubmitting || demoMode}
-                    >
-                      Advanced
-                    </button>
-                  ) : (
-                    <div className="ml-2 flex items-center gap-2">
-                      <select
-                        value={routePreference}
-                        onChange={(e) => {
-                          setRoutePreference(e.target.value as RequestRoute);
-                          setShowAdvancedRouting(false);
-                        }}
-                        className="text-xs px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-                        style={{ fontFamily: 'Poppins, sans-serif' }}
-                      >
-                        <option value="Auto">Auto</option>
-                        <option value="Emergency">Emergency</option>
-                        <option value="Booking&Access">Booking</option>
-                        <option value="TechSupport">Tech</option>
-                        <option value="BrandTone">Brand</option>
-                      </select>
+              {/* Advanced Button or Bot Options - Desktop only */}
+              <div className="hidden sm:block">
+                {smartAssistEnabled && !isTicketMode && (
+                  <>
+                    {!showAdvancedRouting ? (
                       <button
                         type="button"
-                        onClick={() => setShowAdvancedRouting(false)}
-                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        onClick={() => setShowAdvancedRouting(true)}
+                        className="ml-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                        disabled={isSubmitting || demoMode}
                       >
-                        ✕
+                        Advanced
                       </button>
-                    </div>
-                  )}
-                </>
-              )}
+                    ) : (
+                      <div className="ml-2 flex items-center gap-2">
+                        <select
+                          value={routePreference}
+                          onChange={(e) => {
+                            setRoutePreference(e.target.value as RequestRoute);
+                            setShowAdvancedRouting(false);
+                          }}
+                          className="text-xs px-2 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          <option value="Auto">Auto</option>
+                          <option value="Emergency">Emergency</option>
+                          <option value="Booking&Access">Booking</option>
+                          <option value="TechSupport">Tech</option>
+                          <option value="BrandTone">Brand</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvancedRouting(false)}
+                          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -811,7 +837,25 @@ const RequestForm: React.FC = () => {
             </>
           )}
 
-          {/* Route Selector - Removed, now inline */}
+          {/* Route Selector for Mobile - Below toggle */}
+          {smartAssistEnabled && !isTicketMode && showAdvancedRouting && (
+            <div className="sm:hidden mb-3">
+              <select
+                value={routePreference}
+                onChange={(e) => {
+                  setRoutePreference(e.target.value as RequestRoute);
+                  setShowAdvancedRouting(false);
+                }}
+                className="w-full text-sm px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+              >
+                <option value="Auto">Auto Select Bot</option>
+                <option value="Emergency">Emergency Bot</option>
+                <option value="Booking&Access">Booking Bot</option>
+                <option value="TechSupport">Tech Support Bot</option>
+                <option value="BrandTone">Brand Tone Bot</option>
+              </select>
+            </div>
+          )}
 
           {/* Toggle Options - Removed, now in header */}
 

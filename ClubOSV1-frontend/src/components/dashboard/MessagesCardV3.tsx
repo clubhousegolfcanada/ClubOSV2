@@ -230,13 +230,13 @@ export default function MessagesCardV3() {
   return (
     <div className="card" style={{ fontFamily: 'Poppins, -apple-system, sans-serif' }}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900" style={{ fontWeight: 600 }}>
+      <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900" style={{ fontWeight: 600 }}>
           Messages
         </h3>
         <button
           onClick={() => router.push('/messages')}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-xs text-gray-500 hover:text-gray-700"
           style={{ fontWeight: 400 }}
         >
           View all
@@ -267,42 +267,42 @@ export default function MessagesCardV3() {
                 {/* Message Row */}
                 <div
                   onClick={() => handleExpand(conv.id)}
-                  className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="p-3 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 border border-gray-300 rounded-lg">
-                      <span className="text-xs font-medium text-gray-600">
+                  <div className="flex items-start gap-2">
+                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 border border-gray-300 rounded-lg">
+                      <span className="text-xs font-medium text-gray-600" style={{ fontSize: '10px' }}>
                         {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 flex items-center gap-2" style={{ fontWeight: 500 }}>
+                          <p className="text-xs font-medium text-gray-900 flex items-center gap-2" style={{ fontWeight: 500 }}>
                             {conv.customerName}
                             {conv.lastMessageDirection === 'outbound' && (
-                              <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded" style={{ fontWeight: 400 }}>
+                              <span className="text-xs px-1 py-0.5 bg-blue-100 text-blue-700 rounded" style={{ fontWeight: 400, fontSize: '10px' }}>
                                 You
                               </span>
                             )}
                           </p>
-                          <p className="text-sm text-gray-600 mt-0.5 break-words" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                          <p className="text-xs text-gray-600 mt-0.5 break-words line-clamp-2" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                             {conv.lastMessageDirection === 'outbound' && '↗ '}
                             {conv.lastMessage}
                           </p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500 flex items-center gap-0.5" style={{ fontSize: '10px' }}>
+                              <Clock className="w-2.5 h-2.5" />
                               {formatTime(conv.timestamp)}
                             </span>
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
+                            <span className="text-xs text-gray-500 flex items-center gap-0.5" style={{ fontSize: '10px' }}>
+                              <Phone className="w-2.5 h-2.5" />
                               {conv.phoneNumber}
                             </span>
                           </div>
                         </div>
                         {conv.unreadCount > 0 && (
-                          <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full" style={{ fontSize: '10px' }}>
                             {conv.unreadCount}
                           </span>
                         )}
