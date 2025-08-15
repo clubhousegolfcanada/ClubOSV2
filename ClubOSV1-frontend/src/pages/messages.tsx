@@ -669,17 +669,70 @@ export default function Messages() {
       <div className={`min-h-screen bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.className}`}>
         {/* Desktop Layout - Standard ClubOS design */}
         <div className="hidden md:block">
-          <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-            {/* Header Section */}
-            <div className="mb-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
-                    Messages
-                  </h1>
-                  <p className="text-[var(--text-secondary)] text-sm font-light">
-                    Send and receive SMS messages with customers via OpenPhone
-                  </p>
+          <div className="container mx-auto px-3 sm:px-4 py-3">
+            {/* Header Section - More compact */}
+            <div className="mb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                      Messages
+                    </h1>
+                    <p className="text-[var(--text-secondary)] text-xs font-light">
+                      SMS via OpenPhone
+                    </p>
+                  </div>
+                  {/* Quick Actions Bar - Inline with title */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => router.push('/tickets?create=true')}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs"
+                      title="Create new ticket"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Ticket</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs"
+                      title="Check booking site"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Bookings</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        // Check if on mobile device
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                        
+                        if (isMobile) {
+                          // On mobile, try to open the Splashtop app
+                          // Using a hidden iframe method which is more reliable
+                          // Use simple URL scheme for all mobile platforms
+                          // st-business:// is the correct scheme for Splashtop Business app
+                          window.location.href = 'st-business://com.splashtop.business';
+                          
+                          // Fallback: After a short delay, if user is still here, open web version
+                          setTimeout(() => {
+                            // Check if page is still visible (app didn't open)
+                            if (!document.hidden) {
+                              window.location.href = 'https://my.splashtop.com/computers';
+                            }
+                          }, 2500);
+                        } else {
+                          // On desktop, open web interface
+                          window.open('https://my.splashtop.com/computers', '_blank');
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs"
+                      title="Remote control simulators"
+                    >
+                      <Monitor className="w-3.5 h-3.5" />
+                      <span>Control</span>
+                    </button>
+                  </div>
                 </div>
                 
                 {/* Push Notification Toggle */}
@@ -718,94 +771,42 @@ export default function Messages() {
                   ) : isSubscribed ? (
                     <button
                       onClick={unsubscribe}
-                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
                       title="Disable push notifications"
                     >
-                      <Bell className="w-4 h-4" />
-                      <span className="text-sm">Notifications On</span>
+                      <Bell className="w-3.5 h-3.5" />
+                      <span className="text-xs">Notifications</span>
                     </button>
                   ) : (
                     <button
                       onClick={subscribe}
-                      className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
                       title="Enable push notifications"
                     >
-                      <BellOff className="w-4 h-4" />
-                      <span className="text-sm">Notifications Off</span>
+                      <BellOff className="w-3.5 h-3.5" />
+                      <span className="text-xs">Enable</span>
                     </button>
                   )}
                 </div>
               </div>
-              
-              {/* Quick Actions Bar - Desktop */}
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => router.push('/tickets?create=true')}
-                  className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
-                  title="Create new ticket"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Create Ticket</span>
-                </button>
-                
-                <button
-                  onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
-                  className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
-                  title="Check booking site"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Bookings</span>
-                </button>
-                
-                <button
-                  onClick={() => {
-                    // Check if on mobile device
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                    
-                    if (isMobile) {
-                      // On mobile, try to open the Splashtop app
-                      // Using a hidden iframe method which is more reliable
-                      // Use simple URL scheme for all mobile platforms
-                      // st-business:// is the correct scheme for Splashtop Business app
-                      window.location.href = 'st-business://com.splashtop.business';
-                      
-                      // Fallback: After a short delay, if user is still here, open web version
-                      setTimeout(() => {
-                        // Check if page is still visible (app didn't open)
-                        if (!document.hidden) {
-                          window.location.href = 'https://my.splashtop.com/computers';
-                        }
-                      }, 2500);
-                    } else {
-                      // On desktop, open web interface
-                      window.open('https://my.splashtop.com/computers', '_blank');
-                    }
-                  }}
-                  className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-sm"
-                  title="Remote control simulators"
-                >
-                  <Monitor className="w-4 h-4" />
-                  <span>Control</span>
-                </button>
-              </div>
             </div>
 
-            {/* Messages Interface */}
+            {/* Messages Interface - Better height calculation */}
             <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
-              <div className={`grid grid-cols-3 transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-290px)]' : 'h-[calc(100vh-240px)]'}`}>
+              <div className={`grid grid-cols-3 transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-200px)]' : 'h-[calc(100vh-150px)]'}`}>
                 
                 {/* Conversations List */}
                 <div className="border-r border-[var(--border-secondary)] overflow-y-auto">
-                  {/* Search */}
-                  <div className="p-4 border-b border-[var(--border-secondary)]">
+                  {/* Search - More compact */}
+                  <div className="p-3 border-b border-[var(--border-secondary)]">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
                       <input
                         type="text"
-                        placeholder="Search by name or number..."
+                        placeholder="Search..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-sm"
+                        className="w-full pl-8 pr-3 py-1.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-xs"
                       />
                     </div>
                   </div>
@@ -825,46 +826,38 @@ export default function Messages() {
                         <div
                           key={conv.id}
                           onClick={() => selectConversation(conv)}
-                          className={`p-4 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out transform hover:translate-x-1 ${
+                          className={`p-2.5 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out transform hover:translate-x-0.5 ${
                             selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
                           }`}
                         >
-                          <div className="flex items-start justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <div className="px-2 py-0.5 border border-gray-300 rounded text-xs font-medium text-gray-600">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="px-1.5 py-0.5 border border-gray-300 rounded text-[10px] font-medium text-gray-600 flex-shrink-0">
                                 {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
                               </div>
-                              <span className="font-medium text-sm">
+                              <span className="font-medium text-xs truncate">
                                 {conv.customer_name || 'Unknown'}
                               </span>
-                              {conv._debug_invalid_phone && (
-                                <span className="text-xs text-red-500">[Invalid]</span>
-                              )}
                             </div>
                             {conv.unread_count > 0 && (
-                              <span className="bg-[var(--accent)] text-white text-xs px-2 py-0.5 rounded-full">
+                              <span className="bg-[var(--accent)] text-white text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1">
                                 {conv.unread_count}
                               </span>
                             )}
                           </div>
-                          {conv.phone_number && (
-                            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
-                              <Phone className="w-3 h-3" />
-                              <span>{conv.phone_number}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-1">
+                            <Phone className="w-2.5 h-2.5" />
+                            <span>{conv.phone_number}</span>
+                            <span className="ml-auto">
+                              {!isClient ? '•' : conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }).replace(' ago', '') : '•'}
+                            </span>
+                          </div>
                           {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
-                            <p className="text-xs text-[var(--text-secondary)] truncate">
-                              {conv.lastMessage.direction === 'outbound' && 'You: '}
+                            <p className="text-[11px] text-[var(--text-secondary)] truncate mt-1">
+                              {conv.lastMessage.direction === 'outbound' && '↗ '}
                               {conv.lastMessage.text || conv.lastMessage.body}
                             </p>
                           )}
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                            <span className="text-xs text-[var(--text-muted)]">
-                              {!isClient ? 'Recently' : conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : 'Recently'}
-                            </span>
-                          </div>
                         </div>
                       ))
                     )}
@@ -875,21 +868,21 @@ export default function Messages() {
                 <div className="col-span-2 flex flex-col h-full overflow-hidden">
                   {selectedConversation ? (
                     <>
-                      {/* Conversation Header */}
-                      <div className="p-4 border-b border-[var(--border-secondary)]">
+                      {/* Conversation Header - More compact */}
+                      <div className="p-3 border-b border-[var(--border-secondary)]">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="px-3 py-1.5 border border-gray-300 rounded-lg">
-                              <span className="text-sm font-medium text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <div className="px-2 py-1 border border-gray-300 rounded-lg">
+                              <span className="text-xs font-medium text-gray-600">
                                 {selectedConversation.bay ? `Bay ${selectedConversation.bay}` : selectedConversation.location ? selectedConversation.location : 'General'}
                               </span>
                             </div>
                             <div>
-                              <h3 className="font-semibold">{selectedConversation.customer_name || 'Unknown'}</h3>
-                              <p className="text-sm text-[var(--text-muted)]">
+                              <h3 className="font-semibold text-sm">{selectedConversation.customer_name || 'Unknown'}</h3>
+                              <p className="text-xs text-[var(--text-muted)]">
                                 {selectedConversation.phone_number || 'No phone number'}
                                 {selectedConversation.total_conversations && selectedConversation.total_conversations > 1 && (
-                                  <span className="ml-2 text-xs bg-[var(--bg-tertiary)] px-2 py-0.5 rounded-full">
+                                  <span className="ml-2 text-[10px] bg-[var(--bg-tertiary)] px-1.5 py-0.5 rounded-full">
                                     {selectedConversation.total_conversations} conversations
                                   </span>
                                 )}
