@@ -91,15 +91,24 @@ class UnifiCloudService {
 
   constructor() {
     // Check for API key first (preferred method)
-    const apiKey = process.env.UNIFI_API_KEY;
+    const apiKey = process.env.UNIFI_ACCESS_API_TOKEN || process.env.UNIFI_API_KEY;
     this.consoleId = process.env.UNIFI_CONSOLE_ID || '0CEA1424DB29000000000861C4610000000008D3E6AB000000006703125C:145557302';
     
     if (apiKey) {
-      // API key authentication (UniFi Access local API)
-      // Try to use controller IP if provided, otherwise use default
-      const controllerIp = process.env.UNIFI_CONTROLLER_IP || '192.168.1.1';
-      const apiPort = process.env.UNIFI_API_PORT || '12445';
-      this.baseUrl = `https://${controllerIp}:${apiPort}`;
+      // Check if using remote access or local connection
+      const useRemoteAccess = process.env.UNIFI_USE_REMOTE_ACCESS === 'true';
+      
+      if (useRemoteAccess) {
+        // Use UniFi cloud proxy for remote access
+        // This works when Remote Access is enabled in UniFi Dashboard > Settings > System > Remote Access
+        this.baseUrl = `https://unifi.ui.com/proxy/consoles/${this.consoleId}/access`;
+      } else {
+        // Direct local connection
+        const controllerIp = process.env.UNIFI_CONTROLLER_IP || '192.168.1.1';
+        const apiPort = process.env.UNIFI_API_PORT || '12445';
+        this.baseUrl = `https://${controllerIp}:${apiPort}`;
+      }
+      
       this.initializeWithApiKey(apiKey);
     } else {
       // Check if using cloud proxy or direct connection
