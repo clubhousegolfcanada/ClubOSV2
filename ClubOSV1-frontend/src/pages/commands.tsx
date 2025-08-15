@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
+import { unifiDoorsAPI } from '@/api/unifiDoors';
 import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
 
 interface Command {
@@ -876,6 +877,9 @@ export default function CommandsRedesigned() {
                                 <div className="flex items-center gap-1.5">
                                   <DoorOpen className="w-3.5 h-3.5 text-blue-500" />
                                   <span className="text-xs font-medium text-blue-500">Door Access</span>
+                                  {location === 'Dartmouth' && (
+                                    <span className="text-[10px] text-green-500 bg-green-500/20 px-1.5 py-0.5 rounded">Active</span>
+                                  )}
                                 </div>
                               </div>
                               <div className="grid grid-cols-3 gap-1.5">
@@ -888,14 +892,23 @@ export default function CommandsRedesigned() {
                                     const toastId = toast.loading('Unlocking main door...');
                                     
                                     try {
-                                      await doorAccessAPI.unlock({
-                                        location,
-                                        doorKey: 'main-entrance',
-                                        duration: 30
-                                      });
+                                      // Use new UniFi API for Dartmouth, fallback to old API for others
+                                      if (location === 'Dartmouth') {
+                                        await unifiDoorsAPI.unlock({
+                                          location: 'dartmouth',
+                                          doorKey: 'office',
+                                          duration: 30
+                                        });
+                                      } else {
+                                        await doorAccessAPI.unlock({
+                                          location,
+                                          doorKey: 'main-entrance',
+                                          duration: 30
+                                        });
+                                      }
                                       toast.success('Main door unlocked for 30 seconds', { id: toastId });
                                     } catch (error: any) {
-                                      toast.error(error.response?.data?.message || 'Failed to unlock door', { id: toastId });
+                                      toast.error(error.response?.data?.message || error.response?.data?.error || 'Failed to unlock door', { id: toastId });
                                     } finally {
                                       setExecutingDoorAction(prev => {
                                         const next = new Set(prev);
@@ -904,7 +917,7 @@ export default function CommandsRedesigned() {
                                       });
                                     }
                                   }}
-                                  disabled={executingDoorAction.has(`door-${location}-main`)}
+                                  disabled={executingDoorAction.has(`door-${location}-main`) || (location !== 'Dartmouth')}
                                   className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-primary)] hover:bg-blue-500 hover:text-white border border-blue-500/50 rounded text-xs transition-all disabled:opacity-50"
                                 >
                                   {executingDoorAction.has(`door-${location}-main`) ? (
@@ -912,7 +925,7 @@ export default function CommandsRedesigned() {
                                   ) : (
                                     <Unlock className="w-3 h-3" />
                                   )}
-                                  <span className="text-[10px]">Main</span>
+                                  <span className="text-[10px]">{location === 'Dartmouth' ? 'Office' : 'Main'}</span>
                                 </button>
                                 <button
                                   onClick={async () => {
