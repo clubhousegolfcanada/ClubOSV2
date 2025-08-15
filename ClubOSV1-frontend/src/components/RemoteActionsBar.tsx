@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone, Users, Circle } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { unifiDoorsAPI } from '@/api/unifiDoors';
+import { systemStatusAPI, LocationStatus } from '@/api/systemStatus';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
@@ -20,6 +21,7 @@ const RemoteActionsBar: React.FC = () => {
   const [executingActions, setExecutingActions] = useState<Set<string>>(new Set());
   const [doorStatuses, setDoorStatuses] = useState<Record<string, DoorStatus[]>>({});
   const [loadingDoors, setLoadingDoors] = useState<Set<string>>(new Set());
+  const [locationStatuses, setLocationStatuses] = useState<LocationStatus[]>([]);
   const { notify } = useNotifications();
   const { user } = useAuthState();
   
@@ -31,14 +33,18 @@ const RemoteActionsBar: React.FC = () => {
     }
   }, []);
 
-  // Load door statuses when expanded
+  // Load door statuses and system status when expanded
   useEffect(() => {
     if (isExpanded) {
+      // Load initial data
+      loadSystemStatuses();
       locations.forEach(location => {
         loadDoorStatus(location.name);
       });
+      
       // Refresh every 30 seconds
       const interval = setInterval(() => {
+        loadSystemStatuses();
         locations.forEach(location => {
           loadDoorStatus(location.name);
         });
@@ -46,6 +52,16 @@ const RemoteActionsBar: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isExpanded]);
+  
+  // Load system statuses
+  const loadSystemStatuses = async () => {
+    try {
+      const statuses = await systemStatusAPI.getAllStatus();
+      setLocationStatuses(statuses);
+    } catch (error) {
+      console.error('Failed to load system statuses:', error);
+    }
+  };
 
   // Save state to localStorage
   const toggleExpanded = () => {
@@ -209,9 +225,24 @@ const RemoteActionsBar: React.FC = () => {
                     <div className="space-y-1.5">
                       {location.bays.map((bay) => {
                         const isExecuting = executingActions.has(`${location.name}-restart-trackman-${bay}`);
+                        const locationStatus = locationStatuses.find(ls => ls.location === location.name);
+                        const bayStatus = locationStatus?.bays.find(b => b.bayNumber === bay);
+                        const isOnline = bayStatus?.isOnline ?? true;
+                        const isOccupied = bayStatus?.isOccupied ?? false;
+                        const hasIssue = bayStatus?.hasIssue ?? false;
+                        
                         return (
                           <div key={bay} className="flex items-center gap-1">
-                            <span className="text-xs text-[var(--text-muted)] w-10">B{bay}:</span>
+                            <div className="flex items-center gap-1 w-16">
+                              <Circle 
+                                className={`w-2 h-2 ${isOnline ? (hasIssue ? 'text-yellow-500' : 'text-green-500') : 'text-red-500'} fill-current`}
+                                title={isOnline ? (hasIssue ? 'Online with issue' : 'Online') : 'Offline'}
+                              />
+                              <span className="text-xs text-[var(--text-muted)]">B{bay}</span>
+                              {isOccupied && (
+                                <Users className="w-3 h-3 text-blue-500" title={bayStatus?.bookingInfo?.customerName || 'Occupied'} />
+                              )}
+                            </div>
                             <button
                               onClick={() => {
                                 executeAction('restart-trackman', location.name, String(bay));
@@ -237,6 +268,12 @@ const RemoteActionsBar: React.FC = () => {
                               <MonitorSmartphone className="w-3 h-3" />
                               Remote
                             </button>
+                            {/* Show issue type if present */}
+                            {hasIssue && bayStatus?.issueType && (
+                              <span className="text-[10px] text-yellow-500 ml-1" title={bayStatus.issueType}>
+                                {bayStatus.issueType === 'frozen' ? '❄️' : '⚫'}
+                              </span>
+                            )}
                           </div>
                         );
                       })}

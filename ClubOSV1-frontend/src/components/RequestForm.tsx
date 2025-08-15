@@ -4,7 +4,7 @@ import { useRequestSubmission, useNotifications, useDemoMode } from '@/state/hoo
 import { useSettingsState, useAuthState } from '@/state/useStore';
 import { canAccessRoute, getRestrictedTooltip } from '@/utils/roleUtils';
 import type { UserRequest, RequestRoute } from '@/types/request';
-import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle } from 'lucide-react';
+import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle, Sparkles, X } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { ResponseDisplay } from './ResponseDisplay';
@@ -73,6 +73,8 @@ const RequestForm: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [conversationExpanded, setConversationExpanded] = useState(true);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { preferences } = useSettingsState();
   const { user } = useAuthState();
@@ -98,6 +100,18 @@ const RequestForm: React.FC = () => {
 
   const requestDescription = watch('requestDescription');
   const toneConversion = watch('toneConversion');
+  
+  // Common request patterns for suggestions
+  const commonPatterns = [
+    { pattern: /frozen|stuck|not responding/i, suggestion: 'TrackMan in Bay [X] is frozen and needs to be restarted', location: 'Bay [X]', route: 'TechSupport' },
+    { pattern: /black screen|no display/i, suggestion: 'The screen in Bay [X] is black/not displaying anything', location: 'Bay [X]', route: 'TechSupport' },
+    { pattern: /cancel|cancellation/i, suggestion: 'Customer needs to cancel their booking for [date/time]', location: '', route: 'Booking&Access' },
+    { pattern: /book|booking|reserve/i, suggestion: 'Customer wants to book Bay [X] for [date/time]', location: 'Bay [X]', route: 'Booking&Access' },
+    { pattern: /power|outage|electricity/i, suggestion: 'Power outage affecting [location]', location: '[Location]', route: 'Emergency' },
+    { pattern: /unlock|door|access/i, suggestion: 'Need to unlock door at [location]', location: '[Location]', route: 'Emergency' },
+    { pattern: /music|sound|audio/i, suggestion: 'Music/audio system issue in [location]', location: '[Location]', route: 'TechSupport' },
+    { pattern: /member|membership/i, suggestion: 'Customer inquiry about membership benefits', location: '', route: 'BrandTone' }
+  ];
 
   const routes: RequestRoute[] = ['Auto', 'Emergency', 'Booking&Access', 'TechSupport', 'BrandTone'];
   
@@ -150,6 +164,42 @@ const RequestForm: React.FC = () => {
       setSmartAssistEnabled(true);
     }
   }, [demoMode, setValue]);
+  
+  // Detect patterns and show suggestions
+  useEffect(() => {
+    if (!requestDescription || requestDescription.length < 5) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    const matchedPatterns = commonPatterns.filter(p => p.pattern.test(requestDescription));
+    if (matchedPatterns.length > 0) {
+      const uniqueSuggestions = [...new Set(matchedPatterns.map(p => p.suggestion))].slice(0, 3);
+      setSuggestions(uniqueSuggestions);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [requestDescription]);
+  
+  // Apply suggestion
+  const applySuggestion = (suggestion: string) => {
+    setValue('requestDescription', suggestion);
+    
+    // Find matching pattern to set location and route
+    const match = commonPatterns.find(p => p.suggestion === suggestion);
+    if (match) {
+      if (match.location && !match.location.includes('[')) {
+        setValue('location', match.location);
+      }
+      setRoutePreference(match.route as RequestRoute);
+    }
+    
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
 
   // Handle error notifications
   useEffect(() => {
@@ -597,24 +647,109 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Task Description - No label, just placeholder */}
-          <div className="form-group">
-            <textarea
-              id="taskInput"
-              {...register('requestDescription', {
-                required: 'Please enter a request description',
-                minLength: {
-                  value: 10,
-                  message: 'Please provide at least 10 characters',
-                },
-              })}
-              className="form-textarea"
-              placeholder={isTicketMode ? "Describe the issue for the support ticket..." : "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"}
-              disabled={isSubmitting || demoMode}
-            />
-            {errors.requestDescription && (
-              <p className="error-message">{errors.requestDescription.message}</p>
-            )}
+          {/* Condensed Input Panel */}
+          <div className="space-y-2">
+            {/* Inline Controls */}
+            <div className="flex gap-2">
+              {/* Location Input */}
+              <input
+                id="locationInput"
+                {...register('location')}
+                type="text"
+                className="form-input w-32"
+                placeholder="Location"
+                disabled={isSubmitting || demoMode}
+              />
+              
+              {/* Bot Route Selector - Inline */}
+              {!isTicketMode && smartAssistEnabled && (
+                <select
+                  value={routePreference}
+                  onChange={(e) => setRoutePreference(e.target.value)}
+                  className="form-input w-36 text-sm"
+                  disabled={isSubmitting || demoMode}
+                >
+                  <option value="Auto">Auto Route</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Booking">Booking</option>
+                  <option value="Tech">Tech Support</option>
+                  <option value="Brand">Brand Tone</option>
+                </select>
+              )}
+              
+              {/* AI Toggle - Compact */}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs text-[var(--text-muted)]">AI</span>
+                <label className="toggle-switch small">
+                  <input
+                    type="checkbox"
+                    checked={smartAssistEnabled}
+                    onChange={(e) => {
+                      setSmartAssistEnabled(e.target.checked);
+                      if (!e.target.checked) {
+                        setShowResponse(false);
+                        resetRequestState();
+                      }
+                    }}
+                    disabled={isSubmitting || demoMode || isTicketMode}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            
+            {/* Task Description with Suggestions */}
+            <div className="form-group mb-0 relative">
+              <textarea
+                id="taskInput"
+                {...register('requestDescription', {
+                  required: 'Please enter a request description',
+                  minLength: {
+                    value: 10,
+                    message: 'Please provide at least 10 characters',
+                  },
+                })}
+                className="form-textarea"
+                placeholder={isTicketMode ? "Describe the issue for the support ticket..." : "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"}
+                disabled={isSubmitting || demoMode}
+                rows={2}
+              />
+              
+              {/* AI Suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full mt-2 left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--accent)]/30 rounded-lg shadow-lg z-10 p-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1 text-xs text-[var(--accent)]">
+                      <Sparkles className="w-3 h-3" />
+                      <span>AI Suggestions</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSuggestions(false)}
+                      className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => applySuggestion(suggestion)}
+                        className="w-full text-left p-2 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--accent)]/10 rounded transition-all"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {errors.requestDescription && (
+                <p className="error-message">{errors.requestDescription.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Tone Conversion Input - HIDDEN FOR NOW */}
@@ -647,17 +782,6 @@ const RequestForm: React.FC = () => {
             )}
           </div> */}
 
-          {/* Location Input */}
-          <div className="form-group">
-            <input
-              id="locationInput"
-              {...register('location')}
-              type="text"
-              className="form-input"
-              placeholder="Location (Optional)"
-              disabled={isSubmitting || demoMode}
-            />
-          </div>
 
           {/* Ticket Options */}
           {isTicketMode && (
@@ -724,72 +848,9 @@ const RequestForm: React.FC = () => {
             </>
           )}
 
-          {/* Route Selector - Simplified */}
-          {!isTicketMode && smartAssistEnabled && (
-            <div className="form-group">
-              <div className="flex items-center justify-between mb-2">
-                <label className="form-label mb-0">
-                  Bot Route: <span className="text-[var(--accent)]">{routePreference}</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
-                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors"
-                  disabled={isSubmitting || demoMode}
-                >
-                  {showAdvancedRouting ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                  Advanced Options
-                </button>
-              </div>
-              
-              {/* Collapsible Route Options */}
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                showAdvancedRouting ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
-              }`}>
-                <div className="route-selector mt-2">
-                  {routes.map((route) => {
-                    const isDisabled = !canAccessRoute(user?.role, routeAccessMap[route]);
-                    const tooltip = isDisabled ? getRestrictedTooltip(routeAccessMap[route]) : '';
-                    
-                    return (
-                      <React.Fragment key={route}>
-                        <input
-                          type="radio"
-                          id={`route-${route.toLowerCase()}`}
-                          name="route"
-                          value={route}
-                          checked={routePreference === route}
-                          onChange={() => {
-                            setRoutePreference(route);
-                            // Clear response when changing routes
-                            if (showResponse) {
-                              setShowResponse(false);
-                              resetRequestState();
-                            }
-                          }}
-                          disabled={isSubmitting || demoMode || isDisabled}
-                        />
-                        <label
-                          htmlFor={`route-${route.toLowerCase()}`}
-                          className={`route-option ${route === 'Auto' ? 'route-auto' : ''} ${isDisabled ? 'route-disabled' : ''}`}
-                          title={tooltip}
-                        >
-                          {route.replace('&', ' & ')}
-                          {isDisabled && <Lock className="inline-block w-3 h-3 ml-1" />}
-                        </label>
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-                <div className="form-helper mt-2">
-                  Auto mode intelligently selects the best bot based on your request
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Toggle Options */}
-          {!isTicketMode && (
+          {/* Toggle Options - Removed, AI toggle moved inline */}
+          {!isTicketMode && false && (
             <div className="form-group">
               <div className="flex items-center justify-between">
                 <div className="toggle-item flex items-center gap-3">

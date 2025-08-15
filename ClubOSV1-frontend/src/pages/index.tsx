@@ -13,6 +13,7 @@ import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
 import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
+import OccupancyMap from '@/components/dashboard/OccupancyMap';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -252,6 +253,9 @@ export default function Home() {
               
               {/* Mobile-only recent customers */}
               <RecentCustomers />
+              
+              {/* Live Occupancy Map */}
+              <OccupancyMap compact />
               
               {/* Desktop-only enhancements */}
               <MiniInsightsPanel />
