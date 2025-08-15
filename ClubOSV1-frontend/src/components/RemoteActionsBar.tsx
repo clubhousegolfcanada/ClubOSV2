@@ -242,63 +242,64 @@ const RemoteActionsBar: React.FC = () => {
                         const isOnline = bayStatus?.isOnline ?? true;
                         const isOccupied = bayStatus?.isOccupied ?? false;
                         const hasIssue = bayStatus?.hasIssue ?? false;
-                        const hasCriticalError = bayStatus?.criticalError ?? false;
-                        const ninjaOneError = bayStatus?.ninjaOneError;
+                        
+                        // Simplified status logic:
+                        // Green = working (online, no issues)
+                        // Red = not working + occupied
+                        // Yellow = not working + empty
+                        let statusColor = 'bg-green-500'; // Default: working
+                        let statusTitle = 'Working';
+                        
+                        if (!isOnline || hasIssue) {
+                          // Not working
+                          if (isOccupied) {
+                            statusColor = 'bg-red-500';
+                            statusTitle = 'Issue - Customer in bay';
+                          } else {
+                            statusColor = 'bg-yellow-500';
+                            statusTitle = 'Issue - Bay empty';
+                          }
+                        }
                         
                         return (
                           <div 
                             key={bay} 
-                            className={`flex items-center gap-1 p-1 rounded transition-all ${
-                              hasCriticalError ? 'ring-2 ring-red-500 bg-red-500/10' : ''
-                            }`}
-                            title={hasCriticalError && ninjaOneError ? 
-                              `CRITICAL: ${ninjaOneError.type.replace(/_/g, ' ')} detected during active booking` : 
-                              undefined
-                            }
+                            className="flex items-center gap-2 p-1"
                           >
-                            <span className="text-xs text-[var(--text-muted)] w-10">Bay {bay}:</span>
-                            <button
-                              onClick={() => {
-                                executeAction('restart-trackman', location.name, String(bay));
-                              }}
-                              disabled={isExecuting}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50"
-                              title={`Reset TrackMan Bay ${bay}`}
-                            >
-                              {isExecuting ? (
-                                <Loader className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <RefreshCw className="w-3 h-3" />
-                              )}
-                              Reset
-                            </button>
-                            <button
-                              onClick={() => {
-                                openRemoteDesktopForBay(location.name, String(bay));
-                              }}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-blue-500 hover:text-white border border-[var(--border-secondary)] rounded transition-all active:scale-95"
-                              title={`Remote Desktop to Bay ${bay}`}
-                            >
-                              <MonitorSmartphone className="w-3 h-3" />
-                              Remote
-                            </button>
-                            {/* Status indicator - enhanced for critical errors */}
-                            <div className="flex items-center gap-1">
-                              {hasCriticalError ? (
-                                <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />
-                              ) : (
-                                <>
-                                  {!isOnline && (
-                                    <span title="Offline" className="w-2 h-2 bg-red-500 rounded-full" />
-                                  )}
-                                  {isOnline && hasIssue && !hasCriticalError && (
-                                    <span title={bayStatus?.issueType || 'Issue'} className="w-2 h-2 bg-yellow-500 rounded-full" />
-                                  )}
-                                  {isOccupied && !hasCriticalError && (
-                                    <span title={bayStatus?.bookingInfo?.customerName || 'Occupied'} className="w-2 h-2 bg-blue-500 rounded-full" />
-                                  )}
-                                </>
-                              )}
+                            <span className="text-xs text-[var(--text-muted)] w-12 flex-shrink-0">Bay {bay}:</span>
+                            <div className="flex items-center gap-1 flex-1">
+                              <button
+                                onClick={() => {
+                                  executeAction('restart-trackman', location.name, String(bay));
+                                }}
+                                disabled={isExecuting}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50 min-w-[60px]"
+                                title={`Reset TrackMan Bay ${bay}`}
+                              >
+                                {isExecuting ? (
+                                  <Loader className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-3 h-3" />
+                                )}
+                                <span className="hidden sm:inline">Reset</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  openRemoteDesktopForBay(location.name, String(bay));
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-blue-500 hover:text-white border border-[var(--border-secondary)] rounded transition-all active:scale-95 min-w-[60px]"
+                                title={`Remote Desktop to Bay ${bay}`}
+                              >
+                                <MonitorSmartphone className="w-3 h-3" />
+                                <span className="hidden sm:inline">Remote</span>
+                              </button>
+                            </div>
+                            {/* Status indicator - simplified */}
+                            <div className="flex-shrink-0">
+                              <span 
+                                title={statusTitle} 
+                                className={`block w-2 h-2 ${statusColor} rounded-full`} 
+                              />
                             </div>
                           </div>
                         );
@@ -309,21 +310,21 @@ const RemoteActionsBar: React.FC = () => {
                   {/* System Actions */}
                   <div className="space-y-2">
                     <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Systems</p>
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-2">
                       {location.hasMusic && (
                         <button
                           onClick={() => {
                             executeAction('restart-music', location.name);
                           }}
                           disabled={executingActions.has(`${location.name}-restart-music-system`)}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50"
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50 min-w-[60px]"
                         >
                           {executingActions.has(`${location.name}-restart-music-system`) ? (
                             <Loader className="w-3 h-3 animate-spin" />
                           ) : (
                             <Music className="w-3 h-3" />
                           )}
-                          Music
+                          <span className="hidden sm:inline">Music</span>
                         </button>
                       )}
                       {location.hasTv && (
@@ -332,14 +333,14 @@ const RemoteActionsBar: React.FC = () => {
                             executeAction('restart-tv', location.name);
                           }}
                           disabled={executingActions.has(`${location.name}-restart-tv-system`)}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50"
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded transition-all active:scale-95 disabled:opacity-50 min-w-[60px]"
                         >
                           {executingActions.has(`${location.name}-restart-tv-system`) ? (
                             <Loader className="w-3 h-3 animate-spin" />
                           ) : (
                             <Tv className="w-3 h-3" />
                           )}
-                          TV
+                          <span className="hidden sm:inline">TV</span>
                         </button>
                       )}
                     </div>
