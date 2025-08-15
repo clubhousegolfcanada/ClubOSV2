@@ -175,7 +175,9 @@ const RequestForm: React.FC = () => {
     
     const matchedPatterns = commonPatterns.filter(p => p.pattern.test(requestDescription));
     if (matchedPatterns.length > 0) {
-      const uniqueSuggestions = [...new Set(matchedPatterns.map(p => p.suggestion))].slice(0, 3);
+      // Use Array.from for better TypeScript compatibility
+      const allSuggestions = matchedPatterns.map(p => p.suggestion);
+      const uniqueSuggestions = Array.from(new Set(allSuggestions)).slice(0, 3);
       setSuggestions(uniqueSuggestions);
       setShowSuggestions(true);
     } else {
