@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Users, Circle, AlertTriangle, Clock, Activity } from 'lucide-react';
 import { systemStatusAPI, LocationStatus } from '@/api/systemStatus';
+import { useRouter } from 'next/router';
 
 interface OccupancyMapProps {
   compact?: boolean;
 }
 
 const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
+  const router = useRouter();
   const [locationStatuses, setLocationStatuses] = useState<LocationStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -84,7 +86,12 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
           {locationStatuses.map((location) => {
             const stats = getLocationStats(location);
             return (
-              <div key={location.location} className="flex items-center justify-between p-2 bg-[var(--bg-tertiary)] rounded">
+              <div 
+                key={location.location} 
+                className="flex items-center justify-between p-2 bg-[var(--bg-tertiary)] rounded cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
+                onClick={() => router.push(`/commands?location=${encodeURIComponent(location.location)}`)}
+                title={`Click to view ${location.location} commands`}
+              >
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
                   <span className="text-xs font-medium">{location.location}</span>

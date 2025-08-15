@@ -593,6 +593,27 @@ export default function CommandsRedesigned() {
       router.push('/login');
     }
   }, [user, router]);
+  
+  // Handle location query parameter
+  useEffect(() => {
+    if (router.query.location && typeof router.query.location === 'string') {
+      // Set active tab to remote-actions
+      setActiveTab('remote-actions');
+      
+      // Scroll to the location section after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        const locationElement = document.getElementById(`location-${router.query.location}`);
+        if (locationElement) {
+          locationElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a highlight effect
+          locationElement.classList.add('ring-2', 'ring-[var(--accent)]', 'ring-opacity-50');
+          setTimeout(() => {
+            locationElement.classList.remove('ring-2', 'ring-[var(--accent)]', 'ring-opacity-50');
+          }, 2000);
+        }
+      }, 100);
+    }
+  }, [router.query.location]);
 
   // Separate triggers (resets) from regular commands
   const triggers = commands.filter(cmd => cmd.category === 'resets');
@@ -864,7 +885,7 @@ export default function CommandsRedesigned() {
                         if (!locationData) return null;
                         
                         return (
-                          <div key={location} className="card group p-3 sm:p-4">
+                          <div key={location} id={`location-${location}`} className="card group p-3 sm:p-4 transition-all">
                             {/* Location Header */}
                             <div className="flex items-center gap-2 mb-3">
                               <MapPin className="w-4 h-4 text-[var(--accent)]" />
