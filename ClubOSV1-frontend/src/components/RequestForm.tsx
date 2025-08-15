@@ -658,21 +658,12 @@ const RequestForm: React.FC = () => {
           </div> */}
 
           {/* Location and Mode Toggle Row - Responsive */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-3">
-            {/* Location Input - Full width on mobile */}
-            <div className="w-full sm:w-48">
-              <input
-                id="locationInput"
-                {...register('location')}
-                type="text"
-                className="form-input py-1.5 text-sm w-full"
-                placeholder="Location (Optional)"
-                disabled={isSubmitting || demoMode}
-              />
-            </div>
+          <div className="flex flex-row gap-2 mb-3">
+            {/* Mobile: Toggle takes 3/5, Location takes 2/5 */}
+            {/* Desktop: Location fixed width, toggle flexible */}
             
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
+            <div className="flex items-center gap-2 w-3/5 sm:w-auto sm:flex-1 justify-center sm:justify-start order-2 sm:order-1">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
@@ -776,6 +767,18 @@ const RequestForm: React.FC = () => {
                   )}
                 </div>
               )}
+            </div>
+            
+            {/* Location Input - Smaller on mobile, normal on desktop */}
+            <div className="w-2/5 sm:w-48 order-1 sm:order-2">
+              <input
+                id="locationInput"
+                {...register('location')}
+                type="text"
+                className="form-input py-1.5 text-sm w-full"
+                placeholder="Location"
+                disabled={isSubmitting || demoMode}
+              />
             </div>
           </div>
 
