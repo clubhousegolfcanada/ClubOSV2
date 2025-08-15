@@ -52,7 +52,7 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
   };
 
   // Get status color
-  const getStatusColor = (isOnline: boolean, isOccupied: boolean, hasIssue: boolean) => {
+  const getStatusColor = (isOnline?: boolean, isOccupied?: boolean, hasIssue?: boolean) => {
     if (!isOnline) return 'bg-red-500';
     if (hasIssue) return 'bg-yellow-500';
     if (isOccupied) return 'bg-blue-500';
