@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
-import { roleGuard } from '../middleware/roleAuth';
+import { roleGuard } from '../middleware/roleGuard';
 import { logger } from '../utils/logger';
 import fetch from 'node-fetch';
 import https from 'https';
-import { getDb } from '../database/database';
+import { db } from '../utils/database';
 
 const router = Router();
 
@@ -116,25 +116,24 @@ router.post('/doors/:location/:doorKey/unlock',
       }
       
       // Unlock the door
-      const unlocked = await unlockDoor(locationConfig, doorConfig.id, duration, username);
+      const unlocked = await unlockDoor(locationConfig, (doorConfig as any).id, duration, username);
       
       if (unlocked) {
         // Log to database
         try {
-          const db = await getDb();
-          await db.run(`
+          await db.query(`
             INSERT INTO door_access_log (
               location, door_name, door_id, action, user_id, username, duration, success
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `, [
             location,
-            doorConfig.name,
-            doorConfig.id,
+            (doorConfig as any).name,
+            (doorConfig as any).id,
             'unlock',
             userId,
             username,
             duration,
-            1
+            true
           ]);
         } catch (logError) {
           logger.error('Failed to log door access:', logError);
@@ -142,7 +141,7 @@ router.post('/doors/:location/:doorKey/unlock',
         
         res.json({
           success: true,
-          message: `${doorConfig.name} unlocked for ${duration} seconds`
+          message: `${(doorConfig as any).name} unlocked for ${duration} seconds`
         });
       } else {
         res.status(500).json({
@@ -187,8 +186,8 @@ router.get('/doors/:location/:doorKey/status',
       res.json({
         success: true,
         status: {
-          id: doorConfig.id,
-          name: doorConfig.name,
+          id: (doorConfig as any).id,
+          name: (doorConfig as any).name,
           location: location,
           locked: true, // We'd need to fetch actual status
           online: true,
