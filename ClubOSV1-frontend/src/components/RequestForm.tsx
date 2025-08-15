@@ -727,57 +727,55 @@ const RequestForm: React.FC = () => {
               <span className="text-xs text-[var(--text-muted)]">Ticket</span>
               
               {/* Advanced Button or Bot Options - Desktop only */}
-              <div className="hidden sm:block">
-                {smartAssistEnabled && !isTicketMode && (
-                  <>
-                    {!showAdvancedRouting ? (
+              {smartAssistEnabled && !isTicketMode && (
+                <div className="hidden sm:flex items-center">
+                  {!showAdvancedRouting ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedRouting(true)}
+                      className="ml-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      Advanced
+                    </button>
+                  ) : (
+                    <div className="ml-2 flex items-center gap-1">
+                      <span className="text-xs text-[var(--text-muted)]">Bot:</span>
+                      <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
+                        {routes.map((route, index) => (
+                          <button
+                            key={route}
+                            type="button"
+                            onClick={() => {
+                              setRoutePreference(route);
+                              // Don't hide the selector after selection
+                            }}
+                            className={`px-2 py-0.5 text-xs transition-all rounded-full ${
+                              routePreference === route
+                                ? 'bg-[var(--accent)] text-white'
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                            disabled={isSubmitting || demoMode}
+                          >
+                            {route === 'Auto' ? 'Auto' : 
+                             route === 'Emergency' ? 'Emrg' :
+                             route === 'Booking&Access' ? 'Book' :
+                             route === 'TechSupport' ? 'Tech' : 'Tone'}
+                          </button>
+                        ))}
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setShowAdvancedRouting(true)}
-                        className="ml-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-                        style={{ fontFamily: 'Poppins, sans-serif' }}
-                        disabled={isSubmitting || demoMode}
+                        onClick={() => setShowAdvancedRouting(false)}
+                        className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                       >
-                        Advanced
+                        ✕
                       </button>
-                    ) : (
-                      <div className="ml-2 flex items-center gap-1">
-                        <span className="text-xs text-[var(--text-muted)]">Bot:</span>
-                        <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
-                          {routes.map((route, index) => (
-                            <button
-                              key={route}
-                              type="button"
-                              onClick={() => {
-                                setRoutePreference(route);
-                                setShowAdvancedRouting(false);
-                              }}
-                              className={`px-2 py-0.5 text-xs transition-all rounded-full ${
-                                routePreference === route
-                                  ? 'bg-[var(--accent)] text-white'
-                                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                              }`}
-                              disabled={isSubmitting || demoMode}
-                            >
-                              {route === 'Auto' ? 'Auto' : 
-                               route === 'Emergency' ? 'Emrg' :
-                               route === 'Booking&Access' ? 'Book' :
-                               route === 'TechSupport' ? 'Tech' : 'Tone'}
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowAdvancedRouting(false)}
-                          className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -858,7 +856,7 @@ const RequestForm: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setRoutePreference(route);
-                        setShowAdvancedRouting(false);
+                        // Don't hide the selector after selection
                       }}
                       className={`px-3 py-1 text-xs transition-all rounded-full whitespace-nowrap ${
                         routePreference === route
