@@ -263,7 +263,7 @@ router.get('/users/count',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const users = await db.getAllUsers();
-      const activeUsers = users.filter(user => user.status === 'active').length;
+      const activeUsers = users.filter(user => user.isActive).length;
       const totalUsers = users.length;
       
       res.json({

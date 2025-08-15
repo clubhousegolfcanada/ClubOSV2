@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
-import unifiAccessService from '../services/unifiAccess';
+// Use the new cloud service instead of the old npm package-based service
+import unifiAccessService from '../services/unifiCloudService';
 import { pool } from '../utils/db';
 import { slackFallback } from '../services/slackFallback';
 import { logger } from '../utils/logger';
