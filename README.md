@@ -129,6 +129,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.11.24**: UniFi Access API Integration for Dartmouth
+  - Implemented official UniFi Developer API for door control
+  - Added remote door unlock for Dartmouth location (office door)
+  - Created multi-location infrastructure for future expansion
+  - Bedford location requires UniFi OS authentication (pending)
 - **v1.11.23**: Fixed Customer Names in Messages
   - Enhanced OpenPhone webhook to extract names from more fields
   - Added automatic HubSpot name sync service (runs every 5 min)

@@ -2,6 +2,33 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.11.24] - 2025-08-15
+
+### Added
+- **UniFi Access Developer API Integration**
+  - Implemented official UniFi Access Developer API for door control
+  - Added remote door unlock capability for Dartmouth location
+  - Created multi-location service architecture for managing multiple sites
+  - Added door_access_log table for audit trail
+  - New API endpoints: `/api/unifi-doors/doors`, `/api/unifi-doors/doors/:location/:doorKey/unlock`
+
+### Changed
+- **Commands Page Door Controls**
+  - Updated Dartmouth door controls to use new UniFi API
+  - Added "Active" indicator for working door locations
+  - Disabled non-functional door buttons for locations pending setup
+  - Changed Dartmouth "Main" door label to "Office" to match actual door
+
+### Technical
+- Added services: unifiAccessAPI, unifiMultiLocation, unifiAccessDirect
+- Configured port forwarding for remote access (port 12445 → 443)
+- Created test scripts for API validation and door discovery
+- Added tough-cookie dependency for session management
+
+### Pending
+- Bedford location requires UniFi OS authentication layer (not just API token)
+- Other locations need API tokens and port forwarding configuration
+
 ## [1.7.1] - 2025-08-14
 
 ### Added
