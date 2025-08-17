@@ -100,82 +100,103 @@ export default function MessagesCardV3() {
     }
   };
 
-  const handleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
+  const handleExpand = (convId: string) => {
+    if (expandedId === convId) {
+      setExpandedId(null);
+      // Don't clear AI suggestion - keep it cached
+      return;
+    }
+
+    setExpandedId(convId);
+    // AI suggestion will persist if it was already fetched
   };
-
-  const fetchAiSuggestion = async (conversationId: string) => {
-    const conv = conversations.find(c => c.id === conversationId);
+  
+  const fetchAiSuggestion = async (convId: string) => {
+    const conv = conversations.find(c => c.id === convId);
     if (!conv) return;
-
-    setLoadingAi({ ...loadingAi, [conversationId]: true });
-
+    
+    // If we already have a suggestion cached, don't fetch again
+    if (aiSuggestions[convId]) {
+      return;
+    }
+    
+    setLoadingAi({ ...loadingAi, [convId]: true });
+    
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/ai-automations/suggest-reply`,
-        {
-          conversationId,
-          customerMessage: conv.lastMessage,
-          customerName: conv.customerName,
-          phoneNumber: conv.phoneNumber,
-          location: conv.location,
-          bay: conv.bay
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        `${API_URL}/messages/conversations/${conv.phoneNumber}/suggest-response`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.data.success && response.data.data?.suggestion) {
+      if (response.data.success && response.data.data) {
+        const suggestion = response.data.data;
         setAiSuggestions({
           ...aiSuggestions,
-          [conversationId]: {
-            text: response.data.data.suggestion,
-            confidence: response.data.data.confidence || 0.8
+          [convId]: {
+            text: suggestion.suggestedText || 'I\'ll check on that and get back to you shortly.',
+            confidence: Math.round((suggestion.confidence || 0.6) * 100)
           }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to get AI suggestion:', error);
-      toast.error('Failed to get AI suggestion');
+      // Only show error if it's not a 404 (no conversation)
+      if (error.response?.status !== 404) {
+        const fallbackMessage = 'I\'ll check on that and get back to you shortly.';
+        setAiSuggestions({
+          ...aiSuggestions,
+          [convId]: {
+            text: fallbackMessage,
+            confidence: 30
+          }
+        });
+      }
     } finally {
-      setLoadingAi({ ...loadingAi, [conversationId]: false });
+      setLoadingAi({ ...loadingAi, [convId]: false });
     }
   };
 
-  const handleSend = async (conv: Conversation, customMessage?: string) => {
-    const message = customMessage || replyText[conv.id];
-    if (!message?.trim()) return;
+  const handleSend = async (conv: Conversation, messageOverride?: string) => {
+    const message = messageOverride || replyText[conv.id]?.trim();
+    if (!message) return;
 
     setSending({ ...sending, [conv.id]: true });
-
+    
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
         `${API_URL}/messages/send`,
         {
-          phoneNumber: conv.phoneNumber,
-          message: message.trim(),
-          conversationId: conv.id
+          to: conv.phoneNumber,
+          text: message
         },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Clear the reply text and AI suggestion
+      toast.success('Message sent');
       setReplyText({ ...replyText, [conv.id]: '' });
+      setExpandedId(null);
+      
+      // Clear AI suggestion for this conversation since context has changed
       setAiSuggestions(prev => {
         const newSuggestions = { ...prev };
         delete newSuggestions[conv.id];
         return newSuggestions;
       });
       
-      // Collapse the expanded section
-      setExpandedId(null);
-      
-      toast.success('Message sent!');
+      // Update conversation with the new message
+      setConversations(prev => prev.map(c => 
+        c.id === conv.id 
+          ? { 
+              ...c, 
+              lastMessage: message,
+              timestamp: new Date().toISOString(),
+              unreadCount: 0 
+            } 
+          : c
+      ));
       
       // Refresh conversations after a short delay to get server state
       setTimeout(() => {
@@ -209,13 +230,13 @@ export default function MessagesCardV3() {
   return (
     <div className="card" style={{ fontFamily: 'Poppins, -apple-system, sans-serif' }}>
       {/* Header */}
-      <div className="px-3 py-2 border-b border-primary flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-primary" style={{ fontWeight: 600 }}>
+      <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900" style={{ fontWeight: 600 }}>
           Messages
         </h3>
         <button
           onClick={() => router.push('/messages')}
-          className="text-xs text-secondary hover:text-primary transition-colors"
+          className="text-xs text-gray-500 hover:text-gray-700"
           style={{ fontWeight: 400 }}
         >
           View all
@@ -225,15 +246,15 @@ export default function MessagesCardV3() {
       {/* Content */}
       {isLoading ? (
         <div className="p-8 text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--text-muted)] mx-auto"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto"></div>
         </div>
       ) : conversations.length === 0 ? (
         <div className="p-8 text-center">
-          <MessageSquare className="w-8 h-8 text-muted mx-auto mb-2" />
-          <p className="text-sm text-secondary">No recent messages</p>
+          <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No recent messages</p>
         </div>
       ) : (
-        <div className="divide-y divide-[var(--border-secondary)]">
+        <div className="divide-y divide-gray-100">
           {conversations.map(conv => {
             const isExpanded = expandedId === conv.id;
             const suggestion = aiSuggestions[conv.id];
@@ -246,42 +267,42 @@ export default function MessagesCardV3() {
                 {/* Message Row */}
                 <div
                   onClick={() => handleExpand(conv.id)}
-                  className="p-3 cursor-pointer hover-bg transition-colors"
+                  className="p-3 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start gap-2">
-                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 border border-primary rounded-lg bg-tertiary">
-                      <span className="text-xs font-medium text-secondary" style={{ fontSize: '10px' }}>
+                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 border border-gray-300 rounded-lg">
+                      <span className="text-xs font-medium text-gray-600" style={{ fontSize: '10px' }}>
                         {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="text-xs font-medium text-primary flex items-center gap-2" style={{ fontWeight: 500 }}>
+                          <p className="text-xs font-medium text-gray-900 flex items-center gap-2" style={{ fontWeight: 500 }}>
                             {conv.customerName}
                             {conv.lastMessageDirection === 'outbound' && (
-                              <span className="text-xs px-1 py-0.5 bg-[var(--accent-light)] text-[var(--accent)] rounded" style={{ fontWeight: 400, fontSize: '10px' }}>
+                              <span className="text-xs px-1 py-0.5 bg-blue-100 text-blue-700 rounded" style={{ fontWeight: 400, fontSize: '10px' }}>
                                 You
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-secondary mt-0.5 break-words line-clamp-2" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                          <p className="text-xs text-gray-600 mt-0.5 break-words line-clamp-2" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                             {conv.lastMessageDirection === 'outbound' && '↗ '}
                             {conv.lastMessage}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted flex items-center gap-0.5" style={{ fontSize: '10px' }}>
+                            <span className="text-xs text-gray-500 flex items-center gap-0.5" style={{ fontSize: '10px' }}>
                               <Clock className="w-2.5 h-2.5" />
                               {formatTime(conv.timestamp)}
                             </span>
-                            <span className="text-xs text-muted flex items-center gap-0.5" style={{ fontSize: '10px' }}>
+                            <span className="text-xs text-gray-500 flex items-center gap-0.5" style={{ fontSize: '10px' }}>
                               <Phone className="w-2.5 h-2.5" />
                               {conv.phoneNumber}
                             </span>
                           </div>
                         </div>
                         {conv.unreadCount > 0 && (
-                          <span className="bg-[var(--status-info)] text-white text-xs px-1.5 py-0.5 rounded-full" style={{ fontSize: '10px' }}>
+                          <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full" style={{ fontSize: '10px' }}>
                             {conv.unreadCount}
                           </span>
                         )}
@@ -292,30 +313,30 @@ export default function MessagesCardV3() {
 
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
-                  <div className="border-t border-secondary bg-tertiary p-3 space-y-2">
+                  <div className="border-t border-gray-100 bg-gray-50 p-3 space-y-2">
                     {/* AI Suggestion Section - Above input field */}
                     {!suggestion && !isLoadingAi ? (
                       // Show Get AI Suggestion button
                       <button
                         onClick={() => fetchAiSuggestion(conv.id)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-elevated border border-primary rounded-lg hover-bg transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                         style={{ fontWeight: 500 }}
                       >
-                        <Bot className="w-3 h-3 text-[var(--status-info)]" />
-                        <span className="text-primary">Get AI Suggestion</span>
+                        <Bot className="w-3 h-3 text-blue-500" />
+                        Get AI Suggestion
                       </button>
                     ) : isLoadingAi ? (
                       // Loading state
                       <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[var(--text-muted)]"></div>
-                        <span className="text-xs text-secondary">Getting AI suggestion...</span>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
+                        <span className="text-xs text-gray-500">Getting AI suggestion...</span>
                       </div>
                     ) : suggestion ? (
                       // Show AI Suggestion above input
-                      <div className="flex items-center justify-between p-2 bg-[var(--accent-light)] border border-[var(--accent)] rounded-lg">
+                      <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex-1 flex items-center gap-2 min-w-0">
-                          <Bot className="w-3 h-3 text-[var(--accent)] flex-shrink-0" />
-                          <p className="text-xs text-primary break-words" style={{ fontWeight: 400, wordBreak: 'break-word' }}>
+                          <Bot className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                          <p className="text-xs text-gray-700 break-words" style={{ fontWeight: 400, wordBreak: 'break-word' }}>
                             {suggestion.text}
                           </p>
                         </div>
@@ -326,7 +347,7 @@ export default function MessagesCardV3() {
                               handleSend(conv, suggestion.text);
                             }}
                             disabled={isSending}
-                            className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
+                            className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
                             style={{ fontWeight: 500 }}
                           >
                             Send
@@ -340,7 +361,7 @@ export default function MessagesCardV3() {
                                 return newSuggestions;
                               });
                             }}
-                            className="p-0.5 text-muted hover:text-secondary transition-colors"
+                            className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -361,14 +382,14 @@ export default function MessagesCardV3() {
                           }
                         }}
                         placeholder="Type your reply..."
-                        className="w-full pl-3 pr-20 py-1.5 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-primary placeholder-muted focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
+                        className="w-full pl-3 pr-20 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                         style={{ fontWeight: 400 }}
                       />
                       <div className="absolute right-1 top-1 flex items-center gap-1">
                         <button
                           onClick={() => handleSend(conv)}
                           disabled={!reply.trim() || isSending}
-                          className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           style={{ fontWeight: 500 }}
                         >
                           {isSending ? (
@@ -376,6 +397,17 @@ export default function MessagesCardV3() {
                           ) : (
                             'Send'
                           )}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedId(null);
+                            setReplyText({ ...replyText, [conv.id]: '' });
+                          }}
+                          className="px-2 py-0.5 text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                          style={{ fontWeight: 400 }}
+                        >
+                          Cancel
                         </button>
                       </div>
                     </div>
