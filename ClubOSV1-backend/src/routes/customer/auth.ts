@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { pool } from '../../config/database';
+import { pool } from '../../utils/db';
 import { 
   generateCustomerTokens, 
   refreshCustomerToken, 
@@ -190,7 +190,7 @@ router.post('/login', customerAuthLimiter, validateLogin, async (req: Request, r
  * Refresh access token
  * POST /api/v2/customer/auth/refresh
  */
-router.post('/refresh', refreshCustomerToken);
+router.post('/refresh', refreshCustomerToken as any);
 
 /**
  * Logout customer

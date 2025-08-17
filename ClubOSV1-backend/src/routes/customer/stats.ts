@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../../config/database';
+import { pool } from '../../utils/db';
 
 interface CustomerRequest extends Request {
   user?: {

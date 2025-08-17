@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../../config/database';
+import { pool } from '../../utils/db';
 import { eventLimiter } from '../../middleware/customerRateLimit';
 
 interface CustomerRequest extends Request {

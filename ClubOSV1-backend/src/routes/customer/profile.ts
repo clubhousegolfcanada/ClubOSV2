@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../../config/database';
+import { pool } from '../../utils/db';
 import { body, validationResult } from 'express-validator';
 
 interface CustomerRequest extends Request {
