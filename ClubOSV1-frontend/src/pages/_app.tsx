@@ -223,7 +223,10 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         <Component {...pageProps} />
       ) : (
         <AuthGuard>
-          <Component {...pageProps} />
+          {/* Add padding-top for operator pages to account for fixed navbar */}
+          <div className={showNavigation && viewMode !== 'customer' ? 'pt-14' : ''}>
+            <Component {...pageProps} />
+          </div>
           <SwipeIndicator enabled={isAuthenticated} />
           {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && <RemoteActionsBar />}
         </AuthGuard>

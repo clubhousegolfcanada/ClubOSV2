@@ -33,7 +33,7 @@ export default function CustomerApp() {
         <CustomerNavigation />
         
         {/* Main Content - Mobile first design */}
-        <main className="pb-20 lg:pb-8 pt-16 lg:pt-20">
+        <main className="pb-20 lg:pb-8 pt-12 lg:pt-14">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <CustomerDashboard />
           </div>

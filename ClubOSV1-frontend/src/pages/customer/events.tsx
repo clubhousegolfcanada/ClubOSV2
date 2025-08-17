@@ -42,11 +42,11 @@ export default function CustomerEvents() {
       <div className="min-h-screen bg-[#fafafa]">
         <CustomerNavigation />
         
-        <main className="pb-20 lg:pb-8 pt-16 lg:pt-20">
+        <main className="pb-20 lg:pb-8 pt-12 lg:pt-14">
           {/* TrackMan Leaderboard Embed - Full Screen */}
           <div className="h-full">
             <iframe
-              src="https://tm-short.me/pZY461g"
+              src="https://tm-short.me/Tqjb7AS"
               title="TrackMan Tournament Leaderboard"
               className="w-full"
               style={{ 

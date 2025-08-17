@@ -10,7 +10,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-gray-50">
       <CustomerNavigation />
       {/* Main Content - Add padding to account for fixed header and bottom nav */}
-      <main className="pt-14 pb-20 lg:pb-0">
+      <main className="pt-12 pb-20 lg:pb-0 lg:pt-14">
         {children}
       </main>
     </div>
