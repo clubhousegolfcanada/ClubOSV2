@@ -300,9 +300,40 @@ node scripts/generate-vapid-keys.js
 4. Add rate limiting if public-facing
 
 ### Database Changes
-1. Create numbered migration: `/backend/src/database/migrations/016_feature.sql`
-2. Migrations run automatically on deploy
-3. Update TypeScript types if needed
+
+#### New Migration System (v2)
+```bash
+# Check migration status
+npm run db:status
+
+# Run pending migrations
+npm run db:migrate
+
+# Preview migrations without executing
+npm run db:migrate:dry
+
+# Rollback last migration
+npm run db:rollback
+
+# Validate migration checksums
+npm run db:validate
+
+# Reset database (DEV ONLY)
+npm run db:reset
+```
+
+#### Creating New Migrations
+1. Create file: `/backend/src/database/migrations/XXX_description.sql`
+2. Include UP and DOWN sections for rollback support:
+```sql
+-- UP
+CREATE TABLE example (...);
+
+-- DOWN
+DROP TABLE example;
+```
+3. Test locally before deploying
+4. Migrations run automatically on deploy
 
 ## 🚨 Important Patterns
 
