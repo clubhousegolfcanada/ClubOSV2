@@ -597,7 +597,7 @@ const RequestForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowLocationSelector(true)}
-                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] px-2 py-0.5 rounded-md transition-all"
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                     disabled={isSubmitting || demoMode}
                   >
@@ -792,7 +792,7 @@ const RequestForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowLocationSelector(true)}
-                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] border border-[var(--border-secondary)] hover:border-[var(--accent)] px-2 py-0.5 rounded-md transition-all"
+                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                       disabled={isSubmitting || demoMode}
                     >
