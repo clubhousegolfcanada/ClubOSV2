@@ -197,30 +197,17 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     </div>
                     
                     <div className="py-1">
+                      {/* Combined Profile & Settings */}
                       <button
                         onClick={() => {
-                          // Navigate to profile
-                          router.push('/profile');
+                          router.push(user.role === 'admin' ? '/settings' : '/profile');
                           setUserDropdownOpen(false);
                         }}
                         className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 transition-colors"
                       >
-                        <User className="w-4 h-4" />
-                        Profile
+                        <Settings className="w-4 h-4" />
+                        {user.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                       </button>
-                      
-                      {user.role === 'admin' && (
-                        <button
-                          onClick={() => {
-                            router.push('/settings');
-                            setUserDropdownOpen(false);
-                          }}
-                          className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 transition-colors"
-                        >
-                          <Settings className="w-4 h-4" />
-                          Settings
-                        </button>
-                      )}
                       
                       <button
                         onClick={toggleTheme}
@@ -232,9 +219,10 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                         </span>
                       </button>
                       
-                      {/* Mode Toggle for Admin and Operator */}
+                      {/* Mode Toggle for Admin and Operator - Fixed positioning */}
                       {(user.role === 'admin' || user.role === 'operator') && (
-                        <div className="px-4 py-2">
+                        <div className="px-4 py-2 border-t border-[var(--border-secondary)] mt-1">
+                          <div className="text-xs text-[var(--text-muted)] mb-2">View Mode</div>
                           <ModeToggle />
                         </div>
                       )}
@@ -405,18 +393,17 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                       Theme: {theme.toUpperCase()}
                     </button>
                     <Link
-                      href="/profile"
+                      href={user.role === 'admin' ? '/settings' : '/profile'}
                       className="block px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
                     >
-                      Profile
+                      {user.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                     </Link>
-                    {user.role === 'admin' && (
-                      <Link
-                        href="/settings"
-                        className="block px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
-                      >
-                        Settings
-                      </Link>
+                    {/* Mode Toggle for Admin and Operator */}
+                    {(user.role === 'admin' || user.role === 'operator') && (
+                      <div className="px-4 py-3 border-t border-[var(--border-secondary)] mt-2">
+                        <div className="text-xs text-[var(--text-muted)] mb-2">View Mode</div>
+                        <ModeToggle />
+                      </div>
                     )}
                   </div>
                 </div>
