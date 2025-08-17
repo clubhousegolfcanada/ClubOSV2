@@ -267,6 +267,7 @@ app.use('/api/prompts', promptsRoutes);
 app.use('/api/ai-automations', aiAutomationsRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
+app.use('/api/system-status', require('./routes/system-status').default);
 
 
 // Root endpoint
