@@ -592,7 +592,7 @@ const RequestForm: React.FC = () => {
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                     disabled={isSubmitting || demoMode}
                   >
-                    Advanced
+                    {routePreference === 'Auto' ? 'Advanced' : routePreference.replace('&Access', '').replace('Support', '')}
                   </button>
                   <button
                     type="button"
@@ -601,7 +601,7 @@ const RequestForm: React.FC = () => {
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                     disabled={isSubmitting || demoMode}
                   >
-                    Location
+                    {selectedLocation || 'Location'}
                   </button>
                 </>
               ) : showAdvancedRouting ? (
@@ -749,7 +749,7 @@ const RequestForm: React.FC = () => {
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                       disabled={isSubmitting || demoMode}
                     >
-                      Advanced
+                      {routePreference === 'Auto' ? 'Advanced' : routePreference.replace('&Access', '').replace('Support', '')}
                     </button>
                   ) : (
                     <div className="ml-2 flex items-center gap-1">
@@ -796,7 +796,7 @@ const RequestForm: React.FC = () => {
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                       disabled={isSubmitting || demoMode}
                     >
-                      Location
+                      {selectedLocation || 'Location'}
                     </button>
                   ) : (
                     <div className="flex items-center gap-1">
