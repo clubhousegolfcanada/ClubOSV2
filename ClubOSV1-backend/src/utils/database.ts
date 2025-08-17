@@ -176,15 +176,19 @@ class DatabaseService {
     name: string;
     role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
     phone?: string;
+    status?: 'active' | 'pending_approval' | 'suspended' | 'rejected';
   }): Promise<DbUser> {
     const id = user.id || uuidv4();
     const hashedPassword = await bcrypt.hash(user.password, 10);
     
+    // Default status: customer role = pending_approval, others = active
+    const status = user.status || (user.role === 'customer' ? 'pending_approval' : 'active');
+    
     const result = await query(
-      `INSERT INTO "Users" (id, email, password, name, role, phone, "createdAt", "updatedAt", "isActive") 
-       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true) 
+      `INSERT INTO "Users" (id, email, password, name, role, phone, status, "createdAt", "updatedAt", "isActive") 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true) 
        RETURNING *`,
-      [id, user.email, hashedPassword, user.name, user.role, user.phone]
+      [id, user.email, hashedPassword, user.name, user.role, user.phone, status]
     );
     return result.rows[0];
   }

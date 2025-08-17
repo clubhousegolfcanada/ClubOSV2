@@ -67,6 +67,7 @@ router.post('/signup',
         name,
         phone,
         role: 'customer'
+        // Status will default to 'pending_approval' for customers
       });
       
       // Create customer profile automatically
@@ -86,25 +87,17 @@ router.post('/signup',
         success: true
       });
       
-      // Generate token
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        sessionId: uuidv4()
-      });
-      
-      logger.info('Customer registered successfully:', { 
+      logger.info('Customer registered successfully (pending approval):', { 
         userId: user.id,
         email: user.email 
       });
       
+      // Don't generate token for pending users - they need approval first
       res.status(201).json({
         success: true,
-        message: 'Account created successfully',
+        message: 'Account created successfully. Your account is pending approval and you will be notified once approved.',
         data: {
-          user: transformUser(user),
-          token
+          status: 'pending_approval'
         }
       });
       
@@ -198,6 +191,21 @@ router.post('/login',
           error_message: 'Invalid password'
         });
         throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+      }
+      
+      // Check if user account is pending approval
+      if ((user as any).status === 'pending_approval') {
+        throw new AppError('Your account is pending approval. You will be notified once approved.', 403, 'ACCOUNT_PENDING');
+      }
+      
+      // Check if user account is suspended
+      if ((user as any).status === 'suspended') {
+        throw new AppError('Your account has been suspended. Please contact support.', 403, 'ACCOUNT_SUSPENDED');
+      }
+      
+      // Check if user account is rejected
+      if ((user as any).status === 'rejected') {
+        throw new AppError('Your account application was not approved.', 403, 'ACCOUNT_REJECTED');
       }
       
       // Update last login
@@ -430,6 +438,105 @@ router.post('/change-password',
       res.json({
         success: true,
         message: 'Password changed successfully'
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Approve pending user
+router.put('/users/:userId/approve',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
+      
+      // Update user status to active
+      const result = await db.query(
+        `UPDATE "Users" SET status = 'active', "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id = $1 AND status = 'pending_approval' 
+         RETURNING id, email, name, status`,
+        [userId]
+      );
+      
+      if (result.rowCount === 0) {
+        throw new AppError('User not found or already approved', 404, 'USER_NOT_FOUND');
+      }
+      
+      const user = result.rows[0];
+      
+      logger.info('User approved:', { userId, approvedBy: (req as any).userId });
+      
+      // TODO: Send approval email to user
+      
+      res.json({
+        success: true,
+        message: 'User approved successfully',
+        data: user
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Reject pending user
+router.put('/users/:userId/reject',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
+      const { reason } = req.body;
+      
+      // Update user status to rejected
+      const result = await db.query(
+        `UPDATE "Users" SET status = 'rejected', "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id = $1 AND status = 'pending_approval' 
+         RETURNING id, email, name, status`,
+        [userId]
+      );
+      
+      if (result.rowCount === 0) {
+        throw new AppError('User not found or not pending', 404, 'USER_NOT_FOUND');
+      }
+      
+      const user = result.rows[0];
+      
+      logger.info('User rejected:', { userId, rejectedBy: (req as any).userId, reason });
+      
+      res.json({
+        success: true,
+        message: 'User rejected',
+        data: user
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get pending users
+router.get('/users/pending',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await db.query(
+        `SELECT id, email, name, phone, role, status, "createdAt" as created_at, signup_date
+         FROM "Users" 
+         WHERE status = 'pending_approval' 
+         ORDER BY "createdAt" DESC`
+      );
+      
+      res.json({
+        success: true,
+        data: result.rows
       });
       
     } catch (error) {

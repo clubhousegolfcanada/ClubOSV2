@@ -12,8 +12,10 @@ type User = {
   name: string;
   role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
   phone?: string;
+  status?: 'active' | 'pending_approval' | 'suspended' | 'rejected';
   createdAt: string;
   updatedAt: string;
+  signup_date?: string;
 };
 
 type PasswordValidation = {
@@ -195,9 +197,9 @@ export const OperationsUsers: React.FC = () => {
     }
     
     try {
-      await axios.put(
-        `${API_URL}/auth/users/${resetPasswordUserId}/password`,
-        { password: newPassword },
+      await axios.post(
+        `${API_URL}/auth/users/${resetPasswordUserId}/reset-password`,
+        { newPassword },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -209,6 +211,42 @@ export const OperationsUsers: React.FC = () => {
     } catch (error) {
       console.error('Error resetting password:', error);
       toast.error('Failed to reset password');
+    }
+  };
+
+  const handleApproveUser = async (userId: string) => {
+    try {
+      await axios.put(
+        `${API_URL}/auth/users/${userId}/approve`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      toast.success('Customer approved successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast.error('Failed to approve customer');
+    }
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to reject this customer application?')) return;
+    
+    try {
+      await axios.put(
+        `${API_URL}/auth/users/${userId}/reject`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      toast.success('Customer application rejected');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast.error('Failed to reject customer');
     }
   };
 
@@ -266,6 +304,15 @@ export const OperationsUsers: React.FC = () => {
   // Separate operators and customers
   const operators = users.filter(u => u.role !== 'customer');
   const customers = users.filter(u => u.role === 'customer');
+  
+  // Sort customers: pending first, then active
+  const sortedCustomers = [...customers].sort((a, b) => {
+    if (a.status === 'pending_approval' && b.status !== 'pending_approval') return -1;
+    if (a.status !== 'pending_approval' && b.status === 'pending_approval') return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  
+  const pendingCount = customers.filter(c => c.status === 'pending_approval').length;
 
   return (
     <div className="space-y-6">
@@ -444,6 +491,11 @@ export const OperationsUsers: React.FC = () => {
               <Users className="h-5 w-5 text-orange-500" />
               <h2 className="text-lg font-semibold text-gray-900">Customer Management</h2>
               <span className="text-sm text-gray-500">({customers.length} customers)</span>
+              {pendingCount > 0 && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                  {pendingCount} pending
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -461,7 +513,7 @@ export const OperationsUsers: React.FC = () => {
         </div>
 
         <div className="p-6">
-          {customers.length > 0 ? (
+          {sortedCustomers.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -469,13 +521,14 @@ export const OperationsUsers: React.FC = () => {
                     <th className="pb-3">Name</th>
                     <th className="pb-3">Email</th>
                     <th className="pb-3">Phone</th>
+                    <th className="pb-3">Status</th>
                     <th className="pb-3">Member Since</th>
                     <th className="pb-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50">
+                  {sortedCustomers.map((customer) => (
+                    <tr key={customer.id} className={`hover:bg-gray-50 ${customer.status === 'pending_approval' ? 'bg-yellow-50' : ''}`}>
                       <td className="py-3">
                         <span className="text-sm font-medium text-gray-900">{customer.name}</span>
                       </td>
@@ -486,36 +539,74 @@ export const OperationsUsers: React.FC = () => {
                         <span className="text-sm text-gray-600">{customer.phone || '-'}</span>
                       </td>
                       <td className="py-3">
+                        {customer.status === 'pending_approval' ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                            Pending Approval
+                          </span>
+                        ) : customer.status === 'suspended' ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                            Suspended
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                            Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3">
                         <span className="text-sm text-gray-500">
-                          {new Date(customer.createdAt).toLocaleDateString()}
+                          {new Date(customer.signup_date || customer.createdAt).toLocaleDateString()}
                         </span>
                       </td>
                       <td className="py-3">
                         <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleEditUser(customer)}
-                            className="p-1 text-gray-600 hover:text-gray-700"
-                            title="Edit"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setResetPasswordUserId(customer.id);
-                              setShowResetPassword(true);
-                            }}
-                            className="p-1 text-blue-600 hover:text-blue-700"
-                            title="Reset Password"
-                          >
-                            <Key className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(customer.id)}
-                            className="p-1 text-red-600 hover:text-red-700"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {customer.status === 'pending_approval' ? (
+                            <>
+                              <button
+                                onClick={() => handleApproveUser(customer.id)}
+                                className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                                title="Approve"
+                              >
+                                <Check className="h-3 w-3 inline mr-1" />
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectUser(customer.id)}
+                                className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                                title="Reject"
+                              >
+                                <X className="h-3 w-3 inline mr-1" />
+                                Reject
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEditUser(customer)}
+                                className="p-1 text-gray-600 hover:text-gray-700"
+                                title="Edit"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setResetPasswordUserId(customer.id);
+                                  setShowResetPassword(true);
+                                }}
+                                className="p-1 text-blue-600 hover:text-blue-700"
+                                title="Reset Password"
+                              >
+                                <Key className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(customer.id)}
+                                className="p-1 text-red-600 hover:text-red-700"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

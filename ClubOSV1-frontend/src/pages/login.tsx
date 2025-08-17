@@ -52,7 +52,7 @@ const LoginPage = () => {
       
       // Handle customer signup
       if (loginMode === 'customer' && isSignup) {
-        response = await axios.post(`${API_URL}/auth/signup`, {
+        response = await axios.post(`${API_URL}/api/auth/signup`, {
           email,
           password,
           name,
@@ -61,14 +61,16 @@ const LoginPage = () => {
         });
         
         if (response.data.success) {
-          toast.success('Account created! Please log in.');
+          toast.success(response.data.message || 'Account created! Your account is pending approval.');
           setIsSignup(false);
           setPassword('');
+          setName('');
+          setPhone('');
           return;
         }
       } else {
         // Handle login (both operator and customer)
-        response = await axios.post(`${API_URL}/auth/login`, {
+        response = await axios.post(`${API_URL}/api/auth/login`, {
           email,
           password
         });
@@ -114,7 +116,7 @@ const LoginPage = () => {
     setIsResetting(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+      const response = await axios.post(`${API_URL}/api/auth/forgot-password`, {
         email: resetEmail
       });
 
