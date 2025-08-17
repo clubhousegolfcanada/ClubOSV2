@@ -884,4 +884,39 @@ router.post('/send', authenticate, async (req: Request, res: Response, next: Nex
   }
 });
 
+// GET /api/messages/stats/today - Get today's message statistics
+router.get('/stats/today', authenticate, async (req, res) => {
+  try {
+    // Get today's messages count
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const messagesResult = await db.query(`
+      SELECT 
+        COUNT(*) as total_count,
+        COUNT(CASE WHEN is_ai_generated = true THEN 1 END) as ai_count
+      FROM messages 
+      WHERE created_at >= $1
+    `, [todayStart]);
+    
+    const totalMessages = parseInt(messagesResult.rows[0]?.total_count || '0');
+    const aiMessages = parseInt(messagesResult.rows[0]?.ai_count || '0');
+    const aiResponseRate = totalMessages > 0 ? (aiMessages / totalMessages) * 100 : 0;
+    
+    res.json({
+      success: true,
+      count: totalMessages,
+      aiMessages: aiMessages,
+      aiResponseRate: Math.round(aiResponseRate * 10) / 10
+    });
+  } catch (error) {
+    logger.error('Error getting message stats:', error);
+    res.status(500).json({
+      success: false,
+      count: 0,
+      aiResponseRate: 0
+    });
+  }
+});
+
 export default router;

@@ -28,7 +28,7 @@ interface AppContentProps {
 
 function AppContent({ Component, pageProps }: AppContentProps) {
   const router = useRouter();
-  const { setUser, isAuthenticated } = useAuthState();
+  const { setUser, isAuthenticated, user } = useAuthState();
   const isPublicRoute = publicRoutes.includes(router.pathname);
   const [authInitialized, setAuthInitialized] = useState(false);
   
@@ -206,7 +206,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         <AuthGuard>
           <Component {...pageProps} />
           <SwipeIndicator enabled={isAuthenticated} />
-          <RemoteActionsBar />
+          {isAuthenticated && user?.role !== 'customer' && <RemoteActionsBar />}
         </AuthGuard>
       )}
       <Notifications />

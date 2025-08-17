@@ -78,29 +78,36 @@ export function OperationsDashboardEnhanced() {
     
     try {
       // Fetch metrics
-      const [healthResponse, messagesResponse, usersResponse, ticketsResponse] = await Promise.all([
+      const [healthResponse, messagesResponse, usersResponse, ticketsResponse, messagesStatsResponse] = await Promise.all([
         axios.get(`${API_URL}/api/health`),
         axios.get(`${API_URL}/api/messages/recent`, {
           headers: { Authorization: `Bearer ${token}` }
-        }),
+        }).catch(() => ({ data: { success: false, data: [] } })),
         axios.get(`${API_URL}/auth/users`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: { data: [] } })),
+        }).catch(() => ({ data: { success: false, data: [] } })),
         axios.get(`${API_URL}/api/tickets/active-count`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: { count: 0 } }))
+        }).catch(() => ({ data: { count: 0 } })),
+        axios.get(`${API_URL}/api/messages/stats/today`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { count: 0, aiResponseRate: 0 } }))
       ]);
 
       // Calculate real metrics
-      const userCount = usersResponse.data?.data?.length || usersResponse.data?.length || 0;
+      const users = Array.isArray(usersResponse.data?.data) ? usersResponse.data.data : 
+                   Array.isArray(usersResponse.data) ? usersResponse.data : [];
+      const userCount = users.length;
       const activeTicketCount = ticketsResponse.data?.count || 0;
+      const messagesToday = messagesStatsResponse.data?.count || 0;
+      const aiRate = messagesStatsResponse.data?.aiResponseRate || 0;
       
       // Update metrics
       setMetrics({
         totalUsers: userCount,
         activeTickets: activeTicketCount,
-        messagesProcessed: 247, // This would need a real endpoint
-        aiResponseRate: 94.5 // This would need a real endpoint
+        messagesProcessed: messagesToday,
+        aiResponseRate: aiRate
       });
 
       // Process messages

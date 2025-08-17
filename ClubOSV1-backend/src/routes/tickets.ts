@@ -229,6 +229,27 @@ router.post('/:id/comments', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/tickets/active-count - Get active ticket count
+router.get('/active-count', authenticate, async (req, res) => {
+  try {
+    const tickets = await db.getTickets({ status: 'open' });
+    const inProgressTickets = await db.getTickets({ status: 'in-progress' });
+    const activeCount = tickets.length + inProgressTickets.length;
+    
+    res.json({
+      success: true,
+      count: activeCount
+    });
+  } catch (error) {
+    logger.error('Failed to get active ticket count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get active ticket count',
+      count: 0
+    });
+  }
+});
+
 // GET /api/tickets/stats - Get ticket statistics
 router.get('/stats', authenticate, async (req, res) => {
   try {
