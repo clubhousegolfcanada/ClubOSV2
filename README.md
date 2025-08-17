@@ -34,7 +34,7 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 - **Checklists**: Daily maintenance, auto-ticket creation, admin-only task editing
 - **Remote Control**: 
   - NinjaOne integration for simulator/TV/music control
-  - Ubiquiti UniFi Access for door control (staff & future customer access)
+  - Ubiquiti UniFi Access for door control (Cloudflare tunnel ready - see [UniFi Setup Guide](./UNIFI-IMPLEMENTATION-GUIDE.md))
 - **Analytics**: Usage tracking, performance metrics, cost monitoring
 - **Messages**: 
   - Two-way SMS via OpenPhone with AI suggestions
@@ -129,6 +129,13 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Recent Changes
+- **v1.12.0**: UniFi Access Cloudflare Tunnel Integration (Ready for Deployment)
+  - Complete refactor to use Cloudflare tunnels instead of port forwarding
+  - CloudflareTunnelManager service for multi-location support
+  - Enhanced UniFiAccessService with caching and health monitoring
+  - Migration scripts and rollback procedures included
+  - Comprehensive testing suite and implementation guide
+  - See [Implementation Guide](./UNIFI-IMPLEMENTATION-GUIDE.md) for setup
 - **v1.11.24**: UniFi Access API Integration for Dartmouth
   - Implemented official UniFi Developer API for door control
   - Added remote door unlock for Dartmouth location (office door)
@@ -277,6 +284,11 @@ Run the security verification script to check your security posture:
 - `VAPID_PUBLIC_KEY` - Push notification public key (REQUIRED for notifications)
 - `VAPID_PRIVATE_KEY` - Push notification private key (REQUIRED for notifications)
 - `VAPID_EMAIL` - mailto: contact for push service (REQUIRED for notifications)
+- **UniFi/Cloudflare** (Optional - for door control):
+  - `UNIFI_USE_CLOUDFLARE` - Enable Cloudflare tunnels (set to `true` when ready)
+  - `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
+  - `CLOUDFLARE_API_TOKEN` - Cloudflare API token
+  - See `.env.cloudflare.example` for complete UniFi configuration
 - See `.env.example` for complete list
 
 **Generate VAPID Keys**:

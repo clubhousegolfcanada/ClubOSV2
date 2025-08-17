@@ -15,9 +15,10 @@ import { authenticate } from '../middleware/auth';
 import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+// Only initialize OpenAI if API key is present
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-});
+}) : null;
 
 const router = Router();
 

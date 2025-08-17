@@ -1,0 +1,130 @@
+{
+  "locations": {
+    "dartmouth": {
+      "name": "Dartmouth",
+      "displayName": "Dartmouth Golf & Country Club",
+      "tunnel": "dartmouth-unifi.clubos.internal",
+      "enabled": true,
+      "doors": {
+        "staff": {
+          "id": "28:70:4e:80:de:3b",
+          "mac": "28:70:4e:80:de:3b",
+          "name": "Staff Door",
+          "displayName": "Staff Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 60,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator", "support"]
+        },
+        "main": {
+          "id": "dartmouth-main",
+          "name": "Main Door",
+          "displayName": "Main Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 30,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator"]
+        }
+      }
+    },
+    "bedford": {
+      "name": "Bedford",
+      "displayName": "Bedford Basin Yacht Club",
+      "tunnel": "bedford-unifi.clubos.internal",
+      "enabled": true,
+      "doors": {
+        "front": {
+          "id": "28:70:4e:80:c4:4f",
+          "mac": "28:70:4e:80:c4:4f",
+          "name": "Front Door",
+          "displayName": "Front Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 60,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator", "support"]
+        },
+        "middle": {
+          "id": "28:70:4e:80:de:f3",
+          "mac": "28:70:4e:80:de:f3",
+          "name": "Middle Door",
+          "displayName": "Middle Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 60,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator", "support"]
+        }
+      }
+    },
+    "stratford": {
+      "name": "Stratford",
+      "displayName": "Stratford Country Club",
+      "tunnel": "stratford-unifi.clubos.internal",
+      "enabled": false,
+      "doors": {
+        "main": {
+          "id": "stratford-main",
+          "name": "Main Door",
+          "displayName": "Main Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 30,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator"]
+        }
+      }
+    },
+    "bayerslake": {
+      "name": "Bayers Lake",
+      "displayName": "Bayers Lake Mystery Walls",
+      "tunnel": "bayerslake-unifi.clubos.internal",
+      "enabled": false,
+      "doors": {
+        "main": {
+          "id": "bayerslake-main",
+          "name": "Main Door",
+          "displayName": "Main Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 30,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator"]
+        }
+      }
+    },
+    "truro": {
+      "name": "Truro",
+      "displayName": "Truro Golf Club",
+      "tunnel": "truro-unifi.clubos.internal",
+      "enabled": false,
+      "doors": {
+        "main": {
+          "id": "truro-main",
+          "name": "Main Door",
+          "displayName": "Main Entrance",
+          "defaultDuration": 5,
+          "maxDuration": 30,
+          "requiresAuth": true,
+          "allowedRoles": ["admin", "operator"]
+        }
+      }
+    }
+  },
+  "defaultSettings": {
+    "unlockDuration": 5,
+    "maxUnlockDuration": 300,
+    "requireAuthentication": true,
+    "logAllAccess": true,
+    "enableEmergencyOverride": true,
+    "cacheTimeout": 60
+  },
+  "emergencyContacts": [
+    {
+      "name": "Security",
+      "phone": "+1-555-SECURITY",
+      "priority": 1
+    },
+    {
+      "name": "Maintenance",
+      "phone": "+1-555-MAINTAIN",
+      "priority": 2
+    }
+  ]
+}

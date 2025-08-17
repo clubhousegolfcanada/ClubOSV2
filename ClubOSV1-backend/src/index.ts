@@ -215,7 +215,11 @@ app.use('/api/tickets', ticketsRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
 app.use('/api/slack', slackRoutes);
-app.use('/api/customer', customerRoutes);
+// Legacy customer routes (if any)
+// app.use('/api/customer', customerRoutes);
+
+// New Clubhouse customer app API v2
+app.use('/api/v2/customer', customerRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/access', accessRoutes);
