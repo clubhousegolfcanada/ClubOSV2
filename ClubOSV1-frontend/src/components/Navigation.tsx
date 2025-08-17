@@ -328,12 +328,8 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         aria-label="Mobile navigation menu"
         role="navigation"
       >
-        {/* Navigation items - slide and fade when user menu is expanded */}
-        <div className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 transition-all duration-500 ease-in-out ${
-          mobileUserMenuOpen 
-            ? 'opacity-0 transform -translate-y-4 max-h-0 overflow-hidden pointer-events-none' 
-            : 'opacity-100 transform translate-y-0 max-h-[400px]'
-        }`}>
+        {/* Navigation items - always visible */}
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -356,7 +352,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
           ))}
         </div>
         <div className="pt-4 pb-3 border-t border-[var(--border-secondary)]">
-          <div className="px-4">
+          <div className="px-4 relative">
             {user && (
               <>
                 {/* Collapsible User Menu */}
@@ -369,21 +365,21 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     <span>{user.name || user.email?.split('@')[0]}</span>
                   </div>
                   <ChevronDown 
-                    className={`w-5 h-5 transition-transform ${
-                      mobileUserMenuOpen ? 'rotate-180' : ''
+                    className={`w-5 h-5 transition-transform duration-300 ${
+                      mobileUserMenuOpen ? 'rotate-180' : 'rotate-0'
                     }`}
                   />
                 </button>
                 
-                {/* Collapsible Content with smooth animation */}
+                {/* Collapsible Content with proper animations and z-index */}
                 <div 
-                  className={`transition-all duration-500 ease-in-out overflow-hidden transform origin-top ${
+                  className={`relative z-50 transition-all duration-300 ease-in-out overflow-hidden ${
                     mobileUserMenuOpen 
-                      ? 'max-h-[500px] opacity-100 scale-y-100' 
-                      : 'max-h-0 opacity-0 scale-y-0'
+                      ? 'max-h-[500px] opacity-100' 
+                      : 'max-h-0 opacity-0'
                   }`}
                 >
-                  <div className={`space-y-2 mt-3 bg-[var(--bg-secondary)] rounded-lg p-3 transition-all duration-300 ${
+                  <div className={`space-y-2 mt-3 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-lg p-3 shadow-lg transition-transform duration-300 ${
                     mobileUserMenuOpen ? 'transform translate-y-0' : 'transform -translate-y-2'
                   }`}>
                     <div className="text-xs text-[var(--text-muted)] px-2">
