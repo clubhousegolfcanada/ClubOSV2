@@ -28,13 +28,13 @@ export default function CustomerApp() {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen bg-[#fafafa]">
         {/* Customer Navigation - Mobile optimized */}
         <CustomerNavigation />
         
         {/* Main Content - Mobile first design */}
-        <main className="pb-20 pt-16">
-          <div className="container mx-auto px-4 max-w-md md:max-w-2xl lg:max-w-7xl">
+        <main className="pb-20 lg:pb-8 pt-16 lg:pt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <CustomerDashboard />
           </div>
         </main>
