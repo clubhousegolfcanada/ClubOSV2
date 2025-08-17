@@ -413,8 +413,8 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity - Hidden on mobile */}
-        <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+        {/* Recent Activity - Completely hidden (not implemented) */}
+        {/* <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Recent Activity</h2>
             <Activity className="w-4 h-4 text-[#0B3D3A]" />
@@ -442,10 +442,10 @@ export const CustomerDashboard: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
+      </div> */}
 
-      {/* Stats Overview - Hidden on mobile */}
-      <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      {/* Stats Overview - Completely hidden (not implemented) */}
+      {/* <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-900">This Month</h2>
           <TrendingUp className="w-4 h-4 text-[#0B3D3A]" />
@@ -480,7 +480,7 @@ export const CustomerDashboard: React.FC = () => {
           View Details
           <ChevronRight className="w-3 h-3 ml-1" />
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };

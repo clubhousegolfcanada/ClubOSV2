@@ -114,7 +114,7 @@ const CustomerNavigation: React.FC = () => {
             {/* Mode Toggle for Admin and Operator - Desktop */}
             {(user?.role === 'admin' || user?.role === 'operator') && (
               <div className="hidden sm:block">
-                <ModeToggle variant="compact" />
+                <ModeToggle />
               </div>
             )}
           </div>
@@ -213,8 +213,7 @@ const CustomerNavigation: React.FC = () => {
                 <>
                   <div className="border-t border-gray-200 my-4" />
                   <div className="px-3">
-                    <div className="text-xs text-gray-500 mb-2">View Mode</div>
-                    <ModeToggle variant="compact" />
+                    <ModeToggle />
                   </div>
                 </>
               )}

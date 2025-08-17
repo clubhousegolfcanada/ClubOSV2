@@ -6,6 +6,7 @@ import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
 import ModeToggle from '@/components/ModeToggle';
+import ThemeToggle from '@/components/ThemeToggle';
 import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar, CreditCard } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
@@ -209,21 +210,14 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                         {user.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                       </button>
                       
-                      <button
-                        onClick={toggleTheme}
-                        className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] flex items-center justify-between transition-colors"
-                      >
-                        <span>Theme</span>
-                        <span className="text-xs bg-[var(--bg-tertiary)] px-2 py-1 rounded">
-                          {theme.toUpperCase()}
-                        </span>
-                      </button>
+                      <div className="px-4 py-2">
+                        <ThemeToggle />
+                      </div>
                       
                       {/* Mode Toggle for Admin and Operator - Fixed positioning */}
                       {(user.role === 'admin' || user.role === 'operator') && (
                         <div className="px-4 py-3 border-t border-[var(--border-secondary)] mt-1">
-                          <div className="text-xs text-[var(--text-muted)] mb-2">View Mode</div>
-                          <ModeToggle variant="compact" />
+                          <ModeToggle />
                         </div>
                       )}
                     </div>
@@ -401,19 +395,14 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     >
                       {user.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                     </Link>
-                    <button
-                      onClick={toggleTheme}
-                      className="block w-full text-left px-3 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
-                    >
-                      Theme: {theme.toUpperCase()}
-                    </button>
+                    <div className="px-3 py-2">
+                      <ThemeToggle />
+                    </div>
                     {/* Mode Toggle for Admin and Operator */}
                     {(user.role === 'admin' || user.role === 'operator') && (
                       <div className="pt-3 pb-1 border-t border-[var(--border-secondary)] mt-2">
-                        <div className="text-xs text-[var(--text-muted)] mb-2 px-2">View Mode</div>
                         <div className="px-2">
-                          <ModeToggle variant="compact" />
-                        </div>
+                          <ModeToggle />
                       </div>
                     )}
                   </div>
