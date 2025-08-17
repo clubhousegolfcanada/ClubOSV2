@@ -412,6 +412,9 @@ const RequestForm: React.FC = () => {
     
     // Reset all state to defaults
     setRoutePreference('Auto'); // Reset to Auto route
+    setSelectedLocation(''); // Clear location selection
+    setShowAdvancedRouting(false); // Close Advanced selector if open
+    setShowLocationSelector(false); // Close Location selector if open
     setSmartAssistEnabled(true); // Enable Smart Assist by default
     setShowResponse(false);
     resetRequestState();
