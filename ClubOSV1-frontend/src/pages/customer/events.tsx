@@ -56,7 +56,7 @@ export default function CustomerEvents() {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Current Tournament
+                  Pro League
                 </button>
                 <button
                   onClick={() => setActiveLeaderboard('original')}
@@ -66,7 +66,7 @@ export default function CustomerEvents() {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  All Events
+                  House League
                 </button>
               </div>
             </div>
@@ -77,7 +77,7 @@ export default function CustomerEvents() {
             {activeLeaderboard === 'new' ? (
               <iframe
                 src="https://tm-short.me/Tqjb7AS"
-                title="Current Tournament Leaderboard"
+                title="Pro League Leaderboard"
                 className="w-full h-full"
                 style={{ 
                   border: 'none',
@@ -88,7 +88,7 @@ export default function CustomerEvents() {
             ) : (
               <iframe
                 src="https://tm-short.me/pZY461g"
-                title="All Events Leaderboard"
+                title="House League Leaderboard"
                 className="w-full h-full"
                 style={{ 
                   border: 'none',
