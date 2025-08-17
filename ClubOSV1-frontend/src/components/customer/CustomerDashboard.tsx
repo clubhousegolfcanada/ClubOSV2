@@ -413,8 +413,8 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity - Compact */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+        {/* Recent Activity - Hidden on mobile */}
+        <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Recent Activity</h2>
             <Activity className="w-4 h-4 text-[#0B3D3A]" />
@@ -444,8 +444,8 @@ export const CustomerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Overview - Compact */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      {/* Stats Overview - Hidden on mobile */}
+      <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-900">This Month</h2>
           <TrendingUp className="w-4 h-4 text-[#0B3D3A]" />
