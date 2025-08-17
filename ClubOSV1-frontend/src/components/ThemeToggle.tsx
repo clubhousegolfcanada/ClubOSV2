@@ -1,21 +1,14 @@
 import React from 'react';
-import { useStore } from '../state/useStore';
+import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle: React.FC = () => {
-  const { theme, setTheme } = useStore();
+  const { theme, toggleTheme } = useTheme();
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
     if (theme === newTheme) return; // Already in this theme
     
-    setTheme(newTheme);
-    localStorage.setItem('clubos_theme', newTheme);
-    
-    // Apply theme to document
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    // toggleTheme handles all the logic including localStorage and class updates
+    toggleTheme();
   };
 
   return (
