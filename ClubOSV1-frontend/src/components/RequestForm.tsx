@@ -601,7 +601,7 @@ const RequestForm: React.FC = () => {
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                     disabled={isSubmitting || demoMode}
                   >
-                    {selectedLocation || 'Location'}
+                    Location
                   </button>
                 </>
               ) : showAdvancedRouting ? (
@@ -761,7 +761,7 @@ const RequestForm: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setRoutePreference(route);
-                              // Don't hide the selector after selection
+                              setShowAdvancedRouting(false);
                             }}
                             className={`px-2 py-0.5 text-xs transition-all rounded-full ${
                               routePreference === route
@@ -796,7 +796,7 @@ const RequestForm: React.FC = () => {
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                       disabled={isSubmitting || demoMode}
                     >
-                      {selectedLocation || 'Location'}
+                      Location
                     </button>
                   ) : (
                     <div className="flex items-center gap-1">
@@ -809,7 +809,7 @@ const RequestForm: React.FC = () => {
                             onClick={() => {
                               setValue('location', loc);
                               setSelectedLocation(loc);
-                              // Don't hide the selector after selection
+                              setShowLocationSelector(false);
                             }}
                             className={`px-2 py-0.5 text-xs transition-all rounded-full ${
                               selectedLocation === loc
@@ -913,7 +913,7 @@ const RequestForm: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setRoutePreference(route);
-                        // Don't hide the selector after selection
+                        setShowAdvancedRouting(false);
                       }}
                       className={`px-3 py-1 text-xs transition-all rounded-full whitespace-nowrap ${
                         routePreference === route
@@ -946,7 +946,7 @@ const RequestForm: React.FC = () => {
                       onClick={() => {
                         setValue('location', loc);
                         setSelectedLocation(loc);
-                        // Don't hide the selector after selection
+                        setShowLocationSelector(false);
                       }}
                       className={`px-3 py-1 text-xs transition-all rounded-full whitespace-nowrap ${
                         selectedLocation === loc
