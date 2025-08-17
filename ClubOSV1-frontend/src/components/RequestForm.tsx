@@ -800,6 +800,7 @@ const RequestForm: React.FC = () => {
                     </button>
                   ) : (
                     <div className="flex items-center gap-1">
+                      <span className="text-xs text-[var(--text-muted)]">Location:</span>
                       <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
                         {['Bedford', 'Dartmouth', 'Bayers Lake'].map(loc => (
                           <button
@@ -808,7 +809,7 @@ const RequestForm: React.FC = () => {
                             onClick={() => {
                               setValue('location', loc);
                               setSelectedLocation(loc);
-                              setShowLocationSelector(false);
+                              // Don't hide the selector after selection
                             }}
                             className={`px-2 py-0.5 text-xs transition-all rounded-full ${
                               selectedLocation === loc
@@ -823,11 +824,7 @@ const RequestForm: React.FC = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setShowLocationSelector(false);
-                          setSelectedLocation('');
-                          setValue('location', '');
-                        }}
+                        onClick={() => setShowLocationSelector(false)}
                         className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                       >
                         ✕
