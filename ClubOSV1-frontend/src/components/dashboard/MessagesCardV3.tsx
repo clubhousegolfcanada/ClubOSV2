@@ -57,7 +57,9 @@ export default function MessagesCardV3() {
       });
 
       if (response.data.success) {
-        const convs = response.data.data.map((conv: any) => {
+        // Ensure data is an array before mapping
+        const rawData = response.data.data || [];
+        const convs = Array.isArray(rawData) ? rawData.map((conv: any) => {
           const lastMsg = conv.lastMessage || conv.messages?.[0];
           return {
             id: conv.id,
@@ -70,7 +72,7 @@ export default function MessagesCardV3() {
             location: conv.location || null,
             bay: conv.bay || null
           };
-        });
+        }) : [];
         
         // Clear AI suggestions for conversations that have new messages
         setConversations(prevConvs => {
