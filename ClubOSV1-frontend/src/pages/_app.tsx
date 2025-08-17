@@ -39,8 +39,10 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   // Use message context for unread count
   const { unreadCount } = useMessages();
   
-  // Enable swipe navigation for authenticated users
-  useSwipeNavigation({ enabled: isAuthenticated && !isPublicRoute });
+  // Enable swipe navigation for authenticated users (but not in customer mode or for customer role)
+  useSwipeNavigation({ 
+    enabled: isAuthenticated && !isPublicRoute && viewMode !== 'customer' && user?.role !== 'customer' 
+  });
 
   useEffect(() => {
     // Initialize CSRF token
@@ -227,7 +229,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           <div className={showNavigation && viewMode !== 'customer' ? 'pt-14' : ''}>
             <Component {...pageProps} />
           </div>
-          <SwipeIndicator enabled={isAuthenticated} />
+          <SwipeIndicator enabled={isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer'} />
           {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && <RemoteActionsBar />}
         </AuthGuard>
       )}
