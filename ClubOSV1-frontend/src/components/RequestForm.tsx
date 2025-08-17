@@ -70,6 +70,8 @@ const RequestForm: React.FC = () => {
   const [isWaitingForReply, setIsWaitingForReply] = useState(false);
   const [lastSlackThreadTs, setLastSlackThreadTs] = useState<string | null>(null);
   const [showAdvancedRouting, setShowAdvancedRouting] = useState(false);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [conversationExpanded, setConversationExpanded] = useState(true);
@@ -578,20 +580,31 @@ const RequestForm: React.FC = () => {
         {/* Title Header with Advanced button on mobile */}
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
-          {/* Advanced button for mobile - top right */}
+          {/* Advanced and Location buttons for mobile - top right */}
           {smartAssistEnabled && !isTicketMode && (
-            <div className="sm:hidden">
-              {!showAdvancedRouting ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedRouting(true)}
-                  className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                  style={{ fontFamily: 'Poppins, sans-serif' }}
-                  disabled={isSubmitting || demoMode}
-                >
-                  Advanced
-                </button>
-              ) : (
+            <div className="sm:hidden flex items-center gap-2">
+              {!showAdvancedRouting && !showLocationSelector ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedRouting(true)}
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                    disabled={isSubmitting || demoMode}
+                  >
+                    Advanced
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationSelector(true)}
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                    disabled={isSubmitting || demoMode}
+                  >
+                    Location
+                  </button>
+                </>
+              ) : showAdvancedRouting ? (
                 <button
                   type="button"
                   onClick={() => setShowAdvancedRouting(false)}
@@ -599,7 +612,15 @@ const RequestForm: React.FC = () => {
                 >
                   ✕
                 </button>
-              )}
+              ) : showLocationSelector ? (
+                <button
+                  type="button"
+                  onClick={() => setShowLocationSelector(false)}
+                  className="text-xs text-[var(--text-primary)]"
+                >
+                  ✕
+                </button>
+              ) : null}
             </div>
           )}
         </div>
@@ -657,11 +678,10 @@ const RequestForm: React.FC = () => {
             )}
           </div> */}
 
-          {/* Location and Mode Toggle Row - Inline */}
-          <div className="flex flex-row gap-3 mb-3">
-            
+          {/* Mode Toggle Row */}
+          <div className="mb-3">
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
@@ -717,9 +737,10 @@ const RequestForm: React.FC = () => {
               </div>
               <span className="text-xs text-[var(--text-muted)]">Ticket</span>
               
-              {/* Advanced Button or Bot Options - Desktop only */}
+              {/* Advanced and Location Buttons - Desktop only */}
               {smartAssistEnabled && !isTicketMode && (
-                <div className="hidden sm:flex items-center">
+                <div className="hidden sm:flex items-center gap-2">
+                  {/* Advanced Button */}
                   {!showAdvancedRouting ? (
                     <button
                       type="button"
@@ -765,20 +786,55 @@ const RequestForm: React.FC = () => {
                       </button>
                     </div>
                   )}
+                  
+                  {/* Location Button */}
+                  {!showLocationSelector ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationSelector(true)}
+                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      Location
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
+                        {['Bedford', 'Dartmouth', 'Bayers Lake'].map(loc => (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => {
+                              setValue('location', loc);
+                              setSelectedLocation(loc);
+                            }}
+                            className={`px-2 py-0.5 text-xs transition-all rounded-full ${
+                              selectedLocation === loc
+                                ? 'bg-[var(--accent)] text-white'
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                            disabled={isSubmitting || demoMode}
+                          >
+                            {loc.replace(' Lake', '')}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowLocationSelector(false);
+                          setSelectedLocation('');
+                          setValue('location', '');
+                        }}
+                        className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-            
-            {/* Location Input - Fixed width aligned right */}
-            <div className="w-[160px] sm:w-[200px]">
-              <input
-                id="locationInput"
-                {...register('location')}
-                type="text"
-                className="form-input py-1.5 text-sm w-full"
-                placeholder="Location"
-                disabled={isSubmitting || demoMode}
-              />
             </div>
           </div>
 
@@ -872,6 +928,35 @@ const RequestForm: React.FC = () => {
                        route === 'Emergency' ? 'Emergency' :
                        route === 'Booking&Access' ? 'Booking' :
                        route === 'TechSupport' ? 'Tech' : 'Brand'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Location Selector for Mobile - Below toggle */}
+          {smartAssistEnabled && !isTicketMode && showLocationSelector && (
+            <div className="sm:hidden mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--text-muted)]">Location:</span>
+                <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5 flex-1">
+                  {['Bedford', 'Dartmouth', 'Bayers Lake'].map(loc => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => {
+                        setValue('location', loc);
+                        setSelectedLocation(loc);
+                      }}
+                      className={`px-3 py-1 text-xs transition-all rounded-full whitespace-nowrap ${
+                        selectedLocation === loc
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'text-[var(--text-secondary)]'
+                      }`}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      {loc.replace(' Lake', '')}
                     </button>
                   ))}
                 </div>
