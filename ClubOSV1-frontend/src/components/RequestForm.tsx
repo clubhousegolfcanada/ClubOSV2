@@ -769,15 +769,17 @@ const RequestForm: React.FC = () => {
               )}
             </div>
             
-            {/* Location Input - Takes remaining space inline */}
-            <input
-              id="locationInput"
-              {...register('location')}
-              type="text"
-              className="form-input py-1.5 text-sm flex-1"
-              placeholder="Location"
-              disabled={isSubmitting || demoMode}
-            />
+            {/* Location Input - Constrained width */}
+            <div className="flex-1 max-w-[200px] sm:max-w-[250px]">
+              <input
+                id="locationInput"
+                {...register('location')}
+                type="text"
+                className="form-input py-1.5 text-sm w-full"
+                placeholder="Location"
+                disabled={isSubmitting || demoMode}
+              />
+            </div>
           </div>
 
           {/* Ticket Options */}
