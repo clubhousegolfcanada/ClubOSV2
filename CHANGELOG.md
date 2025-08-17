@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.3] - 2025-08-17
+
+### Changed
+- **Operations Center Streamlining**
+  - Removed Dashboard tab as it provided no actionable value
+  - Made Users the default first tab for immediate access
+  - Reduced bundle size by 2.7 kB (20.6 kB → 17.9 kB)
+  - Simplified navigation with 4 focused tabs instead of 5
+
 ## [1.12.2] - 2025-08-17
 
 ### Changed

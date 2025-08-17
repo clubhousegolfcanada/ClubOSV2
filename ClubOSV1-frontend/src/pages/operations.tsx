@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuthState } from '@/state/useStore';
-import { LayoutDashboard, Users, Brain, Zap, BarChart3 } from 'lucide-react';
+import { Users, Brain, Zap, BarChart3 } from 'lucide-react';
 
 // Import new operation components
-import { OperationsDashboardEnhanced } from '@/components/operations/dashboard/OperationsDashboardEnhanced';
 import { OperationsUsers } from '@/components/operations/users/OperationsUsers';
 import { OperationsAICenter } from '@/components/operations/ai/OperationsAICenter';
 import { OperationsIntegrations } from '@/components/operations/integrations/OperationsIntegrations';
 import { OperationsAnalytics } from '@/components/operations/analytics/OperationsAnalytics';
 
-type TabType = 'dashboard' | 'users' | 'ai' | 'integrations' | 'analytics';
+type TabType = 'users' | 'ai' | 'integrations' | 'analytics';
 
 export default function Operations() {
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabType>('users');
 
   // Check if user has permission to view this page
   useEffect(() => {
@@ -24,11 +23,11 @@ export default function Operations() {
     }
   }, [user]);
 
-  // Listen for tab change events from dashboard
+  // Listen for tab change events
   useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail as TabType;
-      if (tab && ['dashboard', 'users', 'ai', 'integrations', 'analytics'].includes(tab)) {
+      if (tab && ['users', 'ai', 'integrations', 'analytics'].includes(tab)) {
         setActiveTab(tab);
       }
     };
@@ -51,7 +50,6 @@ export default function Operations() {
   }
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
     { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, adminOnly: true },
     { id: 'ai', label: 'AI Center', icon: <Brain className="h-4 w-4" />, adminOnly: true },
     { id: 'integrations', label: 'Integrations', icon: <Zap className="h-4 w-4" />, adminOnly: true },
@@ -62,8 +60,6 @@ export default function Operations() {
 
   const getTabDescription = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return 'System overview and real-time status monitoring';
       case 'users':
         return 'Manage operators, customers, roles, and access permissions';
       case 'ai':
@@ -79,8 +75,6 @@ export default function Operations() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <OperationsDashboardEnhanced />;
       case 'users':
         return user.role === 'admin' ? <OperationsUsers /> : null;
       case 'ai':
@@ -90,7 +84,7 @@ export default function Operations() {
       case 'analytics':
         return <OperationsAnalytics />;
       default:
-        return <OperationsDashboardEnhanced />;
+        return user.role === 'admin' ? <OperationsUsers /> : <OperationsAnalytics />;
     }
   };
 
