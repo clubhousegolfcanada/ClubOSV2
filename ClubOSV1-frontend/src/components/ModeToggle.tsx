@@ -56,9 +56,10 @@ const ModeToggle: React.FC<ModeToggleProps> = ({ variant = 'default' }) => {
       <div className="flex items-center bg-[var(--bg-secondary)] rounded-lg p-1">
         <button
           onClick={() => {
-            if (isCustomerMode) {
-              handleToggle();
-            }
+            if (!isCustomerMode) return; // Already in operator mode
+            setViewMode('operator');
+            localStorage.setItem('clubos_view_mode', 'operator');
+            router.push('/');
           }}
           className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
             !isCustomerMode
@@ -71,9 +72,10 @@ const ModeToggle: React.FC<ModeToggleProps> = ({ variant = 'default' }) => {
         </button>
         <button
           onClick={() => {
-            if (!isCustomerMode) {
-              handleToggle();
-            }
+            if (isCustomerMode) return; // Already in customer mode
+            setViewMode('customer');
+            localStorage.setItem('clubos_view_mode', 'customer');
+            router.push('/customer');
           }}
           className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
             isCustomerMode
