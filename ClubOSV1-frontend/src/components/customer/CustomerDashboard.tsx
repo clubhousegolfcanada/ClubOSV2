@@ -242,60 +242,62 @@ export const CustomerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-start justify-between">
+    <div className="space-y-4">
+      {/* Welcome Section - Compact */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-lg font-semibold text-gray-900">
               Welcome back, {customerProfile?.displayName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Guest'}
             </h1>
-            {customerProfile?.hubspotName && customerProfile.hubspotName !== customerProfile.displayName && (
-              <p className="text-sm text-gray-500 mt-0.5">
-                {customerProfile.company ? `${customerProfile.company} Member` : 'Valued Member'}
-              </p>
-            )}
-            <p className="mt-1 text-gray-600">
-              Ready to improve your game? You have {upcomingBookings.length} upcoming {upcomingBookings.length === 1 ? 'booking' : 'bookings'}.
+            <p className="text-sm text-gray-600 mt-0.5">
+              {upcomingBookings.length > 0 
+                ? `${upcomingBookings.length} upcoming ${upcomingBookings.length === 1 ? 'booking' : 'bookings'} today`
+                : 'No bookings today - book your box now'}
             </p>
           </div>
           <div className="hidden sm:block">
-            <Zap className="w-8 h-8 text-[#0B3D3A]" />
+            <div className="flex items-center space-x-2 text-sm">
+              <Zap className="w-4 h-4 text-[#0B3D3A]" />
+              <span className="text-gray-500">Active Member</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Quick Actions Grid - Compact Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {quickActions.map((action, index) => (
           <button
             key={index}
             onClick={action.onClick}
-            className="group relative bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-[#0B3D3A]/20 transition-all duration-200"
+            className="group relative bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md hover:border-[#0B3D3A]/30 transition-all duration-200"
           >
-            <div className="relative">
-              <div className="inline-flex p-3 rounded-lg bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors mb-4">
-                <action.icon className="w-6 h-6 text-[#0B3D3A]" />
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 p-2 rounded-md bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors">
+                <action.icon className="w-4 h-4 text-[#0B3D3A]" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">{action.label}</h3>
-              <p className="text-sm text-gray-500">{action.description}</p>
+              <div className="text-left">
+                <h3 className="text-sm font-medium text-gray-900">{action.label}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
+              </div>
             </div>
           </button>
         ))}
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* My Clubhouse Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">My Clubhouse</h2>
+      {/* Main Content Grid - Tighter Spacing */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* My Clubhouse Card - Compact */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 relative">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-900">My Clubhouse</h2>
             <button
               onClick={() => setShowLocationSelector(!showLocationSelector)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
               title="Change location"
             >
-              <MapPin className="w-5 h-5 text-[#0B3D3A]" />
+              <MapPin className="w-4 h-4 text-[#0B3D3A]" />
             </button>
           </div>
           
@@ -321,32 +323,29 @@ export const CustomerDashboard: React.FC = () => {
           )}
           
           {myClubhouse ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <p className="text-sm text-gray-500">{myClubhouse.city}</p>
-                <p className="text-xl font-bold text-gray-900">{myClubhouse.name}</p>
+                <p className="text-xs text-gray-500">{myClubhouse.city}</p>
+                <p className="text-base font-semibold text-gray-900">{myClubhouse.name}</p>
               </div>
-              <div className="pt-4 border-t border-gray-100">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Available Now</span>
-                    <span className="text-sm font-semibold text-green-600">
-                      {myClubhouse.availableBoxes} {myClubhouse.availableBoxes === 1 ? 'box' : 'boxes'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Next Available</span>
-                    <span className="text-sm font-medium text-gray-900">{myClubhouse.nextAvailable}</span>
-                  </div>
+              <div className="space-y-2 py-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600">Available</span>
+                  <span className="text-xs font-semibold text-green-600">
+                    {myClubhouse.availableBoxes} {myClubhouse.availableBoxes === 1 ? 'box' : 'boxes'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600">Next slot</span>
+                  <span className="text-xs font-medium text-gray-900">{myClubhouse.nextAvailable}</span>
                 </div>
               </div>
               <button 
                 onClick={() => {
-                  // Use location-specific URL if available, otherwise main booking page
                   const url = skeddaUrls[myClubhouse.id] || 'https://clubhouse247golf.skedda.com/booking';
                   window.open(url, '_blank');
                 }}
-                className="w-full mt-4 py-2.5 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors font-medium"
+                className="w-full py-2 bg-[#0B3D3A] text-white text-sm rounded-md hover:bg-[#084a45] transition-colors font-medium"
               >
                 Book Now
               </button>
@@ -365,29 +364,29 @@ export const CustomerDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Upcoming Bookings */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Bookings</h2>
-            <Calendar className="w-5 h-5 text-[#0B3D3A]" />
+        {/* Upcoming Bookings - Compact */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-900">Upcoming Bookings</h2>
+            <Calendar className="w-4 h-4 text-[#0B3D3A]" />
           </div>
           <div className="space-y-3">
             {upcomingBookings.length > 0 ? (
               <>
                 {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-gray-900">{booking.date}</span>
-                      <span className="text-sm font-medium text-[#0B3D3A]">{booking.time}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{booking.box} • {booking.location}</p>
-                    {booking.friends.length > 0 && (
-                      <div className="flex items-center mt-2">
-                        <Users className="w-3 h-3 text-gray-400 mr-1" />
-                        <p className="text-xs text-gray-500">
-                          {booking.friends.join(', ')}
-                        </p>
+                  <div key={booking.id} className="p-2.5 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{booking.date}</span>
+                        <span className="text-xs text-gray-500 ml-2">{booking.time}</span>
                       </div>
+                      <span className="text-xs text-[#0B3D3A] font-medium">{booking.box}</span>
+                    </div>
+                    {booking.friends.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        <Users className="w-3 h-3 inline mr-1" />
+                        {booking.friends.join(', ')}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -414,23 +413,23 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-            <Activity className="w-5 h-5 text-[#0B3D3A]" />
+        {/* Recent Activity - Compact */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-900">Recent Activity</h2>
+            <Activity className="w-4 h-4 text-[#0B3D3A]" />
           </div>
           <div className="space-y-3">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+              <div key={index} className="flex items-start space-x-2 p-1.5 rounded-md hover:bg-gray-50 transition-colors">
                 <div className="flex-shrink-0 mt-0.5">
-                  <div className="p-1.5 bg-gray-100 rounded-lg">
+                  <div className="p-1 bg-gray-100 rounded">
                     {getActivityIcon(activity.type)}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">{activity.message}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{activity.time}</p>
+                  <p className="text-xs text-gray-900 line-clamp-1">{activity.message}</p>
+                  <p className="text-[10px] text-gray-500">{activity.time}</p>
                 </div>
               </div>
             ))}
@@ -445,50 +444,42 @@ export const CustomerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Performance This Month</h2>
-          <TrendingUp className="w-5 h-5 text-[#0B3D3A]" />
+      {/* Stats Overview - Compact */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-900">This Month</h2>
+          <TrendingUp className="w-4 h-4 text-[#0B3D3A]" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <p className="text-3xl font-bold text-gray-900">{stats.roundsPlayed}</p>
-            </div>
-            <p className="text-sm text-gray-600">Rounds Played</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{stats.roundsPlayed}</p>
+            <p className="text-xs text-gray-600">Rounds</p>
           </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <p className="text-3xl font-bold text-gray-900">{stats.avgScore}</p>
-            </div>
-            <p className="text-sm text-gray-600">Average Score</p>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{stats.avgScore}</p>
+            <p className="text-xs text-gray-600">Avg Score</p>
           </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-2">
-              <p className="text-3xl font-bold text-gray-900">
+          <div>
+            <div className="flex items-center space-x-1">
+              <p className="text-2xl font-bold text-gray-900">
                 {Math.abs(stats.improvement)}
               </p>
               {getTrendIcon(stats.improvement)}
             </div>
-            <p className="text-sm text-gray-600">Improvement</p>
+            <p className="text-xs text-gray-600">Improvement</p>
           </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <p className="text-3xl font-bold text-gray-900">{stats.avgDrive}</p>
-            </div>
-            <p className="text-sm text-gray-600">Avg Drive (yds)</p>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{stats.avgDrive}</p>
+            <p className="text-xs text-gray-600">Avg Drive</p>
           </div>
         </div>
-        <div className="mt-6 pt-6 border-t border-gray-100">
-          <button 
-            onClick={() => router.push('/customer/stats')}
-            className="w-full py-2.5 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium flex items-center justify-center"
-          >
-            View Detailed Stats
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
+        <button 
+          onClick={() => router.push('/customer/stats')}
+          className="w-full mt-3 py-1.5 text-xs bg-gray-50 text-gray-700 rounded-md hover:bg-gray-100 transition-colors font-medium flex items-center justify-center"
+        >
+          View Details
+          <ChevronRight className="w-3 h-3 ml-1" />
+        </button>
       </div>
     </div>
   );

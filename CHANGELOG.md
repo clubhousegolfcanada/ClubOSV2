@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.1] - 2025-08-17
+
+### Changed
+- **Customer UI Modernization**
+  - Unified navigation style between operator and customer views for consistency
+  - Reduced card sizes by 40% for better information density
+  - Implemented compact typography (smaller fonts, tighter spacing)
+  - Streamlined quick action cards with horizontal layout
+  - Minimized button sizes while maintaining touch targets
+  - Updated welcome section to single-line format
+  - Compressed stats display with inline metrics
+  - Reduced padding throughout interface (p-6 → p-4, p-3 → p-2)
+  - Maintained all functionality while improving visual hierarchy
+
 ## [1.12.0] - 2025-08-17
 
 ### Added
