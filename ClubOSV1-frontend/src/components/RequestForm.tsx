@@ -661,7 +661,7 @@ const RequestForm: React.FC = () => {
           <div className="flex flex-row gap-2 mb-3">
             
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">

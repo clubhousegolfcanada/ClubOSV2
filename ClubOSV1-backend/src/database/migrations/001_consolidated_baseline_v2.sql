@@ -86,12 +86,14 @@ CREATE TABLE IF NOT EXISTS openphone_conversations (
   processed_at TIMESTAMP,
   assistant_type VARCHAR(50),
   assistant_confidence FLOAT,
-  assistant_response TEXT,
-  INDEX idx_phone_number (phone_number),
-  INDEX idx_updated_at (updated_at DESC),
-  INDEX idx_is_read (is_read),
-  INDEX idx_conversation_id (conversation_id)
+  assistant_response TEXT
 );
+
+-- Indexes for openphone_conversations
+CREATE INDEX IF NOT EXISTS idx_openphone_phone_number ON openphone_conversations(phone_number);
+CREATE INDEX IF NOT EXISTS idx_openphone_updated_at ON openphone_conversations(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_openphone_is_read ON openphone_conversations(is_read);
+CREATE INDEX IF NOT EXISTS idx_openphone_conversation_id ON openphone_conversations(conversation_id);
 
 -- =====================================================
 -- TICKETING SYSTEM
@@ -114,11 +116,13 @@ CREATE TABLE IF NOT EXISTS tickets (
   metadata JSONB DEFAULT '{}',
   CONSTRAINT valid_category CHECK (category IN ('facilities', 'tech', 'general')),
   CONSTRAINT valid_status CHECK (status IN ('open', 'in-progress', 'resolved', 'closed')),
-  CONSTRAINT valid_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-  INDEX idx_status (status),
-  INDEX idx_priority (priority),
-  INDEX idx_created_at (created_at DESC)
+  CONSTRAINT valid_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );
+
+-- Indexes for tickets
+CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
+CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at DESC);
 
 -- Ticket comments
 CREATE TABLE IF NOT EXISTS ticket_comments (
@@ -127,10 +131,12 @@ CREATE TABLE IF NOT EXISTS ticket_comments (
   user_id UUID NOT NULL REFERENCES users(id),
   comment TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_ticket_id (ticket_id),
-  INDEX idx_created_at (created_at)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes for ticket_comments
+CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_at ON ticket_comments(created_at);
 
 -- =====================================================
 -- AI & AUTOMATION
