@@ -946,7 +946,7 @@ const RequestForm: React.FC = () => {
                       onClick={() => {
                         setValue('location', loc);
                         setSelectedLocation(loc);
-                        setShowLocationSelector(false);
+                        // Don't hide the selector after selection
                       }}
                       className={`px-3 py-1 text-xs transition-all rounded-full whitespace-nowrap ${
                         selectedLocation === loc
