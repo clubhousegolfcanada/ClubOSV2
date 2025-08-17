@@ -403,6 +403,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                       <div className="pt-3 pb-1 border-t border-[var(--border-secondary)] mt-2">
                         <div className="px-2">
                           <ModeToggle />
+                        </div>
                       </div>
                     )}
                   </div>
