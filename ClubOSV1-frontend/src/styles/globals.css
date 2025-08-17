@@ -122,10 +122,21 @@
     @apply transition-all duration-300;
   }
 
-  .card:hover {
+  .card:not(.messages-card-no-hover):hover {
     @apply bg-[var(--bg-hover)] border-[var(--border-hover)];
     @apply -translate-y-0.5;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Special styling for messages card */
+  .messages-card-no-hover {
+    @apply bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-3 mb-3;
+    @apply transition-all duration-300;
+  }
+  
+  .messages-card-no-hover:hover {
+    /* No hover effect on the card itself */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   /* Dark mode specific card shadows */
