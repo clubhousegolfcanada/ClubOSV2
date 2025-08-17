@@ -658,11 +658,10 @@ const RequestForm: React.FC = () => {
           </div> */}
 
           {/* Location and Mode Toggle Row - Responsive */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-3">
-            {/* Mobile: Stack vertically, Desktop: Side by side */}
+          <div className="flex flex-col gap-2 mb-3">
             
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-1 justify-center sm:justify-start">
+            <div className="flex items-center gap-2 w-full justify-center sm:justify-start">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
@@ -770,14 +769,14 @@ const RequestForm: React.FC = () => {
               )}
             </div>
             
-            {/* Location Input - Full width on mobile, fixed width on desktop */}
-            <div className="w-full sm:w-48">
+            {/* Location Input - Full width on both mobile and desktop */}
+            <div className="w-full">
               <input
                 id="locationInput"
                 {...register('location')}
                 type="text"
                 className="form-input py-1.5 text-sm w-full"
-                placeholder="Location (e.g., Bedford Bay 2)"
+                placeholder="Location"
                 disabled={isSubmitting || demoMode}
               />
             </div>

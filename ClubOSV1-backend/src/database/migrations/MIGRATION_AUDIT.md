@@ -1,119 +1,139 @@
-# Database Migration Audit
+# Database Migration Audit Report
 
-## Overview
-Total migration files: 29
-Major issues identified: Multiple duplicate table definitions, conflicting schemas, no versioning system
+## Summary
+- **Total Migration Files**: 56+ files
+- **Duplicate Table Creates**: Multiple (tickets, checklist_submissions, etc.)
+- **Conflicting Migrations**: Several migrations modify same tables
+- **Missing Version Control**: No migration tracking table
 
-## Critical Issues
+## Critical Issues Found
 
-### 1. Duplicate Table Definitions
+### 1. Duplicate Table Creation
+- **checklist_submissions**: Created in 005 and 008
+- **tickets**: Created in 000_baseline_schema.sql and 035_create_tickets_table.sql
+- **ai_automation_response_tracking**: Created in 048 and 051
 
-#### checklist_submissions
-- **005_checklist_submissions.sql** - First definition
-- **008_checklist_submissions.sql** - Duplicate definition (3 days later)
-- **Conflict**: Same table created twice, potential data loss
+### 2. Multiple "Fix" Migrations
+- 020_fix_missing_columns.sql
+- 025_fix_openphone_column_types.sql
+- 026_fix_ticket_comments_index.sql
+- 029_fix_gift_card_automation.sql
+- 034_fix_ticket_columns_and_indexes.sql
+- 037_fix_tickets_table_column_names.sql
+- 044_fix_assistant_service_timing.sql
+- 045_fix_extracted_knowledge_column_sizes.sql
+- 051_force_create_missing_tables.sql
+- 053_fix_missing_tables.sql
 
-#### tickets table
-- **002_create_tickets_table.sql** - Original definition
-- **021_fix_tickets_table_column_names.sql** - Column fixes
-- **026_fix_ticket_comments_index.sql** - Index fixes
-- **027_fix_ticket_columns_and_indexes.sql** - More fixes
-- **Issue**: Multiple patches instead of clean migration
+### 3. Conflicting Column Modifications
+- **openphone_conversations**: Modified in migrations 012, 018, 020, 023, 024, 025, 028, 041, 049
+- **tickets**: Modified in migrations 026, 034, 037
 
-#### openphone_conversations
-- **011_openphone_sop_system.sql** - First definition
-- **012_add_openphone_missing_columns.sql** - Missing columns
-- **017_openphone_messages_enhancement.sql** - Enhancements
-- **018_add_updated_at_to_openphone.sql** - More missing columns
-- **020_fix_missing_columns.sql** - More fixes
-- **023_ensure_openphone_columns.sql** - Ensuring columns exist
-- **024_add_updated_at_column.sql** - Another updated_at attempt
-- **025_fix_openphone_column_types.sql** - Type fixes
-- **Issue**: 8 files to define one table!
+### 4. Skipped/Broken Files
+- 007_remote_actions.sql.skip
+- 010_learning_sop_module.sql.broken
 
-### 2. Naming Inconsistencies
-- Some files use descriptive names (e.g., `create_tickets_table.sql`)
-- Others use generic names (e.g., `fix_missing_columns.sql`)
-- No clear versioning pattern
+## Tables Inventory
 
-### 3. Missing Core Tables
-No migration files found for:
-- users table
-- system_config table
-- Other core tables defined in index.ts
+### Core Tables (from baseline)
+1. **users** - Authentication and user management
+2. **tickets** - Support ticket system
+3. **ticket_comments** - Comments on tickets
+4. **feedback** - User feedback on AI responses
+5. **slack_replies** - Slack integration data
+6. **checklist_submissions** - Daily checklist tracking
+7. **checklist_task_customizations** - Custom checklist tasks
+8. **openphone_conversations** - SMS conversations
+9. **remote_action_history** - NinjaOne action logs
+10. **system_config** - System configuration
+11. **knowledge_base** - Knowledge articles
+12. **assistant_knowledge** - AI assistant data
+13. **public_requests** - Public API requests
+14. **push_subscriptions** - Push notification subscriptions
+15. **notification_history** - Notification logs
+16. **notification_preferences** - User notification settings
+17. **ai_prompt_templates** - Prompt templates
+18. **ai_automation_features** - Automation configuration
+19. **ai_automation_usage** - Usage tracking
+20. **ai_automation_response_tracking** - Response tracking
+21. **extracted_knowledge** - AI-extracted knowledge
+22. **hubspot_contact_cache** - HubSpot integration cache
+23. **door_access_log** - UniFi door access logs
+24. **knowledge_store** - New knowledge storage system
 
-### 4. Order Dependencies
-Current numeric prefixes don't reflect actual dependencies:
-- 021 appears twice (ai_prompt_templates.sql and fix_tickets_table_column_names.sql)
-- add-document-relationships.sql has no number
+## Migration Dependencies
 
-## Tables Created by Migrations
+### Order Dependencies
+1. users → tickets (user_id foreign key)
+2. tickets → ticket_comments (ticket_id foreign key)
+3. openphone_conversations → extracted_knowledge (conversation_id)
+4. ai_automation_features → ai_automation_usage (feature_key)
 
-1. **feedback** - 001, 002, 003
-2. **slack_messages** - 001
-3. **slack_replies** - 004
-4. **checklist_submissions** - 005, 008 (duplicate!)
-5. **remote_actions_log** - 007
-6. **knowledge_captures** - 010
-7. **sop_update_queue** - 010
-8. **sop_drafts** - 010
-9. **sop_update_log** - 010
-10. **slack_thread_resolutions** - 010
-11. **learning_metrics** - 010
-12. **openphone_conversations** - 011 (plus 7 fix files)
-13. **extracted_knowledge** - 011
-14. **sop_shadow_comparisons** - 011
-15. **sop_metrics** - 011
-16. **vector_store_archive** - 013
-17. **vector_store_deletion_log** - 013
-18. **knowledge_audit_log** - 013
-19. **assistant_knowledge** - 014
-20. **public_requests** - 015
-21. **checklist_task_customizations** - 016
-22. **message_status** - 017
-23. **push_subscriptions** - 019
-24. **notification_history** - 019
-25. **notification_preferences** - 019
-26. **ai_prompt_templates** - 021
-27. **ai_prompt_template_history** - 021
-28. **tickets** - 002 (plus 4 fix files)
-29. **ticket_comments** - 002
-30. **parent_documents** - add-document-relationships
-31. **hubspot_cache** - 028
+## Recommended Actions
 
-## Recommended Consolidation Strategy
+### Phase 1: Immediate Fixes
+1. Create migration tracking table
+2. Consolidate all migrations into baseline
+3. Remove duplicate CREATE TABLE statements
+4. Fix column naming inconsistencies
 
-### Phase 1: Core Tables (no dependencies)
-- users
-- system_config
-- feedback
-- public_requests
+### Phase 2: New Migration System
+1. Implement version control
+2. Add rollback support
+3. Create migration validator
+4. Add dependency management
 
-### Phase 2: Feature Tables (depend on users)
-- tickets & ticket_comments
-- checklist_submissions & checklist_task_customizations
-- remote_actions_log
-- push_subscriptions, notification_history, notification_preferences
+## Migration Consolidation Plan
 
-### Phase 3: Integration Tables
-- openphone_conversations & message_status
-- slack_messages & slack_replies & slack_thread_resolutions
-- hubspot_cache
+### Step 1: Create New Baseline (000_consolidated_baseline.sql)
+Combine all successful migrations into single file with:
+- Proper table creation order
+- All indexes
+- All constraints
+- Initial data
 
-### Phase 4: AI/Knowledge Tables
-- assistant_knowledge
-- knowledge_captures & knowledge_audit_log
-- ai_prompt_templates & ai_prompt_template_history
-- parent_documents
+### Step 2: Create Migration Tracker
+```sql
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version VARCHAR(255) PRIMARY KEY,
+  executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  checksum VARCHAR(64),
+  success BOOLEAN DEFAULT true,
+  rollback_sql TEXT
+);
+```
 
-### Phase 5: Legacy/Archive Tables
-- sop_* tables (being phased out)
-- vector_store_* tables (archived)
-- learning_metrics
+### Step 3: Implement Rollback Support
+Each migration should include:
+- Forward migration (UP)
+- Rollback migration (DOWN)
+- Validation queries
 
-## Action Items
-1. Create 000_baseline_schema.sql consolidating all tables
-2. Remove all duplicate CREATE TABLE statements
-3. Implement proper migration versioning
-4. Add rollback support
-5. Create data migration scripts for existing deployments
+### Step 4: Test Migration Path
+1. Backup current database
+2. Drop all tables (in dev)
+3. Run consolidated baseline
+4. Verify all functionality
+5. Document any data migrations needed
+
+## Risk Assessment
+
+### High Risk
+- Data loss if migrations not properly tested
+- Production downtime during migration
+- Foreign key constraint violations
+
+### Mitigation
+- Extensive testing in staging environment
+- Complete database backup before migration
+- Rollback plan for each step
+- Parallel run of old and new schemas if needed
+
+## Next Steps
+1. ✅ Audit complete
+2. Create consolidated baseline migration
+3. Test in development environment
+4. Create rollback procedures
+5. Document migration process
+6. Execute in staging
+7. Deploy to production
