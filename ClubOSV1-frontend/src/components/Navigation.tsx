@@ -328,15 +328,17 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
       {/* Mobile menu with smooth transition */}
       <div 
-        className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-          mobileMenuOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+        className={`md:hidden transition-all duration-500 ease-in-out overflow-hidden ${
+          mobileMenuOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
         }`}
         aria-label="Mobile navigation menu"
         role="navigation"
       >
-        {/* Navigation items - hide when user menu is expanded */}
-        <div className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 transition-all duration-300 ${
-          mobileUserMenuOpen ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100'
+        {/* Navigation items - slide and fade when user menu is expanded */}
+        <div className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 transition-all duration-500 ease-in-out ${
+          mobileUserMenuOpen 
+            ? 'opacity-0 transform -translate-y-4 max-h-0 overflow-hidden pointer-events-none' 
+            : 'opacity-100 transform translate-y-0 max-h-[400px]'
         }`}>
           {navItems.map((item) => (
             <Link
@@ -379,13 +381,17 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                   />
                 </button>
                 
-                {/* Collapsible Content */}
+                {/* Collapsible Content with smooth animation */}
                 <div 
-                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    mobileUserMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                  className={`transition-all duration-500 ease-in-out overflow-hidden transform origin-top ${
+                    mobileUserMenuOpen 
+                      ? 'max-h-[500px] opacity-100 scale-y-100' 
+                      : 'max-h-0 opacity-0 scale-y-0'
                   }`}
                 >
-                  <div className="space-y-2 mt-3 bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <div className={`space-y-2 mt-3 bg-[var(--bg-secondary)] rounded-lg p-3 transition-all duration-300 ${
+                    mobileUserMenuOpen ? 'transform translate-y-0' : 'transform -translate-y-2'
+                  }`}>
                     <div className="text-xs text-[var(--text-muted)] px-2">
                       {user.email}
                     </div>
