@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuthState } from '@/state/useStore';
 import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
+import ModeToggle from '@/components/ModeToggle';
 import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar, CreditCard } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
@@ -230,6 +231,13 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                           {theme.toUpperCase()}
                         </span>
                       </button>
+                      
+                      {/* Mode Toggle for Admin and Operator */}
+                      {(user.role === 'admin' || user.role === 'operator') && (
+                        <div className="px-4 py-2">
+                          <ModeToggle />
+                        </div>
+                      )}
                     </div>
                     
                     <div className="border-t border-[var(--border-secondary)] py-1">

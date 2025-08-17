@@ -24,6 +24,21 @@ export default function Operations() {
     }
   }, [user]);
 
+  // Listen for tab change events from dashboard
+  useEffect(() => {
+    const handleTabChange = (event: CustomEvent) => {
+      const tab = event.detail as TabType;
+      if (tab && ['dashboard', 'users', 'ai', 'integrations', 'analytics'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    };
+
+    window.addEventListener('operations-tab-change', handleTabChange as EventListener);
+    return () => {
+      window.removeEventListener('operations-tab-change', handleTabChange as EventListener);
+    };
+  }, []);
+
   if (!user || !['admin', 'operator'].includes(user.role)) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">

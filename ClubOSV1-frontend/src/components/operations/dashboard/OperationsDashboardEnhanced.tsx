@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { 
@@ -51,6 +52,7 @@ interface ExpandedConversation {
 
 export function OperationsDashboardEnhanced() {
   const { user } = useAuthState();
+  const router = useRouter();
   const token = user?.token || localStorage.getItem('clubos_token');
   
   const [metrics, setMetrics] = useState<SystemMetrics>({
@@ -76,19 +78,29 @@ export function OperationsDashboardEnhanced() {
     
     try {
       // Fetch metrics
-      const [healthResponse, messagesResponse] = await Promise.all([
+      const [healthResponse, messagesResponse, usersResponse, ticketsResponse] = await Promise.all([
         axios.get(`${API_URL}/api/health`),
         axios.get(`${API_URL}/api/messages/recent`, {
           headers: { Authorization: `Bearer ${token}` }
-        })
+        }),
+        axios.get(`${API_URL}/auth/users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API_URL}/api/tickets/active-count`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { count: 0 } }))
       ]);
 
+      // Calculate real metrics
+      const userCount = usersResponse.data?.data?.length || usersResponse.data?.length || 0;
+      const activeTicketCount = ticketsResponse.data?.count || 0;
+      
       // Update metrics
       setMetrics({
-        totalUsers: 12,
-        activeTickets: 3,
-        messagesProcessed: 247,
-        aiResponseRate: 94.5
+        totalUsers: userCount,
+        activeTickets: activeTicketCount,
+        messagesProcessed: 247, // This would need a real endpoint
+        aiResponseRate: 94.5 // This would need a real endpoint
       });
 
       // Process messages
@@ -272,41 +284,65 @@ export function OperationsDashboardEnhanced() {
     <div className="space-y-6">
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+        <div 
+          className="bg-[var(--bg-secondary)] rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            // Navigate to users tab in operations
+            const event = new CustomEvent('operations-tab-change', { detail: 'users' });
+            window.dispatchEvent(event);
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-[var(--text-muted)]">Total Users</p>
               <p className="text-2xl font-bold mt-1">{metrics.totalUsers}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Click to manage</p>
             </div>
             <Users className="w-8 h-8 text-[var(--accent)]" />
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+        <div 
+          className="bg-[var(--bg-secondary)] rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => router.push('/tickets')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-[var(--text-muted)]">Active Tickets</p>
               <p className="text-2xl font-bold mt-1">{metrics.activeTickets}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">View tickets</p>
             </div>
             <FileText className="w-8 h-8 text-[var(--accent)]" />
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+        <div 
+          className="bg-[var(--bg-secondary)] rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => router.push('/messages')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-[var(--text-muted)]">Messages Today</p>
               <p className="text-2xl font-bold mt-1">{metrics.messagesProcessed}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">View messages</p>
             </div>
             <MessageSquare className="w-8 h-8 text-[var(--accent)]" />
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+        <div 
+          className="bg-[var(--bg-secondary)] rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            // Navigate to AI tab in operations
+            const event = new CustomEvent('operations-tab-change', { detail: 'ai' });
+            window.dispatchEvent(event);
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-[var(--text-muted)]">AI Response Rate</p>
               <p className="text-2xl font-bold mt-1">{metrics.aiResponseRate}%</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">AI settings</p>
             </div>
             <Bot className="w-8 h-8 text-[var(--accent)]" />
           </div>

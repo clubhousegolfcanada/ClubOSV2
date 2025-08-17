@@ -1,9 +1,10 @@
 import React from 'react';
-import { useStore } from '../store/useStore';
+import { useStore, useAuthState } from '../state/useStore';
 import { UserGroupIcon, UserIcon } from '@heroicons/react/24/outline';
 
 const ModeToggle: React.FC = () => {
-  const { viewMode, setViewMode, user } = useStore();
+  const { viewMode, setViewMode } = useStore();
+  const { user } = useAuthState();
 
   // Only show toggle for users who have both customer and operator access
   // Admins and operators can switch to customer view to test

@@ -10,7 +10,7 @@ type User = {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'operator' | 'support' | 'kiosk';
+  role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
   phone?: string;
   createdAt: string;
   updatedAt: string;
@@ -32,7 +32,7 @@ export const OperationsUsers: React.FC = () => {
     email: '',
     name: '',
     password: '',
-    role: 'support' as 'admin' | 'operator' | 'support' | 'kiosk',
+    role: 'support' as 'admin' | 'operator' | 'support' | 'kiosk' | 'customer',
     phone: ''
   });
   const [loading, setLoading] = useState(false);
@@ -344,12 +344,14 @@ export const OperationsUsers: React.FC = () => {
                           <option value="operator">Operator</option>
                           <option value="support">Support</option>
                           <option value="kiosk">Kiosk</option>
+                          <option value="customer">Customer</option>
                         </select>
                       ) : (
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
                           user.role === 'operator' ? 'bg-blue-100 text-blue-700' :
                           user.role === 'support' ? 'bg-green-100 text-green-700' :
+                          user.role === 'customer' ? 'bg-orange-100 text-orange-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
                           {user.role}
@@ -591,6 +593,7 @@ export const OperationsUsers: React.FC = () => {
                   <option value="operator">Operator</option>
                   <option value="support">Support</option>
                   <option value="kiosk">Kiosk</option>
+                  <option value="customer">Customer</option>
                 </select>
               </div>
               
