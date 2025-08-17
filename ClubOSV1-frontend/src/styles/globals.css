@@ -14,6 +14,18 @@
   }
 }
 
+/* Customer app mobile optimizations */
+.customer-app {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Remove iOS bounce effect on customer pages */
+.customer-app main {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Mobile messaging app layout fix */
 @media (max-width: 768px) {
   /* Messages page specific */

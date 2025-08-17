@@ -34,12 +34,12 @@ export default function CustomerBookings() {
     <>
       <Head>
         <title>Book a Box - Clubhouse 24/7</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa]">
+      <div className="min-h-screen bg-[#fafafa] customer-app">
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8 pt-12 lg:pt-14">

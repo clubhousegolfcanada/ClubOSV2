@@ -9,6 +9,7 @@ export default function CustomerEvents() {
   const router = useRouter();
   const { user } = useAuthState();
   const [loading, setLoading] = useState(true);
+  const [activeLeaderboard, setActiveLeaderboard] = useState<'new' | 'original'>('new');
 
   useEffect(() => {
     // Check authentication
@@ -34,28 +35,68 @@ export default function CustomerEvents() {
     <>
       <Head>
         <title>Leaderboard - Clubhouse 24/7</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa]">
+      <div className="min-h-screen bg-[#fafafa] customer-app">
         <CustomerNavigation />
         
-        <main className="pb-20 lg:pb-8 pt-12 lg:pt-14">
-          {/* TrackMan Leaderboard Embed - Full Screen */}
-          <div className="h-full">
-            <iframe
-              src="https://tm-short.me/Tqjb7AS"
-              title="TrackMan Tournament Leaderboard"
-              className="w-full"
-              style={{ 
-                height: 'calc(100vh - 136px)', 
-                border: 'none',
-                minHeight: '600px'
-              }}
-              allow="fullscreen"
-            />
+        <main className="pb-20 lg:pb-8">
+          {/* Leaderboard Toggle */}
+          <div className="fixed top-14 left-0 right-0 bg-white border-b border-gray-200 z-40">
+            <div className="flex justify-center p-2">
+              <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+                <button
+                  onClick={() => setActiveLeaderboard('new')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    activeLeaderboard === 'new'
+                      ? 'bg-[#0B3D3A] text-white'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Current Tournament
+                </button>
+                <button
+                  onClick={() => setActiveLeaderboard('original')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    activeLeaderboard === 'original'
+                      ? 'bg-[#0B3D3A] text-white'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  All Events
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* TrackMan Leaderboard Embeds - Full Screen */}
+          <div className="pt-12" style={{ height: 'calc(100vh - 48px)' }}>
+            {activeLeaderboard === 'new' ? (
+              <iframe
+                src="https://tm-short.me/Tqjb7AS"
+                title="Current Tournament Leaderboard"
+                className="w-full h-full"
+                style={{ 
+                  border: 'none',
+                  minHeight: '600px'
+                }}
+                allow="fullscreen"
+              />
+            ) : (
+              <iframe
+                src="https://tm-short.me/pZY461g"
+                title="All Events Leaderboard"
+                className="w-full h-full"
+                style={{ 
+                  border: 'none',
+                  minHeight: '600px'
+                }}
+                allow="fullscreen"
+              />
+            )}
           </div>
         </main>
       </div>

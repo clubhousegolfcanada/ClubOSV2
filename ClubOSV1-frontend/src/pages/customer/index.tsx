@@ -23,12 +23,12 @@ export default function CustomerApp() {
     <>
       <Head>
         <title>Clubhouse 24/7 - Your Golf Experience</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa]">
+      <div className="min-h-screen bg-[#fafafa] customer-app">
         {/* Customer Navigation - Mobile optimized */}
         <CustomerNavigation />
         
