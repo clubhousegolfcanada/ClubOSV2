@@ -191,8 +191,8 @@ export const CustomerDashboard: React.FC = () => {
     },
     { 
       icon: Trophy, 
-      label: 'Join Event', 
-      description: 'Compete and win',
+      label: 'Leaderboard', 
+      description: 'Live rankings',
       onClick: () => router.push('/customer/events') 
     },
     { 

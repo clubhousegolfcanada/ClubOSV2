@@ -41,7 +41,7 @@ const CustomerNavigation: React.FC = () => {
     { icon: Home, label: 'Home', path: '/customer' },
     { icon: Calendar, label: 'Bookings', path: '/customer/bookings' },
     { icon: Users, label: 'Friends', path: '/customer/friends' },
-    { icon: Trophy, label: 'Events', path: '/customer/events' },
+    { icon: Trophy, label: 'Leaderboard', path: '/customer/events' },
     { icon: User, label: 'Profile', path: '/customer/profile' }
   ];
 

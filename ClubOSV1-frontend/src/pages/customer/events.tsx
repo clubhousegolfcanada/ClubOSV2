@@ -33,7 +33,7 @@ export default function CustomerEvents() {
   return (
     <>
       <Head>
-        <title>Tournaments - Clubhouse 24/7</title>
+        <title>Leaderboard - Clubhouse 24/7</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -44,48 +44,23 @@ export default function CustomerEvents() {
         
         <main className="pb-20 lg:pb-8 pt-16 lg:pt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Compact Header */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                <Trophy className="w-6 h-6 text-[#0B3D3A] mr-2" />
-                Local Tournaments
-              </h1>
-            </div>
 
-            {/* Quick Instructions */}
-            <div className="bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-xl shadow-sm p-4 sm:p-6 mb-4 text-white">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">1</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Download TrackMan App</p>
-                  </div>
+            {/* Compact Instructions Bar */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-3 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-6 text-xs text-gray-600">
+                  <span className="flex items-center">
+                    <span className="font-medium text-gray-900 mr-1">1.</span> Download TrackMan
+                  </span>
+                  <span className="flex items-center">
+                    <span className="font-medium text-gray-900 mr-1">2.</span> Sign in at clubhouse
+                  </span>
+                  <span className="flex items-center">
+                    <span className="font-medium text-gray-900 mr-1">3.</span> Join "Local" tournaments
+                  </span>
                 </div>
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">2</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Sign in at Any Clubhouse</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">3</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Go to "Local" Tournaments</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Download Button */}
-              <div className="mt-4 flex flex-col sm:flex-row gap-3">
                 <button 
                   onClick={() => {
-                    // Detect iOS or Android and redirect accordingly
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
                     const isAndroid = /Android/.test(navigator.userAgent);
                     
@@ -94,40 +69,39 @@ export default function CustomerEvents() {
                     } else if (isAndroid) {
                       window.open('https://play.google.com/store/apps/details?id=com.trackman.golf', '_blank');
                     } else {
-                      // Default to web or show both options
                       window.open('https://trackman.com/golf/apps', '_blank');
                     }
                   }}
-                  className="flex-1 bg-white text-[#0B3D3A] py-2.5 px-4 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center justify-center"
+                  className="px-3 py-1.5 bg-[#0B3D3A] text-white text-xs rounded-md hover:bg-[#084a45] transition-colors flex items-center"
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download TrackMan App
+                  <Download className="w-3 h-3 mr-1" />
+                  Get App
                 </button>
               </div>
             </div>
 
-            {/* Live Leaderboard */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-gray-200">
+            {/* Live Leaderboard - Maximized */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <MapPin className="w-5 h-5 text-[#0B3D3A] mr-2" />
+                  <h2 className="text-sm font-semibold text-gray-900 flex items-center">
+                    <Trophy className="w-4 h-4 text-[#0B3D3A] mr-1.5" />
                     Live Leaderboard
                   </h2>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-                    <span className="text-sm text-gray-600">Live</span>
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1.5"></div>
+                    <span className="text-xs text-gray-600">Live</span>
                   </div>
                 </div>
               </div>
               
-              {/* TrackMan Leaderboard Embed */}
-              <div className="relative bg-gray-50" style={{ minHeight: '500px' }}>
+              {/* TrackMan Leaderboard Embed - Full Height */}
+              <div className="relative bg-gray-50" style={{ minHeight: '70vh' }}>
                 <iframe
                   src="https://tm-short.me/pZY461g"
                   title="TrackMan Tournament Leaderboard"
                   className="w-full"
-                  style={{ height: '600px', border: 'none' }}
+                  style={{ height: 'calc(100vh - 200px)', minHeight: '600px', border: 'none' }}
                   allow="fullscreen"
                 />
               </div>

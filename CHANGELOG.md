@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.2] - 2025-08-17
+
+### Changed
+- **Leaderboard Page Optimization**
+  - Renamed "Join Event" to "Leaderboard" throughout customer interface
+  - Removed "Local Tournaments" title for cleaner design
+  - Compressed tournament instructions to single-line format
+  - Minimized TrackMan app download button (Get App)
+  - Maximized leaderboard iframe to 70vh minimum height
+  - Reduced header size to prioritize live rankings display
+  - Streamlined page to focus on the main leaderboard content
+
 ## [1.12.1] - 2025-08-17
 
 ### Changed
