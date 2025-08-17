@@ -43,43 +43,19 @@ export default function CustomerBookings() {
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8 pt-16 lg:pt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Quick Info Bar */}
-            <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] rounded-xl shadow-sm p-4 mb-4 text-white">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <span className="text-sm">4 Locations</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span className="text-sm">Open 6am - 11pm</span>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Info className="w-4 h-4 mr-2" />
-                  <span className="text-sm">Select your location and preferred time below</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Skedda Booking System Embed */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="relative bg-gray-50" style={{ minHeight: '700px' }}>
-                <iframe
-                  src="https://clubhouse247golf.skedda.com/booking"
-                  title="Clubhouse 24/7 Booking System"
-                  className="w-full"
-                  style={{ 
-                    height: '800px', 
-                    border: 'none',
-                    minHeight: '700px'
-                  }}
-                  allow="fullscreen"
-                />
-              </div>
-            </div>
+          {/* Skedda Booking System Embed - Full Width */}
+          <div className="h-full">
+            <iframe
+              src="https://clubhouse247golf.skedda.com/booking"
+              title="Clubhouse 24/7 Booking System"
+              className="w-full"
+              style={{ 
+                height: 'calc(100vh - 136px)', 
+                border: 'none',
+                minHeight: '600px'
+              }}
+              allow="fullscreen"
+            />
           </div>
         </main>
       </div>

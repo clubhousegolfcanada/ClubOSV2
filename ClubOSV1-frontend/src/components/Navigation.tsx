@@ -221,9 +221,9 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                       
                       {/* Mode Toggle for Admin and Operator - Fixed positioning */}
                       {(user.role === 'admin' || user.role === 'operator') && (
-                        <div className="px-4 py-2 border-t border-[var(--border-secondary)] mt-1">
+                        <div className="px-4 py-3 border-t border-[var(--border-secondary)] mt-1">
                           <div className="text-xs text-[var(--text-muted)] mb-2">View Mode</div>
-                          <ModeToggle />
+                          <ModeToggle variant="compact" />
                         </div>
                       )}
                     </div>
@@ -402,7 +402,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     {(user.role === 'admin' || user.role === 'operator') && (
                       <div className="px-4 py-3 border-t border-[var(--border-secondary)] mt-2">
                         <div className="text-xs text-[var(--text-muted)] mb-2">View Mode</div>
-                        <ModeToggle />
+                        <ModeToggle variant="compact" />
                       </div>
                     )}
                   </div>

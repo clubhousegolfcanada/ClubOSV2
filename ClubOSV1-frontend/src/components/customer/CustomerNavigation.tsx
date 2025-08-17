@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
+import ModeToggle from '@/components/ModeToggle';
 import { 
   Home, 
   Calendar, 
@@ -110,16 +111,11 @@ const CustomerNavigation: React.FC = () => {
               </button>
             </div>
 
-            {/* Switch to Operator - Subtle */}
-            {user?.role !== 'customer' && (
-              <button
-                onClick={handleSwitchToOperator}
-                className="hidden sm:flex items-center px-2 py-1 text-xs bg-[var(--bg-tertiary)] rounded-md hover:bg-[var(--accent)] hover:text-white transition-colors"
-                title="Switch to Operator View"
-              >
-                <Shield className="w-3 h-3 mr-1" />
-                <span className="font-medium">Operator</span>
-              </button>
+            {/* Mode Toggle for Admin and Operator - Desktop */}
+            {(user?.role === 'admin' || user?.role === 'operator') && (
+              <div className="hidden sm:block">
+                <ModeToggle variant="compact" />
+              </div>
             )}
           </div>
         </div>
@@ -212,19 +208,14 @@ const CustomerNavigation: React.FC = () => {
                 <span className="font-medium">Settings</span>
               </button>
 
-              {user?.role !== 'customer' && (
+              {/* Mode Toggle for Admin and Operator */}
+              {(user?.role === 'admin' || user?.role === 'operator') && (
                 <>
                   <div className="border-t border-gray-200 my-4" />
-                  <button
-                    onClick={() => {
-                      handleSwitchToOperator();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg bg-[#0B3D3A]/10 text-[#0B3D3A]"
-                  >
-                    <Shield className="w-5 h-5" />
-                    <span className="font-medium">Switch to Operator</span>
-                  </button>
+                  <div className="px-3">
+                    <div className="text-xs text-gray-500 mb-2">View Mode</div>
+                    <ModeToggle variant="compact" />
+                  </div>
                 </>
               )}
 
