@@ -107,10 +107,11 @@ export const hasMinimumRole = (user: Express.Request['user'], minimumRole: UserR
   if (!user) return false;
   
   const roleHierarchy: Record<UserRole, number> = {
-    'kiosk': 0,
-    'support': 1,
-    'operator': 2,
-    'admin': 3
+    'customer': 0,
+    'kiosk': 1,
+    'support': 2,
+    'operator': 3,
+    'admin': 4
   };
 
   const userLevel = roleHierarchy[user.role];

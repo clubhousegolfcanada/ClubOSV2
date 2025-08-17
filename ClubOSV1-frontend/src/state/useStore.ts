@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
 
 // Export UserRole type
-export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
+export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
+export type ViewMode = 'operator' | 'customer';
 
 // User type for user management
 export type User = {
@@ -53,7 +54,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'operator' | 'support' | 'kiosk';
+  role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
   phone?: string;
   token?: string;
 }
@@ -88,6 +89,8 @@ interface AppState {
   addRequest: (request: ProcessedRequest) => void;
   updateRequest: (id: string, updates: Partial<ProcessedRequest>) => void;
   clearRequests: () => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 }
 
 // Default values
@@ -176,7 +179,14 @@ export const useStore = create<AppState>((set) => ({
       req.id === id ? { ...req, ...updates } : req
     )
   })),
-  clearRequests: () => set({ requests: [] })
+  clearRequests: () => set({ requests: [] }),
+  viewMode: (typeof window !== 'undefined' && localStorage.getItem('clubos_view_mode') as ViewMode) || 'operator',
+  setViewMode: (mode) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('clubos_view_mode', mode);
+    }
+    set({ viewMode: mode });
+  }
 }));
 
 // Settings Store

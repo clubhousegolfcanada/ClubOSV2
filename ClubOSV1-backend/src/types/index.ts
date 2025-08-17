@@ -135,7 +135,7 @@ export interface AccessRequest {
 
 export type BotRoute = 'Auto' | 'Booking&Access' | 'Booking & Access' | 'Emergency' | 'TechSupport' | 'BrandTone' | 'Slack' | 'general';
 export type RequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'fallback' | 'sent_to_slack';
-export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
+export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
 
 export interface User {
   id: string;

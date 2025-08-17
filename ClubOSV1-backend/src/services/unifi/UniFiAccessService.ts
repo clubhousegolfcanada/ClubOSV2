@@ -238,7 +238,7 @@ export class UniFiAccessService {
         throw new Error(`Failed to fetch doors: ${response.status}`);
       }
       
-      const result = await response.json();
+      const result = await response.json() as any;
       const doors = (result.data || []).map((door: any) => ({
         ...door,
         location
@@ -344,7 +344,7 @@ export class UniFiAccessService {
         throw new Error(`Failed to get door status: ${response.status}`);
       }
       
-      const door = await response.json();
+      const door = await response.json() as any;
       
       return {
         id: door.id,
