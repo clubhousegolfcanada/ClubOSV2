@@ -165,10 +165,7 @@ export const CustomerDashboard: React.FC = () => {
       icon: Calendar, 
       label: 'Book a Box', 
       description: 'Reserve your spot',
-      onClick: () => {
-        // Open main Skedda page showing all locations
-        window.open('https://clubhouse247golf.skedda.com/booking', '_blank');
-      } 
+      onClick: () => router.push('/customer/bookings')
     },
     { 
       icon: Users, 
