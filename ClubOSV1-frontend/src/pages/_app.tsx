@@ -29,7 +29,7 @@ interface AppContentProps {
 function AppContent({ Component, pageProps }: AppContentProps) {
   const router = useRouter();
   const { setUser, isAuthenticated, user } = useAuthState();
-  const { viewMode } = useStore(); // Get viewMode from store
+  const { viewMode, setViewMode } = useStore(); // Get viewMode and setViewMode from store
   const isPublicRoute = publicRoutes.includes(router.pathname);
   const [authInitialized, setAuthInitialized] = useState(false);
   
@@ -117,19 +117,37 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         if (!tokenManager.isTokenExpired(storedToken)) {
           const user = JSON.parse(storedUser);
           setUser({ ...user, token: storedToken });
+          
+          // Set correct view mode based on user role
+          // Operators and admins should default to operator mode
+          if (user.role === 'customer') {
+            setViewMode('customer');
+          } else if (user.role === 'admin' || user.role === 'operator') {
+            // For operators/admins, check if they have a saved preference
+            const savedViewMode = localStorage.getItem('clubos_view_mode');
+            // Only use saved mode if it's explicitly set to customer
+            // Otherwise default to operator mode
+            if (savedViewMode === 'customer' && router.pathname.startsWith('/customer')) {
+              setViewMode('customer');
+            } else {
+              setViewMode('operator');
+            }
+          }
         } else {
           // Clear expired token silently (no redirect from here)
           localStorage.removeItem('clubos_user');
           localStorage.removeItem('clubos_token');
+          localStorage.removeItem('clubos_view_mode');
         }
       } catch (error) {
         console.error('Failed to restore auth state:', error);
         localStorage.removeItem('clubos_user');
         localStorage.removeItem('clubos_token');
+        localStorage.removeItem('clubos_view_mode');
       }
     }
     setAuthInitialized(true);
-  }, [setUser, isAuthenticated, router.pathname]);
+  }, [setUser, isAuthenticated, router.pathname, setViewMode]);
 
   useEffect(() => {
     // Start token monitoring when authenticated (but not on login page)
