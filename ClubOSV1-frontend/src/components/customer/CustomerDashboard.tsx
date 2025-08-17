@@ -444,6 +444,8 @@ export const CustomerDashboard: React.FC = () => {
         </div>
       </div> */}
 
+      </div>
+
       {/* Stats Overview - Completely hidden (not implemented) */}
       {/* <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between mb-3">
