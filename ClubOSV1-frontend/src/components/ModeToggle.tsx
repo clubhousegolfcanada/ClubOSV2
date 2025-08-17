@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore, useAuthState } from '../state/useStore';
-import { UserGroupIcon, UserIcon } from '@heroicons/react/24/outline';
+import { Users, User } from 'lucide-react';
 
 const ModeToggle: React.FC = () => {
   const { viewMode, setViewMode } = useStore();
@@ -32,7 +32,7 @@ const ModeToggle: React.FC = () => {
   if (user?.role === 'customer') {
     return (
       <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 rounded-lg">
-        <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
           Customer View
         </span>
@@ -58,9 +58,9 @@ const ModeToggle: React.FC = () => {
           `}
         >
           {isCustomerMode ? (
-            <UserIcon className="h-6 w-6 p-1 text-blue-600" />
+            <User className="h-6 w-6 p-1 text-blue-600" />
           ) : (
-            <UserGroupIcon className="h-6 w-6 p-1 text-clubhouse-green" />
+            <Users className="h-6 w-6 p-1 text-clubhouse-green" />
           )}
         </span>
       </button>
