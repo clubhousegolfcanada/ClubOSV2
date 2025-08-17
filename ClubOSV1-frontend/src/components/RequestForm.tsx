@@ -658,10 +658,10 @@ const RequestForm: React.FC = () => {
           </div> */}
 
           {/* Location and Mode Toggle Row - Inline */}
-          <div className="flex flex-row gap-2 mb-3">
+          <div className="flex flex-row gap-3 mb-3">
             
             {/* Mode Toggle - Classic Style */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
@@ -769,8 +769,8 @@ const RequestForm: React.FC = () => {
               )}
             </div>
             
-            {/* Location Input - Constrained width with left margin */}
-            <div className="max-w-[200px] sm:max-w-[250px] ml-auto">
+            {/* Location Input - Fixed width aligned right */}
+            <div className="w-[160px] sm:w-[200px]">
               <input
                 id="locationInput"
                 {...register('location')}
