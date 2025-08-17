@@ -56,6 +56,7 @@ interface Stats {
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthState();
   const router = useRouter();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
   const [myClubhouse, setMyClubhouse] = useState<ClubhouseLocation | null>(null);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
@@ -67,6 +68,7 @@ export const CustomerDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showLocationSelector, setShowLocationSelector] = useState(false);
+  const [customerProfile, setCustomerProfile] = useState<any>(null);
 
   // Available locations
   const locations: ClubhouseLocation[] = [
@@ -101,6 +103,20 @@ export const CustomerDashboard: React.FC = () => {
   const fetchCustomerData = async () => {
     setLoading(true);
     try {
+      // Fetch customer profile with HubSpot data
+      if (token) {
+        try {
+          const response = await axios.get(`${API_URL}/api/customer-profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.data.success) {
+            setCustomerProfile(response.data.data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch customer profile:', error);
+        }
+      }
+      
       // Set default location to Bedford (or from user preferences in future)
       const savedLocation = localStorage.getItem('preferredClubhouse');
       const defaultLocation = locations.find(loc => loc.id === savedLocation) || locations[0];
@@ -220,8 +236,13 @@ export const CustomerDashboard: React.FC = () => {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, {user?.name?.split(' ')[0]}
+              Welcome back, {customerProfile?.displayName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Guest'}
             </h1>
+            {customerProfile?.hubspotName && customerProfile.hubspotName !== customerProfile.displayName && (
+              <p className="text-sm text-gray-500 mt-0.5">
+                {customerProfile.company ? `${customerProfile.company} Member` : 'Valued Member'}
+              </p>
+            )}
             <p className="mt-1 text-gray-600">
               Ready to improve your game? You have {upcomingBookings.length} upcoming {upcomingBookings.length === 1 ? 'booking' : 'bookings'}.
             </p>
