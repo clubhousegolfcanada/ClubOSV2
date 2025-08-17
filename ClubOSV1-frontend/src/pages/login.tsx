@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuthState } from '@/state/useStore';
+import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Users, User, ArrowRight } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const LoginPage = () => {
   const router = useRouter();
   const { login } = useAuthState();
+  const { setViewMode } = useStore();
+  const [loginMode, setLoginMode] = useState<'operator' | 'customer'>('operator');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // For customer signup
+  const [phone, setPhone] = useState(''); // For customer signup
+  const [isSignup, setIsSignup] = useState(false); // Toggle between login and signup for customers
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -43,27 +48,61 @@ const LoginPage = () => {
       localStorage.removeItem('clubos_token');
       localStorage.removeItem('clubos_user');
 
-      // Make real API call to login
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        email,
-        password
-      });
+      let response;
+      
+      // Handle customer signup
+      if (loginMode === 'customer' && isSignup) {
+        response = await axios.post(`${API_URL}/auth/signup`, {
+          email,
+          password,
+          name,
+          phone,
+          role: 'customer'
+        });
+        
+        if (response.data.success) {
+          toast.success('Account created! Please log in.');
+          setIsSignup(false);
+          setPassword('');
+          return;
+        }
+      } else {
+        // Handle login (both operator and customer)
+        response = await axios.post(`${API_URL}/auth/login`, {
+          email,
+          password
+        });
+      }
 
       if (response.data.success) {
         const { user, token } = response.data.data;
         
         // Login user with real data
         login(user, token);
+        
+        // Set view mode based on user role or login mode
+        if (user.role === 'customer' || loginMode === 'customer') {
+          setViewMode('customer');
+        } else {
+          setViewMode('operator');
+        }
 
         // Small delay before navigation to ensure state is set
         setTimeout(() => {
-          toast.success(`Welcome back, ${user.name}!`);
-          router.push('/');
+          toast.success(`Welcome ${isSignup ? '' : 'back'}, ${user.name}!`);
+          
+          // Navigate based on user role
+          if (user.role === 'customer' || loginMode === 'customer') {
+            router.push('/customer');
+          } else {
+            router.push('/');
+          }
         }, 100);
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      const message = error.response?.data?.message || 
+        (isSignup ? 'Registration failed. Please try again.' : 'Login failed. Please check your credentials.');
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -98,15 +137,69 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-6">
         <div>
           <h1 className="text-center text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--accent)] to-teal-400 bg-clip-text text-transparent">
-            ClubOS
+            {loginMode === 'customer' ? 'Clubhouse 24/7' : 'ClubOS'}
           </h1>
           <h2 className="mt-4 sm:mt-6 text-center text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
-            Sign in to your account
+            {loginMode === 'customer' ? 
+              (isSignup ? 'Create your account' : 'Welcome back!') : 
+              'Sign in to operations'
+            }
           </h2>
+        </div>
+
+        {/* Login Mode Toggle */}
+        <div className="flex items-center justify-center space-x-2 bg-[var(--bg-secondary)] rounded-lg p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMode('operator');
+              setIsSignup(false);
+            }}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md transition-all ${
+              loginMode === 'operator' 
+                ? 'bg-[var(--accent)] text-white' 
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Operator</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setLoginMode('customer')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md transition-all ${
+              loginMode === 'customer' 
+                ? 'bg-[var(--accent)] text-white' 
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Customer</span>
+          </button>
         </div>
 
         <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-3 sm:space-y-4">
+            {/* Show name field for customer signup */}
+            {loginMode === 'customer' && isSignup && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-[var(--text-secondary)]">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  className="mt-1 block w-full px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-md text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent text-base"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[var(--text-secondary)]">
                 Email address
@@ -123,6 +216,25 @@ const LoginPage = () => {
                 required
               />
             </div>
+
+            {/* Show phone field for customer signup */}
+            {loginMode === 'customer' && isSignup && (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-[var(--text-secondary)]">
+                  Phone Number (optional)
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  className="mt-1 block w-full px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-md text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent text-base"
+                  placeholder="(902) 555-0123"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-[var(--text-secondary)]">
@@ -173,10 +285,29 @@ const LoginPage = () => {
               disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 
+                (isSignup ? 'Creating account...' : 'Signing in...') : 
+                (isSignup ? 'Create Account' : 'Sign In')
+              }
             </button>
           </div>
         </form>
+
+        {/* Customer signup/login toggle */}
+        {loginMode === 'customer' && (
+          <div className="text-center">
+            <p className="text-sm text-[var(--text-secondary)]">
+              {isSignup ? 'Already have an account?' : "Don't have an account?"}
+              <button
+                type="button"
+                onClick={() => setIsSignup(!isSignup)}
+                className="ml-2 font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
+              >
+                {isSignup ? 'Sign In' : 'Sign Up'}
+              </button>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Password Reset Modal */}

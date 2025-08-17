@@ -14,7 +14,7 @@ export interface DbUser {
   email: string;
   password: string;
   name: string;
-  role: 'admin' | 'operator' | 'support' | 'kiosk';
+  role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
   phone?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -170,13 +170,14 @@ class DatabaseService {
   }
 
   async createUser(user: {
+    id?: string;
     email: string;
     password: string;
     name: string;
-    role: 'admin' | 'operator' | 'support' | 'kiosk';
+    role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
     phone?: string;
   }): Promise<DbUser> {
-    const id = uuidv4();
+    const id = user.id || uuidv4();
     const hashedPassword = await bcrypt.hash(user.password, 10);
     
     const result = await query(

@@ -12,6 +12,109 @@ import { transformUser } from '../utils/transformers';
 
 const router = Router();
 
+// Customer Registration endpoint (public)
+router.post('/signup',
+  validate([
+    body('email')
+      .trim()
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Valid email is required'),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/)
+      .withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('Password must contain at least one lowercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must contain at least one number'),
+    body('name')
+      .trim()
+      .notEmpty()
+      .withMessage('Name is required'),
+    body('phone')
+      .optional()
+      .trim(),
+    body('role')
+      .optional()
+      .isIn(['customer'])
+      .withMessage('Only customer registration is allowed through this endpoint')
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, password, name, phone, role = 'customer' } = req.body;
+      
+      // Only allow customer registration through this endpoint
+      if (role !== 'customer') {
+        throw new AppError('Only customer registration is allowed', 403, 'FORBIDDEN');
+      }
+      
+      logger.info('Customer registration attempt:', { email, name });
+      
+      // Check if user already exists
+      const existingUser = await db.findUserByEmail(email);
+      if (existingUser) {
+        throw new AppError('Email already registered', 409, 'EMAIL_EXISTS');
+      }
+      
+      // Create user (password will be hashed in createUser)
+      const userId = uuidv4();
+      const user = await db.createUser({
+        id: userId,
+        email: email.toLowerCase(),
+        password: password,
+        name,
+        phone,
+        role: 'customer'
+      });
+      
+      // Create customer profile automatically
+      await db.query(
+        `INSERT INTO customer_profiles (user_id, display_name) 
+         VALUES ($1, $2) 
+         ON CONFLICT (user_id) DO NOTHING`,
+        [userId, name]
+      );
+      
+      // Log successful registration
+      await db.createAuthLog({
+        user_id: userId,
+        action: 'register',
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+        success: true
+      });
+      
+      // Generate token
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        sessionId: uuidv4()
+      });
+      
+      logger.info('Customer registered successfully:', { 
+        userId: user.id,
+        email: user.email 
+      });
+      
+      res.status(201).json({
+        success: true,
+        message: 'Account created successfully',
+        data: {
+          user: transformUser(user),
+          token
+        }
+      });
+      
+    } catch (error) {
+      logger.error('Registration error:', error);
+      next(error);
+    }
+  }
+);
+
 // Request password reset
 router.post('/forgot-password',
   validate([
