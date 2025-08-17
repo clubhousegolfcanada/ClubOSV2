@@ -668,7 +668,9 @@ const RequestForm: React.FC = () => {
               <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
                   <div 
-                    className="absolute inset-y-0.5 transition-all duration-200 bg-[var(--accent)] rounded-full"
+                    className={`absolute inset-y-0.5 transition-all duration-200 rounded-full ${
+                      isTicketMode ? 'bg-[#4A154B]' : !smartAssistEnabled ? 'bg-[#4A154B]' : 'bg-[var(--accent)]'
+                    }`}
                     style={{
                       width: '33.33%',
                       left: isTicketMode ? '66.66%' : smartAssistEnabled ? '33.33%' : '0%'
