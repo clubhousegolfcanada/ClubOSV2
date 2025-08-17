@@ -329,12 +329,15 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
       {/* Mobile menu with smooth transition */}
       <div 
         className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-          mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+          mobileMenuOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
         }`}
         aria-label="Mobile navigation menu"
         role="navigation"
       >
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        {/* Navigation items - hide when user menu is expanded */}
+        <div className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 transition-all duration-300 ${
+          mobileUserMenuOpen ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100'
+        }`}>
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -379,30 +382,32 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                 {/* Collapsible Content */}
                 <div 
                   className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    mobileUserMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    mobileUserMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
                   }`}
                 >
-                  <div className="pl-4 space-y-1 mt-2">
-                    <div className="text-xs text-[var(--text-muted)] px-4 py-1">
+                  <div className="space-y-2 mt-3 bg-[var(--bg-secondary)] rounded-lg p-3">
+                    <div className="text-xs text-[var(--text-muted)] px-2">
                       {user.email}
                     </div>
                     <Link
                       href={user.role === 'admin' ? '/settings' : '/profile'}
-                      className="block px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                      className="block px-3 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
                     >
                       {user.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                     </Link>
                     <button
                       onClick={toggleTheme}
-                      className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                      className="block w-full text-left px-3 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
                     >
                       Theme: {theme.toUpperCase()}
                     </button>
                     {/* Mode Toggle for Admin and Operator */}
                     {(user.role === 'admin' || user.role === 'operator') && (
-                      <div className="px-4 py-3 border-t border-[var(--border-secondary)] mt-2">
-                        <div className="text-xs text-[var(--text-muted)] mb-2">View Mode</div>
-                        <ModeToggle variant="compact" />
+                      <div className="pt-3 pb-1 border-t border-[var(--border-secondary)] mt-2">
+                        <div className="text-xs text-[var(--text-muted)] mb-2 px-2">View Mode</div>
+                        <div className="px-2">
+                          <ModeToggle variant="compact" />
+                        </div>
                       </div>
                     )}
                   </div>
