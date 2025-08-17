@@ -27,7 +27,7 @@ interface ClubhouseLocation {
   name: string;
   displayName: string;
   city: string;
-  availableBays: number;
+  availableBoxes: number;
   nextAvailable: string;
 }
 
@@ -35,7 +35,7 @@ interface Booking {
   id: string;
   date: string;
   time: string;
-  bay: string;
+  box: string;
   location: string;
   friends: string[];
 }
@@ -77,7 +77,7 @@ export const CustomerDashboard: React.FC = () => {
       name: 'Bedford',
       displayName: 'Clubhouse 24/7 Golf - Bedford',
       city: 'Bedford',
-      availableBays: 3,
+      availableBoxes: 3,
       nextAvailable: '2:00 PM'
     },
     {
@@ -85,7 +85,7 @@ export const CustomerDashboard: React.FC = () => {
       name: 'Dartmouth',
       displayName: 'Clubhouse 24/7 Golf - Dartmouth', 
       city: 'Dartmouth',
-      availableBays: 4,
+      availableBoxes: 4,
       nextAvailable: '1:30 PM'
     }
   ];
@@ -127,7 +127,7 @@ export const CustomerDashboard: React.FC = () => {
           id: '1',
           date: 'Today',
           time: '6:00 PM',
-          bay: 'Bay 2',
+          box: 'Box 2',
           location: 'Bedford',
           friends: ['John D.', 'Mike S.']
         },
@@ -135,7 +135,7 @@ export const CustomerDashboard: React.FC = () => {
           id: '2',
           date: 'Tomorrow',
           time: '7:00 PM',
-          bay: 'Bay 4',
+          box: 'Box 4',
           location: 'Bedford',
           friends: []
         }
@@ -163,12 +163,11 @@ export const CustomerDashboard: React.FC = () => {
   const quickActions = [
     { 
       icon: Calendar, 
-      label: 'Book a Bay', 
+      label: 'Book a Box', 
       description: 'Reserve your spot',
       onClick: () => {
-        if (myClubhouse) {
-          window.open(skeddaUrls[myClubhouse.id], '_blank');
-        }
+        // Open main Skedda page showing all locations
+        window.open('https://clubhouse247golf.skedda.com/booking', '_blank');
       } 
     },
     { 
@@ -319,7 +318,7 @@ export const CustomerDashboard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Available Now</span>
                     <span className="text-sm font-semibold text-green-600">
-                      {myClubhouse.availableBays} {myClubhouse.availableBays === 1 ? 'bay' : 'bays'}
+                      {myClubhouse.availableBoxes} {myClubhouse.availableBoxes === 1 ? 'box' : 'boxes'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -329,7 +328,11 @@ export const CustomerDashboard: React.FC = () => {
                 </div>
               </div>
               <button 
-                onClick={() => window.open(skeddaUrls[myClubhouse.id], '_blank')}
+                onClick={() => {
+                  // Use location-specific URL if available, otherwise main booking page
+                  const url = skeddaUrls[myClubhouse.id] || 'https://clubhouse247golf.skedda.com/booking';
+                  window.open(url, '_blank');
+                }}
                 className="w-full mt-4 py-2.5 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors font-medium"
               >
                 Book Now
@@ -364,7 +367,7 @@ export const CustomerDashboard: React.FC = () => {
                       <span className="font-medium text-gray-900">{booking.date}</span>
                       <span className="text-sm font-medium text-[#0B3D3A]">{booking.time}</span>
                     </div>
-                    <p className="text-sm text-gray-600">{booking.bay} • {booking.location}</p>
+                    <p className="text-sm text-gray-600">{booking.box} • {booking.location}</p>
                     {booking.friends.length > 0 && (
                       <div className="flex items-center mt-2">
                         <Users className="w-3 h-3 text-gray-400 mr-1" />
@@ -391,7 +394,7 @@ export const CustomerDashboard: React.FC = () => {
                   onClick={() => router.push('/customer/bookings')}
                   className="text-[#0B3D3A] hover:text-[#084a45] font-medium"
                 >
-                  Book a Bay
+                  Book a Box
                 </button>
               </div>
             )}
