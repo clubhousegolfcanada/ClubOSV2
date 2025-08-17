@@ -65,7 +65,7 @@ export default function Operations() {
       case 'dashboard':
         return 'System overview and real-time status monitoring';
       case 'users':
-        return 'Manage users, roles, and access permissions';
+        return 'Manage operators, customers, roles, and access permissions';
       case 'ai':
         return 'Configure AI automations, knowledge base, and prompt templates';
       case 'integrations':

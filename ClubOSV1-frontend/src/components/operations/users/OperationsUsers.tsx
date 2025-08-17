@@ -263,16 +263,20 @@ export const OperationsUsers: React.FC = () => {
     input.click();
   };
 
+  // Separate operators and customers
+  const operators = users.filter(u => u.role !== 'customer');
+  const customers = users.filter(u => u.role === 'customer');
+
   return (
     <div className="space-y-6">
-      {/* User Management Section */}
+      {/* Operator Management Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-900">User Management</h2>
-              <span className="text-sm text-gray-500">({users.length} users)</span>
+              <h2 className="text-lg font-semibold text-gray-900">Operator Management</h2>
+              <span className="text-sm text-gray-500">({operators.length} operators)</span>
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -307,7 +311,7 @@ export const OperationsUsers: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {users.map((user) => (
+                {operators.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="py-3">
                       {editingUser === user.id ? (
@@ -432,6 +436,103 @@ export const OperationsUsers: React.FC = () => {
         </div>
       </div>
 
+      {/* Customer Management Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-orange-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Customer Management</h2>
+              <span className="text-sm text-gray-500">({customers.length} customers)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  setNewUser({ ...newUser, role: 'customer' });
+                  setShowAddUser(true);
+                }}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Customer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {customers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="pb-3">Name</th>
+                    <th className="pb-3">Email</th>
+                    <th className="pb-3">Phone</th>
+                    <th className="pb-3">Member Since</th>
+                    <th className="pb-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50">
+                      <td className="py-3">
+                        <span className="text-sm font-medium text-gray-900">{customer.name}</span>
+                      </td>
+                      <td className="py-3">
+                        <span className="text-sm text-gray-600">{customer.email}</span>
+                      </td>
+                      <td className="py-3">
+                        <span className="text-sm text-gray-600">{customer.phone || '-'}</span>
+                      </td>
+                      <td className="py-3">
+                        <span className="text-sm text-gray-500">
+                          {new Date(customer.createdAt).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEditUser(customer)}
+                            className="p-1 text-gray-600 hover:text-gray-700"
+                            title="Edit"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setResetPasswordUserId(customer.id);
+                              setShowResetPassword(true);
+                            }}
+                            className="p-1 text-blue-600 hover:text-blue-700"
+                            title="Reset Password"
+                          >
+                            <Key className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(customer.id)}
+                            className="p-1 text-red-600 hover:text-red-700"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 mb-4">No customers yet</p>
+              <p className="text-sm text-gray-400">Customers can sign up through the mobile app or you can add them manually.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Access Control Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -441,7 +542,7 @@ export const OperationsUsers: React.FC = () => {
           </div>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="p-4 bg-purple-50 rounded-lg">
               <h3 className="font-semibold text-purple-900 mb-2">Admin</h3>
               <ul className="text-sm text-purple-700 space-y-1">
@@ -476,6 +577,15 @@ export const OperationsUsers: React.FC = () => {
                 <li>• Public terminal</li>
                 <li>• Auto-redirect</li>
                 <li>• No admin access</li>
+              </ul>
+            </div>
+            <div className="p-4 bg-orange-50 rounded-lg">
+              <h3 className="font-semibold text-orange-900 mb-2">Customer</h3>
+              <ul className="text-sm text-orange-700 space-y-1">
+                <li>• Mobile app access</li>
+                <li>• Book bays</li>
+                <li>• Social features</li>
+                <li>• View stats</li>
               </ul>
             </div>
           </div>
