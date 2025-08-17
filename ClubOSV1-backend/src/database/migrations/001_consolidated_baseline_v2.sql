@@ -1,7 +1,7 @@
 -- =====================================================
--- CONSOLIDATED BASELINE SCHEMA V2
+-- CONSOLIDATED BASELINE SCHEMA V2 (FIXED)
 -- Date: 2025-08-17
--- Purpose: Clean consolidated schema fixing all conflicts
+-- Purpose: Clean consolidated schema with proper PostgreSQL syntax
 -- =====================================================
 
 -- Drop existing schema (only in development!)
@@ -89,12 +89,6 @@ CREATE TABLE IF NOT EXISTS openphone_conversations (
   assistant_response TEXT
 );
 
--- Indexes for openphone_conversations
-CREATE INDEX IF NOT EXISTS idx_openphone_phone_number ON openphone_conversations(phone_number);
-CREATE INDEX IF NOT EXISTS idx_openphone_updated_at ON openphone_conversations(updated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_openphone_is_read ON openphone_conversations(is_read);
-CREATE INDEX IF NOT EXISTS idx_openphone_conversation_id ON openphone_conversations(conversation_id);
-
 -- =====================================================
 -- TICKETING SYSTEM
 -- =====================================================
@@ -119,11 +113,6 @@ CREATE TABLE IF NOT EXISTS tickets (
   CONSTRAINT valid_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );
 
--- Indexes for tickets
-CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
-CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
-CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at DESC);
-
 -- Ticket comments
 CREATE TABLE IF NOT EXISTS ticket_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -133,10 +122,6 @@ CREATE TABLE IF NOT EXISTS ticket_comments (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Indexes for ticket_comments
-CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
-CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_at ON ticket_comments(created_at);
 
 -- =====================================================
 -- AI & AUTOMATION
@@ -204,8 +189,7 @@ CREATE TABLE IF NOT EXISTS assistant_knowledge (
   knowledge_text TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_by UUID REFERENCES users(id),
-  INDEX idx_assistant_name (assistant_name)
+  created_by UUID REFERENCES users(id)
 );
 
 -- Extracted knowledge
@@ -217,9 +201,7 @@ CREATE TABLE IF NOT EXISTS extracted_knowledge (
   answer TEXT,
   confidence_score FLOAT,
   metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_conversation_id (conversation_id),
-  INDEX idx_knowledge_type (knowledge_type)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Knowledge store (new unified system)
@@ -238,11 +220,7 @@ CREATE TABLE IF NOT EXISTS knowledge_store (
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_by UUID REFERENCES users(id),
-  INDEX idx_category (category),
-  INDEX idx_tags (tags),
-  INDEX idx_is_active (is_active),
-  INDEX idx_usage_count (usage_count DESC)
+  created_by UUID REFERENCES users(id)
 );
 
 -- Prompt templates
@@ -287,10 +265,7 @@ CREATE TABLE IF NOT EXISTS usage_logs (
   response_time_ms INTEGER,
   ip_address VARCHAR(45),
   user_agent TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_id (user_id),
-  INDEX idx_endpoint (endpoint),
-  INDEX idx_created_at (created_at DESC)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =====================================================
@@ -308,10 +283,7 @@ CREATE TABLE IF NOT EXISTS checklist_submissions (
   comments TEXT,
   ticket_created BOOLEAN DEFAULT false,
   ticket_id UUID REFERENCES tickets(id),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_id (user_id),
-  INDEX idx_checklist_type (checklist_type),
-  INDEX idx_created_at (created_at DESC)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Checklist task customizations
@@ -350,9 +322,7 @@ CREATE TABLE IF NOT EXISTS door_access_log (
   success BOOLEAN DEFAULT true,
   error_message TEXT,
   metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_location (location),
-  INDEX idx_created_at (created_at DESC)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =====================================================
@@ -397,9 +367,7 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   device_info JSONB DEFAULT '{}',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_id (user_id),
-  INDEX idx_is_active (is_active)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Notification history
@@ -415,9 +383,7 @@ CREATE TABLE IF NOT EXISTS notification_history (
   error_message TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   delivered_at TIMESTAMP,
-  read_at TIMESTAMP,
-  INDEX idx_user_id (user_id),
-  INDEX idx_created_at (created_at DESC)
+  read_at TIMESTAMP
 );
 
 -- Notification preferences
@@ -449,20 +415,74 @@ CREATE TABLE IF NOT EXISTS public_requests (
   confidence FLOAT,
   assistant_used VARCHAR(50),
   metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_source (source),
-  INDEX idx_created_at (created_at DESC)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =====================================================
--- INDEXES FOR PERFORMANCE
+-- CREATE ALL INDEXES
 -- =====================================================
 
--- Additional performance indexes
+-- OpenPhone conversations indexes
+CREATE INDEX IF NOT EXISTS idx_openphone_phone_number ON openphone_conversations(phone_number);
+CREATE INDEX IF NOT EXISTS idx_openphone_updated_at ON openphone_conversations(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_openphone_is_read ON openphone_conversations(is_read);
+CREATE INDEX IF NOT EXISTS idx_openphone_conversation_id ON openphone_conversations(conversation_id);
+
+-- Tickets indexes
+CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
+CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tickets_status_priority ON tickets(status, priority);
-CREATE INDEX IF NOT EXISTS idx_openphone_phone_updated ON openphone_conversations(phone_number, updated_at DESC);
+
+-- Ticket comments indexes
+CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_at ON ticket_comments(created_at);
+
+-- Assistant knowledge indexes
+CREATE INDEX IF NOT EXISTS idx_assistant_knowledge_name ON assistant_knowledge(assistant_name);
+
+-- Extracted knowledge indexes
+CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_conversation ON extracted_knowledge(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_type ON extracted_knowledge(knowledge_type);
+
+-- Knowledge store indexes
+CREATE INDEX IF NOT EXISTS idx_knowledge_store_category ON knowledge_store(category);
+CREATE INDEX IF NOT EXISTS idx_knowledge_store_tags ON knowledge_store USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_knowledge_store_is_active ON knowledge_store(is_active);
+CREATE INDEX IF NOT EXISTS idx_knowledge_store_usage ON knowledge_store(usage_count DESC);
+
+-- Usage logs indexes
+CREATE INDEX IF NOT EXISTS idx_usage_logs_user_id ON usage_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_usage_logs_endpoint ON usage_logs(endpoint);
+CREATE INDEX IF NOT EXISTS idx_usage_logs_created_at ON usage_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_usage_logs_user_endpoint ON usage_logs(user_id, endpoint, created_at DESC);
+
+-- Checklist submissions indexes
+CREATE INDEX IF NOT EXISTS idx_checklist_user_id ON checklist_submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_checklist_type ON checklist_submissions(checklist_type);
+CREATE INDEX IF NOT EXISTS idx_checklist_created_at ON checklist_submissions(created_at DESC);
+
+-- Door access log indexes
+CREATE INDEX IF NOT EXISTS idx_door_access_location ON door_access_log(location);
+CREATE INDEX IF NOT EXISTS idx_door_access_created_at ON door_access_log(created_at DESC);
+
+-- Push subscriptions indexes
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_is_active ON push_subscriptions(is_active);
+
+-- Notification history indexes
+CREATE INDEX IF NOT EXISTS idx_notification_history_user_id ON notification_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_history_created_at ON notification_history(created_at DESC);
+
+-- Public requests indexes
+CREATE INDEX IF NOT EXISTS idx_public_requests_source ON public_requests(source);
+CREATE INDEX IF NOT EXISTS idx_public_requests_created_at ON public_requests(created_at DESC);
+
+-- AI automation indexes
 CREATE INDEX IF NOT EXISTS idx_ai_usage_feature_date ON ai_automation_usage(feature_key, triggered_at DESC);
+
+-- Additional composite index for OpenPhone
+CREATE INDEX IF NOT EXISTS idx_openphone_phone_updated ON openphone_conversations(phone_number, updated_at DESC);
 
 -- =====================================================
 -- INITIAL DATA
@@ -511,10 +531,11 @@ BEGIN
     ])
   LOOP
     EXECUTE format('
+      DROP TRIGGER IF EXISTS update_%I_updated_at ON %I;
       CREATE TRIGGER update_%I_updated_at 
       BEFORE UPDATE ON %I 
       FOR EACH ROW 
-      EXECUTE FUNCTION update_updated_at_column()', t, t);
+      EXECUTE FUNCTION update_updated_at_column()', t, t, t, t);
   END LOOP;
 END $$;
 

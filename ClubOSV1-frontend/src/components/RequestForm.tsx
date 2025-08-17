@@ -585,7 +585,7 @@ const RequestForm: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAdvancedRouting(true)}
-                  className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                  className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                   disabled={isSubmitting || demoMode}
                 >
@@ -724,7 +724,7 @@ const RequestForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowAdvancedRouting(true)}
-                      className="ml-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      className="ml-2 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                       disabled={isSubmitting || demoMode}
                     >
@@ -769,8 +769,8 @@ const RequestForm: React.FC = () => {
               )}
             </div>
             
-            {/* Location Input - Constrained width */}
-            <div className="flex-1 max-w-[200px] sm:max-w-[250px]">
+            {/* Location Input - Constrained width with left margin */}
+            <div className="max-w-[200px] sm:max-w-[250px] ml-auto">
               <input
                 id="locationInput"
                 {...register('location')}
