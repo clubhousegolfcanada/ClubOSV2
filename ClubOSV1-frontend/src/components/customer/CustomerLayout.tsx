@@ -1,0 +1,20 @@
+import React from 'react';
+import CustomerNavigation from './CustomerNavigation';
+
+interface CustomerLayoutProps {
+  children: React.ReactNode;
+}
+
+const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <CustomerNavigation />
+      {/* Main Content - Add padding to account for fixed header and bottom nav */}
+      <main className="pt-14 pb-20 lg:pb-0">
+        {children}
+      </main>
+    </div>
+  );
+};
+
+export default CustomerLayout;

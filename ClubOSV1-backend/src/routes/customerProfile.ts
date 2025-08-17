@@ -153,4 +153,69 @@ router.put('/', authenticate, async (req, res) => {
   }
 });
 
+// PUT /api/users/profile - Update user's basic information (name, email, phone)
+router.put('/users/profile', authenticate, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+    const { name, email, phone } = req.body;
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+    
+    // Check if email is already taken by another user
+    if (email && email !== req.user!.email) {
+      const emailCheck = await db.query(
+        'SELECT id FROM users WHERE email = $1 AND id != $2',
+        [email.toLowerCase(), userId]
+      );
+      
+      if (emailCheck.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email address is already in use'
+        });
+      }
+    }
+    
+    // Update user information
+    const result = await db.query(`
+      UPDATE users 
+      SET 
+        name = COALESCE($1, name),
+        email = COALESCE(LOWER($2), email),
+        phone = COALESCE($3, phone),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+      RETURNING id, name, email, phone, role, created_at
+    `, [name, email, phone, userId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    logger.info(`User profile updated for user ${userId}`);
+    
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: 'Profile updated successfully'
+    });
+  } catch (error) {
+    logger.error('Failed to update user profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile'
+    });
+  }
+});
+
 export default router;
