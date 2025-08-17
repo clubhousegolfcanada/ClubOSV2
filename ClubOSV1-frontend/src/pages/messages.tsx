@@ -1323,7 +1323,7 @@ export default function Messages() {
                   </div>
 
                   {/* Messages - Mobile optimized with better spacing */}
-                  <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                  <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 flex flex-col" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
                     {/* Load More Messages Button - Mobile */}
                     {hasMoreMessages && (
                       <div className="text-center mb-3">
@@ -1369,9 +1369,9 @@ export default function Messages() {
                           return (
                             <div
                               key={message.id || index}
-                              className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                              className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'} px-1`}
                             >
-                              <div className={`max-w-[85%] ${
+                              <div className={`max-w-[80%] sm:max-w-[85%] ${
                                 message.direction === 'outbound'
                                   ? 'bg-[var(--accent)] text-white rounded-2xl rounded-br-sm'
                                   : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-2xl rounded-bl-sm'
