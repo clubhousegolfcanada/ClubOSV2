@@ -44,21 +44,6 @@ export default function CustomerBookings() {
         
         <main className="pb-20 lg:pb-8 pt-16 lg:pt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Compact Header */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                    <Calendar className="w-6 h-6 text-[#0B3D3A] mr-2" />
-                    Book a Box
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Reserve your time at any Clubhouse 24/7 location
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Quick Info Bar */}
             <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] rounded-xl shadow-sm p-4 mb-4 text-white">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -93,25 +78,6 @@ export default function CustomerBookings() {
                   }}
                   allow="fullscreen"
                 />
-              </div>
-            </div>
-
-            {/* Help Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mt-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Booking Tips</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600">
-                <div className="flex items-start">
-                  <span className="font-medium text-[#0B3D3A] mr-2">•</span>
-                  <span>TrackMan boxes are marked with (TM)</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="font-medium text-[#0B3D3A] mr-2">•</span>
-                  <span>Book up to 7 days in advance</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="font-medium text-[#0B3D3A] mr-2">•</span>
-                  <span>Cancel up to 2 hours before</span>
-                </div>
               </div>
             </div>
           </div>

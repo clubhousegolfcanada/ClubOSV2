@@ -35,6 +35,7 @@ import llmRoutes from './routes/llm';
 import slackRoutes from './routes/slack';
 import customerRoutes from './routes/customer';
 import customerProfileRoutes from './routes/customerProfile';
+import customerBookingsRoutes from './routes/customerBookings';
 import userSettingsRoutes from './routes/userSettings';
 import backupRoutes from './routes/backup';
 import accessRoutes from './routes/access';
@@ -222,6 +223,7 @@ app.use('/api/slack', slackRoutes);
 // New Clubhouse customer app API v2
 app.use('/api/v2/customer', customerRoutes);
 app.use('/api/customer-profile', customerProfileRoutes);
+app.use('/api/customer-bookings', customerBookingsRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/access', accessRoutes);

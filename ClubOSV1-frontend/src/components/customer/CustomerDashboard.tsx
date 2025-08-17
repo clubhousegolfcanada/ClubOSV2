@@ -115,31 +115,47 @@ export const CustomerDashboard: React.FC = () => {
         } catch (error) {
           console.error('Failed to fetch customer profile:', error);
         }
+        
+        // Fetch real bookings from HubSpot
+        try {
+          const bookingsResponse = await axios.get(`${API_URL}/api/customer-bookings`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (bookingsResponse.data.success) {
+            // Filter only upcoming bookings for the dashboard
+            const upcomingOnly = bookingsResponse.data.bookings
+              .filter((b: any) => b.status === 'upcoming')
+              .slice(0, 3); // Show max 3 bookings
+            setUpcomingBookings(upcomingOnly);
+          }
+        } catch (error) {
+          console.error('Failed to fetch bookings:', error);
+          // Fallback to mock data if API fails
+          setUpcomingBookings([
+            {
+              id: '1',
+              date: 'Today',
+              time: '6:00 PM',
+              box: 'Box 2',
+              location: 'Bedford',
+              friends: ['John D.', 'Mike S.']
+            },
+            {
+              id: '2',
+              date: 'Tomorrow',
+              time: '7:00 PM',
+              box: 'Box 4',
+              location: 'Bedford',
+              friends: []
+            }
+          ]);
+        }
       }
       
       // Set default location to Bedford (or from user preferences in future)
       const savedLocation = localStorage.getItem('preferredClubhouse');
       const defaultLocation = locations.find(loc => loc.id === savedLocation) || locations[0];
       setMyClubhouse(defaultLocation);
-
-      setUpcomingBookings([
-        {
-          id: '1',
-          date: 'Today',
-          time: '6:00 PM',
-          box: 'Box 2',
-          location: 'Bedford',
-          friends: ['John D.', 'Mike S.']
-        },
-        {
-          id: '2',
-          date: 'Tomorrow',
-          time: '7:00 PM',
-          box: 'Box 4',
-          location: 'Bedford',
-          friends: []
-        }
-      ]);
 
       setRecentActivity([
         { type: 'friend', message: 'Sarah K. accepted your friend request', time: '2 hours ago' },

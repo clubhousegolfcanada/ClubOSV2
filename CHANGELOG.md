@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.0] - 2025-08-17
+
+### Added
+- **HubSpot Booking Integration**
+  - Created customer bookings API endpoint to fetch bookings from HubSpot CRM
+  - Integrated real-time booking data into customer dashboard
+  - Added automatic HubSpot contact ID caching for performance
+
+### Changed
+- **Customer Experience Improvements**
+  - Removed "Book a Box" title and booking tips from bookings page for cleaner UI
+  - Fixed RemoteActionsBar to never show in customer mode (including for operators testing)
+  - Combined Profile and Settings into single menu item in navigation dropdown
+  - Fixed operator/customer toggle visibility in dropdown menu with proper styling
+  - Mobile navigation consistency improvements across all views
+
+### Fixed
+- **Navigation Issues**
+  - Fixed operator/customer toggle not working in user dropdown
+  - Fixed mobile navigation menu Profile/Settings inconsistency
+  - Ensured RemoteActionsBar hidden for all users when in customer view mode
+  - Fixed mobile navigation dropdown collapsible behavior
+
 ## [Refactor Phase 1] - 2025-08-17
 
 ### Database Schema Consolidation

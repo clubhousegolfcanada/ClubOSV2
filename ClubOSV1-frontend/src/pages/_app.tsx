@@ -7,7 +7,7 @@ import Navigation from '@/components/Navigation';
 import Notifications from '@/components/Notifications';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { useAuthState } from '@/state/useStore';
+import { useAuthState, useStore } from '@/state/useStore';
 import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 import { tokenManager } from '@/utils/tokenManager';
 import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
@@ -29,6 +29,7 @@ interface AppContentProps {
 function AppContent({ Component, pageProps }: AppContentProps) {
   const router = useRouter();
   const { setUser, isAuthenticated, user } = useAuthState();
+  const { viewMode } = useStore(); // Get viewMode from store
   const isPublicRoute = publicRoutes.includes(router.pathname);
   const [authInitialized, setAuthInitialized] = useState(false);
   
@@ -206,7 +207,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         <AuthGuard>
           <Component {...pageProps} />
           <SwipeIndicator enabled={isAuthenticated} />
-          {isAuthenticated && user?.role !== 'customer' && <RemoteActionsBar />}
+          {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && <RemoteActionsBar />}
         </AuthGuard>
       )}
       <Notifications />

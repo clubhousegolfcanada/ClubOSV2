@@ -386,18 +386,18 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     <div className="text-xs text-[var(--text-muted)] px-4 py-1">
                       {user.email}
                     </div>
-                    <button
-                      onClick={toggleTheme}
-                      className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
-                    >
-                      Theme: {theme.toUpperCase()}
-                    </button>
                     <Link
                       href={user.role === 'admin' ? '/settings' : '/profile'}
                       className="block px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
                     >
                       {user.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                     </Link>
+                    <button
+                      onClick={toggleTheme}
+                      className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200"
+                    >
+                      Theme: {theme.toUpperCase()}
+                    </button>
                     {/* Mode Toggle for Admin and Operator */}
                     {(user.role === 'admin' || user.role === 'operator') && (
                       <div className="px-4 py-3 border-t border-[var(--border-secondary)] mt-2">
