@@ -1,10 +1,12 @@
 import React from 'react';
 import { useStore, useAuthState } from '../state/useStore';
 import { Users, User } from 'lucide-react';
+import { useRouter } from 'next/router';
 
 const ModeToggle: React.FC = () => {
   const { viewMode, setViewMode } = useStore();
   const { user } = useAuthState();
+  const router = useRouter();
 
   // Only show toggle for users who have both customer and operator access
   // Admins and operators can switch to customer view to test
@@ -24,8 +26,12 @@ const ModeToggle: React.FC = () => {
     // Store preference in localStorage
     localStorage.setItem('clubos_view_mode', newMode);
     
-    // Optionally reload to refresh the UI completely
-    // window.location.reload();
+    // Navigate to the appropriate app
+    if (newMode === 'customer') {
+      router.push('/customer');
+    } else {
+      router.push('/');
+    }
   };
 
   // If user is a customer role, they're always in customer mode
