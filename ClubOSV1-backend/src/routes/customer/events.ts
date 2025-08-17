@@ -4,8 +4,10 @@ import { eventLimiter } from '../../middleware/customerRateLimit';
 
 interface CustomerRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    role?: string;
+    sessionId?: string;
   };
 }
 
@@ -68,7 +70,7 @@ router.get('/', async (req: CustomerRequest, res: Response) => {
  */
 router.post('/', eventLimiter, async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const {
       name, description, type, location, start_date, end_date,
       registration_deadline, max_participants, min_participants,
@@ -116,7 +118,7 @@ router.post('/', eventLimiter, async (req: CustomerRequest, res: Response) => {
  */
 router.post('/:eventId/register', eventLimiter, async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { eventId } = req.params;
     const { team_id } = req.body;
 
@@ -180,7 +182,7 @@ router.post('/:eventId/register', eventLimiter, async (req: CustomerRequest, res
  */
 router.get('/my', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     const result = await pool.query(
       `SELECT 

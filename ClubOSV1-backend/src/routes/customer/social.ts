@@ -4,8 +4,10 @@ import { socialActionLimiter } from '../../middleware/customerRateLimit';
 
 interface CustomerRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    role?: string;
+    sessionId?: string;
   };
 }
 
@@ -17,7 +19,7 @@ const router = Router();
  */
 router.get('/friends', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     const result = await pool.query(
       `SELECT 
@@ -51,7 +53,7 @@ router.get('/friends', async (req: CustomerRequest, res: Response) => {
  */
 router.post('/friends/request', socialActionLimiter, async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { friendId } = req.body;
 
     if (!friendId) {
@@ -99,7 +101,7 @@ router.post('/friends/request', socialActionLimiter, async (req: CustomerRequest
  */
 router.put('/friends/accept/:requestId', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { requestId } = req.params;
 
     const result = await pool.query(
@@ -127,7 +129,7 @@ router.put('/friends/accept/:requestId', async (req: CustomerRequest, res: Respo
  */
 router.get('/teams', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     const result = await pool.query(
       `SELECT 
@@ -155,7 +157,7 @@ router.get('/teams', async (req: CustomerRequest, res: Response) => {
  */
 router.post('/teams', socialActionLimiter, async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { name, description, type, is_public, max_members } = req.body;
 
     if (!name) {

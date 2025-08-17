@@ -3,8 +3,10 @@ import { pool } from '../../utils/db';
 
 interface CustomerRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    role?: string;
+    sessionId?: string;
   };
 }
 
@@ -16,7 +18,7 @@ const router = Router();
  */
 router.get('/', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { start_date, end_date, location } = req.query;
 
     // Get TrackMan sessions
@@ -72,7 +74,7 @@ router.get('/', async (req: CustomerRequest, res: Response) => {
  */
 router.post('/session', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const {
       external_session_id,
       booking_id,
@@ -199,7 +201,7 @@ router.get('/leaderboard', async (req: CustomerRequest, res: Response) => {
  */
 router.post('/share', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { session_id, achievement, message, visibility } = req.body;
 
     // Add to activity feed

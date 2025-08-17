@@ -5,8 +5,10 @@ import axios from 'axios';
 
 interface CustomerRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    role?: string;
+    sessionId?: string;
   };
 }
 
@@ -22,7 +24,7 @@ const SKEDDA_API_KEY = process.env.SKEDDA_API_KEY || '';
  */
 router.get('/', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { start_date, end_date, location } = req.query;
 
     // TODO: Integrate with Skedda API
@@ -72,7 +74,7 @@ router.get('/', async (req: CustomerRequest, res: Response) => {
  */
 router.post('/share', bookingLimiter, async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const {
       skedda_booking_id,
       booking_date,
@@ -177,7 +179,7 @@ router.post('/share', bookingLimiter, async (req: CustomerRequest, res: Response
  */
 router.put('/share/:shareId/accept', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { shareId } = req.params;
 
     // Check if user is invited
@@ -239,7 +241,7 @@ router.put('/share/:shareId/accept', async (req: CustomerRequest, res: Response)
  */
 router.get('/shared', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     // Get bookings shared with user or their teams
     const result = await pool.query(

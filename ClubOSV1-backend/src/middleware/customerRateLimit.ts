@@ -3,8 +3,10 @@ import { Request, Response } from 'express';
 
 interface CustomerRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    role?: string;
+    sessionId?: string;
   };
 }
 
@@ -40,7 +42,7 @@ export const customerApiLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: CustomerRequest) => {
     // Use user ID if authenticated, otherwise IP
-    return req.user?.userId || req.ip || 'unknown';
+    return req.user?.id || req.ip || 'unknown';
   },
   skip: (req: CustomerRequest) => {
     // Skip rate limiting for premium users (future feature)
@@ -58,7 +60,7 @@ export const customerStrictLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: CustomerRequest) => {
-    return req.user?.userId || req.ip || 'unknown';
+    return req.user?.id || req.ip || 'unknown';
   }
 });
 
@@ -72,7 +74,7 @@ export const socialActionLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: CustomerRequest) => {
-    return req.user?.userId || req.ip || 'unknown';
+    return req.user?.id || req.ip || 'unknown';
   }
 });
 
@@ -86,7 +88,7 @@ export const bookingLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: CustomerRequest) => {
-    return req.user?.userId || req.ip || 'unknown';
+    return req.user?.id || req.ip || 'unknown';
   }
 });
 
@@ -100,7 +102,7 @@ export const eventLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: CustomerRequest) => {
-    return req.user?.userId || req.ip || 'unknown';
+    return req.user?.id || req.ip || 'unknown';
   }
 });
 

@@ -3,11 +3,12 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../utils/db';
 
 interface CustomerTokenPayload {
-  userId: string;
+  id: string;
   email: string;
-  role: string;
+  role: 'customer';
   isCustomer: boolean;
   deviceId?: string;
+  sessionId: string;
 }
 
 interface CustomerRequest extends Request {
@@ -28,11 +29,12 @@ export const generateCustomerTokens = async (
   deviceId?: string
 ) => {
   const payload: CustomerTokenPayload = {
-    userId,
+    id: userId,
     email,
     role: 'customer',
     isCustomer: true,
-    deviceId
+    deviceId,
+    sessionId: `customer_${userId}_${Date.now()}`
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
@@ -85,7 +87,7 @@ export const authenticateCustomer = async (
       // Verify user exists and is active
       const userResult = await pool.query(
         'SELECT id, email, is_active FROM users WHERE id = $1 AND is_customer = true',
-        [decoded.userId]
+        [decoded.id]
       );
 
       if (userResult.rows.length === 0) {
@@ -141,7 +143,7 @@ export const refreshCustomerToken = async (
        WHERE refresh_token = $1 
        AND user_id = $2 
        AND expires_at > CURRENT_TIMESTAMP`,
-      [refreshToken, decoded.userId]
+      [refreshToken, decoded.id]
     );
 
     if (tokenResult.rows.length === 0) {
@@ -157,11 +159,12 @@ export const refreshCustomerToken = async (
     // Generate new access token
     const newAccessToken = jwt.sign(
       {
-        userId: decoded.userId,
+        id: decoded.id,
         email: decoded.email,
         role: 'customer',
         isCustomer: true,
-        deviceId: decoded.deviceId
+        deviceId: decoded.deviceId,
+        sessionId: decoded.sessionId
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
@@ -189,7 +192,7 @@ export const logoutCustomer = async (
 ) => {
   try {
     const { refreshToken } = req.body;
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     if (!refreshToken || !userId) {
       return res.status(400).json({ error: 'Invalid request' });

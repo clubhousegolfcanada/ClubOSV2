@@ -4,8 +4,10 @@ import { body, validationResult } from 'express-validator';
 
 interface CustomerRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    role?: string;
+    sessionId?: string;
   };
 }
 
@@ -17,7 +19,7 @@ const router = Router();
  */
 router.get('/', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     const result = await pool.query(
       `SELECT 
@@ -59,7 +61,7 @@ router.put('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const {
       display_name,
       bio,
@@ -112,7 +114,7 @@ router.put('/', [
  */
 router.put('/privacy', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { privacy_settings } = req.body;
 
     // Validate privacy settings
@@ -148,7 +150,7 @@ router.put('/privacy', async (req: CustomerRequest, res: Response) => {
  */
 router.put('/notifications', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { notification_preferences } = req.body;
 
     const result = await pool.query(
@@ -173,7 +175,7 @@ router.put('/notifications', async (req: CustomerRequest, res: Response) => {
 router.get('/:userId', async (req: CustomerRequest, res: Response) => {
   try {
     const { userId } = req.params;
-    const requesterId = req.user?.userId;
+    const requesterId = req.user?.id;
 
     // Get profile with privacy check
     const result = await pool.query(
@@ -231,7 +233,7 @@ router.get('/:userId', async (req: CustomerRequest, res: Response) => {
  */
 router.delete('/', async (req: CustomerRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { password } = req.body;
 
     if (!password) {
