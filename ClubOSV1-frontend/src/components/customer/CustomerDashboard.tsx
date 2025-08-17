@@ -66,6 +66,33 @@ export const CustomerDashboard: React.FC = () => {
     avgDrive: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
+
+  // Available locations
+  const locations: ClubhouseLocation[] = [
+    {
+      id: 'bedford',
+      name: 'Bedford',
+      displayName: 'Clubhouse 24/7 Golf - Bedford',
+      city: 'Bedford',
+      availableBays: 3,
+      nextAvailable: '2:00 PM'
+    },
+    {
+      id: 'dartmouth',
+      name: 'Dartmouth',
+      displayName: 'Clubhouse 24/7 Golf - Dartmouth', 
+      city: 'Dartmouth',
+      availableBays: 4,
+      nextAvailable: '1:30 PM'
+    }
+  ];
+
+  // Skedda booking URLs
+  const skeddaUrls: Record<string, string> = {
+    bedford: 'https://clubhouse247golf.skedda.com/booking?spacefeatureids=c58c2cecfcce4559a3b61827b1cc8b47',
+    dartmouth: 'https://clubhouse247golf.skedda.com/booking?spacefeatureids=9c2102d2571146709f186a1cc14b4ecf'
+  };
 
   useEffect(() => {
     fetchCustomerData();
@@ -74,15 +101,10 @@ export const CustomerDashboard: React.FC = () => {
   const fetchCustomerData = async () => {
     setLoading(true);
     try {
-      // For now, use mock data until API endpoints are ready
-      setMyClubhouse({
-        id: '1',
-        name: 'Bedford',
-        displayName: 'Clubhouse 24/7 Golf - Bedford',
-        city: 'Bedford',
-        availableBays: 3,
-        nextAvailable: '2:00 PM'
-      });
+      // Set default location to Bedford (or from user preferences in future)
+      const savedLocation = localStorage.getItem('preferredClubhouse');
+      const defaultLocation = locations.find(loc => loc.id === savedLocation) || locations[0];
+      setMyClubhouse(defaultLocation);
 
       setUpcomingBookings([
         {
@@ -127,28 +149,28 @@ export const CustomerDashboard: React.FC = () => {
       icon: Calendar, 
       label: 'Book a Bay', 
       description: 'Reserve your spot',
-      gradient: 'from-emerald-500 to-green-600',
-      onClick: () => router.push('/customer/bookings') 
+      onClick: () => {
+        if (myClubhouse) {
+          window.open(skeddaUrls[myClubhouse.id], '_blank');
+        }
+      } 
     },
     { 
       icon: Users, 
       label: 'Find Friends', 
       description: 'Connect with players',
-      gradient: 'from-blue-500 to-indigo-600',
       onClick: () => router.push('/customer/friends') 
     },
     { 
       icon: Trophy, 
       label: 'Join Event', 
       description: 'Compete and win',
-      gradient: 'from-purple-500 to-pink-600',
       onClick: () => router.push('/customer/events') 
     },
     { 
       icon: BarChart3, 
       label: 'My Stats', 
       description: 'Track progress',
-      gradient: 'from-orange-500 to-red-600',
       onClick: () => router.push('/customer/stats') 
     }
   ];
@@ -172,6 +194,12 @@ export const CustomerDashboard: React.FC = () => {
     if (value > 0) return <ArrowUp className="w-4 h-4 text-green-500" />;
     if (value < 0) return <ArrowDown className="w-4 h-4 text-green-500" />;
     return <Minus className="w-4 h-4 text-gray-400" />;
+  };
+
+  const handleLocationChange = (location: ClubhouseLocation) => {
+    setMyClubhouse(location);
+    localStorage.setItem('preferredClubhouse', location.id);
+    setShowLocationSelector(false);
   };
 
   if (loading) {
@@ -210,12 +238,11 @@ export const CustomerDashboard: React.FC = () => {
           <button
             key={index}
             onClick={action.onClick}
-            className="group relative bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 overflow-hidden"
+            className="group relative bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-[#0B3D3A]/20 transition-all duration-200"
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
             <div className="relative">
-              <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${action.gradient} mb-4`}>
-                <action.icon className="w-6 h-6 text-white" />
+              <div className="inline-flex p-3 rounded-lg bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors mb-4">
+                <action.icon className="w-6 h-6 text-[#0B3D3A]" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">{action.label}</h3>
               <p className="text-sm text-gray-500">{action.description}</p>
@@ -227,11 +254,39 @@ export const CustomerDashboard: React.FC = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* My Clubhouse Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">My Clubhouse</h2>
-            <MapPin className="w-5 h-5 text-[#0B3D3A]" />
+            <button
+              onClick={() => setShowLocationSelector(!showLocationSelector)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Change location"
+            >
+              <MapPin className="w-5 h-5 text-[#0B3D3A]" />
+            </button>
           </div>
+          
+          {/* Location Selector Dropdown */}
+          {showLocationSelector && (
+            <div className="absolute top-14 right-4 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+              <div className="p-2">
+                <p className="text-xs text-gray-500 px-2 py-1">Select Location</p>
+                {locations.map((location) => (
+                  <button
+                    key={location.id}
+                    onClick={() => handleLocationChange(location)}
+                    className={`w-full text-left px-3 py-2 rounded hover:bg-gray-100 transition-colors ${
+                      myClubhouse?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
+                    }`}
+                  >
+                    <div className="font-medium">{location.name}</div>
+                    <div className="text-xs text-gray-500">{location.city}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {myClubhouse ? (
             <div className="space-y-4">
               <div>
@@ -253,7 +308,7 @@ export const CustomerDashboard: React.FC = () => {
                 </div>
               </div>
               <button 
-                onClick={() => router.push('/customer/bookings')}
+                onClick={() => window.open(skeddaUrls[myClubhouse.id], '_blank')}
                 className="w-full mt-4 py-2.5 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors font-medium"
               >
                 Book Now
@@ -263,7 +318,10 @@ export const CustomerDashboard: React.FC = () => {
             <div className="text-center py-8">
               <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 mb-3">Set your home clubhouse</p>
-              <button className="text-[#0B3D3A] hover:text-[#084a45] font-medium">
+              <button 
+                onClick={() => setShowLocationSelector(true)}
+                className="text-[#0B3D3A] hover:text-[#084a45] font-medium"
+              >
                 Choose Location
               </button>
             </div>
