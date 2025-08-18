@@ -95,7 +95,7 @@ const LoginPage = () => {
           
           // Navigate based on user role
           if (user.role === 'customer' || loginMode === 'customer') {
-            router.push('/customer');
+            router.push('/customer/');
           } else {
             router.push('/');
           }
