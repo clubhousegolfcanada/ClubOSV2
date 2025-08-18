@@ -263,11 +263,11 @@ CREATE TABLE IF NOT EXISTS booking_history (
   trackman_session_id VARCHAR(100),
   stats_summary JSONB,
   
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  
-  -- Index for quick lookups
-  INDEX idx_booking_history_user_date (user_id, booking_date DESC)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create index separately
+CREATE INDEX idx_booking_history_user_date ON booking_history(user_id, booking_date DESC);
 
 -- ============================================
 -- SCOREBOARDS & LEADERBOARDS
@@ -433,9 +433,11 @@ CREATE TABLE IF NOT EXISTS bay_availability (
   
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   
-  UNIQUE(clubhouse_id, date, bay_number),
-  INDEX idx_bay_availability_lookup (clubhouse_id, date, is_available)
+  UNIQUE(clubhouse_id, date, bay_number)
 );
+
+-- Create index separately
+CREATE INDEX idx_bay_availability_lookup ON bay_availability(clubhouse_id, date, is_available);
 
 -- Clubhouse announcements/news
 CREATE TABLE IF NOT EXISTS clubhouse_announcements (
@@ -492,11 +494,11 @@ CREATE TABLE IF NOT EXISTS activity_feed (
   likes_count INTEGER DEFAULT 0,
   comments_count INTEGER DEFAULT 0,
   
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  
-  -- Index for feed queries
-  INDEX idx_activity_feed_user_created (user_id, created_at DESC)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create index separately
+CREATE INDEX idx_activity_feed_user_created ON activity_feed(user_id, created_at DESC);
 
 -- Activity interactions (likes, comments)
 CREATE TABLE IF NOT EXISTS activity_interactions (

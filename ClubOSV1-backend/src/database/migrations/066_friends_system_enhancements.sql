@@ -8,14 +8,14 @@
 -- ============================================
 
 -- Add columns to existing friendships table (don't recreate)
-ALTER TABLE friendships ADD COLUMN IF NOT EXISTS 
-  invitation_method VARCHAR(20) DEFAULT 'in_app', -- email, phone, in_app, qr_code
-  invitation_message TEXT,
-  mutual_friends_count INTEGER DEFAULT 0,
-  friendship_source VARCHAR(50), -- search, booking, event, suggestion
-  clubcoin_wagers_count INTEGER DEFAULT 0,
-  clubcoin_wagers_total DECIMAL(10,2) DEFAULT 0,
-  last_wager_date TIMESTAMP;
+ALTER TABLE friendships 
+  ADD COLUMN IF NOT EXISTS invitation_method VARCHAR(20) DEFAULT 'in_app',
+  ADD COLUMN IF NOT EXISTS invitation_message TEXT,
+  ADD COLUMN IF NOT EXISTS mutual_friends_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS friendship_source VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS clubcoin_wagers_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS clubcoin_wagers_total DECIMAL(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_wager_date TIMESTAMP;
 
 -- ============================================
 -- FRIEND INVITATIONS FOR NON-USERS
@@ -91,10 +91,12 @@ CREATE TABLE IF NOT EXISTS contact_sync (
   synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   source VARCHAR(50), -- ios_contacts, android_contacts, manual, import
   
-  UNIQUE(user_id, contact_hash),
-  INDEX idx_contact_hash (contact_hash),
-  INDEX idx_matched_user (matched_user_id)
+  UNIQUE(user_id, contact_hash)
 );
+
+-- Create indexes separately
+CREATE INDEX idx_contact_hash ON contact_sync(contact_hash);
+CREATE INDEX idx_matched_user ON contact_sync(matched_user_id);
 
 -- ============================================
 -- FRIEND GROUPS FOR WAGERING
@@ -154,10 +156,11 @@ CREATE TABLE IF NOT EXISTS friend_activities (
   booking_id VARCHAR(200),
   event_id UUID REFERENCES events(id),
   
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
-  INDEX idx_friend_activity_users (user_id, friend_id, created_at DESC)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create index separately
+CREATE INDEX idx_friend_activity_users ON friend_activities(user_id, friend_id, created_at DESC);
 
 -- ============================================
 -- FRIEND NOTIFICATIONS PREFERENCES

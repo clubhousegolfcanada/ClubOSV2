@@ -6,7 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import { body, query, param } from 'express-validator';
-import { rateLimiter } from '../middleware/rateLimiter';
+import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 
 const router = Router();
@@ -15,7 +15,7 @@ const router = Router();
 router.use(authenticate);
 
 // Rate limiting for friend requests
-const friendRequestLimiter = rateLimiter({ 
+const friendRequestLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
   max: 10, // 10 friend requests per day
   message: 'Too many friend requests. Please try again tomorrow.'

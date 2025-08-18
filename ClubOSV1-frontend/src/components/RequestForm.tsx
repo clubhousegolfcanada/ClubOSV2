@@ -747,21 +747,21 @@ const RequestForm: React.FC = () => {
                     style={{
                       width: '25%',
                       left: isKnowledgeMode ? '75%' :
-                            isTicketMode ? '50%' : 
+                            !smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? '50%' : 
                             smartAssistEnabled ? '25%' : '0%'
                     }}
                   />
                   <button
                     type="button"
                     onClick={() => {
+                      setIsTicketMode(true);
                       setSmartAssistEnabled(false);
-                      setIsTicketMode(false);
                       setIsKnowledgeMode(false);
                     }}
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                    <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
                       •
                     </span>
                   </button>
@@ -782,14 +782,14 @@ const RequestForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setIsTicketMode(true);
                       setSmartAssistEnabled(false);
+                      setIsTicketMode(false);
                       setIsKnowledgeMode(false);
                     }}
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
                       HMN
                     </span>
                   </button>
@@ -1380,3 +1380,5 @@ const RequestForm: React.FC = () => {
 };
 
 export default RequestForm;
+// trigger recompile
+
