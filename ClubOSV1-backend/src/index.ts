@@ -277,6 +277,7 @@ app.use('/api/ai-automations', aiAutomationsRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
 app.use('/api/debug', debugCacheRoutes);
+app.use('/api/debug', require('./routes/debug-flow').default);
 app.use('/api/system-status', require('./routes/system-status').default);
 
 
