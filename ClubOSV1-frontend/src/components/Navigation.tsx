@@ -7,11 +7,11 @@ import { hasAnyRole } from '@/utils/roleUtils';
 import RoleTag from '@/components/RoleTag';
 import ModeToggle from '@/components/ModeToggle';
 import ThemeToggle from '@/components/ThemeToggle';
-import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar, CreditCard } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calendar, CreditCard, Users } from 'lucide-react';
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
 
-type UserRole = 'admin' | 'operator' | 'support' | 'kiosk';
+type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
 
 interface NavigationProps {
   unreadMessages?: number;
@@ -96,6 +96,15 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     ? [
         // Kiosk users only see ClubOS Boy
         { href: '/clubosboy', label: 'ClubOS Boy', roles: ['kiosk'] as UserRole[] },
+      ]
+    : user?.role === 'customer'
+    ? [
+        // Customer navigation
+        { href: '/', label: 'Dashboard', roles: ['customer'] as UserRole[], icon: 'home' },
+        { href: '/friends', label: 'Friends', roles: ['customer'] as UserRole[], icon: 'users' },
+        { href: '/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
+        { href: '/wallet', label: 'Wallet', roles: ['customer'] as UserRole[], icon: 'wallet' },
+        { href: '/profile', label: 'Profile', roles: ['customer'] as UserRole[], icon: 'user' },
       ]
     : [
         // All other roles see the full navigation
