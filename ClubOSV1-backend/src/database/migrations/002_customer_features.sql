@@ -10,7 +10,7 @@
 -- Extended customer profile information
 CREATE TABLE IF NOT EXISTS customer_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   
   -- Profile Info
   display_name VARCHAR(100),
@@ -55,13 +55,13 @@ CREATE TABLE IF NOT EXISTS customer_profiles (
 -- Friend relationships
 CREATE TABLE IF NOT EXISTS friendships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  friend_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+  friend_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, accepted, blocked
   requested_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   accepted_at TIMESTAMP WITH TIME ZONE,
   blocked_at TIMESTAMP WITH TIME ZONE,
-  blocked_by UUID REFERENCES users(id),
+  blocked_by UUID REFERENCES "Users"(id),
   
   -- Ensure no duplicate friendships
   UNIQUE(user_id, friend_id),
@@ -81,8 +81,8 @@ CREATE TABLE IF NOT EXISTS teams (
   join_code VARCHAR(20) UNIQUE, -- For private team invites
   
   -- Team owner
-  created_by UUID NOT NULL REFERENCES users(id),
-  captain_id UUID REFERENCES users(id),
+  created_by UUID NOT NULL REFERENCES "Users"(id),
+  captain_id UUID REFERENCES "Users"(id),
   
   -- Team stats
   total_rounds INTEGER DEFAULT 0,
@@ -106,10 +106,10 @@ CREATE TABLE IF NOT EXISTS teams (
 CREATE TABLE IF NOT EXISTS team_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   role VARCHAR(20) DEFAULT 'member', -- captain, co-captain, member
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  invited_by UUID REFERENCES users(id),
+  invited_by UUID REFERENCES "Users"(id),
   
   -- Member stats within team
   rounds_played INTEGER DEFAULT 0,
@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS events (
   handicap_enabled BOOLEAN DEFAULT true,
   
   -- Organizer
-  created_by UUID NOT NULL REFERENCES users(id),
+  created_by UUID NOT NULL REFERENCES "Users"(id),
   is_official BOOLEAN DEFAULT false, -- Created by Clubhouse vs user
   team_id UUID REFERENCES teams(id), -- If team event
   
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS events (
   status VARCHAR(20) DEFAULT 'draft', -- draft, open, in_progress, completed, cancelled
   
   -- Results
-  winner_user_id UUID REFERENCES users(id),
+  winner_user_id UUID REFERENCES "Users"(id),
   winner_team_id UUID REFERENCES teams(id),
   final_scores JSONB,
   
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS event_participants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   team_id UUID REFERENCES teams(id),
   
   -- Registration
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS event_participants (
 CREATE TABLE IF NOT EXISTS booking_shares (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id VARCHAR(200) NOT NULL, -- External booking ID from Skedda
-  shared_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  shared_by UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   
   -- Booking details (cached from Skedda)
   booking_date TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS booking_shares (
 CREATE TABLE IF NOT EXISTS booking_participants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_share_id UUID NOT NULL REFERENCES booking_shares(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   status VARCHAR(20) DEFAULT 'confirmed', -- confirmed, maybe, declined
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS booking_participants (
 -- Booking history (cached from Skedda for quick access)
 CREATE TABLE IF NOT EXISTS booking_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   booking_id VARCHAR(200) NOT NULL,
   
   -- Booking details
@@ -382,7 +382,7 @@ CREATE TABLE IF NOT EXISTS clubhouse_locations (
 -- User's favorite/home clubhouse
 CREATE TABLE IF NOT EXISTS user_clubhouses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   clubhouse_id UUID NOT NULL REFERENCES clubhouse_locations(id) ON DELETE CASCADE,
   is_primary BOOLEAN DEFAULT false, -- User's main clubhouse
   is_favorite BOOLEAN DEFAULT false,
@@ -462,7 +462,7 @@ CREATE TABLE IF NOT EXISTS clubhouse_announcements (
   start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   end_date TIMESTAMP WITH TIME ZONE,
   
-  created_by UUID REFERENCES users(id),
+  created_by UUID REFERENCES "Users"(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -474,7 +474,7 @@ CREATE TABLE IF NOT EXISTS clubhouse_announcements (
 -- Social activity feed
 CREATE TABLE IF NOT EXISTS activity_feed (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   activity_type VARCHAR(50) NOT NULL, -- booking_shared, event_created, score_posted, friend_joined, achievement, team_joined
   
   -- Polymorphic references
@@ -504,7 +504,7 @@ CREATE INDEX idx_activity_feed_user_created ON activity_feed(user_id, created_at
 CREATE TABLE IF NOT EXISTS activity_interactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   activity_id UUID NOT NULL REFERENCES activity_feed(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
   interaction_type VARCHAR(20) NOT NULL, -- like, comment
   comment_text TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -604,7 +604,7 @@ END;
 $$ language 'plpgsql';
 
 CREATE TRIGGER auto_create_customer_profile
-AFTER INSERT ON users
+AFTER INSERT ON "Users"
 FOR EACH ROW EXECUTE FUNCTION create_customer_profile();
 
 -- Prevent teams from exceeding member limit

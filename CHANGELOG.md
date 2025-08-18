@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.4] - 2025-08-18
+
+### Fixed
+- **Customer Signup Functionality**
+  - Fixed database schema issues preventing customer account creation
+  - Added 'customer' role to Users table enum type
+  - Added status, signup_date, and signup_metadata columns for approval workflow
+  - Fixed customer_profiles table foreign key reference to Users table
+  - Customer accounts now properly created with pending_approval status
+  - Login correctly validates account status before allowing access
+
 ## [1.12.3] - 2025-08-17
 
 ### Changed
