@@ -108,10 +108,12 @@ Return as JSON array of objects with these fields. Only include clear, actionabl
       // Store extracted knowledge in the database
       if (knowledge.length > 0) {
         for (const item of knowledge) {
-          await db.query(`
+          // Save to extracted_knowledge table (legacy)
+          const extractResult = await db.query(`
             INSERT INTO extracted_knowledge 
             (source_id, source_type, category, problem, solution, confidence, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            RETURNING id
           `, [
             transcriptId,
             'call_transcript',
@@ -119,6 +121,47 @@ Return as JSON array of objects with these fields. Only include clear, actionabl
             item.problem,
             item.solution,
             item.confidence
+          ]);
+          
+          // Also save to unified knowledge_store for immediate searchability
+          const key = `transcript.${item.category.toLowerCase()}.${extractResult.rows[0].id}`;
+          await db.query(`
+            INSERT INTO knowledge_store (
+              key, 
+              value, 
+              confidence, 
+              category,
+              search_vector,
+              source_type,
+              source_id,
+              source_table,
+              validation_status,
+              created_at
+            ) VALUES (
+              $1,
+              $2,
+              $3,
+              $4,
+              to_tsvector('english', $5),
+              'customer_conversation',
+              $6,
+              'call_transcripts',
+              'pending', -- Requires validation
+              NOW()
+            )
+          `, [
+            key,
+            JSON.stringify({
+              problem: item.problem,
+              solution: item.solution,
+              answer: item.solution,
+              category: item.category,
+              transcript_id: transcriptId
+            }),
+            item.confidence * 0.7, // Reduce confidence for auto-extracted
+            item.category,
+            `${item.problem} ${item.solution}`,
+            transcriptId
           ]);
         }
         
