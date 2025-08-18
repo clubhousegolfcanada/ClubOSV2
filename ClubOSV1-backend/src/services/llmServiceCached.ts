@@ -207,6 +207,22 @@ export class CachedLLMService {
   routeWithoutLLM(description: string) {
     return this.llmService.routeWithoutLLM(description);
   }
+
+  // Forward isEnabled method
+  isEnabled(): boolean {
+    return this.llmService.isConfigured();
+  }
+
+  // Forward getRouterStatus method
+  getRouterStatus() {
+    // Return default router status
+    return {
+      configured: this.llmService.isConfigured(),
+      providers: ['openai'],
+      cacheEnabled: true,
+      cacheStats: cacheService.getStats()
+    };
+  }
 }
 
 // Export cached version
