@@ -734,7 +734,10 @@ const RequestForm: React.FC = () => {
           <div className="mb-3">
             {/* Mode Toggle - Classic Style - Now with 4 positions */}
             <div className="flex items-center gap-2">
-              <div className="relative inline-block w-48">
+              <span className="text-xs text-[var(--text-muted)]">Human</span>
+              <span className="text-xs text-[var(--text-muted)]">/</span>
+              <span className="text-xs text-[var(--text-muted)]">Ticket</span>
+              <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
                   <div 
                     className={`absolute inset-y-0.5 transition-all duration-200 rounded-full ${
@@ -761,7 +764,7 @@ const RequestForm: React.FC = () => {
                     disabled={isSubmitting || demoMode}
                   >
                     <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      Human
+                      •
                     </span>
                   </button>
                   <button
@@ -789,7 +792,7 @@ const RequestForm: React.FC = () => {
                     disabled={isSubmitting || demoMode}
                   >
                     <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      TKT
+                      HMN
                     </span>
                   </button>
                   <button
@@ -803,11 +806,12 @@ const RequestForm: React.FC = () => {
                     disabled={isSubmitting || demoMode}
                   >
                     <span className={isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      Update
+                      •
                     </span>
                   </button>
                 </div>
               </div>
+              <span className="text-xs text-[var(--text-muted)]">Update</span>
               
               {/* Advanced and Location Buttons - Desktop only */}
               {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
