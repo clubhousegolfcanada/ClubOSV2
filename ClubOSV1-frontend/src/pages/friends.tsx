@@ -97,8 +97,8 @@ export default function Friends() {
 
   const loadFriends = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/friends?include_stats=true`, {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/friends?include_stats=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFriends(response.data.data.friends);
@@ -112,8 +112,8 @@ export default function Friends() {
 
   const loadPendingRequests = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/friends/pending`, {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/friends/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPendingRequests(response.data.data.requests);
@@ -124,8 +124,8 @@ export default function Friends() {
 
   const loadSuggestions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/friends/suggestions`, {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/friends/suggestions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuggestions(response.data.data.suggestions);
@@ -152,9 +152,9 @@ export default function Friends() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/api/friends/search`,
+        `${API_URL}/friends/search`,
         { query, type: 'all' },
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -166,9 +166,9 @@ export default function Friends() {
 
   const sendFriendRequest = async (targetUserId?: string, targetEmail?: string, targetPhone?: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/api/friends/request`,
+        `${API_URL}/friends/request`,
         {
           target_user_id: targetUserId,
           target_email: targetEmail,
@@ -191,9 +191,9 @@ export default function Friends() {
 
   const acceptRequest = async (requestId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       await axios.put(
-        `${API_URL}/api/friends/${requestId}/accept`,
+        `${API_URL}/friends/${requestId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -208,9 +208,9 @@ export default function Friends() {
 
   const rejectRequest = async (requestId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       await axios.put(
-        `${API_URL}/api/friends/${requestId}/reject`,
+        `${API_URL}/friends/${requestId}/reject`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -226,9 +226,9 @@ export default function Friends() {
     if (!confirm('Are you sure you want to remove this friend?')) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       await axios.delete(
-        `${API_URL}/api/friends/${friendshipId}`,
+        `${API_URL}/friends/${friendshipId}`,
         { headers: { Authorization: `Bearer ${token}` }}
       );
       
@@ -244,9 +244,9 @@ export default function Friends() {
     if (!confirm('Are you sure you want to block this user? They will not be able to send you friend requests or wagers.')) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('clubos_token');
       await axios.put(
-        `${API_URL}/api/friends/${userId}/block`,
+        `${API_URL}/friends/${userId}/block`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
