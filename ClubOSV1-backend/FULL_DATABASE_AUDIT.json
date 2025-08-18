@@ -1,0 +1,472 @@
+{
+  "timestamp": "2025-08-18T02:51:42.494Z",
+  "summary": {
+    "totalTables": 54,
+    "knowledgeTables": 9,
+    "totalKnowledgeRecords": 58
+  },
+  "tables": [
+    {
+      "tableName": "knowledge_store",
+      "recordCount": 4,
+      "columns": [
+        "id",
+        "key",
+        "value",
+        "confidence",
+        "verification_status",
+        "source_type",
+        "source_count",
+        "replaces",
+        "superseded_by",
+        "usage_count",
+        "success_count",
+        "failure_count",
+        "search_vector",
+        "metadata",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "last_accessed",
+        "expires_at"
+      ],
+      "sampleData": [
+        {
+          "id": "5c9b14ef-6334-4281-a78d-5f5a93d8fb08",
+          "key": "brand.pricing.gift_cards_test_1754956971330",
+          "value": {
+            "title": "Gift Cards",
+            "answer": "Yes, we offer gift cards! You can purchase them online at www.clubhouse247golf.com/giftcard/purchase",
+            "content": "Gift cards are available for purchase at www.clubhouse247golf.com/giftcard/purchase",
+            "category": "pricing",
+            "question": "Do you have gift cards?",
+            "assistant": "brand"
+          },
+          "confidence": 0.9,
+          "verification_status": "verified",
+          "source_type": "manual",
+          "source_count": 1,
+          "replaces": null,
+          "superseded_by": null,
+          "usage_count": 1,
+          "success_count": 1,
+          "failure_count": 0,
+          "search_vector": "'/giftcard/purchase':16,35,53,64 '1754956971330':4 'answer':39 'assist':73 'avail':10,58 'brand':74 'brand.pricing.gift':1 'card':2,6,8,21,26,38,44,56,72 'categori':65 'content':54 'gift':5,7,20,25,37,43,55,71 'offer':24,42 'onlin':31,49 'price':66 'purchas':12,29,47,60 'question':67 'test':3 'titl':36 'www.clubhouse247golf.com':15,34,52,63 'www.clubhouse247golf.com/giftcard/purchase':14,33,51,62 'yes':22,40",
+          "metadata": {},
+          "created_at": "2025-08-12T03:02:51.607Z",
+          "updated_at": "2025-08-12T03:22:19.783Z",
+          "created_by": null,
+          "last_accessed": "2025-08-12T03:22:19.783Z",
+          "expires_at": null
+        },
+        {
+          "id": "aaa2018d-84e1-4c45-93b1-3372a4f59e8f",
+          "key": "brand.pricing",
+          "value": {
+            "title": "Pricing",
+            "intent": "add",
+            "content": "Gift cards available at www.clubhouse247golf.com/giftcard/purchase",
+            "category": "Pricing",
+            "metadata": {},
+            "assistant": "brand"
+          },
+          "confidence": 0.8,
+          "verification_status": "verified",
+          "source_type": "manual",
+          "source_count": 1,
+          "replaces": null,
+          "superseded_by": null,
+          "usage_count": 0,
+          "success_count": 0,
+          "failure_count": 0,
+          "search_vector": "'/giftcard/purchase':9,21 'add':13 'assist':25 'avail':5,17 'brand':26 'brand.pricing':1 'card':4,16 'categori':22 'content':14 'gift':3,15 'intent':12 'metadata':24 'price':2,11,23 'titl':10 'www.clubhouse247golf.com':8,20 'www.clubhouse247golf.com/giftcard/purchase':7,19",
+          "metadata": {},
+          "created_at": "2025-08-12T00:47:41.799Z",
+          "updated_at": "2025-08-12T00:47:41.799Z",
+          "created_by": "c1905bcc-1b6d-4124-91cc-bd74d39bd551",
+          "last_accessed": null,
+          "expires_at": null
+        },
+        {
+          "id": "1bbcbbd8-eceb-4dde-ae83-c0d1ad6d382f",
+          "key": "system.initialized",
+          "value": "true",
+          "confidence": 1,
+          "verification_status": "verified",
+          "source_type": "manual",
+          "source_count": 1,
+          "replaces": null,
+          "superseded_by": null,
+          "usage_count": 0,
+          "success_count": 0,
+          "failure_count": 0,
+          "search_vector": "'system.initialized':1 'true':2",
+          "metadata": {},
+          "created_at": "2025-08-11T06:46:11.267Z",
+          "updated_at": "2025-08-11T06:46:11.267Z",
+          "created_by": null,
+          "last_accessed": null,
+          "expires_at": null
+        },
+        {
+          "id": "dac853b8-0c2a-41c9-baaa-823ea1eeb19e",
+          "key": "system.version",
+          "value": "1.0.0",
+          "confidence": 1,
+          "verification_status": "verified",
+          "source_type": "manual",
+          "source_count": 1,
+          "replaces": null,
+          "superseded_by": null,
+          "usage_count": 0,
+          "success_count": 0,
+          "failure_count": 0,
+          "search_vector": "'1.0.0':2 'system.version':1",
+          "metadata": {},
+          "created_at": "2025-08-11T06:46:11.267Z",
+          "updated_at": "2025-08-11T06:46:11.267Z",
+          "created_by": null,
+          "last_accessed": null,
+          "expires_at": null
+        }
+      ],
+      "hasSearchableContent": true,
+      "knowledgeType": "structured"
+    },
+    {
+      "tableName": "knowledge_patterns",
+      "recordCount": 41,
+      "columns": [
+        "id",
+        "pattern",
+        "pattern_type",
+        "occurrence_count",
+        "current_best_solution",
+        "current_best_confidence",
+        "current_best_source",
+        "alternatives",
+        "first_seen",
+        "last_seen",
+        "created_at",
+        "updated_at"
+      ],
+      "sampleData": [
+        {
+          "id": "6bc796ce-82ea-44f9-9263-64cc33fa1a26",
+          "pattern": "what is the clubhouse color code?",
+          "pattern_type": "search",
+          "occurrence_count": 5,
+          "current_best_solution": null,
+          "current_best_confidence": 0.5,
+          "current_best_source": null,
+          "alternatives": [],
+          "first_seen": "2025-08-18T03:56:56.598Z",
+          "last_seen": "2025-08-18T04:03:57.819Z",
+          "created_at": "2025-08-18T03:56:56.598Z",
+          "updated_at": "2025-08-18T04:03:57.819Z"
+        },
+        {
+          "id": "f41143bc-9eeb-456b-af69-cae29567927c",
+          "pattern": "what computer parts do we use?",
+          "pattern_type": "search",
+          "occurrence_count": 1,
+          "current_best_solution": null,
+          "current_best_confidence": 0.5,
+          "current_best_source": null,
+          "alternatives": [],
+          "first_seen": "2025-08-17T06:49:21.942Z",
+          "last_seen": "2025-08-17T06:49:21.942Z",
+          "created_at": "2025-08-17T06:49:21.942Z",
+          "updated_at": "2025-08-17T06:49:21.942Z"
+        },
+        {
+          "id": "38fcf95a-d43a-45a6-82ef-af3f022d73c3",
+          "pattern": "who owns clubhouse?",
+          "pattern_type": "search",
+          "occurrence_count": 1,
+          "current_best_solution": null,
+          "current_best_confidence": 0.5,
+          "current_best_source": null,
+          "alternatives": [],
+          "first_seen": "2025-08-17T05:26:36.078Z",
+          "last_seen": "2025-08-17T05:26:36.078Z",
+          "created_at": "2025-08-17T05:26:36.078Z",
+          "updated_at": "2025-08-17T05:26:36.078Z"
+        },
+        {
+          "id": "1a4d0805-4d4f-4ca3-8cce-cfe21ce57468",
+          "pattern": "what is clubhouse color code",
+          "pattern_type": "search",
+          "occurrence_count": 1,
+          "current_best_solution": null,
+          "current_best_confidence": 0.5,
+          "current_best_source": null,
+          "alternatives": [],
+          "first_seen": "2025-08-15T21:59:41.829Z",
+          "last_seen": "2025-08-15T21:59:41.829Z",
+          "created_at": "2025-08-15T21:59:41.829Z",
+          "updated_at": "2025-08-15T21:59:41.829Z"
+        },
+        {
+          "id": "d19466ec-98ff-4465-9e0e-9084a1694042",
+          "pattern": "who is dylan at clubhouse",
+          "pattern_type": "search",
+          "occurrence_count": 1,
+          "current_best_solution": null,
+          "current_best_confidence": 0.5,
+          "current_best_source": null,
+          "alternatives": [],
+          "first_seen": "2025-08-15T21:58:37.150Z",
+          "last_seen": "2025-08-15T21:58:37.150Z",
+          "created_at": "2025-08-15T21:58:37.150Z",
+          "updated_at": "2025-08-15T21:58:37.150Z"
+        }
+      ],
+      "hasSearchableContent": false,
+      "knowledgeType": "unknown"
+    },
+    {
+      "tableName": "knowledge_audit_log",
+      "recordCount": 12,
+      "columns": [
+        "id",
+        "timestamp",
+        "action",
+        "category",
+        "key",
+        "new_value",
+        "previous_value",
+        "user_id",
+        "user_name",
+        "assistant_target",
+        "metadata",
+        "slack_notified"
+      ],
+      "sampleData": [
+        {
+          "id": "fda6bc79-be8b-4afb-a4d9-266a53d6a238",
+          "timestamp": "2025-07-30T04:43:48.221Z",
+          "action": "add",
+          "category": "Competitor",
+          "key": null,
+          "new_value": "Nick Wang owns Airlanes golf course",
+          "previous_value": null,
+          "user_id": "c1905bcc-1b6d-4124-91cc-bd74d39bd551",
+          "user_name": null,
+          "assistant_target": "brand",
+          "metadata": {},
+          "slack_notified": false
+        },
+        {
+          "id": "e488eaa7-8bdb-46a5-a8b9-4700fced8410",
+          "timestamp": "2025-07-30T04:47:26.989Z",
+          "action": "add",
+          "category": "SOP",
+          "key": null,
+          "new_value": "For gift card inquiries, direct customers to www.clubhouse247golf.com/giftcards/purchase",
+          "previous_value": null,
+          "user_id": "c1905bcc-1b6d-4124-91cc-bd74d39bd551",
+          "user_name": null,
+          "assistant_target": "booking",
+          "metadata": {},
+          "slack_notified": false
+        },
+        {
+          "id": "a038d422-6b7f-4ac9-85bf-a61f3683002b",
+          "timestamp": "2025-07-30T00:19:28.561Z",
+          "action": "add",
+          "category": "Brand",
+          "key": null,
+          "new_value": "Nick's kids are named Jett, Beckett, and Nash (or Nashypooooo)",
+          "previous_value": null,
+          "user_id": "c1905bcc-1b6d-4124-91cc-bd74d39bd551",
+          "user_name": null,
+          "assistant_target": "brand",
+          "metadata": {},
+          "slack_notified": false
+        },
+        {
+          "id": "7a662c7e-f175-48e8-a24b-d44544173666",
+          "timestamp": "2025-08-04T19:50:23.192Z",
+          "action": "add",
+          "category": "SOP",
+          "key": null,
+          "new_value": "Gift cards can be purchased at http://www.clubhouse247golf.com/giftcard/purchase",
+          "previous_value": null,
+          "user_id": "c1905bcc-1b6d-4124-91cc-bd74d39bd551",
+          "user_name": null,
+          "assistant_target": "booking",
+          "metadata": {},
+          "slack_notified": false
+        },
+        {
+          "id": "71d89565-f200-4627-ab17-397ee162c95e",
+          "timestamp": "2025-07-30T04:46:31.361Z",
+          "action": "add",
+          "category": "Brand",
+          "key": null,
+          "new_value": "Clubhouse is the main Sponsor of the Nova Scotia Senior Golf Tour. We created their logo, host their scoreboards and show up to their events to do video photo, PA, giveaways etc.",
+          "previous_value": null,
+          "user_id": "c1905bcc-1b6d-4124-91cc-bd74d39bd551",
+          "user_name": null,
+          "assistant_target": "brand",
+          "metadata": {},
+          "slack_notified": false
+        }
+      ],
+      "hasSearchableContent": true,
+      "knowledgeType": "unknown"
+    },
+    {
+      "tableName": "knowledge_captures",
+      "recordCount": 0,
+      "columns": [
+        "id",
+        "source",
+        "query",
+        "response",
+        "assistant",
+        "confidence",
+        "verified",
+        "created_at",
+        "verified_by",
+        "metadata"
+      ],
+      "sampleData": [],
+      "hasSearchableContent": true,
+      "knowledgeType": "unknown"
+    },
+    {
+      "tableName": "assistant_knowledge",
+      "recordCount": 1,
+      "columns": [
+        "id",
+        "assistant_id",
+        "route",
+        "knowledge",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "sampleData": [
+        {
+          "id": 1,
+          "assistant_id": "asst_E2CrYEtb5CKJGPZYdE7z7VAq",
+          "route": "Booking & Access",
+          "knowledge": {
+            "automatedResponses": {
+              "gift_cards": [
+                {
+                  "query": "do you sell giftcards?",
+                  "response": "Yes, gift cards are available and can be purchased online. You can find You on our website at clubhouse247golf.com/gift-card/purchase.",
+                  "timestamp": "2025-08-05T23:10:38.950Z",
+                  "confidence": "high"
+                },
+                {
+                  "query": "do you sell giftcards?",
+                  "response": "Yes, you can purchase gift cards for Clubhouse 24/7 Golf online. Please visit [clubhouse247golf.com/gift-card/purchase](https://clubhouse247golf.com/gift-card/purchase) for a direct link to purchase gift cards.",
+                  "timestamp": "2025-08-05T23:18:30.203Z",
+                  "confidence": "high"
+                },
+                {
+                  "query": "do you sell giftcards?",
+                  "response": "Yes, we do sell gift cards. You can purchase You at clubhouse247golf.com/gift-card/purchase .",
+                  "timestamp": "2025-08-05T23:24:09.327Z",
+                  "confidence": "high"
+                },
+                {
+                  "query": "do you sell giftcards?",
+                  "response": "Yes, we do sell gift cards. Digital gift cards can be purchased online and used anytime as they do not have an expiry date. You can buy You through our website at the following link: [Buy Gift Card](https://www.clubhouse247golf.com/giftcard/purchase).",
+                  "timestamp": "2025-08-06T00:10:49.077Z",
+                  "confidence": "high"
+                }
+              ]
+            }
+          },
+          "version": "1.0",
+          "created_at": "2025-08-06T02:10:38.952Z",
+          "updated_at": "2025-08-06T03:10:49.079Z"
+        }
+      ],
+      "hasSearchableContent": true,
+      "knowledgeType": "assistant"
+    },
+    {
+      "tableName": "knowledge_extraction_log",
+      "recordCount": 0,
+      "columns": [
+        "id",
+        "conversation_id",
+        "extraction_type",
+        "extracted_data",
+        "confidence",
+        "action_taken",
+        "knowledge_id",
+        "pattern_id",
+        "skip_reason",
+        "processing_time_ms",
+        "created_at"
+      ],
+      "sampleData": [],
+      "hasSearchableContent": true,
+      "knowledgeType": "unknown"
+    },
+    {
+      "tableName": "knowledge_base",
+      "recordCount": 0,
+      "columns": [
+        "id",
+        "category",
+        "subcategory",
+        "issue",
+        "symptoms",
+        "solutions",
+        "priority",
+        "time_estimate",
+        "customer_script",
+        "escalation_path",
+        "metadata",
+        "created_at",
+        "updated_at"
+      ],
+      "sampleData": [],
+      "hasSearchableContent": false,
+      "knowledgeType": "base"
+    },
+    {
+      "tableName": "extracted_knowledge",
+      "recordCount": 0,
+      "columns": [
+        "id",
+        "source_id",
+        "source_type",
+        "category",
+        "problem",
+        "solution",
+        "confidence",
+        "applied_to_sop",
+        "sop_file",
+        "created_at"
+      ],
+      "sampleData": [],
+      "hasSearchableContent": false,
+      "knowledgeType": "extracted"
+    },
+    {
+      "tableName": "learning_metrics",
+      "recordCount": 0,
+      "columns": [
+        "id",
+        "metric_type",
+        "assistant",
+        "value",
+        "metadata",
+        "created_at"
+      ],
+      "sampleData": [],
+      "hasSearchableContent": true,
+      "knowledgeType": "unknown"
+    }
+  ],
+  "recommendation": "Need to add more knowledge to the database"
+}

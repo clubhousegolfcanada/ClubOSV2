@@ -206,8 +206,8 @@ export class AssistantService {
       const combinedScore = topResult.confidence * topResult.relevance;
       
       // Use local knowledge if we have a good match (lowered threshold)
-      // Lowered to 0.3 since we're now only searching knowledge_store with good data
-      if (combinedScore >= 0.3) {
+      // Lowered to 0.15 to prioritize using our 379+ SOPs over OpenAI calls
+      if (combinedScore >= 0.15) {
         logger.info('✅ USING LOCAL KNOWLEDGE DATABASE (NOT OpenAI)', {
           route,
           source: topResult.source,
@@ -215,8 +215,10 @@ export class AssistantService {
           confidence: topResult.confidence,
           relevance: topResult.relevance,
           combinedScore,
-          threshold: 0.5,
-          USING_LOCAL: true
+          threshold: 0.15,
+          USING_LOCAL: true,
+          SAVED_API_CALL: true,
+          responseSource: 'DATABASE_KNOWLEDGE'
         });
         
         // Format the response from knowledge
@@ -246,11 +248,21 @@ export class AssistantService {
           };
         }
       } else {
-        logger.info('Knowledge found but confidence too low', {
+        logger.warn('📊 Knowledge found but confidence too low - CALLING OPENAI', {
           combinedScore,
-          topResult: topResult.key
+          threshold: 0.15,
+          topResult: topResult.key,
+          confidence: topResult.confidence,
+          relevance: topResult.relevance,
+          WILL_USE_OPENAI: true,
+          COULD_HAVE_USED_LOCAL: true
         });
       }
+    } else {
+      logger.info('🔍 No matching knowledge found in database - will use OpenAI', {
+        query: userMessage.substring(0, 50),
+        WILL_USE_OPENAI: true
+      });
     }
     
     if (!this.isEnabled || !this.openai) {

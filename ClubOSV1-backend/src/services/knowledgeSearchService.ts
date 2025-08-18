@@ -441,14 +441,22 @@ export class KnowledgeSearchService {
   formatResultsForResponse(results: SearchResult[]): string {
     if (results.length === 0) return '';
 
-    const highConfidenceResults = results.filter(r => r.confidence >= 0.7);
-    if (highConfidenceResults.length === 0) return '';
+    // Lower confidence threshold to 0.5 to include more SOP knowledge
+    const usableResults = results.filter(r => r.confidence >= 0.5);
+    if (usableResults.length === 0) {
+      // If no high confidence results, use top result if it exists
+      if (results[0] && results[0].confidence >= 0.3) {
+        usableResults.push(results[0]);
+      } else {
+        return '';
+      }
+    }
 
     // Deduplicate and clean up results
     const seenContent = new Set<string>();
     const uniqueResults: string[] = [];
     
-    for (const result of highConfidenceResults.slice(0, 5)) {
+    for (const result of usableResults.slice(0, 5)) {
       let content = result.value.content || result.value.answer || result.value;
       
       // Clean up content
