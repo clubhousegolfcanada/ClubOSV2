@@ -104,17 +104,17 @@ const LoginPage = () => {
           setViewMode('operator');
         }
 
-        // Small delay before navigation to ensure state is set
-        setTimeout(() => {
-          toast.success(`Welcome ${isSignup ? '' : 'back'}, ${user.name}!`);
-          
-          // Navigate based on user role
-          if (user.role === 'customer' || loginMode === 'customer') {
-            router.push('/customer/');
-          } else {
-            router.push('/');
-          }
-        }, 100);
+        // Ensure state is properly set before navigation
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        toast.success(`Welcome ${isSignup ? '' : 'back'}, ${user.name}!`);
+        
+        // Navigate based on user role
+        if (user.role === 'customer' || loginMode === 'customer') {
+          router.push('/customer/');
+        } else {
+          router.push('/');
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);

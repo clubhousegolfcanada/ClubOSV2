@@ -7,17 +7,20 @@ import Head from 'next/head';
 
 export default function CustomerApp() {
   const router = useRouter();
-  const { user } = useAuthState();
+  const { user, isLoading } = useAuthState();
   const { viewMode } = useStore();
 
   useEffect(() => {
+    // Don't redirect while auth is still loading
+    if (isLoading) return;
+    
     // Redirect if not in customer mode and not a customer
     if (!user) {
       router.push('/login');
     } else if (viewMode !== 'customer' && user.role !== 'customer') {
       router.push('/');
     }
-  }, [user, viewMode, router]);
+  }, [user, viewMode, router, isLoading]);
 
   return (
     <>

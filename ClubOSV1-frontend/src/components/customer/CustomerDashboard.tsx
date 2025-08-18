@@ -74,7 +74,8 @@ const humorousMessages = [
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthState();
   const router = useRouter();
-  const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
+  // Always get token from auth state - it's the single source of truth
+  const token = user?.token;
   const [myClubhouse, setMyClubhouse] = useState<ClubhouseLocation | null>(null);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
