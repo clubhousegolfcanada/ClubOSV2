@@ -49,28 +49,24 @@ export class KnowledgeSearchService {
         results.push(...knowledgeStoreResults);
       }
 
-      // DISABLED: Only use knowledge_store for now
-      // The other tables have inconsistent confidence scores and poor relevance
-      // This was causing wrong results to be prioritized
-      /*
+      // Search additional tables if knowledge_store doesn't have enough results
       if (results.length < limit) {
-        // 2. Search knowledge_audit_log (recent uploads)
+        // 2. Search SOP embeddings (379 operational procedures)
+        const sopResults = await this.searchSopEmbeddings(query, assistantType, limit - results.length);
+        results.push(...sopResults);
+      }
+
+      if (results.length < limit) {
+        // 3. Search knowledge_audit_log (recent uploads)
         const auditResults = await this.searchKnowledgeAuditLog(query, assistantType, limit - results.length);
         results.push(...auditResults);
       }
 
       if (results.length < limit) {
-        // 3. Search assistant_knowledge
+        // 4. Search assistant_knowledge
         const assistantResults = await this.searchAssistantKnowledge(query, assistantType, limit - results.length);
         results.push(...assistantResults);
       }
-
-      if (results.length < limit) {
-        // 4. Search extracted_knowledge
-        const extractedResults = await this.searchExtractedKnowledge(query, limit - results.length);
-        results.push(...extractedResults);
-      }
-      */
 
       // Sort by relevance and confidence
       results.sort((a, b) => {
@@ -142,6 +138,85 @@ export class KnowledgeSearchService {
       }));
     } catch (error) {
       logger.error('Error searching knowledge_store:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search the sop_embeddings table (379 operational procedures)
+   */
+  private async searchSopEmbeddings(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
+    try {
+      // Extract key terms from query
+      const searchTerms = query.toLowerCase()
+        .replace(/[?!.,;:]/g, '')
+        .split(' ')
+        .filter(term => term.length > 2);
+      
+      let sql = `
+        SELECT 
+          id,
+          assistant,
+          title,
+          content,
+          metadata
+        FROM sop_embeddings
+        WHERE 1=1
+      `;
+
+      const params: any[] = [];
+
+      // Add search conditions - search in both title and content
+      if (searchTerms.length > 0) {
+        const searchConditions = searchTerms.map((_, index) => {
+          params.push(`%${searchTerms[index]}%`);
+          return `(LOWER(title) LIKE $${params.length} OR LOWER(content) LIKE $${params.length})`;
+        });
+        sql += ` AND (${searchConditions.join(' OR ')})`;
+      }
+
+      // Filter by assistant type if provided
+      if (assistantType) {
+        const assistantMap: Record<string, string> = {
+          'emergency': 'emergency',
+          'booking': 'booking',
+          'booking & access': 'booking',
+          'techsupport': 'tech',
+          'tech': 'tech',
+          'brandtone': 'brand',
+          'brand': 'brand'
+        };
+        const mappedType = assistantMap[assistantType.toLowerCase()] || assistantType;
+        params.push(mappedType);
+        sql += ` AND assistant = $${params.length}`;
+      }
+
+      sql += ` ORDER BY created_at DESC LIMIT $${params.length + 1}`;
+      params.push(limit);
+
+      const result = await db.query(sql, params);
+
+      return result.rows.map((row: any) => {
+        // Calculate relevance based on term matches
+        const contentLower = `${row.title} ${row.content}`.toLowerCase();
+        const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
+        const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.5;
+
+        return {
+          key: `sop.${row.assistant}.${row.id}`,
+          value: {
+            title: row.title,
+            content: row.content,
+            assistant: row.assistant,
+            metadata: row.metadata
+          },
+          confidence: 0.85, // SOPs have high confidence as they're official procedures
+          relevance,
+          source: 'sop_embeddings'
+        };
+      });
+    } catch (error) {
+      logger.error('Error searching sop_embeddings:', error);
       return [];
     }
   }
@@ -457,7 +532,7 @@ export class KnowledgeSearchService {
     const uniqueResults: string[] = [];
     
     for (const result of usableResults.slice(0, 5)) {
-      let content = result.value.content || result.value.answer || result.value;
+      let content = result.value.content || result.value.answer || result.value.title || result.value;
       
       // Clean up content
       if (typeof content === 'string') {
