@@ -63,6 +63,7 @@ const RequestForm: React.FC = () => {
   const [feedbackGiven, setFeedbackGiven] = useState<string | null>(null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [isTicketMode, setIsTicketMode] = useState(false);
+  const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
   const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [ticketCategory, setTicketCategory] = useState<'facilities' | 'tech'>('facilities');
   const [lastRequestData, setLastRequestData] = useState<FormData | null>(null);
@@ -232,6 +233,49 @@ const RequestForm: React.FC = () => {
       } catch (error) {
         console.error('Failed to create ticket:', error);
         notify('error', 'Failed to create ticket');
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+    
+    // If in knowledge mode, add knowledge to the system
+    if (isKnowledgeMode) {
+      setIsProcessing(true);
+      try {
+        const token = isMounted ? localStorage.getItem('clubos_token') : null;
+        
+        // Use the existing knowledge-router endpoint
+        const response = await axios.post(
+          `${API_URL}/knowledge-router/parse-and-route`,
+          { input: data.requestDescription },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (response.data.success) {
+          notify('success', 'Knowledge added successfully! The AI will now use this information.');
+          reset();
+          
+          // Show what was added
+          const parsed = response.data.data.parsed;
+          setLastResponse({
+            response: `✅ Knowledge Added Successfully!\n\nCategory: ${parsed.category}\nTarget Assistant: ${parsed.target_assistant}\nIntent: ${parsed.intent}\n\nValue: "${parsed.value}"\n\nThe AI will now use this knowledge when answering related questions.`,
+            confidence: 1.0,
+            route: 'Knowledge',
+            status: 'completed'
+          } as any);
+          setShowResponse(true);
+          setIsNewSubmission(true);
+        } else {
+          notify('error', response.data.error || 'Failed to add knowledge');
+        }
+      } catch (error) {
+        console.error('Knowledge submission error:', error);
+        if (axios.isAxiosError(error) && error.response?.data?.error) {
+          notify('error', error.response.data.error);
+        } else {
+          notify('error', 'Failed to add knowledge. Please check the format and try again.');
+        }
       } finally {
         setIsProcessing(false);
       }
@@ -421,6 +465,7 @@ const RequestForm: React.FC = () => {
     setConvertedTone('');
     setFeedbackGiven(null);
     setIsTicketMode(false); // Reset to request mode
+    setIsKnowledgeMode(false); // Reset knowledge mode
     setTicketPriority('medium'); // Reset ticket priority
     setTicketCategory('facilities'); // Reset ticket category
     setLastRequestData(null);
@@ -584,7 +629,7 @@ const RequestForm: React.FC = () => {
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
           {/* Advanced and Location buttons for mobile - top right */}
-          {smartAssistEnabled && !isTicketMode && (
+          {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
             <div className="sm:hidden flex items-center gap-2">
               {!showAdvancedRouting && !showLocationSelector ? (
                 <>
@@ -642,7 +687,11 @@ const RequestForm: React.FC = () => {
                 },
               })}
               className="form-textarea"
-              placeholder={isTicketMode ? "Describe the issue for the support ticket..." : "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"}
+              placeholder={
+                isKnowledgeMode ? "Add knowledge: e.g., 'Gift cards are available at website.com/giftcards for $25, $50, or $100'" :
+                isTicketMode ? "Describe the issue for the support ticket..." : 
+                "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"
+              }
               disabled={isSubmitting || demoMode}
               rows={2}
             />
@@ -683,18 +732,23 @@ const RequestForm: React.FC = () => {
 
           {/* Mode Toggle Row */}
           <div className="mb-3">
-            {/* Mode Toggle - Classic Style */}
+            {/* Mode Toggle - Classic Style - Now with 4 positions */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--text-muted)]">Human</span>
-              <div className="relative inline-block w-32">
+              <div className="relative inline-block w-40">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
                   <div 
                     className={`absolute inset-y-0.5 transition-all duration-200 rounded-full ${
-                      isTicketMode ? 'bg-[#4A154B]' : !smartAssistEnabled ? 'bg-[#4A154B]' : 'bg-[var(--accent)]'
+                      isKnowledgeMode ? 'bg-purple-600' :
+                      isTicketMode ? 'bg-[#4A154B]' : 
+                      !smartAssistEnabled ? 'bg-[#4A154B]' : 
+                      'bg-[var(--accent)]'
                     }`}
                     style={{
-                      width: '33.33%',
-                      left: isTicketMode ? '66.66%' : smartAssistEnabled ? '33.33%' : '0%'
+                      width: '25%',
+                      left: isKnowledgeMode ? '75%' :
+                            isTicketMode ? '50%' : 
+                            smartAssistEnabled ? '25%' : '0%'
                     }}
                   />
                   <button
@@ -702,11 +756,12 @@ const RequestForm: React.FC = () => {
                     onClick={() => {
                       setSmartAssistEnabled(false);
                       setIsTicketMode(false);
+                      setIsKnowledgeMode(false);
                     }}
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={!smartAssistEnabled && !isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
                       •
                     </span>
                   </button>
@@ -715,11 +770,12 @@ const RequestForm: React.FC = () => {
                     onClick={() => {
                       setSmartAssistEnabled(true);
                       setIsTicketMode(false);
+                      setIsKnowledgeMode(false);
                     }}
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={smartAssistEnabled && !isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                    <span className={smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
                       AI
                     </span>
                   </button>
@@ -728,20 +784,35 @@ const RequestForm: React.FC = () => {
                     onClick={() => {
                       setIsTicketMode(true);
                       setSmartAssistEnabled(false);
+                      setIsKnowledgeMode(false);
                     }}
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
                     <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      •
+                      🎫
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsKnowledgeMode(true);
+                      setIsTicketMode(false);
+                      setSmartAssistEnabled(false);
+                    }}
+                    className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                    disabled={isSubmitting || demoMode}
+                  >
+                    <span className={isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                      📚
                     </span>
                   </button>
                 </div>
               </div>
-              <span className="text-xs text-[var(--text-muted)]">Ticket</span>
+              <span className="text-xs text-[var(--text-muted)]">Know</span>
               
               {/* Advanced and Location Buttons - Desktop only */}
-              {smartAssistEnabled && !isTicketMode && (
+              {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
                 <div className="hidden sm:flex items-center gap-2">
                   {/* Advanced Button */}
                   {!showAdvancedRouting ? (
@@ -992,7 +1063,8 @@ const RequestForm: React.FC = () => {
               )}
               {isProcessing ? (
                 <>
-                  {smartAssistEnabled ? 'Processing...' : 'Sending...'}
+                  {isKnowledgeMode ? 'Adding Knowledge...' : 
+                   smartAssistEnabled ? 'Processing...' : 'Sending...'}
                   <div style={{
                     position: 'absolute',
                     top: 0,
@@ -1005,7 +1077,9 @@ const RequestForm: React.FC = () => {
                   }} />
                 </>
               ) : (
-                isTicketMode ? 'Create' : (smartAssistEnabled ? 'Process' : 'Send to Clubhouse Team')
+                isKnowledgeMode ? 'Add Knowledge' : 
+                isTicketMode ? 'Create' : 
+                (smartAssistEnabled ? 'Process' : 'Send to Clubhouse Team')
               )}
             </button>
             <button
@@ -1045,7 +1119,8 @@ const RequestForm: React.FC = () => {
               }}></div>
             </div>
             <p className="text-lg font-medium text-gray-300 mb-2">
-              {smartAssistEnabled ? 'Processing your request...' : 'Sending to Slack...'}
+              {isKnowledgeMode ? 'Adding knowledge to AI system...' :
+               smartAssistEnabled ? 'Processing your request...' : 'Sending to Slack...'}
             </p>
             <p className="text-sm text-gray-400 mb-1">
               {smartAssistEnabled ? 'This could take up to 30 seconds... we are thinking' : 'This could take up to 2-3 minutes for a response... we are asking a real human'}
