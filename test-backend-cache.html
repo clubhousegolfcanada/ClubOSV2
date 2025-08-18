@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ClubOS Backend Cache Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #0B3D3A;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0a2d2a;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f5f5f5;
+        }
+        .fast { color: green; font-weight: bold; }
+        .slow { color: orange; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🚀 ClubOS Cache Performance Test</h1>
+    <p>This tests if Redis caching is working on your Railway backend.</p>
+    
+    <button onclick="testCache()">Test Cache Performance</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const BACKEND_URL = 'https://clubosv2-production.up.railway.app';
+        
+        async function testCache() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing...</p>';
+            
+            const testQuery = "What are the hours for the golf simulator?";
+            const timestamp = Date.now();
+            
+            // First request (should be slow - hits OpenAI)
+            const start1 = Date.now();
+            try {
+                const response1 = await fetch(`${BACKEND_URL}/api/public/llm/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        description: testQuery,
+                        name: `Test User ${timestamp}`
+                    })
+                });
+                
+                const data1 = await response1.json();
+                const time1 = Date.now() - start1;
+                
+                // Wait a second
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Second request (should be fast - from cache)
+                const start2 = Date.now();
+                const response2 = await fetch(`${BACKEND_URL}/api/public/llm/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        description: testQuery,
+                        name: `Test User ${timestamp}`
+                    })
+                });
+                
+                const data2 = await response2.json();
+                const time2 = Date.now() - start2;
+                
+                // Calculate improvement
+                const improvement = Math.round(((time1 - time2) / time1) * 100);
+                const cacheWorking = improvement > 50;
+                
+                // Display results
+                resultsDiv.innerHTML = `
+                    <div class="result">
+                        <h3>Cache Test Results:</h3>
+                        <p>🔹 First Request: <span class="${time1 > 3000 ? 'slow' : 'fast'}">${time1}ms</span> (hits OpenAI)</p>
+                        <p>🔹 Second Request: <span class="${time2 < 1000 ? 'fast' : 'slow'}">${time2}ms</span> (should be cached)</p>
+                        <p>🔹 Performance Improvement: <span class="${cacheWorking ? 'fast' : 'error'}">${improvement}%</span></p>
+                        <hr>
+                        <p><strong>Status: ${cacheWorking ? '✅ Redis Cache is Working!' : '⚠️ Cache might not be working properly'}</strong></p>
+                        ${data2.cached ? '<p>✅ Response was served from cache</p>' : ''}
+                        <details>
+                            <summary>Response Details</summary>
+                            <pre>${JSON.stringify(data1, null, 2).substring(0, 500)}...</pre>
+                        </details>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>Error:</h3>
+                        <p>${error.message}</p>
+                        <p>Make sure the backend is running and CORS is configured.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Test cache statistics endpoint
+        async function getCacheStats() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/health`);
+                const data = await response.json();
+                console.log('Cache Stats:', data);
+            } catch (error) {
+                console.error('Could not fetch cache stats:', error);
+            }
+        }
+        
+        // Run stats check on load
+        getCacheStats();
+    </script>
+</body>
+</html>

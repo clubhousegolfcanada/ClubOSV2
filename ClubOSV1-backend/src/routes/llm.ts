@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
-import { llmService } from '../services/llmService';
+import { cachedLLMService as llmService } from '../services/llmServiceCached';
 import { assistantService } from '../services/assistantService';
 import { slackFallback } from '../services/slackFallback';
 // JSON operations removed - using PostgreSQL

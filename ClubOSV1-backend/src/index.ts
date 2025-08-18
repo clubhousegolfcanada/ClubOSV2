@@ -78,6 +78,7 @@ import aiAutomationsRoutes from './routes/ai-automations';
 import openphoneProcessingRoutes from './routes/openphone-processing';
 import integrationsRoutes from './routes/integrations';
 import unifiDoorsRoutes from './routes/unifi-doors';
+import debugCacheRoutes from './routes/debug-cache';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -275,6 +276,7 @@ app.use('/api/prompts', promptsRoutes);
 app.use('/api/ai-automations', aiAutomationsRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
+app.use('/api/debug', debugCacheRoutes);
 app.use('/api/system-status', require('./routes/system-status').default);
 
 
