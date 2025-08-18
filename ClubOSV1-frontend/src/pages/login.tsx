@@ -60,13 +60,28 @@ const LoginPage = () => {
           role: 'customer'
         });
         
+        // Check if signup was successful
         if (response.data.success) {
-          toast.success(response.data.message || 'Account created! Your account is pending approval.');
-          setIsSignup(false);
-          setPassword('');
-          setName('');
-          setPhone('');
-          return;
+          // Check if account was auto-approved (has token)
+          if (response.data.data?.token) {
+            // Auto-approved - log them in immediately
+            const { user, token } = response.data.data;
+            login(user, token);
+            setViewMode('customer');
+            toast.success(`Welcome ${user.name}! Your account is ready.`);
+            setTimeout(() => {
+              router.push('/customer/');
+            }, 100);
+            return;
+          } else {
+            // Pending approval - show message and switch to login
+            toast.success('Account created! Your account is pending approval. You will be notified once approved.');
+            setIsSignup(false);
+            setPassword('');
+            setName('');
+            setPhone('');
+            return;
+          }
         }
       } else {
         // Handle login (both operator and customer)
@@ -103,8 +118,28 @@ const LoginPage = () => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      const message = error.response?.data?.message || 
-        (isSignup ? 'Registration failed. Please try again.' : 'Login failed. Please check your credentials.');
+      
+      // Extract error details
+      const errorCode = error.response?.data?.code;
+      const errorMessage = error.response?.data?.message;
+      
+      // Provide specific error messages based on error codes
+      let message = errorMessage;
+      
+      if (errorCode === 'INVALID_CREDENTIALS') {
+        message = 'Invalid email or password. Please check your credentials.';
+      } else if (errorCode === 'ACCOUNT_PENDING') {
+        message = 'Your account is pending approval. You will be notified once approved.';
+      } else if (errorCode === 'ACCOUNT_SUSPENDED') {
+        message = 'Your account has been suspended. Please contact support.';
+      } else if (errorCode === 'ACCOUNT_REJECTED') {
+        message = 'Your account application was not approved.';
+      } else if (errorCode === 'EMAIL_EXISTS') {
+        message = 'An account with this email already exists. Please login instead.';
+      } else if (!message) {
+        message = isSignup ? 'Registration failed. Please try again.' : 'Login failed. Please check your credentials.';
+      }
+      
       toast.error(message);
     } finally {
       setIsLoading(false);
