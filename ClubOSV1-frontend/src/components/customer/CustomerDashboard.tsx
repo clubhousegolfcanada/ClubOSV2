@@ -128,7 +128,7 @@ export const CustomerDashboard: React.FC = () => {
       // Fetch customer profile with HubSpot data
       if (token) {
         try {
-          const response = await axios.get(`${API_URL}/api/customer-profile`, {
+          const response = await axios.get(`${API_URL}/customer-profile`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data.success) {
@@ -140,7 +140,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch real bookings from HubSpot
         try {
-          const bookingsResponse = await axios.get(`${API_URL}/api/customer-bookings`, {
+          const bookingsResponse = await axios.get(`${API_URL}/customer-bookings`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (bookingsResponse.data.success) {

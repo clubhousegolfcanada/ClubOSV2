@@ -35,7 +35,7 @@ export default function CustomerProfile() {
       const token = localStorage.getItem('clubos_token');
       
       const response = await axios.put(
-        `${API_URL}/api/customer-profile/users/profile`,
+        `${API_URL}/customer-profile/users/profile`,
         formData,
         {
           headers: {
