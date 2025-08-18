@@ -88,8 +88,8 @@ export default function Friends() {
       // No user, redirect to login
       router.push('/login');
     } else if (user.role !== 'customer') {
-      // Not a customer, redirect to customer dashboard
-      router.push('/customer');
+      // Not a customer, show message instead of redirect
+      setAuthChecked(true); // Allow render but show error message
     } else {
       // User is a customer, allow access
       setAuthChecked(true);
@@ -306,6 +306,26 @@ export default function Friends() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Show message for non-customers
+  if (user?.role !== 'customer') {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-4">
+        <Users className="w-16 h-16 text-gray-400 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Friends - Customer Feature</h2>
+        <p className="text-gray-600 text-center max-w-md mb-6">
+          The friends system is only available for customer accounts. 
+          Switch to a customer account to connect with other players and manage friendships.
+        </p>
+        <button
+          onClick={() => router.push('/customer')}
+          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Back to Dashboard
+        </button>
       </div>
     );
   }
