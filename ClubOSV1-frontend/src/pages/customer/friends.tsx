@@ -80,20 +80,30 @@ export default function Friends() {
   const [addFriendType, setAddFriendType] = useState<'email' | 'phone'>('email');
   const [friendMessage, setFriendMessage] = useState('');
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Check auth - customers only
   useEffect(() => {
-    if (user && user.role !== 'customer') {
-      router.push('/');
+    if (!user) {
+      // No user, redirect to login
+      router.push('/login');
+    } else if (user.role !== 'customer') {
+      // Not a customer, redirect to customer dashboard
+      router.push('/customer');
+    } else {
+      // User is a customer, allow access
+      setAuthChecked(true);
     }
   }, [user, router]);
 
-  // Load initial data
+  // Load initial data - only for customers
   useEffect(() => {
-    loadFriends();
-    loadPendingRequests();
-    loadSuggestions();
-  }, []);
+    if (authChecked && user?.role === 'customer') {
+      loadFriends();
+      loadPendingRequests();
+      loadSuggestions();
+    }
+  }, [authChecked, user]);
 
   const loadFriends = async () => {
     try {
@@ -290,6 +300,15 @@ export default function Friends() {
 
   const incomingRequests = pendingRequests.filter(r => r.direction === 'incoming');
   const outgoingRequests = pendingRequests.filter(r => r.direction === 'outgoing');
+
+  // Don't render until auth is checked
+  if (!authChecked) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <>
