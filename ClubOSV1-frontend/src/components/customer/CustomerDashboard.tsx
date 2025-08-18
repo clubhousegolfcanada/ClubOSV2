@@ -53,6 +53,24 @@ interface Stats {
   avgDrive: number;
 }
 
+const humorousMessages = [
+  "Good news, the simulator is still cheaper than golf lessons. Book it.",
+  "Look who crawled back—must've run out of excuses for why you're bad.",
+  "Ah yes, the return of the bunker enthusiast. Book a bay, sandtrap king.",
+  "Welcome back, legend… of the lost fairway.",
+  "Behold, the crown prince of three-putts has returned.",
+  "Welcome back, sire. The fairways tremble, the rough rejoices.",
+  "All hail the monarch of mulligans. Book your throne (bay).",
+  "Ah, the Emperor of Out-of-Bounds has logged back in.",
+  "Just remind us to calibrate the system after you shank 5 into the TrackMan.",
+  "Let us know if you manage to dig that hole 5 inches behind the ball this booking.",
+  "Welcome back, noble ruler of the sandtrap kingdom.",
+  "Hail the Baron of Bogeys, long may he chunk.",
+  "The court jester of chip shots has entered the lobby.",
+  "Ah yes, the Prince of Pushes and Pulls—make yourself at home.",
+  "Long live the Overlord of Over-par. Book your dominion."
+];
+
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthState();
   const router = useRouter();
@@ -69,6 +87,7 @@ export const CustomerDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showLocationSelector, setShowLocationSelector] = useState(false);
   const [customerProfile, setCustomerProfile] = useState<any>(null);
+  const [welcomeMessage, setWelcomeMessage] = useState<string>("");
 
   // Available locations
   const locations: ClubhouseLocation[] = [
@@ -98,6 +117,9 @@ export const CustomerDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchCustomerData();
+    // Select a random humorous message
+    const randomIndex = Math.floor(Math.random() * humorousMessages.length);
+    setWelcomeMessage(humorousMessages[randomIndex]);
   }, []);
 
   const fetchCustomerData = async () => {
@@ -251,9 +273,7 @@ export const CustomerDashboard: React.FC = () => {
               Welcome back, {customerProfile?.displayName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Guest'}
             </h1>
             <p className="text-sm text-gray-600 mt-0.5">
-              {upcomingBookings.length > 0 
-                ? `${upcomingBookings.length} upcoming ${upcomingBookings.length === 1 ? 'booking' : 'bookings'} today`
-                : 'No bookings today - book your box now'}
+              {welcomeMessage}
             </p>
           </div>
           <div className="hidden sm:block">
