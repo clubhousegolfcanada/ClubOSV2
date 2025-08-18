@@ -66,8 +66,8 @@ router.post('/signup',
         password: password,
         name,
         phone,
-        role: 'customer'
-        // Status will default to 'pending_approval' for customers
+        role: 'customer',
+        status: 'active' // Auto-approve customers for now
       });
       
       // Create customer profile automatically
@@ -87,17 +87,29 @@ router.post('/signup',
         success: true
       });
       
-      logger.info('Customer registered successfully (pending approval):', { 
+      logger.info('Customer registered successfully:', { 
         userId: user.id,
         email: user.email 
       });
       
-      // Don't generate token for pending users - they need approval first
+      // Generate token for auto-approved users
+      const sessionId = uuidv4();
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        sessionId: sessionId
+      });
+      
+      // Transform user for response
+      const transformedUser = transformUser(user);
+      
       res.status(201).json({
         success: true,
-        message: 'Account created successfully. Your account is pending approval and you will be notified once approved.',
+        message: 'Account created successfully!',
         data: {
-          status: 'pending_approval'
+          user: transformedUser,
+          token
         }
       });
       

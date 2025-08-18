@@ -181,8 +181,8 @@ class DatabaseService {
     const id = user.id || uuidv4();
     const hashedPassword = await bcrypt.hash(user.password, 10);
     
-    // Default status: customer role = pending_approval, others = active
-    const status = user.status || (user.role === 'customer' ? 'pending_approval' : 'active');
+    // Default status: all roles = active (auto-approve for now)
+    const status = user.status || 'active';
     
     const result = await query(
       `INSERT INTO "Users" (id, email, password, name, role, phone, status, "createdAt", "updatedAt", "isActive") 

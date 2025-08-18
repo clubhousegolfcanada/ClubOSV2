@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.5] - 2025-08-18
+
+### Changed
+- **Customer Account Auto-Approval**
+  - Customer accounts now auto-approve on signup for immediate access
+  - Signup returns JWT token immediately for seamless onboarding
+  - Removed pending approval workflow for customer accounts
+  - Admin approval workflow still available for other user roles
+
 ## [1.12.4] - 2025-08-18
 
 ### Fixed
