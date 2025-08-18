@@ -48,13 +48,57 @@ export const OperationsUsers: React.FC = () => {
   const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [autoApproveCustomers, setAutoApproveCustomers] = useState(true);
   
   const { user } = useAuthState();
   const token = user?.token || localStorage.getItem('clubos_token');
 
   useEffect(() => {
     fetchUsers();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    if (!authToken) return;
+    
+    try {
+      const response = await axios.get(`${API_URL}/system-settings/customer_auto_approval`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      
+      if (response.data.success && response.data.data) {
+        setAutoApproveCustomers(response.data.data.value?.enabled !== false);
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      // Default to true if can't fetch
+      setAutoApproveCustomers(true);
+    }
+  };
+  
+  const updateAutoApproval = async (enabled: boolean) => {
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    if (!authToken) return;
+    
+    try {
+      await axios.put(
+        `${API_URL}/system-settings/customer_auto_approval`,
+        { value: { enabled } },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      setAutoApproveCustomers(enabled);
+      toast.success(`Customer auto-approval ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error: any) {
+      console.error('Error updating setting:', error);
+      toast.error('Failed to update setting');
+      // Revert on error
+      setAutoApproveCustomers(!enabled);
+    }
+  };
 
   const fetchUsers = async () => {
     const authToken = token || localStorage.getItem('clubos_token');
@@ -316,6 +360,40 @@ export const OperationsUsers: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Settings Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Registration Settings</h2>
+              <p className="text-sm text-gray-500 mt-1">Configure how new accounts are handled</p>
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Auto-approve Customer Accounts</label>
+              <p className="text-xs text-gray-500 mt-1">
+                When enabled, customer accounts are immediately active. When disabled, they require admin approval.
+              </p>
+            </div>
+            <button
+              onClick={() => updateAutoApproval(!autoApproveCustomers)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                autoApproveCustomers ? 'bg-primary' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  autoApproveCustomers ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Operator Management Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">

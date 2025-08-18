@@ -283,6 +283,7 @@ app.use('/api/unifi-doors', unifiDoorsRoutes);
 app.use('/api/debug', debugCacheRoutes);
 app.use('/api/debug', require('./routes/debug-flow').default);
 app.use('/api/system-status', require('./routes/system-status').default);
+app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api', testKnowledgeRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 

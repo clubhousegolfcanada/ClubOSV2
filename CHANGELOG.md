@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.12.6] - 2025-08-18
+
+### Added
+- **Configurable Customer Approval Settings**
+  - Added toggle in Operations Center to control customer auto-approval
+  - System settings infrastructure for global configuration storage
+  - Admin can enable/disable auto-approval for customer accounts
+  - Settings persist in database and apply immediately to new signups
+  - When disabled, customers require admin approval before login
+
 ## [1.12.5] - 2025-08-18
 
 ### Changed

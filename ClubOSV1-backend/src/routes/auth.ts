@@ -58,6 +58,19 @@ router.post('/signup',
         throw new AppError('Email already registered', 409, 'EMAIL_EXISTS');
       }
       
+      // Check auto-approval setting
+      let autoApprove = true; // Default to auto-approve
+      try {
+        const settingResult = await db.query(
+          `SELECT value FROM system_settings WHERE key = 'customer_auto_approval'`
+        );
+        if (settingResult.rows.length > 0) {
+          autoApprove = settingResult.rows[0].value?.enabled !== false;
+        }
+      } catch (err) {
+        logger.warn('Could not fetch auto-approval setting, defaulting to auto-approve');
+      }
+      
       // Create user (password will be hashed in createUser)
       const userId = uuidv4();
       const user = await db.createUser({
@@ -67,7 +80,7 @@ router.post('/signup',
         name,
         phone,
         role: 'customer',
-        status: 'active' // Auto-approve customers for now
+        status: autoApprove ? 'active' : 'pending_approval'
       });
       
       // Create customer profile automatically
@@ -89,29 +102,41 @@ router.post('/signup',
       
       logger.info('Customer registered successfully:', { 
         userId: user.id,
-        email: user.email 
-      });
-      
-      // Generate token for auto-approved users
-      const sessionId = uuidv4();
-      const token = generateToken({
-        userId: user.id,
         email: user.email,
-        role: user.role,
-        sessionId: sessionId
+        status: autoApprove ? 'active' : 'pending_approval'
       });
       
-      // Transform user for response
-      const transformedUser = transformUser(user);
-      
-      res.status(201).json({
-        success: true,
-        message: 'Account created successfully!',
-        data: {
-          user: transformedUser,
-          token
-        }
-      });
+      if (autoApprove) {
+        // Generate token for auto-approved users
+        const sessionId = uuidv4();
+        const token = generateToken({
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          sessionId: sessionId
+        });
+        
+        // Transform user for response
+        const transformedUser = transformUser(user);
+        
+        res.status(201).json({
+          success: true,
+          message: 'Account created successfully!',
+          data: {
+            user: transformedUser,
+            token
+          }
+        });
+      } else {
+        // Pending approval response
+        res.status(201).json({
+          success: true,
+          message: 'Account created successfully. Your account is pending approval and you will be notified once approved.',
+          data: {
+            status: 'pending_approval'
+          }
+        });
+      }
       
     } catch (error) {
       logger.error('Registration error:', error);
