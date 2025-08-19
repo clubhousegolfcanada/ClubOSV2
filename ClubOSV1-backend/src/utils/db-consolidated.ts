@@ -10,9 +10,12 @@ interface QueryMetrics {
 }
 
 // Create a single connection pool instance
+// Use explicit Railway URL if DATABASE_URL is not set (happens when modules load before dotenv)
+const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('railway') ? { rejectUnauthorized: false } : false,
+  connectionString: dbUrl,
+  ssl: dbUrl.includes('railway') ? { rejectUnauthorized: false } : false,
   max: 20, // Increased from 10 for better concurrency
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

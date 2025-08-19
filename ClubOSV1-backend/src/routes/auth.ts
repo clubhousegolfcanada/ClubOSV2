@@ -93,8 +93,7 @@ router.post('/signup',
       
       // Initialize ClubCoins with 100 CC signup bonus
       try {
-        const ClubCoinService = require('../services/clubCoinService').ClubCoinService;
-        const clubCoinService = ClubCoinService.getInstance();
+        const { clubCoinService } = await import('../services/clubCoinService');
         await clubCoinService.initializeUser(userId, 100);
         logger.info('Initialized ClubCoins for new user:', { userId, initialBalance: 100 });
       } catch (error) {
@@ -113,8 +112,8 @@ router.post('/signup',
           // Initialize seasonal earnings tracking for leaderboard
           await db.query(
             `INSERT INTO seasonal_cc_earnings 
-             (user_id, season_id, cc_from_wins, cc_from_losses, cc_from_bonuses, cc_net, challenges_completed) 
-             VALUES ($1, $2, 0, 0, 100, 100, 0)
+             (user_id, season_id, cc_from_wins, cc_from_bonuses, cc_lost, cc_net, challenges_completed) 
+             VALUES ($1, $2, 0, 100, 0, 100, 0)
              ON CONFLICT (user_id, season_id) DO NOTHING`,
             [userId, seasonId]
           );
