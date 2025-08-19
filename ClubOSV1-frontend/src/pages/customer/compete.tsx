@@ -12,7 +12,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists  
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface Challenge {
   id: string;
@@ -104,7 +109,7 @@ export default function Compete() {
   const loadCCBalance = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/challenges/cc-balance`, {
+      const response = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -123,7 +128,7 @@ export default function Compete() {
       let allChallenges: Challenge[] = [];
       
       if (challengeFilter === 'all' || challengeFilter === 'active') {
-        const activeRes = await axios.get(`${API_URL}/challenges/my-challenges`, {
+        const activeRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (activeRes.data.success) {
@@ -134,7 +139,7 @@ export default function Compete() {
       }
       
       if (challengeFilter === 'all' || challengeFilter === 'pending') {
-        const pendingRes = await axios.get(`${API_URL}/challenges/my-challenges`, {
+        const pendingRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (pendingRes.data.success) {
@@ -145,7 +150,7 @@ export default function Compete() {
       }
       
       if (challengeFilter === 'history') {
-        const historyRes = await axios.get(`${API_URL}/challenges/my-challenges`, {
+        const historyRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (historyRes.data.success) {
@@ -167,7 +172,7 @@ export default function Compete() {
   const loadCompetitors = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/friends?include_stats=true`, {
+      const response = await axios.get(`${API_URL}/api/friends?include_stats=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -196,7 +201,7 @@ export default function Compete() {
 
   const loadLeaderboard = async () => {
     try {
-      const response = await axios.get(`${API_URL}/leaderboard/alltime`, {
+      const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
       setLeaderboardData(response.data.data || []);
@@ -222,7 +227,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/challenges/${challengeId}/accept`,
+        `${API_URL}/api/challenges/${challengeId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -238,7 +243,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/challenges/${challengeId}/decline`,
+        `${API_URL}/api/challenges/${challengeId}/decline`,
         { reason: 'Not interested' },
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -253,7 +258,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/friends/request`,
+        `${API_URL}/api/friends/request`,
         { target_user_id: targetUserId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

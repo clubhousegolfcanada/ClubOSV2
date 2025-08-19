@@ -21,7 +21,13 @@ import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
+// Now we can safely add /api to our calls
 
 interface Location {
   id: string;
@@ -114,7 +120,7 @@ export const CustomerDashboard: React.FC = () => {
       if (token) {
         // Fetch customer profile
         try {
-          const response = await axios.get(`${API_URL}/customer-profile`, {
+          const response = await axios.get(`${API_URL}/api/customer-profile`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data.success) {
@@ -126,7 +132,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch bookings
         try {
-          const bookingsResponse = await axios.get(`${API_URL}/customer-bookings`, {
+          const bookingsResponse = await axios.get(`${API_URL}/api/customer-bookings`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (bookingsResponse.data.success) {
@@ -151,7 +157,7 @@ export const CustomerDashboard: React.FC = () => {
 
         // Fetch active challenges count and CC balance
         try {
-          const challengesResponse = await axios.get(`${API_URL}/challenges/my-challenges`, {
+          const challengesResponse = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (challengesResponse.data.success) {
@@ -166,7 +172,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch CC balance
         try {
-          const ccResponse = await axios.get(`${API_URL}/challenges/cc-balance`, {
+          const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (ccResponse.data.success) {
