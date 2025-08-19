@@ -12,6 +12,7 @@ const CUSTOMER_ALLOWED_ROUTES = [
   '/customer/bookings',
   '/customer/events',
   '/customer/friends',
+  '/customer/wallet',
   '/login',
   '/logout'
 ];

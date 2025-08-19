@@ -37,12 +37,13 @@ const CustomerNavigation: React.FC = () => {
     router.push('/login');
   };
 
+  // Fixed navigation items order - must be consistent
   const mainNavItems = [
-    { icon: Home, label: 'Home', path: '/customer' },
-    { icon: Calendar, label: 'Bookings', path: '/customer/bookings' },
-    { icon: Users, label: 'Friends', path: '/customer/friends' },
-    { icon: Trophy, label: 'Leaderboard', path: '/customer/events' },
-    { icon: User, label: 'Profile', path: '/customer/profile' }
+    { icon: Home, label: 'Dashboard', path: '/customer', key: 'dashboard' },
+    { icon: Users, label: 'Friends', path: '/customer/friends', key: 'friends' },
+    { icon: Calendar, label: 'Bookings', path: '/customer/bookings', key: 'bookings' },
+    { icon: TrendingUp, label: 'Wallet', path: '/customer/wallet', key: 'wallet' },
+    { icon: User, label: 'Profile', path: '/customer/profile', key: 'profile' }
   ];
 
   const currentPath = router.pathname;
@@ -69,7 +70,7 @@ const CustomerNavigation: React.FC = () => {
             <nav className="hidden lg:flex items-center space-x-4 ml-10">
               {mainNavItems.map((item) => (
                 <button
-                  key={item.path}
+                  key={item.key}
                   onClick={() => router.push(item.path)}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
                     currentPath === item.path
@@ -144,7 +145,7 @@ const CustomerNavigation: React.FC = () => {
             <nav className="p-4 space-y-1">
               {mainNavItems.map((item) => (
                 <button
-                  key={item.path}
+                  key={item.key}
                   onClick={() => {
                     router.push(item.path);
                     setMobileMenuOpen(false);
@@ -227,9 +228,9 @@ const CustomerNavigation: React.FC = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg">
         <div className="flex items-center justify-around h-16">
-          {mainNavItems.slice(0, 5).map((item) => (
+          {mainNavItems.map((item) => (
             <button
-              key={item.path}
+              key={item.key}
               onClick={() => router.push(item.path)}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 currentPath === item.path
