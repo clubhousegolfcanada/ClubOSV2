@@ -266,23 +266,36 @@ export default function CustomerProfile() {
                   ))}
                 </div>
 
-                {/* Performance Overview */}
+                {/* Tournament Achievements */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Overview</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Total Challenges</div>
-                      <div className="text-xl font-bold text-gray-900">{profileData?.totalChallenges || 0}</div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Tournament Achievements</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Tournament Wins */}
+                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                      <Trophy className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <div className="text-sm font-medium text-gray-400">Tournament Wins</div>
+                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
                     </div>
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Record</div>
-                      <div className="text-xl font-bold text-gray-900">
-                        {profileData?.totalWins || 0}W - {(profileData?.totalChallenges || 0) - (profileData?.totalWins || 0)}L
-                      </div>
+                    
+                    {/* Champion Title */}
+                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                      <Award className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <div className="text-sm font-medium text-gray-400">Champion</div>
+                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
                     </div>
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Longest Streak</div>
-                      <div className="text-xl font-bold text-gray-900">{profileData?.longestStreak || 0} wins</div>
+                    
+                    {/* Closest to Pin */}
+                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                      <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <div className="text-sm font-medium text-gray-400">Closest to Pin</div>
+                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
+                    </div>
+                    
+                    {/* Tour Pro */}
+                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                      <Shield className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <div className="text-sm font-medium text-gray-400">Tour Pro</div>
+                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
                     </div>
                   </div>
                 </div>

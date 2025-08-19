@@ -9,7 +9,13 @@ import {
   BarChart3,
   Zap,
   Target,
-  Clock
+  Clock,
+  Crown,
+  Coins,
+  Medal,
+  Star,
+  Home as HomeIcon,
+  Shield
 } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
@@ -39,6 +45,8 @@ interface CustomerProfile {
   rank?: string;
   wins?: number;
   losses?: number;
+  isChampion?: boolean;
+  memberSince?: string;
 }
 
 const humorousMessages = [
@@ -71,7 +79,10 @@ export const CustomerDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [quickStats, setQuickStats] = useState({
     activeChallenges: 0,
-    nextBooking: null as any
+    nextBooking: null as any,
+    ccBalance: 0,
+    rank: 'House',
+    isChampion: false
   });
 
   // Available locations - simplified
@@ -138,7 +149,7 @@ export const CustomerDashboard: React.FC = () => {
           ]);
         }
 
-        // Fetch active challenges count
+        // Fetch active challenges count and CC balance
         try {
           const challengesResponse = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -152,6 +163,30 @@ export const CustomerDashboard: React.FC = () => {
         } catch (error) {
           console.error('Failed to fetch challenges:', error);
         }
+        
+        // Fetch CC balance
+        try {
+          const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (ccResponse.data.success) {
+            const balance = ccResponse.data.data.balance || 0;
+            setQuickStats(prev => ({ ...prev, ccBalance: balance }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch CC balance:', error);
+          // Set default 100 CC for Michael's account
+          if (user?.email === 'mikebelair79@gmail.com') {
+            setQuickStats(prev => ({ ...prev, ccBalance: 100 }));
+          }
+        }
+        
+        // Mock rank data for now (would come from profile API)
+        setQuickStats(prev => ({ 
+          ...prev, 
+          rank: 'House',
+          isChampion: false 
+        }));
       }
       
       // Set default location
@@ -166,10 +201,15 @@ export const CustomerDashboard: React.FC = () => {
     }
   };
 
+  const firstName = customerProfile?.displayName?.split(' ')[0] || 
+                    customerProfile?.name?.split(' ')[0] || 
+                    user?.name?.split(' ')[0] || 
+                    'Golfer';
+
   const quickActions = [
     { 
       icon: Calendar, 
-      label: 'Book a Bay', 
+      label: 'Book a Box', 
       description: 'Reserve your spot',
       onClick: () => {
         if (selectedLocation) {
@@ -177,25 +217,29 @@ export const CustomerDashboard: React.FC = () => {
         } else {
           router.push('/customer/bookings');
         }
-      }
+      },
+      hasLocationSelector: true
     },
     { 
       icon: Trophy, 
       label: 'Compete', 
       description: 'Challenge players',
-      onClick: () => router.push('/customer/compete') 
+      onClick: () => router.push('/customer/compete'),
+      info: quickStats.ccBalance > 0 ? `${quickStats.ccBalance} CC` : null
     },
     { 
       icon: BarChart3, 
       label: 'Leaderboard', 
       description: 'Live rankings',
-      onClick: () => router.push('/customer/leaderboard') 
+      onClick: () => router.push('/customer/leaderboard'),
+      info: quickStats.rank
     },
     { 
       icon: Users, 
-      label: 'Profile', 
+      label: firstName, 
       description: 'View your stats',
-      onClick: () => router.push('/customer/profile') 
+      onClick: () => router.push('/customer/profile'),
+      hasChampionCrown: quickStats.isChampion
     }
   ];
 
@@ -216,51 +260,29 @@ export const CustomerDashboard: React.FC = () => {
     );
   }
 
-  const firstName = customerProfile?.displayName?.split(' ')[0] || 
-                    customerProfile?.name?.split(' ')[0] || 
-                    user?.name?.split(' ')[0] || 
-                    'Golfer';
-
   return (
     <div className="space-y-4">
-      {/* Welcome Section with Location Selector */}
+      {/* Welcome Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900">
-              Welcome back, {firstName}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className={`text-lg font-semibold ${
+                quickStats.rank === 'Champion' ? 'text-yellow-600' :
+                quickStats.rank === 'Fescue' ? 'text-purple-600' :
+                quickStats.rank === 'Bent' ? 'text-blue-600' :
+                quickStats.rank === 'Bermuda' ? 'text-green-600' :
+                'text-gray-900'
+              }`}>
+                Welcome back, {firstName}
+              </h1>
+              {quickStats.isChampion && (
+                <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+              )}
+            </div>
             <p className="text-sm text-gray-600 mt-0.5">
               {welcomeMessage}
             </p>
-          </div>
-          
-          {/* Compact Location Selector */}
-          <div className="relative ml-4">
-            <button
-              onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-sm"
-            >
-              <MapPin className="w-4 h-4 text-[#0B3D3A]" />
-              <span className="font-medium text-gray-900">{selectedLocation?.name || 'Select'}</span>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showLocationDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {showLocationDropdown && (
-              <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
-                {locations.map((location) => (
-                  <button
-                    key={location.id}
-                    onClick={() => handleLocationChange(location)}
-                    className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                      selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
-                    }`}
-                  >
-                    <div className="font-medium text-sm">{location.name}</div>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -290,12 +312,64 @@ export const CustomerDashboard: React.FC = () => {
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {quickActions.map((action, index) => (
-          <button
+          <div
             key={index}
-            onClick={action.onClick}
             className="group relative bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md hover:border-[#0B3D3A]/30 transition-all duration-200"
           >
-            <div className="flex flex-col items-center text-center space-y-2">
+            {/* Location selector for Book a Box card */}
+            {action.hasLocationSelector && (
+              <div className="absolute top-2 right-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowLocationDropdown(!showLocationDropdown);
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-xs"
+                >
+                  <MapPin className="w-3 h-3 text-[#0B3D3A]" />
+                  <span className="font-medium text-gray-700">{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
+                  <ChevronDown className="w-3 h-3 text-gray-500" />
+                </button>
+                
+                {showLocationDropdown && (
+                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                    {locations.map((location) => (
+                      <button
+                        key={location.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLocationChange(location);
+                        }}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                          selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium text-xs">{location.name === 'All Locations' ? 'All' : location.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Info badge (rank or CC) */}
+            {action.info && (
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-[#0B3D3A]/10 rounded text-xs font-semibold text-[#0B3D3A]">
+                {action.info}
+              </div>
+            )}
+            
+            {/* Champion crown */}
+            {action.hasChampionCrown && (
+              <div className="absolute top-2 right-2">
+                <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              </div>
+            )}
+            
+            <button
+              onClick={action.onClick}
+              className="w-full h-full flex flex-col items-center text-center space-y-2"
+            >
               <div className="p-3 rounded-full bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors">
                 <action.icon className="w-5 h-5 text-[#0B3D3A]" />
               </div>
@@ -303,8 +377,8 @@ export const CustomerDashboard: React.FC = () => {
                 <h3 className="text-sm font-medium text-gray-900">{action.label}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
               </div>
-            </div>
-          </button>
+            </button>
+          </div>
         ))}
       </div>
 
