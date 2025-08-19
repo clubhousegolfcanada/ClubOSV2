@@ -225,6 +225,68 @@ router.get('/settings-catalog', async (req, res) => {
 });
 
 /**
+ * GET /api/challenges/my-challenges
+ * Get all user's challenges (pending, active, and recent history)
+ */
+router.get('/my-challenges', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
+    // Get all challenges where user is creator or acceptor
+    const query = `
+      SELECT 
+        c.*,
+        u1.name as creator_name,
+        u2.name as acceptor_name,
+        cp1.current_rank as creator_rank,
+        cp2.current_rank as acceptor_rank,
+        CASE 
+          WHEN c.creator_id = $1 THEN u2.name
+          ELSE u1.name
+        END as opponent_name,
+        c.wager_amount,
+        c.expires_at,
+        c.status
+      FROM challenges c
+      LEFT JOIN users u1 ON u1.id = c.creator_id
+      LEFT JOIN users u2 ON u2.id = c.acceptor_id
+      LEFT JOIN customer_profiles cp1 ON cp1.user_id = c.creator_id
+      LEFT JOIN customer_profiles cp2 ON cp2.user_id = c.acceptor_id
+      WHERE (c.creator_id = $1 OR c.acceptor_id = $1)
+      AND c.status IN ('pending', 'accepted', 'active', 'resolved', 'expired', 'declined')
+      ORDER BY 
+        CASE 
+          WHEN c.status = 'pending' THEN 1
+          WHEN c.status IN ('accepted', 'active') THEN 2
+          ELSE 3
+        END,
+        c.created_at DESC
+      LIMIT 100
+    `;
+    
+    const result = await pool.query(query, [userId]);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    logger.error('Error fetching my challenges:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch challenges'
+    });
+  }
+});
+
+/**
  * GET /api/challenges/cc-balance
  * Get user's CC balance
  */
