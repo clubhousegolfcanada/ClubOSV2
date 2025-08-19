@@ -210,22 +210,22 @@ export const CustomerDashboard: React.FC = () => {
       onClick: () => router.push('/customer/bookings')
     },
     { 
-      icon: Users, 
-      label: 'Friends', 
-      description: 'Send invites',
-      onClick: () => router.push('/customer/friends') 
+      icon: Trophy, 
+      label: 'Compete', 
+      description: 'Challenge players',
+      onClick: () => router.push('/customer/compete') 
     },
     { 
-      icon: Trophy, 
+      icon: BarChart3, 
       label: 'Leaderboard', 
       description: 'Live rankings',
       onClick: () => router.push('/customer/leaderboard') 
     },
     { 
-      icon: BarChart3, 
-      label: 'My Stats', 
-      description: 'Track progress',
-      onClick: () => router.push('/customer/stats') 
+      icon: Users, 
+      label: 'Profile', 
+      description: 'View stats',
+      onClick: () => router.push('/customer/profile') 
     }
   ];
 

@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.9] - 2025-08-19
+
+### Changed
+- **Unified Competition System**
+  - Combined Friends and Challenges into single "Compete" page
+  - Fantasy sports-style competition focus instead of social messaging
+  - Three main tabs: Challenges, Competitors, Leaderboard
+  - Streamlined challenge management with filters (all, active, pending, history)
+  - Competitor view shows friends/rivals with stats and quick challenge buttons
+  - Integrated leaderboard with add competitor functionality
+  - Removed separate Friends and Challenges pages for cleaner navigation
+  - Mobile-optimized with improved information density
+
 ## [1.14.8] - 2025-08-19
 
 ### Added

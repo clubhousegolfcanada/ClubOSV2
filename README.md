@@ -152,6 +152,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.9**: Unified Competition System
+  - Combined Friends and Challenges into single "Compete" page
+  - Fantasy sports-style focus on competition vs social messaging
+  - Streamlined navigation with Challenges, Competitors, Leaderboard tabs
 - **v1.14.8**: Pride-first profile page with rank emblems and career timeline
 - **v1.14.7**: Fixed Customer App Loading & Navigation Issues
   - Removed broken wallet link
