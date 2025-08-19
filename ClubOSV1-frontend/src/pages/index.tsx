@@ -39,6 +39,21 @@ export default function Home() {
   const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
   
+  // SECURITY: Redirect customers to their dashboard
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'customer') {
+        router.push('/customer/');
+        return;
+      }
+      // Only allow operator roles
+      if (!['admin', 'operator', 'support', 'kiosk'].includes(user.role)) {
+        router.push('/login');
+        return;
+      }
+    }
+  }, [user, router]);
+  
   // Set client flag
   useEffect(() => {
     setIsClient(true);
