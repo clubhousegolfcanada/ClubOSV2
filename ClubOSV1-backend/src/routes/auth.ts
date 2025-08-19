@@ -110,12 +110,13 @@ router.post('/signup',
         
         if (seasonResult.rows.length > 0) {
           const seasonId = seasonResult.rows[0].id;
+          // Initialize seasonal earnings tracking for leaderboard
           await db.query(
-            `INSERT INTO seasons_participants 
-             (season_id, user_id, rank_tier, rank_points, cc_earned, cc_wagered) 
-             VALUES ($1, $2, 'House', 0, 0, 0)
-             ON CONFLICT (season_id, user_id) DO NOTHING`,
-            [seasonId, userId]
+            `INSERT INTO seasonal_cc_earnings 
+             (user_id, season_id, cc_from_wins, cc_from_losses, cc_from_bonuses, cc_net, challenges_completed) 
+             VALUES ($1, $2, 0, 0, 100, 100, 0)
+             ON CONFLICT (user_id, season_id) DO NOTHING`,
+            [userId, seasonId]
           );
           logger.info('Added user to season leaderboard:', { userId, seasonId });
         }
