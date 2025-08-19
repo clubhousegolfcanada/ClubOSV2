@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.1] - 2025-08-19
+
+### Fixed
+- **Backend TypeScript Compilation Errors**
+  - Fixed all import statements for database, logger, and services
+  - Changed from default exports to named exports for consistency
+  - Removed Redis dependency from rate limiting (using memory store)
+  - Fixed Date type conversion issues in seasons route
+  
+- **Database Migrations**
+  - Successfully deployed challenge system tables to production
+  - Created seasons, challenges, badges, and related tables
+  - Active Winter 2025 season now running
+  - All challenge backend services now operational
+
 ## [1.14.0] - 2025-08-19
 
 ### Added
