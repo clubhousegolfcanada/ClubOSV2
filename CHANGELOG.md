@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.5] - 2025-08-19
+
+### Fixed
+- **Customer Leaderboard Embed Links**
+  - Fixed Pro League embed URL to use correct TrackMan short link
+  - Fixed House League embed URL to use correct TrackMan short link
+  - Added "Closest to the Pin" tab with TrackMan embed
+  - Reordered tabs: Pro League, House League, Closest to Pin, All Time
+  - All TrackMan embeds now working correctly for customer portal
+
 ## [1.14.4] - 2025-08-19
 
 ### Fixed

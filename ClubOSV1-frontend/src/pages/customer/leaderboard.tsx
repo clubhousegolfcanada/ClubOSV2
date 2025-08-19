@@ -8,12 +8,13 @@ import { Trophy, Download } from 'lucide-react';
 export default function CustomerLeaderboard() {
   const router = useRouter();
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<'pro' | 'house' | 'alltime'>('pro');
+  const [activeTab, setActiveTab] = useState<'pro' | 'house' | 'closest' | 'alltime'>('pro');
 
-  // TrackMan embed URLs - these should be configured per location
+  // TrackMan embed URLs
   const embedUrls = {
-    pro: 'https://trackman.golfleague.net/embed/leaderboard/pro-league-id', // Replace with actual Pro League ID
-    house: 'https://trackman.golfleague.net/embed/leaderboard/house-league-id', // Replace with actual House League ID
+    pro: 'https://tm-short.me/pZY461g', // Pro League
+    house: 'https://tm-short.me/Tqjb7AS', // House League
+    closest: 'https://tm-short.me/IsUwwGi', // Closest to the Pin
     alltime: null // All-time will be custom implementation
   };
 
@@ -60,10 +61,10 @@ export default function CustomerLeaderboard() {
           {/* Tabs */}
           <div className="bg-white border-b border-gray-200 sticky top-14 z-30">
             <div className="max-w-7xl mx-auto px-4">
-              <div className="flex space-x-8">
+              <div className="flex space-x-6 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('pro')}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'pro'
                       ? 'border-[#0B3D3A] text-[#0B3D3A]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -73,7 +74,7 @@ export default function CustomerLeaderboard() {
                 </button>
                 <button
                   onClick={() => setActiveTab('house')}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'house'
                       ? 'border-[#0B3D3A] text-[#0B3D3A]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -82,8 +83,18 @@ export default function CustomerLeaderboard() {
                   House League
                 </button>
                 <button
+                  onClick={() => setActiveTab('closest')}
+                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'closest'
+                      ? 'border-[#0B3D3A] text-[#0B3D3A]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Closest to Pin
+                </button>
+                <button
                   onClick={() => setActiveTab('alltime')}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'alltime'
                       ? 'border-[#0B3D3A] text-[#0B3D3A]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -116,7 +127,11 @@ export default function CustomerLeaderboard() {
                     style={{ minHeight: '70vh' }}
                     frameBorder="0"
                     allowFullScreen
-                    title={`${activeTab === 'pro' ? 'Pro' : 'House'} League Leaderboard`}
+                    title={`${
+                      activeTab === 'pro' ? 'Pro League' : 
+                      activeTab === 'house' ? 'House League' : 
+                      'Closest to the Pin'
+                    } Leaderboard`}
                   />
                 ) : (
                   <div className="p-8 text-center">
