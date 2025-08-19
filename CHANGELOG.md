@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.8] - 2025-08-19
+
+### Added
+- **Pride-First Customer Profile Page**
+  - Hero section with large rank emblem and username
+  - Champion markers and auto-generated lore lines
+  - Stats overview grid with all-time CC, W/L record, streaks
+  - Clean stencil-style rank emblems (Crown, Trophy, Star, Medal, etc.)
+  - Badges showcase with pride-of-place highlighting
+  - Career timeline showing seasonal rank progression
+  - Recent activity feed with wins, losses, badges, rank-ups
+  - Deep dive tabs for history, all badges, and settings
+  - Mobile-responsive grid layout matching UI design system
+
 ## [1.14.7] - 2025-08-19
 
 ### Fixed

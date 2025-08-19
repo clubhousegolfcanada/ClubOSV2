@@ -152,6 +152,7 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.8**: Pride-first profile page with rank emblems and career timeline
 - **v1.14.7**: Fixed Customer App Loading & Navigation Issues
   - Removed broken wallet link
   - Fixed dashboard leaderboard routing
