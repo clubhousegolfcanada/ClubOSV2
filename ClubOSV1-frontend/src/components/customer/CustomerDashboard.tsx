@@ -212,7 +212,7 @@ export const CustomerDashboard: React.FC = () => {
     { 
       icon: Users, 
       label: 'Friends', 
-      description: 'Connect with players',
+      description: 'Send invites',
       onClick: () => router.push('/customer/friends') 
     },
     { 
