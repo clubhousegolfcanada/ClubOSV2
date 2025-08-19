@@ -1,16 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import CustomerLayout from '@/components/customer/CustomerLayout';
-import { User, Mail, Phone, Save, CheckCircle, Wallet, CreditCard, TrendingUp, DollarSign, Plus, History } from 'lucide-react';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  Save, 
+  CheckCircle, 
+  Trophy,
+  Target,
+  Award,
+  TrendingUp,
+  Shield,
+  Star,
+  ChevronRight,
+  Activity
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+interface ProfileStats {
+  currentRank: string;
+  highestRank: string;
+  ccBalance: number;
+  totalCCEarned: number;
+  totalChallenges: number;
+  totalWins: number;
+  winRate: number;
+  currentStreak: number;
+  maxWinStreak: number;
+  seasonPosition: number;
+  hasChampionMarker: boolean;
+}
+
+interface Badge {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  tier: string;
+  earnedAt: string;
+  isFeatured: boolean;
+}
+
 export default function CustomerProfile() {
   const { user, setUser } = useAuthState();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'stats' | 'badges'>('profile');
+  const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,8 +65,42 @@ export default function CustomerProfile() {
         email: user.email || '',
         phone: user.phone || ''
       });
+      fetchProfileStats();
+      fetchBadges();
     }
   }, [user]);
+
+  const fetchProfileStats = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(
+        `${API_URL}/api/leaderboard/user/${user?.id}`,
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      
+      if (response.data.success) {
+        setProfileStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile stats:', error);
+    }
+  };
+
+  const fetchBadges = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(
+        `${API_URL}/api/badges/user/${user?.id}`,
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      
+      if (response.data.success) {
+        setBadges(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch badges:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +120,6 @@ export default function CustomerProfile() {
       );
 
       if (response.data.success) {
-        // Update local user state
         if (user) {
           const updatedUser = { ...user, ...formData };
           setUser(updatedUser);
@@ -54,8 +128,6 @@ export default function CustomerProfile() {
         
         setSaved(true);
         toast.success('Profile updated successfully');
-        
-        // Reset saved indicator after 3 seconds
         setTimeout(() => setSaved(false), 3000);
       }
     } catch (error: any) {
@@ -74,179 +146,307 @@ export default function CustomerProfile() {
     setSaved(false);
   };
 
+  const getRankColor = (rank: string) => {
+    const colors: Record<string, string> = {
+      legend: 'bg-purple-100 text-purple-700 border-purple-200',
+      champion: 'bg-red-100 text-red-700 border-red-200',
+      pro: 'bg-blue-100 text-blue-700 border-blue-200',
+      gold: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      silver: 'bg-gray-100 text-gray-700 border-gray-200',
+      bronze: 'bg-orange-100 text-orange-700 border-orange-200',
+      amateur: 'bg-green-100 text-green-700 border-green-200',
+      house: 'bg-gray-50 text-gray-500 border-gray-200'
+    };
+    return colors[rank?.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+
+  const getBadgeColor = (tier: string) => {
+    const colors: Record<string, string> = {
+      legendary: 'bg-purple-50 border-purple-200',
+      epic: 'bg-indigo-50 border-indigo-200',
+      rare: 'bg-blue-50 border-blue-200',
+      uncommon: 'bg-green-50 border-green-200',
+      common: 'bg-gray-50 border-gray-200'
+    };
+    return colors[tier?.toLowerCase()] || 'bg-gray-50 border-gray-200';
+  };
+
   return (
     <CustomerLayout>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {/* Wallet Section */}
+        {/* Header with Rank Display */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-[#0B3D3A]" />
-              Wallet & Credits
-            </h2>
-          </div>
-          
           <div className="p-6">
-            {/* Balance Card */}
-            <div className="bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-xl p-6 text-white mb-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-white/80 text-sm mb-1">Available Balance</p>
-                  <p className="text-3xl font-bold">$0.00</p>
-                  <p className="text-white/60 text-xs mt-2">0 Credits</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-[#0B3D3A] rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
                 </div>
-                <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-                  <TrendingUp className="w-6 h-6 text-white" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{user?.name}</h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getRankColor(profileStats?.currentRank || 'house')}`}>
+                      {profileStats?.currentRank?.toUpperCase() || 'HOUSE'}
+                    </span>
+                    {profileStats?.hasChampionMarker && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+                        <Star className="w-3 h-3" />
+                        Champion
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center gap-2 hover:bg-gray-100 transition-colors">
-                <Plus className="w-6 h-6 text-[#0B3D3A]" />
-                <span className="text-sm font-medium">Add Funds</span>
-              </button>
-              <button className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center gap-2 hover:bg-gray-100 transition-colors">
-                <History className="w-6 h-6 text-[#0B3D3A]" />
-                <span className="text-sm font-medium">History</span>
-              </button>
-            </div>
-
-            {/* Payment Methods */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                Payment Methods
-              </h3>
-              <div className="text-center py-6 bg-gray-50 rounded-lg">
-                <CreditCard className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No payment methods added</p>
-                <button className="mt-3 text-[#0B3D3A] text-sm font-medium hover:underline">
-                  Add Payment Method
-                </button>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">CC Balance</p>
+                <p className="text-2xl font-bold text-[#0B3D3A]">
+                  {profileStats?.ccBalance?.toLocaleString() || 0}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Profile Section */}
+        {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h1 className="text-xl font-semibold text-gray-900">My Profile</h1>
-            <p className="text-sm text-gray-500 mt-1">Update your personal information</p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            {/* Name Field */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Full Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B3D3A] focus:border-[#0B3D3A] transition-colors"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B3D3A] focus:border-[#0B3D3A] transition-colors"
-                  placeholder="your@email.com"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Phone Field */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Phone Number
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B3D3A] focus:border-[#0B3D3A] transition-colors"
-                  placeholder="(902) 123-4567"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500">Optional - for booking confirmations</p>
-            </div>
-
-            {/* Submit Button */}
-            <div className="pt-4">
+          <div className="border-b border-gray-200">
+            <div className="flex">
               <button
-                type="submit"
-                disabled={loading || saved}
-                className={`w-full flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all ${
-                  saved
-                    ? 'bg-green-600 text-white'
-                    : loading
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#0B3D3A] text-white hover:bg-[#084a45]'
+                onClick={() => setActiveTab('profile')}
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'profile'
+                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {saved ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Profile Updated
-                  </>
-                ) : loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
+                Profile
+              </button>
+              <button
+                onClick={() => setActiveTab('stats')}
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'stats'
+                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Challenge Stats
+              </button>
+              <button
+                onClick={() => setActiveTab('badges')}
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'badges'
+                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Badges ({badges.length})
               </button>
             </div>
-          </form>
+          </div>
 
-          {/* Account Info Footer */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-lg">
-            <div className="text-xs text-gray-500">
-              <p>Account Type: <span className="font-medium text-gray-700">Customer</span></p>
-              <p className="mt-1">Member Since: <span className="font-medium text-gray-700">
-                {(user as any)?.created_at ? new Date((user as any).created_at).toLocaleDateString() : 'N/A'}
-              </span></p>
-            </div>
+          <div className="p-6">
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <User className="w-4 h-4 inline mr-2" />
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                    placeholder="Enter your name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Mail className="w-4 h-4 inline mr-2" />
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Phone className="w-4 h-4 inline mr-2" />
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || saved}
+                  className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${
+                    saved
+                      ? 'bg-green-600 text-white'
+                      : 'bg-[#0B3D3A] text-white hover:bg-[#084a45]'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {saved ? (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Saved
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Stats Tab */}
+            {activeTab === 'stats' && profileStats && (
+              <div className="space-y-6">
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Target className="w-5 h-5 text-gray-400" />
+                      <span className="text-xs text-gray-500">Total</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{profileStats.totalChallenges}</p>
+                    <p className="text-xs text-gray-500">Challenges</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Trophy className="w-5 h-5 text-gray-400" />
+                      <span className="text-xs text-gray-500">Wins</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{profileStats.totalWins}</p>
+                    <p className="text-xs text-gray-500">Victories</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <TrendingUp className="w-5 h-5 text-gray-400" />
+                      <span className="text-xs text-gray-500">Rate</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {(profileStats.winRate * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-gray-500">Win Rate</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Activity className="w-5 h-5 text-gray-400" />
+                      <span className="text-xs text-gray-500">Streak</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Math.abs(profileStats.currentStreak)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {profileStats.currentStreak > 0 ? 'Win' : profileStats.currentStreak < 0 ? 'Loss' : 'No'} Streak
+                    </p>
+                  </div>
+                </div>
+
+                {/* Detailed Stats */}
+                <div className="space-y-3">
+                  <div className="flex justify-between py-3 border-b border-gray-100">
+                    <span className="text-gray-600">Season Position</span>
+                    <span className="font-medium">#{profileStats.seasonPosition || 'Unranked'}</span>
+                  </div>
+                  <div className="flex justify-between py-3 border-b border-gray-100">
+                    <span className="text-gray-600">Total CC Earned</span>
+                    <span className="font-medium text-[#0B3D3A]">
+                      {profileStats.totalCCEarned.toLocaleString()} CC
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-3 border-b border-gray-100">
+                    <span className="text-gray-600">Highest Rank</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getRankColor(profileStats.highestRank)}`}>
+                      {profileStats.highestRank?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-3 border-b border-gray-100">
+                    <span className="text-gray-600">Best Win Streak</span>
+                    <span className="font-medium">{profileStats.maxWinStreak} wins</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <button
+                    onClick={() => window.location.href = '/customer/challenges'}
+                    className="w-full py-3 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
+                  >
+                    View Challenges
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => window.location.href = '/customer/leaderboard'}
+                    className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    View Leaderboard
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Badges Tab */}
+            {activeTab === 'badges' && (
+              <div className="space-y-6">
+                {badges.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No badges earned yet</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Complete challenges to earn badges
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {badges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className={`p-4 rounded-lg border ${getBadgeColor(badge.tier)} ${
+                          badge.isFeatured ? 'ring-2 ring-[#0B3D3A]' : ''
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-2">
+                            <Award className="w-6 h-6 text-gray-600" />
+                          </div>
+                          <h3 className="font-medium text-gray-900 text-sm">{badge.name}</h3>
+                          <p className="text-xs text-gray-500 mt-1">{badge.description}</p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            {new Date(badge.earnedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -14,7 +14,8 @@ import {
   MapPin,
   Settings2,
   User,
-  Target
+  Target,
+  Star
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -25,6 +26,7 @@ interface Friend {
   email: string;
   rank?: string;
   ccBalance?: number;
+  hasChampionMarker?: boolean;
 }
 
 interface CourseSettings {
@@ -81,7 +83,7 @@ export default function CreateChallenge() {
 
   const fetchCourseSettings = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/challenges/settings-catalog`, {
+      const response = await axios.get(`${API_URL}/api/trackman/settings-catalog`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
       if (response.data.success) {
@@ -270,7 +272,12 @@ export default function CreateChallenge() {
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-gray-900">{friend.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-900">{friend.name}</p>
+                                {friend.hasChampionMarker && (
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                )}
+                              </div>
                               <p className="text-sm text-gray-500">{friend.email}</p>
                             </div>
                             {friend.rank && (

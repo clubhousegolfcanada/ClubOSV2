@@ -49,7 +49,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         cp.handicap as friend_handicap,
         cp.home_location as friend_home_location,
         cp.total_rounds as friend_total_rounds,
-        cp.profile_visibility as friend_visibility
+        cp.profile_visibility as friend_visibility,
+        cp.current_rank as friend_rank,
+        cp.cc_balance as friend_cc_balance,
+        EXISTS(
+          SELECT 1 FROM champion_markers cm 
+          WHERE cm.user_id = u.id 
+          AND cm.is_active = true 
+          AND (cm.expires_at IS NULL OR cm.expires_at > CURRENT_TIMESTAMP)
+        ) as has_champion_marker
         ${include_stats ? `, 
           f.clubcoin_wagers_count,
           f.clubcoin_wagers_total,
@@ -77,7 +85,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const friends = result.rows.map(row => {
       const isPrivate = row.friend_visibility === 'private';
       return {
-        id: row.id,
+        id: row.friend_user_id,
         friendship_id: row.id,
         user_id: row.friend_user_id,
         email: row.friend_email,
@@ -86,6 +94,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         bio: isPrivate ? null : row.friend_bio,
         handicap: isPrivate ? null : row.friend_handicap,
         home_location: row.friend_home_location,
+        rank: row.friend_rank,
+        ccBalance: row.friend_cc_balance,
+        hasChampionMarker: row.has_champion_marker,
         status: row.status,
         requested_at: row.requested_at,
         accepted_at: row.accepted_at,

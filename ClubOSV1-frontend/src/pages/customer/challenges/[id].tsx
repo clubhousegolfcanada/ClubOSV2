@@ -18,7 +18,8 @@ import {
   Activity,
   Calendar,
   ChevronRight,
-  Flag
+  Flag,
+  Star
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -32,6 +33,8 @@ interface ChallengeDetail {
   acceptorName: string;
   creatorRank: string;
   acceptorRank: string;
+  creatorHasChampion?: boolean;
+  acceptorHasChampion?: boolean;
   wagerAmount: number;
   creatorStakeAmount: number;
   acceptorStakeAmount: number;
@@ -261,7 +264,12 @@ export default function ChallengeDetail() {
                     <span className="text-sm text-gray-600">Challenger</span>
                     {isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
                   </div>
-                  <p className="font-medium text-gray-900">{challenge.creatorName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900">{challenge.creatorName}</p>
+                    {challenge.creatorHasChampion && (
+                      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
                   <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${getRankColor(challenge.creatorRank)}`}>
                     {challenge.creatorRank?.toUpperCase()}
                   </span>
@@ -279,7 +287,12 @@ export default function ChallengeDetail() {
                     <span className="text-sm text-gray-600">Opponent</span>
                     {!isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
                   </div>
-                  <p className="font-medium text-gray-900">{challenge.acceptorName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900">{challenge.acceptorName}</p>
+                    {challenge.acceptorHasChampion && (
+                      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
                   <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${getRankColor(challenge.acceptorRank)}`}>
                     {challenge.acceptorRank?.toUpperCase()}
                   </span>

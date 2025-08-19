@@ -13,7 +13,8 @@ import {
   Target,
   AlertCircle,
   Check,
-  X
+  X,
+  Star
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -27,6 +28,8 @@ interface Challenge {
   acceptorName: string;
   creatorRank: string;
   acceptorRank: string;
+  creatorHasChampion?: boolean;
+  acceptorHasChampion?: boolean;
   wagerAmount: number;
   totalPot: number;
   expiresAt: string;
@@ -259,8 +262,13 @@ export default function CustomerChallenges() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div>
-                          <div className="font-medium text-gray-900">
-                            {challenge.creatorId === user?.id ? challenge.acceptorName : challenge.creatorName}
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">
+                              {challenge.creatorId === user?.id ? challenge.acceptorName : challenge.creatorName}
+                            </span>
+                            {(challenge.creatorId === user?.id ? challenge.acceptorHasChampion : challenge.creatorHasChampion) && (
+                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            )}
                           </div>
                           <div className={`text-xs font-medium ${getRankColor(
                             challenge.creatorId === user?.id ? challenge.acceptorRank : challenge.creatorRank

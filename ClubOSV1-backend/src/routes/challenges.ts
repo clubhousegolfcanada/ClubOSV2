@@ -5,12 +5,20 @@ import challengeService from '../services/challengeService';
 import clubCoinService from '../services/clubCoinService';
 import pool from '../config/database';
 import logger from '../utils/logger';
+import { 
+  challengeRateLimiters,
+  challengeCreationRateLimiters,
+  challengeAcceptanceRateLimiters 
+} from '../middleware/challengeRateLimiter';
 
 const router = Router();
 
 // All routes require authentication and customer role
 router.use(authenticate);
 router.use(roleGuard(['customer', 'admin', 'operator']));
+
+// Apply general rate limiting to all challenge routes
+router.use(challengeRateLimiters);
 
 /**
  * GET /api/challenges
@@ -275,7 +283,7 @@ router.get('/:id', async (req, res) => {
  * POST /api/challenges
  * Create a new challenge
  */
-router.post('/', async (req, res) => {
+router.post('/', challengeCreationRateLimiters, async (req, res) => {
   try {
     const userId = req.user?.id;
     const {
@@ -342,7 +350,7 @@ router.post('/', async (req, res) => {
  * POST /api/challenges/:id/accept
  * Accept a challenge
  */
-router.post('/:id/accept', async (req, res) => {
+router.post('/:id/accept', challengeAcceptanceRateLimiters, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;

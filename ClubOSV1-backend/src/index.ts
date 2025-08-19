@@ -232,6 +232,8 @@ app.use('/api/friends', friendsRoutes);
 app.use('/api/challenges', require('./routes/challenges').default);
 app.use('/api/leaderboard', require('./routes/leaderboard').default);
 app.use('/api/seasons', require('./routes/seasons').default);
+app.use('/api/badges', require('./routes/badges').default);
+app.use('/api/trackman', require('./routes/trackman').default);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/access', accessRoutes);
@@ -348,6 +350,21 @@ async function startServer() {
     const { customerNameSyncService } = await import('./services/syncCustomerNames');
     customerNameSyncService.start();
     logger.info('✅ Customer name sync service started');
+    
+    // Start challenge expiry job
+    const challengeExpiryJob = await import('./jobs/challengeExpiry');
+    challengeExpiryJob.default.start();
+    logger.info('✅ Challenge expiry job started');
+    
+    // Start rank calculation job
+    const rankCalculationJob = await import('./jobs/rankCalculation');
+    rankCalculationJob.default.start();
+    logger.info('✅ Rank calculation job started');
+    
+    // Start seasonal reset job
+    const seasonalResetJob = await import('./jobs/seasonalReset');
+    seasonalResetJob.default.start();
+    logger.info('✅ Seasonal reset job started');
     
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');

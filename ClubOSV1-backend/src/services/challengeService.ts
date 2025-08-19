@@ -3,6 +3,8 @@ import pool from '../config/database';
 import logger from '../utils/logger';
 import clubCoinService from './clubCoinService';
 import notificationService from './notificationService';
+import badgeRulesEngine from './badgeRulesEngine';
+import rankCalculationService from './rankCalculationService';
 
 export interface CreateChallengeDto {
   creatorId: string;
@@ -150,6 +152,12 @@ class ChallengeService {
         challenge
       );
 
+      // Trigger badge checks for challenge creation
+      await badgeRulesEngine.triggerEvent('challenge_created', data.creatorId, {
+        challengeId: challenge.id,
+        wagerAmount: data.wagerAmount
+      });
+
       return {
         id: challenge.id,
         status: challenge.status,
@@ -246,6 +254,11 @@ class ChallengeService {
         'challenge_accepted',
         challenge
       );
+
+      // Trigger badge checks for challenge acceptance
+      await badgeRulesEngine.triggerEvent('challenge_accepted', acceptorId, {
+        challengeId: challenge.id
+      });
 
       return true;
     } catch (error) {
@@ -561,6 +574,10 @@ class ChallengeService {
 
       await client.query('COMMIT');
 
+      // Recalculate ranks for both players
+      await rankCalculationService.recalculateUserRank(winnerId);
+      await rankCalculationService.recalculateUserRank(loserId);
+
       // Send notifications
       await this.sendChallengeNotification(winnerId, 'challenge_won', {
         challengeId,
@@ -607,7 +624,19 @@ class ChallengeService {
           u1.name as creator_name,
           u2.name as acceptor_name,
           cp1.current_rank as creator_rank,
-          cp2.current_rank as acceptor_rank
+          cp2.current_rank as acceptor_rank,
+          EXISTS(
+            SELECT 1 FROM champion_markers cm1 
+            WHERE cm1.user_id = c.creator_id 
+            AND cm1.is_active = true 
+            AND (cm1.expires_at IS NULL OR cm1.expires_at > CURRENT_TIMESTAMP)
+          ) as creator_has_champion,
+          EXISTS(
+            SELECT 1 FROM champion_markers cm2 
+            WHERE cm2.user_id = c.acceptor_id 
+            AND cm2.is_active = true 
+            AND (cm2.expires_at IS NULL OR cm2.expires_at > CURRENT_TIMESTAMP)
+          ) as acceptor_has_champion
         FROM challenges c
         JOIN users u1 ON u1.id = c.creator_id
         JOIN users u2 ON u2.id = c.acceptor_id
@@ -754,9 +783,23 @@ class ChallengeService {
     challengeId: string,
     client: any
   ): Promise<void> {
-    // This would call the badge service to evaluate badges
-    // Placeholder for now
-    logger.info(`Checking badge triggers for ${userId} on ${event}`);
+    try {
+      // Map challenge events to badge engine events
+      const badgeEvent = event === 'challenge_win' ? 'challenge_completed' : 
+                        event === 'challenge_loss' ? 'challenge_completed' : event;
+      
+      // Trigger badge checks
+      const awardedBadges = await badgeRulesEngine.triggerEvent(badgeEvent, userId, {
+        challengeId,
+        event
+      });
+      
+      if (awardedBadges.length > 0) {
+        logger.info(`Awarded ${awardedBadges.length} badges to user ${userId}:`, awardedBadges);
+      }
+    } catch (error) {
+      logger.error(`Error checking badge triggers for ${userId}:`, error);
+    }
   }
 
   private async sendChallengeNotification(
