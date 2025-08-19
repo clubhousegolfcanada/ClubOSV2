@@ -77,14 +77,14 @@ export class TokenManager {
     }
 
     // Don't check immediately on start - the token was just validated by login
-    // Start checking after 30 seconds
+    // Check every 5 minutes (300000ms) since we have 30 day expiration
     this.checkInterval = setInterval(() => {
       const token = localStorage.getItem('clubos_token');
       
       if (token && this.isTokenExpired(token)) {
         this.handleTokenExpiration();
       }
-    }, 30000);
+    }, 300000); // Check every 5 minutes instead of 30 seconds
   }
 
   /**

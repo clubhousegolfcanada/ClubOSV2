@@ -158,7 +158,10 @@ export const useAuthState = create<AuthState>()(
         
         localStorage.removeItem('clubos_token');
         localStorage.removeItem('clubos_user');
-        set({ user: null, isAuthenticated: false });
+        localStorage.removeItem('clubos_view_mode');
+        
+        // Set loading to false to prevent stuck loading state
+        set({ user: null, isAuthenticated: false, isLoading: false });
         
         // Navigate to login page
         if (typeof window !== 'undefined') {

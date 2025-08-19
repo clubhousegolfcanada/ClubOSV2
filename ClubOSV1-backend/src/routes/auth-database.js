@@ -49,7 +49,7 @@ router.post('/login', async (req, res) => {
         role: user.role 
       },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '30d' }
     );
 
     // Return success response

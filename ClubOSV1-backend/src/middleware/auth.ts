@@ -32,7 +32,7 @@ interface JWTPayload extends IJWTPayload {
 // Generate JWT token
 export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
   return jwt.sign(payload, config.JWT_SECRET, {
-    expiresIn: '24h',
+    expiresIn: '30d', // Extended from 24h to 30 days for better UX
     issuer: 'clubosv1',
     audience: 'clubosv1-users'
   });
