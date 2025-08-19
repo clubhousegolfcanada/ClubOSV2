@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.2] - 2025-08-19
+
+### Changed
+- **Restored Original Leaderboard Functionality**
+  - Restored Pro League, House League, and All Time tabs
+  - Re-added TrackMan embed support for league leaderboards
+  - Removed standalone challenges page from navigation
+  
+- **Integrated Challenges into Friends System**
+  - Added Challenges tab to Friends page for better integration
+  - Shows active challenges with friends and CC balance
+  - Create Challenge button links to challenge creation
+  - Challenge friends directly from friend details view
+
 ## [1.14.1] - 2025-08-19
 
 ### Fixed

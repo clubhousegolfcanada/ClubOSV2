@@ -71,7 +71,9 @@ export default function Friends() {
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-  const [activeTab, setActiveTab] = useState<'friends' | 'pending' | 'discover'>('friends');
+  const [activeTab, setActiveTab] = useState<'friends' | 'pending' | 'discover' | 'challenges'>('friends');
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [ccBalance, setCCBalance] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +105,8 @@ export default function Friends() {
       loadFriends();
       loadPendingRequests();
       loadSuggestions();
+      loadChallenges();
+      loadCCBalance();
     }
   }, [authChecked, user]);
 
@@ -145,12 +149,42 @@ export default function Friends() {
     }
   };
 
+  const loadChallenges = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setChallenges(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading challenges:', error);
+    }
+  };
+
+  const loadCCBalance = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setCCBalance(response.data.data.balance);
+      }
+    } catch (error) {
+      console.error('Error loading CC balance:', error);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
       loadFriends(),
       loadPendingRequests(),
-      loadSuggestions()
+      loadSuggestions(),
+      loadChallenges(),
+      loadCCBalance()
     ]);
     setRefreshing(false);
     toast.success('Friends list refreshed');
@@ -365,7 +399,7 @@ export default function Friends() {
         {/* Tabs */}
         <div className="bg-white border-b px-4">
           <div className="flex gap-6">
-            {['friends', 'pending', 'discover'].map((tab) => (
+            {['friends', 'pending', 'discover', 'challenges'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -379,6 +413,11 @@ export default function Friends() {
                 {tab === 'pending' && incomingRequests.length > 0 && (
                   <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                     {incomingRequests.length}
+                  </span>
+                )}
+                {tab === 'challenges' && ccBalance > 0 && (
+                  <span className="ml-2 text-xs text-green-600 font-medium">
+                    {ccBalance} CC
                   </span>
                 )}
               </button>
@@ -700,6 +739,80 @@ export default function Friends() {
                 )}
               </div>
             )}
+
+            {activeTab === 'challenges' && (
+              <div className="divide-y">
+                <div className="p-4 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-medium">ClubCoin Challenges</h3>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" />
+                      <span className="font-bold text-xl">{ccBalance} CC</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-white/80">Challenge friends to head-to-head matches</p>
+                  <button
+                    onClick={() => router.push('/customer/challenges/create')}
+                    className="mt-3 w-full bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trophy className="w-5 h-5" />
+                    Create Challenge
+                  </button>
+                </div>
+
+                {challenges.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No active challenges</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Create a challenge to compete with friends for ClubCoins
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    {challenges.map((challenge) => (
+                      <div
+                        key={challenge.id}
+                        onClick={() => router.push(`/customer/challenges/${challenge.id}`)}
+                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                                challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                challenge.status === 'accepted' ? 'bg-blue-100 text-blue-700' :
+                                challenge.status === 'active' ? 'bg-green-100 text-green-700' :
+                                challenge.status === 'resolved' ? 'bg-gray-100 text-gray-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {challenge.status.toUpperCase()}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                vs {challenge.opponent_name}
+                              </span>
+                            </div>
+                            <div className="text-lg font-medium text-gray-900">
+                              {challenge.wager_amount} CC Wager
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {challenge.settings?.course_name || 'Standard Match'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">
+                              {challenge.expires_at && 
+                                `Expires ${new Date(challenge.expires_at).toLocaleDateString()}`
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Friend Details (Mobile: Full screen, Desktop: Main panel) */}
@@ -790,18 +903,21 @@ export default function Friends() {
               <div className="p-4 border-t mt-auto">
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    disabled
-                    className="bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+                    onClick={() => {
+                      // Navigate to create challenge with friend pre-selected
+                      router.push(`/customer/challenges/create?friend=${selectedFriend.user_id}`);
+                    }}
+                    className="bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
                   >
-                    <DollarSign className="w-5 h-5" />
-                    Wager (Coming Soon)
+                    <Trophy className="w-5 h-5" />
+                    Challenge
                   </button>
                   
                   <button
                     disabled
                     className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
                   >
-                    <Trophy className="w-5 h-5" />
+                    <DollarSign className="w-5 h-5" />
                     View Stats (Coming Soon)
                   </button>
                 </div>

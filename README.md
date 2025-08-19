@@ -141,6 +141,7 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.2**: Restored TrackMan leaderboards, moved challenges to Friends page
 - **v1.14.1**: Fixed backend compilation and deployed challenge tables to production
 - **v1.14.0**: Clubhouse Challenges System
   - Complete challenge system with ClubCoin economy
