@@ -213,7 +213,7 @@ const RequestForm: React.FC = () => {
       try {
         const token = isMounted ? localStorage.getItem('clubos_token') : null;
         const response = await axios.post(
-          `${API_URL}/tickets`,
+          `${API_URL}/api/tickets`,
           {
             title: data.requestDescription.substring(0, 100), // First 100 chars as title
             description: data.requestDescription,

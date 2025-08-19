@@ -105,7 +105,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(`${API_URL}/openphone/import-history`, 
+      const response = await axios.post(`${API_URL}/api/openphone/import-history`, 
         { daysBack: 30 }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
