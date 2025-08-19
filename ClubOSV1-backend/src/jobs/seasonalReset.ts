@@ -1,7 +1,7 @@
 import cron from 'node-cron';
-import pool from '../config/database';
-import logger from '../utils/logger';
-import rankCalculationService from '../services/rankCalculationService';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
+import { rankCalculationService } from '../services/rankCalculationService';
 
 class SeasonalResetJob {
   /**

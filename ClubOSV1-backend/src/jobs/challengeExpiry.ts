@@ -1,8 +1,8 @@
 import cron from 'node-cron';
-import pool from '../config/database';
-import logger from '../utils/logger';
-import clubCoinService from '../services/clubCoinService';
-import notificationService from '../services/notificationService';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
+import { clubCoinService } from '../services/clubCoinService';
+import { notificationService } from '../services/notificationService';
 
 class ChallengeExpiryJob {
   private isRunning = false;

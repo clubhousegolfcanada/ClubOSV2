@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import trackmanIntegrationService from '../services/trackmanIntegrationService';
-import logger from '../utils/logger';
+import { trackmanIntegrationService } from '../services/trackmanIntegrationService';
+import { logger } from '../utils/logger';
 import crypto from 'crypto';
 
 const router = Router();

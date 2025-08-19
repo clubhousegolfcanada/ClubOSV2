@@ -1,6 +1,6 @@
 import axios from 'axios';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
 
 interface TrackManSettings {
   courseId: string;
@@ -425,4 +425,4 @@ class TrackManIntegrationService {
 }
 
 // Export singleton instance
-export default new TrackManIntegrationService();
+export const trackmanIntegrationService = new TrackManIntegrationService();

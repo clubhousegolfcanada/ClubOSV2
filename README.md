@@ -1,4 +1,4 @@
-# ClubOS v1.13.0 - AI-Powered Golf Simulator Management
+# ClubOS v1.14.0 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -45,7 +45,18 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
   - Push notifications for new messages (works in background)
 - **Call Transcripts**: Extract knowledge from customer calls, searchable archive
 
-#### 3. User System
+#### 3. Clubhouse Challenges & Gamification (NEW v1.14.0)
+- **ClubCoin Economy**: Non-monetary points for wagering on golf matches
+- **Head-to-Head Challenges**: 30/70 stake split (challenger/acceptor)
+- **8-Tier Rank System**: House → Amateur → Bronze → Silver → Gold → Pro → Champion → Legend
+- **Seasonal Competitions**: 3-month seasons with resets and archives
+- **18 Achievement Badges**: Automatic awarding based on performance
+- **TrackMan Integration**: Settings catalog and round verification
+- **Leaderboards**: Seasonal, all-time, and activity-based rankings
+- **Champion Markers**: Tournament winners get 20% defeat bonus
+- **Rate Limiting**: Anti-spam measures based on credibility scores
+
+#### 4. User System
 | Role | Access | Key Features |
 |------|--------|--------------|
 | Admin | Full system | Knowledge management, all operations |

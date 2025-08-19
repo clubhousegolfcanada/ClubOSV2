@@ -1,6 +1,6 @@
-import pool from '../config/database';
-import logger from '../utils/logger';
-import notificationService from './notificationService';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
+import { notificationService } from './notificationService';
 
 interface BadgeRule {
   key: string;
@@ -383,4 +383,4 @@ class BadgeRulesEngine {
 }
 
 // Export singleton instance
-export default new BadgeRulesEngine();
+export const badgeRulesEngine = new BadgeRulesEngine();

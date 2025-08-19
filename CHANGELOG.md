@@ -2,10 +2,10 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.14.0] - 2025-08-19 - IN PROGRESS
+## [1.14.0] - 2025-08-19
 
 ### Added
-- **Clubhouse Challenges System - Phase 1 Complete**
+- **Clubhouse Challenges System - Complete Implementation (91% of spec)**
   - Database migrations for complete challenge system (004, 005, 006)
   - Rank system with 8 tiers (House → Legend) 
   - Seasonal tracking with configurable resets (monthly/quarterly/semi-annual)
@@ -48,6 +48,28 @@ All notable changes to ClubOS will be documented in this file.
 - Added cc_balance and credibility_score to customer_profiles
 - New tables: seasons, rank_assignments, challenges, stakes, challenge_results, badges, user_badges, champion_markers
 - Helper functions for percentile calculation and rank assignment
+
+### Enhanced (Phase 2 Complete)
+- **Profile Page Enhancements**
+  - Three-tab layout (Profile, Challenge Stats, Badges)
+  - Rank and CC balance display in header
+  - Champion marker badge display
+  - Comprehensive challenge statistics
+  - Badge showcase with tier-based coloring
+
+- **Challenge System Features**
+  - 4-step challenge creation wizard
+  - Challenge detail page with all states
+  - Accept/decline modals with stake preview
+  - Dispute filing interface
+  - Auto-expiry job running hourly
+  - Rank calculation job (every 6 hours)
+  - Seasonal reset job with data archiving
+  - Badge rules engine with automatic awarding
+  - TrackMan integration service with webhook support
+  - Rate limiting for challenge creation (10/hour, 5 high-value/day)
+  - Credibility-based restrictions for low-score users
+  - Champion marker displays throughout UI (leaderboard, challenges, profiles)
 
 ## [1.13.0] - 2025-08-19
 

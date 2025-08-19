@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
 
 const router = Router();
 

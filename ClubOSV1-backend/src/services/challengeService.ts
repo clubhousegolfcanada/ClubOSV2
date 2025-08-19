@@ -1,10 +1,10 @@
 import { Pool } from 'pg';
-import pool from '../config/database';
-import logger from '../utils/logger';
-import clubCoinService from './clubCoinService';
-import notificationService from './notificationService';
-import badgeRulesEngine from './badgeRulesEngine';
-import rankCalculationService from './rankCalculationService';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
+import { clubCoinService } from './clubCoinService';
+import { notificationService } from './notificationService';
+import { badgeRulesEngine } from './badgeRulesEngine';
+import { rankCalculationService } from './rankCalculationService';
 
 export interface CreateChallengeDto {
   creatorId: string;
@@ -847,4 +847,4 @@ class ChallengeService {
 }
 
 // Export singleton instance
-export default new ChallengeService();
+export const challengeService = new ChallengeService();

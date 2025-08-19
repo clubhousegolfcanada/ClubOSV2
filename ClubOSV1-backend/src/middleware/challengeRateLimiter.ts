@@ -1,31 +1,9 @@
 import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
-import Redis from 'ioredis';
 import { Request, Response } from 'express';
-import logger from '../utils/logger';
-
-// Create Redis client for rate limiting
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  db: 2, // Use a different DB for rate limiting
-  retryStrategy: (times: number) => {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  }
-});
-
-redisClient.on('error', (error) => {
-  logger.error('Redis rate limiter error:', error);
-});
+import { logger } from '../utils/logger';
 
 // Challenge creation rate limiter
 export const challengeCreationLimiter = rateLimit({
-  store: new RedisStore({
-    client: redisClient,
-    prefix: 'rl:challenge:create:'
-  }),
   windowMs: 60 * 60 * 1000, // 1 hour window
   max: 10, // Max 10 challenges per hour
   message: 'Too many challenges created. Please wait before creating another.',
@@ -47,10 +25,6 @@ export const challengeCreationLimiter = rateLimit({
 
 // Challenge acceptance rate limiter
 export const challengeAcceptanceLimiter = rateLimit({
-  store: new RedisStore({
-    client: redisClient,
-    prefix: 'rl:challenge:accept:'
-  }),
   windowMs: 15 * 60 * 1000, // 15 minute window
   max: 20, // Max 20 acceptances per 15 minutes
   message: 'Too many challenge acceptances. Please slow down.',
@@ -63,10 +37,6 @@ export const challengeAcceptanceLimiter = rateLimit({
 
 // Challenge API general rate limiter
 export const challengeApiLimiter = rateLimit({
-  store: new RedisStore({
-    client: redisClient,
-    prefix: 'rl:challenge:api:'
-  }),
   windowMs: 1 * 60 * 1000, // 1 minute window
   max: 100, // Max 100 requests per minute
   message: 'Too many requests to challenge API.',
@@ -79,10 +49,6 @@ export const challengeApiLimiter = rateLimit({
 
 // Large wager limiter (additional check for high-value challenges)
 export const largeWagerLimiter = rateLimit({
-  store: new RedisStore({
-    client: redisClient,
-    prefix: 'rl:challenge:highvalue:'
-  }),
   windowMs: 24 * 60 * 60 * 1000, // 24 hour window
   max: 5, // Max 5 high-value challenges per day
   message: 'Too many high-value challenges. Please wait 24 hours.',
@@ -138,8 +104,8 @@ export const credibilityBasedLimiter = async (req: Request, res: Response, next:
     if (!userId) return next();
     
     // Get user's credibility score
-    const pool = await import('../config/database');
-    const result = await pool.default.query(
+    const { pool } = await import('../utils/database');
+    const result = await pool.query(
       'SELECT credibility_score FROM customer_profiles WHERE user_id = $1',
       [userId]
     );
@@ -149,7 +115,7 @@ export const credibilityBasedLimiter = async (req: Request, res: Response, next:
     // Apply stricter limits for low credibility users
     if (credibilityScore < 50) {
       // Check recent challenge creation
-      const recentChallenges = await pool.default.query(
+      const recentChallenges = await pool.query(
         `SELECT COUNT(*) as count 
          FROM challenges 
          WHERE creator_id = $1 

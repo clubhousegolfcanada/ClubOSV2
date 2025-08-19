@@ -1,5 +1,5 @@
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
 
 interface RankCutLines {
   legend: number;     // Top 1%
@@ -390,4 +390,4 @@ class RankCalculationService {
 }
 
 // Export singleton instance
-export default new RankCalculationService();
+export const rankCalculationService = new RankCalculationService();

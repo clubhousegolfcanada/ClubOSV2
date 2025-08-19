@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
-import challengeService from '../services/challengeService';
-import clubCoinService from '../services/clubCoinService';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { challengeService } from '../services/challengeService';
+import { clubCoinService } from '../services/clubCoinService';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
 import { 
   challengeRateLimiters,
   challengeCreationRateLimiters,

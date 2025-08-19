@@ -1,6 +1,6 @@
 import cron from 'node-cron';
-import logger from '../utils/logger';
-import rankCalculationService from '../services/rankCalculationService';
+import { logger } from '../utils/logger';
+import { rankCalculationService } from '../services/rankCalculationService';
 
 class RankCalculationJob {
   /**

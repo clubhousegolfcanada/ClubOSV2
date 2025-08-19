@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
 
 export interface CCTransaction {
   userId: string;
@@ -526,4 +526,4 @@ class ClubCoinService {
 }
 
 // Export singleton instance
-export default new ClubCoinService();
+export const clubCoinService = new ClubCoinService();

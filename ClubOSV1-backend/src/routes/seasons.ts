@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../utils/database';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -63,7 +63,7 @@ router.get('/current', async (req, res) => {
         totalChallenges: parseInt(season.total_challenges || 0),
         totalCCCirculated: parseFloat(season.total_cc_circulated || 0),
         rankCutLines: season.rank_cut_lines,
-        daysRemaining: Math.ceil((new Date(season.end_date) - new Date()) / (1000 * 60 * 60 * 24))
+        daysRemaining: Math.ceil((new Date(season.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
       }
     });
   } catch (error) {
