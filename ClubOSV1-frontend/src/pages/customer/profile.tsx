@@ -92,7 +92,7 @@ export default function CustomerProfile() {
         email: user?.email || '',
         phone: user?.phone || '',
         location: 'Halifax, NS', // Default location
-        memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'August 2025',
+        memberSince: 'August 2025', // Default member since date
         handicap: undefined, // Not tracked yet
         ccBalance: ccBalance,
         totalChallenges: challenges.total,
