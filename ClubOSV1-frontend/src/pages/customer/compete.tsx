@@ -104,7 +104,7 @@ export default function Compete() {
   const loadCCBalance = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+      const response = await axios.get(`${API_URL}/challenges/cc-balance`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -123,7 +123,7 @@ export default function Compete() {
       let allChallenges: Challenge[] = [];
       
       if (challengeFilter === 'all' || challengeFilter === 'active') {
-        const activeRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+        const activeRes = await axios.get(`${API_URL}/challenges/my-challenges`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (activeRes.data.success) {
@@ -134,7 +134,7 @@ export default function Compete() {
       }
       
       if (challengeFilter === 'all' || challengeFilter === 'pending') {
-        const pendingRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+        const pendingRes = await axios.get(`${API_URL}/challenges/my-challenges`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (pendingRes.data.success) {
@@ -145,7 +145,7 @@ export default function Compete() {
       }
       
       if (challengeFilter === 'history') {
-        const historyRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+        const historyRes = await axios.get(`${API_URL}/challenges/my-challenges`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (historyRes.data.success) {
@@ -222,7 +222,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/api/challenges/${challengeId}/accept`,
+        `${API_URL}/challenges/${challengeId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -238,7 +238,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/api/challenges/${challengeId}/decline`,
+        `${API_URL}/challenges/${challengeId}/decline`,
         { reason: 'Not interested' },
         { headers: { Authorization: `Bearer ${token}` }}
       );

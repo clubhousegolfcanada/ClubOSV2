@@ -151,7 +151,7 @@ export const CustomerDashboard: React.FC = () => {
 
         // Fetch active challenges count and CC balance
         try {
-          const challengesResponse = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+          const challengesResponse = await axios.get(`${API_URL}/challenges/my-challenges`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (challengesResponse.data.success) {
@@ -166,7 +166,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch CC balance
         try {
-          const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+          const ccResponse = await axios.get(`${API_URL}/challenges/cc-balance`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (ccResponse.data.success) {
