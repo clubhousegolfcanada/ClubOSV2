@@ -120,8 +120,19 @@ export const useAuthState = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
       login: (user, token) => {
+        // Clear any existing auth data first to prevent account mixing
+        localStorage.removeItem('clubos_token');
+        localStorage.removeItem('clubos_user');
+        localStorage.removeItem('clubos_view_mode');
+        
+        // Set new auth data
         localStorage.setItem('clubos_token', token);
         localStorage.setItem('clubos_user', JSON.stringify(user));
+        
+        // Set view mode based on user role
+        const viewMode = user.role === 'customer' ? 'customer' : 'operator';
+        localStorage.setItem('clubos_view_mode', viewMode);
+        
         set({ 
           user: { ...user, token }, 
           isAuthenticated: true,

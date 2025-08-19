@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import CustomerLayout from '@/components/customer/CustomerLayout';
-import { User, Mail, Phone, Save, CheckCircle } from 'lucide-react';
+import { User, Mail, Phone, Save, CheckCircle, Wallet, CreditCard, TrendingUp, DollarSign, Plus, History } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -76,7 +76,61 @@ export default function CustomerProfile() {
 
   return (
     <CustomerLayout>
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* Wallet Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-[#0B3D3A]" />
+              Wallet & Credits
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            {/* Balance Card */}
+            <div className="bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-xl p-6 text-white mb-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-white/80 text-sm mb-1">Available Balance</p>
+                  <p className="text-3xl font-bold">$0.00</p>
+                  <p className="text-white/60 text-xs mt-2">0 Credits</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur rounded-lg p-3">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <button className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center gap-2 hover:bg-gray-100 transition-colors">
+                <Plus className="w-6 h-6 text-[#0B3D3A]" />
+                <span className="text-sm font-medium">Add Funds</span>
+              </button>
+              <button className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center gap-2 hover:bg-gray-100 transition-colors">
+                <History className="w-6 h-6 text-[#0B3D3A]" />
+                <span className="text-sm font-medium">History</span>
+              </button>
+            </div>
+
+            {/* Payment Methods */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Payment Methods
+              </h3>
+              <div className="text-center py-6 bg-gray-50 rounded-lg">
+                <CreditCard className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No payment methods added</p>
+                <button className="mt-3 text-[#0B3D3A] text-sm font-medium hover:underline">
+                  Add Payment Method
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-100">

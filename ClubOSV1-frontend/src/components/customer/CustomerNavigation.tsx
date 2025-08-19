@@ -34,6 +34,9 @@ const CustomerNavigation: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('clubos_token');
     localStorage.removeItem('clubos_user');
+    localStorage.removeItem('clubos_view_mode');
+    // Clear any cached auth state
+    setViewMode('operator');
     router.push('/login');
   };
 
@@ -42,7 +45,7 @@ const CustomerNavigation: React.FC = () => {
     { icon: Home, label: 'Dashboard', path: '/customer', key: 'dashboard' },
     { icon: Users, label: 'Friends', path: '/customer/friends', key: 'friends' },
     { icon: Calendar, label: 'Bookings', path: '/customer/bookings', key: 'bookings' },
-    { icon: TrendingUp, label: 'Wallet', path: '/customer/wallet', key: 'wallet' },
+    { icon: Trophy, label: 'Events', path: '/customer/events', key: 'events' },
     { icon: User, label: 'Profile', path: '/customer/profile', key: 'profile' }
   ];
 
