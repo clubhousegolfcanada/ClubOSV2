@@ -4,7 +4,12 @@ import { useForm } from 'react-hook-form';
 import axios from 'axios';
 import { Loader } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface FormData {
   question: string;
@@ -83,7 +88,7 @@ export default function ClubOSBoy() {
         kioskId: 'kiosk-1' // You can make this configurable if needed
       };
 
-      const response = await axios.post(`${API_URL}/customer/ask`, request);
+      const response = await axios.post(`${API_URL}/api/customer/ask`, request);
       
       if (response.data.success) {
         setResponseMessage("Thanks! Your question has been sent to our staff. Someone will help you shortly.");

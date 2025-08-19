@@ -11,7 +11,12 @@ import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface RecentConversation {
   id: string;
@@ -49,7 +54,7 @@ export const MessagesCardEnhanced: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
+        const response = await axios.get(`${API_URL}/api/messages/conversations?limit=3`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -99,7 +104,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/llm/suggest-response`,
+        `${API_URL}/api/llm/suggest-response`,
         {
           conversationId: conv.conversationId,
           context: conv.lastMessage
@@ -137,7 +142,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/messages/send`,
+        `${API_URL}/api/messages/send`,
         {
           to: conv.phoneNumber,
           content: expandedConv.replyText,

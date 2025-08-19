@@ -7,7 +7,12 @@ import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X } from 'lucide-react'
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface Conversation {
   id: string;
@@ -52,7 +57,7 @@ export default function MessagesCardV3() {
         return;
       }
 
-      const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
+      const response = await axios.get(`${API_URL}/api/messages/conversations?limit=3`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -153,7 +158,7 @@ export default function MessagesCardV3() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/messages/send`,
+        `${API_URL}/api/messages/send`,
         {
           phoneNumber: conv.phoneNumber,
           message: message.trim(),

@@ -12,7 +12,12 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface SystemMetrics {
   totalUsers: number;
@@ -83,7 +88,7 @@ export function OperationsDashboardEnhanced() {
         axios.get(`${API_URL}/api/messages/recent`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { success: false, data: [] } })),
-        axios.get(`${API_URL}/auth/users`, {
+        axios.get(`${API_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { success: false, data: [] } })),
         axios.get(`${API_URL}/api/tickets/active-count`, {

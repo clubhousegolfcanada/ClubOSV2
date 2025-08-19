@@ -4,7 +4,12 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useAuthState } from '../state/useStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface Task {
   id: string;
@@ -78,7 +83,7 @@ export const ChecklistSystem: React.FC = () => {
       
       console.log('Loading template for:', activeCategory, activeType);
       const response = await axios.get(
-        `${API_URL}/checklists/template/${activeCategory}/${activeType}`,
+        `${API_URL}/api/checklists/template/${activeCategory}/${activeType}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -143,7 +148,7 @@ export const ChecklistSystem: React.FC = () => {
       }
       
       const response = await axios.get(
-        `${API_URL}/checklists/submissions?${queryParams}`,
+        `${API_URL}/api/checklists/submissions?${queryParams}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -209,7 +214,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       await axios.put(
-        `${API_URL}/checklists/template/task`,
+        `${API_URL}/api/checklists/template/task`,
         {
           category: activeCategory,
           type: activeType,
@@ -242,7 +247,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       await axios.delete(
-        `${API_URL}/checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
+        `${API_URL}/api/checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -272,7 +277,7 @@ export const ChecklistSystem: React.FC = () => {
       });
       
       const response = await axios.post(
-        `${API_URL}/checklists/submit`,
+        `${API_URL}/api/checklists/submit`,
         {
           category: activeCategory,
           type: activeType,
@@ -340,7 +345,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       await axios.delete(
-        `${API_URL}/checklists/submissions/${submissionId}`,
+        `${API_URL}/api/checklists/submissions/${submissionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

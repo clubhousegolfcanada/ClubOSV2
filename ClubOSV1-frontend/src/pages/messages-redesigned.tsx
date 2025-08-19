@@ -13,7 +13,12 @@ import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useMessages } from '@/contexts/MessagesContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface Message {
   id: string;
@@ -132,7 +137,7 @@ export default function MessagesRedesigned() {
         return;
       }
 
-      const response = await axios.get(`${API_URL}/messages/conversations`, {
+      const response = await axios.get(`${API_URL}/api/messages/conversations`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -183,7 +188,7 @@ export default function MessagesRedesigned() {
         const token = localStorage.getItem('clubos_token');
         if (token) {
           const historyResponse = await axios.get(
-            `${API_URL}/messages/conversations/${conversation.phone_number}/full-history`,
+            `${API_URL}/api/messages/conversations/${conversation.phone_number}/full-history`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           
@@ -252,7 +257,7 @@ export default function MessagesRedesigned() {
       }
       
       const response = await axios.post(
-        `${API_URL}/messages/send`,
+        `${API_URL}/api/messages/send`,
         {
           to: selectedConversation.phone_number,
           text: messageText
@@ -301,7 +306,7 @@ export default function MessagesRedesigned() {
       }
       
       const response = await axios.post(
-        `${API_URL}/messages/conversations/${selectedConversation.phone_number}/suggest-response`,
+        `${API_URL}/api/messages/conversations/${selectedConversation.phone_number}/suggest-response`,
         {},
         { 
           headers: { 
@@ -337,7 +342,7 @@ export default function MessagesRedesigned() {
       const finalText = customReply || editedText || aiSuggestion?.suggestedText || '';
       
       const response = await axios.post(
-        `${API_URL}/messages/suggestions/${suggestionId}/approve-and-send`,
+        `${API_URL}/api/messages/suggestions/${suggestionId}/approve-and-send`,
         { editedText: finalText },
         { 
           headers: { 

@@ -4,7 +4,12 @@ import axios from 'axios';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 export function useMessageNotifications() {
   const { user } = useAuthState();
@@ -24,7 +29,7 @@ export function useMessageNotifications() {
         const token = localStorage.getItem('clubos_token');
         if (!token) return;
 
-        const response = await axios.get(`${API_URL}/messages/unread-count`, {
+        const response = await axios.get(`${API_URL}/api/messages/unread-count`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

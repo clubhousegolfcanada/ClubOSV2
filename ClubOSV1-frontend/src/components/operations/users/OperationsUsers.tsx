@@ -4,7 +4,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 type User = {
   id: string;
@@ -110,8 +115,8 @@ export const OperationsUsers: React.FC = () => {
     }
     
     try {
-      console.log('Fetching users from:', `${API_URL}/auth/users`);
-      const response = await axios.get(`${API_URL}/auth/users`, {
+      console.log('Fetching users from:', `${API_URL}/api/auth/users`);
+      const response = await axios.get(`${API_URL}/api/auth/users`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -162,7 +167,7 @@ export const OperationsUsers: React.FC = () => {
   const handleSaveUser = async () => {
     try {
       await axios.put(
-        `${API_URL}/auth/users/${editingUser}`,
+        `${API_URL}/api/auth/users/${editingUser}`,
         editedUser,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -181,7 +186,7 @@ export const OperationsUsers: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      await axios.delete(`${API_URL}/auth/users/${userId}`, {
+      await axios.delete(`${API_URL}/api/auth/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('User deleted successfully');
@@ -207,7 +212,7 @@ export const OperationsUsers: React.FC = () => {
     setLoading(true);
     try {
       await axios.post(
-        `${API_URL}/auth/users`,
+        `${API_URL}/api/auth/users`,
         newUser,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -242,7 +247,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       await axios.post(
-        `${API_URL}/auth/users/${resetPasswordUserId}/reset-password`,
+        `${API_URL}/api/auth/users/${resetPasswordUserId}/reset-password`,
         { newPassword },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -261,7 +266,7 @@ export const OperationsUsers: React.FC = () => {
   const handleApproveUser = async (userId: string) => {
     try {
       await axios.put(
-        `${API_URL}/auth/users/${userId}/approve`,
+        `${API_URL}/api/auth/users/${userId}/approve`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -280,7 +285,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       await axios.put(
-        `${API_URL}/auth/users/${userId}/reject`,
+        `${API_URL}/api/auth/users/${userId}/reject`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -296,7 +301,7 @@ export const OperationsUsers: React.FC = () => {
 
   const handleBackup = async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/backup`, {
+      const response = await axios.get(`${API_URL}/api/auth/backup`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -327,7 +332,7 @@ export const OperationsUsers: React.FC = () => {
         try {
           const data = JSON.parse(event.target?.result as string);
           await axios.post(
-            `${API_URL}/auth/restore`,
+            `${API_URL}/api/auth/restore`,
             data,
             {
               headers: { Authorization: `Bearer ${token}` }

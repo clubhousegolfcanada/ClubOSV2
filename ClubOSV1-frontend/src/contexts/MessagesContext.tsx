@@ -4,7 +4,12 @@ import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface MessagesContextType {
   unreadCount: number;
@@ -45,7 +50,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      const response = await axios.get(`${API_URL}/messages/unread-count`, {
+      const response = await axios.get(`${API_URL}/api/messages/unread-count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -87,7 +92,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!token) return;
 
       await axios.put(
-        `${API_URL}/messages/conversations/${phoneNumber}/read`,
+        `${API_URL}/api/messages/conversations/${phoneNumber}/read`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

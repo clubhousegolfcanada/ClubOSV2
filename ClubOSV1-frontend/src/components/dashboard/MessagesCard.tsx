@@ -5,7 +5,12 @@ import { MessageSquare, Clock, ArrowRight } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface RecentConversation {
   phoneNumber: string;
@@ -31,7 +36,7 @@ export const MessagesCard: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=2`, {
+        const response = await axios.get(`${API_URL}/api/messages/conversations?limit=2`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

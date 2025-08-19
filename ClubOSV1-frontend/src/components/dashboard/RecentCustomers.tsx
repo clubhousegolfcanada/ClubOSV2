@@ -3,7 +3,12 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import { MessageSquare, Clock } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface RecentCustomer {
   phoneNumber: string;
@@ -34,7 +39,7 @@ export const RecentCustomers: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=2`, {
+        const response = await axios.get(`${API_URL}/api/messages/conversations?limit=2`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

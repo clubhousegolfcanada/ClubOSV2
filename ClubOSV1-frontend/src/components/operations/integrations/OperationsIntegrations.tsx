@@ -4,7 +4,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface SystemFeature {
   key: string;
