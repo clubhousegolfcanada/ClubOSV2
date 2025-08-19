@@ -126,22 +126,12 @@ export default function CustomerLeaderboard() {
           <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-4 py-3">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Trophy className="w-5 h-5" />
+                <h1 className="text-xl font-bold">
                   Leaderboard
                 </h1>
-                <a
-                  href="https://apps.apple.com/app/trackman-golf/id123456789"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                >
-                  <Download className="w-3 h-3" />
-                  Get App
-                </a>
               </div>
               <p className="text-xs text-white/80 mt-1">
-                Join our leagues in the TrackMan app to compete for prizes
+                Install the TrackMan app and go to any Clubhouse to enter
               </p>
             </div>
           </div>
