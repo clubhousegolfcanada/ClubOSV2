@@ -164,6 +164,7 @@ export default function CustomerEvents() {
                       </div>
                     </div>
                   </div>
+                </div>
               </div>
             ) : activeLeaderboard === 'new' ? (
               <iframe
