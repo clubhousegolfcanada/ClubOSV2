@@ -16,17 +16,22 @@ const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzh
 const pool = new Pool({
   connectionString: dbUrl,
   ssl: dbUrl.includes('railway') ? { rejectUnauthorized: false } : false,
-  max: 20, // Increased from 10 for better concurrency
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 50, // Increased from 20 to handle more concurrent connections
+  idleTimeoutMillis: 10000, // Reduced from 30000 to release idle connections faster
+  connectionTimeoutMillis: 5000, // Increased from 2000
   // Additional performance settings
   statement_timeout: 30000, // 30 second query timeout
   query_timeout: 30000,
+  allowExitOnIdle: true, // Allow process to exit if pool is idle
 });
 
 // Performance metrics collection
 const queryMetrics: QueryMetrics[] = [];
 const MAX_METRICS_HISTORY = 1000;
+
+// Connection tracking for debugging
+let activeQueries = 0;
+let totalQueries = 0;
 
 // Pool event monitoring
 pool.on('error', (err) => {
@@ -39,18 +44,47 @@ pool.on('connect', (client) => {
 
 pool.on('acquire', () => {
   const activeCount = pool.totalCount - pool.idleCount;
-  if (activeCount > 15) {
-    logger.warn(`High database connection usage: ${activeCount}/${pool.totalCount} connections active`);
+  const waitingCount = pool.waitingCount;
+  
+  // Log warning at lower threshold
+  if (activeCount > pool.totalCount * 0.7) {
+    logger.warn(`High database connection usage: ${activeCount}/${pool.totalCount} connections active, ${waitingCount} waiting`);
+  }
+  
+  // Log critical if at max
+  if (activeCount >= pool.totalCount - 1) {
+    logger.error(`CRITICAL: Database connection pool nearly exhausted: ${activeCount}/${pool.totalCount} active, ${waitingCount} waiting`);
   }
 });
 
-// Enhanced query function with performance logging
+pool.on('remove', () => {
+  logger.debug('Database client removed from pool');
+});
+
+// Enhanced query function with performance logging and connection management
 export async function query(text: string, params?: any[]): Promise<any> {
   const start = Date.now();
   const queryId = Math.random().toString(36).substring(7);
   
+  activeQueries++;
+  totalQueries++;
+  
   try {
-    logger.debug(`[Query ${queryId}] Starting`, { text: text.substring(0, 100) });
+    // Log pool status periodically
+    if (totalQueries % 100 === 0) {
+      logger.info('Database pool status', {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount,
+        activeQueries,
+        totalQueries
+      });
+    }
+    
+    logger.debug(`[Query ${queryId}] Starting`, { 
+      text: text.substring(0, 100),
+      activeQueries 
+    });
     
     const result = await pool.query(text, params);
     const duration = Date.now() - start;
@@ -89,10 +123,12 @@ export async function query(text: string, params?: any[]): Promise<any> {
       query: text.substring(0, 200)
     });
     throw error;
+  } finally {
+    activeQueries--;
   }
 }
 
-// Transaction helper with automatic rollback
+// Transaction helper with automatic rollback and proper client release
 export async function transaction<T>(
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
@@ -114,65 +150,61 @@ export async function transaction<T>(
     logger.error(`[Transaction ${transactionId}] Rolled back`, { error });
     throw error;
   } finally {
+    // IMPORTANT: Always release the client back to the pool
     client.release();
+    logger.debug(`[Transaction ${transactionId}] Client released`);
   }
 }
 
-// Get performance statistics
-export function getQueryStats() {
-  if (queryMetrics.length === 0) {
-    return {
-      totalQueries: 0,
-      avgDuration: 0,
-      slowQueries: 0,
-      recentQueries: []
-    };
-  }
-  
-  const totalDuration = queryMetrics.reduce((sum, m) => sum + m.duration, 0);
-  const slowQueries = queryMetrics.filter(m => m.duration > 1000).length;
-  
+// Get pool statistics
+export function getPoolStats() {
   return {
-    totalQueries: queryMetrics.length,
-    avgDuration: Math.round(totalDuration / queryMetrics.length),
-    slowQueries,
-    slowQueryPercentage: ((slowQueries / queryMetrics.length) * 100).toFixed(2),
-    recentQueries: queryMetrics.slice(-10).map(m => ({
-      query: m.text.substring(0, 50) + '...',
-      duration: m.duration,
-      rows: m.rows,
-      timestamp: m.timestamp
-    }))
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+    active: pool.totalCount - pool.idleCount,
+    activeQueries,
+    totalQueries,
+    metrics: {
+      recentQueries: queryMetrics.slice(-10),
+      slowQueries: queryMetrics.filter(m => m.duration > 1000).slice(-10),
+      averageDuration: queryMetrics.reduce((acc, m) => acc + m.duration, 0) / queryMetrics.length || 0
+    }
   };
 }
 
-// Health check
-export async function checkHealth(): Promise<boolean> {
+// Graceful shutdown with proper pool drainage
+export async function closePool(): Promise<void> {
+  try {
+    logger.info('Closing database pool...');
+    await pool.end();
+    logger.info('Database pool closed successfully');
+  } catch (error) {
+    logger.error('Error closing database pool:', error);
+    throw error;
+  }
+}
+
+// Health check with connection test
+export async function healthCheck(): Promise<boolean> {
   try {
     const result = await query('SELECT 1 as health');
-    return result.rows[0].health === 1;
+    return result.rows[0]?.health === 1;
   } catch (error) {
     logger.error('Database health check failed:', error);
     return false;
   }
 }
 
-// Graceful shutdown
-export async function close(): Promise<void> {
-  logger.info('Closing database pool...');
-  await pool.end();
-  logger.info('Database pool closed');
-}
-
-// Export pool for advanced use cases
+// Export the pool for direct access if needed (use with caution)
 export { pool };
 
 // Default export for backward compatibility
 export default {
   query,
   transaction,
-  getQueryStats,
-  checkHealth,
-  close,
+  getPoolStats,
+  closePool,
+  healthCheck,
   pool
 };
