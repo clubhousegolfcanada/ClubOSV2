@@ -305,7 +305,7 @@ router.post('/register',
       .notEmpty()
       .withMessage('Name is required'),
     body('role')
-      .isIn(['admin', 'operator', 'support', 'kiosk'])
+      .isIn(['admin', 'operator', 'support', 'kiosk', 'customer'])
       .withMessage('Invalid role'),
     body('phone')
       .optional({ nullable: true, checkFalsy: true })
@@ -604,7 +604,7 @@ router.put('/users/:userId',
       .withMessage('Valid email is required'),
     body('role')
       .optional()
-      .isIn(['admin', 'operator', 'support', 'kiosk'])
+      .isIn(['admin', 'operator', 'support', 'kiosk', 'customer'])
       .withMessage('Invalid role')
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
