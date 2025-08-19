@@ -117,11 +117,14 @@ export const CustomerDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCustomerData();
+    // Only fetch data when we have a token
+    if (token) {
+      fetchCustomerData();
+    }
     // Select a random humorous message
     const randomIndex = Math.floor(Math.random() * humorousMessages.length);
     setWelcomeMessage(humorousMessages[randomIndex]);
-  }, []);
+  }, [token]); // Re-run when token becomes available
 
   const fetchCustomerData = async () => {
     setLoading(true);

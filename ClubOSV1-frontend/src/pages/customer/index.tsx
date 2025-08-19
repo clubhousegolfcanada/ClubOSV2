@@ -22,6 +22,18 @@ export default function CustomerApp() {
     }
   }, [user, viewMode, router, isLoading]);
 
+  // Show loading state while auth is being verified
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
