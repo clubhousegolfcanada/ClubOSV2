@@ -10,60 +10,17 @@ export default function CustomerEvents() {
   const { user } = useAuthState();
   const [loading, setLoading] = useState(true);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'new' | 'original' | 'alltime'>('new');
+  const [alltimeLoading, setAlltimeLoading] = useState(false);
   
-  // Mock data for All Time leaderboard - replace with API call
-  const allTimeLeaderboard = [
-    { 
-      rank: 1, 
-      name: 'Mike Johnson', 
-      coins: 15420, 
-      badges: ['champion', 'eagle', 'ironman'],
-      avgScore: 72,
-      roundsPlayed: 342 
-    },
-    { 
-      rank: 2, 
-      name: 'Sarah Williams', 
-      coins: 14200, 
-      badges: ['champion', 'birdie-king'],
-      avgScore: 74,
-      roundsPlayed: 298 
-    },
-    { 
-      rank: 3, 
-      name: 'Tom Anderson', 
-      coins: 13850, 
-      badges: ['eagle', 'consistency'],
-      avgScore: 75,
-      roundsPlayed: 276 
-    },
-    { 
-      rank: 4, 
-      name: 'Emily Chen', 
-      coins: 12900, 
-      badges: ['birdie-king'],
-      avgScore: 76,
-      roundsPlayed: 251 
-    },
-    { 
-      rank: 5, 
-      name: 'David Brown', 
-      coins: 11750, 
-      badges: ['ironman'],
-      avgScore: 77,
-      roundsPlayed: 234 
-    }
-  ];
-
-  const getBadgeIcon = (badge: string) => {
-    switch(badge) {
-      case 'champion': return <Crown className="w-4 h-4 text-yellow-500" />;
-      case 'eagle': return <Star className="w-4 h-4 text-purple-500" />;
-      case 'birdie-king': return <Award className="w-4 h-4 text-blue-500" />;
-      case 'ironman': return <Medal className="w-4 h-4 text-gray-500" />;
-      case 'consistency': return <Trophy className="w-4 h-4 text-green-500" />;
-      default: return null;
-    }
+  // Competitive ranking tiers
+  const getRankTier = (rank: number) => {
+    if (rank <= 10) return { name: 'Grand Master', color: 'text-red-600', bg: 'bg-red-50' };
+    if (rank <= 25) return { name: 'Master', color: 'text-purple-600', bg: 'bg-purple-50' };
+    if (rank <= 50) return { name: 'Diamond', color: 'text-blue-600', bg: 'bg-blue-50' };
+    if (rank <= 100) return { name: 'Platinum', color: 'text-cyan-600', bg: 'bg-cyan-50' };
+    if (rank <= 200) return { name: 'Gold', color: 'text-yellow-600', bg: 'bg-yellow-50' };
+    if (rank <= 500) return { name: 'Silver', color: 'text-gray-600', bg: 'bg-gray-50' };
+    return { name: 'Bronze', color: 'text-orange-600', bg: 'bg-orange-50' };
   };
 
   useEffect(() => {
@@ -141,130 +98,72 @@ export default function CustomerEvents() {
           {/* Leaderboard Content */}
           <div className="pt-12" style={{ height: 'calc(100vh - 48px)' }}>
             {activeLeaderboard === 'alltime' ? (
-              // All Time ClubCoin Leaderboard
-              <div className="max-w-4xl mx-auto px-4 py-6">
+              // All Time Competitive Rankings
+              <div className="max-w-5xl mx-auto px-4 py-6">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                   {/* Header */}
                   <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-[#0B3D3A] to-[#084a45]">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                       <Trophy className="w-6 h-6" />
-                      All Time ClubCoin Leaderboard
+                      All Time Rankings
                     </h2>
-                    <p className="text-white/80 text-sm mt-1">Top players across all Clubhouse 24/7 locations</p>
+                    <p className="text-white/80 text-sm mt-1">Official competitive standings across all Clubhouse 24/7 locations</p>
                   </div>
                   
-                  {/* Leaderboard Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Badges</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">ClubCoins</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rounds</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {allTimeLeaderboard.map((player) => (
-                          <tr key={player.rank} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-4">
-                              <div className="flex items-center">
-                                {player.rank === 1 && <Crown className="w-5 h-5 text-yellow-500 mr-2" />}
-                                {player.rank === 2 && <Medal className="w-5 h-5 text-gray-400 mr-2" />}
-                                {player.rank === 3 && <Medal className="w-5 h-5 text-orange-600 mr-2" />}
-                                <span className={`font-bold ${player.rank <= 3 ? 'text-lg' : 'text-base'}`}>
-                                  #{player.rank}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center">
-                                <div className="w-10 h-10 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center mr-3">
-                                  <span className="text-white font-bold">
-                                    {player.name.split(' ').map(n => n[0]).join('')}
-                                  </span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">{player.name}</div>
-                                  {player.rank === 1 && (
-                                    <div className="text-xs text-yellow-600 font-medium">👑 Reigning Champion</div>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex gap-1">
-                                {player.badges.map((badge, idx) => (
-                                  <div key={idx} className="group relative">
-                                    {getBadgeIcon(badge)}
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                      {badge.replace('-', ' ').charAt(0).toUpperCase() + badge.replace('-', ' ').slice(1)}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <Coins className="w-4 h-4 text-yellow-500" />
-                                <span className="font-bold text-gray-900">{player.coins.toLocaleString()}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              <span className="text-gray-600">{player.avgScore}</span>
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              <span className="text-gray-600">{player.roundsPlayed}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  {/* Footer */}
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">Your Rank:</span> #47 • 
-                        <span className="font-medium ml-2">Your ClubCoins:</span> 
-                        <span className="font-bold text-yellow-600 ml-1">2,450</span>
+                  {/* Coming Soon Content */}
+                  <div className="p-12 text-center">
+                    <div className="max-w-2xl mx-auto">
+                      <Trophy className="w-16 h-16 text-[#0B3D3A] mx-auto mb-4" />
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                        Competitive Rankings Coming Soon
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        The official Clubhouse 24/7 competitive ranking system is launching soon. 
+                        Track your progress from Bronze to Grand Master as you compete against players across all locations.
+                      </p>
+                      
+                      {/* Tier Preview */}
+                      <div className="bg-gray-50 rounded-lg p-6 mb-8">
+                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
+                          Competitive Tiers
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-orange-600 font-bold">Bronze</div>
+                            <div className="text-xs text-gray-500">Entry Level</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-gray-600 font-bold">Silver</div>
+                            <div className="text-xs text-gray-500">Top 500</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-yellow-600 font-bold">Gold</div>
+                            <div className="text-xs text-gray-500">Top 200</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-cyan-600 font-bold">Platinum</div>
+                            <div className="text-xs text-gray-500">Top 100</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-blue-600 font-bold">Diamond</div>
+                            <div className="text-xs text-gray-500">Top 50</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-purple-600 font-bold">Master</div>
+                            <div className="text-xs text-gray-500">Top 25</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200 md:col-span-2">
+                            <div className="text-red-600 font-bold">Grand Master</div>
+                            <div className="text-xs text-gray-500">Top 10 Elite Players</div>
+                          </div>
+                        </div>
                       </div>
-                      <button className="text-sm text-[#0B3D3A] font-medium hover:underline">
-                        View Full Rankings →
-                      </button>
+                      
+                      <div className="text-sm text-gray-500">
+                        ClubCoin rewards, seasonal championships, and exclusive prizes for top performers.
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                {/* Badge Legend */}
-                <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold mb-4">Badge Legend</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Crown className="w-5 h-5 text-yellow-500" />
-                      <span className="text-sm">Champion</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="w-5 h-5 text-purple-500" />
-                      <span className="text-sm">Eagle Master</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Award className="w-5 h-5 text-blue-500" />
-                      <span className="text-sm">Birdie King</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Medal className="w-5 h-5 text-gray-500" />
-                      <span className="text-sm">Iron Man</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-green-500" />
-                      <span className="text-sm">Consistency</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             ) : activeLeaderboard === 'new' ? (
               <iframe
