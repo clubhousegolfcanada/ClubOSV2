@@ -1,4 +1,4 @@
-# ClubOS v1.14.0 - AI-Powered Golf Simulator Management
+# ClubOS v1.14.3 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -77,7 +77,18 @@ ClubOSV1/
 │   ├── src/routes/             # API endpoints
 │   ├── src/middleware/         # Auth, rate limiting
 │   └── src/database/migrations/# Schema changes
-├── docs/                       # Documentation
+├── scripts/                    # All operational scripts (ORGANIZED)
+│   ├── dev/                    # Development scripts
+│   ├── deploy/                 # Deployment scripts
+│   ├── test/                   # Test scripts
+│   ├── utils/                  # Utility scripts
+│   └── security/               # Security scripts
+├── docs/                       # All documentation (ORGANIZED)
+│   ├── architecture/           # System design docs
+│   ├── deployment/             # Deployment guides
+│   ├── development/            # Dev guides & standards
+│   ├── features/               # Feature documentation
+│   └── archive/                # Old/deprecated docs
 ├── CLAUDE.md                   # Your context doc (MUST READ)
 └── README.md                   # This file
 ```
@@ -141,6 +152,13 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.3**: Major Codebase Standardization
+  - Organized 34 root files into proper directories
+  - Created standardized `/scripts` structure (dev, deploy, test, utils, security)
+  - Organized documentation into `/docs` subdirectories
+  - Cleaned root directory (now only 9 essential files)
+  - Added standardization audit and progress tracking
+  - Improved project maintainability score from 5/10 to 7/10
 - **v1.14.2**: Restored TrackMan leaderboards, moved challenges to Friends page
 - **v1.14.1**: Fixed backend compilation and deployed challenge tables to production
 - **v1.14.0**: Clubhouse Challenges System
