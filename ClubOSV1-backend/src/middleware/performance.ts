@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
-import { getQueryStats } from '../utils/db';
+import { getPoolStats } from '../utils/db';
 import os from 'os';
 
 // Performance metrics storage
@@ -147,7 +147,7 @@ export const getPerformanceStats = async (req: Request, res: Response) => {
       .slice(0, 10);
     
     // Get database stats
-    const dbStats = getQueryStats();
+    const dbStats = getPoolStats();
     
     // Get system metrics
     const systemMetrics = getSystemMetrics();
