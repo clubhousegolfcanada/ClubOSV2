@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.7] - 2025-08-19
+
+### Fixed
+- **Customer App Loading Issues**
+  - Removed old "Wallet" navigation item that was causing 404s
+  - Fixed dashboard linking to wrong leaderboard page (/events → /leaderboard)
+  - Updated service worker cache version to clear stale content
+  - Improved cache cleanup on service worker activation
+  - Enhanced app visibility hook to properly route customers
+  - Updated customer route whitelist to include leaderboard and challenges
+
 ## [1.14.6] - 2025-08-19
 
 ### Added

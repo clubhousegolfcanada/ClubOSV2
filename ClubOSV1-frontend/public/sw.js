@@ -1,5 +1,5 @@
 // ClubOS Service Worker - Push Notifications & Offline Support
-const CACHE_NAME = 'clubos-v1';
+const CACHE_NAME = 'clubos-v2'; // Increment version to bust cache
 const OFFLINE_URL = '/offline.html';
 
 // Install event - cache essential assets
@@ -24,7 +24,13 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
   event.waitUntil(
-    clients.claim()
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((cacheName) => cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => clients.claim())
   );
 });
 

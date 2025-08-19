@@ -10,8 +10,9 @@ const CUSTOMER_ALLOWED_ROUTES = [
   '/customer/index',
   '/customer/profile',
   '/customer/bookings',
-  '/customer/events',
+  '/customer/leaderboard',
   '/customer/friends',
+  '/customer/challenges',
   '/login',
   '/logout'
 ];

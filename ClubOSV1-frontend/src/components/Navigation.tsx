@@ -103,7 +103,6 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         { href: '/', label: 'Dashboard', roles: ['customer'] as UserRole[], icon: 'home' },
         { href: '/friends', label: 'Friends', roles: ['customer'] as UserRole[], icon: 'users' },
         { href: '/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
-        { href: '/wallet', label: 'Wallet', roles: ['customer'] as UserRole[], icon: 'wallet' },
         { href: '/profile', label: 'Profile', roles: ['customer'] as UserRole[], icon: 'user' },
       ]
     : [
