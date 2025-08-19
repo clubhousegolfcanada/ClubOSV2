@@ -76,7 +76,7 @@ export default function CustomerEvents() {
           <div className="pt-12" style={{ height: 'calc(100vh - 48px)' }}>
             {activeLeaderboard === 'new' ? (
               <iframe
-                src="https://tm-short.me/Tqjb7AS"
+                src="https://tm-short.me/pZY461g"
                 title="Pro League Leaderboard"
                 className="w-full h-full"
                 style={{ 
@@ -87,7 +87,7 @@ export default function CustomerEvents() {
               />
             ) : (
               <iframe
-                src="https://tm-short.me/pZY461g"
+                src="https://tm-short.me/Tqjb7AS"
                 title="House League Leaderboard"
                 className="w-full h-full"
                 style={{ 
