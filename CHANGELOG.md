@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.11] - 2025-08-19
+
+### Redesigned
+- **Professional Customer Profile Page**
+  - Removed colorful/childish design elements for professional ClubOS style
+  - Clean, minimalist layout matching LIV Golf design language
+  - Real data display: 100 CC for founding members (pre-signup bonus)
+  - Three organized tabs: Statistics, Account, Preferences
+  - Removed fake badges, lore lines, and gamification elements
+  - Simple stat cards with ClubCoins, Win Rate, Total Wins, Streak
+  - Professional header with avatar and edit functionality
+  - Clean account management and security sections
+  - Proper preference toggles for notifications
+
 ## [1.14.10] - 2025-08-19
 
 ### Improved

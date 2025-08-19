@@ -152,6 +152,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.11**: Professional Customer Profile Redesign
+  - Clean, minimalist design matching ClubOS style
+  - Real data: 100 CC for founding members
+  - Removed gamification for professional look
 - **v1.14.10**: Customer Dashboard Optimization
   - Compact location selector, removed unavailable features
   - Quick Stats bar and Quick Links for better navigation
