@@ -129,6 +129,16 @@ Run the security verification script to check your security posture:
 
 ## 📊 Current State (August 2025)
 
+### In Development
+- **v1.14.0**: Clubhouse Challenges System
+  - Complete challenge system with ClubCoin economy
+  - 8-tier rank ladder with seasonal resets
+  - Head-to-head wagering with 30/70 stake splits
+  - 18 achievement badges with clubhouse tone
+  - Champion markers for tournament winners
+  - TrackMan integration for automatic verification
+  - See [Implementation Plan](./CLUBHOUSE-CHALLENGES-IMPLEMENTATION-PLAN.md)
+
 ### Recent Changes
 - **v1.12.0**: UniFi Access Cloudflare Tunnel Integration (Ready for Deployment)
   - Complete refactor to use Cloudflare tunnels instead of port forwarding

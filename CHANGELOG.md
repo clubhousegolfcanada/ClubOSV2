@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.0] - 2025-08-19 - IN PROGRESS
+
+### Added
+- **Clubhouse Challenges System Foundation**
+  - Database migrations for complete challenge system (004, 005, 006)
+  - Rank system with 8 tiers (House → Legend) 
+  - Seasonal tracking with configurable resets (monthly/quarterly/semi-annual)
+  - ClubCoin (CC) economy with full transaction ledger
+  - Challenge lifecycle: create, accept, play, resolve with 30/70 stake split
+  - 18 initial badges with dry, adult clubhouse tone
+  - Champion markers for tournament winners with 20% defeat bonus
+  - ClubCoin service for balance management and transactions
+  - Challenge service for core challenge operations
+  - Comprehensive audit trails for disputes
+  - No-show penalties and credibility scoring system
+  - Badge rules engine for automatic achievement tracking
+  - TrackMan integration points for settings and verification
+
+### Database Changes
+- Created rank_tier enum (house, amateur, bronze, silver, gold, pro, champion, legend)
+- Created challenge_status enum for full lifecycle tracking
+- Added cc_balance and credibility_score to customer_profiles
+- New tables: seasons, rank_assignments, challenges, stakes, challenge_results, badges, user_badges, champion_markers
+- Helper functions for percentile calculation and rank assignment
+
 ## [1.13.0] - 2025-08-19
 
 ### Security - CRITICAL
