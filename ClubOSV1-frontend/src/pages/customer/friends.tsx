@@ -2,6 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
+import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { 
   Users, Send, Search, UserPlus, Clock, ArrowLeft, 
   Check, X, UserMinus, Ban, Sparkles, ChevronLeft,
@@ -333,23 +334,21 @@ export default function Friends() {
   return (
     <>
       <Head>
-        <title>Friends - ClubOS</title>
+        <title>Friends - Clubhouse 24/7</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div className="flex flex-col h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold">Friends</h1>
-              <p className="text-sm text-gray-600">
-                {friends.length} friends • {incomingRequests.length} pending
+      <div className="min-h-screen bg-[#fafafa] customer-app">
+        <CustomerNavigation />
+        
+        <div className="flex flex-col h-screen bg-gray-50 pt-14 pb-16 lg:pb-0">
+          {/* Header */}
+          <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-xl font-bold">Friends</h1>
+                <p className="text-sm text-gray-600">
+                  {friends.length} friends • {incomingRequests.length} pending
               </p>
             </div>
           </div>
@@ -911,6 +910,7 @@ export default function Friends() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </>
   );
