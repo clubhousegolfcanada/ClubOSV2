@@ -20,6 +20,11 @@ export default apiClient;
 // Add auth token and CSRF token to requests
 apiClient.interceptors.request.use(
   (config) => {
+    // Fix double /api/api/ issue
+    if (config.url) {
+      config.url = config.url.replace(/\/api\/api\//g, '/api/');
+    }
+    
     // Debug logging removed for security
     
     // Only access localStorage and cookies on client side
