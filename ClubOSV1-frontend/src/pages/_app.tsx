@@ -17,6 +17,7 @@ import { SwipeIndicator } from '@/components/SwipeIndicator';
 import RemoteActionsBar from '@/components/RemoteActionsBar';
 import { performanceMonitor, updateAnimationDurations } from '@/utils/performanceMonitor';
 import { initializeCSRF } from '@/utils/csrf';
+import { useAppVisibility } from '@/hooks/useAppVisibility';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -35,6 +36,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   
   // Use kiosk redirect hook
   useKioskRedirect();
+  
+  // Use app visibility hook to handle background/foreground transitions
+  useAppVisibility();
   
   // Use message context for unread count
   const { unreadCount } = useMessages();
@@ -121,10 +125,14 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           setUser({ ...user, token: storedToken });
           
           // Set correct view mode based on user role
-          // Operators and admins should default to operator mode
+          // Customer role ALWAYS gets customer view
           if (user.role === 'customer') {
             setViewMode('customer');
-          } else if (user.role === 'admin' || user.role === 'operator') {
+            // For customers, ensure we stay on customer pages
+            if (!router.pathname.startsWith('/customer')) {
+              router.push('/customer/profile');
+            }
+          } else if (user.role === 'admin' || user.role === 'operator' || user.role === 'support') {
             // For operators/admins, check if they have a saved preference
             const savedViewMode = localStorage.getItem('clubos_view_mode');
             // Only use saved mode if it's explicitly set to customer
@@ -134,9 +142,15 @@ function AppContent({ Component, pageProps }: AppContentProps) {
             } else {
               setViewMode('operator');
             }
+          } else if (user.role === 'kiosk') {
+            setViewMode('operator');
+            // Kiosk should go to clubosboy
+            if (router.pathname !== '/clubosboy') {
+              router.push('/clubosboy');
+            }
           }
         } else {
-          // Clear expired token silently (no redirect from here)
+          // Clear expired token silently (no redirect from here - let AuthGuard handle it)
           localStorage.removeItem('clubos_user');
           localStorage.removeItem('clubos_token');
           localStorage.removeItem('clubos_view_mode');

@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.4] - 2025-08-19
+
+### Fixed
+- **Customer App Background Resume Issue**
+  - Fixed infinite loading when app returns from background
+  - Prevented operator dashboard flash for customer accounts
+  - Added proper visibility change handling for mobile apps
+  - Improved token expiration checking on app resume
+  - Enhanced AuthGuard with proper loading states
+  - Added useAppVisibility hook for background/foreground transitions
+  - Ensured customer role always stays in customer view mode
+
 ## [1.14.3] - 2025-08-19
 
 ### Changed
