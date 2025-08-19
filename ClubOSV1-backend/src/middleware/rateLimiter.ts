@@ -19,7 +19,7 @@ const keyGenerator = (req: Request): string => {
 // Different rate limits for different endpoints
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 1000 : 500, // Temporarily increased to prevent lockouts
+  max: process.env.NODE_ENV === 'production' ? 5000 : 500, // Increased to 5000 in production to prevent issues
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -30,6 +30,10 @@ export const rateLimiter = rateLimit({
     if (req.path === '/health') return true;
     // Skip for authenticated admin users
     if (req.user?.role === 'admin') return true;
+    // Skip for authenticated customers - they have their own user-based limits
+    if (req.user?.role === 'customer') return true;
+    // Skip for GET requests to most endpoints (reading data shouldn't be heavily limited)
+    if (req.method === 'GET' && !req.path.includes('/llm') && !req.path.includes('/openphone')) return true;
     // Skip in development unless explicitly testing
     if (process.env.NODE_ENV === 'development' && process.env.TEST_RATE_LIMIT !== 'true') return true;
     return false;
@@ -62,7 +66,7 @@ export const rateLimiter = rateLimit({
 // Stricter rate limit for authentication endpoints
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Max 5 login attempts per 15 minutes
+  max: 20, // Increased to 20 login attempts per 15 minutes (was 5)
   skipSuccessfulRequests: true, // Don't count successful logins
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
