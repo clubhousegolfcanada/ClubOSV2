@@ -43,8 +43,8 @@ const CustomerNavigation: React.FC = () => {
   // Fixed navigation items order - must be consistent
   const mainNavItems = [
     { icon: Home, label: 'Dashboard', path: '/customer', key: 'dashboard' },
-    { icon: Users, label: 'Friends', path: '/customer/friends', key: 'friends' },
     { icon: Calendar, label: 'Bookings', path: '/customer/bookings', key: 'bookings' },
+    { icon: Users, label: 'Friends', path: '/customer/friends', key: 'friends' },
     { icon: Trophy, label: 'Events', path: '/customer/events', key: 'events' },
     { icon: User, label: 'Profile', path: '/customer/profile', key: 'profile' }
   ];
