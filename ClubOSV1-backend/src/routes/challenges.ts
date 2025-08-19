@@ -225,6 +225,41 @@ router.get('/settings-catalog', async (req, res) => {
 });
 
 /**
+ * GET /api/challenges/cc-balance
+ * Get user's CC balance
+ */
+router.get('/cc-balance', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
+    const balance = await clubCoinService.getBalance(userId);
+    
+    res.json({
+      success: true,
+      data: {
+        balance: balance.balance,
+        totalEarned: balance.totalEarned,
+        totalSpent: balance.totalSpent,
+        lastTransaction: balance.lastTransaction
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching CC balance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch CC balance'
+    });
+  }
+});
+
+/**
  * GET /api/challenges/:id
  * Get challenge details
  */

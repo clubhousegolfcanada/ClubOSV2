@@ -88,7 +88,8 @@ async function testSignupFlow() {
 
       if (profileResult.rows.length > 0) {
         const profile = profileResult.rows[0];
-        const hasCorrectBalance = profile.cc_balance === 100 || profile.cc_balance === '100';
+        const balance = parseFloat(profile.cc_balance);
+        const hasCorrectBalance = balance === 100;
         logResult(
           'Customer Profile',
           hasCorrectBalance,
@@ -143,7 +144,8 @@ async function testSignupFlow() {
 
         if (leaderboardResult.rows.length > 0) {
           const entry = leaderboardResult.rows[0];
-          const hasCorrectBonus = entry.cc_net === 100 || entry.cc_net === '100';
+          const netCC = parseFloat(entry.cc_net);
+          const hasCorrectBonus = netCC === 100;
           logResult(
             'Season Leaderboard',
             hasCorrectBonus,

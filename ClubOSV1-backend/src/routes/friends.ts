@@ -67,7 +67,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
            AND f2.status = 'accepted') as friend_count
         ` : ''}
       FROM friendships f
-      JOIN users u ON (
+      JOIN "Users" u ON (
         CASE 
           WHEN f.user_id = $1 THEN f.friend_id = u.id
           ELSE f.user_id = u.id
@@ -155,7 +155,7 @@ router.get('/pending', async (req: Request, res: Response, next: NextFunction) =
           ELSE 'incoming'
         END as request_direction
       FROM friendships f
-      JOIN users requester ON (
+      JOIN "Users" requester ON (
         CASE 
           WHEN f.friend_id = $1 THEN f.user_id = requester.id
           ELSE f.friend_id = requester.id
@@ -223,11 +223,11 @@ router.post('/request',
         let params: any[] = [];
 
         if (target_email) {
-          query = 'SELECT id FROM users WHERE email = $1 AND role = $2';
+          query = 'SELECT id FROM "Users" WHERE email = $1 AND role = $2';
           params = [target_email.toLowerCase(), 'customer'];
         } else if (target_phone) {
           const normalizedPhone = target_phone.replace(/\D/g, '');
-          query = 'SELECT id FROM users WHERE phone = $1 AND role = $2';
+          query = 'SELECT id FROM "Users" WHERE phone = $1 AND role = $2';
           params = [normalizedPhone, 'customer'];
         }
 
@@ -479,7 +479,7 @@ router.post('/search',
           cp.profile_visibility,
           f.status as friendship_status,
           calculate_mutual_friends($1, u.id) as mutual_friends
-        FROM users u
+        FROM "Users" u
         LEFT JOIN customer_profiles cp ON cp.user_id = u.id
         LEFT JOIN friendships f ON 
           ((f.user_id = $1 AND f.friend_id = u.id) OR 
@@ -548,7 +548,7 @@ router.get('/suggestions', async (req: Request, res: Response, next: NextFunctio
             WHEN cp.home_location = (SELECT home_location FROM user_location) THEN 1
             ELSE 0
           END as same_location
-        FROM users u
+        FROM "Users" u
         JOIN customer_profiles cp ON cp.user_id = u.id
         WHERE u.role = 'customer'
           AND u.id != $1
@@ -664,7 +664,7 @@ router.get('/blocked', async (req: Request, res: Response, next: NextFunction) =
         u.name,
         cp.display_name
       FROM user_blocks ub
-      JOIN users u ON u.id = ub.blocked_user_id
+      JOIN "Users" u ON u.id = ub.blocked_user_id
       LEFT JOIN customer_profiles cp ON cp.user_id = u.id
       WHERE ub.user_id = $1
       ORDER BY ub.blocked_at DESC`,
@@ -773,10 +773,10 @@ router.post('/sync-contacts',
           let matchValue = '';
           
           if (type === 'email' && contact.email) {
-            matchQuery = 'SELECT id, name FROM users WHERE email = $1 AND role = $2';
+            matchQuery = 'SELECT id, name FROM "Users" WHERE email = $1 AND role = $2';
             matchValue = contact.email.toLowerCase();
           } else if (type === 'phone' && contact.phone) {
-            matchQuery = 'SELECT id, name FROM users WHERE phone = $1 AND role = $2';
+            matchQuery = 'SELECT id, name FROM "Users" WHERE phone = $1 AND role = $2';
             matchValue = contact.phone.replace(/\D/g, '');
           }
 
