@@ -4,17 +4,13 @@ import {
   Users, 
   Trophy, 
   MapPin, 
-  Clock, 
-  TrendingUp, 
-  Activity, 
   ChevronRight,
+  ChevronDown,
   BarChart3,
-  Target,
-  Award,
   Zap,
-  ArrowUp,
-  ArrowDown,
-  Minus
+  Coins,
+  Target,
+  Clock
 } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
@@ -22,35 +18,28 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface ClubhouseLocation {
+interface Location {
   id: string;
   name: string;
-  displayName: string;
   city: string;
-  availableBoxes: number;
-  nextAvailable: string;
 }
 
 interface Booking {
   id: string;
   date: string;
   time: string;
-  box: string;
+  bay: string;
   location: string;
   friends: string[];
 }
 
-interface Activity {
-  type: 'friend' | 'booking' | 'score' | 'achievement';
-  message: string;
-  time: string;
-}
-
-interface Stats {
-  roundsPlayed: number;
-  avgScore: number;
-  improvement: number;
-  avgDrive: number;
+interface CustomerProfile {
+  displayName?: string;
+  name?: string;
+  ccBalance?: number;
+  rank?: string;
+  wins?: number;
+  losses?: number;
 }
 
 const humorousMessages = [
@@ -74,40 +63,24 @@ const humorousMessages = [
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthState();
   const router = useRouter();
-  // Always get token from auth state - it's the single source of truth
   const token = user?.token;
-  const [myClubhouse, setMyClubhouse] = useState<ClubhouseLocation | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
-  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    roundsPlayed: 0,
-    avgScore: 0,
-    improvement: 0,
-    avgDrive: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
-  const [customerProfile, setCustomerProfile] = useState<any>(null);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [quickStats, setQuickStats] = useState({
+    ccBalance: 0,
+    activeChallenges: 0,
+    weekStreak: 0,
+    nextBooking: null as any
+  });
 
-  // Available locations
-  const locations: ClubhouseLocation[] = [
-    {
-      id: 'bedford',
-      name: 'Bedford',
-      displayName: 'Clubhouse 24/7 Golf - Bedford',
-      city: 'Bedford',
-      availableBoxes: 3,
-      nextAvailable: '2:00 PM'
-    },
-    {
-      id: 'dartmouth',
-      name: 'Dartmouth',
-      displayName: 'Clubhouse 24/7 Golf - Dartmouth', 
-      city: 'Dartmouth',
-      availableBoxes: 4,
-      nextAvailable: '1:30 PM'
-    }
+  // Available locations - simplified
+  const locations: Location[] = [
+    { id: 'bedford', name: 'Bedford', city: 'Bedford' },
+    { id: 'dartmouth', name: 'Dartmouth', city: 'Dartmouth' }
   ];
 
   // Skedda booking URLs
@@ -117,20 +90,19 @@ export const CustomerDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    // Only fetch data when we have a token
     if (token) {
       fetchCustomerData();
     }
     // Select a random humorous message
     const randomIndex = Math.floor(Math.random() * humorousMessages.length);
     setWelcomeMessage(humorousMessages[randomIndex]);
-  }, [token]); // Re-run when token becomes available
+  }, [token]);
 
   const fetchCustomerData = async () => {
     setLoading(true);
     try {
-      // Fetch customer profile with HubSpot data
       if (token) {
+        // Fetch customer profile
         try {
           const response = await axios.get(`${API_URL}/customer-profile`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -142,59 +114,49 @@ export const CustomerDashboard: React.FC = () => {
           console.error('Failed to fetch customer profile:', error);
         }
         
-        // Fetch real bookings from HubSpot
+        // Fetch bookings
         try {
           const bookingsResponse = await axios.get(`${API_URL}/customer-bookings`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (bookingsResponse.data.success) {
-            // Filter only upcoming bookings for the dashboard
             const upcomingOnly = bookingsResponse.data.bookings
               .filter((b: any) => b.status === 'upcoming')
-              .slice(0, 3); // Show max 3 bookings
+              .slice(0, 3);
             setUpcomingBookings(upcomingOnly);
+            
+            // Set next booking for quick stats
+            if (upcomingOnly.length > 0) {
+              setQuickStats(prev => ({ ...prev, nextBooking: upcomingOnly[0] }));
+            }
           }
         } catch (error) {
           console.error('Failed to fetch bookings:', error);
-          // Fallback to mock data if API fails
+          // Use mock data as fallback
           setUpcomingBookings([
-            {
-              id: '1',
-              date: 'Today',
-              time: '6:00 PM',
-              box: 'Box 2',
-              location: 'Bedford',
-              friends: ['John D.', 'Mike S.']
-            },
-            {
-              id: '2',
-              date: 'Tomorrow',
-              time: '7:00 PM',
-              box: 'Box 4',
-              location: 'Bedford',
-              friends: []
-            }
+            { id: '1', date: 'Today', time: '6:00 PM', bay: 'Bay 2', location: 'Bedford', friends: ['John D.'] },
+            { id: '2', date: 'Tomorrow', time: '7:00 PM', bay: 'Bay 4', location: 'Bedford', friends: [] }
           ]);
+        }
+
+        // Fetch CC balance and challenges
+        try {
+          const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (ccResponse.data.success) {
+            setQuickStats(prev => ({ ...prev, ccBalance: ccResponse.data.data.balance }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch CC balance:', error);
         }
       }
       
-      // Set default location to Bedford (or from user preferences in future)
+      // Set default location
       const savedLocation = localStorage.getItem('preferredClubhouse');
       const defaultLocation = locations.find(loc => loc.id === savedLocation) || locations[0];
-      setMyClubhouse(defaultLocation);
-
-      setRecentActivity([
-        { type: 'friend', message: 'Sarah K. accepted your friend request', time: '2 hours ago' },
-        { type: 'booking', message: 'Mike S. joined your booking for today', time: '5 hours ago' },
-        { type: 'achievement', message: 'New personal best: 72 at Pebble Beach', time: '1 day ago' }
-      ]);
-
-      setStats({
-        roundsPlayed: 12,
-        avgScore: 78.5,
-        improvement: -2.3,
-        avgDrive: 245
-      });
+      setSelectedLocation(defaultLocation);
+      
     } catch (error) {
       console.error('Failed to fetch customer data:', error);
     } finally {
@@ -205,9 +167,15 @@ export const CustomerDashboard: React.FC = () => {
   const quickActions = [
     { 
       icon: Calendar, 
-      label: 'Book a Box', 
+      label: 'Book a Bay', 
       description: 'Reserve your spot',
-      onClick: () => router.push('/customer/bookings')
+      onClick: () => {
+        if (selectedLocation) {
+          window.open(skeddaUrls[selectedLocation.id], '_blank');
+        } else {
+          router.push('/customer/bookings');
+        }
+      }
     },
     { 
       icon: Trophy, 
@@ -224,36 +192,15 @@ export const CustomerDashboard: React.FC = () => {
     { 
       icon: Users, 
       label: 'Profile', 
-      description: 'View stats',
+      description: 'View your stats',
       onClick: () => router.push('/customer/profile') 
     }
   ];
 
-  const getActivityIcon = (type: Activity['type']) => {
-    switch (type) {
-      case 'friend':
-        return <Users className="w-4 h-4" />;
-      case 'booking':
-        return <Calendar className="w-4 h-4" />;
-      case 'score':
-        return <Target className="w-4 h-4" />;
-      case 'achievement':
-        return <Award className="w-4 h-4" />;
-      default:
-        return <Activity className="w-4 h-4" />;
-    }
-  };
-
-  const getTrendIcon = (value: number) => {
-    if (value > 0) return <ArrowUp className="w-4 h-4 text-green-500" />;
-    if (value < 0) return <ArrowDown className="w-4 h-4 text-green-500" />;
-    return <Minus className="w-4 h-4 text-gray-400" />;
-  };
-
-  const handleLocationChange = (location: ClubhouseLocation) => {
-    setMyClubhouse(location);
+  const handleLocationChange = (location: Location) => {
+    setSelectedLocation(location);
     localStorage.setItem('preferredClubhouse', location.id);
-    setShowLocationSelector(false);
+    setShowLocationDropdown(false);
   };
 
   if (loading) {
@@ -267,29 +214,107 @@ export const CustomerDashboard: React.FC = () => {
     );
   }
 
+  const firstName = customerProfile?.displayName?.split(' ')[0] || 
+                    customerProfile?.name?.split(' ')[0] || 
+                    user?.name?.split(' ')[0] || 
+                    'Golfer';
+
   return (
     <div className="space-y-4">
-      {/* Welcome Section - Compact */}
+      {/* Welcome Section with Location Selector */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-semibold text-gray-900">
-              Welcome back, {customerProfile?.displayName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Guest'}
+              Welcome back, {firstName}
             </h1>
             <p className="text-sm text-gray-600 mt-0.5">
               {welcomeMessage}
             </p>
           </div>
-          <div className="hidden sm:block">
-            <div className="flex items-center space-x-2 text-sm">
-              <Zap className="w-4 h-4 text-[#0B3D3A]" />
-              <span className="text-gray-500">Active Member</span>
+          
+          {/* Compact Location Selector */}
+          <div className="relative ml-4">
+            <button
+              onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+            >
+              <MapPin className="w-4 h-4 text-[#0B3D3A]" />
+              <span className="font-medium text-gray-900">{selectedLocation?.name || 'Select'}</span>
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showLocationDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showLocationDropdown && (
+              <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                {locations.map((location) => (
+                  <button
+                    key={location.id}
+                    onClick={() => handleLocationChange(location)}
+                    className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                      selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
+                    }`}
+                  >
+                    <div className="font-medium text-sm">{location.name}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Stats Bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-lg border border-gray-100 p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">ClubCoins</p>
+              <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
+                <Coins className="w-4 h-4 text-[#0B3D3A]" />
+                {quickStats.ccBalance}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg border border-gray-100 p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Active Challenges</p>
+              <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
+                <Target className="w-4 h-4 text-[#0B3D3A]" />
+                {quickStats.activeChallenges}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg border border-gray-100 p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Next Booking</p>
+              <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                <Clock className="w-4 h-4 text-[#0B3D3A]" />
+                {quickStats.nextBooking ? quickStats.nextBooking.time : 'None'}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg border border-gray-100 p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Week Streak</p>
+              <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
+                <Zap className="w-4 h-4 text-[#0B3D3A]" />
+                {quickStats.weekStreak}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions Grid - Compact Cards */}
+      {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {quickActions.map((action, index) => (
           <button
@@ -297,11 +322,11 @@ export const CustomerDashboard: React.FC = () => {
             onClick={action.onClick}
             className="group relative bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md hover:border-[#0B3D3A]/30 transition-all duration-200"
           >
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 p-2 rounded-md bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors">
-                <action.icon className="w-4 h-4 text-[#0B3D3A]" />
+            <div className="flex flex-col items-center text-center space-y-2">
+              <div className="p-3 rounded-full bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors">
+                <action.icon className="w-5 h-5 text-[#0B3D3A]" />
               </div>
-              <div className="text-left">
+              <div>
                 <h3 className="text-sm font-medium text-gray-900">{action.label}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
               </div>
@@ -310,203 +335,118 @@ export const CustomerDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Content Grid - Tighter Spacing */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* My Clubhouse Card - Compact */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 relative">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">My Clubhouse</h2>
-            <button
-              onClick={() => setShowLocationSelector(!showLocationSelector)}
-              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-              title="Change location"
-            >
-              <MapPin className="w-4 h-4 text-[#0B3D3A]" />
-            </button>
-          </div>
-          
-          {/* Location Selector Dropdown */}
-          {showLocationSelector && (
-            <div className="absolute top-14 right-4 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
-              <div className="p-2">
-                <p className="text-xs text-gray-500 px-2 py-1">Select Location</p>
-                {locations.map((location) => (
-                  <button
-                    key={location.id}
-                    onClick={() => handleLocationChange(location)}
-                    className={`w-full text-left px-3 py-2 rounded hover:bg-gray-100 transition-colors ${
-                      myClubhouse?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
-                    }`}
-                  >
-                    <div className="font-medium">{location.name}</div>
-                    <div className="text-xs text-gray-500">{location.city}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {myClubhouse ? (
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500">{myClubhouse.city}</p>
-                <p className="text-base font-semibold text-gray-900">{myClubhouse.name}</p>
-              </div>
-              <div className="space-y-2 py-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">Available</span>
-                  <span className="text-xs font-semibold text-green-600">
-                    {myClubhouse.availableBoxes} {myClubhouse.availableBoxes === 1 ? 'box' : 'boxes'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">Next slot</span>
-                  <span className="text-xs font-medium text-gray-900">{myClubhouse.nextAvailable}</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  const url = skeddaUrls[myClubhouse.id] || 'https://clubhouse247golf.skedda.com/booking';
-                  window.open(url, '_blank');
-                }}
-                className="w-full py-2 bg-[#0B3D3A] text-white text-sm rounded-md hover:bg-[#084a45] transition-colors font-medium"
-              >
-                Book Now
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 mb-3">Set your home clubhouse</p>
-              <button 
-                onClick={() => setShowLocationSelector(true)}
-                className="text-[#0B3D3A] hover:text-[#084a45] font-medium"
-              >
-                Choose Location
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Upcoming Bookings - Compact */}
+      {/* Main Content - Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Upcoming Bookings */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Upcoming Bookings</h2>
             <Calendar className="w-4 h-4 text-[#0B3D3A]" />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {upcomingBookings.length > 0 ? (
               <>
                 {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="p-2.5 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
+                  <div key={booking.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-sm font-medium text-gray-900">{booking.date}</span>
-                        <span className="text-xs text-gray-500 ml-2">{booking.time}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">{booking.date}</span>
+                          <span className="text-xs text-gray-500">{booking.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-[#0B3D3A] font-medium">{booking.bay}</span>
+                          {booking.friends.length > 0 && (
+                            <span className="text-xs text-gray-500">
+                              • With {booking.friends.join(', ')}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xs text-[#0B3D3A] font-medium">{booking.box}</span>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
                     </div>
-                    {booking.friends.length > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        <Users className="w-3 h-3 inline mr-1" />
-                        {booking.friends.join(', ')}
-                      </p>
-                    )}
                   </div>
                 ))}
                 <button 
                   onClick={() => router.push('/customer/bookings')}
-                  className="w-full pt-3 text-[#0B3D3A] hover:text-[#084a45] text-sm font-medium flex items-center justify-center"
+                  className="w-full pt-2 text-[#0B3D3A] hover:text-[#084a45] text-sm font-medium flex items-center justify-center"
                 >
                   View All Bookings
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
               </>
             ) : (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-3">No upcoming bookings</p>
+              <div className="text-center py-6">
+                <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 mb-3">No upcoming bookings</p>
                 <button 
-                  onClick={() => router.push('/customer/bookings')}
-                  className="text-[#0B3D3A] hover:text-[#084a45] font-medium"
+                  onClick={() => {
+                    if (selectedLocation) {
+                      window.open(skeddaUrls[selectedLocation.id], '_blank');
+                    } else {
+                      router.push('/customer/bookings');
+                    }
+                  }}
+                  className="px-4 py-2 bg-[#0B3D3A] text-white text-sm rounded-lg hover:bg-[#084a45] transition-colors font-medium"
                 >
-                  Book a Box
+                  Book a Bay Now
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Recent Activity - Completely hidden (not implemented) */}
-        {/* <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+        {/* Quick Links */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Recent Activity</h2>
-            <Activity className="w-4 h-4 text-[#0B3D3A]" />
+            <h2 className="text-sm font-semibold text-gray-900">Quick Links</h2>
+            <Zap className="w-4 h-4 text-[#0B3D3A]" />
           </div>
-          <div className="space-y-3">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-start space-x-2 p-1.5 rounded-md hover:bg-gray-50 transition-colors">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="p-1 bg-gray-100 rounded">
-                    {getActivityIcon(activity.type)}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-900 line-clamp-1">{activity.message}</p>
-                  <p className="text-[10px] text-gray-500">{activity.time}</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => router.push('/customer/compete')}
+              className="w-full p-3 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white rounded-lg hover:shadow-md transition-all flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <Trophy className="w-5 h-5" />
+                <div className="text-left">
+                  <p className="font-medium">Create Challenge</p>
+                  <p className="text-xs opacity-90">Compete for ClubCoins</p>
                 </div>
               </div>
-            ))}
-            <button 
-              onClick={() => router.push('/customer/activity')}
-              className="w-full pt-3 text-[#0B3D3A] hover:text-[#084a45] text-sm font-medium flex items-center justify-center"
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+            
+            <button
+              onClick={() => router.push('/customer/leaderboard')}
+              className="w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-between group"
             >
-              View All Activity
-              <ChevronRight className="w-4 h-4 ml-1" />
+              <div className="flex items-center gap-3">
+                <BarChart3 className="w-5 h-5 text-[#0B3D3A]" />
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">View Leaderboard</p>
+                  <p className="text-xs text-gray-500">Check your ranking</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+            
+            <button
+              onClick={() => router.push('/customer/profile')}
+              className="w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-[#0B3D3A]" />
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">Your Profile</p>
+                  <p className="text-xs text-gray-500">Stats & achievements</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
-      </div> */}
-
       </div>
-
-      {/* Stats Overview - Completely hidden (not implemented) */}
-      {/* <div className="hidden sm:block bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-900">This Month</h2>
-          <TrendingUp className="w-4 h-4 text-[#0B3D3A]" />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{stats.roundsPlayed}</p>
-            <p className="text-xs text-gray-600">Rounds</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{stats.avgScore}</p>
-            <p className="text-xs text-gray-600">Avg Score</p>
-          </div>
-          <div>
-            <div className="flex items-center space-x-1">
-              <p className="text-2xl font-bold text-gray-900">
-                {Math.abs(stats.improvement)}
-              </p>
-              {getTrendIcon(stats.improvement)}
-            </div>
-            <p className="text-xs text-gray-600">Improvement</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{stats.avgDrive}</p>
-            <p className="text-xs text-gray-600">Avg Drive</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => router.push('/customer/stats')}
-          className="w-full mt-3 py-1.5 text-xs bg-gray-50 text-gray-700 rounded-md hover:bg-gray-100 transition-colors font-medium flex items-center justify-center"
-        >
-          View Details
-          <ChevronRight className="w-3 h-3 ml-1" />
-        </button>
-      </div> */}
     </div>
   );
 };

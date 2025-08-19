@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.10] - 2025-08-19
+
+### Improved
+- **Customer Dashboard Optimization**
+  - Reduced location selector to compact dropdown in header
+  - Removed unavailable features (box availability, next slot times)
+  - Added Quick Stats bar with ClubCoins, challenges, next booking, streak
+  - Reorganized layout to 2-column for better space usage
+  - Added Quick Links section with prominent challenge creation
+  - Fixed naming conventions: "Bay" instead of "Box", consistent terminology
+  - Centered quick action buttons with better visual hierarchy
+  - Improved mobile responsiveness with better grid layouts
+
 ## [1.14.9] - 2025-08-19
 
 ### Changed

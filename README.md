@@ -152,6 +152,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.10**: Customer Dashboard Optimization
+  - Compact location selector, removed unavailable features
+  - Quick Stats bar and Quick Links for better navigation
+  - Consistent "Bay" naming convention throughout
 - **v1.14.9**: Unified Competition System
   - Combined Friends and Challenges into single "Compete" page
   - Fantasy sports-style focus on competition vs social messaging
