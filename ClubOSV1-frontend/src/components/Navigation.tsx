@@ -100,10 +100,10 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     : user?.role === 'customer'
     ? [
         // Customer navigation
-        { href: '/', label: 'Dashboard', roles: ['customer'] as UserRole[], icon: 'home' },
-        { href: '/friends', label: 'Friends', roles: ['customer'] as UserRole[], icon: 'users' },
-        { href: '/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
-        { href: '/profile', label: 'Profile', roles: ['customer'] as UserRole[], icon: 'user' },
+        { href: '/customer', label: 'Dashboard', roles: ['customer'] as UserRole[], icon: 'home' },
+        { href: '/customer/friends', label: 'Friends', roles: ['customer'] as UserRole[], icon: 'users' },
+        { href: '/customer/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
+        { href: '/customer/profile', label: 'Profile', roles: ['customer'] as UserRole[], icon: 'user' },
       ]
     : [
         // All other roles see the full navigation
@@ -123,7 +123,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
           {/* Logo with tagline - Compressed */}
           <div className="flex items-center">
             <div className="flex items-center gap-2">
-              <Link href="/" className="logo text-lg font-semibold" aria-label="ClubOS Home">
+              <Link href={user?.role === 'customer' ? '/customer' : '/'} className="logo text-lg font-semibold" aria-label="ClubOS Home">
                 ClubOS
               </Link>
               <span className="text-[10px] text-[var(--text-muted)] hidden md:block">
