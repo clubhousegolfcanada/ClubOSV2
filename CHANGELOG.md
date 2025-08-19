@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.6] - 2025-08-19
+
+### Added
+- **Enhanced New User Experience**
+  - New signups automatically receive 100 ClubCoins
+  - Auto-enrollment in current season leaderboard
+  - Starting rank set to "House" tier
+  
+- **All-Time Leaderboard with Social Features**
+  - Interactive all-time rankings with player stats
+  - Send friend requests directly from leaderboard
+  - View win rates, CC balance, and challenge stats
+  - Proper Lucide icons instead of emojis
+  - Visual rank indicators (Crown, Trophy, Star, Medal, etc.)
+
+### Changed
+- **Friends Page Improvements**
+  - Updated Challenges tab with prominent "Create New Challenge" button
+  - Better visual styling with white button on green background
+  - Changed currency icon from DollarSign to Coins for consistency
+
+- **Customer Login Branding**
+  - Updated all customer pages from "Clubhouse 24/7" to "Clubhouse Golf"
+  - Consistent branding across login and all customer pages
+
 ## [1.14.5] - 2025-08-19
 
 ### Fixed

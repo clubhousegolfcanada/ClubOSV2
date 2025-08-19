@@ -174,7 +174,7 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-6">
         <div>
           <h1 className="text-center text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--accent)] to-teal-400 bg-clip-text text-transparent">
-            {loginMode === 'customer' ? 'Clubhouse 24/7' : 'ClubOS'}
+            {loginMode === 'customer' ? 'Clubhouse Golf' : 'ClubOS'}
           </h1>
           <h2 className="mt-4 sm:mt-6 text-center text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
             {loginMode === 'customer' ? 

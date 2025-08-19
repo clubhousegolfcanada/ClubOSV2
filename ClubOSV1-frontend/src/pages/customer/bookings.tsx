@@ -33,7 +33,7 @@ export default function CustomerBookings() {
   return (
     <>
       <Head>
-        <title>Book a Box - Clubhouse 24/7</title>
+        <title>Book a Box - Clubhouse Golf</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -47,7 +47,7 @@ export default function CustomerBookings() {
           <div className="h-full">
             <iframe
               src="https://clubhouse247golf.skedda.com/booking"
-              title="Clubhouse 24/7 Booking System"
+              title="Clubhouse Golf Booking System"
               className="w-full"
               style={{ 
                 height: 'calc(100vh - 136px)', 

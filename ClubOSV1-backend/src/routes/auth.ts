@@ -91,6 +91,39 @@ router.post('/signup',
         [userId, name]
       );
       
+      // Initialize ClubCoins with 100 CC signup bonus
+      try {
+        const ClubCoinService = require('../services/clubCoinService').ClubCoinService;
+        const clubCoinService = ClubCoinService.getInstance();
+        await clubCoinService.initializeUser(userId, 100);
+        logger.info('Initialized ClubCoins for new user:', { userId, initialBalance: 100 });
+      } catch (error) {
+        logger.error('Failed to initialize ClubCoins for new user:', error);
+        // Don't fail signup if CC initialization fails
+      }
+      
+      // Add user to current season leaderboard
+      try {
+        const seasonResult = await db.query(
+          `SELECT id FROM seasons WHERE status = 'active' LIMIT 1`
+        );
+        
+        if (seasonResult.rows.length > 0) {
+          const seasonId = seasonResult.rows[0].id;
+          await db.query(
+            `INSERT INTO seasons_participants 
+             (season_id, user_id, rank_tier, rank_points, cc_earned, cc_wagered) 
+             VALUES ($1, $2, 'House', 0, 0, 0)
+             ON CONFLICT (season_id, user_id) DO NOTHING`,
+            [seasonId, userId]
+          );
+          logger.info('Added user to season leaderboard:', { userId, seasonId });
+        }
+      } catch (error) {
+        logger.error('Failed to add user to season leaderboard:', error);
+        // Don't fail signup if leaderboard initialization fails
+      }
+      
       // Log successful registration
       await db.createAuthLog({
         user_id: userId,

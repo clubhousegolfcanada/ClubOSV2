@@ -6,7 +6,7 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { 
   Users, Send, Search, UserPlus, Clock, ArrowLeft, 
   Check, X, UserMinus, Ban, Sparkles, ChevronLeft,
-  RefreshCw, DollarSign, Trophy, MapPin, Shield
+  RefreshCw, DollarSign, Trophy, MapPin, Shield, Coins
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -368,7 +368,7 @@ export default function Friends() {
   return (
     <>
       <Head>
-        <title>Friends - Clubhouse 24/7</title>
+        <title>Friends - Clubhouse Golf</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
@@ -746,17 +746,17 @@ export default function Friends() {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-medium">ClubCoin Challenges</h3>
                     <div className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
+                      <Coins className="w-5 h-5" />
                       <span className="font-bold text-xl">{ccBalance} CC</span>
                     </div>
                   </div>
                   <p className="text-sm text-white/80">Challenge friends to head-to-head matches</p>
                   <button
                     onClick={() => router.push('/customer/challenges/create')}
-                    className="mt-3 w-full bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="mt-3 w-full bg-white text-[#0B3D3A] hover:bg-gray-100 font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     <Trophy className="w-5 h-5" />
-                    Create Challenge
+                    Create New Challenge
                   </button>
                 </div>
 

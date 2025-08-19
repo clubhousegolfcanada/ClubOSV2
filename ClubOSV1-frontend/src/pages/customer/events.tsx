@@ -46,7 +46,7 @@ export default function CustomerEvents() {
   return (
     <>
       <Head>
-        <title>Leaderboard - Clubhouse 24/7</title>
+        <title>Leaderboard - Clubhouse Golf</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -107,7 +107,7 @@ export default function CustomerEvents() {
                       <Trophy className="w-6 h-6" />
                       All Time Rankings
                     </h2>
-                    <p className="text-white/80 text-sm mt-1">Official competitive standings across all Clubhouse 24/7 locations</p>
+                    <p className="text-white/80 text-sm mt-1">Official competitive standings across all Clubhouse Golf locations</p>
                   </div>
                   
                   {/* Coming Soon Content */}
@@ -118,7 +118,7 @@ export default function CustomerEvents() {
                         Competitive Rankings Coming Soon
                       </h3>
                       <p className="text-gray-600 mb-6">
-                        The official Clubhouse 24/7 competitive ranking system is launching soon. 
+                        The official Clubhouse Golf competitive ranking system is launching soon. 
                         Track your progress from Bronze to Grand Master as you compete against players across all locations.
                       </p>
                       
