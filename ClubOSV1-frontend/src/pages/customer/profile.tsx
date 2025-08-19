@@ -204,14 +204,6 @@ export default function CustomerProfile() {
                     )}
                   </div>
                 </div>
-                
-                <button
-                  onClick={() => setEditMode(!editMode)}
-                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span className="hidden sm:inline">Edit Profile</span>
-                </button>
               </div>
             </div>
           </div>
@@ -238,7 +230,7 @@ export default function CustomerProfile() {
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Account
+                  Profile & Account
                 </button>
                 <button
                   onClick={() => setActiveTab('preferences')}
@@ -341,7 +333,18 @@ export default function CustomerProfile() {
             {activeTab === 'account' && (
               <div className="max-w-2xl">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Profile & Account</h2>
+                    {!editMode && (
+                      <button
+                        onClick={() => setEditMode(true)}
+                        className="px-3 py-1.5 text-sm bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Edit Profile
+                      </button>
+                    )}
+                  </div>
                   
                   {editMode ? (
                     <form onSubmit={handleSaveProfile} className="space-y-4">
