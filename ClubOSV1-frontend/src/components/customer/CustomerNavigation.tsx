@@ -23,8 +23,7 @@ const CustomerNavigation: React.FC = () => {
   const router = useRouter();
   const { user } = useAuthState();
   const { setViewMode } = useStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationCount] = useState(3);
+  const [notificationCount] = useState(0);
 
   const handleSwitchToOperator = () => {
     setViewMode('operator');
@@ -53,20 +52,14 @@ const CustomerNavigation: React.FC = () => {
 
   return (
     <>
-      {/* Top Navigation Bar - Modernized to match operator style */}
-      <header className="fixed top-0 left-0 right-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] z-50">
+      {/* Top Navigation Bar - Simplified for mobile */}
+      <header className="fixed top-0 left-0 right-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] z-50 lg:block hidden">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-14" style={{ maxHeight: '56px' }}>
-          {/* Logo/Title - Compressed like operator */}
+          {/* Logo/Title */}
           <div className="flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--accent)] transition-all duration-200 mr-2"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
             <div className="flex items-center gap-2">
               <span className="logo text-lg font-semibold">Clubhouse</span>
-              <span className="text-[10px] text-[var(--text-muted)] hidden md:block">Customer</span>
+              <span className="text-[10px] text-[var(--text-muted)]">Customer</span>
             </div>
             
             {/* Desktop Navigation - Inline like operator nav */}
@@ -124,109 +117,6 @@ const CustomerNavigation: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Slide-out Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setMobileMenuOpen(false)} />
-          <div className="fixed left-0 top-0 bottom-0 w-72 bg-white shadow-xl">
-            {/* Profile Section */}
-            <div className="p-6 bg-gradient-to-br from-[#0B3D3A] to-[#084a45]">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-semibold text-white">{user?.name || 'Guest'}</p>
-                  <p className="text-sm text-white/70">{user?.email}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation Items */}
-            <nav className="p-4 space-y-1">
-              {mainNavItems.map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => {
-                    router.push(item.path);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg transition-colors ${
-                    currentPath === item.path
-                      ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
-
-              <div className="border-t border-gray-200 my-4" />
-
-              {/* Additional Menu Items */}
-              <button
-                onClick={() => {
-                  router.push('/customer/stats');
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <BarChart3 className="w-5 h-5" />
-                <span className="font-medium">My Stats</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  // Open Google Maps search for Clubhouse 24/7 Golf simulators
-                  window.open('https://www.google.com/maps/search/Clubhouse+24%2F7+Golf', '_blank');
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <MapPin className="w-5 h-5" />
-                <span className="font-medium">Locations</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  router.push('/customer/settings');
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <Settings className="w-5 h-5" />
-                <span className="font-medium">Settings</span>
-              </button>
-
-              {/* Mode Toggle for Admin and Operator */}
-              {(user?.role === 'admin' || user?.role === 'operator') && (
-                <>
-                  <div className="border-t border-gray-200 my-4" />
-                  <div className="px-3">
-                    <ModeToggle />
-                  </div>
-                </>
-              )}
-
-              <div className="border-t border-gray-200 my-4" />
-
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Sign Out</span>
-              </button>
-            </nav>
-          </div>
-        </div>
-      )}
 
       {/* Bottom Navigation - Mobile Only */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg">

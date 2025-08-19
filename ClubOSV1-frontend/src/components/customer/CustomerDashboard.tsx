@@ -8,7 +8,6 @@ import {
   ChevronDown,
   BarChart3,
   Zap,
-  Coins,
   Target,
   Clock
 } from 'lucide-react';
@@ -71,20 +70,20 @@ export const CustomerDashboard: React.FC = () => {
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [quickStats, setQuickStats] = useState({
-    ccBalance: 0,
     activeChallenges: 0,
-    weekStreak: 0,
     nextBooking: null as any
   });
 
   // Available locations - simplified
   const locations: Location[] = [
+    { id: 'all', name: 'All Locations', city: 'All' },
     { id: 'bedford', name: 'Bedford', city: 'Bedford' },
     { id: 'dartmouth', name: 'Dartmouth', city: 'Dartmouth' }
   ];
 
   // Skedda booking URLs
   const skeddaUrls: Record<string, string> = {
+    all: 'https://clubhouse247golf.skedda.com/booking',
     bedford: 'https://clubhouse247golf.skedda.com/booking?spacefeatureids=c58c2cecfcce4559a3b61827b1cc8b47',
     dartmouth: 'https://clubhouse247golf.skedda.com/booking?spacefeatureids=9c2102d2571146709f186a1cc14b4ecf'
   };
@@ -139,16 +138,19 @@ export const CustomerDashboard: React.FC = () => {
           ]);
         }
 
-        // Fetch CC balance and challenges
+        // Fetch active challenges count
         try {
-          const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+          const challengesResponse = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          if (ccResponse.data.success) {
-            setQuickStats(prev => ({ ...prev, ccBalance: ccResponse.data.data.balance }));
+          if (challengesResponse.data.success) {
+            const activeChallenges = challengesResponse.data.data.filter((c: any) => 
+              c.status === 'active' || c.status === 'accepted'
+            ).length;
+            setQuickStats(prev => ({ ...prev, activeChallenges }));
           }
         } catch (error) {
-          console.error('Failed to fetch CC balance:', error);
+          console.error('Failed to fetch challenges:', error);
         }
       }
       
@@ -263,56 +265,27 @@ export const CustomerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Stats Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white rounded-lg border border-gray-100 p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500">ClubCoins</p>
-              <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
-                <Coins className="w-4 h-4 text-[#0B3D3A]" />
-                {quickStats.ccBalance}
-              </p>
+      {/* Quick Info Bar - Simplified */}
+      {(quickStats.activeChallenges > 0 || quickStats.nextBooking) && (
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {quickStats.activeChallenges > 0 && (
+            <div className="bg-white rounded-lg border border-gray-100 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+              <Target className="w-4 h-4 text-[#0B3D3A]" />
+              <span className="text-sm">
+                <span className="font-semibold">{quickStats.activeChallenges}</span> active challenge{quickStats.activeChallenges !== 1 ? 's' : ''}
+              </span>
             </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg border border-gray-100 p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500">Active Challenges</p>
-              <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
-                <Target className="w-4 h-4 text-[#0B3D3A]" />
-                {quickStats.activeChallenges}
-              </p>
+          )}
+          {quickStats.nextBooking && (
+            <div className="bg-white rounded-lg border border-gray-100 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+              <Clock className="w-4 h-4 text-[#0B3D3A]" />
+              <span className="text-sm">
+                Next: <span className="font-semibold">{quickStats.nextBooking.date} {quickStats.nextBooking.time}</span>
+              </span>
             </div>
-          </div>
+          )}
         </div>
-        
-        <div className="bg-white rounded-lg border border-gray-100 p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500">Next Booking</p>
-              <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                <Clock className="w-4 h-4 text-[#0B3D3A]" />
-                {quickStats.nextBooking ? quickStats.nextBooking.time : 'None'}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg border border-gray-100 p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500">Week Streak</p>
-              <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
-                <Zap className="w-4 h-4 text-[#0B3D3A]" />
-                {quickStats.weekStreak}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
