@@ -4,7 +4,7 @@ import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { 
-  Trophy, Users, Clock, Target, Check, X, Plus, TrendingUp,
+  Trophy, Users, User, Clock, Target, Check, X, Plus, TrendingUp,
   Coins, UserPlus, Crown, Star, Medal, Home, Shield, Search,
   ChevronRight, Filter, Zap, Award, DollarSign, Activity
 } from 'lucide-react';
@@ -349,10 +349,13 @@ export default function Compete() {
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white rounded-full">
-                  <Coins className="w-4 h-4" />
+                <button
+                  onClick={() => router.push('/customer/profile')}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white rounded-full hover:opacity-90 transition-opacity"
+                >
+                  <User className="w-4 h-4" />
                   <span className="font-bold">{ccBalance} CC</span>
-                </div>
+                </button>
                 <button
                   onClick={() => router.push('/customer/challenges/create')}
                   className="p-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors"

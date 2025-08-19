@@ -318,13 +318,13 @@ export const CustomerDashboard: React.FC = () => {
           >
             {/* Location selector for Book a Box card */}
             {action.hasLocationSelector && (
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-2 right-2 z-30">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowLocationDropdown(!showLocationDropdown);
                   }}
-                  className="flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-xs"
+                  className="flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-xs relative z-30"
                 >
                   <MapPin className="w-3 h-3 text-[#0B3D3A]" />
                   <span className="font-medium text-gray-700">{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
@@ -332,7 +332,7 @@ export const CustomerDashboard: React.FC = () => {
                 </button>
                 
                 {showLocationDropdown && (
-                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-40 min-w-[120px]">
                     {locations.map((location) => (
                       <button
                         key={location.id}
@@ -367,7 +367,11 @@ export const CustomerDashboard: React.FC = () => {
             )}
             
             <button
-              onClick={action.onClick}
+              onClick={action.hasLocationSelector ? () => {
+                if (selectedLocation) {
+                  window.open(skeddaUrls[selectedLocation.id], '_blank');
+                }
+              } : action.onClick}
               className="w-full h-full flex flex-col items-center text-center space-y-2"
             >
               <div className="p-3 rounded-full bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors">
