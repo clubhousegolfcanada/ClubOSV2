@@ -101,8 +101,9 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     ? [
         // Customer navigation
         { href: '/customer', label: 'Dashboard', roles: ['customer'] as UserRole[], icon: 'home' },
-        { href: '/customer/friends', label: 'Friends', roles: ['customer'] as UserRole[], icon: 'users' },
         { href: '/customer/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
+        { href: '/customer/compete', label: 'Compete', roles: ['customer'] as UserRole[], icon: 'trophy' },
+        { href: '/customer/leaderboard', label: 'Leaderboard', roles: ['customer'] as UserRole[], icon: 'chart' },
         { href: '/customer/profile', label: 'Profile', roles: ['customer'] as UserRole[], icon: 'user' },
       ]
     : [
