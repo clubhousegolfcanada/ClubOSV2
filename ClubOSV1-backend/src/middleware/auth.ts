@@ -94,8 +94,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       res.setHeader('X-New-Token', newToken);
     }
 
-    // Validate role exists
-    if (!decoded.role || !['admin', 'operator', 'support', 'kiosk'].includes(decoded.role)) {
+    // Validate role exists - include customer role
+    if (!decoded.role || !['admin', 'operator', 'support', 'kiosk', 'customer'].includes(decoded.role)) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid token: missing or invalid role'
