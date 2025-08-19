@@ -48,6 +48,21 @@ export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  
+  // SECURITY: Block customer role from accessing messages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'customer') {
+        router.push('/customer/');
+        return;
+      }
+      // Only allow operator roles
+      if (!['admin', 'operator', 'support'].includes(user.role)) {
+        router.push('/login');
+        return;
+      }
+    }
+  }, [user, router]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

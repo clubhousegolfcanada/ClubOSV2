@@ -8,15 +8,23 @@ export default function Checklists() {
   const { user } = useAuthState();
   const router = useRouter();
 
-  // Redirect if not authorized
+  // SECURITY: Block customer role from accessing checklists
   useEffect(() => {
-    if (user && user.role !== 'admin' && user.role !== 'operator') {
-      router.push('/');
+    if (user) {
+      if (user.role === 'customer') {
+        router.push('/customer/');
+        return;
+      }
+      // Only allow operator roles
+      if (!['admin', 'operator', 'support'].includes(user.role)) {
+        router.push('/login');
+        return;
+      }
     }
   }, [user, router]);
 
   // Don't render until we know the user's role
-  if (!user || (user.role !== 'admin' && user.role !== 'operator')) {
+  if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
     return null;
   }
 

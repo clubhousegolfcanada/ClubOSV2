@@ -1,4 +1,4 @@
-# ClubOS v1.12.6 - AI-Powered Golf Simulator Management
+# ClubOS v1.13.0 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -52,6 +52,7 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 | Operator | Operations | Tickets, checklists, basic analytics |
 | Support | Limited | Commands, ClubOS Boy, no sensitive ops |
 | Kiosk | Public only | ClubOS Boy terminal interface |
+| Customer | Customer portal only | Profile, bookings, events, friends (WHITELIST ENFORCED) |
 
 ## 📁 Project Structure & Patterns
 

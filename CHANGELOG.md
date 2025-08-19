@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.13.0] - 2025-08-19
+
+### Security - CRITICAL
+- **Customer Role Access Control**
+  - Implemented whitelist-based routing for customer accounts
+  - Created customerRouteGuard utility to enforce allowed routes
+  - Customers can ONLY access: /customer/*, /login, /logout
+  - Added security blocks to all operator pages (messages, tickets, checklists, operations, commands)
+  - Fixed authentication middleware to properly validate customer role
+  - Enhanced role-based redirects - customers go to /customer/, operators to /
+  - Prevented customers from accessing sensitive operational data
+  - Added console warnings for security violation attempts
+  - Full audit trail in SECURITY-AUDIT.md
+
+### Fixed
+- **Customer Authentication Issues**
+  - Fixed 401 errors on customer login (auth middleware was rejecting customer role)
+  - Fixed "session expired" false positives for customer accounts
+  - Proper error messages for wrong passwords and account status
+  - Customer dashboard now properly retrieves auth tokens
+
 ## [1.12.6] - 2025-08-18
 
 ### Added

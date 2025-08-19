@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useDemoMode, useAnalytics } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
+import { enforceOperatorRouteGuard } from '@/utils/customerRouteGuard';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
@@ -39,19 +40,9 @@ export default function Home() {
   const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
   
-  // SECURITY: Redirect customers to their dashboard
+  // SECURITY: Enforce operator-only access with whitelist approach
   useEffect(() => {
-    if (user) {
-      if (user.role === 'customer') {
-        router.push('/customer/');
-        return;
-      }
-      // Only allow operator roles
-      if (!['admin', 'operator', 'support', 'kiosk'].includes(user.role)) {
-        router.push('/login');
-        return;
-      }
-    }
+    enforceOperatorRouteGuard(user, router, ['admin', 'operator', 'support', 'kiosk']);
   }, [user, router]);
   
   // Set client flag

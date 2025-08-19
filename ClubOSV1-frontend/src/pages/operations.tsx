@@ -15,11 +15,18 @@ export default function Operations() {
   const { user } = useAuthState();
   const [activeTab, setActiveTab] = useState<TabType>('users');
 
-  // Check if user has permission to view this page
+  // SECURITY: Block customer role from accessing operations
   useEffect(() => {
-    if (user && !['admin', 'operator'].includes(user.role)) {
-      // Redirect non-admin/operator users
-      window.location.href = '/';
+    if (user) {
+      if (user.role === 'customer') {
+        // Redirect customers to their dashboard
+        window.location.href = '/customer/';
+        return;
+      }
+      if (!['admin', 'operator'].includes(user.role)) {
+        // Redirect other non-authorized users to login
+        window.location.href = '/login';
+      }
     }
   }, [user]);
 

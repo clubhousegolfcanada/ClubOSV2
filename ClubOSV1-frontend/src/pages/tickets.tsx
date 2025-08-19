@@ -1,7 +1,28 @@
 import Head from 'next/head';
 import TicketCenterOptimized from '@/components/TicketCenterOptimized';
+import { useAuthState } from '@/state/useStore';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
 export default function TicketCenter() {
+  const { user } = useAuthState();
+  const router = useRouter();
+  
+  // SECURITY: Block customer role from accessing tickets
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'customer') {
+        router.push('/customer/');
+        return;
+      }
+      // Only allow operator roles
+      if (!['admin', 'operator', 'support'].includes(user.role)) {
+        router.push('/login');
+        return;
+      }
+    }
+  }, [user, router]);
+  
   return (
     <>
       <Head>

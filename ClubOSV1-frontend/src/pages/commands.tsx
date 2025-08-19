@@ -587,9 +587,19 @@ export default function CommandsRedesigned() {
   });
   const [executingDoorAction, setExecutingDoorAction] = useState<Set<string>>(new Set());
 
-  // Check authentication
+  // SECURITY: Check authentication and block customer role
   useEffect(() => {
-    if (!user || !hasMinimumRole(user?.role, 'operator')) {
+    if (user) {
+      if (user.role === 'customer') {
+        // Redirect customers to their dashboard
+        router.push('/customer/');
+        return;
+      }
+      if (!hasMinimumRole(user?.role, 'operator')) {
+        router.push('/login');
+      }
+    } else if (user === null) {
+      // User is not authenticated
       router.push('/login');
     }
   }, [user, router]);

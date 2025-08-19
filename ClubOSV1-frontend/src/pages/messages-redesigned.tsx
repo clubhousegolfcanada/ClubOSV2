@@ -48,6 +48,21 @@ interface Conversation {
 export default function MessagesRedesigned() {
   const { user } = useAuthState();
   const router = useRouter();
+  
+  // SECURITY: Block customer role from accessing messages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'customer') {
+        router.push('/customer/');
+        return;
+      }
+      // Only allow operator roles
+      if (!['admin', 'operator', 'support'].includes(user.role)) {
+        router.push('/login');
+        return;
+      }
+    }
+  }, [user, router]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
