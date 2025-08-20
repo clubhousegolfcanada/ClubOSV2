@@ -71,42 +71,57 @@ router.get('/seasonal', async (req, res) => {
 router.get('/alltime', async (req, res) => {
   try {
     const { limit = 100 } = req.query;
+    const userId = (req as any).user?.id;
     
     const query = `
       SELECT 
         u.id,
         u.name,
         cp.current_rank,
-        cp.total_cc_earned as cc_net,
-        cp.total_challenges_played as challenges_completed,
+        cp.cc_balance,
+        cp.total_cc_earned,
+        cp.total_challenges_won,
+        cp.total_challenges_played,
         cp.challenge_win_rate as win_rate,
         cp.highest_rank_achieved,
         RANK() OVER (ORDER BY cp.total_cc_earned DESC) as position,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
           WHERE cm.user_id = u.id AND cm.is_active = true
-        ) as has_champion_marker
+        ) as has_champion_marker,
+        EXISTS(
+          SELECT 1 FROM friends f 
+          WHERE (f.user_id = $2 AND f.friend_id = u.id) 
+          OR (f.friend_id = $2 AND f.user_id = u.id)
+        ) as is_friend,
+        EXISTS(
+          SELECT 1 FROM friend_requests fr
+          WHERE fr.from_user_id = $2 AND fr.to_user_id = u.id
+          AND fr.status = 'pending'
+        ) as has_pending_request
       FROM customer_profiles cp
       JOIN users u ON u.id = cp.user_id
-      WHERE cp.total_cc_earned > 0
+      WHERE cp.total_cc_earned > 0 OR cp.cc_balance > 0
       ORDER BY cp.total_cc_earned DESC
       LIMIT $1
     `;
     
-    const result = await pool.query(query, [limit]);
+    const result = await pool.query(query, [limit, userId]);
     
     res.json({
       success: true,
       data: result.rows.map(row => ({
-        id: row.id,
+        user_id: row.id,
         name: row.name,
-        position: parseInt(row.position),
-        currentRank: row.current_rank,
-        highestRank: row.highest_rank_achieved,
-        ccNet: parseFloat(row.cc_net || 0),
-        challengesCompleted: parseInt(row.challenges_completed || 0),
-        winRate: parseFloat(row.win_rate || 0),
-        hasChampionMarker: row.has_champion_marker
+        rank: parseInt(row.position),
+        rank_tier: row.current_rank || 'house',
+        cc_balance: parseFloat(row.cc_balance || 0),
+        total_challenges_won: parseInt(row.total_challenges_won || 0),
+        total_challenges_played: parseInt(row.total_challenges_played || 0),
+        win_rate: parseFloat(row.win_rate || 0),
+        has_champion_marker: row.has_champion_marker || false,
+        is_friend: row.is_friend || false,
+        has_pending_request: row.has_pending_request || false
       }))
     });
   } catch (error) {

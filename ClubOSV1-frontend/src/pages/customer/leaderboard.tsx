@@ -31,7 +31,7 @@ interface LeaderboardEntry {
 export default function CustomerLeaderboard() {
   const router = useRouter();
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<'pro' | 'house' | 'closest' | 'alltime'>('pro');
+  const [activeTab, setActiveTab] = useState<'pro' | 'house' | 'closest' | 'alltime'>('alltime');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
@@ -46,28 +46,40 @@ export default function CustomerLeaderboard() {
 
   // Fetch all-time leaderboard data
   useEffect(() => {
-    if (activeTab === 'alltime' && user) {
+    if (activeTab === 'alltime' && user?.token) {
       fetchLeaderboard();
     }
   }, [activeTab, user]);
 
   const fetchLeaderboard = async () => {
+    if (!user?.token) {
+      console.error('No auth token available');
+      setLoadingLeaderboard(false);
+      return;
+    }
+    
     setLoadingLeaderboard(true);
     try {
       const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+        headers: { Authorization: `Bearer ${user.token}` }
       });
-      setLeaderboardData(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch leaderboard:', error);
-      // Use mock data for now if endpoint doesn't exist
-      setLeaderboardData([
-        { user_id: '1', name: 'TigerWoods97', rank: 1, rank_tier: 'Legend', cc_balance: 18450, total_challenges_won: 142, total_challenges_played: 180, win_rate: 78.9, has_champion_marker: true, is_friend: false, has_pending_request: false },
-        { user_id: '2', name: 'HappyGilmore', rank: 2, rank_tier: 'Champion', cc_balance: 15200, total_challenges_won: 98, total_challenges_played: 145, win_rate: 67.6, has_champion_marker: false, is_friend: false, has_pending_request: false },
-        { user_id: '3', name: 'TheShark', rank: 3, rank_tier: 'Champion', cc_balance: 14800, total_challenges_won: 89, total_challenges_played: 132, win_rate: 67.4, has_champion_marker: false, is_friend: true, has_pending_request: false },
-        { user_id: '4', name: 'LongBallLarry', rank: 4, rank_tier: 'Pro', cc_balance: 12100, total_challenges_won: 72, total_challenges_played: 118, win_rate: 61.0, has_champion_marker: false, is_friend: false, has_pending_request: false },
-        { user_id: '5', name: 'AceVentura', rank: 5, rank_tier: 'Pro', cc_balance: 10500, total_challenges_won: 65, total_challenges_played: 110, win_rate: 59.1, has_champion_marker: false, is_friend: false, has_pending_request: true },
-      ]);
+      
+      if (response.data.success) {
+        setLeaderboardData(response.data.data || []);
+      } else {
+        console.error('Leaderboard API returned error:', response.data.error);
+        setLeaderboardData([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch leaderboard:', error.response?.data || error.message);
+      // Don't use mock data - show empty state instead
+      setLeaderboardData([]);
+      
+      if (error.response?.status === 401) {
+        // Token expired or invalid
+        toast.error('Session expired. Please login again.');
+        router.push('/login');
+      }
     } finally {
       setLoadingLeaderboard(false);
     }
@@ -111,9 +123,19 @@ export default function CustomerLeaderboard() {
     }
   };
 
+  // Check authentication on mount
+  useEffect(() => {
+    if (!user && !loadingLeaderboard) {
+      router.push('/login');
+    }
+  }, [user, router, loadingLeaderboard]);
+
   if (!user) {
-    router.push('/login');
-    return null;
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
+      </div>
+    );
   }
 
   return (
@@ -300,14 +322,23 @@ export default function CustomerLeaderboard() {
               </div>
             ) : (
               // TrackMan embed for Pro and House leagues
-              <div className="relative" style={{ minHeight: '70vh' }}>
+              <div className="relative w-full" style={{ minHeight: '70vh', height: '70vh' }}>
                 {embedUrls[activeTab] ? (
                   <iframe
                     src={embedUrls[activeTab]}
-                    className="w-full h-full absolute inset-0"
-                    style={{ minHeight: '70vh' }}
+                    className="w-full h-full"
+                    style={{ 
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      minHeight: '70vh',
+                      border: 'none'
+                    }}
                     frameBorder="0"
                     allowFullScreen
+                    loading="lazy"
                     title={`${
                       activeTab === 'pro' ? 'Pro League' : 
                       activeTab === 'house' ? 'House League' : 
