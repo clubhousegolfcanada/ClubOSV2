@@ -639,8 +639,8 @@ const RequestForm: React.FC = () => {
               }}
               className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105 ${
                 isKnowledgeMode 
-                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25' 
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:border-purple-500/50 hover:bg-purple-600/10 hover:text-purple-400'
+                  ? 'bg-[#4A154B] text-white shadow-lg shadow-[#4A154B]/25' 
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:border-[#4A154B]/50 hover:bg-[#4A154B]/10 hover:text-[#4A154B]'
               }`}
               disabled={isSubmitting || demoMode}
             >
@@ -909,8 +909,9 @@ const RequestForm: React.FC = () => {
                       </button>
                     </div>
                   )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Ticket Options */}
