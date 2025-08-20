@@ -9,20 +9,22 @@ New customer signups (Michael & Alanna Belair) created in last 48 hours did NOT 
 - [ ] 1. Check why ClubCoin initialization is failing for new signups
 - [ ] 2. Review error logs from the last 48 hours for CC initialization failures  
 - [ ] 3. Check if clubCoinService import is working properly in auth.ts
+- [ ] 4. **CRITICAL BUG**: Remove hardcoded 100 CC for mikebelair79@gmail.com in profile.tsx (lines 62-63)
 
 ### Phase 2: IMMEDIATE FIXES (Today - Manual)
-- [ ] 4. Grant 100 CC to Michael Belair (mikebelair79@gmail.com)
-- [ ] 5. Grant 100 CC to Alanna Belair (alanna.belair@gmail.com)
-- [ ] 6. Add both users to current season leaderboard
-- [ ] 7. Verify both users appear on all-time leaderboard
-- [ ] 8. Find ALL other affected users without initial grant
-- [ ] 9. Grant 100 CC to all affected existing customers
+- [ ] 5. Grant 100 CC to Michael Belair (mikebelair79@gmail.com)
+- [ ] 6. Grant 100 CC to Alanna Belair (alanna.belair@gmail.com)
+- [ ] 7. Add both users to current season leaderboard
+- [ ] 8. Verify both users appear on all-time leaderboard
+- [ ] 9. Find ALL other affected users without initial grant
+- [ ] 10. Grant 100 CC to all affected existing customers
 
 ### Phase 3: CODE FIXES (Today - Permanent)
-- [ ] 10. Fix silent failure in auth.ts signup endpoint
-- [ ] 11. Add proper error logging when CC initialization fails
-- [ ] 12. Make CC grant required (fail signup if CC grant fails)
-- [ ] 13. Add idempotency check to prevent double grants
+- [ ] 11. Fix silent failure in auth.ts signup endpoint
+- [ ] 12. Add proper error logging when CC initialization fails
+- [ ] 13. Make CC grant required (fail signup if CC grant fails)
+- [ ] 14. Add idempotency check to prevent double grants
+- [ ] 15. **Remove hardcoded CC balance in profile.tsx** - Show real database values only
 
 ### Phase 4: TESTING (Before Deploy)
 - [ ] 14. Run test-signup-flow.ts to verify new signups work
@@ -101,6 +103,7 @@ New customer signups (Michael & Alanna Belair) created in last 48 hours did NOT 
 2. **No Monitoring**: No alerts when CC grants fail
 3. **No Validation**: System allows $0 balance customers
 4. **Missing Idempotency**: Could grant 200 CC if called twice
+5. **HARDCODED PLACEHOLDER**: Profile page shows fake 100 CC for mikebelair79@gmail.com (not from database!)
 
 ## ✅ Success Criteria
 

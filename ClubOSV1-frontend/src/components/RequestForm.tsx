@@ -637,14 +637,14 @@ const RequestForm: React.FC = () => {
                 setIsTicketMode(false);
                 setSmartAssistEnabled(false);
               }}
-              className={`px-3 py-1 text-xs rounded-full transition-all ${
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105 ${
                 isKnowledgeMode 
-                  ? 'bg-purple-600 text-white' 
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-purple-600/20 hover:text-purple-400'
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25' 
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:border-purple-500/50 hover:bg-purple-600/10 hover:text-purple-400'
               }`}
               disabled={isSubmitting || demoMode}
             >
-              Update
+              {isKnowledgeMode ? '✓ Update Mode' : '+ Update'}
             </button>
             
             {/* Advanced and Location buttons for mobile - top right */}
@@ -751,10 +751,11 @@ const RequestForm: React.FC = () => {
           </div> */}
 
           {/* Mode Toggle Row */}
-          <div className="mb-3">
-            {/* Mode Toggle - 3-way toggle: Ticket | AI | Human */}
-            <div className="flex items-center justify-center">
-              <div className="relative inline-block w-32">
+          <div className="mb-4">
+            {/* Mode Toggle - 3-way toggle with labels outside */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-[var(--text-muted)] font-medium">Ticket</span>
+              <div className="relative inline-block w-24">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
                   <div 
                     className={`absolute inset-y-0.5 transition-all duration-200 rounded-full ${
@@ -778,8 +779,8 @@ const RequestForm: React.FC = () => {
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={isTicketMode ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}>
-                      Ticket
+                    <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                      •
                     </span>
                   </button>
                   <button
@@ -792,7 +793,7 @@ const RequestForm: React.FC = () => {
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}>
+                    <span className={smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
                       AI
                     </span>
                   </button>
@@ -806,17 +807,17 @@ const RequestForm: React.FC = () => {
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}>
-                      Human
+                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                      •
                     </span>
                   </button>
                 </div>
               </div>
-            </div>
-            
-            {/* Advanced and Location Buttons - Desktop only */}
-            {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
-              <div className="hidden sm:flex items-center gap-2 justify-center mt-2">
+              <span className="text-xs text-[var(--text-muted)] font-medium">Human</span>
+              
+              {/* Advanced and Location Buttons - Desktop only */}
+              {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
+                <div className="hidden sm:flex items-center gap-2 ml-auto">
                   {/* Advanced Button */}
                   {!showAdvancedRouting ? (
                     <button
