@@ -247,7 +247,7 @@ const RequestForm: React.FC = () => {
         
         // Use the existing knowledge-router endpoint
         const response = await axios.post(
-          `${API_URL}/knowledge-router/parse-and-route`,
+          `${API_URL}/api/knowledge-router/parse-and-route`,
           { input: data.requestDescription },
           { headers: { Authorization: `Bearer ${token}` } }
         );
