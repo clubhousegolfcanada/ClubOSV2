@@ -331,10 +331,10 @@ export const CustomerDashboard: React.FC = () => {
                     e.stopPropagation();
                     setShowLocationDropdown(!showLocationDropdown);
                   }}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-[#0B3D3A]/10 hover:bg-[#0B3D3A]/20 rounded text-xs font-semibold text-[#0B3D3A] relative z-30 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 bg-[#0B3D3A]/10 hover:bg-[#0B3D3A]/20 rounded text-xs font-semibold text-[#0B3D3A] relative z-30 transition-colors"
+                  title={selectedLocation?.name || 'Select location'}
                 >
                   <MapPin className="w-3 h-3" />
-                  <span>{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 

@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.18] - 2025-08-20
+
+### Fixed
+- **Customer Dashboard Location Selector**
+  - Removed location name from selector button to prevent icon overlap
+  - Shows only map pin and dropdown arrow icons
+  - Card label already shows "Book Bedford" etc, so name was redundant
+  - Added tooltip on hover to show selected location
+
 ## [1.14.17] - 2025-08-20
 
 ### Fixed
