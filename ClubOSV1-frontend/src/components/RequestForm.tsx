@@ -625,52 +625,72 @@ const RequestForm: React.FC = () => {
       
       {/* Main Form Card */}
       <div className="card group">
-        {/* Title Header with Advanced button on mobile */}
+        {/* Title Header with Update button on right */}
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
-          {/* Advanced and Location buttons for mobile - top right */}
-          {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
-            <div className="sm:hidden flex items-center gap-2">
-              {!showAdvancedRouting && !showLocationSelector ? (
-                <>
+          <div className="flex items-center gap-2">
+            {/* Update Knowledge button - top right */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsKnowledgeMode(true);
+                setIsTicketMode(false);
+                setSmartAssistEnabled(false);
+              }}
+              className={`px-3 py-1 text-xs rounded-full transition-all ${
+                isKnowledgeMode 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-purple-600/20 hover:text-purple-400'
+              }`}
+              disabled={isSubmitting || demoMode}
+            >
+              Update
+            </button>
+            
+            {/* Advanced and Location buttons for mobile - top right */}
+            {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
+              <div className="sm:hidden flex items-center gap-2">
+                {!showAdvancedRouting && !showLocationSelector ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedRouting(true)}
+                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      {routePreference === 'Auto' ? 'Advanced' : routePreference.replace('&Access', '').replace('Support', '')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationSelector(true)}
+                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      {selectedLocation || 'Location'}
+                    </button>
+                  </>
+                ) : showAdvancedRouting ? (
                   <button
                     type="button"
-                    onClick={() => setShowAdvancedRouting(true)}
-                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                    style={{ fontFamily: 'Poppins, sans-serif' }}
-                    disabled={isSubmitting || demoMode}
+                    onClick={() => setShowAdvancedRouting(false)}
+                    className="text-xs text-[var(--text-primary)]"
                   >
-                    {routePreference === 'Auto' ? 'Advanced' : routePreference.replace('&Access', '').replace('Support', '')}
+                    ✕
                   </button>
+                ) : showLocationSelector ? (
                   <button
                     type="button"
-                    onClick={() => setShowLocationSelector(true)}
-                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                    style={{ fontFamily: 'Poppins, sans-serif' }}
-                    disabled={isSubmitting || demoMode}
+                    onClick={() => setShowLocationSelector(false)}
+                    className="text-xs text-[var(--text-primary)]"
                   >
-                    {selectedLocation || 'Location'}
+                    ✕
                   </button>
-                </>
-              ) : showAdvancedRouting ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedRouting(false)}
-                  className="text-xs text-[var(--text-primary)]"
-                >
-                  ✕
-                </button>
-              ) : showLocationSelector ? (
-                <button
-                  type="button"
-                  onClick={() => setShowLocationSelector(false)}
-                  className="text-xs text-[var(--text-primary)]"
-                >
-                  ✕
-                </button>
-              ) : null}
-            </div>
-          )}
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
         
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -732,23 +752,20 @@ const RequestForm: React.FC = () => {
 
           {/* Mode Toggle Row */}
           <div className="mb-3">
-            {/* Mode Toggle - Classic Style - Now with 4 positions */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">Ticket</span>
-              <div className="relative inline-block w-36">
+            {/* Mode Toggle - 3-way toggle: Ticket | AI | Human */}
+            <div className="flex items-center justify-center">
+              <div className="relative inline-block w-32">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
                   <div 
                     className={`absolute inset-y-0.5 transition-all duration-200 rounded-full ${
-                      isKnowledgeMode ? 'bg-purple-600' :
                       isTicketMode ? 'bg-[#4A154B]' : 
                       !smartAssistEnabled ? 'bg-[#4A154B]' : 
                       'bg-[var(--accent)]'
                     }`}
                     style={{
-                      width: '25%',
-                      left: isKnowledgeMode ? '75%' :
-                            !smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? '50%' : 
-                            smartAssistEnabled ? '25%' : '0%'
+                      width: '33.33%',
+                      left: isTicketMode ? '0%' : 
+                            smartAssistEnabled ? '33.33%' : '66.66%'
                     }}
                   />
                   <button
@@ -761,8 +778,8 @@ const RequestForm: React.FC = () => {
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={isTicketMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      •
+                    <span className={isTicketMode ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}>
+                      Ticket
                     </span>
                   </button>
                   <button
@@ -775,7 +792,7 @@ const RequestForm: React.FC = () => {
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                    <span className={smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}>
                       AI
                     </span>
                   </button>
@@ -789,31 +806,17 @@ const RequestForm: React.FC = () => {
                     className="relative z-10 flex-1 py-1 text-xs transition-colors"
                     disabled={isSubmitting || demoMode}
                   >
-                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      HMN
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsKnowledgeMode(true);
-                      setIsTicketMode(false);
-                      setSmartAssistEnabled(false);
-                    }}
-                    className="relative z-10 flex-1 py-1 text-xs transition-colors"
-                    disabled={isSubmitting || demoMode}
-                  >
-                    <span className={isKnowledgeMode ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                      •
+                    <span className={!smartAssistEnabled && !isTicketMode && !isKnowledgeMode ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}>
+                      Human
                     </span>
                   </button>
                 </div>
               </div>
-              <span className="text-xs text-[var(--text-muted)]">Update</span>
-              
-              {/* Advanced and Location Buttons - Desktop only */}
-              {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
-                <div className="hidden sm:flex items-center gap-2">
+            </div>
+            
+            {/* Advanced and Location Buttons - Desktop only */}
+            {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
+              <div className="hidden sm:flex items-center gap-2 justify-center mt-2">
                   {/* Advanced Button */}
                   {!showAdvancedRouting ? (
                     <button
@@ -905,9 +908,8 @@ const RequestForm: React.FC = () => {
                       </button>
                     </div>
                   )}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Ticket Options */}
