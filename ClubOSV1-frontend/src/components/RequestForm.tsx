@@ -637,11 +637,9 @@ const RequestForm: React.FC = () => {
                 setIsTicketMode(false);
                 // Keep smartAssistEnabled as is (don't change the toggle)
               }}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105 ${
-                isKnowledgeMode 
-                  ? 'bg-[#4A154B] text-white shadow-lg shadow-[#4A154B]/25' 
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:border-[#4A154B]/50 hover:bg-[#4A154B]/10 hover:text-[#4A154B]'
-              }`}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105 
+                bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] 
+                hover:border-[#4A154B]/50 hover:bg-[#4A154B]/10 hover:text-[#4A154B]`}
               disabled={isSubmitting || demoMode}
             >
               {isKnowledgeMode ? '✓ Update Mode' : '+ Update'}
@@ -1051,6 +1049,10 @@ const RequestForm: React.FC = () => {
               disabled={isProcessing || demoMode}
               onClick={() => isMounted && console.log('Button clicked!', isProcessing)}
               style={{
+                ...(isKnowledgeMode && !isProcessing ? {
+                  backgroundColor: '#EAB308',
+                  borderColor: '#CA8A04'
+                } : {}),
                 ...(isProcessing ? {
                   background: 'linear-gradient(90deg, #152f2f 0%, #1a3939 50%, #152f2f 100%)',
                   backgroundSize: '200% 100%',

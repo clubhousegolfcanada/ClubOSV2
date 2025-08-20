@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.14] - 2025-08-20
+
+### Changed
+- **Terminal UI Button Styling**
+  - Add Knowledge submit button now displays in yellow (#EAB308) when in Update mode
+  - Update button in top right no longer changes color when active (stays neutral gray)
+  - Cleaner visual hierarchy with distinct button states
+
 ## [1.14.13] - 2025-08-20
 
 ### Fixed
