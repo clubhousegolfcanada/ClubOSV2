@@ -78,11 +78,16 @@ export default function CreateChallenge() {
       const response = await axios.get(`${API_URL}/api/friends`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
-      if (response.data.success) {
-        setFriends(response.data.data || []);
+      if (response.data.success && response.data.data) {
+        // The API returns { friends: [...], total: n }
+        const friendsList = response.data.data.friends || response.data.data;
+        setFriends(Array.isArray(friendsList) ? friendsList : []);
+      } else {
+        setFriends([]);
       }
     } catch (error) {
       console.error('Failed to fetch friends:', error);
+      setFriends([]);
     }
   };
 
@@ -91,11 +96,15 @@ export default function CreateChallenge() {
       const response = await axios.get(`${API_URL}/api/trackman/settings-catalog`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
-      if (response.data.success) {
-        setCourseSettings(response.data.data || []);
+      if (response.data.success && response.data.data) {
+        const settings = response.data.data;
+        setCourseSettings(Array.isArray(settings) ? settings : []);
+      } else {
+        setCourseSettings([]);
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
+      setCourseSettings([]);
     }
   };
 
@@ -185,10 +194,12 @@ export default function CreateChallenge() {
     }
   };
 
-  const filteredFriends = friends.filter(friend =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFriends = Array.isArray(friends) 
+    ? friends.filter(friend =>
+        friend.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        friend.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   const { creatorStake, acceptorStake, totalPot } = calculateStakes();
 

@@ -54,7 +54,8 @@ export default function CustomerBookings() {
                 border: 'none',
                 minHeight: '600px'
               }}
-              allow="fullscreen"
+              allow="payment; fullscreen; camera; microphone; geolocation"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
             />
           </div>
         </main>
