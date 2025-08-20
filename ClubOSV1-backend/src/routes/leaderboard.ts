@@ -71,7 +71,7 @@ router.get('/seasonal', async (req, res) => {
 router.get('/alltime', async (req, res) => {
   try {
     const { limit = 100 } = req.query;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.id || null;
     
     const query = `
       SELECT 
@@ -89,16 +89,23 @@ router.get('/alltime', async (req, res) => {
           SELECT 1 FROM champion_markers cm 
           WHERE cm.user_id = u.id AND cm.is_active = true
         ) as has_champion_marker,
-        EXISTS(
-          SELECT 1 FROM friends f 
-          WHERE (f.user_id = $2 AND f.friend_id = u.id) 
-          OR (f.friend_id = $2 AND f.user_id = u.id)
-        ) as is_friend,
-        EXISTS(
-          SELECT 1 FROM friend_requests fr
-          WHERE fr.from_user_id = $2 AND fr.to_user_id = u.id
-          AND fr.status = 'pending'
-        ) as has_pending_request
+        CASE 
+          WHEN $2::uuid IS NULL THEN false
+          ELSE EXISTS(
+            SELECT 1 FROM friendships f 
+            WHERE (f.user_id = $2 AND f.friend_id = u.id) 
+            OR (f.friend_id = $2 AND f.user_id = u.id)
+          )
+        END as is_friend,
+        CASE 
+          WHEN $2::uuid IS NULL THEN false
+          ELSE EXISTS(
+            SELECT 1 FROM friend_invitations fi
+            WHERE fi.inviter_id = $2 
+            AND fi.accepted_user_id = u.id
+            AND fi.status = 'pending'
+          )
+        END as has_pending_request
       FROM customer_profiles cp
       JOIN users u ON u.id = cp.user_id
       WHERE cp.total_cc_earned > 0 OR cp.cc_balance > 0

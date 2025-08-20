@@ -204,22 +204,16 @@ export default function Compete() {
       const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
-      setLeaderboardData(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch leaderboard:', error);
-      // Use mock data for now
-      setLeaderboardData([
-        { 
-          id: '1', user_id: '1', name: 'TigerWoods97', email: '', rank_tier: 'Legend', 
-          cc_balance: 18450, total_challenges_won: 142, total_challenges_played: 180, 
-          win_rate: 78.9, has_champion_marker: true, is_friend: false, has_pending_request: false 
-        },
-        { 
-          id: '2', user_id: '2', name: 'HappyGilmore', email: '', rank_tier: 'Champion', 
-          cc_balance: 15200, total_challenges_won: 98, total_challenges_played: 145, 
-          win_rate: 67.6, has_champion_marker: false, is_friend: false, has_pending_request: false 
-        },
-      ]);
+      
+      if (response.data.success) {
+        setLeaderboardData(response.data.data || []);
+      } else {
+        console.error('Leaderboard API returned error:', response.data.error);
+        setLeaderboardData([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch leaderboard:', error.response?.data || error.message);
+      setLeaderboardData([]);
     }
   };
 
