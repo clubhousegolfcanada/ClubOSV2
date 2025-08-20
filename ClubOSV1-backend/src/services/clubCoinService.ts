@@ -445,6 +445,20 @@ class ClubCoinService {
     try {
       await client.query('BEGIN');
 
+      // Check if user already has initial grant (idempotency check)
+      const existingGrant = await client.query(
+        `SELECT 1 FROM cc_transactions 
+         WHERE user_id = $1 AND type = 'initial_grant' 
+         LIMIT 1`,
+        [userId]
+      );
+      
+      if (existingGrant.rows.length > 0) {
+        logger.info('User already has initial grant, skipping:', { userId });
+        await client.query('COMMIT');
+        return true;
+      }
+
       // Create profile if needed
       await this.createUserProfile(userId, client);
 

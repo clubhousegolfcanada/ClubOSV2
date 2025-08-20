@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.13] - 2025-08-20
+
+### Fixed
+- **ClubCoin System Critical Fixes**
+  - Fixed all existing customers not receiving 100 CC founding member bonus
+  - Michael Belair and Alanna Belair now have their 100 CC properly granted
+  - Fixed silent failure in signup CC initialization that prevented new users from getting CC
+  - Added proper error logging and rollback when CC initialization fails
+  - Added idempotency check to prevent double grants
+  - Removed hardcoded 100 CC placeholder for mikebelair79@gmail.com in profile page
+  - Profile page now shows actual CC balance from database
+  - Added database migration to grant 100 CC to all existing customers without initial grant
+  - All 3 active customers now have their founding member bonus
+  - New signups will now properly receive 100 CC or fail with clear error
+
 ## [1.14.12] - 2025-08-20
 
 ### Fixed

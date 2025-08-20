@@ -58,20 +58,17 @@ export default function CustomerProfile() {
     try {
       const token = localStorage.getItem('clubos_token');
       
-      // Check if this is Michael's account and set appropriate CC balance
-      const isMichaelAccount = user?.email === 'mikebelair79@gmail.com';
-      const baseCC = isMichaelAccount ? 100 : 0;
-      
-      // Try to fetch real data
-      let ccBalance = baseCC;
+      // Try to fetch real data - no hardcoded values
+      let ccBalance = 0;
       let challenges = { total: 0, wins: 0 };
       
       try {
         const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (ccResponse.data.success && ccResponse.data.data.balance > 0) {
-          ccBalance = ccResponse.data.data.balance;
+        if (ccResponse.data.success) {
+          // Always use the actual balance from database, even if 0
+          ccBalance = ccResponse.data.data.balance || 0;
         }
       } catch (error) {
         console.error('Failed to fetch CC balance:', error);
