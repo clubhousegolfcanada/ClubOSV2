@@ -16,8 +16,8 @@ const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzh
 const pool = new Pool({
   connectionString: dbUrl,
   ssl: dbUrl.includes('railway') ? { rejectUnauthorized: false } : false,
-  max: 5, // Reduced to work with Railway's connection limits
-  idleTimeoutMillis: 3000, // Reduced to release connections faster
+  max: 20, // Railway Pro plan supports many connections
+  idleTimeoutMillis: 10000, // 10 seconds idle timeout
   connectionTimeoutMillis: 5000,
   // Additional performance settings
   statement_timeout: 30000, // 30 second query timeout
@@ -46,14 +46,14 @@ pool.on('acquire', () => {
   const activeCount = pool.totalCount - pool.idleCount;
   const waitingCount = pool.waitingCount;
   
-  // Log warning at 60% usage (3/5 connections)
-  if (activeCount >= 3 && pool.totalCount <= 5) {
+  // Log warning at 70% usage
+  if (activeCount > pool.totalCount * 0.7) {
     logger.warn(`High database connection usage: ${activeCount}/${pool.totalCount} connections active, ${waitingCount} waiting`);
   }
   
-  // Log critical if at max
-  if (activeCount >= pool.totalCount) {
-    logger.error(`CRITICAL: Database connection pool exhausted: ${activeCount}/${pool.totalCount} active, ${waitingCount} waiting`);
+  // Log critical if near max
+  if (activeCount >= pool.totalCount - 2) {
+    logger.error(`CRITICAL: Database connection pool nearly exhausted: ${activeCount}/${pool.totalCount} active, ${waitingCount} waiting`);
   }
 });
 
