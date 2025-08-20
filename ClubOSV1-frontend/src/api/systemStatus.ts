@@ -38,10 +38,10 @@ export const systemStatusAPI = {
   // Get status for all locations
   getAllStatus: async (): Promise<LocationStatus[]> => {
     try {
-      const response = await apiClient.get('/api/system/status');
-      // The /api/system/status endpoint returns system info, not location bay data
+      const response = await apiClient.get('/api/system/check');
+      // The /api/system/check endpoint returns system info, not location bay data
       // For now, return mock data since the endpoint doesn't return the expected structure
-      console.log('System status response:', response.data.data);
+      console.log('System status response:', response.data);
       return getMockStatus();
     } catch (error) {
       console.error('Failed to fetch system status:', error);
@@ -53,8 +53,8 @@ export const systemStatusAPI = {
   // Get status for specific location
   getLocationStatus: async (location: string): Promise<LocationStatus | null> => {
     try {
-      const response = await apiClient.get(`/api/system/status/${location}`);
-      return response.data.data;
+      // No specific location endpoint exists, return mock data
+      return getMockLocationStatus(location);
     } catch (error) {
       console.error(`Failed to fetch status for ${location}:`, error);
       return getMockLocationStatus(location);
@@ -64,8 +64,12 @@ export const systemStatusAPI = {
   // Get bay occupancy
   getBayOccupancy: async (location: string, bayNumber: number): Promise<BayStatus | null> => {
     try {
-      const response = await apiClient.get(`/api/system/status/${location}/bay/${bayNumber}`);
-      return response.data.data;
+      // No specific bay endpoint exists, return mock data
+      const mockLocation = getMockLocationStatus(location);
+      if (mockLocation) {
+        return mockLocation.bays.find(b => b.bayNumber === bayNumber) || null;
+      }
+      return null;
     } catch (error) {
       console.error(`Failed to fetch bay status:`, error);
       return null;
