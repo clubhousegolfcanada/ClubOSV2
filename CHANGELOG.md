@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.17] - 2025-08-20
+
+### Fixed
+- **Leaderboard Mobile Black Screen Issue**
+  - Fixed API response format mismatch between backend and frontend
+  - Backend now returns snake_case fields matching frontend LeaderboardEntry interface
+  - Added proper friend status and pending request checks to alltime endpoint
+  - Improved error handling and removed mock data fallback
+  - Fixed iframe responsive styling for TrackMan embeds on mobile devices
+  - Added proper authentication checks and loading states
+  - Set default tab to 'alltime' since it's the main custom leaderboard
+  - Added lazy loading to iframes to improve mobile performance
+
 ## [1.14.16] - 2025-08-20
 
 ### Improved
