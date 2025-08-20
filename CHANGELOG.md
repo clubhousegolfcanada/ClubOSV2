@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.15] - 2025-08-20
+
+### Fixed
+- **Customer Dashboard Book Card**
+  - Made location selector smaller to prevent icon overlap
+  - Card now shows "Book Bedford", "Book Dartmouth", or "Book Anywhere" based on selection
+  - Location selector moved to top-right corner with minimal footprint
+  - Text hidden on mobile to save space (only shows icon)
+
 ## [1.14.14] - 2025-08-20
 
 ### Changed

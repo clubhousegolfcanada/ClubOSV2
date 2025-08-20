@@ -215,7 +215,8 @@ export const CustomerDashboard: React.FC = () => {
   const quickActions = [
     { 
       icon: Calendar, 
-      label: 'Book a Box', 
+      label: selectedLocation?.name === 'All Locations' ? 'Book Anywhere' : 
+             selectedLocation ? `Book ${selectedLocation.name}` : 'Book a Bay', 
       description: 'Reserve your spot',
       onClick: () => {
         if (selectedLocation) {
@@ -324,17 +325,17 @@ export const CustomerDashboard: React.FC = () => {
           >
             {/* Location selector for Book a Box card */}
             {action.hasLocationSelector && (
-              <div className="absolute top-2 right-2 z-30">
+              <div className="absolute top-1 right-1 z-30">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowLocationDropdown(!showLocationDropdown);
                   }}
-                  className="flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-xs relative z-30"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-50 hover:bg-gray-100 rounded text-[10px] relative z-30"
                 >
-                  <MapPin className="w-3 h-3 text-[#0B3D3A]" />
-                  <span className="font-medium text-gray-700">{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
-                  <ChevronDown className="w-3 h-3 text-gray-500" />
+                  <MapPin className="w-2.5 h-2.5 text-[#0B3D3A]" />
+                  <span className="font-medium text-gray-700 hidden sm:inline">{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
+                  <ChevronDown className="w-2.5 h-2.5 text-gray-500" />
                 </button>
                 
                 {showLocationDropdown && (
