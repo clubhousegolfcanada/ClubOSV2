@@ -74,6 +74,65 @@ export class AssistantService {
     }
   }
 
+  private async validateAnswerRelevance(question: string, answer: string | undefined): Promise<boolean> {
+    if (!answer) return false;
+    
+    // Quick validation for very short or obviously wrong answers
+    if (answer.length < 20) return false;
+    
+    // If we have OpenAI, use it for smart validation
+    if (this.openai) {
+      try {
+        const response = await this.openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a relevance checker. Determine if an answer actually addresses the question asked. Respond with just "true" or "false".'
+            },
+            {
+              role: 'user',
+              content: `Question: "${question}"\n\nAnswer: "${answer.substring(0, 500)}"\n\nDoes this answer actually address the question? Reply with just true or false.`
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 10
+        });
+        
+        const result = response.choices[0].message.content?.toLowerCase().includes('true');
+        
+        if (!result) {
+          logger.warn('Answer validation failed - not relevant', {
+            question: question.substring(0, 100),
+            answer: answer.substring(0, 100)
+          });
+        }
+        
+        return result || false;
+      } catch (error) {
+        logger.error('Failed to validate answer relevance:', error);
+        // Fall back to basic checks
+      }
+    }
+    
+    // Basic fallback validation
+    const questionLower = question.toLowerCase();
+    const answerLower = answer.toLowerCase();
+    
+    // Extract key terms from question (excluding stop words)
+    const stopWords = new Set(['what', 'is', 'the', 'are', 'how', 'where', 'when', 'why', 'can', 'do', 'does', 'will', 'would', 'should', 'a', 'an', 'of', 'for', 'to', 'in', 'on', 'at']);
+    const questionTerms = questionLower
+      .split(/\W+/)
+      .filter(term => term.length > 2 && !stopWords.has(term));
+    
+    // Check if at least some key terms appear in the answer
+    const matchingTerms = questionTerms.filter(term => answerLower.includes(term));
+    const matchRatio = questionTerms.length > 0 ? matchingTerms.length / questionTerms.length : 0;
+    
+    // Need at least 30% of key terms to match
+    return matchRatio >= 0.3;
+  }
+
   private extractJsonFromText(text: string): { json: any | null; textAfter: string; fullText: string } {
     // First, clean up markdown and citations
     let cleanedText = text;
@@ -212,18 +271,10 @@ export class AssistantService {
         // Format the response from knowledge
         const formattedResponse = knowledgeSearchService.formatResultsForResponse(searchResults);
         
-        // Validate that the response actually answers the question
-        const questionLower = userMessage.toLowerCase();
-        const responseLower = formattedResponse?.toLowerCase() || '';
+        // Validate that the response actually answers the question using AI
+        const isRelevant = await this.validateAnswerRelevance(userMessage, formattedResponse);
         
-        // Check for obvious mismatches
-        const isMismatch = (
-          (questionLower.includes('color') && !responseLower.includes('color') && !responseLower.includes('green') && !responseLower.includes('#')) ||
-          (questionLower.includes('price') && !responseLower.includes('$') && !responseLower.includes('cost') && !responseLower.includes('price')) ||
-          (questionLower.includes('hours') && !responseLower.includes('open') && !responseLower.includes('close') && !responseLower.includes('am') && !responseLower.includes('pm'))
-        );
-        
-        if (formattedResponse && !isMismatch) {
+        if (formattedResponse && isRelevant) {
           logger.info('✅ USING LOCAL KNOWLEDGE DATABASE (NOT OpenAI)', {
             route,
             source: topResult.source,
@@ -258,11 +309,11 @@ export class AssistantService {
               knowledgeKey: topResult.key
             }
           };
-        } else if (isMismatch) {
+        } else if (!isRelevant) {
           logger.warn('❌ Knowledge result does not answer the question', {
-            question: questionLower.substring(0, 50),
-            responsePreview: responseLower.substring(0, 100),
-            mismatchDetected: true
+            question: userMessage.substring(0, 50),
+            responsePreview: formattedResponse?.substring(0, 100),
+            validationFailed: true
           });
         }
       } else {
