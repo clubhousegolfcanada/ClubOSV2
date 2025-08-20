@@ -72,7 +72,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
   
   try {
     // Always use the LLM endpoint - it handles both smart assist and Slack routing
-    const endpoint = '/llm/request';
+    const endpoint = '/api/llm/request';
     
     // REMOVED: Sending user info in request body is a security risk
     // User info should only come from authenticated JWT token

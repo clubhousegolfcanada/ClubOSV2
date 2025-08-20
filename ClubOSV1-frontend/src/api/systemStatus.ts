@@ -38,8 +38,8 @@ export const systemStatusAPI = {
   // Get status for all locations
   getAllStatus: async (): Promise<LocationStatus[]> => {
     try {
-      const response = await apiClient.get('/system-status/all');
-      // The /system-status/all endpoint returns system info, not location bay data
+      const response = await apiClient.get('/api/system/status');
+      // The /api/system/status endpoint returns system info, not location bay data
       // For now, return mock data since the endpoint doesn't return the expected structure
       console.log('System status response:', response.data.data);
       return getMockStatus();
@@ -53,7 +53,7 @@ export const systemStatusAPI = {
   // Get status for specific location
   getLocationStatus: async (location: string): Promise<LocationStatus | null> => {
     try {
-      const response = await apiClient.get(`/system-status/${location}`);
+      const response = await apiClient.get(`/api/system/status/${location}`);
       return response.data.data;
     } catch (error) {
       console.error(`Failed to fetch status for ${location}:`, error);
@@ -64,7 +64,7 @@ export const systemStatusAPI = {
   // Get bay occupancy
   getBayOccupancy: async (location: string, bayNumber: number): Promise<BayStatus | null> => {
     try {
-      const response = await apiClient.get(`/system-status/${location}/bay/${bayNumber}`);
+      const response = await apiClient.get(`/api/system/status/${location}/bay/${bayNumber}`);
       return response.data.data;
     } catch (error) {
       console.error(`Failed to fetch bay status:`, error);

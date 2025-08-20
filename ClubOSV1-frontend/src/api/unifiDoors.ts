@@ -26,14 +26,14 @@ export interface DoorStatus {
 export const unifiDoorsAPI = {
   // Get all available doors
   getDoors: async (): Promise<{ success: boolean; doors: UnifiDoor[] }> => {
-    const response = await apiClient.get('/unifi-doors/doors');
+    const response = await apiClient.get('/api/unifi-doors/doors');
     return response.data;
   },
 
   // Unlock a specific door
   unlock: async (params: UnlockParams): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.post(
-      `/unifi-doors/doors/${params.location.toLowerCase()}/${params.doorKey}/unlock`,
+      `/api/unifi-doors/doors/${params.location.toLowerCase()}/${params.doorKey}/unlock`,
       { duration: params.duration || 30 }
     );
     return response.data;
@@ -42,7 +42,7 @@ export const unifiDoorsAPI = {
   // Get door status
   getStatus: async (location: string, doorKey: string): Promise<{ success: boolean; status: DoorStatus }> => {
     const response = await apiClient.get(
-      `/unifi-doors/doors/${location.toLowerCase()}/${doorKey}/status`
+      `/api/unifi-doors/doors/${location.toLowerCase()}/${doorKey}/status`
     );
     return response.data;
   }
