@@ -325,17 +325,17 @@ export const CustomerDashboard: React.FC = () => {
           >
             {/* Location selector for Book a Box card */}
             {action.hasLocationSelector && (
-              <div className="absolute top-1 right-1 z-30">
+              <div className="absolute top-2 right-2 z-30">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowLocationDropdown(!showLocationDropdown);
                   }}
-                  className="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-50 hover:bg-gray-100 rounded text-[10px] relative z-30"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-[#0B3D3A]/10 hover:bg-[#0B3D3A]/20 rounded text-xs font-semibold text-[#0B3D3A] relative z-30 transition-colors"
                 >
-                  <MapPin className="w-2.5 h-2.5 text-[#0B3D3A]" />
-                  <span className="font-medium text-gray-700 hidden sm:inline">{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
-                  <ChevronDown className="w-2.5 h-2.5 text-gray-500" />
+                  <MapPin className="w-3 h-3" />
+                  <span>{selectedLocation?.name === 'All Locations' ? 'All' : selectedLocation?.name || 'Select'}</span>
+                  <ChevronDown className="w-3 h-3" />
                 </button>
                 
                 {showLocationDropdown && (

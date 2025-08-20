@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.16] - 2025-08-20
+
+### Improved
+- **Customer Dashboard Location Selector**
+  - Location selector now matches style of other card badges
+  - Uses consistent green theme (bg-[#0B3D3A]/10) like CC and rank badges
+  - Proper sizing with text-xs and standard padding
+  - Better hover state with darker green background
+  - Consistent positioning at top-2 right-2
+
 ## [1.14.15] - 2025-08-20
 
 ### Fixed
