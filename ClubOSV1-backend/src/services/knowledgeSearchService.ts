@@ -1,6 +1,7 @@
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { intelligentSearchService } from './intelligentSearchService';
+import { semanticSearch } from './semanticSearch';
 
 interface SearchResult {
   key: string;
@@ -27,7 +28,48 @@ export class KnowledgeSearchService {
     const results: SearchResult[] = [];
 
     try {
-      // Use intelligent search to understand query better
+      // First, try semantic search if OpenAI is configured
+      if ((semanticSearch as any).openai) {
+        logger.info('🔍 Using SEMANTIC SEARCH for query:', query.substring(0, 50));
+        
+        try {
+          const semanticResults = await semanticSearch.searchKnowledge(query, {
+            limit: limit * 2, // Get more results to filter
+            minRelevance: 0.7,
+            includeAllCategories: !assistantType,
+            category: assistantType
+          });
+          
+          if (semanticResults.length > 0) {
+            logger.info('✅ Semantic search found', semanticResults.length, 'results');
+            
+            // Convert semantic results to our format
+            const convertedResults = semanticResults.map((sr: any) => ({
+              key: `semantic.${sr.category || 'general'}.${sr.id}`,
+              value: {
+                problem: sr.problem,
+                solution: sr.solution,
+                content: sr.solution,
+                reasoning: sr.reasoning
+              },
+              confidence: sr.confidence || 0.8,
+              relevance: sr.relevance || 0.8,
+              source: 'semantic_search'
+            }));
+            
+            results.push(...convertedResults.slice(0, limit));
+            
+            // If we have good semantic results, return them
+            if (results.length >= limit) {
+              return results;
+            }
+          }
+        } catch (semanticError) {
+          logger.warn('Semantic search failed, falling back to keyword search:', semanticError);
+        }
+      }
+      
+      // Fallback to intelligent keyword search
       const intelligentAnalysis = intelligentSearchService.intelligentSearch(query, userRole);
       
       // Log the intelligent analysis for debugging
