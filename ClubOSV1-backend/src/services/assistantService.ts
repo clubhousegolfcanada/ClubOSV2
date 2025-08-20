@@ -205,26 +205,38 @@ export class AssistantService {
       const topResult = searchResults[0];
       const combinedScore = topResult.confidence * topResult.relevance;
       
-      // Use local knowledge if we have a good match (lowered threshold)
-      // Lowered to 0.15 to prioritize using our 379+ SOPs over OpenAI calls
-      if (combinedScore >= 0.15) {
-        logger.info('✅ USING LOCAL KNOWLEDGE DATABASE (NOT OpenAI)', {
-          route,
-          source: topResult.source,
-          key: topResult.key,
-          confidence: topResult.confidence,
-          relevance: topResult.relevance,
-          combinedScore,
-          threshold: 0.15,
-          USING_LOCAL: true,
-          SAVED_API_CALL: true,
-          responseSource: 'DATABASE_KNOWLEDGE'
-        });
-        
+      // Use local knowledge if we have a good match
+      // Increased threshold to 0.6 to ensure quality answers
+      // Also check if the answer is actually relevant to the question
+      if (combinedScore >= 0.6) {
         // Format the response from knowledge
         const formattedResponse = knowledgeSearchService.formatResultsForResponse(searchResults);
         
-        if (formattedResponse) {
+        // Validate that the response actually answers the question
+        const questionLower = userMessage.toLowerCase();
+        const responseLower = formattedResponse?.toLowerCase() || '';
+        
+        // Check for obvious mismatches
+        const isMismatch = (
+          (questionLower.includes('color') && !responseLower.includes('color') && !responseLower.includes('green') && !responseLower.includes('#')) ||
+          (questionLower.includes('price') && !responseLower.includes('$') && !responseLower.includes('cost') && !responseLower.includes('price')) ||
+          (questionLower.includes('hours') && !responseLower.includes('open') && !responseLower.includes('close') && !responseLower.includes('am') && !responseLower.includes('pm'))
+        );
+        
+        if (formattedResponse && !isMismatch) {
+          logger.info('✅ USING LOCAL KNOWLEDGE DATABASE (NOT OpenAI)', {
+            route,
+            source: topResult.source,
+            key: topResult.key,
+            confidence: topResult.confidence,
+            relevance: topResult.relevance,
+            combinedScore,
+            threshold: 0.6,
+            USING_LOCAL: true,
+            SAVED_API_CALL: true,
+            responseSource: 'DATABASE_KNOWLEDGE'
+          });
+          
           // Track successful usage
           await knowledgeSearchService.trackUsage(topResult.key, true);
           
@@ -246,6 +258,12 @@ export class AssistantService {
               knowledgeKey: topResult.key
             }
           };
+        } else if (isMismatch) {
+          logger.warn('❌ Knowledge result does not answer the question', {
+            question: questionLower.substring(0, 50),
+            responsePreview: responseLower.substring(0, 100),
+            mismatchDetected: true
+          });
         }
       } else {
         logger.warn('📊 Knowledge found but confidence too low - CALLING OPENAI', {
