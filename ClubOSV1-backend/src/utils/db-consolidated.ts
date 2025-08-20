@@ -45,15 +45,18 @@ pool.on('connect', (client) => {
 pool.on('acquire', () => {
   const activeCount = pool.totalCount - pool.idleCount;
   const waitingCount = pool.waitingCount;
+  const maxConnections = 20; // Our configured max
   
-  // Log warning at 70% usage
-  if (activeCount > pool.totalCount * 0.7) {
-    logger.warn(`High database connection usage: ${activeCount}/${pool.totalCount} connections active, ${waitingCount} waiting`);
+  // Log warning if we have waiting connections
+  if (waitingCount > 0 && pool.totalCount < maxConnections) {
+    logger.info(`Pool growing: ${activeCount} active, ${pool.idleCount} idle, ${waitingCount} waiting (${pool.totalCount}/${maxConnections} total)`);
+  } else if (waitingCount > 5) {
+    logger.warn(`High database connection demand: ${activeCount} active, ${waitingCount} waiting (pool: ${pool.totalCount}/${maxConnections})`);
   }
   
-  // Log critical if near max
-  if (activeCount >= pool.totalCount - 2) {
-    logger.error(`CRITICAL: Database connection pool nearly exhausted: ${activeCount}/${pool.totalCount} active, ${waitingCount} waiting`);
+  // Log critical only if we're at max AND have many waiting
+  if (pool.totalCount >= maxConnections && waitingCount > 10) {
+    logger.error(`CRITICAL: Database connection pool saturated: ${activeCount} active, ${waitingCount} waiting (max: ${maxConnections})`);
   }
 });
 
