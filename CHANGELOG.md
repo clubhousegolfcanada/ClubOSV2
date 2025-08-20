@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.12] - 2025-08-20
+
+### Fixed
+- **Terminal UI Polish**
+  - Update button now preserves AI toggle state when clicked
+  - Advanced and Location buttons positioned closer to left side for better UX
+  - Fixed toggle behavior to stay on AI mode when entering Update mode
+
 ## [1.14.11] - 2025-08-19
 
 ### Redesigned

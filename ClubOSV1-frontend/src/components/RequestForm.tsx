@@ -635,7 +635,7 @@ const RequestForm: React.FC = () => {
               onClick={() => {
                 setIsKnowledgeMode(true);
                 setIsTicketMode(false);
-                setSmartAssistEnabled(false);
+                // Keep smartAssistEnabled as is (don't change the toggle)
               }}
               className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105 ${
                 isKnowledgeMode 
@@ -817,7 +817,7 @@ const RequestForm: React.FC = () => {
               
               {/* Advanced and Location Buttons - Desktop only */}
               {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
-                <div className="hidden sm:flex items-center gap-2 ml-auto">
+                <div className="hidden sm:flex items-center gap-2 ml-4">
                   {/* Advanced Button */}
                   {!showAdvancedRouting ? (
                     <button
