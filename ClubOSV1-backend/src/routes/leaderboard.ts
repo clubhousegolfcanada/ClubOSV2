@@ -280,30 +280,35 @@ router.get('/user/:userId', async (req, res) => {
 router.get('/rank', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
+    const client = await pool.connect();
     
-    const result = await db.query(`
+    try {
+      const result = await client.query(`
       SELECT rank_tier, points, challenges_played, challenges_won
       FROM rank_assignments
       WHERE user_id = $1 AND season_id = get_current_season()
     `, [userId]);
     
-    if (result.rows.length === 0) {
-      // Return default if no rank assignment
-      return res.json({
-        success: true,
-        data: {
-          rank_tier: 'house',
-          points: 0,
-          challenges_played: 0,
-          challenges_won: 0
-        }
-      });
-    }
+      if (result.rows.length === 0) {
+        // Return default if no rank assignment
+        return res.json({
+          success: true,
+          data: {
+            rank_tier: 'house',
+            points: 0,
+            challenges_played: 0,
+            challenges_won: 0
+          }
+        });
+      }
     
-    res.json({
-      success: true,
-      data: result.rows[0]
-    });
+      res.json({
+        success: true,
+        data: result.rows[0]
+      });
+    } finally {
+      client.release();
+    }
   } catch (error) {
     logger.error('Failed to fetch user rank:', error);
     res.status(500).json({
