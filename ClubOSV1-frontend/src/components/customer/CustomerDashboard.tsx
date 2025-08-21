@@ -35,15 +35,6 @@ interface Location {
   city: string;
 }
 
-interface Booking {
-  id: string;
-  date: string;
-  time: string;
-  bay: string;
-  location: string;
-  friends: string[];
-}
-
 interface CustomerProfile {
   displayName?: string;
   name?: string;
@@ -79,13 +70,11 @@ export const CustomerDashboard: React.FC = () => {
   const token = user?.token;
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [quickStats, setQuickStats] = useState({
     activeChallenges: 0,
-    nextBooking: null as any,
     ccBalance: 0,
     rank: 'House',
     isChampion: false
@@ -128,31 +117,6 @@ export const CustomerDashboard: React.FC = () => {
           }
         } catch (error) {
           console.error('Failed to fetch customer profile:', error);
-        }
-        
-        // Fetch bookings
-        try {
-          const bookingsResponse = await axios.get(`${API_URL}/api/customer-bookings`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (bookingsResponse.data.success) {
-            const upcomingOnly = bookingsResponse.data.bookings
-              .filter((b: any) => b.status === 'upcoming')
-              .slice(0, 3);
-            setUpcomingBookings(upcomingOnly);
-            
-            // Set next booking for quick stats
-            if (upcomingOnly.length > 0) {
-              setQuickStats(prev => ({ ...prev, nextBooking: upcomingOnly[0] }));
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch bookings:', error);
-          // Use mock data as fallback
-          setUpcomingBookings([
-            { id: '1', date: 'Today', time: '6:00 PM', bay: 'Bay 2', location: 'Bedford', friends: ['John D.'] },
-            { id: '2', date: 'Tomorrow', time: '7:00 PM', bay: 'Bay 4', location: 'Bedford', friends: [] }
-          ]);
         }
 
         // Fetch active challenges count and CC balance
@@ -295,24 +259,14 @@ export const CustomerDashboard: React.FC = () => {
       </div>
 
       {/* Quick Info Bar - Simplified */}
-      {(quickStats.activeChallenges > 0 || quickStats.nextBooking) && (
+      {quickStats.activeChallenges > 0 && (
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {quickStats.activeChallenges > 0 && (
-            <div className="bg-white rounded-lg border border-gray-100 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
-              <Target className="w-4 h-4 text-[#0B3D3A]" />
-              <span className="text-sm">
-                <span className="font-semibold">{quickStats.activeChallenges}</span> active challenge{quickStats.activeChallenges !== 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
-          {quickStats.nextBooking && (
-            <div className="bg-white rounded-lg border border-gray-100 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
-              <Clock className="w-4 h-4 text-[#0B3D3A]" />
-              <span className="text-sm">
-                Next: <span className="font-semibold">{quickStats.nextBooking.date} {quickStats.nextBooking.time}</span>
-              </span>
-            </div>
-          )}
+          <div className="bg-white rounded-lg border border-gray-100 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
+            <Target className="w-4 h-4 text-[#0B3D3A]" />
+            <span className="text-sm">
+              <span className="font-semibold">{quickStats.activeChallenges}</span> active challenge{quickStats.activeChallenges !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
       )}
 
@@ -393,69 +347,8 @@ export const CustomerDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Upcoming Bookings */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Upcoming Bookings</h2>
-            <Calendar className="w-4 h-4 text-[#0B3D3A]" />
-          </div>
-          <div className="space-y-2">
-            {upcomingBookings.length > 0 ? (
-              <>
-                {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">{booking.date}</span>
-                          <span className="text-xs text-gray-500">{booking.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-[#0B3D3A] font-medium">{booking.bay}</span>
-                          {booking.friends.length > 0 && (
-                            <span className="text-xs text-gray-500">
-                              • With {booking.friends.join(', ')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
-                ))}
-                <button 
-                  onClick={() => router.push('/customer/bookings')}
-                  className="w-full pt-2 text-[#0B3D3A] hover:text-[#084a45] text-sm font-medium flex items-center justify-center"
-                >
-                  View All Bookings
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-              </>
-            ) : (
-              <div className="text-center py-6">
-                <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 mb-3">No upcoming bookings</p>
-                <button 
-                  onClick={() => {
-                    if (selectedLocation) {
-                      window.open(skeddaUrls[selectedLocation.id], '_blank');
-                    } else {
-                      router.push('/customer/bookings');
-                    }
-                  }}
-                  className="px-4 py-2 bg-[#0B3D3A] text-white text-sm rounded-lg hover:bg-[#084a45] transition-colors font-medium"
-                >
-                  Book a Bay Now
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Links */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      {/* Quick Links - Full Width */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Quick Links</h2>
             <Zap className="w-4 h-4 text-[#0B3D3A]" />
@@ -503,7 +396,6 @@ export const CustomerDashboard: React.FC = () => {
               <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-        </div>
       </div>
     </div>
   );
