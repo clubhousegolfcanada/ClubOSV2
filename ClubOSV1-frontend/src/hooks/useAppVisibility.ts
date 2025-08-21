@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuthState, useStore } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
 import { useRouter } from 'next/router';
@@ -9,12 +9,27 @@ import { useRouter } from 'next/router';
  */
 export function useAppVisibility() {
   const router = useRouter();
-  const { user, setUser, isAuthenticated } = useAuthState();
+  const { user, setUser, isAuthenticated, setAuthLoading } = useAuthState();
   const { setViewMode } = useStore();
+  const lastCheckRef = useRef<number>(0);
+  const checkInProgressRef = useRef<boolean>(false);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
+        // Debounce: Only check if at least 1 second has passed since last check
+        const now = Date.now();
+        if (now - lastCheckRef.current < 1000) {
+          return;
+        }
+        lastCheckRef.current = now;
+        
+        // Prevent concurrent checks
+        if (checkInProgressRef.current) {
+          return;
+        }
+        checkInProgressRef.current = true;
+        
         // App is visible again
         console.log('App became visible, checking auth state...');
         
@@ -55,18 +70,18 @@ export function useAppVisibility() {
             }
           }
         }
+        
+        // Clear loading state and reset check flag
+        setAuthLoading(false);
+        checkInProgressRef.current = false;
       }
     };
 
-    // Add visibility change listener
+    // Only listen for visibility change, not focus (to prevent double-firing)
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Also listen for focus events (sometimes more reliable on mobile)
-    window.addEventListener('focus', handleVisibilityChange);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [isAuthenticated, user, setUser, setViewMode, router]);
+  }, [isAuthenticated, user, setUser, setViewMode, router, setAuthLoading]);
 }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
@@ -9,25 +9,36 @@ export default function CustomerApp() {
   const router = useRouter();
   const { user, isLoading } = useAuthState();
   const { viewMode } = useStore();
+  const [localLoading, setLocalLoading] = useState(true);
 
   useEffect(() => {
-    // Don't redirect while auth is still loading
-    if (isLoading) return;
+    // Set a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      setLocalLoading(false);
+    }, 3000); // 3 second max load time
     
-    // Redirect if not in customer mode and not a customer
-    if (!user) {
+    // Clear timeout if auth loads successfully
+    if (!isLoading && user) {
+      setLocalLoading(false);
+      clearTimeout(timeout);
+    }
+    
+    // Redirect logic
+    if (!isLoading && !user) {
       router.push('/login');
-    } else if (viewMode !== 'customer' && user.role !== 'customer') {
+    } else if (!isLoading && user && viewMode !== 'customer' && user.role !== 'customer') {
       router.push('/');
     }
+    
+    return () => clearTimeout(timeout);
   }, [user, viewMode, router, isLoading]);
 
-  // Show loading state while auth is being verified
-  if (isLoading) {
+  // Show loading state only briefly
+  if (localLoading && isLoading) {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>

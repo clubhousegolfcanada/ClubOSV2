@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
@@ -10,66 +10,79 @@ interface AuthGuardProps {
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   const router = useRouter();
-  const { isAuthenticated, user, setUser } = useAuthState();
+  const { isAuthenticated, user, setUser, setAuthLoading } = useAuthState();
   const [isChecking, setIsChecking] = useState(true);
+  const checkTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     // Only run on initial mount
     if (typeof window === 'undefined') return;
     
-    const checkAuth = () => {
-      // Check if user is stored in localStorage (for page refresh or app resume)
-      const storedUser = localStorage.getItem('clubos_user');
-      const storedToken = localStorage.getItem('clubos_token');
+    let isCheckInProgress = false;
+    
+    const checkAuth = async () => {
+      // Prevent concurrent checks
+      if (isCheckInProgress) return;
+      isCheckInProgress = true;
       
-      if (storedUser && storedToken) {
-        // Check if token is still valid
-        if (!tokenManager.isTokenExpired(storedToken)) {
-          if (!user) {
-            try {
-              const parsedUser = JSON.parse(storedUser);
-              setUser({ ...parsedUser, token: storedToken });
-            } catch (error) {
-              console.error('Failed to parse stored user:', error);
-              localStorage.removeItem('clubos_user');
-              localStorage.removeItem('clubos_token');
-              router.push('/login');
+      // Set a timeout to prevent infinite loading
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+      }
+      
+      checkTimeoutRef.current = setTimeout(() => {
+        console.warn('Auth check timeout - clearing loading state');
+        setIsChecking(false);
+        setAuthLoading(false);
+        isCheckInProgress = false;
+      }, 5000); // 5 second timeout
+      
+      try {
+        // Check if user is stored in localStorage
+        const storedUser = localStorage.getItem('clubos_user');
+        const storedToken = localStorage.getItem('clubos_token');
+        
+        if (storedUser && storedToken) {
+          // Check if token is still valid
+          if (!tokenManager.isTokenExpired(storedToken)) {
+            if (!user) {
+              try {
+                const parsedUser = JSON.parse(storedUser);
+                setUser({ ...parsedUser, token: storedToken });
+              } catch (error) {
+                console.error('Failed to parse stored user:', error);
+                localStorage.removeItem('clubos_user');
+                localStorage.removeItem('clubos_token');
+                router.push('/login');
+              }
             }
+          } else {
+            // Token expired, clear and redirect
+            localStorage.removeItem('clubos_user');
+            localStorage.removeItem('clubos_token');
+            localStorage.removeItem('clubos_view_mode');
+            router.push('/login');
           }
-          setIsChecking(false);
-        } else {
-          // Token expired, clear and redirect
-          localStorage.removeItem('clubos_user');
-          localStorage.removeItem('clubos_token');
-          localStorage.removeItem('clubos_view_mode');
-          setIsChecking(false);
+        } else if (!isAuthenticated) {
+          // No stored auth data
           router.push('/login');
         }
-      } else if (!isAuthenticated) {
-        // No stored auth data
+      } finally {
+        clearTimeout(checkTimeoutRef.current);
         setIsChecking(false);
-        router.push('/login');
-      } else {
-        // Already authenticated
-        setIsChecking(false);
+        setAuthLoading(false);
+        isCheckInProgress = false;
       }
     };
 
     // Check auth immediately
     checkAuth();
-
-    // Listen for visibility changes (app coming back from background)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // App is visible again, recheck auth
-        checkAuth();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     
+    // Cleanup
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+      }
     };
   }, []); // Remove dependencies to prevent re-running
 

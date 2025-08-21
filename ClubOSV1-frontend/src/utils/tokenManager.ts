@@ -13,6 +13,7 @@ export class TokenManager {
   private static instance: TokenManager;
   private checkInterval: NodeJS.Timeout | null = null;
   private hasShownExpiryMessage: boolean = false;
+  private interceptorSetup: boolean = false;
   
   private constructor() {}
   
@@ -95,6 +96,8 @@ export class TokenManager {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
+    // Reset interceptor flag so it can be set up again if needed
+    this.interceptorSetup = false;
   }
 
   /**
@@ -141,11 +144,19 @@ export class TokenManager {
   setupAxiosInterceptor(): void {
     if (typeof window === 'undefined') return;
     
+    // Skip if already setup
+    if (this.interceptorSetup) return;
+    
     // Skip interceptor setup on login page
     if (window.location.pathname === '/login') return;
     
+    this.interceptorSetup = true;
+    
     // Import axios dynamically to avoid SSR issues
     import('axios').then(({ default: axios }) => {
+      // Clear any existing interceptors first
+      axios.interceptors.response.eject(0);
+      
       axios.interceptors.response.use(
         (response) => {
           // Check for new token in response headers

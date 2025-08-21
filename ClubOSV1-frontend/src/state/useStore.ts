@@ -118,7 +118,7 @@ export const useAuthState = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: true,
+      isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
         // Clear any existing auth data first to prevent account mixing
         localStorage.removeItem('clubos_token');

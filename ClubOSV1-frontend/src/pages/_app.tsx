@@ -107,63 +107,38 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Skip auth restoration on login page
-    if (router.pathname === '/login') {
+    // Skip auth restoration on login page or if already initialized
+    if (router.pathname === '/login' || authInitialized) {
       setAuthInitialized(true);
       return;
     }
     
-    // Initialize auth state from localStorage
+    // Simple auth state restoration - let AuthGuard handle validation
     const storedUser = localStorage.getItem('clubos_user');
     const storedToken = localStorage.getItem('clubos_token');
+    const savedViewMode = localStorage.getItem('clubos_view_mode');
     
     if (storedUser && storedToken && !isAuthenticated) {
       try {
-        // Check if token is expired before restoring
-        if (!tokenManager.isTokenExpired(storedToken)) {
-          const user = JSON.parse(storedUser);
-          setUser({ ...user, token: storedToken });
-          
-          // Set correct view mode based on user role
-          // Customer role ALWAYS gets customer view
-          if (user.role === 'customer') {
-            setViewMode('customer');
-            // For customers, ensure we stay on customer pages
-            if (!router.pathname.startsWith('/customer')) {
-              router.push('/customer/profile');
-            }
-          } else if (user.role === 'admin' || user.role === 'operator' || user.role === 'support') {
-            // For operators/admins, check if they have a saved preference
-            const savedViewMode = localStorage.getItem('clubos_view_mode');
-            // Only use saved mode if it's explicitly set to customer
-            // Otherwise default to operator mode
-            if (savedViewMode === 'customer' && router.pathname.startsWith('/customer')) {
-              setViewMode('customer');
-            } else {
-              setViewMode('operator');
-            }
-          } else if (user.role === 'kiosk') {
-            setViewMode('operator');
-            // Kiosk should go to clubosboy
-            if (router.pathname !== '/clubosboy') {
-              router.push('/clubosboy');
-            }
-          }
+        // Quick restore without validation (AuthGuard will validate)
+        const user = JSON.parse(storedUser);
+        setUser({ ...user, token: storedToken });
+        
+        // Restore view mode
+        if (savedViewMode) {
+          setViewMode(savedViewMode as 'operator' | 'customer');
+        } else if (user.role === 'customer') {
+          setViewMode('customer');
         } else {
-          // Clear expired token silently (no redirect from here - let AuthGuard handle it)
-          localStorage.removeItem('clubos_user');
-          localStorage.removeItem('clubos_token');
-          localStorage.removeItem('clubos_view_mode');
+          setViewMode('operator');
         }
       } catch (error) {
         console.error('Failed to restore auth state:', error);
-        localStorage.removeItem('clubos_user');
-        localStorage.removeItem('clubos_token');
-        localStorage.removeItem('clubos_view_mode');
       }
     }
+    
     setAuthInitialized(true);
-  }, [setUser, isAuthenticated, router.pathname, setViewMode]);
+  }, []); // Remove dependencies to run only once
 
   useEffect(() => {
     // Start token monitoring when authenticated (but not on login page)
