@@ -26,12 +26,19 @@ if (API_URL.endsWith('/api')) {
 }
 
 interface Friend {
-  id: string;
-  name: string;
-  email: string;
+  id?: string;
+  user_id?: string;
+  friendship_id?: string;
+  name?: string;
+  friend_name?: string;
+  email?: string;
+  friend_email?: string;
   rank?: string;
+  rank_tier?: string;
   ccBalance?: number;
+  cc_balance?: number;
   hasChampionMarker?: boolean;
+  has_champion_marker?: boolean;
 }
 
 interface CourseSettings {
@@ -84,9 +91,11 @@ export default function CreateChallenge() {
       const response = await axios.get(`${API_URL}/api/friends`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
+      console.log('Friends API response:', response.data); // Debug log
+      
       if (response.data.success && response.data.data) {
-        // The API returns { friends: [...], total: n }
-        const friendsList = response.data.data.friends || response.data.data;
+        // The API returns { success: true, data: { friends: [...], total: n } }
+        const friendsList = response.data.data.friends;
         setFriends(Array.isArray(friendsList) ? friendsList : []);
         
         // Check if we should pre-select a friend
@@ -97,15 +106,16 @@ export default function CreateChallenge() {
           );
           if (friend) {
             setSelectedOpponent({
-              id: friend.friend_id || friend.user_id || friend.id,
-              name: friend.friend_name || friend.name,
-              email: friend.friend_email || friend.email,
-              rank: friend.friend_rank || friend.rank_tier,
-              ccBalance: friend.friend_cc_balance || friend.clubcoin_balance || friend.cc_balance
+              id: friend.user_id || friend.friend_id || friend.id,
+              name: friend.name || friend.friend_name,
+              email: friend.email || friend.friend_email,
+              rank: friend.rank_tier || friend.friend_rank || 'House',
+              ccBalance: friend.cc_balance || friend.friend_cc_balance || friend.clubcoin_balance || 0
             });
           }
         }
       } else {
+        console.log('No friends data in response');
         setFriends([]);
       }
     } catch (error) {
@@ -218,10 +228,12 @@ export default function CreateChallenge() {
   };
 
   const filteredFriends = Array.isArray(friends) 
-    ? friends.filter(friend =>
-        friend.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        friend.email?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? friends.filter(friend => {
+        const friendName = friend.name || friend.friend_name || '';
+        const friendEmail = friend.email || friend.friend_email || '';
+        return friendName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               friendEmail.toLowerCase().includes(searchQuery.toLowerCase());
+      })
     : [];
 
   const { creatorStake, acceptorStake, totalPot } = calculateStakes();
@@ -242,7 +254,7 @@ export default function CreateChallenge() {
             <div className="max-w-3xl mx-auto px-4 py-4">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => step > 1 ? setStep(step - 1) : router.push('/customer/challenges')}
+                  onClick={() => step > 1 ? setStep(step - 1) : router.push('/customer/compete')}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -301,10 +313,16 @@ export default function CreateChallenge() {
                     ) : (
                       filteredFriends.map((friend) => (
                         <button
-                          key={friend.id}
-                          onClick={() => setSelectedOpponent(friend)}
+                          key={friend.id || friend.user_id || friend.friendship_id}
+                          onClick={() => setSelectedOpponent({
+                            id: friend.user_id || friend.id,
+                            name: friend.name || friend.friend_name,
+                            email: friend.email || friend.friend_email,
+                            rank: friend.rank_tier || friend.rank || 'House',
+                            ccBalance: friend.cc_balance || friend.ccBalance || 0
+                          })}
                           className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                            selectedOpponent?.id === friend.id
+                            selectedOpponent?.id === (friend.user_id || friend.id)
                               ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
@@ -312,16 +330,16 @@ export default function CreateChallenge() {
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="flex items-center gap-2">
-                                <p className="font-medium text-gray-900">{friend.name}</p>
-                                {friend.hasChampionMarker && (
+                                <p className="font-medium text-gray-900">{friend.name || friend.friend_name}</p>
+                                {(friend.hasChampionMarker || friend.has_champion_marker) && (
                                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                 )}
                               </div>
-                              <p className="text-sm text-gray-500">{friend.email}</p>
+                              <p className="text-sm text-gray-500">{friend.email || friend.friend_email}</p>
                             </div>
-                            {friend.rank && (
+                            {(friend.rank_tier || friend.rank) && (
                               <span className="text-xs font-medium text-gray-600 uppercase">
-                                {friend.rank}
+                                {friend.rank_tier || friend.rank}
                               </span>
                             )}
                           </div>
