@@ -57,6 +57,7 @@ export interface AuthUser {
   role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
   phone?: string;
   token?: string;
+  created_at?: string;
 }
 
 interface AuthState {

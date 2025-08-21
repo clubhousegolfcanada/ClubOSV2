@@ -478,6 +478,58 @@ router.get('/users/count',
   }
 );
 
+// Update user profile
+router.put('/profile',
+  authenticate,
+  validate([
+    body('name').optional().isString().trim(),
+    body('phone').optional().isMobilePhone('any'),
+    body('location').optional().isString().trim(),
+    body('bio').optional().isString().trim(),
+    body('handicap').optional().isFloat({ min: 0, max: 54 })
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.id;
+      const { name, phone, location, bio, handicap } = req.body;
+      
+      // Update user basic info
+      const userUpdate = await db.query(
+        `UPDATE "Users" 
+         SET name = COALESCE($1, name),
+             phone = COALESCE($2, phone),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3
+         RETURNING id, name, email, phone, role`,
+        [name, phone, userId]
+      );
+      
+      // Update or create customer profile with additional fields
+      if (location !== undefined || bio !== undefined || handicap !== undefined) {
+        await db.query(
+          `INSERT INTO customer_profiles (user_id, home_location, bio, handicap)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (user_id) 
+           DO UPDATE SET 
+             home_location = COALESCE($2, customer_profiles.home_location),
+             bio = COALESCE($3, customer_profiles.bio),
+             handicap = COALESCE($4, customer_profiles.handicap),
+             updated_at = CURRENT_TIMESTAMP`,
+          [userId, location, bio, handicap]
+        );
+      }
+      
+      res.json({
+        success: true,
+        data: userUpdate.rows[0],
+        message: 'Profile updated successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Change password
 router.post('/change-password',
   authenticate,

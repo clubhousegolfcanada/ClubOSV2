@@ -2,6 +2,44 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.19] - 2025-08-21
+
+### Added
+- **Friends Feature Enhancements**
+  - Interactive friends list in Competitors tab of Compete page
+  - Friends display with avatars, ranks, CC balance, and challenge stats
+  - Click-to-challenge functionality - clicking friend card navigates to challenge creation
+  - Pre-selection of friend when navigating from compete page to challenge creation
+  - Friend management dropdown menu with options to remove friend or block user
+  - Click-outside handling to close management menus
+  - Visual feedback with toast notifications for all friend actions
+
+### Fixed
+- **Friend Request Functionality**
+  - Fixed leaderboard API to properly check `friendships` table instead of `friend_invitations`
+  - Friend requests now correctly check for pending status in the right table
+  - Leaderboard properly shows is_friend and has_pending_request status
+
+- **Friends API Data Structure**
+  - Updated friends API endpoint to return proper data format for frontend
+  - Added missing fields: rank_tier, cc_balance, clubcoin_balance, is_friend, has_pending_request
+  - Fixed data mapping for compete page compatibility
+
+### Improved
+- **User Experience**
+  - Made entire friend card clickable for better UX
+  - Added hover effects and smooth transitions
+  - Improved visual design with gradient avatars
+  - Better separation between main content and action buttons
+  - Enhanced mobile responsiveness
+
+### Technical
+- **Duplicate Account Investigation**
+  - Investigated reported duplicate Alanna Belair accounts
+  - Confirmed only one account exists (alannabelair@gmail.com)
+  - Verified email uniqueness constraints are properly enforced
+  - Emails stored in lowercase for case-insensitive matching
+
 ## [1.14.18] - 2025-08-20
 
 ### Fixed

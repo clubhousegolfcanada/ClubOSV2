@@ -1,4 +1,4 @@
-# ClubOS v1.14.18 - AI-Powered Golf Simulator Management
+# ClubOS v1.14.19 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -152,6 +152,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.19**: Comprehensive Friends Feature Improvements
+  - Added interactive friends list to compete page with click-to-challenge
+  - Pre-select friend when navigating from compete to challenge creation
+  - Fixed friend request functionality in leaderboard
+  - Added friend management UI with remove and block options
+  - Updated friends API to return proper data structure
+  - Fixed leaderboard to check correct friendship status
+  - Improved UI with dropdown menus and better visual feedback
 - **v1.14.11**: Professional Customer Profile Redesign
   - Clean, minimalist design matching ClubOS style
   - Real data: 100 CC for founding members

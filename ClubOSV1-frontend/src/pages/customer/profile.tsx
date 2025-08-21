@@ -5,7 +5,7 @@ import Head from 'next/head';
 import { 
   Trophy, User, Mail, Phone, Save, ChevronRight,
   Settings, BarChart3, Coins, TrendingUp, Calendar,
-  Target, Clock, Award, MapPin, Shield
+  Target, Clock, Award, MapPin, Shield, X, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -44,7 +44,29 @@ export default function CustomerProfile() {
     name: '',
     email: '',
     phone: '',
-    location: ''
+    location: '',
+    bio: '',
+    handicap: ''
+  });
+  
+  // Password change modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  
+  // Preferences state
+  const [preferences, setPreferences] = useState({
+    emailNotifications: true,
+    smsNotifications: false,
+    publicProfile: true
   });
 
   useEffect(() => {
@@ -89,12 +111,43 @@ export default function CustomerProfile() {
         console.error('Failed to fetch challenges:', error);
       }
       
+      // Get location from customer profile if it exists
+      let location = 'Not set';
+      try {
+        const profileResponse = await axios.get(`${API_URL}/api/customer-profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (profileResponse.data.success && profileResponse.data.data?.homeLocation) {
+          location = profileResponse.data.data.homeLocation;
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile location:', error);
+      }
+      
+      // Get member since date from user created_at
+      const memberSince = user?.created_at 
+        ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        : 'Unknown';
+      
+      // Get rank from rank_assignments table
+      let currentRank = 'House';
+      try {
+        const rankResponse = await axios.get(`${API_URL}/api/leaderboard/rank`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (rankResponse.data.success && rankResponse.data.data?.rank_tier) {
+          currentRank = rankResponse.data.data.rank_tier;
+        }
+      } catch (error) {
+        console.error('Failed to fetch rank:', error);
+      }
+      
       const profileInfo: ProfileData = {
         name: user?.name || '',
         email: user?.email || '',
         phone: user?.phone || '',
-        location: 'Halifax, NS', // Default location
-        memberSince: 'August 2025', // Default member since date
+        location: location,
+        memberSince: memberSince,
         handicap: undefined, // Not tracked yet
         ccBalance: ccBalance,
         totalChallenges: challenges.total,
@@ -102,7 +155,7 @@ export default function CustomerProfile() {
         winRate: challenges.total > 0 ? (challenges.wins / challenges.total) : 0,
         currentStreak: 0,
         longestStreak: 0,
-        rank: 'House', // Default rank
+        rank: currentRank,
         totalBookings: 0
       };
       
@@ -111,7 +164,9 @@ export default function CustomerProfile() {
         name: profileInfo.name,
         email: profileInfo.email,
         phone: profileInfo.phone,
-        location: profileInfo.location || ''
+        location: profileInfo.location || '',
+        bio: '', // Will be fetched from customer_profiles
+        handicap: profileInfo.handicap?.toString() || ''
       });
       
     } finally {
@@ -126,8 +181,14 @@ export default function CustomerProfile() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.put(
-        `${API_URL}/customer-profile/users/profile`,
-        formData,
+        `${API_URL}/api/auth/profile`,
+        {
+          name: formData.name,
+          phone: formData.phone,
+          location: formData.location,
+          bio: formData.bio,
+          handicap: formData.handicap ? parseFloat(formData.handicap) : undefined
+        },
         { headers: { Authorization: `Bearer ${token}` }}
       );
       toast.success('Profile updated successfully');
@@ -137,6 +198,76 @@ export default function CustomerProfile() {
       toast.error('Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate passwords
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (passwordForm.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const token = localStorage.getItem('clubos_token');
+      await axios.post(
+        `${API_URL}/api/auth/change-password`,
+        {
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      
+      toast.success('Password changed successfully');
+      setShowPasswordModal(false);
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handlePreferenceChange = async (key: string, value: boolean) => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const updatedPreferences = { ...preferences, [key]: value };
+      
+      // Update local state immediately for better UX
+      setPreferences(updatedPreferences);
+      
+      // Save to backend
+      await axios.put(
+        `${API_URL}/api/customer-profile`,
+        {
+          notification_preferences: {
+            email: updatedPreferences.emailNotifications,
+            sms: updatedPreferences.smsNotifications
+          },
+          profile_visibility: updatedPreferences.publicProfile ? 'public' : 'private'
+        },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      
+      toast.success('Preferences updated');
+    } catch (error) {
+      // Revert on error
+      setPreferences(preferences);
+      toast.error('Failed to update preferences');
     }
   };
 
@@ -384,6 +515,29 @@ export default function CustomerProfile() {
                           placeholder="City, State/Province"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                        <textarea
+                          value={formData.bio}
+                          onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          placeholder="Tell us about yourself..."
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Handicap</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="54"
+                          value={formData.handicap}
+                          onChange={(e) => setFormData({...formData, handicap: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          placeholder="e.g., 18.5"
+                        />
+                      </div>
                       <div className="flex gap-3">
                         <button
                           type="submit"
@@ -443,7 +597,10 @@ export default function CustomerProfile() {
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Security</h2>
                   <div className="space-y-3">
-                    <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between group">
+                    <button 
+                      onClick={() => setShowPasswordModal(true)}
+                      className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                    >
                       <div className="flex items-center gap-3">
                         <Shield className="w-4 h-4 text-gray-400" />
                         <span className="text-sm font-medium text-gray-900">Change Password</span>
@@ -474,7 +631,12 @@ export default function CustomerProfile() {
                         <p className="text-xs text-gray-500">Receive updates about challenges and bookings</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={preferences.emailNotifications}
+                          onChange={(e) => handlePreferenceChange('emailNotifications', e.target.checked)}
+                        />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0B3D3A]"></div>
                       </label>
                     </div>
@@ -484,7 +646,12 @@ export default function CustomerProfile() {
                         <p className="text-xs text-gray-500">Get text alerts for upcoming bookings</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={preferences.smsNotifications}
+                          onChange={(e) => handlePreferenceChange('smsNotifications', e.target.checked)}
+                        />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0B3D3A]"></div>
                       </label>
                     </div>
@@ -494,7 +661,12 @@ export default function CustomerProfile() {
                         <p className="text-xs text-gray-500">Allow others to see your stats</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={preferences.publicProfile}
+                          onChange={(e) => handlePreferenceChange('publicProfile', e.target.checked)}
+                        />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0B3D3A]"></div>
                       </label>
                     </div>
@@ -512,6 +684,125 @@ export default function CustomerProfile() {
             )}
           </div>
         </main>
+        
+        {/* Password Change Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Change Password</h2>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {/* Current Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                      className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1"
+                    >
+                      {showPasswords.current ? 
+                        <EyeOff className="w-4 h-4 text-gray-400" /> : 
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      }
+                    </button>
+                  </div>
+                </div>
+                
+                {/* New Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.new ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                      className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      required
+                      minLength={8}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1"
+                    >
+                      {showPasswords.new ? 
+                        <EyeOff className="w-4 h-4 text-gray-400" /> : 
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      }
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Must be at least 8 characters with uppercase, lowercase and numbers
+                  </p>
+                </div>
+                
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1"
+                    >
+                      {showPasswords.confirm ? 
+                        <EyeOff className="w-4 h-4 text-gray-400" /> : 
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      }
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50"
+                  >
+                    {loading ? 'Changing...' : 'Change Password'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
