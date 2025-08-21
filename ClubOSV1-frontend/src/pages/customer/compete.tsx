@@ -6,7 +6,8 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { 
   Trophy, Users, User, Clock, Target, Check, X, Plus, TrendingUp,
   Coins, UserPlus, Crown, Star, Medal, Home, Shield, Search,
-  ChevronRight, Filter, Zap, Award, DollarSign, Activity
+  ChevronRight, Filter, Zap, Award, DollarSign, Activity, MoreVertical,
+  UserMinus, Ban
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -76,6 +77,7 @@ export default function Compete() {
   const [searchTerm, setSearchTerm] = useState('');
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedCompetitor, setSelectedCompetitor] = useState<Competitor | null>(null);
+  const [showFriendMenu, setShowFriendMenu] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -91,6 +93,18 @@ export default function Compete() {
 
     loadData();
   }, [user, activeTab, challengeFilter]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showFriendMenu !== null) {
+        setShowFriendMenu(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showFriendMenu]);
 
   const loadData = async () => {
     setLoading(true);
@@ -268,6 +282,41 @@ export default function Compete() {
       );
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send friend request');
+    }
+  };
+
+  const removeFriend = async (friendshipId: string, friendName: string) => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      await axios.delete(
+        `${API_URL}/api/friends/${friendshipId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${friendName} removed from friends`);
+      
+      // Refresh the friends list
+      loadCompetitors();
+      setShowFriendMenu(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to remove friend');
+    }
+  };
+
+  const blockUser = async (userId: string, userName: string) => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      await axios.put(
+        `${API_URL}/api/friends/${userId}/block`,
+        { reason: 'User blocked' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${userName} has been blocked`);
+      
+      // Refresh the friends list
+      loadCompetitors();
+      setShowFriendMenu(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to block user');
     }
   };
 
@@ -527,51 +576,72 @@ export default function Compete() {
             {/* Competitors Tab */}
             {activeTab === 'competitors' && (
               <div className="p-4">
+                {/* Header with description */}
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Your Friends</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Challenge your friends to head-to-head golf matches
+                  </p>
+                </div>
+
                 {/* Search Bar */}
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Search competitors..."
+                    placeholder="Search friends..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
                   />
                 </div>
 
-                {/* Competitors List */}
+                {/* Friends List */}
                 {loading ? (
                   <div className="flex justify-center items-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
+                  </div>
+                ) : filteredCompetitors.length === 0 && searchTerm ? (
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No friends found
+                    </h3>
+                    <p className="text-gray-500">
+                      Try a different search term
+                    </p>
                   </div>
                 ) : filteredCompetitors.length === 0 ? (
                   <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                     <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No competitors yet
+                      No friends yet
                     </h3>
                     <p className="text-gray-500 mb-6">
-                      Add competitors from the leaderboard to challenge them
+                      Add friends from the leaderboard to challenge them
                     </p>
                     <button
                       onClick={() => setActiveTab('leaderboard')}
-                      className="text-[#0B3D3A] font-medium hover:underline"
+                      className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors"
                     >
-                      View Leaderboard
+                      Browse Leaderboard
                     </button>
                   </div>
                 ) : (
                   <div className="grid gap-3">
                     {filteredCompetitors.map((competitor) => (
                       <div
-                        key={competitor.id}
-                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                        key={competitor.id || competitor.user_id}
+                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all"
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                              <span className="text-lg font-medium text-gray-600">
-                                {competitor.name.charAt(0).toUpperCase()}
+                          <div 
+                            className="flex items-center gap-3 flex-1 cursor-pointer"
+                            onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id || competitor.id}`)}
+                          >
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center">
+                              <span className="text-lg font-bold text-white">
+                                {competitor.name?.charAt(0).toUpperCase() || '?'}
                               </span>
                             </div>
                             <div>
@@ -601,13 +671,52 @@ export default function Compete() {
                             </div>
                           </div>
                           
-                          <button
-                            onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id}`)}
-                            className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
-                          >
-                            <Trophy className="w-4 h-4" />
-                            Challenge
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id || competitor.id}`)}
+                              className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
+                            >
+                              <Trophy className="w-4 h-4" />
+                              Challenge
+                            </button>
+                            
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowFriendMenu(showFriendMenu === competitor.id ? null : competitor.id);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4 text-gray-600" />
+                              </button>
+                              
+                              {showFriendMenu === competitor.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFriend(competitor.friendship_id || competitor.id, competitor.name);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                                  >
+                                    <UserMinus className="w-4 h-4" />
+                                    Remove Friend
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      blockUser(competitor.user_id || competitor.id, competitor.name);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600 border-t border-gray-100"
+                                  >
+                                    <Ban className="w-4 h-4" />
+                                    Block User
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

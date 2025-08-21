@@ -93,17 +93,18 @@ router.get('/alltime', async (req, res) => {
           WHEN $2::uuid IS NULL THEN false
           ELSE EXISTS(
             SELECT 1 FROM friendships f 
-            WHERE (f.user_id = $2 AND f.friend_id = u.id) 
-            OR (f.friend_id = $2 AND f.user_id = u.id)
+            WHERE ((f.user_id = $2 AND f.friend_id = u.id) 
+            OR (f.friend_id = $2 AND f.user_id = u.id))
+            AND f.status = 'accepted'
           )
         END as is_friend,
         CASE 
           WHEN $2::uuid IS NULL THEN false
           ELSE EXISTS(
-            SELECT 1 FROM friend_invitations fi
-            WHERE fi.inviter_id = $2 
-            AND fi.accepted_user_id = u.id
-            AND fi.status = 'pending'
+            SELECT 1 FROM friendships f
+            WHERE ((f.user_id = $2 AND f.friend_id = u.id) 
+            OR (f.friend_id = $2 AND f.user_id = u.id))
+            AND f.status = 'pending'
           )
         END as has_pending_request
       FROM customer_profiles cp

@@ -95,17 +95,28 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         handicap: isPrivate ? null : row.friend_handicap,
         home_location: row.friend_home_location,
         rank: row.friend_rank,
+        rank_tier: row.friend_rank || 'House', // Add for compatibility
         ccBalance: row.friend_cc_balance,
+        cc_balance: parseFloat(row.friend_cc_balance || 0), // Add for compatibility
+        clubcoin_balance: parseFloat(row.friend_cc_balance || 0), // Add for compete page
         hasChampionMarker: row.has_champion_marker,
+        has_champion_marker: row.has_champion_marker, // Add for compatibility
         status: row.status,
         requested_at: row.requested_at,
         accepted_at: row.accepted_at,
         mutual_friends_count: row.mutual_friends_count || 0,
         friendship_source: row.friendship_source,
         last_active: row.friend_last_login,
+        is_friend: true, // They are friends if in this list
+        has_pending_request: false, // Not pending if accepted
+        // Default challenge stats
+        total_challenges_won: 0,
+        total_challenges_played: 0,
+        win_rate: 0,
         // Wager stats if requested
         ...(include_stats && !isPrivate ? {
           wagers_together: row.clubcoin_wagers_count || 0,
+          wagers_won: 0, // Would need additional query
           total_wagered: row.clubcoin_wagers_total || 0,
           last_wager: row.last_wager_date,
           total_friends: row.friend_count || 0

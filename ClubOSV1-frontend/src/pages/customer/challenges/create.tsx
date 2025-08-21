@@ -70,6 +70,12 @@ export default function CreateChallenge() {
       fetchFriends();
       fetchCourseSettings();
       fetchBalance();
+      
+      // Check if a friend was pre-selected from the compete page
+      if (router.query.friend) {
+        const friendId = router.query.friend as string;
+        // We'll select the friend after friends are loaded
+      }
     }
   }, [user, router]);
 
@@ -82,6 +88,23 @@ export default function CreateChallenge() {
         // The API returns { friends: [...], total: n }
         const friendsList = response.data.data.friends || response.data.data;
         setFriends(Array.isArray(friendsList) ? friendsList : []);
+        
+        // Check if we should pre-select a friend
+        if (router.query.friend && Array.isArray(friendsList)) {
+          const friendId = router.query.friend as string;
+          const friend = friendsList.find(f => 
+            f.id === friendId || f.user_id === friendId || f.friend_id === friendId
+          );
+          if (friend) {
+            setSelectedOpponent({
+              id: friend.friend_id || friend.user_id || friend.id,
+              name: friend.friend_name || friend.name,
+              email: friend.friend_email || friend.email,
+              rank: friend.friend_rank || friend.rank_tier,
+              ccBalance: friend.friend_cc_balance || friend.clubcoin_balance || friend.cc_balance
+            });
+          }
+        }
       } else {
         setFriends([]);
       }
