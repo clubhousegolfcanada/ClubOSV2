@@ -458,7 +458,6 @@ export default function CreateChallenge() {
                         <option value="Easy">Easy</option>
                         <option value="Medium">Medium</option>
                         <option value="Hard">Hard</option>
-                        <option value="Random">Random</option>
                       </select>
                     </div>
 
@@ -473,11 +472,12 @@ export default function CreateChallenge() {
                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
                       >
                         <option value="">Please Select</option>
-                        <option value="Gimme Off">Gimme Off</option>
-                        <option value="Gimme 2ft">Gimme 2ft</option>
-                        <option value="Gimme 3ft">Gimme 3ft</option>
-                        <option value="Gimme 4ft">Gimme 4ft</option>
-                        <option value="Gimme 5ft">Gimme 5ft</option>
+                        <option value="Auto">Auto</option>
+                        <option value="Gimme 4">Gimme 4</option>
+                        <option value="Gimme 8">Gimme 8</option>
+                        <option value="Gimme 12">Gimme 12</option>
+                        <option value="Gimme 16">Gimme 16</option>
+                        <option value="Gimme 20">Gimme 20</option>
                       </select>
                     </div>
 
@@ -513,8 +513,7 @@ export default function CreateChallenge() {
                         <option value="">Please Select</option>
                         <option value="Soft">Soft</option>
                         <option value="Medium">Medium</option>
-                        <option value="Firm">Firm</option>
-                        <option value="Extra Firm">Extra Firm</option>
+                        <option value="Hard">Hard</option>
                       </select>
                     </div>
 
@@ -531,8 +530,7 @@ export default function CreateChallenge() {
                         <option value="">Please Select</option>
                         <option value="Soft">Soft</option>
                         <option value="Medium">Medium</option>
-                        <option value="Firm">Firm</option>
-                        <option value="Extra Firm">Extra Firm</option>
+                        <option value="Hard">Hard</option>
                       </select>
                     </div>
 
@@ -550,6 +548,9 @@ export default function CreateChallenge() {
                         <option value="1">1 Attempt</option>
                         <option value="2">2 Attempts</option>
                         <option value="3">3 Attempts</option>
+                        <option value="4">4 Attempts</option>
+                        <option value="5">5 Attempts</option>
+                        <option value="10">10 Attempts</option>
                         <option value="Unlimited">Unlimited</option>
                       </select>
                     </div>
