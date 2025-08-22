@@ -203,9 +203,22 @@ export class TokenManager {
           // Handle 401 errors (but not on login page or during login)
           if (error.response?.status === 401) {
             const isLoginPage = window.location.pathname === '/login';
-            const isAuthEndpoint = error.config?.url?.includes('/auth/login');
+            const isAuthEndpoint = error.config?.url?.includes('/auth/');
             
-            if (!isLoginPage && !isAuthEndpoint) {
+            // Check if we just logged in (within last 5 seconds)
+            const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+            const recentlyLoggedIn = loginTimestamp && 
+              (Date.now() - parseInt(loginTimestamp) < 5000);
+            
+            // Don't handle as expired if:
+            // 1. We're on the login page
+            // 2. This is an auth endpoint
+            // 3. We just logged in (grace period)
+            // 4. Token exists and is not expired
+            const token = localStorage.getItem('clubos_token');
+            const tokenValid = token && !this.isTokenExpired(token);
+            
+            if (!isLoginPage && !isAuthEndpoint && !recentlyLoggedIn && !tokenValid) {
               this.handleTokenExpiration();
             }
           }

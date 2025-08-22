@@ -47,7 +47,12 @@ export default function Home() {
   
   // SECURITY: Enforce operator-only access with whitelist approach
   useEffect(() => {
-    enforceOperatorRouteGuard(user, router, ['admin', 'operator', 'support', 'kiosk']);
+    // Add small delay to let auth state settle
+    const checkAuth = setTimeout(() => {
+      enforceOperatorRouteGuard(user, router, ['admin', 'operator', 'support', 'kiosk']);
+    }, 100);
+    
+    return () => clearTimeout(checkAuth);
   }, [user, router]);
   
   // Set client flag
@@ -69,25 +74,50 @@ export default function Home() {
         return;
       }
       
+      // Check if we just logged in - if so, wait a bit
+      const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+      if (loginTimestamp && (Date.now() - parseInt(loginTimestamp) < 1000)) {
+        // Wait 500ms more if we just logged in
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
       try {
         // For 24h period, get yesterday's data
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         
         const token = localStorage.getItem('clubos_token');
+        // Don't make the call if no token
+        if (!token) {
+          console.log('No token available, skipping stats fetch');
+          setPreviousStats({
+            totalRequests: 0,
+            averageConfidence: 0,
+            totalBookings: 0
+          });
+          return;
+        }
+        
         const response = await axios.get(`${API_URL}/api/history/stats/overview`, {
           params: { 
             period: '24h',
             endDate: yesterday.toISOString()
           },
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` }
         });
         
         if (response.data.success && response.data.data) {
           setPreviousStats(response.data.data);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch previous stats:', error);
+        // Don't log out on 401 if we just logged in
+        if (error.response?.status === 401) {
+          const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+          if (!loginTimestamp || (Date.now() - parseInt(loginTimestamp) > 5000)) {
+            console.log('Token appears invalid after grace period');
+          }
+        }
         // Set empty stats to prevent crash
         setPreviousStats({
           totalRequests: 0,
@@ -97,7 +127,10 @@ export default function Home() {
       }
     };
     
-    fetchPreviousPeriod();
+    // Delay initial fetch slightly
+    const timeoutId = setTimeout(fetchPreviousPeriod, 200);
+    
+    return () => clearTimeout(timeoutId);
   }, [user, isClient]);
   
   // Fetch weekly checklist submissions
