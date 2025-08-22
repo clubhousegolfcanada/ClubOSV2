@@ -162,8 +162,8 @@ export default function CreateChallenge() {
   };
 
   const calculateStakes = () => {
-    const creatorStake = Math.round(wagerAmount * 0.30 * 100) / 100;
-    const acceptorStake = Math.round(wagerAmount * 0.70 * 100) / 100;
+    const creatorStake = Math.round(wagerAmount * 0.50 * 100) / 100;
+    const acceptorStake = Math.round(wagerAmount * 0.50 * 100) / 100;
     const totalPot = creatorStake + acceptorStake;
     return { creatorStake, acceptorStake, totalPot };
   };
@@ -176,15 +176,19 @@ export default function CreateChallenge() {
     }
     
     if (step === 2) {
-      if (!selectedCourse?.courseName) newErrors.course = 'Please select a course';
-      if (!selectedCourse?.teePosition) newErrors.course = 'Please select tee position';
-      if (!selectedCourse?.pins) newErrors.course = 'Please select pins';
-      if (!selectedCourse?.putting) newErrors.course = 'Please select putting';
-      if (!selectedCourse?.wind) newErrors.course = 'Please select wind';
-      if (!selectedCourse?.fairwayFirmness) newErrors.course = 'Please select fairway firmness';
-      if (!selectedCourse?.greenFirmness) newErrors.course = 'Please select green firmness';
-      if (!selectedCourse?.attempts) newErrors.course = 'Please select attempts';
-      if (!selectedCourse?.scoringType) newErrors.course = 'Please select scoring format';
+      if (!selectedCourse?.courseName) {
+        newErrors.course = 'Please select a course or choose to decide outside of the challenge';
+      } else if (selectedCourse?.courseName !== 'DECIDE_LATER') {
+        // Only validate settings if not deciding later
+        if (!selectedCourse?.teePosition) newErrors.course = 'Please select tee position';
+        if (!selectedCourse?.pins) newErrors.course = 'Please select pins';
+        if (!selectedCourse?.putting) newErrors.course = 'Please select putting';
+        if (!selectedCourse?.wind) newErrors.course = 'Please select wind';
+        if (!selectedCourse?.fairwayFirmness) newErrors.course = 'Please select fairway firmness';
+        if (!selectedCourse?.greenFirmness) newErrors.course = 'Please select green firmness';
+        if (!selectedCourse?.attempts) newErrors.course = 'Please select attempts';
+        if (!selectedCourse?.scoringType) newErrors.course = 'Please select scoring format';
+      }
     }
     
     if (step === 3) {
@@ -397,14 +401,21 @@ export default function CreateChallenge() {
                   {/* Course Selection */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Course *
+                      Select Course
                     </label>
                     <select
                       value={selectedCourse?.courseName || ''}
-                      onChange={(e) => setSelectedCourse(prev => ({ ...prev, courseName: e.target.value } as any))}
+                      onChange={(e) => {
+                        if (e.target.value === 'DECIDE_LATER') {
+                          setSelectedCourse({ courseName: 'DECIDE_LATER' } as any);
+                        } else {
+                          setSelectedCourse(prev => ({ ...prev, courseName: e.target.value } as any));
+                        }
+                      }}
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
                     >
                       <option value="">Please Select</option>
+                      <option value="DECIDE_LATER" className="font-medium text-[#0B3D3A]">→ Decide outside of the challenge</option>
                       <option value="Casa De Campo">Casa De Campo</option>
                       <option value="Lofoten Links">Lofoten Links</option>
                       <option value="Marco Simone">Marco Simone</option>
@@ -423,7 +434,8 @@ export default function CreateChallenge() {
                     </select>
                   </div>
 
-                  {/* TrackMan Settings Grid */}
+                  {/* TrackMan Settings Grid - Only show if not deciding later */}
+                  {selectedCourse?.courseName !== 'DECIDE_LATER' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     {/* Tee Position */}
                     <div>
@@ -573,6 +585,16 @@ export default function CreateChallenge() {
                       </select>
                     </div>
                   </div>
+                  )}
+
+                  {/* Info message when "Decide outside" is selected */}
+                  {selectedCourse?.courseName === 'DECIDE_LATER' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-blue-800">
+                        Course and settings will be decided outside of the challenge. Both players should agree on the terms before playing.
+                      </p>
+                    </div>
+                  )}
 
                   {errors.course && (
                     <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
@@ -584,9 +606,11 @@ export default function CreateChallenge() {
 
                 <button
                   onClick={handleNext}
-                  disabled={!selectedCourse?.courseName || !selectedCourse?.teePosition || !selectedCourse?.pins || 
-                           !selectedCourse?.putting || !selectedCourse?.wind || !selectedCourse?.fairwayFirmness || 
-                           !selectedCourse?.greenFirmness || !selectedCourse?.attempts || !selectedCourse?.scoringType}
+                  disabled={!selectedCourse?.courseName || 
+                           (selectedCourse?.courseName !== 'DECIDE_LATER' && 
+                            (!selectedCourse?.teePosition || !selectedCourse?.pins || 
+                             !selectedCourse?.putting || !selectedCourse?.wind || !selectedCourse?.fairwayFirmness || 
+                             !selectedCourse?.greenFirmness || !selectedCourse?.attempts || !selectedCourse?.scoringType))}
                   className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
@@ -639,11 +663,11 @@ export default function CreateChallenge() {
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Stake Breakdown</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Your stake (30%)</span>
+                        <span className="text-gray-600">Your stake (50%)</span>
                         <span className="font-medium">{creatorStake} CC</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Opponent stake (70%)</span>
+                        <span className="text-gray-600">Opponent stake (50%)</span>
                         <span className="font-medium">{acceptorStake} CC</span>
                       </div>
                       <div className="pt-2 border-t border-gray-200 flex justify-between">
@@ -725,10 +749,15 @@ export default function CreateChallenge() {
                     {/* Course */}
                     <div className="flex justify-between py-3 border-b border-gray-100">
                       <span className="text-gray-600">Course</span>
-                      <span className="font-medium">{selectedCourse?.courseName}</span>
+                      <span className="font-medium">
+                        {selectedCourse?.courseName === 'DECIDE_LATER' 
+                          ? 'Decide outside of challenge' 
+                          : selectedCourse?.courseName}
+                      </span>
                     </div>
 
-                    {/* Settings Summary */}
+                    {/* Settings Summary - Only show if not deciding later */}
+                    {selectedCourse?.courseName !== 'DECIDE_LATER' && (
                     <div className="py-3 border-b border-gray-100">
                       <span className="text-gray-600 block mb-2">Settings</span>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -766,6 +795,7 @@ export default function CreateChallenge() {
                         </div>
                       </div>
                     </div>
+                    )}
 
                     {/* Wager */}
                     <div className="flex justify-between py-3 border-b border-gray-100">
