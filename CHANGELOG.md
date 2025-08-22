@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.20] - 2025-08-22
+
+### Added
+- **Complete Friend System Implementation**
+  - FriendRequests component for managing incoming/outgoing friend requests
+  - New "Requests" tab in compete page with notification badge showing pending count
+  - Accept/reject functionality with real-time updates
+  - Visual separation between incoming and outgoing requests
+  - Empty state when no pending requests exist
+
+### Fixed
+- **Friend Request System**
+  - Database migration to fix duplicate user tables (Users vs users)
+  - Foreign key constraints now properly reference correct table
+  - Self-friending prevention at API level with validation
+  - Friend requests now visible to recipients in Requests tab
+  - Club coins balance properly initialized for test accounts
+
+### Technical
+- **Database Improvements**
+  - Migration 099 consolidates duplicate user tables
+  - Fixed foreign key references in friend_invitations and user_blocks
+  - Added self-friending prevention constraint
+  - Performance indexes added for friendships queries
+
+### Testing
+- **Test Account Setup**
+  - mikebelair79@gmail.com: 100 CC, friends with Alanna
+  - alanna.belair@gmail.com: 100 CC, friends with Mike
+  - Both accounts ready for compete feature testing
+
 ## [1.14.19] - 2025-08-21
 
 ### Added

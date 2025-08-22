@@ -42,12 +42,19 @@ interface Friend {
 }
 
 interface CourseSettings {
-  id: string;
-  name: string;
-  category: string;
-  courseName: string;
-  holes: number;
-  scoringType: string;
+  id?: string;
+  name?: string;
+  category?: string;
+  courseName?: string;
+  holes?: number;
+  scoringType?: string;
+  teePosition?: string;
+  pins?: string;
+  putting?: string;
+  wind?: string;
+  fairwayFirmness?: string;
+  greenFirmness?: string;
+  attempts?: string;
 }
 
 export default function CreateChallenge() {
@@ -168,8 +175,16 @@ export default function CreateChallenge() {
       newErrors.opponent = 'Please select an opponent';
     }
     
-    if (step === 2 && !selectedCourse) {
-      newErrors.course = 'Please select course settings';
+    if (step === 2) {
+      if (!selectedCourse?.courseName) newErrors.course = 'Please select a course';
+      if (!selectedCourse?.teePosition) newErrors.course = 'Please select tee position';
+      if (!selectedCourse?.pins) newErrors.course = 'Please select pins';
+      if (!selectedCourse?.putting) newErrors.course = 'Please select putting';
+      if (!selectedCourse?.wind) newErrors.course = 'Please select wind';
+      if (!selectedCourse?.fairwayFirmness) newErrors.course = 'Please select fairway firmness';
+      if (!selectedCourse?.greenFirmness) newErrors.course = 'Please select green firmness';
+      if (!selectedCourse?.attempts) newErrors.course = 'Please select attempts';
+      if (!selectedCourse?.scoringType) newErrors.course = 'Please select scoring format';
     }
     
     if (step === 3) {
@@ -202,16 +217,20 @@ export default function CreateChallenge() {
         `${API_URL}/api/challenges`,
         {
           acceptorId: selectedOpponent?.id,
-          courseId: selectedCourse?.id,
           courseName: selectedCourse?.courseName,
-          settingsCatalogId: selectedCourse?.id,
           wagerAmount,
           expiryDays,
           creatorNote,
           trackmanSettings: {
-            holes: selectedCourse?.holes,
-            scoringType: selectedCourse?.scoringType,
-            category: selectedCourse?.category
+            courseName: selectedCourse?.courseName,
+            teePosition: selectedCourse?.teePosition,
+            pins: selectedCourse?.pins,
+            putting: selectedCourse?.putting,
+            wind: selectedCourse?.wind,
+            fairwayFirmness: selectedCourse?.fairwayFirmness,
+            greenFirmness: selectedCourse?.greenFirmness,
+            attempts: selectedCourse?.attempts,
+            scoringType: selectedCourse?.scoringType
           }
         },
         { headers: { Authorization: `Bearer ${user?.token}` }}
@@ -375,36 +394,183 @@ export default function CreateChallenge() {
                     Select Course & Settings
                   </h2>
 
-                  <div className="space-y-2">
-                    {courseSettings.length === 0 ? (
-                      <p className="text-center text-gray-500 py-8">
-                        No course settings available
-                      </p>
-                    ) : (
-                      courseSettings.map((course) => (
-                        <button
-                          key={course.id}
-                          onClick={() => setSelectedCourse(course)}
-                          className={`w-full p-4 rounded-lg border text-left transition-colors ${
-                            selectedCourse?.id === course.id
-                              ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
-                              : 'border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-gray-900">{course.name}</p>
-                              <p className="text-sm text-gray-500">
-                                {course.courseName} • {course.holes} holes • {course.scoringType}
-                              </p>
-                            </div>
-                            <span className="text-xs font-medium text-gray-600 uppercase bg-gray-100 px-2 py-1 rounded">
-                              {course.category}
-                            </span>
-                          </div>
-                        </button>
-                      ))
-                    )}
+                  {/* Course Selection */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Course *
+                    </label>
+                    <select
+                      value={selectedCourse?.courseName || ''}
+                      onChange={(e) => setSelectedCourse(prev => ({ ...prev, courseName: e.target.value } as any))}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                    >
+                      <option value="">Please Select</option>
+                      <option value="Casa De Campo">Casa De Campo</option>
+                      <option value="Lofoten Links">Lofoten Links</option>
+                      <option value="Marco Simone">Marco Simone</option>
+                      <option value="Moonlight Basin">Moonlight Basin</option>
+                      <option value="Muirfield Village G.C.">Muirfield Village G.C.</option>
+                      <option value="Pebble Beach">Pebble Beach (requires Course Pack)</option>
+                      <option value="Pinehurst No. 2">Pinehurst No. 2</option>
+                      <option value="Royal County Down">Royal County Down</option>
+                      <option value="Royal Melbourne">Royal Melbourne</option>
+                      <option value="Spanish Bay">Spanish Bay (requires Course Pack)</option>
+                      <option value="Spyglass Hill">Spyglass Hill (requires Course Pack)</option>
+                      <option value="St. Andrews – Old Course">St. Andrews – Old Course</option>
+                      <option value="Valderrama">Valderrama</option>
+                      <option value="Wentworth">Wentworth</option>
+                      <option value="Liberty National">Liberty National</option>
+                    </select>
+                  </div>
+
+                  {/* TrackMan Settings Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {/* Tee Position */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tee Position *
+                      </label>
+                      <select
+                        value={selectedCourse?.teePosition || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, teePosition: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="Pro">Pro (Black)</option>
+                        <option value="Championship">Championship (Blue)</option>
+                        <option value="Men">Men (White)</option>
+                        <option value="Women">Women (Red)</option>
+                        <option value="Junior">Junior (Green)</option>
+                      </select>
+                    </div>
+
+                    {/* Pins */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Pins *
+                      </label>
+                      <select
+                        value={selectedCourse?.pins || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, pins: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                        <option value="Random">Random</option>
+                      </select>
+                    </div>
+
+                    {/* Putting */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Putting *
+                      </label>
+                      <select
+                        value={selectedCourse?.putting || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, putting: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="Gimme Off">Gimme Off</option>
+                        <option value="Gimme 2ft">Gimme 2ft</option>
+                        <option value="Gimme 3ft">Gimme 3ft</option>
+                        <option value="Gimme 4ft">Gimme 4ft</option>
+                        <option value="Gimme 5ft">Gimme 5ft</option>
+                      </select>
+                    </div>
+
+                    {/* Wind */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Wind *
+                      </label>
+                      <select
+                        value={selectedCourse?.wind || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, wind: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="None">None</option>
+                        <option value="Light">Light (0-5 mph)</option>
+                        <option value="Medium">Medium (5-15 mph)</option>
+                        <option value="Heavy">Heavy (15-25 mph)</option>
+                        <option value="Random">Random</option>
+                      </select>
+                    </div>
+
+                    {/* Fairway Firmness */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fairway Firmness *
+                      </label>
+                      <select
+                        value={selectedCourse?.fairwayFirmness || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, fairwayFirmness: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="Soft">Soft</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Firm">Firm</option>
+                        <option value="Extra Firm">Extra Firm</option>
+                      </select>
+                    </div>
+
+                    {/* Green Firmness */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Green Firmness *
+                      </label>
+                      <select
+                        value={selectedCourse?.greenFirmness || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, greenFirmness: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="Soft">Soft</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Firm">Firm</option>
+                        <option value="Extra Firm">Extra Firm</option>
+                      </select>
+                    </div>
+
+                    {/* Attempts */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        How Many Attempts? *
+                      </label>
+                      <select
+                        value={selectedCourse?.attempts || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, attempts: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="1">1 Attempt</option>
+                        <option value="2">2 Attempts</option>
+                        <option value="3">3 Attempts</option>
+                        <option value="Unlimited">Unlimited</option>
+                      </select>
+                    </div>
+
+                    {/* Scoring Format */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Scoring Format *
+                      </label>
+                      <select
+                        value={selectedCourse?.scoringType || ''}
+                        onChange={(e) => setSelectedCourse(prev => ({ ...prev, scoringType: e.target.value } as any))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      >
+                        <option value="">Please Select</option>
+                        <option value="Stroke Play">Stroke Play</option>
+                        <option value="Match Play">Match Play</option>
+                        <option value="Stableford">Stableford</option>
+                        <option value="Skins">Skins</option>
+                      </select>
+                    </div>
                   </div>
 
                   {errors.course && (
@@ -417,7 +583,9 @@ export default function CreateChallenge() {
 
                 <button
                   onClick={handleNext}
-                  disabled={!selectedCourse}
+                  disabled={!selectedCourse?.courseName || !selectedCourse?.teePosition || !selectedCourse?.pins || 
+                           !selectedCourse?.putting || !selectedCourse?.wind || !selectedCourse?.fairwayFirmness || 
+                           !selectedCourse?.greenFirmness || !selectedCourse?.attempts || !selectedCourse?.scoringType}
                   className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
@@ -559,12 +727,43 @@ export default function CreateChallenge() {
                       <span className="font-medium">{selectedCourse?.courseName}</span>
                     </div>
 
-                    {/* Settings */}
-                    <div className="flex justify-between py-3 border-b border-gray-100">
-                      <span className="text-gray-600">Settings</span>
-                      <span className="font-medium">
-                        {selectedCourse?.holes} holes • {selectedCourse?.scoringType}
-                      </span>
+                    {/* Settings Summary */}
+                    <div className="py-3 border-b border-gray-100">
+                      <span className="text-gray-600 block mb-2">Settings</span>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Tee:</span>
+                          <span className="font-medium">{selectedCourse?.teePosition}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Pins:</span>
+                          <span className="font-medium">{selectedCourse?.pins}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Putting:</span>
+                          <span className="font-medium">{selectedCourse?.putting}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Wind:</span>
+                          <span className="font-medium">{selectedCourse?.wind}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Fairway:</span>
+                          <span className="font-medium">{selectedCourse?.fairwayFirmness}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Greens:</span>
+                          <span className="font-medium">{selectedCourse?.greenFirmness}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Attempts:</span>
+                          <span className="font-medium">{selectedCourse?.attempts}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Format:</span>
+                          <span className="font-medium">{selectedCourse?.scoringType}</span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Wager */}

@@ -152,6 +152,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.20**: Complete Friend System Implementation
+  - Added comprehensive FriendRequests component for managing requests
+  - New "Requests" tab in compete page with notification badges
+  - Fixed database foreign key constraints with duplicate user tables
+  - Prevented self-friending at API level
+  - Set up test accounts with 100 coins each as friends
+  - Fixed club coins balance initialization
+  - Friend requests now properly visible to recipients
 - **v1.14.19**: Comprehensive Friends Feature Improvements
   - Added interactive friends list to compete page with click-to-challenge
   - Pre-select friend when navigating from compete to challenge creation
