@@ -93,26 +93,31 @@ class TrackManIntegrationService {
         }
       ];
 
-      // Cache in database
-      for (const setting of catalog) {
-        await pool.query(
-          `INSERT INTO trackman_settings_catalog 
-           (id, name, category, course_name, holes, scoring_type, tee_type, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, true)
-           ON CONFLICT (id) DO UPDATE SET
-           name = EXCLUDED.name,
-           is_active = true,
-           updated_at = CURRENT_TIMESTAMP`,
-          [
-            setting.courseId,
-            setting.courseName,
-            'standard',
-            setting.courseName,
-            setting.holes,
-            setting.scoringType,
-            setting.teeType
-          ]
-        );
+      // Try to cache in database if table exists
+      try {
+        for (const setting of catalog) {
+          await pool.query(
+            `INSERT INTO trackman_settings_catalog 
+             (id, name, category, course_name, holes, scoring_type, tee_type, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+             ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             is_active = true,
+             updated_at = CURRENT_TIMESTAMP`,
+            [
+              setting.courseId,
+              setting.courseName,
+              'standard',
+              setting.courseName,
+              setting.holes,
+              setting.scoringType,
+              setting.teeType
+            ]
+          );
+        }
+      } catch (dbError) {
+        // If table doesn't exist, just log and continue
+        logger.warn('Could not cache settings in database:', dbError);
       }
 
       return catalog;
