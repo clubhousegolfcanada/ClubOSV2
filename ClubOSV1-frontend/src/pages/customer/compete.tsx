@@ -7,11 +7,12 @@ import {
   Trophy, Users, User, Clock, Target, Check, X, Plus, TrendingUp,
   Coins, UserPlus, Crown, Star, Medal, Home, Shield, Search,
   ChevronRight, Filter, Zap, Award, DollarSign, Activity, MoreVertical,
-  UserMinus, Ban
+  UserMinus, Ban, Bell
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
+import { FriendRequests } from '@/components/customer/FriendRequests';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -67,7 +68,8 @@ interface Competitor {
 export default function Compete() {
   const { user } = useAuthState();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'challenges' | 'competitors' | 'leaderboard'>('challenges');
+  const [activeTab, setActiveTab] = useState<'challenges' | 'competitors' | 'leaderboard' | 'requests'>('challenges');
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [challengeFilter, setChallengeFilter] = useState<'all' | 'active' | 'pending' | 'history'>('all');
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -92,7 +94,24 @@ export default function Compete() {
     }
 
     loadData();
+    fetchPendingRequestCount();
   }, [user, activeTab, challengeFilter]);
+
+  const fetchPendingRequestCount = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.get(`${API_URL}/api/friends/pending`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        const incoming = response.data.data.incoming || 0;
+        setPendingRequestCount(incoming);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending request count:', error);
+    }
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -452,6 +471,23 @@ export default function Compete() {
                 }`}
               >
                 Leaderboard
+              </button>
+              <button
+                onClick={() => setActiveTab('requests')}
+                className={`py-3 px-1 border-b-2 transition-colors font-medium relative ${
+                  activeTab === 'requests'
+                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  Requests
+                  {pendingRequestCount > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                      {pendingRequestCount}
+                    </span>
+                  )}
+                </span>
               </button>
             </div>
           </div>
@@ -832,6 +868,13 @@ export default function Compete() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Friend Requests Tab */}
+            {activeTab === 'requests' && (
+              <div className="p-4">
+                <FriendRequests />
               </div>
             )}
           </div>

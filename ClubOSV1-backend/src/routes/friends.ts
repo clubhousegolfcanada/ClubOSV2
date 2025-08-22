@@ -227,6 +227,11 @@ router.post('/request',
       }
 
       let targetUserId = target_user_id;
+      
+      // Prevent self-friending early
+      if (targetUserId && targetUserId === userId) {
+        throw new AppError('You cannot send a friend request to yourself', 400);
+      }
 
       // Find user by email or phone if not provided directly
       if (!targetUserId) {
@@ -267,6 +272,11 @@ router.post('/request',
         }
 
         targetUserId = result.rows[0].id;
+      }
+
+      // Check for self-friending after email/phone lookup
+      if (targetUserId === userId) {
+        throw new AppError('You cannot send a friend request to yourself', 400);
       }
 
       // Check if already friends or request exists
