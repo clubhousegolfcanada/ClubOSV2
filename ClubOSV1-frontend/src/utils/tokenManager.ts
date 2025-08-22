@@ -101,6 +101,26 @@ export class TokenManager {
   }
 
   /**
+   * Clear all token references and reset state
+   */
+  clearAllTokens(): void {
+    // Stop monitoring
+    this.stopTokenMonitoring();
+    
+    // Reset all flags
+    this.hasShownExpiryMessage = false;
+    this.interceptorSetup = false;
+    
+    // Clear any cached token data
+    if (typeof window !== 'undefined') {
+      // Remove any token from axios default headers if set
+      import('axios').then(({ default: axios }) => {
+        delete axios.defaults.headers.common['Authorization'];
+      });
+    }
+  }
+
+  /**
    * Handle token expiration
    */
   private handleTokenExpiration(): void {

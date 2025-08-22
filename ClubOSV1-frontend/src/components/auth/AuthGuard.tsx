@@ -13,10 +13,17 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   const { isAuthenticated, user, setUser, setAuthLoading } = useAuthState();
   const [isChecking, setIsChecking] = useState(true);
   const checkTimeoutRef = useRef<NodeJS.Timeout>();
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
     // Only run on initial mount
     if (typeof window === 'undefined') return;
+    
+    // Prevent re-checking if already checked
+    if (hasCheckedRef.current && isAuthenticated) {
+      setIsChecking(false);
+      return;
+    }
     
     let isCheckInProgress = false;
     
@@ -38,6 +45,11 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
       }, 5000); // 5 second timeout
       
       try {
+        // Add small delay to allow state to settle after login
+        if (window.location.pathname !== '/login') {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
         // Check if user is stored in localStorage
         const storedUser = localStorage.getItem('clubos_user');
         const storedToken = localStorage.getItem('clubos_token');
@@ -49,22 +61,28 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
               try {
                 const parsedUser = JSON.parse(storedUser);
                 setUser({ ...parsedUser, token: storedToken });
+                hasCheckedRef.current = true;
               } catch (error) {
                 console.error('Failed to parse stored user:', error);
                 localStorage.removeItem('clubos_user');
                 localStorage.removeItem('clubos_token');
+                localStorage.removeItem('clubos_view_mode');
                 router.push('/login');
               }
+            } else {
+              hasCheckedRef.current = true;
             }
           } else {
             // Token expired, clear and redirect
+            console.log('Token expired, clearing auth data');
             localStorage.removeItem('clubos_user');
             localStorage.removeItem('clubos_token');
             localStorage.removeItem('clubos_view_mode');
+            sessionStorage.clear();
             router.push('/login');
           }
-        } else if (!isAuthenticated) {
-          // No stored auth data
+        } else if (!isAuthenticated && window.location.pathname !== '/login') {
+          // No stored auth data and not on login page
           router.push('/login');
         }
       } finally {
@@ -75,16 +93,17 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
       }
     };
 
-    // Check auth immediately
-    checkAuth();
+    // Check auth with a small delay to avoid race conditions
+    const timeoutId = setTimeout(checkAuth, 50);
     
     // Cleanup
     return () => {
+      clearTimeout(timeoutId);
       if (checkTimeoutRef.current) {
         clearTimeout(checkTimeoutRef.current);
       }
     };
-  }, []); // Remove dependencies to prevent re-running
+  }, [isAuthenticated]); // Add isAuthenticated as dependency but with hasCheckedRef guard
 
   if (isChecking || !isAuthenticated) {
     return <>{fallback || <div className="flex items-center justify-center min-h-screen">

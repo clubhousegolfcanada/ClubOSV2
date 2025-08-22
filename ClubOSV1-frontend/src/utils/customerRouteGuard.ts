@@ -77,8 +77,24 @@ export const enforceOperatorRouteGuard = (
   router: NextRouter,
   allowedRoles: UserRole[] = ['admin', 'operator', 'support']
 ): void => {
+  // Check for recent login grace period (2 seconds)
+  const loginTimestamp = typeof window !== 'undefined' 
+    ? sessionStorage.getItem('clubos_login_timestamp') 
+    : null;
+  
+  if (loginTimestamp) {
+    const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
+    if (timeSinceLogin < 2000) {
+      // Within grace period, don't redirect yet
+      return;
+    }
+  }
+  
   if (!user) {
-    router.push('/login');
+    // Don't redirect if we're already on login page
+    if (router.pathname !== '/login') {
+      router.push('/login');
+    }
     return;
   }
   

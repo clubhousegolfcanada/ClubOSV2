@@ -41,6 +41,18 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Clear any stale authentication state before attempting login
+    if (typeof window !== 'undefined') {
+      // Clear old tokens and user data
+      localStorage.removeItem('clubos_token');
+      localStorage.removeItem('clubos_user');
+      localStorage.removeItem('clubos_view_mode');
+      sessionStorage.clear();
+      
+      // Clear axios default headers
+      delete axios.defaults.headers.common['Authorization'];
+    }
+
     try {
       // Stop any existing token monitoring first
       if (typeof window !== 'undefined') {
@@ -98,6 +110,9 @@ const LoginPage = () => {
 
       if (response.data.success) {
         const { user, token } = response.data.data;
+        
+        // Set login timestamp for grace period
+        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
         
         // Login user with real data
         login(user, token);

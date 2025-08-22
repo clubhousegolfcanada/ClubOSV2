@@ -150,27 +150,53 @@ export const useAuthState = create<AuthState>()(
       },
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
-        // Stop token monitoring
+        // Stop token monitoring and clear all token references
         if (typeof window !== 'undefined') {
           import('../utils/tokenManager').then(({ tokenManager }) => {
             tokenManager.stopTokenMonitoring();
+            tokenManager.clearAllTokens();
           });
+          
+          // Clear all localStorage items
+          localStorage.removeItem('clubos_token');
+          localStorage.removeItem('clubos_user');
+          localStorage.removeItem('clubos_view_mode');
+          
+          // Clear any other auth-related items
+          const keysToRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('clubos_') || key.includes('auth'))) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+          
+          // Clear session storage as well
+          sessionStorage.clear();
         }
         
-        localStorage.removeItem('clubos_token');
-        localStorage.removeItem('clubos_user');
-        localStorage.removeItem('clubos_view_mode');
+        // Complete state reset - clear auth state completely
+        set({ 
+          user: null, 
+          isAuthenticated: false, 
+          isLoading: false 
+        });
         
-        // Set loading to false to prevent stuck loading state
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        // Also reset app state that might contain user-specific data
+        const state = useStore.getState();
+        state.clearRequests?.();
+        state.setViewMode?.('operator'); // Reset to default view mode
         
-        // Navigate to login page
-        if (typeof window !== 'undefined') {
-          // Import router dynamically to avoid SSR issues
-          import('next/router').then(({ default: router }) => {
-            router.push('/login');
-          });
-        }
+        // Small delay to ensure state is cleared before navigation
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            // Import router dynamically to avoid SSR issues
+            import('next/router').then(({ default: router }) => {
+              router.push('/login');
+            });
+          }
+        }, 100);
       },
       setAuthLoading: (isLoading) => set({ isLoading })
     }),
