@@ -489,13 +489,14 @@ router.put('/profile',
     body('name').optional().isString().trim(),
     body('phone').optional().isMobilePhone('any'),
     body('location').optional().isString().trim(),
+    body('homeGolfCourse').optional().isString().trim(),
     body('bio').optional().isString().trim(),
     body('handicap').optional().isFloat({ min: 0, max: 54 })
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!.id;
-      const { name, phone, location, bio, handicap } = req.body;
+      const { name, phone, location, homeGolfCourse, bio, handicap } = req.body;
       
       // Update user basic info
       const userUpdate = await db.query(
@@ -509,17 +510,18 @@ router.put('/profile',
       );
       
       // Update or create customer profile with additional fields
-      if (location !== undefined || bio !== undefined || handicap !== undefined) {
+      if (location !== undefined || homeGolfCourse !== undefined || bio !== undefined || handicap !== undefined) {
         await db.query(
-          `INSERT INTO customer_profiles (user_id, home_location, bio, handicap)
-           VALUES ($1, $2, $3, $4)
+          `INSERT INTO customer_profiles (user_id, home_location, home_golf_course, bio, handicap)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (user_id) 
            DO UPDATE SET 
              home_location = COALESCE($2, customer_profiles.home_location),
-             bio = COALESCE($3, customer_profiles.bio),
-             handicap = COALESCE($4, customer_profiles.handicap),
+             home_golf_course = COALESCE($3, customer_profiles.home_golf_course),
+             bio = COALESCE($4, customer_profiles.bio),
+             handicap = COALESCE($5, customer_profiles.handicap),
              updated_at = CURRENT_TIMESTAMP`,
-          [userId, location, bio, handicap]
+          [userId, location, homeGolfCourse, bio, handicap]
         );
       }
       

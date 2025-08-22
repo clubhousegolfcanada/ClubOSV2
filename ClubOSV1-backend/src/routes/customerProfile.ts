@@ -74,6 +74,7 @@ router.get('/', authenticate, async (req, res) => {
         bio: profile?.bio,
         handicap: profile?.handicap,
         homeLocation: profile?.home_location,
+        homeGolfCourse: profile?.home_golf_course,
         totalRounds: profile?.total_rounds || 0,
         averageScore: profile?.average_score || 0,
         bestScore: profile?.best_score || 0,
@@ -106,6 +107,7 @@ router.put('/', authenticate, async (req, res) => {
       bio,
       handicap,
       homeLocation,
+      homeGolfCourse,
       profileVisibility,
       showBookings,
       showStats,
@@ -117,15 +119,16 @@ router.put('/', authenticate, async (req, res) => {
     // Update or create customer profile
     const result = await db.query(`
       INSERT INTO customer_profiles (
-        user_id, display_name, bio, handicap, home_location,
+        user_id, display_name, bio, handicap, home_location, home_golf_course,
         profile_visibility, show_bookings, show_stats, show_friends,
         preferred_tee_time, preferred_bay_type
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT (user_id) DO UPDATE SET
         display_name = EXCLUDED.display_name,
         bio = EXCLUDED.bio,
         handicap = EXCLUDED.handicap,
         home_location = EXCLUDED.home_location,
+        home_golf_course = EXCLUDED.home_golf_course,
         profile_visibility = EXCLUDED.profile_visibility,
         show_bookings = EXCLUDED.show_bookings,
         show_stats = EXCLUDED.show_stats,
@@ -135,7 +138,7 @@ router.put('/', authenticate, async (req, res) => {
         updated_at = CURRENT_TIMESTAMP
       RETURNING *
     `, [
-      userId, displayName, bio, handicap, homeLocation,
+      userId, displayName, bio, handicap, homeLocation, homeGolfCourse,
       profileVisibility, showBookings, showStats, showFriends,
       preferredTeeTime, preferredBayType
     ]);

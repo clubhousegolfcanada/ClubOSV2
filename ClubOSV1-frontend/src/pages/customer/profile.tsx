@@ -22,6 +22,7 @@ interface ProfileData {
   email: string;
   phone: string;
   location?: string;
+  homeGolfCourse?: string;
   memberSince?: string;
   handicap?: number;
   ccBalance: number;
@@ -45,6 +46,7 @@ export default function CustomerProfile() {
     email: '',
     phone: '',
     location: '',
+    homeGolfCourse: '',
     bio: '',
     handicap: ''
   });
@@ -111,14 +113,16 @@ export default function CustomerProfile() {
         console.error('Failed to fetch challenges:', error);
       }
       
-      // Get location from customer profile if it exists
+      // Get location and home golf course from customer profile if it exists
       let location = 'Not set';
+      let homeGolfCourse = '';
       try {
         const profileResponse = await axios.get(`${API_URL}/api/customer-profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (profileResponse.data.success && profileResponse.data.data?.homeLocation) {
-          location = profileResponse.data.data.homeLocation;
+        if (profileResponse.data.success && profileResponse.data.data) {
+          location = profileResponse.data.data.homeLocation || 'Not set';
+          homeGolfCourse = profileResponse.data.data.homeGolfCourse || '';
         }
       } catch (error) {
         console.error('Failed to fetch profile location:', error);
@@ -147,6 +151,7 @@ export default function CustomerProfile() {
         email: user?.email || '',
         phone: user?.phone || '',
         location: location,
+        homeGolfCourse: homeGolfCourse,
         memberSince: memberSince,
         handicap: undefined, // Not tracked yet
         ccBalance: ccBalance,
@@ -165,6 +170,7 @@ export default function CustomerProfile() {
         email: profileInfo.email,
         phone: profileInfo.phone,
         location: profileInfo.location || '',
+        homeGolfCourse: profileInfo.homeGolfCourse || '',
         bio: '', // Will be fetched from customer_profiles
         handicap: profileInfo.handicap?.toString() || ''
       });
@@ -186,6 +192,7 @@ export default function CustomerProfile() {
           name: formData.name,
           phone: formData.phone,
           location: formData.location,
+          homeGolfCourse: formData.homeGolfCourse,
           bio: formData.bio,
           handicap: formData.handicap ? parseFloat(formData.handicap) : undefined
         },
@@ -521,6 +528,16 @@ export default function CustomerProfile() {
                         </select>
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Home Golf Course</label>
+                        <input
+                          type="text"
+                          value={formData.homeGolfCourse}
+                          onChange={(e) => setFormData({...formData, homeGolfCourse: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          placeholder="e.g., Glen Arbour Golf Course"
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
                         <textarea
                           value={formData.bio}
@@ -585,13 +602,22 @@ export default function CustomerProfile() {
                           {profileData?.phone || 'Not set'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between py-3">
+                      <div className="flex items-center justify-between py-3 border-b border-gray-100">
                         <div className="flex items-center gap-3">
                           <MapPin className="w-4 h-4 text-gray-400" />
                           <span className="text-sm text-gray-600">Location</span>
                         </div>
                         <span className="text-sm font-medium text-gray-900">
                           {profileData?.location || 'Not set'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3">
+                        <div className="flex items-center gap-3">
+                          <Target className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600">Home Golf Course</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {profileData?.homeGolfCourse || 'Not set'}
                         </span>
                       </div>
                     </div>
