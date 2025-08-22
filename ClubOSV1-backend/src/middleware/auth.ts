@@ -55,11 +55,11 @@ export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>, remember
     }
   }
   
-  return jwt.sign(payload, config.JWT_SECRET, {
-    expiresIn,
+  return jwt.sign(payload, config.JWT_SECRET as string, {
+    expiresIn: expiresIn,
     issuer: 'clubosv1',
     audience: 'clubosv1-users'
-  });
+  } as jwt.SignOptions);
 };
 
 // Verify JWT token
