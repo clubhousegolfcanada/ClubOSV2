@@ -217,26 +217,39 @@ export default function CreateChallenge() {
     
     setLoading(true);
     try {
+      // Build the request payload based on whether TrackMan settings are included
+      const payload: any = {
+        acceptorId: selectedOpponent?.id,
+        courseName: selectedCourse?.courseName,
+        wagerAmount,
+        expiryDays,
+        creatorNote
+      };
+
+      // Only include courseId and trackman settings if not deciding later
+      if (selectedCourse?.courseName !== 'DECIDE_LATER') {
+        payload.courseId = selectedCourse?.id || selectedCourse?.courseName; // Use courseName as courseId if no id
+        payload.trackmanSettings = {
+          courseName: selectedCourse?.courseName,
+          teePosition: selectedCourse?.teePosition,
+          pins: selectedCourse?.pins,
+          putting: selectedCourse?.putting,
+          wind: selectedCourse?.wind,
+          fairwayFirmness: selectedCourse?.fairwayFirmness,
+          greenFirmness: selectedCourse?.greenFirmness,
+          attempts: selectedCourse?.attempts,
+          scoringType: selectedCourse?.scoringType
+        };
+      } else {
+        // For decide later, pass minimal trackman settings
+        payload.trackmanSettings = {
+          decideLater: true
+        };
+      }
+
       const response = await axios.post(
         `${API_URL}/api/challenges`,
-        {
-          acceptorId: selectedOpponent?.id,
-          courseName: selectedCourse?.courseName,
-          wagerAmount,
-          expiryDays,
-          creatorNote,
-          trackmanSettings: {
-            courseName: selectedCourse?.courseName,
-            teePosition: selectedCourse?.teePosition,
-            pins: selectedCourse?.pins,
-            putting: selectedCourse?.putting,
-            wind: selectedCourse?.wind,
-            fairwayFirmness: selectedCourse?.fairwayFirmness,
-            greenFirmness: selectedCourse?.greenFirmness,
-            attempts: selectedCourse?.attempts,
-            scoringType: selectedCourse?.scoringType
-          }
-        },
+        payload,
         { headers: { Authorization: `Bearer ${user?.token}` }}
       );
 

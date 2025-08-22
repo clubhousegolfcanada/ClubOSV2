@@ -9,7 +9,7 @@ import { rankCalculationService } from './rankCalculationService';
 export interface CreateChallengeDto {
   creatorId: string;
   acceptorId: string;
-  courseId: string;
+  courseId?: string; // Optional for "decide later" challenges
   courseName: string;
   settingsCatalogId?: string;
   wagerAmount: number;
@@ -56,21 +56,40 @@ class ChallengeService {
       }
 
       // Check for spam (no duplicate open challenges)
-      const duplicateCheck = `
-        SELECT id FROM challenges
-        WHERE creator_id = $1 
-        AND acceptor_id = $2
-        AND status IN ('pending', 'accepted', 'active')
-        AND course_id = $3
-      `;
-      const duplicate = await client.query(duplicateCheck, [
-        data.creatorId,
-        data.acceptorId,
-        data.courseId
-      ]);
+      if (data.courseId) {
+        const duplicateCheck = `
+          SELECT id FROM challenges
+          WHERE creator_id = $1 
+          AND acceptor_id = $2
+          AND status IN ('pending', 'accepted', 'active')
+          AND course_id = $3
+        `;
+        const duplicate = await client.query(duplicateCheck, [
+          data.creatorId,
+          data.acceptorId,
+          data.courseId
+        ]);
 
-      if (duplicate.rows.length > 0) {
-        throw new Error('You already have an open challenge with this opponent on this course.');
+        if (duplicate.rows.length > 0) {
+          throw new Error('You already have an open challenge with this opponent on this course.');
+        }
+      } else {
+        // For "decide later" challenges, check for any duplicate open challenges with same opponent
+        const duplicateCheck = `
+          SELECT id FROM challenges
+          WHERE creator_id = $1 
+          AND acceptor_id = $2
+          AND status IN ('pending', 'accepted', 'active')
+          AND course_name = 'DECIDE_LATER'
+        `;
+        const duplicate = await client.query(duplicateCheck, [
+          data.creatorId,
+          data.acceptorId
+        ]);
+
+        if (duplicate.rows.length > 0) {
+          throw new Error('You already have an open "decide later" challenge with this opponent.');
+        }
       }
 
       // Create challenge

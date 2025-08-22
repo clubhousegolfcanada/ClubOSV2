@@ -152,6 +152,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.14.21**: Challenge System Flexibility & Audit
+  - Added "Decide outside of the challenge" option to skip TrackMan settings
+  - Made course_id optional in database for manual challenge setup
+  - Complete audit verifying profile updates, CC transactions, and leaderboard integration
+  - Comprehensive documentation in CHALLENGE-SYSTEM-AUDIT.md
 - **v1.14.20**: Complete Friend System Implementation
   - Added comprehensive FriendRequests component for managing requests
   - New "Requests" tab in compete page with notification badges

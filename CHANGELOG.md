@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.21] - 2025-08-22
+
+### Added
+- **Challenge System Flexibility**
+  - Option to skip TrackMan settings when creating challenges
+  - "Decide outside of the challenge" option for manual game setup
+  - Complete audit documentation of challenge system flow
+  - Database migration to make course_id optional
+
+### Fixed
+- **Challenge Creation**
+  - Backend now accepts challenges without courseId
+  - Frontend properly handles "DECIDE_LATER" course selection
+  - Validation updated to allow challenges without TrackMan settings
+
+### Technical
+- **Challenge System Audit**
+  - Verified profile statistics updates on challenge completion
+  - Confirmed ClubCoin transactions (stake locking, payouts, bonuses)
+  - Documented complete challenge lifecycle and data flow
+  - Created CHALLENGE-SYSTEM-AUDIT.md with comprehensive documentation
+
+### Verified
+- Challenge results properly link to customer profiles
+- Win/loss statistics update correctly
+- ClubCoin balances update on stake/payout
+- Leaderboard rankings reflect challenge outcomes
+- Badge and rank calculations trigger after resolution
+
 ## [1.14.20] - 2025-08-22
 
 ### Added

@@ -366,8 +366,8 @@ router.post('/', challengeCreationRateLimiters, async (req, res) => {
       trackmanSettings
     } = req.body;
     
-    // Validate input
-    if (!acceptorId || !courseId || !courseName || !wagerAmount || !expiryDays) {
+    // Validate input - courseId is optional when deciding outside of challenge
+    if (!acceptorId || !courseName || !wagerAmount || !expiryDays) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields'
