@@ -11,6 +11,11 @@ All notable changes to ClubOS will be documented in this file.
   - Accept/reject functionality with real-time updates
   - Visual separation between incoming and outgoing requests
   - Empty state when no pending requests exist
+- **Role-Based Session Timeouts**
+  - Customer accounts: 8 hour default session
+  - Operator/Admin accounts: 4 hour default session
+  - "Remember Me" option extends any account to 30 days
+  - Dynamic token monitoring intervals based on session duration
 
 ### Fixed
 - **Friend Request System**
@@ -19,6 +24,11 @@ All notable changes to ClubOS will be documented in this file.
   - Self-friending prevention at API level with validation
   - Friend requests now visible to recipients in Requests tab
   - Club coins balance properly initialized for test accounts
+- **Authentication Issues**
+  - Fixed "session expired" error when switching between accounts
+  - Enhanced logout to properly clear all auth state
+  - Added grace periods to prevent false positive session expiry
+  - Fixed race conditions in auth state management
 
 ### Technical
 - **Database Improvements**
@@ -26,6 +36,10 @@ All notable changes to ClubOS will be documented in this file.
   - Fixed foreign key references in friend_invitations and user_blocks
   - Added self-friending prevention constraint
   - Performance indexes added for friendships queries
+- **Security Enhancements**
+  - Implemented role-based session expiration
+  - Added Remember Me functionality for user convenience
+  - Improved token monitoring with adaptive check intervals
 
 ### Testing
 - **Test Account Setup**
