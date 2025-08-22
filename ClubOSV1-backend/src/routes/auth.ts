@@ -241,11 +241,15 @@ router.post('/login',
       .withMessage('Valid email is required'),
     body('password')
       .notEmpty()
-      .withMessage('Password is required')
+      .withMessage('Password is required'),
+    body('rememberMe')
+      .optional()
+      .isBoolean()
+      .withMessage('Remember me must be a boolean')
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe = false } = req.body;
       
       logger.info('Login attempt:', { email });
       
@@ -307,14 +311,14 @@ router.post('/login',
         success: true
       });
       
-      // Generate JWT token
+      // Generate JWT token with remember me option
       const sessionId = uuidv4();
       const token = generateToken({
         userId: user.id,
         email: user.email,
         role: user.role,
         sessionId: sessionId
-      });
+      }, rememberMe);
       
       // Transform user for response
       const transformedUser = transformUser(user);

@@ -507,13 +507,18 @@ export default function CustomerProfile() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                        <input
-                          type="text"
+                        <select
                           value={formData.location}
                           onChange={(e) => setFormData({...formData, location: e.target.value})}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
-                          placeholder="City, State/Province"
-                        />
+                        >
+                          <option value="">Select a location</option>
+                          <option value="Bedford">Bedford</option>
+                          <option value="Dartmouth">Dartmouth</option>
+                          <option value="Stratford">Stratford</option>
+                          <option value="Bayers Lake">Bayers Lake</option>
+                          <option value="Truro">Truro</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>

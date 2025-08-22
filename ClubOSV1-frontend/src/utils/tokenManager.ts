@@ -69,6 +69,34 @@ export class TokenManager {
   }
 
   /**
+   * Get user role from token
+   */
+  getUserRole(token: string): string | null {
+    const decoded = this.decodeToken(token);
+    return decoded?.role || null;
+  }
+
+  /**
+   * Get appropriate check interval based on token expiry time
+   */
+  private getCheckInterval(token: string): number {
+    const timeUntilExpiry = this.getTimeUntilExpiration(token);
+    const role = this.getUserRole(token);
+    
+    // For short sessions (4-8 hours), check more frequently
+    if (timeUntilExpiry <= 8 * 60 * 60 * 1000) { // 8 hours or less
+      // Check every 15 minutes for short sessions
+      return 15 * 60 * 1000; // 15 minutes
+    } else if (timeUntilExpiry <= 24 * 60 * 60 * 1000) { // 24 hours or less
+      // Check every 30 minutes for medium sessions
+      return 30 * 60 * 1000; // 30 minutes
+    } else {
+      // Check every 2 hours for long sessions (Remember Me)
+      return 2 * 60 * 60 * 1000; // 2 hours
+    }
+  }
+
+  /**
    * Start monitoring token expiration
    */
   startTokenMonitoring(): void {
@@ -77,15 +105,27 @@ export class TokenManager {
       clearInterval(this.checkInterval);
     }
 
+    const token = localStorage.getItem('clubos_token');
+    if (!token) return;
+
+    // Get appropriate check interval based on token
+    const checkInterval = this.getCheckInterval(token);
+
     // Don't check immediately on start - the token was just validated by login
-    // Check every 5 minutes (300000ms) since we have 30 day expiration
     this.checkInterval = setInterval(() => {
-      const token = localStorage.getItem('clubos_token');
+      const currentToken = localStorage.getItem('clubos_token');
       
-      if (token && this.isTokenExpired(token)) {
+      if (currentToken && this.isTokenExpired(currentToken)) {
         this.handleTokenExpiration();
+      } else if (currentToken) {
+        // Adjust check interval if token was refreshed
+        const newInterval = this.getCheckInterval(currentToken);
+        if (newInterval !== checkInterval) {
+          // Restart monitoring with new interval
+          this.startTokenMonitoring();
+        }
       }
-    }, 300000); // Check every 5 minutes instead of 30 seconds
+    }, checkInterval);
   }
 
   /**

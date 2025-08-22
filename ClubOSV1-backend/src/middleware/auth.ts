@@ -29,10 +29,34 @@ interface JWTPayload extends IJWTPayload {
   phone?: string;
 }
 
-// Generate JWT token
-export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
+// Generate JWT token with role-based expiration
+export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>, rememberMe: boolean = false): string => {
+  // Role-based token expiration times
+  let expiresIn: string;
+  
+  if (rememberMe) {
+    // With "Remember Me" - 30 days for all roles
+    expiresIn = '30d';
+  } else {
+    // Without "Remember Me" - role-based shorter sessions
+    switch (payload.role) {
+      case 'customer':
+        expiresIn = '8h';  // 8 hours for customers
+        break;
+      case 'operator':
+      case 'admin':
+        expiresIn = '4h';  // 4 hours for operators and admins
+        break;
+      case 'kiosk':
+        expiresIn = '12h'; // 12 hours for kiosk mode
+        break;
+      default:
+        expiresIn = '4h';  // Default to 4 hours for safety
+    }
+  }
+  
   return jwt.sign(payload, config.JWT_SECRET, {
-    expiresIn: '30d', // Extended from 24h to 30 days for better UX
+    expiresIn,
     issuer: 'clubosv1',
     audience: 'clubosv1-users'
   });
@@ -83,6 +107,10 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     
     if (timeUntilExpiry < 3600) {
       // Token will expire soon, send a new one in response header
+      // Check if original token was long-lived (remember me)
+      const totalTokenLife = (decoded.exp || 0) - (decoded.iat || 0);
+      const wasRememberMe = totalTokenLife > 86400; // More than 24 hours means it was remember me
+      
       const newToken = generateToken({
         userId: decoded.userId,
         email: decoded.email,
@@ -90,7 +118,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
         sessionId: decoded.sessionId,
         name: decoded.name,
         phone: decoded.phone
-      });
+      }, wasRememberMe);
       res.setHeader('X-New-Token', newToken);
     }
 

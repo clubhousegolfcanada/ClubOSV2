@@ -27,6 +27,7 @@ const LoginPage = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false); // Remember me checkbox state
   
   // Stop token monitoring when login page loads
   useEffect(() => {
@@ -104,7 +105,8 @@ const LoginPage = () => {
         // Handle login (both operator and customer)
         response = await axios.post(`${API_URL}/api/auth/login`, {
           email,
-          password
+          password,
+          rememberMe
         });
       }
 
@@ -325,13 +327,27 @@ const LoginPage = () => {
           </div>
 
           <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-[var(--text-secondary)]">
+                Remember me for 30 days
+              </label>
+            </div>
+            
             <div className="text-sm">
               <button
                 type="button"
                 onClick={() => setShowResetModal(true)}
                 className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
               >
-                Forgot your password?
+                Forgot password?
               </button>
             </div>
           </div>
