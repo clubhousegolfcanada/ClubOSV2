@@ -282,37 +282,78 @@ class ClubCoinService {
   }
 
   /**
-   * Lock stakes for a challenge
+   * Lock stakes for a challenge (uses existing transaction)
    */
   async lockStakes(
     challengeId: string,
     creatorId: string,
     creatorStake: number,
     acceptorId: string,
-    acceptorStake: number
+    acceptorStake: number,
+    client?: any  // Optional client for existing transaction
   ): Promise<boolean> {
-    const client = await this.pool.connect();
+    const shouldReleaseClient = !client;
+    if (!client) {
+      client = await this.pool.connect();
+    }
     
     try {
-      await client.query('BEGIN');
+      if (shouldReleaseClient) {
+        await client.query('BEGIN');
+      }
 
-      // Lock creator stake
-      await this.debit({
-        userId: creatorId,
-        type: 'stake_lock',
-        amount: creatorStake,
-        challengeId,
-        description: 'Challenge stake locked (creator)'
-      });
+      // Get current balances
+      const creatorBalanceResult = await client.query(
+        'SELECT cc_balance FROM customer_profiles WHERE user_id = $1',
+        [creatorId]
+      );
+      
+      const acceptorBalanceResult = await client.query(
+        'SELECT cc_balance FROM customer_profiles WHERE user_id = $1',
+        [acceptorId]
+      );
 
-      // Lock acceptor stake
-      await this.debit({
-        userId: acceptorId,
-        type: 'stake_lock',
-        amount: acceptorStake,
-        challengeId,
-        description: 'Challenge stake locked (acceptor)'
-      });
+      const creatorBalance = parseFloat(creatorBalanceResult.rows[0]?.cc_balance || 0);
+      const acceptorBalance = parseFloat(acceptorBalanceResult.rows[0]?.cc_balance || 0);
+
+      // Check balances
+      if (creatorBalance < creatorStake) {
+        throw new Error(`Creator has insufficient balance: ${creatorBalance} < ${creatorStake}`);
+      }
+      if (acceptorBalance < acceptorStake) {
+        throw new Error(`Acceptor has insufficient balance: ${acceptorBalance} < ${acceptorStake}`);
+      }
+
+      // Deduct stakes from balances
+      const newCreatorBalance = creatorBalance - creatorStake;
+      const newAcceptorBalance = acceptorBalance - acceptorStake;
+
+      // Update balances
+      await client.query(
+        'UPDATE customer_profiles SET cc_balance = $1 WHERE user_id = $2',
+        [newCreatorBalance, creatorId]
+      );
+      
+      await client.query(
+        'UPDATE customer_profiles SET cc_balance = $1 WHERE user_id = $2',
+        [newAcceptorBalance, acceptorId]
+      );
+
+      // Log transactions
+      await client.query(
+        `INSERT INTO cc_transactions (
+          user_id, type, amount, balance_before, balance_after,
+          challenge_id, description, created_at
+        ) VALUES 
+          ($1, 'stake_lock', $2, $3, $4, $5, $6, CURRENT_TIMESTAMP),
+          ($7, 'stake_lock', $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)`,
+        [
+          creatorId, -creatorStake, creatorBalance, newCreatorBalance, challengeId,
+          'Challenge stake locked (creator)',
+          acceptorId, -acceptorStake, acceptorBalance, newAcceptorBalance, challengeId,
+          'Challenge stake locked (acceptor)'
+        ]
+      );
 
       // Update stakes table
       const stakeQuery = `
@@ -322,14 +363,21 @@ class ClubCoinService {
       `;
       await client.query(stakeQuery, [challengeId]);
 
-      await client.query('COMMIT');
+      if (shouldReleaseClient) {
+        await client.query('COMMIT');
+      }
+      
       return true;
     } catch (error) {
-      await client.query('ROLLBACK');
+      if (shouldReleaseClient) {
+        await client.query('ROLLBACK');
+      }
       logger.error('Error locking stakes:', error);
       throw error;
     } finally {
-      client.release();
+      if (shouldReleaseClient) {
+        client.release();
+      }
     }
   }
 

@@ -229,13 +229,14 @@ class ChallengeService {
         throw new Error(`Insufficient CC balance. Need ${acceptorStake} CC for stake.`);
       }
 
-      // Lock stakes
+      // Lock stakes (pass the client to use the same transaction)
       await clubCoinService.lockStakes(
         challengeId,
         challenge.creator_id,
         parseFloat(challenge.creator_stake_amount),
         acceptorId,
-        acceptorStake
+        acceptorStake,
+        client  // Pass the client to use existing transaction
       );
 
       // Update challenge status

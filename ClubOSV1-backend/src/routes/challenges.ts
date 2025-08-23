@@ -271,14 +271,31 @@ router.get('/cc-balance', async (req, res) => {
       });
     }
     
-    // TODO: Implement ClubCoin system
-    // For now, return default balance for testing
-    const defaultBalance = req.user?.email === 'mikebelair79@gmail.com' ? 100 : 0;
+    // Get actual balance from customer_profiles table
+    const result = await pool.query(
+      `SELECT cc_balance FROM customer_profiles WHERE user_id = $1`,
+      [userId]
+    );
+    
+    let balance = 0;
+    
+    if (result.rows.length === 0) {
+      // Create profile if it doesn't exist
+      await pool.query(
+        `INSERT INTO customer_profiles (user_id, cc_balance, rank_tier, total_challenges_won, total_challenges_played)
+         VALUES ($1, 100, 'house', 0, 0)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [userId]
+      );
+      balance = 100;
+    } else {
+      balance = parseFloat(result.rows[0].cc_balance) || 0;
+    }
     
     res.json({
       success: true,
       data: {
-        balance: defaultBalance,
+        balance: balance,
         totalEarned: 0,
         totalSpent: 0,
         lastTransaction: null
