@@ -47,7 +47,7 @@ async function checkAndFixAlanna() {
       console.log('\nCreating account for alanna.belair@gmail.com...');
       
       // Create the account with the same password
-      const hashedPassword = await bcrypt.hash('password123', 10);
+      const hashedPassword = await bcrypt.hash('Cozm3dd9u', 10);
       
       const insertResult = await pool.query(
         `INSERT INTO "Users" (email, password, name, role, "isActive", status, "createdAt", "updatedAt")
@@ -70,8 +70,7 @@ async function checkAndFixAlanna() {
       console.log('Created customer profile with 100 CC balance');
       console.log('\nAccount created successfully!');
       console.log('Email: alanna.belair@gmail.com');
-      console.log('Password: password123');
-      console.log('Please change the password after first login');
+      console.log('Password: Cozm3dd9u');
     } else {
       // Account exists, let's fix its status if needed
       const user = await pool.query(
@@ -94,7 +93,7 @@ async function checkAndFixAlanna() {
       
       // Reset password to known value
       console.log('\nResetting password for alanna.belair@gmail.com...');
-      const hashedPassword = await bcrypt.hash('password123', 10);
+      const hashedPassword = await bcrypt.hash('Cozm3dd9u', 10);
       
       await pool.query(
         `UPDATE "Users" 
@@ -106,7 +105,7 @@ async function checkAndFixAlanna() {
       console.log('Password reset successfully');
       console.log('\nAccount ready for login:');
       console.log('Email: alanna.belair@gmail.com');
-      console.log('Password: password123');
+      console.log('Password: Cozm3dd9u');
     }
     
   } catch (error) {
