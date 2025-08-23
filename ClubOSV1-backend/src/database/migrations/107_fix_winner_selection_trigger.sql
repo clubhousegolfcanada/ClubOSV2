@@ -15,14 +15,19 @@ BEGIN
   FROM challenges 
   WHERE id = NEW.challenge_id;
   
-  -- Get both players' selections (using correct column name: selected_winner_id)
-  SELECT 
-    MAX(CASE WHEN user_id = v_creator_id THEN selected_winner_id END),
-    MAX(CASE WHEN user_id = v_acceptor_id THEN selected_winner_id END)
-  INTO v_creator_selection, v_acceptor_selection
+  -- Get creator's selection
+  SELECT selected_winner_id 
+  INTO v_creator_selection
   FROM challenge_winner_selections
   WHERE challenge_id = NEW.challenge_id
-    AND user_id IN (v_creator_id, v_acceptor_id);
+    AND user_id = v_creator_id;
+    
+  -- Get acceptor's selection  
+  SELECT selected_winner_id 
+  INTO v_acceptor_selection
+  FROM challenge_winner_selections
+  WHERE challenge_id = NEW.challenge_id
+    AND user_id = v_acceptor_id;
   
   -- Check if both have selected
   v_both_selected := v_creator_selection IS NOT NULL AND v_acceptor_selection IS NOT NULL;
