@@ -630,6 +630,146 @@ class ChallengeService {
   }
 
   /**
+   * Resolve challenge by player agreement
+   */
+  async resolveChallengeByAgreement(challengeId: string, agreedWinnerId: string): Promise<any> {
+    const client = await this.pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Get challenge details
+      const query = `
+        SELECT 
+          c.*,
+          prof1.current_rank as creator_rank,
+          prof2.current_rank as acceptor_rank
+        FROM challenges c
+        LEFT JOIN customer_profiles prof1 ON prof1.user_id = c.creator_id
+        LEFT JOIN customer_profiles prof2 ON prof2.user_id = c.acceptor_id
+        WHERE c.id = $1
+        FOR UPDATE OF c
+      `;
+      const result = await client.query(query, [challengeId]);
+      
+      if (result.rows.length === 0) {
+        throw new Error('Challenge not found');
+      }
+
+      const challenge = result.rows[0];
+      
+      // Determine winner and loser
+      const winnerId = agreedWinnerId;
+      const loserId = winnerId === challenge.creator_id 
+        ? challenge.acceptor_id 
+        : challenge.creator_id;
+
+      // Calculate bonuses
+      const pot = parseFloat(challenge.total_pot);
+      const winnerRank = winnerId === challenge.creator_id 
+        ? challenge.creator_rank 
+        : challenge.acceptor_rank;
+      const loserRank = winnerId === challenge.creator_id 
+        ? challenge.acceptor_rank 
+        : challenge.creator_rank;
+      
+      const bonuses = await this.calculateBonuses(pot, winnerRank, loserRank, loserId);
+      const totalPayout = pot + bonuses.total;
+
+      // Create result record
+      const resultQuery = `
+        INSERT INTO challenge_results (
+          challenge_id,
+          winner_user_id,
+          loser_user_id,
+          base_pot,
+          rank_gap_bonus,
+          champion_bonus,
+          total_bonus,
+          final_payout,
+          winner_rank,
+          loser_rank,
+          resolution_type,
+          resolution_notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `;
+      
+      await client.query(resultQuery, [
+        challengeId,
+        winnerId,
+        loserId,
+        pot,
+        bonuses.rankGap,
+        bonuses.champion,
+        bonuses.total,
+        totalPayout,
+        winnerRank,
+        loserRank,
+        'player_agreement',
+        'Both players agreed on the winner'
+      ]);
+
+      // Award CC to winner (the pot is already locked, just transfer it)
+      // The pot amount is automatically transferred to winner via database triggers
+      
+      // Award bonus CC if applicable (minted, not from pot)
+      if (bonuses.total > 0) {
+        await clubCoinService.awardBonus(
+          winnerId,
+          bonuses.total,
+          challengeId,
+          'Challenge victory bonus'
+        );
+      }
+
+      // Update challenge status
+      await client.query(
+        `UPDATE challenges SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, 
+         winner_user_id = $1, final_payout = $2 WHERE id = $3`,
+        [winnerId, totalPayout, challengeId]
+      );
+
+      // Update user stats
+      await this.updateWinLossStats(winnerId, loserId, client);
+
+      // Check for badge triggers
+      await this.checkBadgeTriggers(winnerId, 'challenge_win', challengeId, client);
+      await this.checkBadgeTriggers(loserId, 'challenge_loss', challengeId, client);
+
+      await client.query('COMMIT');
+
+      // Recalculate ranks for both players
+      await rankCalculationService.recalculateUserRank(winnerId);
+      await rankCalculationService.recalculateUserRank(loserId);
+
+      // Send notifications
+      await this.sendChallengeNotification(winnerId, 'challenge_won', {
+        challengeId,
+        payout: totalPayout,
+        bonus: bonuses.total
+      });
+      
+      await this.sendChallengeNotification(loserId, 'challenge_lost', {
+        challengeId
+      });
+
+      return {
+        winnerId,
+        loserId,
+        pot,
+        bonuses,
+        totalPayout
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      logger.error('Error resolving challenge by agreement:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Get user's challenges
    */
   async getUserChallenges(

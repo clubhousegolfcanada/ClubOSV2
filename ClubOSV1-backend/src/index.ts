@@ -367,6 +367,11 @@ async function startServer() {
     seasonalResetJob.default.start();
     logger.info('✅ Seasonal reset job started');
     
+    // Start challenge agreement processor
+    const { startChallengeAgreementProcessor } = await import('./jobs/challengeAgreementProcessor');
+    startChallengeAgreementProcessor();
+    logger.info('✅ Challenge agreement processor started');
+    
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
     

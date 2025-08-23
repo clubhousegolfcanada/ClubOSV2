@@ -285,6 +285,103 @@ export default function Compete() {
     }
   };
 
+  const handleSelectWinner = async (challengeId: string) => {
+    try {
+      // Find the challenge to get player names
+      const challenge = challenges.find(c => c.id === challengeId);
+      if (!challenge) return;
+
+      const isCreator = challenge.creatorId === user?.id;
+      
+      // Show a modal or confirm dialog for winner selection
+      const winner = await new Promise<string | null>((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+          <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Who Won?</h3>
+            <p class="text-sm text-gray-600 mb-4">Select the winner of this challenge:</p>
+            <div class="space-y-2">
+              <button id="select-me" class="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
+                <div class="font-medium">Me</div>
+                <div class="text-sm text-gray-500">${isCreator ? challenge.creatorName : challenge.acceptorName}</div>
+              </button>
+              <button id="select-opponent" class="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
+                <div class="font-medium">Opponent</div>
+                <div class="text-sm text-gray-500">${isCreator ? challenge.acceptorName : challenge.creatorName}</div>
+              </button>
+              <button id="cancel" class="w-full p-2 text-gray-500 hover:text-gray-700">Cancel</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        const selectMe = modal.querySelector('#select-me') as HTMLButtonElement;
+        const selectOpponent = modal.querySelector('#select-opponent') as HTMLButtonElement;
+        const cancel = modal.querySelector('#cancel') as HTMLButtonElement;
+
+        selectMe?.addEventListener('click', () => {
+          document.body.removeChild(modal);
+          resolve(user?.id || null);
+        });
+
+        selectOpponent?.addEventListener('click', () => {
+          document.body.removeChild(modal);
+          resolve(isCreator ? challenge.acceptorId : challenge.creatorId);
+        });
+
+        cancel?.addEventListener('click', () => {
+          document.body.removeChild(modal);
+          resolve(null);
+        });
+      });
+
+      if (!winner) return;
+
+      const token = localStorage.getItem('clubos_token');
+      const response = await axios.post(
+        `${API_URL}/api/challenges/${challengeId}/select-winner`,
+        { winnerId: winner },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+
+      if (response.data.data?.status === 'agreed') {
+        toast.success('Both players agree! Challenge will be resolved.');
+      } else if (response.data.data?.status === 'disagreement') {
+        toast.error('Players disagree on winner. Please discuss or file a dispute.');
+      } else {
+        toast.success('Winner selection recorded. Waiting for other player.');
+      }
+      
+      loadChallenges();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to select winner');
+    }
+  };
+
+  const handleDispute = async (challengeId: string) => {
+    try {
+      const reason = prompt('Please describe the issue with this challenge:');
+      if (!reason) return;
+
+      const token = localStorage.getItem('clubos_token');
+      await axios.post(
+        `${API_URL}/api/challenges/${challengeId}/dispute`,
+        { 
+          type: 'disagreement',
+          description: reason,
+          evidence: []
+        },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      
+      toast.success('Dispute filed. An admin will review it soon.');
+      loadChallenges();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to file dispute');
+    }
+  };
+
   const sendFriendRequest = async (targetUserId: string, targetName: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
@@ -668,8 +765,7 @@ export default function Compete() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        // TODO: Implement winner selection modal
-                                        console.log('Select winner for challenge:', challenge.id);
+                                        handleSelectWinner(challenge.id);
                                       }}
                                       className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
                                     >
@@ -679,8 +775,7 @@ export default function Compete() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        // TODO: Implement dispute functionality
-                                        console.log('Dispute challenge:', challenge.id);
+                                        handleDispute(challenge.id);
                                       }}
                                       className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2 border border-red-200"
                                     >

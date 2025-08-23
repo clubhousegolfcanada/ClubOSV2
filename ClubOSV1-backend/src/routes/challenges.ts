@@ -582,6 +582,181 @@ router.post('/:id/play-sync', async (req, res) => {
 });
 
 /**
+ * POST /api/challenges/:id/select-winner
+ * Select who won the challenge (both players must select the same winner)
+ */
+router.post('/:id/select-winner', async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const { winnerId } = req.body;
+    
+    if (!winnerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Winner ID is required'
+      });
+    }
+    
+    // Start transaction
+    await client.query('BEGIN');
+    
+    // Verify challenge exists and user is a participant
+    const challengeQuery = `
+      SELECT id, creator_id, acceptor_id, status
+      FROM challenges
+      WHERE id = $1
+      AND (creator_id = $2 OR acceptor_id = $2)
+      AND status IN ('active', 'accepted')
+    `;
+    
+    const challengeResult = await client.query(challengeQuery, [id, userId]);
+    
+    if (challengeResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
+        success: false,
+        error: 'Challenge not found or you are not a participant'
+      });
+    }
+    
+    const challenge = challengeResult.rows[0];
+    
+    // Verify winnerId is one of the participants
+    if (winnerId !== challenge.creator_id && winnerId !== challenge.acceptor_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        error: 'Winner must be one of the challenge participants'
+      });
+    }
+    
+    // Insert or update the user's selection
+    const selectionQuery = `
+      INSERT INTO challenge_winner_selections (
+        challenge_id, user_id, selected_winner_id
+      ) VALUES ($1, $2, $3)
+      ON CONFLICT (challenge_id, user_id) 
+      DO UPDATE SET 
+        selected_winner_id = $3,
+        selected_at = CURRENT_TIMESTAMP
+      RETURNING id
+    `;
+    
+    await client.query(selectionQuery, [id, userId, winnerId]);
+    
+    // Check if both players have selected
+    const selectionsQuery = `
+      SELECT 
+        COUNT(*) as selection_count,
+        COUNT(DISTINCT selected_winner_id) as unique_selections,
+        MIN(selected_winner_id) as agreed_winner
+      FROM challenge_winner_selections
+      WHERE challenge_id = $1
+    `;
+    
+    const selectionsResult = await client.query(selectionsQuery, [id]);
+    const selections = selectionsResult.rows[0];
+    
+    let message = 'Winner selection recorded. Waiting for other player.';
+    let status = 'pending';
+    
+    // If both players have selected
+    if (selections.selection_count >= 2) {
+      if (selections.unique_selections === 1) {
+        // Both agree on the winner - trigger resolution
+        message = 'Both players agree! Challenge will be resolved.';
+        status = 'agreed';
+        
+        // The trigger will handle updating the challenge status
+      } else {
+        // Players disagree
+        message = 'Players disagree on winner. Please discuss or file a dispute.';
+        status = 'disagreement';
+      }
+    }
+    
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message,
+      data: {
+        status,
+        selections: selections.selection_count,
+        agreedWinner: selections.unique_selections === 1 ? selections.agreed_winner : null
+      }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Error selecting winner:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to record winner selection'
+    });
+  } finally {
+    client.release();
+  }
+});
+
+/**
+ * GET /api/challenges/:id/winner-selections
+ * Get current winner selections for a challenge
+ */
+router.get('/:id/winner-selections', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    
+    // Verify user is a participant
+    const verifyQuery = `
+      SELECT id FROM challenges
+      WHERE id = $1
+      AND (creator_id = $2 OR acceptor_id = $2)
+    `;
+    
+    const verifyResult = await pool.query(verifyQuery, [id, userId]);
+    
+    if (verifyResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Challenge not found or you are not a participant'
+      });
+    }
+    
+    // Get selections
+    const query = `
+      SELECT 
+        ws.user_id,
+        ws.selected_winner_id,
+        ws.selected_at,
+        u1.name as selector_name,
+        u2.name as selected_winner_name
+      FROM challenge_winner_selections ws
+      JOIN users u1 ON ws.user_id = u1.id
+      JOIN users u2 ON ws.selected_winner_id = u2.id
+      WHERE ws.challenge_id = $1
+      ORDER BY ws.selected_at DESC
+    `;
+    
+    const result = await pool.query(query, [id]);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    logger.error('Error fetching winner selections:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch winner selections'
+    });
+  }
+});
+
+/**
  * POST /api/challenges/:id/dispute
  * File a dispute
  */
