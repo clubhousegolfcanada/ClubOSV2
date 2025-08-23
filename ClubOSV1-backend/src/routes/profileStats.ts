@@ -66,7 +66,7 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
         -- Calculate total bookings
         (SELECT COUNT(*) 
          FROM bookings b
-         WHERE b.customer_id = $1
+         WHERE b.user_id = $1
         ) as total_bookings,
         -- Get recent challenge activity
         (SELECT json_agg(recent_challenges ORDER BY resolved_at DESC)
