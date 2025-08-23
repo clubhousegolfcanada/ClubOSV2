@@ -151,7 +151,8 @@ class DatabaseService {
   // User operations
   async findUserByEmail(email: string): Promise<DbUser | null> {
     try {
-      const result = await query('SELECT * FROM "Users" WHERE email = $1', [email]);
+      // Use LOWER to make email comparison case-insensitive
+      const result = await query('SELECT * FROM "Users" WHERE LOWER(email) = LOWER($1)', [email]);
       return result.rows[0] || null;
     } catch (error) {
       logger.error('Error finding user by email:', error);

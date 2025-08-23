@@ -18,7 +18,6 @@ router.post('/signup',
     body('email')
       .trim()
       .isEmail()
-      .normalizeEmail()
       .withMessage('Valid email is required'),
     body('password')
       .isLength({ min: 8 })
@@ -237,7 +236,6 @@ router.post('/login',
     body('email')
       .trim()
       .isEmail()
-      .normalizeEmail()
       .withMessage('Valid email is required'),
     body('password')
       .notEmpty()
@@ -347,7 +345,6 @@ router.post('/register',
     body('email')
       .trim()
       .isEmail()
-      .normalizeEmail()
       .withMessage('Valid email is required'),
     body('password')
       .isLength({ min: 8 })
