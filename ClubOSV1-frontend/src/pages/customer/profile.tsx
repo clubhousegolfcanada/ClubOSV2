@@ -217,8 +217,8 @@ export default function CustomerProfile() {
       return;
     }
     
-    if (passwordForm.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
     
@@ -769,7 +769,7 @@ export default function CustomerProfile() {
                       onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
                       className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
                       required
-                      minLength={8}
+                      minLength={6}
                     />
                     <button
                       type="button"
@@ -783,7 +783,7 @@ export default function CustomerProfile() {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Must be at least 8 characters with uppercase, lowercase and numbers
+                    Must be at least 6 characters
                   </p>
                 </div>
                 

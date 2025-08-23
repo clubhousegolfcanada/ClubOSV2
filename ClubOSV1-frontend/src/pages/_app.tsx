@@ -12,8 +12,7 @@ import { useKioskRedirect } from '@/hooks/useKioskRedirect';
 import { tokenManager } from '@/utils/tokenManager';
 import { SessionExpiryWarning } from '@/components/SessionExpiryWarning';
 import { MessagesProvider, useMessages } from '@/contexts/MessagesContext';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
-import { SwipeIndicator } from '@/components/SwipeIndicator';
+// Swipe navigation removed - conflicts with horizontal scrolling
 import RemoteActionsBar from '@/components/RemoteActionsBar';
 import { performanceMonitor, updateAnimationDurations } from '@/utils/performanceMonitor';
 import { initializeCSRF } from '@/utils/csrf';
@@ -43,10 +42,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   // Use message context for unread count
   const { unreadCount } = useMessages();
   
-  // Enable swipe navigation for authenticated users (but not in customer mode or for customer role)
-  useSwipeNavigation({ 
-    enabled: isAuthenticated && !isPublicRoute && viewMode !== 'customer' && user?.role !== 'customer' 
-  });
+  // Swipe navigation removed - conflicts with horizontal scrolling on pages with tables/lists
 
   useEffect(() => {
     // Initialize CSRF token

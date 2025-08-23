@@ -9,6 +9,7 @@ import { body } from 'express-validator';
 import { authenticate, generateToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { transformUser } from '../utils/transformers';
+import { passwordChangeLimiter } from '../middleware/passwordChangeLimiter';
 
 const router = Router();
 
@@ -20,8 +21,8 @@ router.post('/signup',
       .isEmail()
       .withMessage('Valid email is required'),
     body('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters')
       .matches(/[A-Z]/)
       .withMessage('Password must contain at least one uppercase letter')
       .matches(/[a-z]/)
@@ -347,8 +348,8 @@ router.post('/register',
       .isEmail()
       .withMessage('Valid email is required'),
     body('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters')
       .matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage('Password must contain uppercase, lowercase and numbers'),
     body('name')
@@ -536,15 +537,14 @@ router.put('/profile',
 // Change password
 router.post('/change-password',
   authenticate,
+  passwordChangeLimiter,
   validate([
     body('currentPassword')
       .notEmpty()
       .withMessage('Current password is required'),
     body('newPassword')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters')
-      .matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('Password must contain uppercase, lowercase and numbers')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters')
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
