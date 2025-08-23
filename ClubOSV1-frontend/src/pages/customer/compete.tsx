@@ -7,7 +7,7 @@ import {
   Trophy, Users, User, Clock, Target, Check, X, Plus, TrendingUp,
   Coins, UserPlus, Crown, Star, Medal, Home, Shield, Search,
   ChevronRight, Filter, Zap, Award, DollarSign, Activity, MoreVertical,
-  UserMinus, Ban, Bell
+  UserMinus, Ban, Bell, ChevronDown, MapPin, Flag
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -81,6 +81,7 @@ export default function Compete() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedCompetitor, setSelectedCompetitor] = useState<Competitor | null>(null);
   const [showFriendMenu, setShowFriendMenu] = useState<string | null>(null);
+  const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -544,67 +545,179 @@ export default function Compete() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {challenges.map((challenge) => (
-                      <div
-                        key={challenge.id}
-                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
-                        onClick={() => challenge.status !== 'pending' && router.push(`/customer/challenges/${challenge.id}`)}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">
-                                  vs {challenge.opponent_name || challenge.acceptorName || challenge.creatorName}
-                                </span>
-                                {getRankIcon(challenge.acceptorRank || challenge.creatorRank)}
+                    {challenges.map((challenge) => {
+                      const isExpanded = expandedChallenge === challenge.id;
+                      const isCreator = challenge.creatorId === user?.id;
+                      
+                      return (
+                        <div
+                          key={challenge.id}
+                          className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all"
+                        >
+                          {/* Main Challenge Card - Always Visible */}
+                          <div
+                            className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => setExpandedChallenge(isExpanded ? null : challenge.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-900">
+                                      vs {challenge.opponent_name || challenge.acceptorName || challenge.creatorName}
+                                    </span>
+                                    {getRankIcon(challenge.acceptorRank || challenge.creatorRank)}
+                                  </div>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                    challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                    challenge.status === 'active' || challenge.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                                    challenge.status === 'resolved' ? 'bg-gray-100 text-gray-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    {challenge.status.toUpperCase()}
+                                  </span>
+                                </div>
                               </div>
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                challenge.status === 'active' || challenge.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                                challenge.status === 'resolved' ? 'bg-gray-100 text-gray-700' :
-                                'bg-red-100 text-red-700'
-                              }`}>
-                                {challenge.status.toUpperCase()}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="font-bold text-[#0B3D3A]">
+                                    {challenge.wager_amount || challenge.wagerAmount || challenge.totalPot} CC
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {formatTimeRemaining(challenge.expires_at || challenge.expiresAt)}
+                                  </div>
+                                </div>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="font-bold text-[#0B3D3A]">
-                              {challenge.wager_amount || challenge.wagerAmount || challenge.totalPot} CC
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {formatTimeRemaining(challenge.expires_at || challenge.expiresAt)}
-                            </div>
-                          </div>
-                        </div>
 
-                        {challenge.status === 'pending' && (
-                          <div className="flex gap-2 mt-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcceptChallenge(challenge.id);
-                              }}
-                              className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
-                            >
-                              <Check className="w-4 h-4" />
-                              Accept
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeclineChallenge(challenge.id);
-                              }}
-                              className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                            >
-                              <X className="w-4 h-4" />
-                              Decline
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          {/* Expanded Details */}
+                          {isExpanded && (
+                            <div className="border-t border-gray-200 p-4 bg-gray-50">
+                              {/* Players Section */}
+                              <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-2">Players</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className={`p-3 bg-white rounded-lg border ${isCreator ? 'border-[#0B3D3A]' : 'border-gray-200'}`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs text-gray-600">Challenger</span>
+                                      {isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
+                                    </div>
+                                    <p className="font-medium text-sm">{challenge.creatorName}</p>
+                                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      challenge.creatorRank === 'pro' ? 'bg-purple-100 text-purple-700' :
+                                      challenge.creatorRank === 'gold' ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {(challenge.creatorRank || 'house').toUpperCase()}
+                                    </span>
+                                    {challenge.creatorScore && (
+                                      <div className="mt-2 pt-2 border-t">
+                                        <p className="text-xs text-gray-600">Score: <span className="font-bold">{challenge.creatorScore}</span></p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className={`p-3 bg-white rounded-lg border ${!isCreator ? 'border-[#0B3D3A]' : 'border-gray-200'}`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs text-gray-600">Opponent</span>
+                                      {!isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
+                                    </div>
+                                    <p className="font-medium text-sm">{challenge.acceptorName}</p>
+                                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      challenge.acceptorRank === 'pro' ? 'bg-purple-100 text-purple-700' :
+                                      challenge.acceptorRank === 'gold' ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {(challenge.acceptorRank || 'house').toUpperCase()}
+                                    </span>
+                                    {challenge.acceptorScore && (
+                                      <div className="mt-2 pt-2 border-t">
+                                        <p className="text-xs text-gray-600">Score: <span className="font-bold">{challenge.acceptorScore}</span></p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Challenge Details */}
+                              <div className="bg-white rounded-lg p-3 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-2">Details</h3>
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <MapPin className="w-4 h-4" />
+                                      <span>Course</span>
+                                    </div>
+                                    <span className="font-medium">{challenge.courseName || 'TBD'}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <Target className="w-4 h-4" />
+                                      <span>Format</span>
+                                    </div>
+                                    <span className="font-medium">{challenge.settings?.holes || 18} holes</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <DollarSign className="w-4 h-4" />
+                                      <span>Stakes</span>
+                                    </div>
+                                    <span className="font-medium">50/50 split</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              {challenge.status === 'pending' && !isCreator && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAcceptChallenge(challenge.id);
+                                    }}
+                                    className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Accept Challenge
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeclineChallenge(challenge.id);
+                                    }}
+                                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    Decline
+                                  </button>
+                                </div>
+                              )}
+
+                              {(challenge.status === 'active' || challenge.status === 'accepted') && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                  <p className="text-sm text-blue-800">
+                                    <strong>Action Required:</strong> Complete your round and sync with TrackMan to record your score.
+                                  </p>
+                                </div>
+                              )}
+
+                              {challenge.status === 'resolved' && (
+                                <div className="text-center py-3">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {challenge.winnerUserId === user?.id ? '🏆 You Won!' : 'Challenge Complete'}
+                                  </p>
+                                  {challenge.finalPayout && challenge.winnerUserId === user?.id && (
+                                    <p className="text-lg font-bold text-[#0B3D3A] mt-1">+{challenge.finalPayout} CC</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
