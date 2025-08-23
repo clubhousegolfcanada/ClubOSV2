@@ -2,6 +2,38 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.24] - 2025-08-23
+
+### Added
+- **Unified Leaderboard Component**
+  - Created reusable LeaderboardList component for consistency
+  - Pull-to-refresh functionality for mobile devices
+  - Loading skeletons instead of basic spinners for better UX
+  - Virtual scrolling for performance with large lists (50+ items)
+  - Rank change indicators showing movement up/down
+  - Integrated search functionality within component
+  - Touch gesture support for mobile refresh
+
+### Improved
+- **Enhanced Leaderboard Features**
+  - Better performance with virtual scrolling
+  - Smoother loading experience with skeleton screens
+  - Visual rank change indicators (up/down arrows)
+  - Unified experience across all leaderboard views
+  - Reduced code duplication between pages
+
+### Fixed
+- **Navigation & Scrolling Issues**
+  - Removed swipe navigation that conflicted with horizontal scrolling
+  - Fixed z-index issues with sticky headers (z-30 to z-40)
+  - Improved tab navigation scrolling on mobile
+
+### Changed
+- **Component Architecture**
+  - Both leaderboard and compete pages now use unified component
+  - Consistent styling and behavior across all leaderboard views
+  - Centralized leaderboard logic for easier maintenance
+
 ## [1.14.23] - 2025-08-23
 
 ### Fixed

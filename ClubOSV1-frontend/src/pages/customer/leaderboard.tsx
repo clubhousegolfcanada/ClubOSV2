@@ -3,9 +3,8 @@ import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import Head from 'next/head';
-import { Trophy, Download, UserPlus, Award, TrendingUp, Coins, Crown, Star, Medal, Home, Target } from 'lucide-react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import { Trophy } from 'lucide-react';
+import { LeaderboardList } from '@/components/customer/LeaderboardList';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -14,27 +13,12 @@ if (API_URL.endsWith('/api')) {
   API_URL = API_URL.slice(0, -4);
 }
 
-interface LeaderboardEntry {
-  user_id: string;
-  name: string;
-  rank: number;
-  rank_tier: string;
-  cc_balance: number;
-  total_challenges_won: number;
-  total_challenges_played: number;
-  win_rate: number;
-  has_champion_marker: boolean;
-  is_friend: boolean;
-  has_pending_request: boolean;
-}
 
 export default function CustomerLeaderboard() {
   const router = useRouter();
   const { user } = useAuthState();
   const [activeTab, setActiveTab] = useState<'pro' | 'house' | 'closest' | 'alltime'>('alltime');
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
-  const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // TrackMan embed URLs
   const embedUrls = {
@@ -44,91 +28,17 @@ export default function CustomerLeaderboard() {
     alltime: null // All-time will be custom implementation
   };
 
-  // Fetch all-time leaderboard data
-  useEffect(() => {
-    if (activeTab === 'alltime' && user?.token) {
-      fetchLeaderboard();
-    }
-  }, [activeTab, user]);
-
-  const fetchLeaderboard = async () => {
-    if (!user?.token) {
-      console.error('No auth token available');
-      setLoadingLeaderboard(false);
-      return;
-    }
-    
-    setLoadingLeaderboard(true);
-    try {
-      const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      
-      if (response.data.success) {
-        setLeaderboardData(response.data.data || []);
-      } else {
-        console.error('Leaderboard API returned error:', response.data.error);
-        setLeaderboardData([]);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch leaderboard:', error.response?.data || error.message);
-      // Don't use mock data - show empty state instead
-      setLeaderboardData([]);
-      
-      if (error.response?.status === 401) {
-        // Token expired or invalid
-        toast.error('Session expired. Please login again.');
-        router.push('/login');
-      }
-    } finally {
-      setLoadingLeaderboard(false);
-    }
-  };
-
-  const sendFriendRequest = async (targetUserId: string, targetName: string) => {
-    setSendingRequest(targetUserId);
-    try {
-      await axios.post(
-        `${API_URL}/api/friends/request`,
-        { target_user_id: targetUserId },
-        { headers: { Authorization: `Bearer ${user?.token}` } }
-      );
-      toast.success(`Friend request sent to ${targetName}!`);
-      // Update the leaderboard to show pending status
-      setLeaderboardData(prev => 
-        prev.map(entry => 
-          entry.user_id === targetUserId 
-            ? { ...entry, has_pending_request: true }
-            : entry
-        )
-      );
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to send friend request');
-    } finally {
-      setSendingRequest(null);
-    }
-  };
-
-  const getRankIcon = (tier: string) => {
-    switch(tier) {
-      case 'Legend': return <Crown className="w-4 h-4 text-purple-600" />;
-      case 'Champion': return <Trophy className="w-4 h-4 text-yellow-600" />;
-      case 'Pro': return <Star className="w-4 h-4 text-blue-600" />;
-      case 'Gold': return <Medal className="w-4 h-4 text-yellow-500" />;
-      case 'Silver': return <Medal className="w-4 h-4 text-gray-400" />;
-      case 'Bronze': return <Medal className="w-4 h-4 text-orange-600" />;
-      case 'Amateur': return <Target className="w-4 h-4 text-green-600" />;
-      case 'House': return <Home className="w-4 h-4 text-gray-600" />;
-      default: return <Home className="w-4 h-4 text-gray-600" />;
-    }
+  const handleRefresh = async () => {
+    // Trigger component refresh by changing key
+    setRefreshKey(prev => prev + 1);
   };
 
   // Check authentication on mount
   useEffect(() => {
-    if (!user && !loadingLeaderboard) {
+    if (!user) {
       router.push('/login');
     }
-  }, [user, router, loadingLeaderboard]);
+  }, [user, router]);
 
   if (!user) {
     return (
@@ -164,7 +74,7 @@ export default function CustomerLeaderboard() {
           </div>
 
           {/* Tabs */}
-          <div className="bg-white border-b border-gray-200 sticky top-14 z-30">
+          <div className="bg-white border-b border-gray-200 sticky top-14 z-40">
             <div className="max-w-7xl mx-auto px-2 sm:px-4">
               <div className="flex gap-1 sm:gap-4 overflow-x-auto scrollbar-hide">
                 <button
@@ -217,114 +127,16 @@ export default function CustomerLeaderboard() {
           {/* Content Area */}
           <div className="max-w-7xl mx-auto">
             {activeTab === 'alltime' ? (
-              // All-time leaderboard with friend request functionality
+              // All-time leaderboard using unified component
               <div className="p-4">
-                {loadingLeaderboard ? (
-                  <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Trophy className="w-5 h-5" />
-                        All-Time Rankings
-                      </h3>
-                      <p className="text-xs text-white/80 mt-1">Season-wide competitive standings</p>
-                    </div>
-                    
-                    <div className="divide-y divide-gray-200">
-                      {leaderboardData.map((player) => (
-                        <div key={player.user_id} className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                              {/* Rank */}
-                              <div className="flex-shrink-0 w-8 text-center">
-                                <span className={`font-bold ${
-                                  player.rank === 1 ? 'text-yellow-500 text-lg sm:text-xl' :
-                                  player.rank === 2 ? 'text-gray-400 text-base sm:text-lg' :
-                                  player.rank === 3 ? 'text-orange-600 text-base sm:text-lg' :
-                                  'text-gray-600 text-sm sm:text-base'
-                                }`}>
-                                  {player.rank}
-                                </span>
-                              </div>
-                              
-                              {/* Player Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium text-gray-900 truncate max-w-[150px] sm:max-w-none">
-                                    {player.name}
-                                  </span>
-                                  <span className="flex-shrink-0">{getRankIcon(player.rank_tier)}</span>
-                                  {player.has_champion_marker && (
-                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded flex-shrink-0">
-                                      Champion
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Coins className="w-3 h-3 flex-shrink-0" />
-                                    <span className="hidden sm:inline">{player.cc_balance.toLocaleString()} CC</span>
-                                    <span className="sm:hidden">{player.cc_balance.toLocaleString()}</span>
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Trophy className="w-3 h-3 flex-shrink-0" />
-                                    <span className="hidden sm:inline">{player.total_challenges_won}W / {player.total_challenges_played}P</span>
-                                    <span className="sm:hidden">{player.total_challenges_won}/{player.total_challenges_played}</span>
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                                    {player.win_rate}%
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Friend Request Button */}
-                            <div className="flex-shrink-0 ml-10 sm:ml-0">
-                              {player.user_id !== user?.id && (
-                                player.is_friend ? (
-                                  <span className="text-xs text-gray-500 px-2 sm:px-3 py-1.5 inline-block">
-                                    ✓ Friends
-                                  </span>
-                                ) : player.has_pending_request ? (
-                                  <span className="text-xs text-gray-500 px-2 sm:px-3 py-1.5 inline-block">
-                                    Sent
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={() => sendFriendRequest(player.user_id, player.name)}
-                                    disabled={sendingRequest === player.user_id}
-                                    className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors disabled:opacity-50 min-w-[44px] min-h-[32px] sm:min-h-[28px] justify-center"
-                                  >
-                                    {sendingRequest === player.user_id ? (
-                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                                    ) : (
-                                      <>
-                                        <UserPlus className="w-3 h-3" />
-                                        <span className="hidden sm:inline">Add Friend</span>
-                                        <span className="sm:hidden">Add</span>
-                                      </>
-                                    )}
-                                  </button>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {leaderboardData.length === 0 && (
-                      <div className="p-8 text-center text-gray-500">
-                        <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p>No players ranked yet. Start playing to climb the leaderboard!</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <LeaderboardList 
+                  key={refreshKey}
+                  userId={user?.id}
+                  userToken={user?.token}
+                  onRefresh={handleRefresh}
+                  showSearch={true}
+                  virtualScroll={true}
+                />
               </div>
             ) : (
               // TrackMan embed for Pro and House leagues
