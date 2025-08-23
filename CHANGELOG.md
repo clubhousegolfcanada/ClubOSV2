@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.27] - 2025-08-23
+
+### Improved
+- **Challenge Viewing Experience**
+  - Simplified challenge viewing with expandable inline cards
+  - Users can now view challenge details without leaving the compete page
+  - Added expandable/collapsible UI with smooth animations
+  - Shows full player information, course details, and stakes inline
+  - Displays appropriate action buttons based on challenge status
+  - Improved UX by reducing page navigation
+
 ## [1.14.26] - 2025-08-23
 
 ### Fixed
