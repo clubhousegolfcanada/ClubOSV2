@@ -214,7 +214,6 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           <div className={showNavigation && viewMode !== 'customer' ? 'pt-14' : ''}>
             <Component {...pageProps} />
           </div>
-          <SwipeIndicator enabled={isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer'} />
           {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && <RemoteActionsBar />}
         </AuthGuard>
       )}

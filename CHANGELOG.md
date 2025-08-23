@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.23] - 2025-08-23
+
+### Fixed
+- **Password System Critical Fixes**
+  - Resolved validation mismatch between frontend and backend (now both require 6+ characters)
+  - Removed complex password requirements that were blocking logins
+  - Fixed Alanna's login issue and similar authentication problems
+  - Made email comparison case-insensitive in database queries
+
+### Added
+- **Password Security Enhancements**
+  - Rate limiting on password changes (max 3 attempts per 15 minutes)
+  - New passwordChangeLimiter middleware for security
+  - Protection against brute force attacks
+
+### Improved
+- **Password Change UX**
+  - Clear password requirements display (6 characters minimum)
+  - Consistent validation messages
+  - Fixed password visibility toggle functionality
+
 ## [1.14.22] - 2025-08-23
 
 ### Fixed
