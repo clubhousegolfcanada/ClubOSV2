@@ -7,8 +7,9 @@ All notable changes to ClubOS will be documented in this file.
 ### Fixed
 - **Critical Login Issue**
   - Fixed 404 error when attempting to login (double `/api/api/` in URL)
-  - Removed `/api` suffix from NEXT_PUBLIC_API_URL environment variables
-  - API client already handles adding `/api` to requests automatically
+  - Updated login page to use correct API paths without `/api` prefix
+  - Fixed auth endpoints in login.tsx (login, signup, forgot-password)
+  - Kept environment variables with `/api` suffix as originally configured
   
 - **Database Migration Error**
   - Fixed missing `rank_tier` column in rank_assignments table

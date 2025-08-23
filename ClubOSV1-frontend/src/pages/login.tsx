@@ -64,7 +64,7 @@ const LoginPage = () => {
       
       // Handle customer signup
       if (loginMode === 'customer' && isSignup) {
-        response = await axios.post(getApiUrl('/api/auth/signup'), {
+        response = await axios.post(getApiUrl('/auth/signup'), {
           email,
           password,
           name,
@@ -97,7 +97,7 @@ const LoginPage = () => {
         }
       } else {
         // Handle login (both operator and customer)
-        response = await axios.post(getApiUrl('/api/auth/login'), {
+        response = await axios.post(getApiUrl('/auth/login'), {
           email,
           password,
           rememberMe
@@ -167,7 +167,7 @@ const LoginPage = () => {
     setIsResetting(true);
 
     try {
-      const response = await axios.post(getApiUrl('/api/auth/forgot-password'), {
+      const response = await axios.post(getApiUrl('/auth/forgot-password'), {
         email: resetEmail
       });
 
