@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.31] - 2025-08-23
+
+### Fixed
+- **Challenge Audit Trigger Error**
+  - Fixed trigger using wrong column names (action_type vs event_type)
+  - Updated check_challenge_winner_agreement function to use correct column names
+  - Added migration 106 to fix the trigger function
+  - Winner selection now logs audit entries correctly
+
 ## [1.14.30] - 2025-08-23
 
 ### Fixed
