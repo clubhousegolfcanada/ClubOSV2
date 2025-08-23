@@ -7,7 +7,7 @@ import {
   Trophy, Users, User, Clock, Target, Check, X, Plus, TrendingUp,
   Coins, UserPlus, Crown, Star, Medal, Home, Shield, Search,
   ChevronRight, Filter, Zap, Award, DollarSign, Activity, MoreVertical,
-  UserMinus, Ban, Bell, ChevronDown, MapPin, Flag
+  UserMinus, Ban, Bell, ChevronDown, MapPin, Flag, AlertCircle
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -597,62 +597,15 @@ export default function Compete() {
                           {/* Expanded Details */}
                           {isExpanded && (
                             <div className="border-t border-gray-200 p-4 bg-gray-50">
-                              {/* Players Section */}
-                              <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-2">Players</h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className={`p-3 bg-white rounded-lg border ${isCreator ? 'border-[#0B3D3A]' : 'border-gray-200'}`}>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-gray-600">Challenger</span>
-                                      {isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
-                                    </div>
-                                    <p className="font-medium text-sm">{challenge.creatorName}</p>
-                                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                      challenge.creatorRank === 'pro' ? 'bg-purple-100 text-purple-700' :
-                                      challenge.creatorRank === 'gold' ? 'bg-yellow-100 text-yellow-700' :
-                                      'bg-gray-100 text-gray-700'
-                                    }`}>
-                                      {(challenge.creatorRank || 'house').toUpperCase()}
-                                    </span>
-                                    {challenge.creatorScore && (
-                                      <div className="mt-2 pt-2 border-t">
-                                        <p className="text-xs text-gray-600">Score: <span className="font-bold">{challenge.creatorScore}</span></p>
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  <div className={`p-3 bg-white rounded-lg border ${!isCreator ? 'border-[#0B3D3A]' : 'border-gray-200'}`}>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-gray-600">Opponent</span>
-                                      {!isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
-                                    </div>
-                                    <p className="font-medium text-sm">{challenge.acceptorName}</p>
-                                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                      challenge.acceptorRank === 'pro' ? 'bg-purple-100 text-purple-700' :
-                                      challenge.acceptorRank === 'gold' ? 'bg-yellow-100 text-yellow-700' :
-                                      'bg-gray-100 text-gray-700'
-                                    }`}>
-                                      {(challenge.acceptorRank || 'house').toUpperCase()}
-                                    </span>
-                                    {challenge.acceptorScore && (
-                                      <div className="mt-2 pt-2 border-t">
-                                        <p className="text-xs text-gray-600">Score: <span className="font-bold">{challenge.acceptorScore}</span></p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
                               {/* Challenge Details */}
                               <div className="bg-white rounded-lg p-3 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-2">Details</h3>
                                 <div className="space-y-2 text-sm">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-gray-600">
                                       <MapPin className="w-4 h-4" />
                                       <span>Course</span>
                                     </div>
-                                    <span className="font-medium">{challenge.courseName || 'TBD'}</span>
+                                    <span className="font-medium">{challenge.courseName === 'DECIDE_LATER' ? 'To Be Decided' : (challenge.courseName || 'TBD')}</span>
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-gray-600">
@@ -666,7 +619,14 @@ export default function Compete() {
                                       <DollarSign className="w-4 h-4" />
                                       <span>Stakes</span>
                                     </div>
-                                    <span className="font-medium">50/50 split</span>
+                                    <span className="font-medium">{challenge.wager_amount || challenge.wagerAmount} CC (50/50 split)</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <Clock className="w-4 h-4" />
+                                      <span>Time Remaining</span>
+                                    </div>
+                                    <span className="font-medium">{formatTimeRemaining(challenge.expires_at || challenge.expiresAt)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -698,10 +658,36 @@ export default function Compete() {
                               )}
 
                               {(challenge.status === 'active' || challenge.status === 'accepted') && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                  <p className="text-sm text-blue-800">
-                                    <strong>Action Required:</strong> Complete your round and sync with TrackMan to record your score.
-                                  </p>
+                                <div className="space-y-3">
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <p className="text-sm text-blue-800">
+                                      <strong>Action Required:</strong> Complete your round and sync with TrackMan to record your score.
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implement winner selection modal
+                                        console.log('Select winner for challenge:', challenge.id);
+                                      }}
+                                      className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
+                                    >
+                                      <Trophy className="w-4 h-4" />
+                                      Select Winner
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implement dispute functionality
+                                        console.log('Dispute challenge:', challenge.id);
+                                      }}
+                                      className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2 border border-red-200"
+                                    >
+                                      <AlertCircle className="w-4 h-4" />
+                                      Dispute
+                                    </button>
+                                  </div>
                                 </div>
                               )}
 
