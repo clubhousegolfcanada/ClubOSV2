@@ -168,6 +168,20 @@ export default function CreateChallenge() {
     return { creatorStake, acceptorStake, totalPot };
   };
 
+  const getRankColor = (rank: string) => {
+    const colors: Record<string, string> = {
+      legend: 'bg-purple-100 text-purple-700',
+      champion: 'bg-red-100 text-red-700',
+      pro: 'bg-blue-100 text-blue-700',
+      gold: 'bg-yellow-100 text-yellow-700',
+      silver: 'bg-gray-100 text-gray-700',
+      bronze: 'bg-orange-100 text-orange-700',
+      amateur: 'bg-green-100 text-green-700',
+      house: 'bg-gray-50 text-gray-500'
+    };
+    return colors[rank?.toLowerCase()] || 'bg-gray-100 text-gray-700';
+  };
+
   const validateStep = () => {
     const newErrors: any = {};
     
@@ -339,6 +353,34 @@ export default function CreateChallenge() {
                       className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
                     />
                   </div>
+
+                  {/* Selected opponent preview */}
+                  {selectedOpponent && (
+                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-green-800 font-medium">Selected Opponent</p>
+                          <p className="text-lg font-semibold text-gray-900">{selectedOpponent.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                              getRankColor(selectedOpponent.rank || selectedOpponent.rank_tier || 'house')
+                            }`}>
+                              {(selectedOpponent.rank || selectedOpponent.rank_tier || 'House').toUpperCase()}
+                            </span>
+                            {(selectedOpponent.hasChampionMarker || selectedOpponent.has_champion_marker) && (
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setSelectedOpponent(null)}
+                          className="text-sm text-red-600 hover:text-red-700"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Friends list */}
                   <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -716,6 +758,21 @@ export default function CreateChallenge() {
                         <span className="font-bold text-[#0B3D3A]">{totalPot} CC</span>
                       </div>
                     </div>
+                    
+                    {/* Balance check */}
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Your balance</span>
+                        <span className={`font-medium ${creatorStake > ccBalance ? 'text-red-600' : 'text-gray-900'}`}>
+                          {ccBalance.toLocaleString()} CC
+                        </span>
+                      </div>
+                      {creatorStake > ccBalance && (
+                        <p className="text-xs text-red-600 mt-2">
+                          ⚠️ Insufficient balance for this wager
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Expiry Days */}
@@ -781,10 +838,26 @@ export default function CreateChallenge() {
                   </h2>
 
                   <div className="space-y-4">
-                    {/* Opponent */}
-                    <div className="flex justify-between py-3 border-b border-gray-100">
-                      <span className="text-gray-600">Opponent</span>
-                      <span className="font-medium">{selectedOpponent?.name}</span>
+                    {/* Opponent with more details */}
+                    <div className="py-3 border-b border-gray-100">
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600">Opponent</span>
+                        <div className="text-right">
+                          <span className="font-medium block">{selectedOpponent?.name}</span>
+                          {selectedOpponent && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                getRankColor(selectedOpponent.rank || selectedOpponent.rank_tier || 'house')
+                              }`}>
+                                {(selectedOpponent.rank || selectedOpponent.rank_tier || 'House').toUpperCase()}
+                              </span>
+                              {(selectedOpponent.hasChampionMarker || selectedOpponent.has_champion_marker) && (
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Course */}

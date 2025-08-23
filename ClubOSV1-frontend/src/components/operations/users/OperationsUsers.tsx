@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState, useStore } from '@/state/useStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database } from 'lucide-react';
+import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown } from 'lucide-react';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -54,6 +54,15 @@ export const OperationsUsers: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [autoApproveCustomers, setAutoApproveCustomers] = useState(true);
+  
+  // CC Adjustment states
+  const [showCCAdjustment, setShowCCAdjustment] = useState(false);
+  const [ccAdjustmentUser, setCCAdjustmentUser] = useState<User | null>(null);
+  const [ccBalance, setCCBalance] = useState<number>(0);
+  const [adjustmentAmount, setAdjustmentAmount] = useState<string>('');
+  const [adjustmentType, setAdjustmentType] = useState<'credit' | 'debit'>('credit');
+  const [adjustmentReason, setAdjustmentReason] = useState<string>('');
+  const [loadingBalance, setLoadingBalance] = useState(false);
   
   const { user } = useAuthState();
   const token = user?.token || localStorage.getItem('clubos_token');
@@ -348,6 +357,84 @@ export const OperationsUsers: React.FC = () => {
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const openCCAdjustment = async (customer: User) => {
+    setCCAdjustmentUser(customer);
+    setShowCCAdjustment(true);
+    setAdjustmentAmount('');
+    setAdjustmentType('credit');
+    setAdjustmentReason('');
+    setLoadingBalance(true);
+    
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/admin/cc-adjustments/${customer.id}/balance`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      if (response.data.success) {
+        setCCBalance(response.data.data.balance);
+      }
+    } catch (error: any) {
+      console.error('Error fetching CC balance:', error);
+      toast.error('Failed to fetch CC balance');
+      setCCBalance(0);
+    } finally {
+      setLoadingBalance(false);
+    }
+  };
+  
+  const handleCCAdjustment = async () => {
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    if (!ccAdjustmentUser) return;
+    
+    const amount = parseFloat(adjustmentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid positive amount');
+      return;
+    }
+    
+    if (!adjustmentReason.trim()) {
+      toast.error('Please provide a reason for the adjustment');
+      return;
+    }
+    
+    if (adjustmentType === 'debit' && amount > ccBalance) {
+      toast.error(`Cannot debit more than current balance (${ccBalance} CC)`);
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      const response = await axios.post(
+        `${API_URL}/api/admin/cc-adjustments/${ccAdjustmentUser.id}/adjust`,
+        {
+          amount: amount,
+          type: adjustmentType,
+          reason: adjustmentReason
+        },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      if (response.data.success) {
+        const data = response.data.data;
+        toast.success(
+          `Successfully ${adjustmentType}ed ${amount} CC. New balance: ${data.balanceAfter} CC`
+        );
+        setShowCCAdjustment(false);
+        setCCAdjustmentUser(null);
+      }
+    } catch (error: any) {
+      console.error('Error adjusting CC:', error);
+      toast.error(error.response?.data?.error || 'Failed to adjust CC balance');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Separate operators and customers
@@ -665,6 +752,13 @@ export const OperationsUsers: React.FC = () => {
                           ) : (
                             <>
                               <button
+                                onClick={() => openCCAdjustment(customer)}
+                                className="p-1 text-green-600 hover:text-green-700"
+                                title="Adjust CC Balance"
+                              >
+                                <Coins className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() => handleEditUser(customer)}
                                 className="p-1 text-gray-600 hover:text-gray-700"
                                 title="Edit"
@@ -980,6 +1074,144 @@ export const OperationsUsers: React.FC = () => {
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
               >
                 Reset Password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CC Adjustment Modal */}
+      {showCCAdjustment && ccAdjustmentUser && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Adjust CC Balance</h3>
+              <button
+                onClick={() => {
+                  setShowCCAdjustment(false);
+                  setCCAdjustmentUser(null);
+                }}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* User Info */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="text-sm text-gray-600">Customer</div>
+                <div className="font-medium text-gray-900">{ccAdjustmentUser.name}</div>
+                <div className="text-sm text-gray-500">{ccAdjustmentUser.email}</div>
+                <div className="mt-2 flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-green-600" />
+                  <span className="font-semibold text-gray-900">
+                    Current Balance: {loadingBalance ? '...' : `${ccBalance} CC`}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Adjustment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adjustment Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setAdjustmentType('credit')}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border-2 transition-colors ${
+                      adjustmentType === 'credit'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                    <span className="font-medium">Credit</span>
+                  </button>
+                  <button
+                    onClick={() => setAdjustmentType('debit')}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border-2 transition-colors ${
+                      adjustmentType === 'debit'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                    <span className="font-medium">Debit</span>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (CC)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={adjustmentAmount}
+                  onChange={(e) => setAdjustmentAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {adjustmentAmount && (
+                  <div className="mt-1 text-sm text-gray-600">
+                    New balance will be:{' '}
+                    <span className="font-semibold">
+                      {adjustmentType === 'credit'
+                        ? ccBalance + parseFloat(adjustmentAmount || '0')
+                        : ccBalance - parseFloat(adjustmentAmount || '0')
+                      } CC
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={adjustmentReason}
+                  onChange={(e) => setAdjustmentReason(e.target.value)}
+                  placeholder="Enter reason for adjustment (required)"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCCAdjustment(false);
+                  setCCAdjustmentUser(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCCAdjustment}
+                disabled={loading || !adjustmentAmount || !adjustmentReason.trim()}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  loading || !adjustmentAmount || !adjustmentReason.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : adjustmentType === 'credit'
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {adjustmentType === 'credit' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                    {adjustmentType === 'credit' ? 'Add' : 'Remove'} CC
+                  </>
+                )}
               </button>
             </div>
           </div>
