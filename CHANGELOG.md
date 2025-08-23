@@ -12,6 +12,11 @@ All notable changes to ClubOS will be documented in this file.
   - Fixed course dropdown to not show "DECIDE_LATER" as a selectable course
   - Improved visual feedback when skip option is selected
 
+- **Terminal UI Mobile Layout**
+  - Fixed Advanced and Location buttons positioning on mobile devices
+  - Moved buttons from top-right header to next to the mode toggle (matching desktop layout)
+  - Improved consistency between mobile and desktop layouts
+
 ## [1.14.21] - 2025-08-22
 
 ### Added

@@ -644,50 +644,6 @@ const RequestForm: React.FC = () => {
             >
               {isKnowledgeMode ? '✓ Update Mode' : '+ Update'}
             </button>
-            
-            {/* Advanced and Location buttons for mobile - top right */}
-            {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
-              <div className="sm:hidden flex items-center gap-2">
-                {!showAdvancedRouting && !showLocationSelector ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedRouting(true)}
-                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                      disabled={isSubmitting || demoMode}
-                    >
-                      {routePreference === 'Auto' ? 'Advanced' : routePreference.replace('&Access', '').replace('Support', '')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowLocationSelector(true)}
-                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                      disabled={isSubmitting || demoMode}
-                    >
-                      {selectedLocation || 'Location'}
-                    </button>
-                  </>
-                ) : showAdvancedRouting ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvancedRouting(false)}
-                    className="text-xs text-[var(--text-primary)]"
-                  >
-                    ✕
-                  </button>
-                ) : showLocationSelector ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowLocationSelector(false)}
-                    className="text-xs text-[var(--text-primary)]"
-                  >
-                    ✕
-                  </button>
-                ) : null}
-              </div>
-            )}
           </div>
         </div>
         
@@ -813,7 +769,51 @@ const RequestForm: React.FC = () => {
               </div>
               <span className="text-xs text-[var(--text-muted)] font-medium">Human</span>
               
-              {/* Advanced and Location Buttons - Desktop only */}
+              {/* Advanced and Location Buttons - Mobile */}
+              {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
+                <div className="sm:hidden flex items-center gap-2 ml-2">
+                  {!showAdvancedRouting && !showLocationSelector ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedRouting(true)}
+                        className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                        disabled={isSubmitting || demoMode}
+                      >
+                        {routePreference === 'Auto' ? 'Advanced' : routePreference.replace('&Access', '').replace('Support', '')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowLocationSelector(true)}
+                        className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                        disabled={isSubmitting || demoMode}
+                      >
+                        {selectedLocation || 'Location'}
+                      </button>
+                    </>
+                  ) : showAdvancedRouting ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedRouting(false)}
+                      className="text-xs text-[var(--text-primary)]"
+                    >
+                      ✕
+                    </button>
+                  ) : showLocationSelector ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationSelector(false)}
+                      className="text-xs text-[var(--text-primary)]"
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                </div>
+              )}
+              
+              {/* Advanced and Location Buttons - Desktop */}
               {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
                 <div className="hidden sm:flex items-center gap-2 ml-4">
                   {/* Advanced Button */}
