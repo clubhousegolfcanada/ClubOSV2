@@ -44,6 +44,8 @@ interface Challenge {
   settings?: any;
   expires_at?: string;
   wager_amount?: number;
+  winner_user_id?: string;
+  final_payout?: number;
 }
 
 interface Competitor {
@@ -706,10 +708,10 @@ export default function Compete() {
                               {challenge.status === 'resolved' && (
                                 <div className="text-center py-3">
                                   <p className="text-sm font-medium text-gray-900">
-                                    {challenge.winnerUserId === user?.id ? '🏆 You Won!' : 'Challenge Complete'}
+                                    {challenge.winner_user_id === user?.id ? '🏆 You Won!' : 'Challenge Complete'}
                                   </p>
-                                  {challenge.finalPayout && challenge.winnerUserId === user?.id && (
-                                    <p className="text-lg font-bold text-[#0B3D3A] mt-1">+{challenge.finalPayout} CC</p>
+                                  {challenge.final_payout && challenge.winner_user_id === user?.id && (
+                                    <p className="text-lg font-bold text-[#0B3D3A] mt-1">+{challenge.final_payout} CC</p>
                                   )}
                                 </div>
                               )}
