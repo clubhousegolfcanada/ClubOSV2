@@ -652,7 +652,7 @@ router.post('/:id/select-winner', async (req, res) => {
       SELECT 
         COUNT(*) as selection_count,
         COUNT(DISTINCT selected_winner_id) as unique_selections,
-        MIN(selected_winner_id) as agreed_winner
+        ARRAY_AGG(DISTINCT selected_winner_id) as winner_ids
       FROM challenge_winner_selections
       WHERE challenge_id = $1
     `;
@@ -662,6 +662,7 @@ router.post('/:id/select-winner', async (req, res) => {
     
     let message = 'Winner selection recorded. Waiting for other player.';
     let status = 'pending';
+    let agreedWinner = null;
     
     // If both players have selected
     if (selections.selection_count >= 2) {
@@ -669,6 +670,7 @@ router.post('/:id/select-winner', async (req, res) => {
         // Both agree on the winner - trigger resolution
         message = 'Both players agree! Challenge will be resolved.';
         status = 'agreed';
+        agreedWinner = selections.winner_ids[0]; // Get the single agreed winner
         
         // The trigger will handle updating the challenge status
       } else {
@@ -686,7 +688,7 @@ router.post('/:id/select-winner', async (req, res) => {
       data: {
         status,
         selections: selections.selection_count,
-        agreedWinner: selections.unique_selections === 1 ? selections.agreed_winner : null
+        agreedWinner: agreedWinner
       }
     });
   } catch (error) {
