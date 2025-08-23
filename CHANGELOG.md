@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.22] - 2025-08-23
+
+### Fixed
+- **Challenge Creation UX**
+  - Made "Skip Course & Settings Selection" option more prominent and discoverable
+  - Added dedicated button above course dropdown for skipping TrackMan settings
+  - Separated skip option from course selection with visual "OR" divider
+  - Fixed course dropdown to not show "DECIDE_LATER" as a selectable course
+  - Improved visual feedback when skip option is selected
+
 ## [1.14.21] - 2025-08-22
 
 ### Added
