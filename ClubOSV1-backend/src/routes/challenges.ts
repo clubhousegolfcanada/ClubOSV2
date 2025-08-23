@@ -239,13 +239,74 @@ router.get('/my-challenges', async (req, res) => {
       });
     }
     
-    // TODO: Implement challenges system
-    // For now, return empty array to prevent frontend errors
-    logger.info('My challenges endpoint called - returning empty array (challenges system not yet implemented)');
+    // Get all challenges for the user
+    const query = `
+      SELECT 
+        c.*,
+        u1.name as creator_name,
+        u2.name as acceptor_name,
+        cp1.current_rank as creator_rank,
+        cp2.current_rank as acceptor_rank,
+        CASE 
+          WHEN c.creator_id = $1 THEN u2.name
+          ELSE u1.name
+        END as opponent_name,
+        play1.score as creator_played_score,
+        play2.score as acceptor_played_score,
+        play1.played_at as creator_played_at,
+        play2.played_at as acceptor_played_at,
+        CASE 
+          WHEN c.expires_at < CURRENT_TIMESTAMP AND c.status = 'pending' THEN 'expired'
+          WHEN play1.played_at IS NOT NULL AND play2.played_at IS NOT NULL THEN 'ready_resolve'
+          WHEN play1.played_at IS NOT NULL OR play2.played_at IS NOT NULL THEN 'awaiting_sync'
+          ELSE c.status
+        END as display_status
+      FROM challenges c
+      JOIN users u1 ON u1.id = c.creator_id
+      JOIN users u2 ON u2.id = c.acceptor_id
+      LEFT JOIN customer_profiles cp1 ON cp1.user_id = c.creator_id
+      LEFT JOIN customer_profiles cp2 ON cp2.user_id = c.acceptor_id
+      LEFT JOIN challenge_plays play1 ON play1.challenge_id = c.id AND play1.user_id = c.creator_id
+      LEFT JOIN challenge_plays play2 ON play2.challenge_id = c.id AND play2.user_id = c.acceptor_id
+      WHERE (c.creator_id = $1 OR c.acceptor_id = $1)
+      ORDER BY 
+        CASE 
+          WHEN c.status = 'pending' THEN 1
+          WHEN c.status IN ('accepted', 'active') THEN 2
+          ELSE 3
+        END,
+        c.created_at DESC
+      LIMIT 100
+    `;
+    
+    const result = await pool.query(query, [userId]);
+    
+    // Format the data for frontend
+    const formattedChallenges = result.rows.map(challenge => ({
+      id: challenge.id,
+      status: challenge.display_status || challenge.status,
+      creatorId: challenge.creator_id,
+      acceptorId: challenge.acceptor_id,
+      creatorName: challenge.creator_name,
+      acceptorName: challenge.acceptor_name,
+      creatorRank: challenge.creator_rank || 'house',
+      acceptorRank: challenge.acceptor_rank || 'house',
+      opponent_name: challenge.opponent_name,
+      wagerAmount: parseFloat(challenge.wager_amount),
+      wager_amount: parseFloat(challenge.wager_amount),
+      totalPot: parseFloat(challenge.total_pot),
+      expiresAt: challenge.expires_at,
+      expires_at: challenge.expires_at,
+      courseName: challenge.course_name,
+      creatorScore: challenge.creator_played_score,
+      acceptorScore: challenge.acceptor_played_score,
+      createdAt: challenge.created_at,
+      settings: challenge.trackman_settings
+    }));
     
     res.json({
       success: true,
-      data: []
+      data: formattedChallenges
     });
   } catch (error) {
     logger.error('Error in my-challenges endpoint:', error);
