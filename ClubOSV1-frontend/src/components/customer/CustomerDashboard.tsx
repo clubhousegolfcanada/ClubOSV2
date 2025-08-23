@@ -193,7 +193,7 @@ export const CustomerDashboard: React.FC = () => {
     },
     { 
       icon: Trophy, 
-      label: 'Compete', 
+      label: 'Friends', 
       description: 'Challenge players',
       onClick: () => router.push('/customer/compete'),
       info: quickStats.ccBalance > 0 ? `${quickStats.ccBalance} CC` : null
