@@ -47,8 +47,8 @@ class ChallengeService {
     try {
       await client.query('BEGIN');
 
-      // Validate creator has sufficient balance for stake
-      const creatorStake = Math.round(data.wagerAmount * 0.30 * 100) / 100;
+      // Validate creator has sufficient balance for stake (50/50 split)
+      const creatorStake = Math.round(data.wagerAmount * 0.50 * 100) / 100;
       const hasBalance = await clubCoinService.hasBalance(data.creatorId, creatorStake);
       
       if (!hasBalance) {
@@ -140,13 +140,13 @@ class ChallengeService {
 
       const challenge = result.rows[0];
 
-      // Create stake records
+      // Create stake records (50/50 split)
       const stakeQuery = `
         INSERT INTO stakes (
           challenge_id, user_id, role, amount, percentage
         ) VALUES 
-          ($1, $2, 'creator', $3, 0.30),
-          ($1, $4, 'acceptor', $5, 0.70)
+          ($1, $2, 'creator', $3, 0.50),
+          ($1, $4, 'acceptor', $5, 0.50)
       `;
       await client.query(stakeQuery, [
         challenge.id,
