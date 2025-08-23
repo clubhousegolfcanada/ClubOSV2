@@ -367,10 +367,11 @@ router.post('/', challengeCreationRateLimiters, async (req, res) => {
     } = req.body;
     
     // Validate input - courseId is optional when deciding outside of challenge
+    // courseName can be 'DECIDE_LATER' when players decide settings outside the system
     if (!acceptorId || !courseName || !wagerAmount || !expiryDays) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields'
+        error: 'Missing required fields: acceptorId, courseName, wagerAmount, or expiryDays'
       });
     }
     
