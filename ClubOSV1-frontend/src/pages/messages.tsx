@@ -119,9 +119,12 @@ export default function Messages() {
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     let isTabVisible = true;
+    let isMounted = true;
     
     // Initial load
-    loadConversations();
+    if (isMounted) {
+      loadConversations();
+    }
     
     // Setup refresh interval with visibility check
     const startRefresh = () => {
@@ -132,20 +135,23 @@ export default function Messages() {
       
       // Set up auto-refresh every 15 seconds (increased from 5s to reduce rate limit issues)
       interval = setInterval(() => {
-        // Only refresh if tab is visible and not rate limited
-        if (isTabVisible && !isRateLimited) {
+        // Only refresh if tab is visible, not rate limited, and component is mounted
+        if (isTabVisible && !isRateLimited && isMounted) {
           loadConversations(false);
         }
       }, 15000);
-      setRefreshInterval(interval);
+      
+      // Only set state if component is mounted
+      if (isMounted) {
+        setRefreshInterval(interval);
+      }
     };
     
     // Handle visibility changes
     const handleVisibilityChange = () => {
       isTabVisible = !document.hidden;
-      console.log('Tab visibility changed:', isTabVisible ? 'visible' : "hidden");
       
-      if (isTabVisible && !isRateLimited) {
+      if (isTabVisible && !isRateLimited && isMounted) {
         // Reload when tab becomes visible
         loadConversations(false);
       }
@@ -158,6 +164,7 @@ export default function Messages() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
+      isMounted = false;
       if (interval) {
         clearInterval(interval);
       }

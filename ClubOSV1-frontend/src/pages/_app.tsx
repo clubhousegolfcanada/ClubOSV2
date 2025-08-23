@@ -17,6 +17,7 @@ import RemoteActionsBar from '@/components/RemoteActionsBar';
 import { performanceMonitor, updateAnimationDurations } from '@/utils/performanceMonitor';
 import { initializeCSRF } from '@/utils/csrf';
 import { useAppVisibility } from '@/hooks/useAppVisibility';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -248,10 +249,12 @@ function AppContent({ Component, pageProps }: AppContentProps) {
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider>
-      <MessagesProvider>
-        <AppContent Component={Component} pageProps={pageProps} />
-      </MessagesProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <MessagesProvider>
+          <AppContent Component={Component} pageProps={pageProps} />
+        </MessagesProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
