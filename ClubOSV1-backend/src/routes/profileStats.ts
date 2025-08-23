@@ -99,7 +99,7 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
         (SELECT COUNT(*) 
          FROM challenges c
          WHERE (c.creator_id = $1 OR c.acceptor_id = $1)
-         AND c.status IN ('pending', 'accepted', 'playing')
+         AND c.status IN ('pending', 'accepted', 'active')
         ) as active_challenges_count
       FROM customer_profiles cp
       JOIN users u ON u.id = cp.user_id
