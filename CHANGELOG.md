@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.26] - 2025-08-23
+
+### Fixed
+- **Missing Routes**
+  - Added missing /customer/challenges index page that redirects to compete page
+  - Fixed 404 error when accessing /challenges endpoint
+
+### Security
+- **Enhanced Security Headers**
+  - Added Referrer-Policy header for better privacy
+  - Added Permissions-Policy to restrict feature access
+  - Improved security posture without breaking functionality
+
+### Technical
+- **CSP Analysis**
+  - Identified CSP warnings are from parent HubSpot iframe (report-only, non-blocking)
+  - Found 7 files with inline styles (acceptable for React)
+  - Production build completes successfully with no errors
+
 ## [1.14.25] - 2025-08-23
 
 ### Improved
