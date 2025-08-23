@@ -330,10 +330,9 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                     player.is_friend ? (
                       <button
                         onClick={() => router.push(`/customer/challenges/create?friend=${player.user_id}`)}
-                        className="px-2 sm:px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors min-w-[44px] min-h-[32px] sm:min-h-[28px] flex items-center justify-center"
+                        className="px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors min-w-[80px] min-h-[32px] flex items-center justify-center"
                       >
-                        <span className="sm:hidden">⚔️</span>
-                        <span className="hidden sm:inline">Challenge</span>
+                        Challenge
                       </button>
                     ) : player.has_pending_request ? (
                       <span className="text-xs text-gray-500 px-2 sm:px-3 py-1.5 inline-block">
