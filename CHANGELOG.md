@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.25] - 2025-08-23
+
+### Improved
+- **Challenge Creation UX**
+  - Added selected opponent preview card showing rank and champion status
+  - Enhanced review section with opponent rank details
+  - Added balance check in stake breakdown showing if user has sufficient funds
+  - Visual warning when wager exceeds available balance
+  - Clearer "Change" option for selected opponent
+
+### Fixed
+- **Challenge Details Page**
+  - Now properly fetches and displays real challenge data from API
+  - Shows actual player names, ranks, scores, and stakes
+  - Displays correct challenge status and timestamps
+  - Fixed champion marker display for both players
+
 ## [1.14.24] - 2025-08-23
 
 ### Added
