@@ -22,6 +22,7 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
     }
     
     // Get comprehensive stats in a single query
+    // Removed optional columns that may not exist yet (home_golf_course, previous_rank, rank_last_updated)
     const query = `
       SELECT 
         cp.user_id,
@@ -43,7 +44,6 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
         cp.last_challenge_at,
         cp.credibility_score,
         cp.home_location,
-        cp.home_golf_course,
         cp.handicap,
         cp.bio,
         cp.total_rounds,
@@ -57,8 +57,6 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
         cp.preferred_tee_time,
         cp.preferred_bay_type,
         cp.last_active_at,
-        cp.previous_rank,
-        cp.rank_last_updated,
         -- Calculate friend count
         (SELECT COUNT(*) 
          FROM friendships f
@@ -148,13 +146,13 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
       ranking: {
         currentRank: stats.current_rank || 'house',
         highestRank: stats.highest_rank_achieved || 'house',
-        previousRank: stats.previous_rank,
-        rankLastUpdated: stats.rank_last_updated,
+        previousRank: null, // Column doesn't exist yet in production
+        rankLastUpdated: null, // Column doesn't exist yet in production
         credibilityScore: parseInt(stats.credibility_score || 100)
       },
       profile: {
         homeLocation: stats.home_location,
-        homeGolfCourse: stats.home_golf_course,
+        homeGolfCourse: null, // Column doesn't exist yet in production
         handicap: stats.handicap ? parseFloat(stats.handicap) : null,
         bio: stats.bio,
         totalRounds: parseInt(stats.total_rounds || 0),

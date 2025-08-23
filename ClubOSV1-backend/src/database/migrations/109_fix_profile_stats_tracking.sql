@@ -48,15 +48,15 @@ EXECUTE FUNCTION update_challenge_stats();
 CREATE OR REPLACE FUNCTION update_cc_earned()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Track earnings from various sources
-  IF NEW.transaction_type IN ('challenge_win', 'challenge_stake_return', 'daily_bonus', 'achievement_bonus', 'rank_bonus', 'gift_card_cashback') THEN
+  -- Track earnings from various sources (using 'type' column instead of 'transaction_type')
+  IF NEW.type IN ('challenge_win', 'challenge_stake_return', 'daily_bonus', 'achievement_bonus', 'rank_bonus', 'gift_card_cashback') THEN
     UPDATE customer_profiles 
     SET total_cc_earned = total_cc_earned + NEW.amount
     WHERE user_id = NEW.user_id;
   END IF;
   
   -- Track spending
-  IF NEW.transaction_type IN ('challenge_stake', 'gift_card_purchase', 'store_purchase') THEN
+  IF NEW.type IN ('challenge_stake', 'gift_card_purchase', 'store_purchase') THEN
     UPDATE customer_profiles 
     SET total_cc_spent = total_cc_spent + ABS(NEW.amount)
     WHERE user_id = NEW.user_id;
@@ -122,14 +122,14 @@ SET
     SELECT SUM(amount) 
     FROM cc_transactions 
     WHERE user_id = cp.user_id 
-    AND transaction_type IN ('challenge_win', 'challenge_stake_return', 'daily_bonus', 'achievement_bonus', 'rank_bonus', 'gift_card_cashback')
+    AND type IN ('challenge_win', 'challenge_stake_return', 'daily_bonus', 'achievement_bonus', 'rank_bonus', 'gift_card_cashback')
     AND amount > 0
   ), 0),
   total_cc_spent = COALESCE((
     SELECT SUM(ABS(amount))
     FROM cc_transactions 
     WHERE user_id = cp.user_id 
-    AND transaction_type IN ('challenge_stake', 'gift_card_purchase', 'store_purchase')
+    AND type IN ('challenge_stake', 'gift_card_purchase', 'store_purchase')
     AND amount < 0
   ), 0);
 
