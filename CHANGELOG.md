@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.32] - 2025-08-23
+
+### Fixed
+- **Winner Selection Column Error**
+  - Fixed trigger using wrong column name (winner_id vs selected_winner_id)
+  - Updated check_challenge_winner_agreement function in migration 107
+  - Mike can now successfully select a winner for challenges
+  
+- **ClubCoin Balance Issues**
+  - Updated existing challenge from 30/70 to 50/50 stake split (25 CC each)
+  - Corrected Mike's balance to reflect proper 25 CC stake
+  - API now returns correct balance of 75 CC
+
 ## [1.14.31] - 2025-08-23
 
 ### Fixed
