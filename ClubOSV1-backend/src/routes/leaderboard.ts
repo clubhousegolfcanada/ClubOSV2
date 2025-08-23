@@ -84,6 +84,7 @@ router.get('/alltime', async (req, res) => {
         cp.total_challenges_played,
         cp.challenge_win_rate as win_rate,
         cp.highest_rank_achieved,
+        cp.previous_rank,
         RANK() OVER (ORDER BY cp.total_cc_earned DESC) as position,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
@@ -118,19 +119,31 @@ router.get('/alltime', async (req, res) => {
     
     res.json({
       success: true,
-      data: result.rows.map(row => ({
-        user_id: row.id,
-        name: row.name,
-        rank: parseInt(row.position),
-        rank_tier: row.current_rank || 'house',
-        cc_balance: parseFloat(row.cc_balance || 0),
-        total_challenges_won: parseInt(row.total_challenges_won || 0),
-        total_challenges_played: parseInt(row.total_challenges_played || 0),
-        win_rate: parseFloat(row.win_rate || 0),
-        has_champion_marker: row.has_champion_marker || false,
-        is_friend: row.is_friend || false,
-        has_pending_request: row.has_pending_request || false
-      }))
+      data: result.rows.map(row => {
+        const currentRank = parseInt(row.position);
+        const previousRank = row.previous_rank ? parseInt(row.previous_rank) : null;
+        
+        // Calculate rank change (positive = moved up, negative = moved down)
+        let rankChange = 0;
+        if (previousRank !== null && previousRank !== currentRank) {
+          rankChange = previousRank - currentRank; // If was 3, now 1, then 3-1 = +2 (moved up 2)
+        }
+        
+        return {
+          user_id: row.id,
+          name: row.name,
+          rank: currentRank,
+          rank_tier: row.current_rank || 'house',
+          cc_balance: parseFloat(row.cc_balance || 0),
+          total_challenges_won: parseInt(row.total_challenges_won || 0),
+          total_challenges_played: parseInt(row.total_challenges_played || 0),
+          win_rate: parseFloat(row.win_rate || 0),
+          has_champion_marker: row.has_champion_marker || false,
+          is_friend: row.is_friend || false,
+          has_pending_request: row.has_pending_request || false,
+          rank_change: rankChange
+        };
+      })
     });
   } catch (error) {
     logger.error('Error fetching all-time leaderboard:', error);

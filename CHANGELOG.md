@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.33] - 2025-08-23
+
+### Fixed
+- **All-Time Leaderboard Rank Changes**
+  - Removed simulated/placeholder rank change values
+  - Added proper database tracking for rank changes with migration 108
+  - Created rank_history table to track all rank movements
+  - Added previous_rank column to customer_profiles for accurate tracking
+  - Backend API now calculates and returns real rank changes
+  - Rank change indicators now show actual movement based on CC earnings
+
 ## [1.14.32] - 2025-08-23
 
 ### Fixed

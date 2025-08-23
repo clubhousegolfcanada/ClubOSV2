@@ -90,12 +90,8 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       });
       
       if (response.data.success) {
-        // Simulate rank changes for demo (in production, this would come from the API)
-        const dataWithChanges = (response.data.data || []).map((player: LeaderboardEntry) => ({
-          ...player,
-          rank_change: Math.random() > 0.7 ? Math.floor(Math.random() * 5) - 2 : 0
-        }));
-        setLeaderboardData(dataWithChanges);
+        // Use actual rank change data from API
+        setLeaderboardData(response.data.data || []);
       }
     } catch (error: any) {
       console.error('Failed to fetch leaderboard:', error);
