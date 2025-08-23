@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.30] - 2025-08-23
+
+### Fixed
+- **Winner Selection Error**
+  - Fixed missing `updated_at` column in challenges table
+  - Added migration 105 to add updated_at column with auto-update trigger
+  - Winner selection now works correctly without database errors
+
 ## [1.14.29] - 2025-08-23
 
 ### Fixed
