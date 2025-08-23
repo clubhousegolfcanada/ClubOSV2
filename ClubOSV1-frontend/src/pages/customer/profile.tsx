@@ -77,104 +77,78 @@ export default function CustomerProfile() {
     }
   }, [user]);
 
+  // Auto-refresh on tab focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible' && user) {
+        fetchProfileData(); // Refresh stats when user returns to tab
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleFocus);
+    
+    // Also refresh when navigating back to this page
+    const handleRouteChange = () => {
+      if (user) {
+        fetchProfileData();
+      }
+    };
+    
+    window.addEventListener('focus', handleRouteChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleRouteChange);
+    };
+  }, [user]);
+
   const fetchProfileData = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
       
-      // Try to fetch real data - no hardcoded values
-      let ccBalance = 0;
-      let challenges = { total: 0, wins: 0 };
-      
-      try {
-        const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (ccResponse.data.success) {
-          // Always use the actual balance from database, even if 0
-          ccBalance = ccResponse.data.data.balance || 0;
-        }
-      } catch (error) {
-        console.error('Failed to fetch CC balance:', error);
-      }
-      
-      try {
-        const challengesResponse = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (challengesResponse.data.success) {
-          const allChallenges = challengesResponse.data.data || [];
-          challenges.total = allChallenges.length;
-          challenges.wins = allChallenges.filter((c: any) => 
-            c.status === 'resolved' && c.winner_id === user?.id
-          ).length;
-        }
-      } catch (error) {
-        console.error('Failed to fetch challenges:', error);
-      }
-      
-      // Get location and home golf course from customer profile if it exists
-      let location = 'Not set';
-      let homeGolfCourse = '';
-      try {
-        const profileResponse = await axios.get(`${API_URL}/api/customer-profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (profileResponse.data.success && profileResponse.data.data) {
-          location = profileResponse.data.data.homeLocation || 'Not set';
-          homeGolfCourse = profileResponse.data.data.homeGolfCourse || '';
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile location:', error);
-      }
-      
-      // Get member since date from user created_at
-      const memberSince = user?.created_at 
-        ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-        : 'Unknown';
-      
-      // Get rank from rank_assignments table
-      let currentRank = 'House';
-      try {
-        const rankResponse = await axios.get(`${API_URL}/api/leaderboard/rank`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (rankResponse.data.success && rankResponse.data.data?.rank_tier) {
-          currentRank = rankResponse.data.data.rank_tier;
-        }
-      } catch (error) {
-        console.error('Failed to fetch rank:', error);
-      }
-      
-      const profileInfo: ProfileData = {
-        name: user?.name || '',
-        email: user?.email || '',
-        phone: user?.phone || '',
-        location: location,
-        homeGolfCourse: homeGolfCourse,
-        memberSince: memberSince,
-        handicap: undefined, // Not tracked yet
-        ccBalance: ccBalance,
-        totalChallenges: challenges.total,
-        totalWins: challenges.wins,
-        winRate: challenges.total > 0 ? (challenges.wins / challenges.total) : 0,
-        currentStreak: 0,
-        longestStreak: 0,
-        rank: currentRank,
-        totalBookings: 0
-      };
-      
-      setProfileData(profileInfo);
-      setFormData({
-        name: profileInfo.name,
-        email: profileInfo.email,
-        phone: profileInfo.phone,
-        location: profileInfo.location || '',
-        homeGolfCourse: profileInfo.homeGolfCourse || '',
-        bio: '', // Will be fetched from customer_profiles
-        handicap: profileInfo.handicap?.toString() || ''
+      // Fetch all profile stats in one API call
+      const statsResponse = await axios.get(`${API_URL}/api/profile/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
+      if (statsResponse.data.success) {
+        const stats = statsResponse.data.data;
+        
+        const profileInfo: ProfileData = {
+          name: stats.user.name || '',
+          email: stats.user.email || '',
+          phone: stats.user.phone || '',
+          location: stats.profile.homeLocation || 'Not set',
+          homeGolfCourse: stats.profile.homeGolfCourse || '',
+          memberSince: stats.user.memberSince 
+            ? new Date(stats.user.memberSince).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : 'Unknown',
+          handicap: stats.profile.handicap,
+          ccBalance: stats.clubcoins.balance,
+          totalChallenges: stats.challenges.totalPlayed,
+          totalWins: stats.challenges.totalWon,
+          winRate: stats.challenges.winRate,
+          currentStreak: stats.challenges.currentStreak,
+          longestStreak: stats.challenges.longestWinStreak,
+          rank: stats.ranking.currentRank || 'House',
+          totalBookings: stats.social.totalBookings
+        };
+        
+        setProfileData(profileInfo);
+        setFormData({
+          name: profileInfo.name,
+          email: profileInfo.email,
+          phone: profileInfo.phone,
+          location: profileInfo.location || '',
+          homeGolfCourse: profileInfo.homeGolfCourse || '',
+          bio: stats.profile.bio || '',
+          handicap: profileInfo.handicap?.toString() || ''
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile stats:', error);
+      toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
     }

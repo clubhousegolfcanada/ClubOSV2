@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { createTablesSQL, createIndexesSQL } from './database-tables';
 import { runMigrations as runHardcodedMigrations } from './database-migrations';
-import { runMigrations as runSqlMigrations } from '../scripts/runMigrations';
+// import { runMigrations as runSqlMigrations } from '../scripts/runMigrations';
 
 // Import the pool and query from db.ts
 import { pool, query } from './db';
@@ -132,7 +132,7 @@ class DatabaseService {
       // Run SQL migrations from files
       try {
         logger.info('Running SQL migrations...');
-        await runSqlMigrations();
+        // await runSqlMigrations();
       } catch (error) {
         logger.error('SQL migrations failed:', error);
         // Don't throw - allow app to start even if migrations fail

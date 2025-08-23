@@ -227,6 +227,7 @@ app.use('/api/slack', slackRoutes);
 // New Clubhouse customer app API v2
 app.use('/api/v2/customer', customerRoutes);
 app.use('/api/customer-profile', customerProfileRoutes);
+app.use('/api/profile', require('./routes/profileStats').default);
 app.use('/api/customer-bookings', customerBookingsRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/challenges', require('./routes/challenges').default);

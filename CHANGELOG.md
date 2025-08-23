@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.34] - 2025-08-23
+
+### Fixed
+- **Profile Page Stats Updates**
+  - Fixed `total_challenges_played` not incrementing for both players
+  - Added proper `challenge_win_rate` calculation after each challenge
+  - Created comprehensive stats tracking via migration 109
+  - Profile page now uses single optimized API endpoint `/api/profile/stats`
+  - Reduced API calls from 4 to 1 for better performance
+  - Added auto-refresh on tab focus and window focus
+  - Fixed `total_cc_earned` and `total_cc_spent` tracking with triggers
+
+### Added
+- **New Profile Stats API**
+  - `/api/profile/stats` - Returns all profile data in one call
+  - `/api/profile/stats-summary` - Quick stats for dashboard widgets
+  - Includes challenges, rankings, social stats, and settings
+
+### Changed
+- Profile page now refreshes automatically when returning to tab
+- Stats update immediately after challenge resolution (database triggers)
+
 ## [1.14.33] - 2025-08-23
 
 ### Fixed

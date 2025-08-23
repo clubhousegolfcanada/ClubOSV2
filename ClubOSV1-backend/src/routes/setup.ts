@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { setupDatabase } from '../scripts/setupDatabase';
+// import { setupDatabase } from '../scripts/setupDatabase';
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.post('/setup-database', async (req: Request, res: Response) => {
     console.log('Starting database setup via HTTP endpoint...');
     
     // Run the setup
-    await setupDatabase();
+    // await setupDatabase();
     
     res.json({
       success: true,

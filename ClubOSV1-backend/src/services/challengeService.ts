@@ -921,9 +921,12 @@ class ChallengeService {
     await client.query(`
       UPDATE customer_profiles 
       SET 
+        total_challenges_played = total_challenges_played + 1,
         total_challenges_won = total_challenges_won + 1,
         challenge_streak = GREATEST(1, challenge_streak + 1),
-        max_win_streak = GREATEST(max_win_streak, GREATEST(1, challenge_streak + 1))
+        max_win_streak = GREATEST(max_win_streak, GREATEST(1, challenge_streak + 1)),
+        last_challenge_at = CURRENT_TIMESTAMP,
+        challenge_win_rate = (total_challenges_won + 1)::decimal / (total_challenges_played + 1)::decimal
       WHERE user_id = $1
     `, [winnerId]);
 
@@ -931,8 +934,11 @@ class ChallengeService {
     await client.query(`
       UPDATE customer_profiles 
       SET 
+        total_challenges_played = total_challenges_played + 1,
         challenge_streak = LEAST(-1, challenge_streak - 1),
-        max_loss_streak = GREATEST(max_loss_streak, ABS(LEAST(-1, challenge_streak - 1)))
+        max_loss_streak = GREATEST(max_loss_streak, ABS(LEAST(-1, challenge_streak - 1))),
+        last_challenge_at = CURRENT_TIMESTAMP,
+        challenge_win_rate = total_challenges_won::decimal / (total_challenges_played + 1)::decimal
       WHERE user_id = $1
     `, [loserId]);
   }
