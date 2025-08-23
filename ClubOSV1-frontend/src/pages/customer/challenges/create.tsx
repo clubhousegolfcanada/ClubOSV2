@@ -411,24 +411,52 @@ export default function CreateChallenge() {
                     Select Course & Settings
                   </h2>
 
+                  {/* Skip Settings Option */}
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCourse({ courseName: 'DECIDE_LATER' } as any)}
+                      className={`w-full p-4 rounded-lg border-2 transition-all ${
+                        selectedCourse?.courseName === 'DECIDE_LATER'
+                          ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-left">
+                        <div className="font-medium text-gray-900 mb-1">
+                          Skip Course & Settings Selection
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Decide on the course and settings outside of the challenge
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-3 bg-white text-gray-500">OR</span>
+                    </div>
+                  </div>
+
                   {/* Course Selection */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Course
+                      Select Course with TrackMan Settings
                     </label>
                     <select
-                      value={selectedCourse?.courseName || ''}
+                      value={selectedCourse?.courseName === 'DECIDE_LATER' ? '' : (selectedCourse?.courseName || '')}
                       onChange={(e) => {
-                        if (e.target.value === 'DECIDE_LATER') {
-                          setSelectedCourse({ courseName: 'DECIDE_LATER' } as any);
-                        } else {
+                        if (e.target.value) {
                           setSelectedCourse(prev => ({ ...prev, courseName: e.target.value } as any));
                         }
                       }}
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
                     >
-                      <option value="">Please Select</option>
-                      <option value="DECIDE_LATER" className="font-medium text-[#0B3D3A]">→ Decide outside of the challenge</option>
+                      <option value="">Please Select a Course</option>
                       <option value="Casa De Campo">Casa De Campo</option>
                       <option value="Lofoten Links">Lofoten Links</option>
                       <option value="Marco Simone">Marco Simone</option>
@@ -447,8 +475,8 @@ export default function CreateChallenge() {
                     </select>
                   </div>
 
-                  {/* TrackMan Settings Grid - Only show if not deciding later */}
-                  {selectedCourse?.courseName !== 'DECIDE_LATER' && (
+                  {/* TrackMan Settings Grid - Only show if not deciding later and a course is selected */}
+                  {selectedCourse?.courseName && selectedCourse?.courseName !== 'DECIDE_LATER' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     {/* Tee Position */}
                     <div>
