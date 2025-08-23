@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.29] - 2025-08-23
+
+### Fixed
+- **Critical Login Issue**
+  - Fixed 404 error when attempting to login (double `/api/api/` in URL)
+  - Removed `/api` suffix from NEXT_PUBLIC_API_URL environment variables
+  - API client already handles adding `/api` to requests automatically
+  
+- **Database Migration Error**
+  - Fixed missing `rank_tier` column in rank_assignments table
+  - Added migration 104 to rename `rank` column to `rank_tier` to match application code
+  - Fixed rank calculation service errors preventing proper rank assignments
+
 ## [1.14.28] - 2025-08-23
 
 ### Added
