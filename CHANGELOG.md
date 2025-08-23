@@ -17,6 +17,16 @@ All notable changes to ClubOS will be documented in this file.
   - Moved buttons from top-right header to next to the mode toggle (matching desktop layout)
   - Improved consistency between mobile and desktop layouts
 
+- **Leaderboard Mobile Responsiveness**
+  - Fixed horizontal scrolling issues on mobile devices
+  - Made player stats responsive with abbreviated format on small screens
+  - Added text truncation for long player names to prevent overflow
+  - Optimized button sizes with icon-only display on mobile
+  - Fixed tab navigation with shortened labels and proper scrolling
+  - Adjusted iframe heights for better mobile viewport
+  - Added proper touch targets (min 44px) for mobile interactions
+  - Implemented flex layout for mobile-first responsive design
+
 ## [1.14.21] - 2025-08-22
 
 ### Added
