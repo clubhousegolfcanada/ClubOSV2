@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.28] - 2025-08-23
+
+### Added
+- **Winner Selection System**
+  - Players can now select who won after completing a challenge
+  - Both players must agree on the winner for automatic resolution
+  - If players disagree, they can file a dispute for admin review
+  - Added modal interface for selecting "Me" or "Opponent" as winner
+  - Challenge automatically resolves and awards CC when both agree
+
+### Fixed
+- **Production Database Migration**
+  - Manually ran challenge_winner_selections migration on production
+  - Fixed 500 error when selecting winner
+  - Added proper indexes and triggers for winner agreement
+
+### Improved
+- **Challenge Card UI**
+  - Removed redundant "Players" section from expanded view
+  - Added time remaining display with duration options (1/2/4 weeks)
+  - Added "Select Winner" and "Dispute" buttons for active challenges
+  - Shows "To Be Decided" for skipped course selection
+
 ## [1.14.27] - 2025-08-23
 
 ### Improved
