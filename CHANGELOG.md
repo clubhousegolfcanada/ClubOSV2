@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.1] - 2025-08-24
+
+### Changed
+- **Custom Achievements System Refactor**
+  - Removed all pre-defined achievements - system is now 100% custom
+  - Operators create completely bespoke achievements on-the-fly
+  - Full control over appearance: colors, icons, animations, glow effects
+  - Each achievement is unique and special to the recipient
+  - Added award button directly in operator user management page
+  - No limitations - create any achievement imaginable
+
+### Added
+- **CustomAchievementCreator Component**
+  - Visual achievement designer with live preview
+  - Color picker with 10 preset themes (Gold, Silver, Bronze, Diamond, etc.)
+  - 40+ popular emoji icons with custom input option
+  - 8 animation types (pulse, spin, bounce, glow, float, shake, ping)
+  - Points value slider (0-5000)
+  - Custom categories and rarities
+  - Tournament/event ID tracking
+
 ## [1.15.0] - 2025-08-24
 
 ### Added
