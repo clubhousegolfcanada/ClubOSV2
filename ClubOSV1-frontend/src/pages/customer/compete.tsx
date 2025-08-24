@@ -224,27 +224,35 @@ export default function Compete() {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      // Handle different response structures
+      let friendsArray = [];
       if (response.data.data?.friends) {
-        console.log('Friends from API:', response.data.data.friends.length, 'friends');
-        response.data.data.friends.forEach((f: any) => {
-          console.log('Friend:', f.email, 'ID:', f.id, 'Name:', f.name);
-        });
-        
-        // Transform friends data to competitor format
-        const competitorData = response.data.data.friends.map((friend: any) => ({
-          ...friend,
-          rank_tier: friend.rank_tier || 'House',
-          cc_balance: friend.clubcoin_balance || friend.cc_balance || 0,
-          total_challenges_won: friend.total_challenges_won || 0,
-          total_challenges_played: friend.total_challenges_played || 0,
-          win_rate: friend.win_rate ? Math.round(friend.win_rate * 100) : 0,
-          has_champion_marker: friend.has_champion_marker || false,
-          is_friend: true,
-          has_pending_request: false,
-          featured_achievements: friend.featured_achievements || []
-        }));
-        setCompetitors(competitorData);
+        friendsArray = response.data.data.friends;
+      } else if (Array.isArray(response.data.data)) {
+        friendsArray = response.data.data;
+      } else if (response.data.friends) {
+        friendsArray = response.data.friends;
       }
+      
+      console.log('Friends from API:', friendsArray.length, 'friends');
+      friendsArray.forEach((f: any) => {
+        console.log('Friend:', f.email, 'ID:', f.id, 'Name:', f.name);
+      });
+      
+      // Transform friends data to competitor format
+      const competitorData = friendsArray.map((friend: any) => ({
+        ...friend,
+        rank_tier: friend.rank_tier || 'House',
+        cc_balance: friend.clubcoin_balance || friend.cc_balance || 0,
+        total_challenges_won: friend.total_challenges_won || 0,
+        total_challenges_played: friend.total_challenges_played || 0,
+        win_rate: friend.win_rate ? Math.round(friend.win_rate * 100) : 0,
+        has_champion_marker: friend.has_champion_marker || false,
+        is_friend: true,
+        has_pending_request: false,
+        featured_achievements: friend.featured_achievements || []
+      }));
+      setCompetitors(competitorData);
     } catch (error) {
       console.error('Error loading competitors:', error);
       setCompetitors([]);
