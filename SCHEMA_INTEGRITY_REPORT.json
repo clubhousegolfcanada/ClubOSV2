@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-08-24T12:25:22.953Z",
+  "results": [
+    {
+      "test": "Check for orphaned customer_profiles",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for orphaned cc_transactions",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for orphaned friendships",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for duplicate emails in users table",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for users without customer_profiles",
+      "status": "warning",
+      "message": "Found 3 problematic rows",
+      "rowCount": 3
+    },
+    {
+      "test": "Check for invalid role values",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for negative CC balances",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for invalid season dates",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Check for overlapping active seasons",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 0
+    },
+    {
+      "test": "Verify at least one admin user exists",
+      "status": "passed",
+      "message": "OK",
+      "rowCount": 4
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "passed": 9,
+    "warnings": 1,
+    "failed": 0
+  },
+  "criticalIssues": [],
+  "warnings": [
+    {
+      "test": "Check for users without customer_profiles",
+      "status": "warning",
+      "message": "Found 3 problematic rows",
+      "rowCount": 3
+    }
+  ]
+}

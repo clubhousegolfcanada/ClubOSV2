@@ -1,0 +1,480 @@
+{
+  "timestamp": "2025-08-24T12:22:18.898Z",
+  "database": {
+    "totalTables": 100,
+    "totalRows": 148274,
+    "criticalTablesPresent": 13,
+    "criticalTablesMissing": [
+      "team_memberships",
+      "challenge_seasons"
+    ]
+  },
+  "tablesWithData": [
+    {
+      "name": "request_logs",
+      "rows": 145616
+    },
+    {
+      "name": "knowledge_store",
+      "rows": 413
+    },
+    {
+      "name": "auth_logs",
+      "rows": 382
+    },
+    {
+      "name": "sop_embeddings",
+      "rows": 379
+    },
+    {
+      "name": "notification_history",
+      "rows": 270
+    },
+    {
+      "name": "customer_interactions",
+      "rows": 264
+    },
+    {
+      "name": "ai_automation_rules",
+      "rows": 254
+    },
+    {
+      "name": "conversation_sessions",
+      "rows": 226
+    },
+    {
+      "name": "openphone_conversations",
+      "rows": 97
+    },
+    {
+      "name": "knowledge_patterns",
+      "rows": 62
+    },
+    {
+      "name": "hubspot_cache",
+      "rows": 60
+    },
+    {
+      "name": "achievements",
+      "rows": 34
+    },
+    {
+      "name": "feedback",
+      "rows": 34
+    },
+    {
+      "name": "slack_messages",
+      "rows": 33
+    },
+    {
+      "name": "message_suggestions",
+      "rows": 20
+    },
+    {
+      "name": "badges",
+      "rows": 18
+    },
+    {
+      "name": "slack_replies",
+      "rows": 16
+    },
+    {
+      "name": "knowledge_audit_log",
+      "rows": 13
+    },
+    {
+      "name": "migrations",
+      "rows": 12
+    },
+    {
+      "name": "users",
+      "rows": 12
+    }
+  ],
+  "foreignKeyRelationships": [
+    {
+      "from": "achievement_preferences.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "admin_actions.admin_id",
+      "to": "users.id"
+    },
+    {
+      "from": "admin_actions.target_user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "ai_automation_actions.feature_key",
+      "to": "ai_automation_features.feature_key"
+    },
+    {
+      "from": "ai_automation_actions.conversation_id",
+      "to": "openphone_conversations.id"
+    },
+    {
+      "from": "ai_automation_response_tracking.conversation_id",
+      "to": "openphone_conversations.id"
+    },
+    {
+      "from": "ai_automation_response_tracking.feature_key",
+      "to": "ai_automation_features.feature_key"
+    },
+    {
+      "from": "ai_automation_rules.feature_id",
+      "to": "ai_automation_features.id"
+    },
+    {
+      "from": "ai_automation_usage.feature_id",
+      "to": "ai_automation_features.id"
+    },
+    {
+      "from": "ai_prompt_template_history.template_id",
+      "to": "ai_prompt_templates.id"
+    },
+    {
+      "from": "ai_prompt_template_history.changed_by",
+      "to": "users.id"
+    },
+    {
+      "from": "ai_prompt_templates.created_by",
+      "to": "users.id"
+    },
+    {
+      "from": "ai_prompt_templates.updated_by",
+      "to": "users.id"
+    },
+    {
+      "from": "badge_progress.badge_id",
+      "to": "badges.id"
+    },
+    {
+      "from": "badge_rules.badge_id",
+      "to": "badges.id"
+    },
+    {
+      "from": "badges.season_id",
+      "to": "seasons.id"
+    },
+    {
+      "from": "booking_participants.booking_share_id",
+      "to": "booking_shares.id"
+    },
+    {
+      "from": "booking_participants.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "booking_rewards.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "booking_shares.shared_by",
+      "to": "users.id"
+    },
+    {
+      "from": "booking_shares.team_id",
+      "to": "teams.id"
+    },
+    {
+      "from": "booking_shares.event_id",
+      "to": "events.id"
+    },
+    {
+      "from": "cc_transactions.season_id",
+      "to": "seasons.id"
+    },
+    {
+      "from": "challenge_audit.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "challenge_disputes.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "challenge_no_shows.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "challenge_plays.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "challenge_results.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "challenge_winner_selections.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "challenge_winner_selections.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "challenge_winner_selections.selected_winner_id",
+      "to": "users.id"
+    },
+    {
+      "from": "challenges.settings_catalog_id",
+      "to": "challenge_settings_catalog.id"
+    },
+    {
+      "from": "challenges.season_id",
+      "to": "seasons.id"
+    },
+    {
+      "from": "challenges.previous_challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "champion_markers.event_id",
+      "to": "events.id"
+    },
+    {
+      "from": "checklist_submissions.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "clubhouse_announcements.clubhouse_id",
+      "to": "clubhouse_locations.id"
+    },
+    {
+      "from": "clubhouse_announcements.created_by",
+      "to": "users.id"
+    },
+    {
+      "from": "contact_sync.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "contact_sync.matched_user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "customer_profiles.rarest_achievement",
+      "to": "achievements.id"
+    },
+    {
+      "from": "event_participants.event_id",
+      "to": "events.id"
+    },
+    {
+      "from": "event_participants.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "event_participants.team_id",
+      "to": "teams.id"
+    },
+    {
+      "from": "events.created_by",
+      "to": "users.id"
+    },
+    {
+      "from": "events.team_id",
+      "to": "teams.id"
+    },
+    {
+      "from": "events.winner_user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "events.winner_team_id",
+      "to": "teams.id"
+    },
+    {
+      "from": "friend_activities.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_activities.friend_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_activities.event_id",
+      "to": "events.id"
+    },
+    {
+      "from": "friend_group_members.group_id",
+      "to": "friend_groups.id"
+    },
+    {
+      "from": "friend_group_members.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_group_members.invited_by",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_groups.owner_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_notification_preferences.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_suggestions.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friend_suggestions.suggested_user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friendships.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friendships.friend_id",
+      "to": "users.id"
+    },
+    {
+      "from": "friendships.blocked_by",
+      "to": "users.id"
+    },
+    {
+      "from": "knowledge_extraction_log.knowledge_id",
+      "to": "knowledge_store.id"
+    },
+    {
+      "from": "knowledge_extraction_log.pattern_id",
+      "to": "knowledge_patterns.id"
+    },
+    {
+      "from": "knowledge_patterns.current_best_source",
+      "to": "knowledge_store.id"
+    },
+    {
+      "from": "knowledge_store.superseded_by",
+      "to": "knowledge_store.id"
+    },
+    {
+      "from": "knowledge_store.created_by",
+      "to": "users.id"
+    },
+    {
+      "from": "message_suggestions.created_by",
+      "to": "users.id"
+    },
+    {
+      "from": "message_suggestions.approved_by",
+      "to": "users.id"
+    },
+    {
+      "from": "notification_history.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "notification_history.subscription_id",
+      "to": "push_subscriptions.id"
+    },
+    {
+      "from": "notification_preferences.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "openphone_conversations.knowledge_id",
+      "to": "knowledge_store.id"
+    },
+    {
+      "from": "push_subscriptions.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "rank_assignments.season_id",
+      "to": "seasons.id"
+    },
+    {
+      "from": "rank_history.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "remote_action_history.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "scoreboards.event_id",
+      "to": "events.id"
+    },
+    {
+      "from": "scoreboards.team_id",
+      "to": "teams.id"
+    },
+    {
+      "from": "seasonal_cc_earnings.season_id",
+      "to": "seasons.id"
+    },
+    {
+      "from": "stakes.challenge_id",
+      "to": "challenges.id"
+    },
+    {
+      "from": "stakes.lock_transaction_id",
+      "to": "cc_transactions.id"
+    },
+    {
+      "from": "stakes.refund_transaction_id",
+      "to": "cc_transactions.id"
+    },
+    {
+      "from": "team_members.team_id",
+      "to": "teams.id"
+    },
+    {
+      "from": "team_members.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "team_members.invited_by",
+      "to": "users.id"
+    },
+    {
+      "from": "teams.created_by",
+      "to": "users.id"
+    },
+    {
+      "from": "teams.captain_id",
+      "to": "users.id"
+    },
+    {
+      "from": "ticket_comments.ticket_id",
+      "to": "tickets.id"
+    },
+    {
+      "from": "usage_logs.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "user_achievements.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "user_achievements.achievement_id",
+      "to": "achievements.id"
+    },
+    {
+      "from": "user_achievements.awarded_by",
+      "to": "users.id"
+    },
+    {
+      "from": "user_badges.badge_id",
+      "to": "badges.id"
+    },
+    {
+      "from": "user_badges.season_id",
+      "to": "seasons.id"
+    },
+    {
+      "from": "user_clubhouses.user_id",
+      "to": "users.id"
+    },
+    {
+      "from": "user_clubhouses.clubhouse_id",
+      "to": "clubhouse_locations.id"
+    }
+  ]
+}
