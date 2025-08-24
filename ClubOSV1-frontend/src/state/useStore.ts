@@ -146,6 +146,10 @@ export const useAuthState = create<AuthState>()(
             tokenManager.startTokenMonitoring();
             tokenManager.setupAxiosInterceptor();
           });
+          // Reset session expiry manager on successful login
+          import('../utils/sessionExpiryManager').then(({ sessionExpiryManager }) => {
+            sessionExpiryManager.reset();
+          });
         }
       },
       setUser: (user) => set({ user, isAuthenticated: !!user }),

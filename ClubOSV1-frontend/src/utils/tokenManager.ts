@@ -1,5 +1,6 @@
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
+import { sessionExpiryManager } from './sessionExpiryManager';
 
 interface DecodedToken {
   exp: number;
@@ -12,7 +13,6 @@ interface DecodedToken {
 export class TokenManager {
   private static instance: TokenManager;
   private checkInterval: NodeJS.Timeout | null = null;
-  private hasShownExpiryMessage: boolean = false;
   private interceptorSetup: boolean = false;
   
   private constructor() {}
@@ -148,7 +148,6 @@ export class TokenManager {
     this.stopTokenMonitoring();
     
     // Reset all flags
-    this.hasShownExpiryMessage = false;
     this.interceptorSetup = false;
     
     // Clear any cached token data
@@ -169,25 +168,25 @@ export class TokenManager {
       return; // Don't do anything if already on login page
     }
     
+    // Check if we should show notification (singleton pattern)
+    if (!sessionExpiryManager.shouldShowNotification()) {
+      return; // Already handling or already shown
+    }
+    
+    // Mark that we're handling expiry
+    sessionExpiryManager.markNotificationShown();
+    
     // Get the logout function from the auth store
     const { logout } = useAuthState.getState();
     
     // Stop monitoring to prevent multiple calls
     this.stopTokenMonitoring();
     
+    // Show notification only once
+    toast.error('Your session has expired. Please log in again.');
+    
     // Call the proper logout function
     logout();
-    
-    // Show notification only once
-    if (!this.hasShownExpiryMessage) {
-      toast.error('Your session has expired. Please log in again.');
-      this.hasShownExpiryMessage = true;
-      
-      // Reset the flag after navigation
-      setTimeout(() => {
-        this.hasShownExpiryMessage = false;
-      }, 3000);
-    }
     
     // Use Next.js router for navigation
     if (typeof window !== 'undefined') {
@@ -250,15 +249,19 @@ export class TokenManager {
             const recentlyLoggedIn = loginTimestamp && 
               (Date.now() - parseInt(loginTimestamp) < 5000);
             
+            // Check if already handling session expiry (via singleton)
+            const isAlreadyHandling = sessionExpiryManager.isHandling();
+            
             // Don't handle as expired if:
             // 1. We're on the login page
             // 2. This is an auth endpoint
             // 3. We just logged in (grace period)
             // 4. Token exists and is not expired
+            // 5. Already handling session expiry
             const token = localStorage.getItem('clubos_token');
             const tokenValid = token && !this.isTokenExpired(token);
             
-            if (!isLoginPage && !isAuthEndpoint && !recentlyLoggedIn && !tokenValid) {
+            if (!isLoginPage && !isAuthEndpoint && !recentlyLoggedIn && !tokenValid && !isAlreadyHandling) {
               this.handleTokenExpiration();
             }
           }

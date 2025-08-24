@@ -351,8 +351,7 @@ export default function Messages() {
       console.error('Failed to load conversations:', error);
       
       if (error.response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-        router.push('/login');
+        // Session expiry handled by tokenManager interceptor
       } else if (error.response?.status === 404) {
         toast.error('Messages API not found. Please check backend deployment.');
       } else if (error.response?.status === 429) {
@@ -503,8 +502,7 @@ export default function Messages() {
     try {
       const token = localStorage.getItem('clubos_token');
       if (!token) {
-        toast.error('Session expired. Please log in again.');
-        router.push('/login');
+        // Session expiry handled by tokenManager interceptor
         return;
       }
       
@@ -557,8 +555,7 @@ export default function Messages() {
       toast.error(errorMessage);
       
       if (error.response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-        router.push('/login');
+        // Session expiry handled by tokenManager interceptor
       }
     } finally {
       setSending(false);
