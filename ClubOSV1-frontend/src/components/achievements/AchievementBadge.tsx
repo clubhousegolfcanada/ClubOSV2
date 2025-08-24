@@ -1,7 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 
 interface AchievementBadgeProps {
   icon: string;
@@ -25,17 +23,20 @@ const rarityStyles = {
   common: {
     border: 'border-gray-400',
     glow: '',
-    bg: 'bg-gray-50'
+    bg: 'bg-gray-50',
+    animation: ''
   },
   rare: {
     border: 'border-blue-500',
     glow: 'shadow-[0_0_10px_rgba(59,130,246,0.5)]',
-    bg: 'bg-blue-50'
+    bg: 'bg-blue-50',
+    animation: ''
   },
   epic: {
     border: 'border-purple-500',
     glow: 'shadow-[0_0_15px_rgba(139,92,246,0.6)]',
-    bg: 'bg-purple-50'
+    bg: 'bg-purple-50',
+    animation: ''
   },
   legendary: {
     border: 'border-yellow-500',
@@ -99,12 +100,7 @@ export function AchievementBadge({
 
   const badge = (
     <motion.div
-      className={cn(
-        'relative flex items-center justify-center rounded-full border-2 transition-all',
-        sizeClass,
-        onClick && 'cursor-pointer hover:scale-110',
-        className
-      )}
+      className={`relative flex items-center justify-center rounded-full border-2 transition-all ${sizeClass} ${onClick ? 'cursor-pointer hover:scale-110' : ''} ${className || ''}`}
       style={{
         borderColor: color || undefined,
         backgroundColor: backgroundColor || undefined,
@@ -152,31 +148,11 @@ export function AchievementBadge({
     return badge;
   }
 
+  // Simple tooltip with title attribute for now
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {badge}
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="text-center max-w-xs">
-            <div className="font-semibold">{name}</div>
-            {description && (
-              <div className="text-xs text-gray-500 mt-1">{description}</div>
-            )}
-            <div className={cn(
-              'text-xs mt-1 px-2 py-0.5 rounded inline-block',
-              rarity === 'common' && 'bg-gray-500 text-white',
-              rarity === 'rare' && 'bg-blue-500 text-white',
-              rarity === 'epic' && 'bg-purple-500 text-white',
-              rarity === 'legendary' && 'bg-yellow-500 text-white'
-            )}>
-              {rarity}
-            </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div title={`${name}${description ? `: ${description}` : ''} (${rarity})`}>
+      {badge}
+    </div>
   );
 }
 
@@ -186,7 +162,8 @@ interface AchievementBadgeGroupProps {
     icon: string;
     name: string;
     description?: string;
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    rarity: string;
+    [key: string]: any; // Allow additional properties
   }>;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   maxDisplay?: number;
@@ -205,7 +182,7 @@ export function AchievementBadgeGroup({
   const remainingCount = Math.max(0, achievements.length - maxDisplay);
 
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div className={`flex items-center gap-1 ${className || ''}`}>
       {displayAchievements.map((achievement, index) => (
         <motion.div
           key={achievement.id}
@@ -228,10 +205,7 @@ export function AchievementBadgeGroup({
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: displayAchievements.length * 0.1 }}
-          className={cn(
-            'flex items-center justify-center rounded-full bg-gray-200 text-gray-600 font-medium',
-            sizeStyles[size]
-          )}
+          className={`flex items-center justify-center rounded-full bg-gray-200 text-gray-600 font-medium ${sizeStyles[size]}`}
         >
           +{remainingCount}
         </motion.div>

@@ -81,56 +81,70 @@ Based on max 300 CC bets and tier distribution:
 ```sql
 -- Add tier thresholds to system
 INSERT INTO system_settings (key, value) VALUES
-  ('tier.house.min', '0'),
-  ('tier.house.max', '249'),
-  ('tier.putter.min', '250'),
-  ('tier.putter.max', '999'),
-  ('tier.iron.min', '1000'),
-  ('tier.iron.max', '3749'),
-  ('tier.driver.min', '3750');
+  ('tier.junior.min', '0'),
+  ('tier.junior.max', '199'),
+  ('tier.house.min', '200'),
+  ('tier.house.max', '749'),
+  ('tier.amateur.min', '750'),
+  ('tier.amateur.max', '1999'),
+  ('tier.pro.min', '2000'),
+  ('tier.pro.max', '4999'),
+  ('tier.master.min', '5000');
 
 -- Update existing rank calculation
 UPDATE customer_profiles
 SET rank_tier = CASE
-  WHEN total_cc_earned >= 3750 THEN 'driver'::rank_tier
-  WHEN total_cc_earned >= 1000 THEN 'iron'::rank_tier
-  WHEN total_cc_earned >= 250 THEN 'putter'::rank_tier
-  ELSE 'house'::rank_tier
+  WHEN total_cc_earned >= 5000 THEN 'master'::rank_tier
+  WHEN total_cc_earned >= 2000 THEN 'pro'::rank_tier
+  WHEN total_cc_earned >= 750 THEN 'amateur'::rank_tier
+  WHEN total_cc_earned >= 200 THEN 'house'::rank_tier
+  ELSE 'junior'::rank_tier
 END;
 ```
 
 ### Tier Benefits Implementation
 
-#### House (0-249 CC)
+#### Junior (0-199 CC)
 - Base simulator access
 - Can book standard times
 - Participate in challenges
 - View leaderboards
+- Welcome bonus opportunities
 
-#### Putter (250-999 CC)
-- Everything in House, plus:
+#### House (200-749 CC)
+- Everything in Junior, plus:
 - 5% booking discount
 - Early access to weekend slots (1 day)
-- Putter badge on profile
+- House badge on profile
 - Monthly CC bonus (+10 CC)
 
-#### Iron (1,000-3,749 CC)
-- Everything in Putter, plus:
+#### Amateur (750-1,999 CC)
+- Everything in House, plus:
 - 10% booking discount
 - Priority booking (2 days early)
-- Iron badge and profile customization
-- Quarterly CC bonus (+50 CC)
-- Access to Iron-only tournaments
+- Amateur badge and profile customization
+- Monthly CC bonus (+25 CC)
+- Access to Amateur-only tournaments
 
-#### Driver (3,750+ CC)
-- Everything in Iron, plus:
+#### Pro (2,000-4,999 CC)
+- Everything in Amateur, plus:
 - 15% booking discount
 - VIP booking priority (3 days early)
-- Driver badge and premium profile
-- Monthly CC bonus (+100 CC)
+- Pro badge and premium profile
+- Monthly CC bonus (+50 CC)
 - Free entry to special events
+- Priority challenge matching
+
+#### Master (5,000+ CC)
+- Everything in Pro, plus:
+- 20% booking discount
+- Master booking priority (4 days early)
+- Master badge and elite profile
+- Monthly CC bonus (+100 CC)
 - Personal booking assistant
-- Complimentary guest passes (2/month)
+- Complimentary guest passes (4/month)
+- Master-only lounge access
+- Special tournament invitations
 
 ## Implementation Checklist
 
@@ -154,15 +168,17 @@ END;
 4. **Retention**: User activity correlation with tier
 
 ### Target Distribution (Mature System)
-- House: 40% (new/casual users)
-- Putter: 35% (regular users)
-- Iron: 20% (active users)
-- Driver: 5% (elite users)
+- Junior: 30% (new users)
+- House: 35% (regular users)
+- Amateur: 20% (active users)
+- Pro: 12% (dedicated users)
+- Master: 3% (elite users)
 
 ### Adjustment Triggers
-- If >50% stay in House after 6 months → Lower Putter threshold
-- If >10% reach Driver in Year 1 → Raise Driver threshold
+- If >40% stay in Junior after 6 months → Lower House threshold
+- If >5% reach Master in Year 1 → Raise Master threshold
 - If challenge bets average <50 CC → Adjust tier benefits
+- If <20% reach Amateur by Year 2 → Lower Amateur threshold
 
 ## Future Expansions
 
@@ -172,7 +188,10 @@ END;
 - Limited-time tier boost events
 
 ### Sub-Tiers
-- House I, II, III (0-82, 83-165, 166-249)
+- Junior I, II (0-99, 100-199)
+- House I, II, III (200-349, 350-549, 550-749)
+- Amateur I, II, III (750-1149, 1150-1549, 1550-1999)
+- Pro I, II (2000-3499, 3500-4999)
 - Visual progress within each tier
 - Mini-rewards at sub-tier boundaries
 
@@ -186,8 +205,10 @@ END;
 
 ### Database Changes
 ```sql
--- Already exists in migration 004
-CREATE TYPE rank_tier AS ENUM ('house', 'putter', 'iron', 'driver');
+-- Update existing enum in new migration
+-- First rename old values to transition
+ALTER TYPE rank_tier RENAME TO rank_tier_old;
+CREATE TYPE rank_tier AS ENUM ('junior', 'house', 'amateur', 'pro', 'master');
 
 -- Add to customer_profiles if not exists
 ALTER TABLE customer_profiles
@@ -202,6 +223,19 @@ CREATE TABLE IF NOT EXISTS tier_benefits (
   monthly_cc_bonus INTEGER DEFAULT 0,
   perks JSONB DEFAULT '{}'
 );
+
+-- Insert default tier benefits
+INSERT INTO tier_benefits (tier, booking_discount, early_booking_days, monthly_cc_bonus, perks) VALUES
+  ('junior', 0, 0, 0, '{"welcome_bonus": true}'),
+  ('house', 5, 1, 10, '{"weekend_early_access": true}'),
+  ('amateur', 10, 2, 25, '{"tournaments": true}'),
+  ('pro', 15, 3, 50, '{"vip_events": true}'),
+  ('master', 20, 4, 100, '{"lounge_access": true, "guest_passes": 4}')
+ON CONFLICT (tier) DO UPDATE SET
+  booking_discount = EXCLUDED.booking_discount,
+  early_booking_days = EXCLUDED.early_booking_days,
+  monthly_cc_bonus = EXCLUDED.monthly_cc_bonus,
+  perks = EXCLUDED.perks;
 ```
 
 ### API Endpoints
@@ -229,7 +263,8 @@ This tier system is designed to:
 5. **Scale appropriately** with your user base growth
 
 The thresholds are calibrated for:
-- New users to reach Putter within 6-12 months
-- Active users to reach Iron within 2-3 years
-- Only the most dedicated to achieve Driver status
+- New users to reach House within 6-12 months
+- Active users to reach Amateur within 2-3 years
+- Dedicated users to reach Pro within 3-4 years
+- Only the most elite to achieve Master status
 - Natural distribution that encourages engagement without being unattainable

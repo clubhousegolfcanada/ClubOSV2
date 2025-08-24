@@ -1243,6 +1243,7 @@ export const OperationsUsers: React.FC = () => {
           }}
           userId={achievementUser.id}
           userName={achievementUser.name}
+          userToken={token || localStorage.getItem('clubos_token') || ''}
           onSuccess={() => {
             toast.success('Achievement created and awarded successfully!');
           }}
