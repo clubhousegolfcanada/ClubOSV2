@@ -96,7 +96,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
            AND f2.status = 'accepted') as friend_count
         ` : ''}
       FROM friendships f
-      JOIN users u ON (
+      JOIN Users u ON (
         CASE 
           WHEN f.user_id = $1 THEN f.friend_id = u.id
           ELSE f.user_id = u.id
@@ -199,7 +199,7 @@ router.get('/pending', async (req: Request, res: Response, next: NextFunction) =
           ELSE 'incoming'
         END as request_direction
       FROM friendships f
-      JOIN users requester ON (
+      JOIN Users requester ON (
         CASE 
           WHEN f.friend_id = $1 THEN f.user_id = requester.id
           ELSE f.friend_id = requester.id
@@ -718,7 +718,7 @@ router.get('/blocked', async (req: Request, res: Response, next: NextFunction) =
         u.name,
         cp.display_name
       FROM user_blocks ub
-      JOIN users u ON u.id = ub.blocked_user_id
+      JOIN Users u ON u.id = ub.blocked_user_id
       LEFT JOIN customer_profiles cp ON cp.user_id = u.id
       WHERE ub.user_id = $1
       ORDER BY ub.blocked_at DESC`,
