@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.36] - 2025-08-24
+
+### Added
+- **5-Tier Club Coin System**
+  - New tier structure: Junior (0-199), House (200-749), Amateur (750-1999), Pro (2000-4999), Master (5000+)
+  - TierBadge component with visual indicators and icons
+  - TierProgressBar showing progression to next tier
+  - Tier display integrated into customer profile
+  - Tier progression notifications utility
+  - Database migration ready (111_update_tier_system.sql)
+
+- **Booking Rewards System**
+  - 25 CC reward per booking (7-day delay)
+  - Complete webhook infrastructure for HubSpot
+  - Admin monitoring endpoints
+  - Awaiting HubSpot webhook configuration
+
+### Fixed
+- Push Notifications save button added to Integrations page
+- Configure buttons now show instructions for HubSpot, NinjaOne, and UniFi
+- AI Center consolidated into Integrations tab (removed from operator view)
+
+### Changed
+- Profile page now displays tier badge next to user name
+- Added tier progression card showing CC progress and total bookings
+
 ## [1.15.2] - 2025-08-24
 
 ### Added

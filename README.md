@@ -45,10 +45,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
   - Push notifications for new messages (works in background)
 - **Call Transcripts**: Extract knowledge from customer calls, searchable archive
 
-#### 3. Clubhouse Challenges & Gamification (v1.14.27)
+#### 3. Clubhouse Challenges & Gamification (v1.14.36)
 - **ClubCoin Economy**: Non-monetary points for wagering on golf matches
 - **Head-to-Head Challenges**: 50/50 stake split (equal risk/reward)
-- **8-Tier Rank System**: House → Amateur → Bronze → Silver → Gold → Pro → Champion → Legend
+- **5-Tier System**: Junior → House → Amateur → Pro → Master (NEW!)
+- **Tier Progression**: Based on total CC earned, visual badges and progress bars
+- **Booking Rewards**: 25 CC per booking (7-day delay) - Ready for HubSpot webhook
 - **Seasonal Competitions**: 3-month seasons with resets and archives
 - **18 Achievement Badges**: Automatic awarding based on performance
 - **TrackMan Integration**: Settings catalog and round verification

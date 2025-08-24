@@ -354,16 +354,28 @@ export const OperationsIntegrations: React.FC = () => {
     // Show information about how to configure each service
     switch(service) {
       case 'HubSpot':
-        toast.info('HubSpot configuration: Add HUBSPOT_API_KEY to Railway environment variables');
+        toast('HubSpot configuration: Add HUBSPOT_API_KEY to Railway environment variables', {
+          icon: 'ℹ️',
+          duration: 4000
+        });
         break;
       case 'NinjaOne':
-        toast.info('NinjaOne configuration: Add NINJAONE_CLIENT_ID and NINJAONE_CLIENT_SECRET to Railway');
+        toast('NinjaOne configuration: Add NINJAONE_CLIENT_ID and NINJAONE_CLIENT_SECRET to Railway', {
+          icon: 'ℹ️',
+          duration: 4000
+        });
         break;
       case 'UniFi':
-        toast.info('UniFi configuration: Add DARTMOUTH_ACCESS_TOKEN and BEDFORD_ACCESS_TOKEN to Railway');
+        toast('UniFi configuration: Add DARTMOUTH_ACCESS_TOKEN and BEDFORD_ACCESS_TOKEN to Railway', {
+          icon: 'ℹ️',
+          duration: 4000
+        });
         break;
       default:
-        toast.info(`${service} configuration coming soon`);
+        toast(`${service} configuration coming soon`, {
+          icon: 'ℹ️',
+          duration: 3000
+        });
     }
   };
 
