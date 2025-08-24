@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.38] - 2025-08-24
+
+### Fixed
+- **User Creation System**
+  - Added missing status, signup_date, and signup_metadata columns to users table
+  - Fixed 500 error when creating new customer accounts
+  - Enabled customer account approval workflow
+  - Migration 115 adds required columns for user management
+
+- **Friends API**
+  - Fixed table naming consistency (all lowercase 'users' now)
+  - Resolved missing column errors for achievements
+  - Friends list now properly loads in Competitors tab
+
 ## [1.14.37] - 2025-08-24
 
 ### Fixed
