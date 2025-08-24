@@ -733,6 +733,7 @@ export const OperationsIntegrations: React.FC = () => {
             
             <p className="text-sm text-gray-600 mb-3">Customer data synchronization</p>
             <button
+              onClick={() => handleConfigureService('HubSpot')}
               className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Configure
@@ -769,6 +770,7 @@ export const OperationsIntegrations: React.FC = () => {
             
             <p className="text-sm text-gray-600 mb-3">Remote device management</p>
             <button
+              onClick={() => handleConfigureService('NinjaOne')}
               className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Configure
@@ -805,6 +807,7 @@ export const OperationsIntegrations: React.FC = () => {
             
             <p className="text-sm text-gray-600 mb-3">Door access control</p>
             <button
+              onClick={() => handleConfigureService('UniFi')}
               className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Configure

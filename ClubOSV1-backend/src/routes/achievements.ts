@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { achievementService } from '../services/achievementService';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
-import { UserRole } from '../types';
 
 const router = Router();
 
@@ -43,7 +42,7 @@ router.get('/user/:userId/featured', authenticate, async (req, res) => {
 });
 
 // Create and award custom achievement (operator only)
-router.post('/create-custom', authenticate, roleGuard([UserRole.OPERATOR, UserRole.ADMIN]), async (req, res) => {
+router.post('/create-custom', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
     const {
       userId, name, description, icon, color, backgroundColor,
@@ -88,7 +87,7 @@ router.post('/create-custom', authenticate, roleGuard([UserRole.OPERATOR, UserRo
 });
 
 // Award achievement to a user (operator only)
-router.post('/award', authenticate, checkOperatorRole, async (req, res) => {
+router.post('/award', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
     const { userId, achievementId, reason, tournamentId, metadata } = req.body;
     const awardedBy = req.user?.id;
@@ -121,7 +120,7 @@ router.post('/award', authenticate, checkOperatorRole, async (req, res) => {
 });
 
 // Bulk award achievements (operator only)
-router.post('/bulk-award', authenticate, checkOperatorRole, async (req, res) => {
+router.post('/bulk-award', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
     const { awards } = req.body;
     const awardedBy = req.user?.id;
@@ -149,7 +148,7 @@ router.post('/bulk-award', authenticate, checkOperatorRole, async (req, res) => 
 });
 
 // Revoke achievement from a user (operator only)
-router.delete('/revoke', authenticate, checkOperatorRole, async (req, res) => {
+router.delete('/revoke', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
     const { userId, achievementId, tournamentId } = req.body;
 
@@ -192,7 +191,7 @@ router.post('/featured', authenticate, async (req, res) => {
 });
 
 // Get achievement statistics (operator only)
-router.get('/stats', authenticate, checkOperatorRole, async (req, res) => {
+router.get('/stats', authenticate, roleGuard(['operator', 'admin']), async (req, res) => {
   try {
     const stats = await achievementService.getAchievementStats();
     res.json(stats);
