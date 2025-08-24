@@ -496,9 +496,9 @@ router.put('/profile',
       const userId = req.user!.id;
       const { name, phone, location, homeGolfCourse, bio, handicap } = req.body;
       
-      // Update user basic info
+      // Update user basic info (use 'users' table, not "Users")
       const userUpdate = await db.query(
-        `UPDATE "Users" 
+        `UPDATE users 
          SET name = COALESCE($1, name),
              phone = COALESCE($2, phone),
              updated_at = CURRENT_TIMESTAMP
@@ -508,18 +508,18 @@ router.put('/profile',
       );
       
       // Update or create customer profile with additional fields
-      if (location !== undefined || homeGolfCourse !== undefined || bio !== undefined || handicap !== undefined) {
+      // Note: home_golf_course column doesn't exist in production yet, so we skip it
+      if (location !== undefined || bio !== undefined || handicap !== undefined) {
         await db.query(
-          `INSERT INTO customer_profiles (user_id, home_location, home_golf_course, bio, handicap)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO customer_profiles (user_id, home_location, bio, handicap)
+           VALUES ($1, $2, $3, $4)
            ON CONFLICT (user_id) 
            DO UPDATE SET 
              home_location = COALESCE($2, customer_profiles.home_location),
-             home_golf_course = COALESCE($3, customer_profiles.home_golf_course),
-             bio = COALESCE($4, customer_profiles.bio),
-             handicap = COALESCE($5, customer_profiles.handicap),
+             bio = COALESCE($3, customer_profiles.bio),
+             handicap = COALESCE($4, customer_profiles.handicap),
              updated_at = CURRENT_TIMESTAMP`,
-          [userId, location, homeGolfCourse, bio, handicap]
+          [userId, location, bio, handicap]
         );
       }
       
