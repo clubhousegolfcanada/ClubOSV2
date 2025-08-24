@@ -294,6 +294,9 @@ app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api', testKnowledgeRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 
+// HubSpot webhook routes
+import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
+app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -372,6 +375,11 @@ async function startServer() {
     const { startChallengeAgreementProcessor } = await import('./jobs/challengeAgreementProcessor');
     startChallengeAgreementProcessor();
     logger.info('✅ Challenge agreement processor started');
+    
+    // Start booking rewards job
+    const { startBookingRewardsJob } = await import('./jobs/bookingRewards');
+    startBookingRewardsJob();
+    logger.info('✅ Booking rewards job started');
     
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
