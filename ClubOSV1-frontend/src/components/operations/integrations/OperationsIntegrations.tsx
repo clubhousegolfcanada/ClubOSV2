@@ -157,7 +157,10 @@ export const OperationsIntegrations: React.FC = () => {
       const response = await axios.get(`${API_URL}/api/ai-automations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setAIFeatures(response.data || []);
+      // Ensure we're getting an array
+      const features = Array.isArray(response.data) ? response.data : 
+                      (response.data?.features || response.data?.data || []);
+      setAIFeatures(features);
     } catch (error: any) {
       console.error('Error fetching AI features:', error);
       setAIFeatures([]);
@@ -214,7 +217,10 @@ export const OperationsIntegrations: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (featuresResponse.data.success) {
-        setSystemFeatures(featuresResponse.data.data);
+        // Ensure we're getting an array
+        const features = Array.isArray(featuresResponse.data.data) ? 
+          featuresResponse.data.data : systemFeatures;
+        setSystemFeatures(features);
       }
       
       // Check HubSpot connection status

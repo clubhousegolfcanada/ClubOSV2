@@ -11,7 +11,7 @@ router.get('/slack/config', authenticate, roleGuard(['admin', 'operator']), asyn
   try {
     const config = await db.query(`
       SELECT key, value 
-      FROM system_configs 
+      FROM system_settings 
       WHERE key LIKE 'slack_%'
     `);
     
@@ -71,7 +71,7 @@ router.put('/slack/config', authenticate, roleGuard(['admin', 'operator']), asyn
     // Upsert each configuration
     for (const config of configs) {
       await db.query(`
-        INSERT INTO system_configs (key, value, updated_at) 
+        INSERT INTO system_settings (key, value, updated_at) 
         VALUES ($1, $2, NOW())
         ON CONFLICT (key) 
         DO UPDATE SET value = $2, updated_at = NOW()
@@ -94,7 +94,7 @@ router.get('/openphone/config', authenticate, roleGuard(['admin', 'operator']), 
   try {
     const config = await db.query(`
       SELECT key, value 
-      FROM system_configs 
+      FROM system_settings 
       WHERE key LIKE 'openphone_%'
     `);
     
@@ -154,7 +154,7 @@ router.put('/openphone/config', authenticate, roleGuard(['admin', 'operator']), 
     // Upsert each configuration
     for (const config of configs) {
       await db.query(`
-        INSERT INTO system_configs (key, value, updated_at) 
+        INSERT INTO system_settings (key, value, updated_at) 
         VALUES ($1, $2, NOW())
         ON CONFLICT (key) 
         DO UPDATE SET value = $2, updated_at = NOW()
@@ -181,7 +181,7 @@ router.post('/:service/test', authenticate, roleGuard(['admin', 'operator']), as
       case 'slack':
         // Test Slack webhook
         const slackWebhook = await db.query(`
-          SELECT value FROM system_configs WHERE key = 'slack_webhook_url'
+          SELECT value FROM system_settings WHERE key = 'slack_webhook_url'
         `);
         
         if (!slackWebhook.rows[0]?.value) {
@@ -201,7 +201,7 @@ router.post('/:service/test', authenticate, roleGuard(['admin', 'operator']), as
       case 'openphone':
         // Test OpenPhone API
         const openphoneKey = await db.query(`
-          SELECT value FROM system_configs WHERE key = 'openphone_api_key'
+          SELECT value FROM system_settings WHERE key = 'openphone_api_key'
         `);
         
         if (!openphoneKey.rows[0]?.value) {
@@ -234,7 +234,7 @@ router.get('/features', authenticate, roleGuard(['admin', 'operator']), async (r
   try {
     const features = await db.query(`
       SELECT key, value 
-      FROM system_configs 
+      FROM system_settings 
       WHERE key LIKE 'feature_%'
     `);
     
@@ -290,7 +290,7 @@ router.put('/features/:featureKey', authenticate, roleGuard(['admin', 'operator'
     const { enabled } = req.body;
     
     await db.query(`
-      INSERT INTO system_configs (key, value, updated_at) 
+      INSERT INTO system_settings (key, value, updated_at) 
       VALUES ($1, $2, NOW())
       ON CONFLICT (key) 
       DO UPDATE SET value = $2, updated_at = NOW()
