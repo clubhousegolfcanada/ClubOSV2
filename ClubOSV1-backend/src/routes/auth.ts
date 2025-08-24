@@ -456,6 +456,85 @@ router.get('/users',
   }
 );
 
+// Create a new user (admin only)
+router.post('/users',
+  authenticate,
+  roleGuard(['admin']),
+  validate([
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('name').notEmpty().withMessage('Name is required'),
+    body('role').isIn(['admin', 'operator', 'support', 'kiosk', 'customer']).withMessage('Invalid role'),
+    body('phone').optional()
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, password, name, role, phone } = req.body;
+      
+      // Check if email already exists
+      const existingUser = await db.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          error: 'User with this email already exists'
+        });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create user
+      const userId = await db.createUser({
+        email,
+        password: hashedPassword,
+        name,
+        role,
+        phone,
+        is_active: true,
+        created_by: req.user!.id
+      });
+      
+      // If it's a customer, create a customer profile
+      if (role === 'customer') {
+        await db.query(`
+          INSERT INTO customer_profiles (
+            user_id,
+            display_name,
+            cc_balance,
+            total_cc_earned,
+            total_cc_spent,
+            profile_visibility,
+            current_rank,
+            created_at,
+            updated_at
+          ) VALUES ($1, $2, 0, 0, 0, 'public', 'house', NOW(), NOW())
+        `, [userId, name]);
+      }
+      
+      logger.info('User created', {
+        userId,
+        email,
+        role,
+        createdBy: req.user!.email
+      });
+      
+      res.status(201).json({
+        success: true,
+        data: {
+          id: userId,
+          email,
+          name,
+          role
+        }
+      });
+      
+    } catch (error) {
+      logger.error('Error creating user:', error);
+      next(error);
+    }
+  }
+);
+
 // Get user count (for dashboard metrics)
 router.get('/users/count',
   authenticate,
