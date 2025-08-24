@@ -472,8 +472,12 @@ router.post('/users',
       const { email, password, name, role, phone } = req.body;
       
       // Check if email already exists
-      const existingUser = await db.getUserByEmail(email);
-      if (existingUser) {
+      const existingUserQuery = await db.query(
+        'SELECT id FROM users WHERE email = $1',
+        [email]
+      );
+      
+      if (existingUserQuery.rows.length > 0) {
         return res.status(400).json({
           success: false,
           error: 'User with this email already exists'
@@ -481,7 +485,7 @@ router.post('/users',
       }
       
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcryptjs.hash(password, 10);
       
       // Create user
       const userId = await db.createUser({
@@ -490,8 +494,7 @@ router.post('/users',
         name,
         role,
         phone,
-        is_active: true,
-        created_by: req.user!.id
+        status: 'active'
       });
       
       // If it's a customer, create a customer profile
