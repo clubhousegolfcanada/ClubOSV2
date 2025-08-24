@@ -2,6 +2,58 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.0] - 2025-08-24
+
+### Added
+- **Tournament Achievements System**
+  - Complete achievement system for operators to award badges and special recognition
+  - 34 pre-defined achievements across 5 categories:
+    - Tournament (9): Champion, Runner-up, Bronze, Hole-in-One, etc.
+    - Seasonal (5): Spring/Summer/Fall/Winter Champions, Season MVP
+    - Special (5): Club Legend, Rising Star, Sportsmanship, Grand Slam
+    - Milestone (10): Auto-awarded based on stats (challenges, win streaks, etc.)
+    - Challenge (5): David vs Goliath, Weekend Warrior, Night Owl, etc.
+  - Achievement rarity levels: Common, Rare, Epic, Legendary
+  - Points system for achievement rankings
+  
+- **Operator Achievement Management**
+  - New operator page at `/operator/achievements` for awarding achievements
+  - Single and bulk award capabilities
+  - Tournament quick-award mode for placing winners
+  - Achievement statistics dashboard
+  - Recent awards timeline
+  
+- **Achievement Display Features**
+  - Featured achievements on user profiles (up to 3)
+  - Achievement badges on leaderboards with animations
+  - Achievement counts and points in profile stats
+  - Competitor cards show achievement badges
+  - Legendary achievements have special glow and shimmer effects
+  
+- **Backend Achievement Infrastructure**
+  - New achievement service with comprehensive API
+  - Database migration 110 with full schema
+  - Auto-award system for milestone achievements
+  - Achievement tracking in customer_profiles
+  - REST API endpoints:
+    - `GET /api/achievements` - List all achievements
+    - `GET /api/achievements/user/:userId` - Get user's achievements
+    - `POST /api/achievements/award` - Award achievement (operator only)
+    - `POST /api/achievements/bulk-award` - Bulk award (operator only)
+    - `DELETE /api/achievements/revoke` - Revoke achievement (operator only)
+    - `GET /api/achievements/stats` - Achievement statistics
+    - `GET /api/achievements/leaderboard` - Achievement rankings
+  
+- **Achievement Components**
+  - `AchievementBadge` - Animated badge component with rarity effects
+  - `AchievementBadgeGroup` - Display multiple badges with overflow count
+  - `AchievementSelector` - Modal for operators to select and award achievements
+  
+### Changed
+- Leaderboard API now includes achievement data (count, points, featured badges)
+- Profile stats API includes achievement statistics
+- Friends API returns featured achievements for each friend
+
 ## [1.14.35] - 2025-08-23
 
 ### Fixed

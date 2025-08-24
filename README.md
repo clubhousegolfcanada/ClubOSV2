@@ -154,6 +154,15 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.15.0**: Tournament Achievements System
+  - Complete achievement system with 34 pre-defined achievements
+  - Operator management interface for awarding badges
+  - Achievement display on profiles, leaderboards, and compete pages
+  - Auto-award system for milestone achievements
+  - See [Tournament Achievements Plan](./TOURNAMENT_ACHIEVEMENTS_PLAN.md) for details
+- **v1.14.35**: Fixed competitors page wins/plays statistics
+- **v1.14.34**: Fixed profile page stats not updating properly
+- **v1.14.33**: Fixed all-time leaderboard rank change indicators
 - **v1.14.21**: Challenge System Flexibility & Audit
   - Added "Decide outside of the challenge" option to skip TrackMan settings
   - Made course_id optional in database for manual challenge setup
