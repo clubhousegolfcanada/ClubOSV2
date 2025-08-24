@@ -376,40 +376,6 @@ export default function CustomerProfile() {
                 {/* Achievements Section */}
                 <ProfileAchievements userId={user?.id || ''} />
 
-                {/* Tournament Achievements */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Tournament Achievements</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Tournament Wins */}
-                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                      <Trophy className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <div className="text-sm font-medium text-gray-400">Tournament Wins</div>
-                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
-                    </div>
-                    
-                    {/* Champion Title */}
-                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                      <Award className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <div className="text-sm font-medium text-gray-400">Champion</div>
-                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
-                    </div>
-                    
-                    {/* Closest to Pin */}
-                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                      <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <div className="text-sm font-medium text-gray-400">Closest to Pin</div>
-                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
-                    </div>
-                    
-                    {/* Tour Pro */}
-                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                      <Shield className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <div className="text-sm font-medium text-gray-400">Tour Pro</div>
-                      <div className="text-xl font-bold text-gray-300 mt-1">-</div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Activity Summary */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Summary</h2>
