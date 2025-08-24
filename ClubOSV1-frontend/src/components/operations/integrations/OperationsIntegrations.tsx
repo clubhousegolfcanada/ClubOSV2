@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap } from 'lucide-react';
+import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap, Brain, Sparkles } from 'lucide-react';
+import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
+import { AIFeatureCard } from '@/components/AIFeatureCard';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -24,6 +26,22 @@ interface IntegrationConfig {
   status: 'connected' | 'disconnected' | 'error';
   lastSync?: string;
   config?: any;
+}
+
+interface AIFeature {
+  id: string;
+  feature_key: string;
+  feature_name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  config: any;
+  allow_follow_up?: boolean;
+  stats?: {
+    total_uses: number;
+    successful_uses: number;
+    last_used?: string;
+  };
 }
 
 export const OperationsIntegrations: React.FC = () => {
@@ -117,13 +135,56 @@ export const OperationsIntegrations: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [testingService, setTestingService] = useState<string | null>(null);
+  const [aiFeatures, setAIFeatures] = useState<AIFeature[]>([]);
+  const [expandedSections, setExpandedSections] = useState({
+    services: true,
+    ai: false,
+    knowledge: false
+  });
   
   const { user } = useAuthState();
   const token = user?.token || localStorage.getItem('clubos_token');
 
   useEffect(() => {
     fetchConfigurations();
+    fetchAIFeatures();
   }, []);
+
+  const fetchAIFeatures = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.get(`${API_URL}/api/ai-automations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAIFeatures(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching AI features:', error);
+      setAIFeatures([]);
+    }
+  };
+
+  const handleToggleAIFeature = async (featureKey: string, enabled: boolean) => {
+    try {
+      await axios.post(
+        `${API_URL}/api/ai-automations/${featureKey}/toggle`,
+        { enabled },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`Feature ${enabled ? 'enabled' : 'disabled'}`);
+      fetchAIFeatures();
+    } catch (error) {
+      console.error('Error toggling AI feature:', error);
+      toast.error('Failed to toggle feature');
+    }
+  };
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const fetchConfigurations = async () => {
     if (!token) return;
@@ -787,6 +848,71 @@ export const OperationsIntegrations: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* AI Automations Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div 
+          className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+          onClick={() => toggleSection('ai')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
+              <span className="text-sm text-gray-500">
+                ({aiFeatures.filter(f => f.enabled).length}/{aiFeatures.length} active)
+              </span>
+            </div>
+            {expandedSections.ai ? 
+              <Settings className="h-5 w-5 text-gray-500 animate-spin-slow" /> : 
+              <Settings className="h-5 w-5 text-gray-500" />
+            }
+          </div>
+        </div>
+        
+        {expandedSections.ai && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {aiFeatures.map((feature) => (
+                <AIFeatureCard
+                  key={feature.id}
+                  feature={feature}
+                  onToggle={() => handleToggleAIFeature(feature.feature_key, !feature.enabled)}
+                  onUpdate={fetchAIFeatures}
+                />
+              ))}
+            </div>
+            {aiFeatures.length === 0 && (
+              <p className="text-gray-500 text-center py-8">No AI features configured</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Knowledge Management Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div 
+          className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+          onClick={() => toggleSection('knowledge')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Brain className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-gray-900">Knowledge Management</h2>
+            </div>
+            {expandedSections.knowledge ? 
+              <Settings className="h-5 w-5 text-gray-500 animate-spin-slow" /> : 
+              <Settings className="h-5 w-5 text-gray-500" />
+            }
+          </div>
+        </div>
+        
+        {expandedSections.knowledge && (
+          <div className="p-6">
+            <KnowledgeRouterPanel />
+          </div>
+        )}
       </div>
     </div>
   );
