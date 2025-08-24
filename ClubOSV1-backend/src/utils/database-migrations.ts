@@ -5,17 +5,13 @@ export async function runMigrations() {
   try {
     logger.info('Running database migrations...');
     
-    // Migration 1: Add last_login column to Users table
+    // Migration 1: Add last_login column to users table (formerly Users)
     try {
-      await query(`
-        ALTER TABLE "Users" 
-        ADD COLUMN IF NOT EXISTS last_login TIMESTAMP
-      `);
-      logger.info('✅ Migration: last_login column added/verified');
+      // Skip this migration - Users table has been consolidated into users
+      logger.info('✅ Migration: Skipped - Users table consolidated into users');
     } catch (error: any) {
-      if (!error.message.includes('already exists')) {
-        logger.error('Failed to add last_login column:', error);
-      }
+      // Table doesn't exist anymore, which is expected
+      logger.info('✅ Migration: Users table migration skipped (table consolidated)');
     }
     
     // Migration 2: Rename Users table columns to camelCase

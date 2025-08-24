@@ -344,7 +344,7 @@ router.get('/activity', authenticate, async (req, res) => {
         b.category
       FROM user_badges ub
       JOIN badges b ON b.key = ub.badge_key
-      JOIN "Users" u ON u.id = ub.user_id
+      JOIN users u ON u.id = ub.user_id
       ORDER BY ub.earned_at DESC
       LIMIT $1
     `;

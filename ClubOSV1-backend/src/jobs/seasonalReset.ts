@@ -269,7 +269,7 @@ class SeasonalResetJob {
     
     const activeUsers = await client.query(
       `SELECT DISTINCT u.id
-       FROM "Users" u
+       FROM users u
        JOIN customer_profiles cp ON cp.user_id = u.id
        WHERE u.role = 'customer'
        AND u.is_active = true`
@@ -318,7 +318,7 @@ class SeasonalResetJob {
       // Get all participants from ended season
       const participants = await pool.query(
         `SELECT DISTINCT u.id, u.email, u.name, ra.rank_tier, ra.cc_earned
-         FROM "Users" u
+         FROM users u
          JOIN rank_assignments ra ON ra.user_id = u.id
          WHERE ra.season_id = $1`,
         [oldSeason.id]

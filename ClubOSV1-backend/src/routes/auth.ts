@@ -598,7 +598,7 @@ router.put('/users/:userId/approve',
       
       // Update user status to active
       const result = await db.query(
-        `UPDATE "Users" SET status = 'active', "updatedAt" = CURRENT_TIMESTAMP 
+        `UPDATE users SET status = 'active', updated_at = CURRENT_TIMESTAMP 
          WHERE id = $1 AND status = 'pending_approval' 
          RETURNING id, email, name, status`,
         [userId]
@@ -637,7 +637,7 @@ router.put('/users/:userId/reject',
       
       // Update user status to rejected
       const result = await db.query(
-        `UPDATE "Users" SET status = 'rejected', "updatedAt" = CURRENT_TIMESTAMP 
+        `UPDATE users SET status = 'rejected', updated_at = CURRENT_TIMESTAMP 
          WHERE id = $1 AND status = 'pending_approval' 
          RETURNING id, email, name, status`,
         [userId]
@@ -671,7 +671,7 @@ router.get('/users/pending',
     try {
       const result = await db.query(
         `SELECT id, email, name, phone, role, status, "createdAt" as created_at, signup_date
-         FROM "Users" 
+         FROM users 
          WHERE status = 'pending_approval' 
          ORDER BY "createdAt" DESC`
       );

@@ -2,18 +2,21 @@
 export const createTablesSQL = {
   // Existing tables (will skip if exists)
   users: `
-    CREATE TABLE IF NOT EXISTS "Users" (
+    CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       email VARCHAR(255) UNIQUE NOT NULL,
       password VARCHAR(255) NOT NULL,
       name VARCHAR(255),
-      role VARCHAR(50) NOT NULL DEFAULT 'support',
+      role VARCHAR(50) NOT NULL DEFAULT 'customer',
       phone VARCHAR(50),
-      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      "lastLogin" TIMESTAMP,
-      "isActive" BOOLEAN DEFAULT true,
-      CONSTRAINT valid_role CHECK (role IN ('admin', 'operator', 'support', 'kiosk'))
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_login TIMESTAMP,
+      is_active BOOLEAN DEFAULT true,
+      status VARCHAR(50) DEFAULT 'active',
+      signup_metadata JSONB,
+      signup_date TIMESTAMP,
+      CONSTRAINT valid_role CHECK (role IN ('admin', 'operator', 'support', 'kiosk', 'customer'))
     );
   `,
   
@@ -152,7 +155,7 @@ export const createTablesSQL = {
 // Index creation SQL
 export const createIndexesSQL = [
   // User indexes
-  'CREATE INDEX IF NOT EXISTS idx_users_email ON "Users"(email);',
+  'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);',
   
   // Feedback indexes
   'CREATE INDEX IF NOT EXISTS idx_feedback_is_useful ON feedback(is_useful);',

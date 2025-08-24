@@ -59,7 +59,7 @@ class RankCalculationService {
             ), 0) as season_cc_earned,
             COUNT(DISTINCT c.id) FILTER (WHERE c.winner_user_id = u.id) as season_wins,
             COUNT(DISTINCT c.id) FILTER (WHERE (c.creator_id = u.id OR c.acceptor_id = u.id)) as season_challenges
-          FROM "Users" u
+          FROM users u
           LEFT JOIN cc_transactions t ON t.user_id = u.id 
             AND t.created_at >= (SELECT start_date FROM seasons WHERE id = $1)
           LEFT JOIN challenges c ON (c.creator_id = u.id OR c.acceptor_id = u.id)
@@ -335,7 +335,7 @@ class RankCalculationService {
                 ELSE 0 
               END
             ), 0) as season_cc_earned
-          FROM "Users" u
+          FROM users u
           LEFT JOIN cc_transactions t ON t.user_id = u.id 
             AND t.created_at >= (SELECT start_date FROM seasons WHERE id = $1)
           WHERE u.role = 'customer'
