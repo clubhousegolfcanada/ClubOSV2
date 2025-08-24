@@ -52,6 +52,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         cp.profile_visibility as friend_visibility,
         cp.current_rank as friend_rank,
         cp.cc_balance as friend_cc_balance,
+        cp.total_challenges_won as friend_challenges_won,
+        cp.total_challenges_played as friend_challenges_played,
+        cp.challenge_win_rate as friend_win_rate,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
           WHERE cm.user_id = u.id 
@@ -109,10 +112,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         last_active: row.friend_last_login,
         is_friend: true, // They are friends if in this list
         has_pending_request: false, // Not pending if accepted
-        // Default challenge stats
-        total_challenges_won: 0,
-        total_challenges_played: 0,
-        win_rate: 0,
+        // Actual challenge stats from database
+        total_challenges_won: parseInt(row.friend_challenges_won || 0),
+        total_challenges_played: parseInt(row.friend_challenges_played || 0),
+        win_rate: parseFloat(row.friend_win_rate || 0),
         // Wager stats if requested
         ...(include_stats && !isPrivate ? {
           wagers_together: row.clubcoin_wagers_count || 0,

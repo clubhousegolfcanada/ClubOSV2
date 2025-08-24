@@ -218,13 +218,11 @@ export default function Compete() {
         const competitorData = response.data.data.friends.map((friend: any) => ({
           ...friend,
           rank_tier: friend.rank_tier || 'House',
-          cc_balance: friend.clubcoin_balance || 0,
-          total_challenges_won: friend.wagers_won || 0,
-          total_challenges_played: friend.wagers_together || 0,
-          win_rate: friend.wagers_together > 0 
-            ? Math.round((friend.wagers_won / friend.wagers_together) * 100) 
-            : 0,
-          has_champion_marker: false,
+          cc_balance: friend.clubcoin_balance || friend.cc_balance || 0,
+          total_challenges_won: friend.total_challenges_won || 0,
+          total_challenges_played: friend.total_challenges_played || 0,
+          win_rate: friend.win_rate ? Math.round(friend.win_rate * 100) : 0,
+          has_champion_marker: friend.has_champion_marker || false,
           is_friend: true,
           has_pending_request: false
         }));

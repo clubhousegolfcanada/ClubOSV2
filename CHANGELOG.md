@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.35] - 2025-08-23
+
+### Fixed
+- **Competitors Page Stats**
+  - Fixed wins/plays display on competitors page under compete
+  - Friends API now returns actual challenge stats from database
+  - Shows correct total_challenges_won and total_challenges_played
+  - Win rate calculated from actual challenge data, not placeholder values
+  - Frontend now properly maps challenge stats instead of wager stats
+
 ## [1.14.34] - 2025-08-23
 
 ### Fixed
