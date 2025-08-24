@@ -1,4 +1,4 @@
-import { query } from '../database';
+import pool from '../utils/db';
 
 interface Achievement {
   id: string;
@@ -71,7 +71,7 @@ class AchievementService {
       ) as achievement_id
     `;
     
-    const result = await query(sql, [
+    const result = await pool.query(sql, [
       userId, name, description, icon, color, backgroundColor,
       category, rarity, points, reason, awardedBy, tournamentId,
       glowColor, animationType
@@ -98,7 +98,7 @@ class AchievementService {
     
     sql += ' ORDER BY display_order, category, rarity DESC, name';
     
-    const result = await query(sql, params);
+    const result = await pool.query(sql, params);
     return result.rows;
   }
 
@@ -143,7 +143,7 @@ class AchievementService {
         ua.awarded_at DESC
     `;
     
-    const result = await query(sql, [userId]);
+    const result = await pool.query(sql, [userId]);
     return result.rows;
   }
 
@@ -152,7 +152,7 @@ class AchievementService {
     const { userId, achievementId, awardedBy, reason, tournamentId, metadata } = params;
     
     // Check if achievement exists and is active
-    const achievementCheck = await query(
+    const achievementCheck = await pool.query(
       'SELECT id, name FROM achievements WHERE id = $1 AND is_active = true',
       [achievementId]
     );
@@ -162,7 +162,7 @@ class AchievementService {
     }
     
     // Check if already awarded (for the same tournament if applicable)
-    const existingCheck = await query(
+    const existingCheck = await pool.query(
       `SELECT id FROM user_achievements 
        WHERE user_id = $1 AND achievement_id = $2 
        AND ($3::VARCHAR IS NULL OR tournament_id = $3)`,
@@ -182,13 +182,13 @@ class AchievementService {
       RETURNING *
     `;
     
-    const result = await query(sql, [
+    const result = await pool.query(sql, [
       userId, achievementId, awardedBy, reason, 
       tournamentId, metadata || {}
     ]);
     
     // Update latest achievement timestamp in customer_profiles
-    await query(
+    await pool.query(
       `UPDATE customer_profiles 
        SET latest_achievement_at = NOW()
        WHERE user_id = $1`,
@@ -209,7 +209,7 @@ class AchievementService {
       AND ($3::VARCHAR IS NULL OR tournament_id = $3)
     `;
     
-    await query(sql, [userId, achievementId, tournamentId]);
+    await pool.query(sql, [userId, achievementId, tournamentId]);
     
     // Update rarest achievement after deletion
     await this.updateRarestAchievement(userId);
@@ -236,7 +236,7 @@ class AchievementService {
       WHERE user_id = $1
     `;
     
-    await query(sql, [userId]);
+    await pool.query(sql, [userId]);
   }
 
   // Get achievement statistics
@@ -270,8 +270,8 @@ class AchievementService {
     `;
     
     const [statsResult, recentResult] = await Promise.all([
-      query(sql),
-      query(recentAwardsSql)
+      pool.query(sql),
+      pool.query(recentAwardsSql)
     ]);
     
     return {
@@ -295,7 +295,7 @@ class AchievementService {
   // Check and award milestone achievements
   async checkMilestoneAchievements(userId: string): Promise<void> {
     const sql = `SELECT check_milestone_achievements($1)`;
-    await query(sql, [userId]);
+    await pool.query(sql, [userId]);
   }
 
   // Get user's featured achievements
@@ -311,14 +311,14 @@ class AchievementService {
       LIMIT 3
     `;
     
-    const result = await query(sql, [userId]);
+    const result = await pool.query(sql, [userId]);
     return result.rows;
   }
 
   // Set featured achievements for a user
   async setFeaturedAchievements(userId: string, achievementIds: string[]): Promise<void> {
     // First, unfeatured all
-    await query(
+    await pool.query(
       'UPDATE user_achievements SET is_featured = false WHERE user_id = $1',
       [userId]
     );
@@ -326,7 +326,7 @@ class AchievementService {
     // Then set featured for selected ones (max 3)
     const featuredIds = achievementIds.slice(0, 3);
     for (let i = 0; i < featuredIds.length; i++) {
-      await query(
+      await pool.query(
         `UPDATE user_achievements 
          SET is_featured = true, display_priority = $3
          WHERE user_id = $1 AND achievement_id = $2`,
@@ -335,7 +335,7 @@ class AchievementService {
     }
     
     // Update preferences
-    await query(
+    await pool.query(
       `INSERT INTO achievement_preferences (user_id, featured_achievements)
        VALUES ($1, $2)
        ON CONFLICT (user_id) 
@@ -366,7 +366,7 @@ class AchievementService {
       LIMIT $1
     `;
     
-    const result = await query(sql, [limit]);
+    const result = await pool.query(sql, [limit]);
     return result.rows;
   }
 }

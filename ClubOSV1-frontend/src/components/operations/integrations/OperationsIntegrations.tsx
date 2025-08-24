@@ -331,6 +331,42 @@ export const OperationsIntegrations: React.FC = () => {
     }
   };
 
+  const handleSavePushConfig = async () => {
+    setLoading(true);
+    try {
+      await axios.put(
+        `${API_URL}/api/integrations/push/config`,
+        pushConfig,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      toast.success('Push notification configuration saved');
+    } catch (error) {
+      console.error('Error saving Push config:', error);
+      toast.error('Failed to save push notification configuration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfigureService = (service: string) => {
+    // Show information about how to configure each service
+    switch(service) {
+      case 'HubSpot':
+        toast.info('HubSpot configuration: Add HUBSPOT_API_KEY to Railway environment variables');
+        break;
+      case 'NinjaOne':
+        toast.info('NinjaOne configuration: Add NINJAONE_CLIENT_ID and NINJAONE_CLIENT_SECRET to Railway');
+        break;
+      case 'UniFi':
+        toast.info('UniFi configuration: Add DARTMOUTH_ACCESS_TOKEN and BEDFORD_ACCESS_TOKEN to Railway');
+        break;
+      default:
+        toast.info(`${service} configuration coming soon`);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'connected':
@@ -644,6 +680,14 @@ export const OperationsIntegrations: React.FC = () => {
               <div className="text-xs text-gray-500">
                 Quiet hours: {pushConfig.quiet_hours_start} - {pushConfig.quiet_hours_end}
               </div>
+
+              <button
+                onClick={handleSavePushConfig}
+                disabled={loading}
+                className="mt-3 w-full px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : 'Save Configuration'}
+              </button>
             </div>
           </div>
         </div>

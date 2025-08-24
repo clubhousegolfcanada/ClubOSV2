@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { achievementService } from '../services/achievementService';
 import { authenticate } from '../middleware/auth';
-import { checkOperatorRole } from '../middleware/checkOperatorRole';
+import { roleGuard } from '../middleware/roleGuard';
+import { UserRole } from '../types';
 
 const router = Router();
 
@@ -42,7 +43,7 @@ router.get('/user/:userId/featured', authenticate, async (req, res) => {
 });
 
 // Create and award custom achievement (operator only)
-router.post('/create-custom', authenticate, checkOperatorRole, async (req, res) => {
+router.post('/create-custom', authenticate, roleGuard([UserRole.OPERATOR, UserRole.ADMIN]), async (req, res) => {
   try {
     const {
       userId, name, description, icon, color, backgroundColor,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { ProfileAchievements } from '@/components/customer/ProfileAchievements';
+import { TierBadge, TierProgressBar, calculateTierFromCC, getNextTier } from '@/components/TierBadge';
 import Head from 'next/head';
 import { 
   Trophy, User, Mail, Phone, Save, ChevronRight,
@@ -27,6 +28,7 @@ interface ProfileData {
   memberSince?: string;
   handicap?: number;
   ccBalance: number;
+  totalCCEarned: number;
   totalChallenges: number;
   totalWins: number;
   winRate: number;
@@ -127,6 +129,7 @@ export default function CustomerProfile() {
             : 'Unknown',
           handicap: stats.profile.handicap,
           ccBalance: stats.clubcoins.balance,
+          totalCCEarned: stats.clubcoins.totalEarned || stats.clubcoins.balance || 0,
           totalChallenges: stats.challenges.totalPlayed,
           totalWins: stats.challenges.totalWon,
           winRate: stats.challenges.winRate,
@@ -304,7 +307,15 @@ export default function CustomerProfile() {
                     </span>
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                      {profileData && (
+                        <TierBadge 
+                          tier={calculateTierFromCC(profileData.totalCCEarned)} 
+                          size="md"
+                        />
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">{user.email}</p>
                     {profileData?.location && (
                       <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
@@ -372,6 +383,33 @@ export default function CustomerProfile() {
                     </div>
                   ))}
                 </div>
+
+                {/* Tier Progression */}
+                {profileData && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Tier Progression</h2>
+                    <TierProgressBar
+                      currentCC={profileData.totalCCEarned}
+                      tier={calculateTierFromCC(profileData.totalCCEarned)}
+                      nextTier={getNextTier(calculateTierFromCC(profileData.totalCCEarned)) || undefined}
+                      className="w-full"
+                    />
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-[#0B3D3A]">
+                          {profileData.totalCCEarned.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Total CC Earned</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-[#0B3D3A]">
+                          {profileData.totalBookings || 0}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Total Bookings</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Achievements Section */}
                 <ProfileAchievements userId={user?.id || ''} />

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Star, Target, Crown, Award, X, Sparkles, Palette, Save } from 'lucide-react';
+import { 
+  Trophy, Medal, Award, Crown, Shield, Star,
+  Target, Zap, Flame, Diamond, Gem, X, 
+  Save, Palette, Sparkles
+} from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { AchievementBadge } from './AchievementBadge';
@@ -16,35 +20,49 @@ interface CustomAchievementCreatorProps {
   onSuccess?: () => void;
 }
 
+// Professional color schemes for real achievements
 const presetColors = [
   { name: 'Gold', bg: '#FEF3C7', color: '#F59E0B', glow: 'rgba(245,158,11,0.5)' },
-  { name: 'Purple', bg: '#EDE9FE', color: '#8B5CF6', glow: 'rgba(139,92,246,0.5)' },
-  { name: 'Blue', bg: '#DBEAFE', color: '#3B82F6', glow: 'rgba(59,130,246,0.5)' },
-  { name: 'Green', bg: '#D1FAE5', color: '#059669', glow: 'rgba(5,150,105,0.5)' },
-  { name: 'Red', bg: '#FEE2E2', color: '#DC2626', glow: 'rgba(220,38,38,0.5)' },
-  { name: 'Pink', bg: '#FCE7F3', color: '#EC4899', glow: 'rgba(236,72,153,0.5)' },
-  { name: 'Amber', bg: '#FEF3C7', color: '#D97706', glow: 'rgba(217,119,6,0.5)' },
-  { name: 'Teal', bg: '#CCFBF1', color: '#0D9488', glow: 'rgba(13,148,136,0.5)' },
-  { name: 'Indigo', bg: '#E0E7FF', color: '#6366F1', glow: 'rgba(99,102,241,0.5)' },
-  { name: 'Rose', bg: '#FFE4E6', color: '#F43F5E', glow: 'rgba(244,63,94,0.5)' }
+  { name: 'Silver', bg: '#F3F4F6', color: '#6B7280', glow: 'rgba(107,114,128,0.5)' },
+  { name: 'Bronze', bg: '#FED7AA', color: '#C2410C', glow: 'rgba(194,65,12,0.5)' },
+  { name: 'Platinum', bg: '#E5E7EB', color: '#374151', glow: 'rgba(55,65,81,0.5)' },
+  { name: 'Diamond', bg: '#DBEAFE', color: '#3B82F6', glow: 'rgba(59,130,246,0.5)' },
+  { name: 'Emerald', bg: '#D1FAE5', color: '#059669', glow: 'rgba(5,150,105,0.5)' },
+  { name: 'Ruby', bg: '#FEE2E2', color: '#DC2626', glow: 'rgba(220,38,38,0.5)' },
+  { name: 'Obsidian', bg: '#1F2937', color: '#F9FAFB', glow: 'rgba(31,41,55,0.8)' },
+  { name: 'Champion', bg: '#8B5CF6', color: '#FFFFFF', glow: 'rgba(139,92,246,0.7)' },
+  { name: 'Master', bg: '#0B3D3A', color: '#FFFFFF', glow: 'rgba(11,61,58,0.7)' }
 ];
 
-const iconOptions = [
-  '🏆', '⭐', '🎯', '👑', '🥇', '🥈', '🥉', '💎', '🔥', '⚡',
-  '🎖️', '🏅', '🌟', '✨', '💫', '🌠', '🎪', '🎨', '🎭', '🎬',
-  '⛳', '🏌️', '🏌️‍♂️', '🏌️‍♀️', '🔴', '🟢', '🔵', '🟡', '🟣', '🟠',
-  '📌', '🎯', '🎪', '🎨', '🎭', '🎬', '🎮', '🎲', '🎰', '🃏'
+// Professional icon options - actual trophy/medal icons
+const iconTypes = [
+  { value: 'trophy', label: 'Trophy', Icon: Trophy },
+  { value: 'medal', label: 'Medal', Icon: Medal },
+  { value: 'award', label: 'Award', Icon: Award },
+  { value: 'crown', label: 'Crown', Icon: Crown },
+  { value: 'shield', label: 'Shield', Icon: Shield },
+  { value: 'star', label: 'Star', Icon: Star },
+  { value: 'target', label: 'Target', Icon: Target },
+  { value: 'zap', label: 'Lightning', Icon: Zap },
+  { value: 'flame', label: 'Flame', Icon: Flame },
+  { value: 'diamond', label: 'Diamond', Icon: Diamond },
+  { value: 'gem', label: 'Gem', Icon: Gem }
 ];
 
-const animationTypes = [
-  { value: 'none', label: 'None' },
-  { value: 'pulse', label: 'Pulse' },
-  { value: 'spin', label: 'Spin' },
-  { value: 'bounce', label: 'Bounce' },
-  { value: 'shake', label: 'Shake' },
-  { value: 'float', label: 'Float' },
-  { value: 'glow', label: 'Glow' },
-  { value: 'sparkle', label: 'Sparkle' }
+// Achievement categories - real competitive categories
+const achievementCategories = [
+  { value: 'tournament_champion', label: 'Tournament Champion' },
+  { value: 'tournament_finalist', label: 'Tournament Finalist' },
+  { value: 'tournament_semifinalist', label: 'Tournament Semi-Finalist' },
+  { value: 'championship_winner', label: 'Championship Winner' },
+  { value: 'ctp_winner', label: 'Closest to Pin Winner' },
+  { value: 'longest_drive', label: 'Longest Drive' },
+  { value: 'best_score', label: 'Best Score' },
+  { value: 'season_champion', label: 'Season Champion' },
+  { value: 'special_recognition', label: 'Special Recognition' },
+  { value: 'founding_member', label: 'Founding Member' },
+  { value: 'vip_member', label: 'VIP Member' },
+  { value: 'custom', label: 'Custom Achievement' }
 ];
 
 export function CustomAchievementCreator({
@@ -55,51 +73,58 @@ export function CustomAchievementCreator({
   userToken,
   onSuccess
 }: CustomAchievementCreatorProps) {
-  const [activeTab, setActiveTab] = useState('basic');
+  const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
 
-  // Form state
-  const [name, setName] = useState('');
+  // Form state - focused on real achievement details
+  const [achievementName, setAchievementName] = useState('');
+  const [achievementTitle, setAchievementTitle] = useState(''); // e.g., "2024 Spring Tournament"
+  const [category, setCategory] = useState('tournament_champion');
+  const [placement, setPlacement] = useState(''); // e.g., "1st Place", "Runner Up"
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('special');
-  const [rarity, setRarity] = useState('epic');
-  const [points, setPoints] = useState(100);
-  const [icon, setIcon] = useState('🏆');
-  const [color, setColor] = useState('#F59E0B');
-  const [backgroundColor, setBackgroundColor] = useState('#FEF3C7');
-  const [glowColor, setGlowColor] = useState('rgba(245,158,11,0.5)');
-  const [animationType, setAnimationType] = useState('pulse');
-  const [message, setMessage] = useState('');
-
-  const handleColorPreset = (preset: typeof presetColors[0]) => {
-    setColor(preset.color);
-    setBackgroundColor(preset.bg);
-    setGlowColor(preset.glow);
-  };
+  const [personalMessage, setPersonalMessage] = useState('');
+  
+  // Visual customization
+  const [selectedIcon, setSelectedIcon] = useState('trophy');
+  const [selectedColor, setSelectedColor] = useState(presetColors[0]);
+  const [rarity, setRarity] = useState('legendary');
 
   const handleCreate = async () => {
-    if (!name || !icon) {
-      toast.error('Please provide a name and icon for the achievement');
+    if (!achievementName || !achievementTitle) {
+      toast.error('Please provide the achievement name and title');
       return;
     }
 
     setLoading(true);
     try {
+      // Create the full achievement name with placement if provided
+      const fullName = placement 
+        ? `${placement} - ${achievementTitle}`
+        : achievementTitle;
+
       const response = await axios.post(
         `${API_URL}/api/achievements/create-custom`,
         {
           user_id: userId,
-          name,
-          description,
-          category,
+          name: fullName,
+          description: description || `Awarded for ${achievementName}`,
+          category: category.split('_')[0], // Extract base category
           rarity,
-          points,
-          icon,
-          color,
-          backgroundColor,
-          glowColor,
-          animationType,
-          message
+          points: rarity === 'legendary' ? 1000 : rarity === 'epic' ? 500 : 250,
+          icon: selectedIcon, // We'll store the icon type, not emoji
+          color: selectedColor.color,
+          backgroundColor: selectedColor.bg,
+          glowColor: selectedColor.glow,
+          animationType: 'none', // Professional - no silly animations
+          message: personalMessage,
+          metadata: {
+            achievementName,
+            achievementTitle,
+            placement,
+            date,
+            awardedBy: 'Operator'
+          }
         },
         {
           headers: { Authorization: `Bearer ${userToken}` }
@@ -107,15 +132,16 @@ export function CustomAchievementCreator({
       );
 
       if (response.data.success) {
-        toast.success(`Achievement awarded to ${userName}!`);
+        toast.success(`Achievement "${fullName}" awarded to ${userName}`);
         onSuccess?.();
         onClose();
         // Reset form
-        setName('');
+        setAchievementName('');
+        setAchievementTitle('');
+        setPlacement('');
         setDescription('');
-        setMessage('');
-        setPoints(100);
-        setActiveTab('basic');
+        setPersonalMessage('');
+        setActiveTab('details');
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to create achievement');
@@ -126,6 +152,8 @@ export function CustomAchievementCreator({
 
   if (!isOpen) return null;
 
+  const SelectedIconComponent = iconTypes.find(i => i.value === selectedIcon)?.Icon || Trophy;
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -133,11 +161,16 @@ export function CustomAchievementCreator({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
         >
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Create Custom Achievement</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Award Achievement</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Recognize {userName}'s accomplishment
+                </p>
+              </div>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -146,158 +179,195 @@ export function CustomAchievementCreator({
               </button>
             </div>
 
-            <p className="text-sm text-gray-600 mb-6">
-              Award a unique achievement to <span className="font-semibold">{userName}</span>
-            </p>
-
             {/* Tab Navigation */}
             <div className="flex gap-2 mb-6 border-b border-gray-200">
-              {['basic', 'appearance', 'effects'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 font-medium capitalize transition-colors ${
-                    activeTab === tab
-                      ? 'text-[#0B3D3A] border-b-2 border-[#0B3D3A]'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab === 'basic' && <Trophy className="w-4 h-4 inline mr-2" />}
-                  {tab === 'appearance' && <Palette className="w-4 h-4 inline mr-2" />}
-                  {tab === 'effects' && <Sparkles className="w-4 h-4 inline mr-2" />}
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'details'
+                    ? 'text-[#0B3D3A] border-b-2 border-[#0B3D3A]'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Achievement Details
+              </button>
+              <button
+                onClick={() => setActiveTab('appearance')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'appearance'
+                    ? 'text-[#0B3D3A] border-b-2 border-[#0B3D3A]'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Palette className="w-4 h-4 inline mr-2" />
+                Appearance
+              </button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Form Fields */}
               <div>
-                {activeTab === 'basic' && (
+                {activeTab === 'details' && (
                   <div className="space-y-4">
+                    {/* Achievement Category */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Achievement Type *
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                      >
+                        {achievementCategories.map(cat => (
+                          <option key={cat.value} value={cat.value}>{cat.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Achievement Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Achievement Name *
                       </label>
                       <input
                         type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g., Tournament Champion 2024"
+                        value={achievementName}
+                        onChange={(e) => setAchievementName(e.target.value)}
+                        placeholder="e.g., Spring Championship, Monthly Tournament"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
                       />
                     </div>
 
+                    {/* Title/Event */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description
+                        Event/Competition Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={achievementTitle}
+                        onChange={(e) => setAchievementTitle(e.target.value)}
+                        placeholder="e.g., 2024 Spring Championship"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                      />
+                    </div>
+
+                    {/* Placement */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Placement/Result
+                      </label>
+                      <input
+                        type="text"
+                        value={placement}
+                        onChange={(e) => setPlacement(e.target.value)}
+                        placeholder="e.g., 1st Place, Champion, Winner"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                      />
+                    </div>
+
+                    {/* Date */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date Achieved
+                      </label>
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Achievement Description
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Describe what this achievement represents..."
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Personal Message
-                      </label>
-                      <textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Add a personal congratulations message..."
+                        placeholder="Details about this achievement..."
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Category
-                        </label>
-                        <select
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
-                        >
-                          <option value="tournament">Tournament</option>
-                          <option value="championship">Championship</option>
-                          <option value="ctp">Closest to Pin</option>
-                          <option value="special">Special</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Rarity
-                        </label>
-                        <select
-                          value={rarity}
-                          onChange={(e) => setRarity(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
-                        >
-                          <option value="common">Common</option>
-                          <option value="rare">Rare</option>
-                          <option value="epic">Epic</option>
-                          <option value="legendary">Legendary</option>
-                        </select>
-                      </div>
-                    </div>
-
+                    {/* Personal Message */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Points: {points}
+                        Personal Congratulations
                       </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1000"
-                        step="50"
-                        value={points}
-                        onChange={(e) => setPoints(Number(e.target.value))}
-                        className="w-full"
+                      <textarea
+                        value={personalMessage}
+                        onChange={(e) => setPersonalMessage(e.target.value)}
+                        placeholder="Congratulations message to the winner..."
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
                       />
+                    </div>
+
+                    {/* Rarity/Significance */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Significance
+                      </label>
+                      <select
+                        value={rarity}
+                        onChange={(e) => setRarity(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                      >
+                        <option value="legendary">Legendary (Major Championship)</option>
+                        <option value="epic">Epic (Tournament Win)</option>
+                        <option value="rare">Rare (Special Achievement)</option>
+                      </select>
                     </div>
                   </div>
                 )}
 
                 {activeTab === 'appearance' && (
                   <div className="space-y-4">
+                    {/* Icon Selection */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Icon
+                        Trophy Style
                       </label>
-                      <div className="grid grid-cols-10 gap-2">
-                        {iconOptions.map((iconOption) => (
+                      <div className="grid grid-cols-4 gap-2">
+                        {iconTypes.map((iconType) => (
                           <button
-                            key={iconOption}
-                            onClick={() => setIcon(iconOption)}
-                            className={`p-2 text-xl rounded-lg transition-all ${
-                              icon === iconOption
-                                ? 'bg-[#0B3D3A] scale-110'
-                                : 'bg-gray-100 hover:bg-gray-200'
+                            key={iconType.value}
+                            onClick={() => setSelectedIcon(iconType.value)}
+                            className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
+                              selectedIcon === iconType.value
+                                ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
+                                : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            {iconOption}
+                            <iconType.Icon className={`w-6 h-6 ${
+                              selectedIcon === iconType.value ? 'text-[#0B3D3A]' : 'text-gray-600'
+                            }`} />
+                            <span className="text-xs">{iconType.label}</span>
                           </button>
                         ))}
                       </div>
                     </div>
 
+                    {/* Color Selection */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Color Preset
+                        Achievement Color
                       </label>
                       <div className="grid grid-cols-5 gap-2">
                         {presetColors.map((preset) => (
                           <button
                             key={preset.name}
-                            onClick={() => handleColorPreset(preset)}
-                            className="p-2 rounded-lg border-2 hover:scale-105 transition-transform"
+                            onClick={() => setSelectedColor(preset)}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              selectedColor.name === preset.name
+                                ? 'ring-2 ring-[#0B3D3A] ring-offset-2'
+                                : ''
+                            }`}
                             style={{
                               backgroundColor: preset.bg,
                               borderColor: preset.color,
@@ -309,118 +379,58 @@ export function CustomAchievementCreator({
                         ))}
                       </div>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Custom Colors
-                      </label>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={color}
-                            onChange={(e) => setColor(e.target.value)}
-                            className="w-12 h-12 rounded border border-gray-300"
-                          />
-                          <span className="text-sm text-gray-600">Icon Color</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={backgroundColor}
-                            onChange={(e) => setBackgroundColor(e.target.value)}
-                            className="w-12 h-12 rounded border border-gray-300"
-                          />
-                          <span className="text-sm text-gray-600">Background</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'effects' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Animation
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {animationTypes.map((anim) => (
-                          <button
-                            key={anim.value}
-                            onClick={() => setAnimationType(anim.value)}
-                            className={`px-3 py-2 rounded-lg border transition-all ${
-                              animationType === anim.value
-                                ? 'bg-[#0B3D3A] text-white border-[#0B3D3A]'
-                                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                            }`}
-                          >
-                            {anim.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Glow Effect
-                      </label>
-                      <input
-                        type="text"
-                        value={glowColor}
-                        onChange={(e) => setGlowColor(e.target.value)}
-                        placeholder="e.g., rgba(245,158,11,0.5)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Use RGBA format for transparency
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Live Preview */}
+              {/* Preview */}
               <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Live Preview</h3>
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Preview</h3>
                 
-                <div className="flex flex-col items-center justify-center min-h-[300px] space-y-6">
-                  <AchievementBadge
-                    icon={icon}
-                    name={name || 'Achievement Name'}
-                    description={description}
-                    rarity={rarity}
-                    size="xl"
-                    animate={true}
-                    color={color}
-                    backgroundColor={backgroundColor}
-                    glowColor={glowColor}
-                    animationType={animationType}
-                  />
+                <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+                  {/* Achievement Badge Preview */}
+                  <div 
+                    className="relative w-32 h-32 rounded-full flex items-center justify-center shadow-lg"
+                    style={{
+                      backgroundColor: selectedColor.bg,
+                      boxShadow: `0 0 30px ${selectedColor.glow}`
+                    }}
+                  >
+                    <SelectedIconComponent 
+                      className="w-16 h-16"
+                      style={{ color: selectedColor.color }}
+                    />
+                  </div>
 
+                  {/* Achievement Text */}
                   <div className="text-center space-y-2">
-                    <h4 className="font-semibold text-gray-900">{name || 'Achievement Name'}</h4>
-                    {description && (
-                      <p className="text-sm text-gray-600">{description}</p>
+                    <h4 className="text-xl font-bold text-gray-900">
+                      {placement && `${placement} - `}
+                      {achievementTitle || 'Achievement Title'}
+                    </h4>
+                    {achievementName && (
+                      <p className="text-sm text-gray-600">{achievementName}</p>
                     )}
-                    <div className="flex items-center justify-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        rarity === 'common' ? 'bg-gray-500' :
-                        rarity === 'rare' ? 'bg-blue-500' :
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
+                        rarity === 'legendary' ? 'bg-yellow-500' :
                         rarity === 'epic' ? 'bg-purple-500' :
-                        'bg-yellow-500'
-                      } text-white`}>
-                        {rarity}
+                        'bg-blue-500'
+                      }`}>
+                        {rarity === 'legendary' ? 'Legendary' :
+                         rarity === 'epic' ? 'Epic' : 'Rare'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {points} points
+                        {date}
                       </span>
                     </div>
                   </div>
 
-                  {message && (
-                    <div className="bg-white rounded-lg p-3 border border-gray-200 max-w-xs">
-                      <p className="text-sm text-gray-700 italic">"{message}"</p>
+                  {/* Personal Message Preview */}
+                  {personalMessage && (
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 max-w-sm">
+                      <p className="text-sm text-gray-700 italic">"{personalMessage}"</p>
+                      <p className="text-xs text-gray-500 mt-2 text-right">- Clubhouse Golf</p>
                     </div>
                   )}
                 </div>
@@ -437,7 +447,7 @@ export function CustomAchievementCreator({
               </button>
               <button
                 onClick={handleCreate}
-                disabled={loading || !name || !icon}
+                disabled={loading || !achievementName || !achievementTitle}
                 className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {loading ? (

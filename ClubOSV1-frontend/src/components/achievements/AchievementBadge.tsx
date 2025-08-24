@@ -1,8 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { 
+  Trophy, Medal, Award, Crown, Shield, Star,
+  Target, Zap, Flame, Diamond, Gem 
+} from 'lucide-react';
 
 interface AchievementBadgeProps {
-  icon: string;
+  icon: string; // Now stores icon type like 'trophy', 'medal', etc.
   name: string;
   description?: string;
   rarity?: string;
@@ -18,6 +22,21 @@ interface AchievementBadgeProps {
   animationType?: string;
   customCSS?: string;
 }
+
+// Map icon names to components
+const iconMap: Record<string, React.FC<any>> = {
+  trophy: Trophy,
+  medal: Medal,
+  award: Award,
+  crown: Crown,
+  shield: Shield,
+  star: Star,
+  target: Target,
+  zap: Zap,
+  flame: Flame,
+  diamond: Diamond,
+  gem: Gem
+};
 
 const rarityStyles = {
   common: {
@@ -47,11 +66,19 @@ const rarityStyles = {
 };
 
 const sizeStyles = {
-  xs: 'w-6 h-6 text-xs',
-  sm: 'w-8 h-8 text-sm',
-  md: 'w-12 h-12 text-lg',
-  lg: 'w-16 h-16 text-2xl',
-  xl: 'w-24 h-24 text-4xl'
+  xs: 'w-6 h-6',
+  sm: 'w-8 h-8',
+  md: 'w-12 h-12',
+  lg: 'w-16 h-16',
+  xl: 'w-24 h-24'
+};
+
+const iconSizeStyles = {
+  xs: 'w-3 h-3',
+  sm: 'w-4 h-4',
+  md: 'w-6 h-6',
+  lg: 'w-8 h-8',
+  xl: 'w-12 h-12'
 };
 
 export function AchievementBadge({
@@ -70,18 +97,16 @@ export function AchievementBadge({
   animationType,
   customCSS
 }: AchievementBadgeProps) {
+  // Get the icon component
+  const IconComponent = iconMap[icon] || Trophy;
+  
   // Use custom styles if provided, otherwise fall back to rarity styles
   const defaultStyles = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.legendary;
-  const styles = {
-    border: color ? `border-[${color}]` : defaultStyles.border,
-    glow: glowColor ? `shadow-[0_0_20px_${glowColor}]` : defaultStyles.glow,
-    bg: backgroundColor || defaultStyles.bg,
-    animation: animationType || defaultStyles.animation
-  };
   const sizeClass = sizeStyles[size];
+  const iconSizeClass = iconSizeStyles[size];
 
   const getAnimation = () => {
-    if (!animate || !animationType) return {};
+    if (!animate || !animationType || animationType === 'none') return {};
     switch (animationType) {
       case 'pulse':
         return { scale: [1, 1.1, 1] };
@@ -105,11 +130,10 @@ export function AchievementBadge({
         borderColor: color || undefined,
         backgroundColor: backgroundColor || undefined,
         boxShadow: glowColor ? `0 0 20px ${glowColor}` : undefined,
-        color: color || undefined,
         ...customCSS && JSON.parse(customCSS)
       }}
-      whileHover={animate ? { scale: 1.1 } : undefined}
-      whileTap={animate ? { scale: 0.95 } : undefined}
+      whileHover={animate && onClick ? { scale: 1.1 } : undefined}
+      whileTap={animate && onClick ? { scale: 0.95 } : undefined}
       onClick={onClick}
       initial={animate ? { scale: 0, opacity: 0 } : undefined}
       animate={animate ? { scale: 1, opacity: 1, ...getAnimation() } : undefined}
@@ -121,12 +145,15 @@ export function AchievementBadge({
         ...(animationType && animationType !== 'none' && { duration: 2, repeat: Infinity })
       }}
     >
-      <span className="select-none">{icon}</span>
+      <IconComponent 
+        className={iconSizeClass}
+        style={{ color: color || undefined }}
+      />
       
       {/* Legendary shimmer effect */}
       {rarity === 'legendary' && animate && (
         <motion.div
-          className="absolute inset-0 rounded-full"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.7) 50%, transparent 60%)',
             backgroundSize: '200% 200%'
@@ -197,6 +224,10 @@ export function AchievementBadgeGroup({
             rarity={achievement.rarity}
             size={size}
             onClick={() => onBadgeClick?.(achievement)}
+            color={achievement.color}
+            backgroundColor={achievement.backgroundColor}
+            glowColor={achievement.glowColor}
+            animationType={achievement.animationType}
           />
         </motion.div>
       ))}
@@ -207,7 +238,7 @@ export function AchievementBadgeGroup({
           transition={{ delay: displayAchievements.length * 0.1 }}
           className={`flex items-center justify-center rounded-full bg-gray-200 text-gray-600 font-medium ${sizeStyles[size]}`}
         >
-          +{remainingCount}
+          <span className="text-xs">+{remainingCount}</span>
         </motion.div>
       )}
     </div>
