@@ -54,9 +54,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         cp.cc_balance as friend_cc_balance,
         cp.total_challenges_won as friend_challenges_won,
         cp.total_challenges_played as friend_challenges_played,
-        cp.challenge_win_rate as friend_win_rate,
-        cp.achievement_count as friend_achievement_count,
-        cp.achievement_points as friend_achievement_points,
+        CASE 
+          WHEN cp.total_challenges_played > 0 
+          THEN ROUND((cp.total_challenges_won::numeric / cp.total_challenges_played::numeric) * 100, 1)
+          ELSE 0 
+        END as friend_win_rate,
+        COALESCE((SELECT COUNT(*) FROM user_achievements WHERE user_id = u.id), 0) as friend_achievement_count,
+        COALESCE((SELECT SUM(a.points) FROM user_achievements ua JOIN achievements a ON a.id = ua.achievement_id WHERE ua.user_id = u.id), 0) as friend_achievement_points,
         (
           SELECT json_agg(json_build_object(
             'id', a.id,
