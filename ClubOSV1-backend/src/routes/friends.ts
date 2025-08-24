@@ -76,7 +76,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           )
           FROM user_achievements ua
           JOIN achievements a ON a.id = ua.achievement_id
-          WHERE ua.user_id = friend.id 
+          WHERE ua.user_id = u.id 
             AND ua.is_featured = true
             AND (ua.expires_at IS NULL OR ua.expires_at > NOW())
           LIMIT 3
