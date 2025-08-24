@@ -154,9 +154,9 @@ class UsageTrackingService {
    */
   private calculateCost(model: string, tokens: number): number {
     const modelCost = this.modelCosts[model] || this.modelCosts['gpt-3.5-turbo'];
-    // Assuming 70% input, 30% output ratio (adjust based on your usage)
-    const inputTokens = tokens * 0.7;
-    const outputTokens = tokens * 0.3;
+    // Assuming 50% input, 50% output ratio (adjust based on your usage)
+    const inputTokens = tokens * 0.5;
+    const outputTokens = tokens * 0.5;
     
     const cost = (inputTokens * modelCost.input / 1000) + 
                  (outputTokens * modelCost.output / 1000);

@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.2] - 2025-08-24
+
+### Added
+- **Customer-Facing Achievement Displays**
+  - Comprehensive achievements section on customer profile page
+  - Tournament achievements with categories: Tournament, Championship, CTP, Special
+  - Featured achievements showcase with special animations
+  - Achievement detail modal with full information
+  - Achievement badges on leaderboard entries (up to 3 featured)
+  - Achievement badges on competitor cards in compete page
+  - ProfileAchievements component with filtering and stats
+  - Support for fully custom colors, animations, and effects
+
+### Categories for Custom Achievements
+- **Tournament** - Tournament wins and placements
+- **Championship** - Championship victories
+- **CTP (Closest to Pin)** - CTP competition wins
+- **Special** - OG Pin (first year members), Tour Pro, custom recognitions
+
 ## [1.15.1] - 2025-08-24
 
 ### Changed
@@ -670,7 +689,7 @@ All notable changes to ClubOS will be documented in this file.
   - Rank system with 8 tiers (House → Legend) 
   - Seasonal tracking with configurable resets (monthly/quarterly/semi-annual)
   - ClubCoin (CC) economy with full transaction ledger
-  - Challenge lifecycle: create, accept, play, resolve with 30/70 stake split
+  - Challenge lifecycle: create, accept, play, resolve with 50/50 stake split
   - 18 initial badges with dry, adult clubhouse tone
   - Champion markers for tournament winners with 20% defeat bonus
   - ClubCoin service for balance management and transactions

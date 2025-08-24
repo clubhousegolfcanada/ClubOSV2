@@ -208,11 +208,11 @@ npm run seed:all         # Everything
 
 ### 1. Document Why, Not Just What
 ```typescript
-// Bad: Multiply by 0.7
-const payout = stake * 0.7;
+// Bad: Multiply by 0.5
+const payout = stake * 0.5;
 
-// Good: Winner gets 70% per business rules (30% house edge)
-const WINNER_PERCENTAGE = 0.7; // Remaining 30% is house edge
+// Good: Winner gets 50% per business rules (50/50 split)
+const WINNER_PERCENTAGE = 0.5; // Fair 50/50 split between players
 const payout = stake * WINNER_PERCENTAGE;
 ```
 

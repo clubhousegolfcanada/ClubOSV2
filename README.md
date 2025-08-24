@@ -225,7 +225,7 @@ Run the security verification script to check your security posture:
 - **v1.14.0**: Clubhouse Challenges System
   - Complete challenge system with ClubCoin economy
   - 8-tier rank ladder with seasonal resets
-  - Head-to-head wagering with 30/70 stake splits
+  - Head-to-head wagering with 50/50 stake splits
   - 18 achievement badges with clubhouse tone
   - Champion markers for tournament winners
   - TrackMan integration for automatic verification
