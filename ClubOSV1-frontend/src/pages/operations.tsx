@@ -13,7 +13,8 @@ type TabType = 'users' | 'ai' | 'integrations' | 'analytics';
 
 export default function Operations() {
   const { user } = useAuthState();
-  const [activeTab, setActiveTab] = useState<TabType>('users');
+  // Default to analytics for operators, users for admins
+  const [activeTab, setActiveTab] = useState<TabType>('analytics');
 
   // SECURITY: Block customer role from accessing operations
   useEffect(() => {
@@ -26,6 +27,12 @@ export default function Operations() {
       if (!['admin', 'operator'].includes(user.role)) {
         // Redirect other non-authorized users to login
         window.location.href = '/login';
+      }
+      // Set initial tab based on role
+      if (user.role === 'admin') {
+        setActiveTab('users');
+      } else if (user.role === 'operator') {
+        setActiveTab('analytics');
       }
     }
   }, [user]);
@@ -60,7 +67,7 @@ export default function Operations() {
     { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, adminOnly: true },
     { id: 'ai', label: 'AI Center', icon: <Brain className="h-4 w-4" />, adminOnly: true },
     { id: 'integrations', label: 'Integrations', icon: <Zap className="h-4 w-4" />, adminOnly: true },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> }
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" />, adminOnly: false }
   ];
 
   const visibleTabs = tabs.filter(tab => !tab.adminOnly || user.role === 'admin');
