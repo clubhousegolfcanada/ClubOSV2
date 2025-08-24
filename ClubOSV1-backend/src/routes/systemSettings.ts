@@ -7,10 +7,10 @@ import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 
-// Get all system settings (admin only)
+// Get all system settings (admin and operators)
 router.get('/',
   authenticate,
-  roleGuard(['admin']),
+  roleGuard(['admin', 'operator']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await query(
@@ -47,7 +47,7 @@ router.get('/',
 // Get specific setting
 router.get('/:key',
   authenticate,
-  roleGuard(['admin']),
+  roleGuard(['admin', 'operator']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { key } = req.params;

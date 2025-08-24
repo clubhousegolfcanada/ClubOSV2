@@ -83,9 +83,8 @@ export const OperationsUsers: React.FC = () => {
     if (!authToken) return;
     
     try {
-      // Remove /api from URL for system-settings endpoint
-      const baseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
-      const response = await axios.get(`${baseUrl}/system-settings/customer_auto_approval`, {
+      // Use the API endpoint correctly
+      const response = await axios.get(`${API_URL}/system-settings/customer_auto_approval`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -105,10 +104,9 @@ export const OperationsUsers: React.FC = () => {
     if (!authToken) return;
     
     try {
-      // Remove /api from URL for system-settings endpoint
-      const baseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
+      // Use the API endpoint correctly
       await axios.put(
-        `${baseUrl}/system-settings/customer_auto_approval`,
+        `${API_URL}/system-settings/customer_auto_approval`,
         { value: { enabled } },
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
