@@ -83,8 +83,8 @@ export const OperationsUsers: React.FC = () => {
     if (!authToken) return;
     
     try {
-      // Use the API endpoint correctly
-      const response = await axios.get(`${API_URL}/system-settings/customer_auto_approval`, {
+      // Use the API endpoint correctly with /api prefix
+      const response = await axios.get(`${API_URL}/api/system-settings/customer_auto_approval`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -106,7 +106,7 @@ export const OperationsUsers: React.FC = () => {
     try {
       // Use the API endpoint correctly
       await axios.put(
-        `${API_URL}/system-settings/customer_auto_approval`,
+        `${API_URL}/api/system-settings/customer_auto_approval`,
         { value: { enabled } },
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
