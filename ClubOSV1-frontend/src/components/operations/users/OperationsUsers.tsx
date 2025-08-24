@@ -22,6 +22,7 @@ type User = {
   createdAt: string;
   updatedAt: string;
   signup_date?: string;
+  cc_balance?: number;
 };
 
 type PasswordValidation = {
@@ -139,14 +140,40 @@ export const OperationsUsers: React.FC = () => {
       console.log('Users response:', response.data);
       
       // Handle both response formats
+      let usersData = [];
       if (response.data.success && response.data.data) {
-        setUsers(Array.isArray(response.data.data) ? response.data.data : []);
+        usersData = Array.isArray(response.data.data) ? response.data.data : [];
       } else if (Array.isArray(response.data)) {
-        setUsers(response.data);
+        usersData = response.data;
       } else {
         console.error('Unexpected users response format:', response.data);
         setUsers([]);
+        return;
       }
+      
+      // Fetch CC balances for customers
+      const customersWithBalances = await Promise.all(
+        usersData.map(async (user) => {
+          if (user.role === 'customer') {
+            try {
+              const balanceResponse = await axios.get(
+                `${API_URL}/api/challenges/cc-balance/${user.id}`,
+                { headers: { Authorization: `Bearer ${authToken}` } }
+              );
+              return {
+                ...user,
+                cc_balance: balanceResponse.data?.data?.balance || 0
+              };
+            } catch (error) {
+              console.log(`Could not fetch balance for ${user.name}`);
+              return { ...user, cc_balance: 0 };
+            }
+          }
+          return user;
+        })
+      );
+      
+      setUsers(customersWithBalances);
     } catch (error: any) {
       console.error('Error fetching users:', error.response || error);
       if (error.response?.status === 401) {
@@ -698,6 +725,7 @@ export const OperationsUsers: React.FC = () => {
                     <th className="pb-3">Name</th>
                     <th className="pb-3">Email</th>
                     <th className="pb-3">Phone</th>
+                    <th className="pb-3">ClubCoins</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3">Member Since</th>
                     <th className="pb-3">Actions</th>
@@ -714,6 +742,14 @@ export const OperationsUsers: React.FC = () => {
                       </td>
                       <td className="py-3">
                         <span className="text-sm text-gray-600">{customer.phone || '-'}</span>
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-1">
+                          <Coins className="h-4 w-4 text-yellow-500" />
+                          <span className="text-sm font-medium text-gray-900">
+                            {customer.cc_balance?.toLocaleString() || '0'}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-3">
                         {customer.status === 'pending_approval' ? (
