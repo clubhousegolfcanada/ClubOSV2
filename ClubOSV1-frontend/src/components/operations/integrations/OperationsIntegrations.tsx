@@ -216,6 +216,23 @@ export const OperationsIntegrations: React.FC = () => {
       if (featuresResponse.data.success) {
         setSystemFeatures(featuresResponse.data.data);
       }
+      
+      // Check HubSpot connection status
+      try {
+        const hubspotResponse = await axios.get(
+          `${API_URL}/api/system-status/hubspot`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (hubspotResponse.data) {
+          setIntegrations(prev => prev.map(i => 
+            i.service === 'HubSpot' 
+              ? { ...i, status: hubspotResponse.data.connected ? 'connected' : 'disconnected' }
+              : i
+          ));
+        }
+      } catch (error) {
+        console.log('HubSpot status check failed:', error);
+      }
     } catch (error) {
       console.error('Error fetching configurations:', error);
     }
