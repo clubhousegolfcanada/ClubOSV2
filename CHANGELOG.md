@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.37] - 2025-08-24
+
+### Fixed
+- **Backend API Errors**
+  - Fixed friends API 500 error by correcting table reference from 'users' to 'Users'
+  - Added missing `/api/challenges/cc-balance/:userId` endpoint for fetching user CC balances
+  - Fixed ClubCoins showing as zero in customer management table
+  - Resolved database table name inconsistency issues
+
 ## [1.14.36] - 2025-08-24
 
 ### Added
