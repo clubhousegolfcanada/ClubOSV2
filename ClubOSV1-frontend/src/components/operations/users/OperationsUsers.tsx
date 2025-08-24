@@ -153,7 +153,7 @@ export const OperationsUsers: React.FC = () => {
       
       // Fetch CC balances for customers
       const customersWithBalances = await Promise.all(
-        usersData.map(async (user) => {
+        usersData.map(async (user: any) => {
           if (user.role === 'customer') {
             try {
               const balanceResponse = await axios.get(
