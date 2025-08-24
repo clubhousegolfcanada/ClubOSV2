@@ -3,6 +3,7 @@ import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, 
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 
 // Fix for double /api/ issue
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -23,6 +24,20 @@ interface LeaderboardEntry {
   is_friend: boolean;
   has_pending_request: boolean;
   rank_change?: number; // Positive = moved up, negative = moved down
+  achievement_count?: number;
+  achievement_points?: number;
+  featured_achievements?: Array<{
+    id: string;
+    code: string;
+    name: string;
+    icon: string;
+    rarity: string;
+    category: string;
+    color?: string;
+    backgroundColor?: string;
+    glowColor?: string;
+    animationType?: string;
+  }>;
 }
 
 interface LeaderboardListProps {
@@ -303,6 +318,15 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded flex-shrink-0">
                           Champion
                         </span>
+                      )}
+                      {/* Achievement Badges */}
+                      {player.featured_achievements && player.featured_achievements.length > 0 && (
+                        <AchievementBadgeGroup
+                          achievements={player.featured_achievements}
+                          size="xs"
+                          maxDisplay={3}
+                          className="flex-shrink-0"
+                        />
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mt-1">

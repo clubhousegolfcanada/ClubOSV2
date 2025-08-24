@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
+import { ProfileAchievements } from '@/components/customer/ProfileAchievements';
 import Head from 'next/head';
 import { 
   Trophy, User, Mail, Phone, Save, ChevronRight,
@@ -371,6 +372,9 @@ export default function CustomerProfile() {
                     </div>
                   ))}
                 </div>
+
+                {/* Achievements Section */}
+                <ProfileAchievements userId={user?.id || ''} />
 
                 {/* Tournament Achievements */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">

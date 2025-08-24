@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import { FriendRequests } from '@/components/customer/FriendRequests';
 import { LeaderboardList } from '@/components/customer/LeaderboardList';
+import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -64,6 +65,16 @@ interface Competitor {
   last_active?: string;
   home_location?: string;
   handicap?: number;
+  featured_achievements?: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    rarity: string;
+    color?: string;
+    backgroundColor?: string;
+    glowColor?: string;
+    animationType?: string;
+  }>;
   wagers_together?: number;
   friendship_id?: string;
 }
@@ -224,7 +235,8 @@ export default function Compete() {
           win_rate: friend.win_rate ? Math.round(friend.win_rate * 100) : 0,
           has_champion_marker: friend.has_champion_marker || false,
           is_friend: true,
-          has_pending_request: false
+          has_pending_request: false,
+          featured_achievements: friend.featured_achievements || []
         }));
         setCompetitors(competitorData);
       }
@@ -883,6 +895,14 @@ export default function Compete() {
                                   <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
                                     Champion
                                   </span>
+                                )}
+                                {/* Achievement Badges */}
+                                {competitor.featured_achievements && competitor.featured_achievements.length > 0 && (
+                                  <AchievementBadgeGroup
+                                    achievements={competitor.featured_achievements}
+                                    size="xs"
+                                    maxDisplay={3}
+                                  />
                                 )}
                               </div>
                               <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
