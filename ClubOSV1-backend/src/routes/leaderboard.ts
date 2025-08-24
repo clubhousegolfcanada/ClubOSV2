@@ -136,8 +136,8 @@ router.get('/alltime', async (req, res) => {
         ) as featured_achievements
       FROM customer_profiles cp
       JOIN users u ON u.id = cp.user_id
-      WHERE cp.total_cc_earned > 0 OR cp.cc_balance > 0
-      ORDER BY cp.total_cc_earned DESC
+      WHERE u.role = 'customer'
+      ORDER BY cp.total_cc_earned DESC, cp.cc_balance DESC, u.name ASC
       LIMIT $1
     `;
     
