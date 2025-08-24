@@ -210,6 +210,29 @@ router.get('/:service', authenticate, async (req: Request, res: Response) => {
         };
         break;
 
+      case 'hubspot':
+        // Import hubspotService at the top if not already
+        const { hubspotService } = require('../services/hubspotService');
+        serviceStatus = {
+          configured: !!process.env.HUBSPOT_API_KEY,
+          connected: hubspotService.isHubSpotConnected(),
+          apiKey: process.env.HUBSPOT_API_KEY ? 'configured' : 'not configured'
+        };
+        
+        // Get cache stats if connected
+        if (hubspotService.isHubSpotConnected()) {
+          try {
+            const cacheStats = await hubspotService.getCacheStats();
+            serviceStatus.cache = {
+              memoryEntries: cacheStats.memorySize,
+              databaseEntries: cacheStats.dbSize
+            };
+          } catch (error) {
+            logger.debug('Could not get HubSpot cache stats');
+          }
+        }
+        break;
+
       default:
         return res.status(404).json({
           success: false,

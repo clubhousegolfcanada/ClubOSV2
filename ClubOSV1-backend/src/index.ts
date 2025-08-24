@@ -234,6 +234,7 @@ app.use('/api/challenges', require('./routes/challenges').default);
 app.use('/api/leaderboard', require('./routes/leaderboard').default);
 app.use('/api/seasons', require('./routes/seasons').default);
 app.use('/api/badges', require('./routes/badges').default);
+app.use('/api/achievements', require('./routes/achievements').default);
 app.use('/api/trackman', require('./routes/trackman').default);
 app.use('/api/admin/cc-adjustments', require('./routes/admin/ccAdjustments').default);
 app.use('/api/user-settings', userSettingsRoutes);

@@ -55,6 +55,32 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         cp.total_challenges_won as friend_challenges_won,
         cp.total_challenges_played as friend_challenges_played,
         cp.challenge_win_rate as friend_win_rate,
+        cp.achievement_count as friend_achievement_count,
+        cp.achievement_points as friend_achievement_points,
+        (
+          SELECT json_agg(json_build_object(
+            'id', a.id,
+            'code', a.code,
+            'name', a.name,
+            'icon', a.icon,
+            'rarity', a.rarity,
+            'category', a.category
+          ) ORDER BY 
+            CASE a.rarity 
+              WHEN 'legendary' THEN 4
+              WHEN 'epic' THEN 3
+              WHEN 'rare' THEN 2
+              WHEN 'common' THEN 1
+            END DESC,
+            ua.awarded_at DESC
+          )
+          FROM user_achievements ua
+          JOIN achievements a ON a.id = ua.achievement_id
+          WHERE ua.user_id = friend.id 
+            AND ua.is_featured = true
+            AND (ua.expires_at IS NULL OR ua.expires_at > NOW())
+          LIMIT 3
+        ) as friend_featured_achievements,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
           WHERE cm.user_id = u.id 
@@ -116,6 +142,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         total_challenges_won: parseInt(row.friend_challenges_won || 0),
         total_challenges_played: parseInt(row.friend_challenges_played || 0),
         win_rate: parseFloat(row.friend_win_rate || 0),
+        // Achievement data
+        achievement_count: parseInt(row.friend_achievement_count || 0),
+        achievement_points: parseInt(row.friend_achievement_points || 0),
+        featured_achievements: row.friend_featured_achievements || [],
         // Wager stats if requested
         ...(include_stats && !isPrivate ? {
           wagers_together: row.clubcoin_wagers_count || 0,

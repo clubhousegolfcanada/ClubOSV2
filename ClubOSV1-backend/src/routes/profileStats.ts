@@ -57,6 +57,9 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
         cp.preferred_tee_time,
         cp.preferred_bay_type,
         cp.last_active_at,
+        cp.achievement_count,
+        cp.achievement_points,
+        cp.latest_achievement_at,
         -- Calculate friend count
         (SELECT COUNT(*) 
          FROM friendships f
@@ -165,7 +168,10 @@ router.get('/stats/:userId?', authenticate, async (req, res) => {
       social: {
         friendCount: parseInt(stats.friend_count || 0),
         badgeCount: parseInt(stats.badge_count || 0),
-        totalBookings: parseInt(stats.total_bookings || 0)
+        totalBookings: parseInt(stats.total_bookings || 0),
+        achievementCount: parseInt(stats.achievement_count || 0),
+        achievementPoints: parseInt(stats.achievement_points || 0),
+        latestAchievementAt: stats.latest_achievement_at
       },
       settings: {
         profileVisibility: stats.profile_visibility || 'friends',

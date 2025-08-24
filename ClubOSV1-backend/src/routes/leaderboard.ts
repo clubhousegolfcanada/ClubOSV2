@@ -85,6 +85,8 @@ router.get('/alltime', async (req, res) => {
         cp.challenge_win_rate as win_rate,
         cp.highest_rank_achieved,
         cp.previous_rank,
+        cp.achievement_count,
+        cp.achievement_points,
         RANK() OVER (ORDER BY cp.total_cc_earned DESC) as position,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
@@ -107,7 +109,31 @@ router.get('/alltime', async (req, res) => {
             OR (f.friend_id = $2 AND f.user_id = u.id))
             AND f.status = 'pending'
           )
-        END as has_pending_request
+        END as has_pending_request,
+        (
+          SELECT json_agg(json_build_object(
+            'id', a.id,
+            'code', a.code,
+            'name', a.name,
+            'icon', a.icon,
+            'rarity', a.rarity,
+            'category', a.category
+          ) ORDER BY 
+            CASE a.rarity 
+              WHEN 'legendary' THEN 4
+              WHEN 'epic' THEN 3
+              WHEN 'rare' THEN 2
+              WHEN 'common' THEN 1
+            END DESC,
+            ua.awarded_at DESC
+          )
+          FROM user_achievements ua
+          JOIN achievements a ON a.id = ua.achievement_id
+          WHERE ua.user_id = u.id 
+            AND ua.is_featured = true
+            AND (ua.expires_at IS NULL OR ua.expires_at > NOW())
+          LIMIT 3
+        ) as featured_achievements
       FROM customer_profiles cp
       JOIN users u ON u.id = cp.user_id
       WHERE cp.total_cc_earned > 0 OR cp.cc_balance > 0
@@ -141,7 +167,10 @@ router.get('/alltime', async (req, res) => {
           has_champion_marker: row.has_champion_marker || false,
           is_friend: row.is_friend || false,
           has_pending_request: row.has_pending_request || false,
-          rank_change: rankChange
+          rank_change: rankChange,
+          achievement_count: parseInt(row.achievement_count || 0),
+          achievement_points: parseInt(row.achievement_points || 0),
+          featured_achievements: row.featured_achievements || []
         };
       })
     });
