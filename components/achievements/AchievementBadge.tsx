@@ -7,12 +7,18 @@ interface AchievementBadgeProps {
   icon: string;
   name: string;
   description?: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showTooltip?: boolean;
   animate?: boolean;
   onClick?: () => void;
   className?: string;
+  // Custom style props
+  color?: string;
+  backgroundColor?: string;
+  glowColor?: string;
+  animationType?: string;
+  customCSS?: string;
 }
 
 const rarityStyles = {
@@ -51,34 +57,73 @@ export function AchievementBadge({
   icon,
   name,
   description,
-  rarity,
+  rarity = 'special',
   size = 'md',
   showTooltip = true,
   animate = true,
   onClick,
-  className
+  className,
+  color,
+  backgroundColor,
+  glowColor,
+  animationType,
+  customCSS
 }: AchievementBadgeProps) {
-  const styles = rarityStyles[rarity];
+  // Use custom styles if provided, otherwise fall back to rarity styles
+  const defaultStyles = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles.legendary;
+  const styles = {
+    border: color ? `border-[${color}]` : defaultStyles.border,
+    glow: glowColor ? `shadow-[0_0_20px_${glowColor}]` : defaultStyles.glow,
+    bg: backgroundColor || defaultStyles.bg,
+    animation: animationType || defaultStyles.animation
+  };
   const sizeClass = sizeStyles[size];
+
+  const getAnimation = () => {
+    if (!animate || !animationType) return {};
+    switch (animationType) {
+      case 'pulse':
+        return { scale: [1, 1.1, 1] };
+      case 'spin':
+        return { rotate: 360 };
+      case 'bounce':
+        return { y: [0, -10, 0] };
+      case 'shake':
+        return { x: [-2, 2, -2, 2, 0] };
+      case 'float':
+        return { y: [0, -5, 0] };
+      default:
+        return {};
+    }
+  };
 
   const badge = (
     <motion.div
       className={cn(
         'relative flex items-center justify-center rounded-full border-2 transition-all',
         sizeClass,
-        styles.border,
-        styles.bg,
-        styles.glow,
-        rarity === 'legendary' && animate && styles.animation,
         onClick && 'cursor-pointer hover:scale-110',
         className
       )}
+      style={{
+        borderColor: color || undefined,
+        backgroundColor: backgroundColor || undefined,
+        boxShadow: glowColor ? `0 0 20px ${glowColor}` : undefined,
+        color: color || undefined,
+        ...customCSS && JSON.parse(customCSS)
+      }}
       whileHover={animate ? { scale: 1.1 } : undefined}
       whileTap={animate ? { scale: 0.95 } : undefined}
       onClick={onClick}
       initial={animate ? { scale: 0, opacity: 0 } : undefined}
-      animate={animate ? { scale: 1, opacity: 1 } : undefined}
-      transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+      animate={animate ? { scale: 1, opacity: 1, ...getAnimation() } : undefined}
+      transition={{ 
+        type: 'spring', 
+        stiffness: 500, 
+        damping: 25,
+        ...(animationType === 'spin' && { duration: 3, repeat: Infinity }),
+        ...(animationType && animationType !== 'none' && { duration: 2, repeat: Infinity })
+      }}
     >
       <span className="select-none">{icon}</span>
       

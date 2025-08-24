@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState, useStore } from '@/state/useStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown } from 'lucide-react';
+import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award } from 'lucide-react';
+import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -63,6 +64,10 @@ export const OperationsUsers: React.FC = () => {
   const [adjustmentType, setAdjustmentType] = useState<'credit' | 'debit'>('credit');
   const [adjustmentReason, setAdjustmentReason] = useState<string>('');
   const [loadingBalance, setLoadingBalance] = useState(false);
+  
+  // Achievement states
+  const [showAchievementCreator, setShowAchievementCreator] = useState(false);
+  const [achievementUser, setAchievementUser] = useState<User | null>(null);
   
   const { user } = useAuthState();
   const token = user?.token || localStorage.getItem('clubos_token');
@@ -752,6 +757,16 @@ export const OperationsUsers: React.FC = () => {
                           ) : (
                             <>
                               <button
+                                onClick={() => {
+                                  setAchievementUser(customer);
+                                  setShowAchievementCreator(true);
+                                }}
+                                className="p-1 text-yellow-600 hover:text-yellow-700"
+                                title="Award Achievement"
+                              >
+                                <Award className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() => openCCAdjustment(customer)}
                                 className="p-1 text-green-600 hover:text-green-700"
                                 title="Adjust CC Balance"
@@ -1216,6 +1231,22 @@ export const OperationsUsers: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Custom Achievement Creator Modal */}
+      {showAchievementCreator && achievementUser && (
+        <CustomAchievementCreator
+          isOpen={showAchievementCreator}
+          onClose={() => {
+            setShowAchievementCreator(false);
+            setAchievementUser(null);
+          }}
+          userId={achievementUser.id}
+          userName={achievementUser.name}
+          onSuccess={() => {
+            toast.success('Achievement created and awarded successfully!');
+          }}
+        />
       )}
     </div>
   );

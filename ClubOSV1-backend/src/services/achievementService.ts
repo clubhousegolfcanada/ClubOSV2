@@ -39,7 +39,46 @@ interface AwardAchievementParams {
   metadata?: any;
 }
 
+interface CreateCustomAchievementParams {
+  userId: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  backgroundColor: string;
+  category?: string;
+  rarity?: string;
+  points?: number;
+  reason?: string;
+  awardedBy: string;
+  tournamentId?: string;
+  glowColor?: string;
+  animationType?: string;
+}
+
 class AchievementService {
+  // Create and award custom achievement in one operation
+  async createAndAwardCustomAchievement(params: CreateCustomAchievementParams): Promise<string> {
+    const {
+      userId, name, description, icon, color, backgroundColor,
+      category = 'custom', rarity = 'special', points = 100,
+      reason, awardedBy, tournamentId, glowColor, animationType
+    } = params;
+
+    const sql = `
+      SELECT create_and_award_achievement(
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+      ) as achievement_id
+    `;
+    
+    const result = await query(sql, [
+      userId, name, description, icon, color, backgroundColor,
+      category, rarity, points, reason, awardedBy, tournamentId,
+      glowColor, animationType
+    ]);
+    
+    return result.rows[0].achievement_id;
+  }
   // Get all available achievements
   async getAllAchievements(category?: string): Promise<Achievement[]> {
     let sql = `

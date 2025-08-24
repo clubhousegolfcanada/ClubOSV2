@@ -41,6 +41,51 @@ router.get('/user/:userId/featured', authenticate, async (req, res) => {
   }
 });
 
+// Create and award custom achievement (operator only)
+router.post('/create-custom', authenticate, checkOperatorRole, async (req, res) => {
+  try {
+    const {
+      userId, name, description, icon, color, backgroundColor,
+      category, rarity, points, reason, tournamentId,
+      glowColor, animationType
+    } = req.body;
+    
+    const awardedBy = req.user?.id;
+
+    if (!userId || !name || !icon) {
+      return res.status(400).json({ 
+        error: 'userId, name, and icon are required' 
+      });
+    }
+
+    const achievementId = await achievementService.createAndAwardCustomAchievement({
+      userId,
+      name,
+      description,
+      icon,
+      color,
+      backgroundColor,
+      category,
+      rarity,
+      points,
+      reason,
+      awardedBy,
+      tournamentId,
+      glowColor,
+      animationType
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Custom achievement created and awarded successfully',
+      achievementId 
+    });
+  } catch (error: any) {
+    console.error('Error creating custom achievement:', error);
+    res.status(500).json({ error: 'Failed to create custom achievement' });
+  }
+});
+
 // Award achievement to a user (operator only)
 router.post('/award', authenticate, checkOperatorRole, async (req, res) => {
   try {
