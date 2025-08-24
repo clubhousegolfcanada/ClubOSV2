@@ -100,7 +100,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
            AND f2.status = 'accepted') as friend_count
         ` : ''}
       FROM friendships f
-      JOIN Users u ON (
+      JOIN users u ON (
         CASE 
           WHEN f.user_id = $1 THEN f.friend_id = u.id
           ELSE f.user_id = u.id

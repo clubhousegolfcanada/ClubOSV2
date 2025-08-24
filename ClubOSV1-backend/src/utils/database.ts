@@ -245,6 +245,11 @@ class DatabaseService {
     return result.rows;
   }
 
+  async getUserByEmail(email: string): Promise<DbUser | null> {
+    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
+    return result.rows[0] || null;
+  }
+
   async updateLastLogin(id: string): Promise<void> {
     await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [id]);
   }
