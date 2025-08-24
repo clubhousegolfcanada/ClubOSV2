@@ -225,6 +225,11 @@ export default function Compete() {
       });
       
       if (response.data.data?.friends) {
+        console.log('Friends from API:', response.data.data.friends.length, 'friends');
+        response.data.data.friends.forEach((f: any) => {
+          console.log('Friend:', f.email, 'ID:', f.id, 'Name:', f.name);
+        });
+        
         // Transform friends data to competitor format
         const competitorData = response.data.data.friends.map((friend: any) => ({
           ...friend,

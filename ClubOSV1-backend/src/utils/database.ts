@@ -16,10 +16,13 @@ export interface DbUser {
   name: string;
   role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
   phone?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogin?: Date;
-  isActive: boolean;
+  created_at: Date;
+  updated_at: Date;
+  last_login?: Date;
+  is_active: boolean;
+  status?: string;
+  signup_metadata?: any;
+  signup_date?: Date;
 }
 
 export interface DbTicket {
@@ -152,7 +155,7 @@ class DatabaseService {
   async findUserByEmail(email: string): Promise<DbUser | null> {
     try {
       // Use LOWER to make email comparison case-insensitive
-      const result = await query('SELECT * FROM "Users" WHERE LOWER(email) = LOWER($1)', [email]);
+      const result = await query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       return result.rows[0] || null;
     } catch (error) {
       logger.error('Error finding user by email:', error);
@@ -162,7 +165,7 @@ class DatabaseService {
 
   async findUserById(id: string): Promise<DbUser | null> {
     try {
-      const result = await query('SELECT * FROM "Users" WHERE id = $1', [id]);
+      const result = await query('SELECT * FROM users WHERE id = $1', [id]);
       return result.rows[0] || null;
     } catch (error) {
       logger.error('Error finding user by id:', error);
@@ -186,7 +189,7 @@ class DatabaseService {
     const status = user.status || 'active';
     
     const result = await query(
-      `INSERT INTO "Users" (id, email, password, name, role, phone, status, "createdAt", "updatedAt", "isActive") 
+      `INSERT INTO users (id, email, password, name, role, phone, status, created_at, updated_at, is_active) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true) 
        RETURNING *`,
       [id, user.email, hashedPassword, user.name, user.role, user.phone, status]
@@ -195,14 +198,14 @@ class DatabaseService {
   }
 
   async updateUser(id: string, updates: Partial<DbUser>): Promise<DbUser | null> {
-    const allowedFields = ['name', 'email', 'phone', 'role', 'isActive'];
+    const allowedFields = ['name', 'email', 'phone', 'role', 'is_active'];
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
     for (const [key, value] of Object.entries(updates)) {
       if (allowedFields.includes(key) && value !== undefined) {
-        updateFields.push(`"${key}" = $${paramCount}`);
+        updateFields.push(`${key} = $${paramCount}`);
         values.push(value);
         paramCount++;
       }
@@ -212,11 +215,11 @@ class DatabaseService {
       return this.findUserById(id);
     }
 
-    updateFields.push(`"updatedAt" = CURRENT_TIMESTAMP`);
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(id);
 
     const result = await query(
-      `UPDATE "Users" SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
       values
     );
 
@@ -226,24 +229,24 @@ class DatabaseService {
   async updateUserPassword(id: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const result = await query(
-      'UPDATE "Users" SET password = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [hashedPassword, id]
     );
     return (result.rowCount || 0) > 0;
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const result = await query('DELETE FROM "Users" WHERE id = $1', [id]);
+    const result = await query('DELETE FROM users WHERE id = $1', [id]);
     return (result.rowCount || 0) > 0;
   }
 
   async getAllUsers(): Promise<DbUser[]> {
-    const result = await query('SELECT * FROM "Users" ORDER BY "createdAt" DESC');
+    const result = await query('SELECT * FROM users ORDER BY created_at DESC');
     return result.rows;
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    await query('UPDATE "Users" SET "lastLogin" = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [id]);
   }
 
   // Feedback operations
