@@ -1,7 +1,7 @@
 import React from 'react';
-import { Trophy, Star, Award, Crown, Sparkles } from 'lucide-react';
+import { Trophy, Star, Award, Crown, Sparkles, Gem } from 'lucide-react';
 
-export type TierName = 'junior' | 'house' | 'amateur' | 'pro' | 'master';
+export type TierName = 'junior' | 'house' | 'amateur' | 'pro' | 'master' | 'legend';
 
 interface TierConfig {
   name: string;
@@ -62,7 +62,17 @@ const tierConfigs: Record<TierName, TierConfig> = {
     borderColor: 'border-amber-400',
     textColor: 'text-amber-900',
     iconColor: 'text-amber-700',
-    minCC: 5000
+    minCC: 5000,
+    maxCC: 9999
+  },
+  legend: {
+    name: 'Legend',
+    icon: <Gem className="w-4 h-4" />,
+    bgColor: 'bg-gradient-to-r from-slate-900 to-slate-700',
+    borderColor: 'border-slate-800',
+    textColor: 'text-white',
+    iconColor: 'text-slate-200',
+    minCC: 10000
   }
 };
 
@@ -132,7 +142,7 @@ export const TierProgressBar: React.FC<TierProgressBarProps> = ({
           </span>
         </div>
         <div className="text-xs text-gray-500 text-center mt-1">
-          Maximum tier achieved! 🎉
+          {tier === 'legend' ? 'Legendary status achieved!' : 'Maximum tier achieved!'}
         </div>
       </div>
     );
@@ -158,7 +168,8 @@ export const TierProgressBar: React.FC<TierProgressBarProps> = ({
             tier === 'house' ? 'bg-green-500' :
             tier === 'amateur' ? 'bg-blue-500' :
             tier === 'pro' ? 'bg-purple-500' :
-            'bg-amber-500'
+            tier === 'master' ? 'bg-amber-500' :
+            'bg-gradient-to-r from-slate-800 to-slate-600'
           }`}
           style={{ width: `${Math.min(progress, 100)}%` }}
         />
@@ -178,6 +189,7 @@ export const TierProgressBar: React.FC<TierProgressBarProps> = ({
 
 // Helper function to calculate tier from CC
 export const calculateTierFromCC = (totalCC: number): TierName => {
+  if (totalCC >= 10000) return 'legend';
   if (totalCC >= 5000) return 'master';
   if (totalCC >= 2000) return 'pro';
   if (totalCC >= 750) return 'amateur';
@@ -187,7 +199,7 @@ export const calculateTierFromCC = (totalCC: number): TierName => {
 
 // Helper function to get next tier
 export const getNextTier = (currentTier: TierName): TierName | null => {
-  const tierOrder: TierName[] = ['junior', 'house', 'amateur', 'pro', 'master'];
+  const tierOrder: TierName[] = ['junior', 'house', 'amateur', 'pro', 'master', 'legend'];
   const currentIndex = tierOrder.indexOf(currentTier);
   
   if (currentIndex === -1 || currentIndex === tierOrder.length - 1) {

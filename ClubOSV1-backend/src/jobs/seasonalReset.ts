@@ -164,8 +164,8 @@ class SeasonalResetJob {
         await this.awardBadge(performer.user_id, 'season_legend', client, {
           season_id: seasonId
         });
-      } else if (performer.rank_tier === 'champion') {
-        await this.awardBadge(performer.user_id, 'season_champion', client, {
+      } else if (performer.rank_tier === 'master') {
+        await this.awardBadge(performer.user_id, 'season_master', client, {
           season_id: seasonId
         });
       }

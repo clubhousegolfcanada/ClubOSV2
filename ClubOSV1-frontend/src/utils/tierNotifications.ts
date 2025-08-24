@@ -57,6 +57,7 @@ export const showTierProgressionNotification = (event: TierProgressionEvent) => 
 };
 
 export const calculateTierFromCC = (totalCC: number): TierName => {
+  if (totalCC >= 10000) return 'legend';
   if (totalCC >= 5000) return 'master';
   if (totalCC >= 2000) return 'pro';
   if (totalCC >= 750) return 'amateur';
@@ -70,13 +71,14 @@ const getTierLevel = (tier: TierName): number => {
     house: 2,
     amateur: 3,
     pro: 4,
-    master: 5
+    master: 5,
+    legend: 6
   };
   return levels[tier] || 1;
 };
 
 export const getCCToNextTier = (currentCC: number): number | null => {
-  const thresholds = [200, 750, 2000, 5000];
+  const thresholds = [200, 750, 2000, 5000, 10000];
   
   for (const threshold of thresholds) {
     if (currentCC < threshold) {
@@ -84,7 +86,7 @@ export const getCCToNextTier = (currentCC: number): number | null => {
     }
   }
   
-  return null; // Already at master tier
+  return null; // Already at legend tier
 };
 
 export const getNextTierName = (currentTier: TierName): string | null => {
@@ -93,7 +95,8 @@ export const getNextTierName = (currentTier: TierName): string | null => {
     house: 'Amateur',
     amateur: 'Pro',
     pro: 'Master',
-    master: null
+    master: 'Legend',
+    legend: null
   };
   
   return nextTier[currentTier];
