@@ -125,7 +125,7 @@ class AchievementService {
         a.rarity,
         a.points,
         a.metadata as achievement_metadata,
-        u.first_name || ' ' || u.last_name as awarded_by_name
+        u.name as awarded_by_name
       FROM user_achievements ua
       JOIN achievements a ON a.id = ua.achievement_id
       LEFT JOIN users u ON u.id = ua.awarded_by
@@ -258,7 +258,7 @@ class AchievementService {
     const recentAwardsSql = `
       SELECT 
         ua.awarded_at,
-        u.first_name || ' ' || u.last_name as user_name,
+        u.name as user_name,
         a.name as achievement_name,
         a.icon as achievement_icon,
         a.rarity
@@ -349,7 +349,7 @@ class AchievementService {
     const sql = `
       SELECT 
         u.id as user_id,
-        u.first_name || ' ' || u.last_name as name,
+        u.name as name,
         cp.achievement_count,
         cp.achievement_points,
         cp.rarest_achievement,

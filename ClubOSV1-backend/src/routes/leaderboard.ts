@@ -9,95 +9,54 @@ const router = Router();
 router.use(authenticate);
 
 /**
- * GET /api/leaderboard/seasonal
- * Get current season leaderboard
- */
-router.get('/seasonal', async (req, res) => {
-  try {
-    const { limit = 100 } = req.query;
-    
-    const query = `
-      SELECT 
-        u.id,
-        u.name,
-        cp.current_rank,
-        sce.cc_net,
-        sce.challenges_completed,
-        ra.percentile,
-        ra.win_rate,
-        RANK() OVER (ORDER BY sce.cc_net DESC) as position,
-        EXISTS(
-          SELECT 1 FROM champion_markers cm 
-          WHERE cm.user_id = u.id AND cm.is_active = true
-        ) as has_champion_marker
-      FROM seasonal_cc_earnings sce
-      JOIN users u ON u.id = sce.user_id
-      JOIN customer_profiles cp ON cp.user_id = u.id
-      LEFT JOIN rank_assignments ra ON ra.user_id = u.id AND ra.season_id = sce.season_id
-      WHERE sce.season_id = get_current_season()
-      AND sce.cc_net > 0
-      ORDER BY sce.cc_net DESC
-      LIMIT $1
-    `;
-    
-    const result = await pool.query(query, [limit]);
-    
-    res.json({
-      success: true,
-      data: result.rows.map(row => ({
-        id: row.id,
-        name: row.name,
-        position: parseInt(row.position),
-        currentRank: row.current_rank,
-        ccNet: parseFloat(row.cc_net || 0),
-        challengesCompleted: parseInt(row.challenges_completed || 0),
-        winRate: parseFloat(row.win_rate || 0),
-        hasChampionMarker: row.has_champion_marker
-      }))
-    });
-  } catch (error) {
-    logger.error('Error fetching seasonal leaderboard:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch leaderboard'
-    });
-  }
-});
-
-/**
  * GET /api/leaderboard/alltime
- * Get all-time leaderboard
+ * Get all-time leaderboard with proper ordering and null handling
  */
 router.get('/alltime', async (req, res) => {
   try {
     const { limit = 100 } = req.query;
     const userId = (req as any).user?.id || null;
     
+    // Fixed query with proper NULL handling and guaranteed ordering
     const query = `
+      WITH ranked_users AS (
+        SELECT 
+          u.id,
+          u.name,
+          cp.current_rank,
+          COALESCE(cp.cc_balance, 0) as cc_balance,
+          COALESCE(cp.total_cc_earned, 0) as total_cc_earned,
+          COALESCE(cp.total_challenges_won, 0) as total_challenges_won,
+          COALESCE(cp.total_challenges_played, 0) as total_challenges_played,
+          COALESCE(cp.challenge_win_rate, 0) as win_rate,
+          cp.highest_rank_achieved,
+          cp.previous_rank,
+          COALESCE(cp.achievement_count, 0) as achievement_count,
+          COALESCE(cp.achievement_points, 0) as achievement_points,
+          -- Use ROW_NUMBER for guaranteed unique ranking
+          ROW_NUMBER() OVER (
+            ORDER BY 
+              COALESCE(cp.total_cc_earned, 0) DESC,
+              COALESCE(cp.cc_balance, 0) DESC,
+              u.name ASC
+          ) as position
+        FROM users u
+        LEFT JOIN customer_profiles cp ON cp.user_id = u.id
+        WHERE u.role = 'customer'
+          AND u.is_active = true
+      )
       SELECT 
-        u.id,
-        u.name,
-        cp.current_rank,
-        cp.cc_balance,
-        cp.total_cc_earned,
-        cp.total_challenges_won,
-        cp.total_challenges_played,
-        cp.challenge_win_rate as win_rate,
-        cp.highest_rank_achieved,
-        cp.previous_rank,
-        cp.achievement_count,
-        cp.achievement_points,
-        RANK() OVER (ORDER BY cp.total_cc_earned DESC) as position,
+        ru.*,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
-          WHERE cm.user_id = u.id AND cm.is_active = true
+          WHERE cm.user_id = ru.id AND cm.is_active = true
         ) as has_champion_marker,
         CASE 
           WHEN $2::uuid IS NULL THEN false
           ELSE EXISTS(
             SELECT 1 FROM friendships f 
-            WHERE ((f.user_id = $2 AND f.friend_id = u.id) 
-            OR (f.friend_id = $2 AND f.user_id = u.id))
+            WHERE ((f.user_id = $2 AND f.friend_id = ru.id) 
+            OR (f.friend_id = $2 AND f.user_id = ru.id))
             AND f.status = 'accepted'
           )
         END as is_friend,
@@ -105,13 +64,13 @@ router.get('/alltime', async (req, res) => {
           WHEN $2::uuid IS NULL THEN false
           ELSE EXISTS(
             SELECT 1 FROM friendships f
-            WHERE ((f.user_id = $2 AND f.friend_id = u.id) 
-            OR (f.friend_id = $2 AND f.user_id = u.id))
+            WHERE ((f.user_id = $2 AND f.friend_id = ru.id) 
+            OR (f.friend_id = $2 AND f.user_id = ru.id))
             AND f.status = 'pending'
           )
         END as has_pending_request,
         (
-          SELECT json_agg(json_build_object(
+          SELECT COALESCE(json_agg(json_build_object(
             'id', a.id,
             'code', a.code,
             'name', a.name,
@@ -124,88 +83,125 @@ router.get('/alltime', async (req, res) => {
               WHEN 'epic' THEN 3
               WHEN 'rare' THEN 2
               WHEN 'common' THEN 1
+              ELSE 0
             END DESC,
             ua.awarded_at DESC
-          )
+          ), '[]'::json)
           FROM user_achievements ua
           JOIN achievements a ON a.id = ua.achievement_id
-          WHERE ua.user_id = u.id 
+          WHERE ua.user_id = ru.id 
             AND ua.is_featured = true
             AND (ua.expires_at IS NULL OR ua.expires_at > NOW())
           LIMIT 3
         ) as featured_achievements
-      FROM customer_profiles cp
-      JOIN users u ON u.id = cp.user_id
-      WHERE u.role = 'customer'
-      ORDER BY cp.total_cc_earned DESC, cp.cc_balance DESC, u.name ASC
+      FROM ranked_users ru
+      ORDER BY ru.position ASC
       LIMIT $1
     `;
     
     const result = await pool.query(query, [limit, userId]);
     
+    // Process and validate results
+    const leaderboard = result.rows.map(row => {
+      const currentRank = parseInt(row.position) || 0;
+      const previousRank = row.previous_rank ? parseInt(row.previous_rank) : null;
+      
+      // Calculate rank change (positive = moved up, negative = moved down)
+      let rankChange = 0;
+      if (previousRank !== null && previousRank !== currentRank) {
+        rankChange = previousRank - currentRank;
+      }
+      
+      return {
+        user_id: row.id,
+        name: row.name || 'Unknown Player',
+        rank: currentRank,
+        rank_tier: row.current_rank || 'house',
+        cc_balance: parseFloat(row.cc_balance || 0),
+        total_cc_earned: parseFloat(row.total_cc_earned || 0),
+        total_challenges_won: parseInt(row.total_challenges_won || 0),
+        total_challenges_played: parseInt(row.total_challenges_played || 0),
+        win_rate: parseFloat(row.win_rate || 0),
+        has_champion_marker: row.has_champion_marker || false,
+        is_friend: row.is_friend || false,
+        has_pending_request: row.has_pending_request || false,
+        rank_change: rankChange,
+        achievement_count: parseInt(row.achievement_count || 0),
+        achievement_points: parseInt(row.achievement_points || 0),
+        featured_achievements: Array.isArray(row.featured_achievements) 
+          ? row.featured_achievements 
+          : []
+      };
+    });
+    
+    // Log sample for debugging
+    if (leaderboard.length > 0) {
+      logger.info('Leaderboard sample (top 3):', {
+        top3: leaderboard.slice(0, 3).map(p => ({
+          rank: p.rank,
+          name: p.name,
+          total_cc: p.total_cc_earned,
+          current_cc: p.cc_balance
+        }))
+      });
+    }
+    
     res.json({
       success: true,
-      data: result.rows.map(row => {
-        const currentRank = parseInt(row.position);
-        const previousRank = row.previous_rank ? parseInt(row.previous_rank) : null;
-        
-        // Calculate rank change (positive = moved up, negative = moved down)
-        let rankChange = 0;
-        if (previousRank !== null && previousRank !== currentRank) {
-          rankChange = previousRank - currentRank; // If was 3, now 1, then 3-1 = +2 (moved up 2)
-        }
-        
-        return {
-          user_id: row.id,
-          name: row.name,
-          rank: currentRank,
-          rank_tier: row.current_rank || 'house',
-          cc_balance: parseFloat(row.cc_balance || 0),
-          total_challenges_won: parseInt(row.total_challenges_won || 0),
-          total_challenges_played: parseInt(row.total_challenges_played || 0),
-          win_rate: parseFloat(row.win_rate || 0),
-          has_champion_marker: row.has_champion_marker || false,
-          is_friend: row.is_friend || false,
-          has_pending_request: row.has_pending_request || false,
-          rank_change: rankChange,
-          achievement_count: parseInt(row.achievement_count || 0),
-          achievement_points: parseInt(row.achievement_points || 0),
-          featured_achievements: row.featured_achievements || []
-        };
-      })
+      data: leaderboard,
+      metadata: {
+        total_players: leaderboard.length,
+        requested_limit: limit,
+        ordered_by: 'total_cc_earned DESC, cc_balance DESC, name ASC'
+      }
     });
   } catch (error) {
     logger.error('Error fetching all-time leaderboard:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch leaderboard'
+      error: 'Failed to fetch leaderboard',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
 /**
- * GET /api/leaderboard/activity
- * Get recent challenge activity
+ * GET /api/leaderboard/seasonal
+ * Get current season leaderboard
  */
-router.get('/activity', async (req, res) => {
+router.get('/seasonal', async (req, res) => {
   try {
-    const { limit = 50 } = req.query;
+    const { limit = 100 } = req.query;
     
     const query = `
+      WITH ranked_users AS (
+        SELECT 
+          u.id,
+          u.name,
+          cp.current_rank,
+          COALESCE(sce.cc_net, 0) as cc_net,
+          COALESCE(sce.challenges_completed, 0) as challenges_completed,
+          COALESCE(ra.percentile, 0) as percentile,
+          COALESCE(ra.win_rate, 0) as win_rate,
+          ROW_NUMBER() OVER (ORDER BY COALESCE(sce.cc_net, 0) DESC) as position
+        FROM users u
+        LEFT JOIN customer_profiles cp ON cp.user_id = u.id
+        LEFT JOIN seasonal_cc_earnings sce ON sce.user_id = u.id 
+          AND sce.season_id = (SELECT id FROM seasons WHERE status = 'active' LIMIT 1)
+        LEFT JOIN rank_assignments ra ON ra.user_id = u.id 
+          AND ra.season_id = sce.season_id
+        WHERE u.role = 'customer'
+          AND u.is_active = true
+      )
       SELECT 
-        cr.resolved_at as activity_time,
-        'challenge_complete' as activity_type,
-        u1.name as winner_name,
-        u2.name as loser_name,
-        cr.winner_score,
-        cr.loser_score,
-        cr.final_payout,
-        c.course_name
-      FROM challenge_results cr
-      JOIN challenges c ON c.id = cr.challenge_id
-      JOIN users u1 ON u1.id = cr.winner_user_id
-      JOIN users u2 ON u2.id = cr.loser_user_id
-      ORDER BY cr.resolved_at DESC
+        ru.*,
+        EXISTS(
+          SELECT 1 FROM champion_markers cm 
+          WHERE cm.user_id = ru.id AND cm.is_active = true
+        ) as has_champion_marker
+      FROM ranked_users ru
+      WHERE ru.cc_net > 0
+      ORDER BY ru.position ASC
       LIMIT $1
     `;
     
@@ -214,21 +210,21 @@ router.get('/activity', async (req, res) => {
     res.json({
       success: true,
       data: result.rows.map(row => ({
-        activityTime: row.activity_time,
-        activityType: row.activity_type,
-        winnerName: row.winner_name,
-        loserName: row.loser_name,
-        winnerScore: parseFloat(row.winner_score || 0),
-        loserScore: parseFloat(row.loser_score || 0),
-        payout: parseFloat(row.final_payout || 0),
-        courseName: row.course_name
+        id: row.id,
+        name: row.name || 'Unknown Player',
+        position: parseInt(row.position) || 0,
+        currentRank: row.current_rank || 'house',
+        ccNet: parseFloat(row.cc_net || 0),
+        challengesCompleted: parseInt(row.challenges_completed || 0),
+        winRate: parseFloat(row.win_rate || 0),
+        hasChampionMarker: row.has_champion_marker || false
       }))
     });
   } catch (error) {
-    logger.error('Error fetching activity feed:', error);
+    logger.error('Error fetching seasonal leaderboard:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch activity'
+      error: 'Failed to fetch leaderboard'
     });
   }
 });
@@ -242,37 +238,39 @@ router.get('/user/:userId', async (req, res) => {
     const { userId } = req.params;
     
     const query = `
+      WITH user_rank AS (
+        SELECT 
+          COUNT(*) + 1 as position
+        FROM customer_profiles cp2
+        JOIN users u2 ON u2.id = cp2.user_id
+        WHERE u2.role = 'customer'
+          AND u2.is_active = true
+          AND COALESCE(cp2.total_cc_earned, 0) > (
+            SELECT COALESCE(cp.total_cc_earned, 0)
+            FROM customer_profiles cp
+            WHERE cp.user_id = $1
+          )
+      )
       SELECT 
         u.id,
         u.name,
         cp.current_rank,
         cp.highest_rank_achieved,
-        cp.cc_balance,
-        cp.total_cc_earned,
-        cp.total_challenges_played,
-        cp.total_challenges_won,
-        cp.challenge_win_rate,
-        cp.max_win_streak,
-        cp.max_loss_streak,
-        cp.challenge_streak,
-        sce.cc_net as season_cc,
-        sce.challenges_completed as season_challenges,
-        ra.percentile as season_percentile,
-        ra.season_rank,
+        COALESCE(cp.cc_balance, 0) as cc_balance,
+        COALESCE(cp.total_cc_earned, 0) as total_cc_earned,
+        COALESCE(cp.total_challenges_won, 0) as total_challenges_won,
+        COALESCE(cp.total_challenges_played, 0) as total_challenges_played,
+        COALESCE(cp.challenge_win_rate, 0) as win_rate,
+        ur.position,
         (
-          SELECT COUNT(*) + 1 
-          FROM seasonal_cc_earnings sce2 
-          WHERE sce2.season_id = get_current_season() 
-          AND sce2.cc_net > sce.cc_net
-        ) as season_position,
-        EXISTS(
-          SELECT 1 FROM champion_markers cm 
-          WHERE cm.user_id = u.id AND cm.is_active = true
-        ) as has_champion_marker
+          SELECT COUNT(*) 
+          FROM users u3 
+          JOIN customer_profiles cp3 ON cp3.user_id = u3.id
+          WHERE u3.role = 'customer' AND u3.is_active = true
+        ) as total_players
       FROM users u
-      JOIN customer_profiles cp ON cp.user_id = u.id
-      LEFT JOIN seasonal_cc_earnings sce ON sce.user_id = u.id AND sce.season_id = get_current_season()
-      LEFT JOIN rank_assignments ra ON ra.user_id = u.id AND ra.season_id = get_current_season()
+      LEFT JOIN customer_profiles cp ON cp.user_id = u.id
+      CROSS JOIN user_rank ur
       WHERE u.id = $1
     `;
     
@@ -285,28 +283,22 @@ router.get('/user/:userId', async (req, res) => {
       });
     }
     
-    const user = result.rows[0];
+    const userData = result.rows[0];
     
     res.json({
       success: true,
       data: {
-        id: user.id,
-        name: user.name,
-        currentRank: user.current_rank,
-        highestRank: user.highest_rank_achieved,
-        ccBalance: parseFloat(user.cc_balance || 0),
-        totalCCEarned: parseFloat(user.total_cc_earned || 0),
-        totalChallenges: parseInt(user.total_challenges_played || 0),
-        totalWins: parseInt(user.total_challenges_won || 0),
-        winRate: parseFloat(user.challenge_win_rate || 0),
-        maxWinStreak: parseInt(user.max_win_streak || 0),
-        maxLossStreak: parseInt(user.max_loss_streak || 0),
-        currentStreak: parseInt(user.challenge_streak || 0),
-        seasonCC: parseFloat(user.season_cc || 0),
-        seasonChallenges: parseInt(user.season_challenges || 0),
-        seasonPercentile: parseFloat(user.season_percentile || 1),
-        seasonPosition: parseInt(user.season_position || 0),
-        hasChampionMarker: user.has_champion_marker
+        id: userData.id,
+        name: userData.name || 'Unknown Player',
+        position: parseInt(userData.position) || 0,
+        totalPlayers: parseInt(userData.total_players) || 0,
+        currentRank: userData.current_rank || 'house',
+        highestRank: userData.highest_rank_achieved,
+        ccBalance: parseFloat(userData.cc_balance || 0),
+        totalCCEarned: parseFloat(userData.total_cc_earned || 0),
+        challengesWon: parseInt(userData.total_challenges_won || 0),
+        challengesPlayed: parseInt(userData.total_challenges_played || 0),
+        winRate: parseFloat(userData.win_rate || 0)
       }
     });
   } catch (error) {
@@ -314,48 +306,6 @@ router.get('/user/:userId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch user stats'
-    });
-  }
-});
-
-// Get user's current rank
-router.get('/rank', authenticate, async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const client = await pool.connect();
-    
-    try {
-      const result = await client.query(`
-      SELECT rank_tier, points, challenges_played, challenges_won
-      FROM rank_assignments
-      WHERE user_id = $1 AND season_id = get_current_season()
-    `, [userId]);
-    
-      if (result.rows.length === 0) {
-        // Return default if no rank assignment
-        return res.json({
-          success: true,
-          data: {
-            rank_tier: 'house',
-            points: 0,
-            challenges_played: 0,
-            challenges_won: 0
-          }
-        });
-      }
-    
-      res.json({
-        success: true,
-        data: result.rows[0]
-      });
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    logger.error('Failed to fetch user rank:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch rank'
     });
   }
 });

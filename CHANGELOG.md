@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.43] - 2025-08-25
+
+### Fixed
+- **Leaderboard Ordering System**
+  - Fixed random ordering issue caused by NULL values in total_cc_earned
+  - Implemented ROW_NUMBER() for guaranteed unique ranking positions
+  - Added COALESCE() to handle NULL values properly (defaults to 0)
+  - Fixed triple-tier ordering: total_cc_earned DESC, cc_balance DESC, name ASC
+  - Added metadata to API responses showing exact ordering criteria
+  - Improved error handling with detailed error messages
+
+- **Achievement API Errors**
+  - Fixed 500 errors when fetching user achievements
+  - Corrected SQL queries using non-existent first_name/last_name columns
+  - Updated to use single 'name' column from users table
+  - Achievement endpoints now properly handle user lookups
+  - Fixed achievement leaderboard and statistics queries
+
 ## [1.14.42] - 2025-08-25
 
 ### Security
