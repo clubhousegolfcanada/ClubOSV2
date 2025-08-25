@@ -8,9 +8,17 @@ async function testProfileAPI() {
     
     // First, let's login as Mike (customer)
     console.log('1. Logging in as customer...');
+    // Use environment variables for test credentials
+    const testEmail = process.env.TEST_EMAIL || 'mikebelair79@gmail.com';
+    const testPassword = process.env.TEST_PASSWORD || 'TestPassword';
+    
+    if (!process.env.TEST_EMAIL || !process.env.TEST_PASSWORD) {
+      console.log('⚠️  Warning: Using default test credentials. Set TEST_EMAIL and TEST_PASSWORD environment variables.');
+    }
+    
     const loginResponse = await axios.post(`${API_URL}/api/auth/login`, {
-      email: 'mikebelair79@gmail.com',
-      password: 'Test1234!'
+      email: testEmail,
+      password: testPassword
     });
     
     const token = loginResponse.data.token;

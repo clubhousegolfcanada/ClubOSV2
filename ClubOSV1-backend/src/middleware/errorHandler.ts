@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { ApiError } from '../types';
+import { sanitizeRequest, sanitizeError, sanitizeData } from '../utils/logSanitizer';
 
 // Custom error class for application errors
 export class AppError extends Error {
@@ -25,13 +26,20 @@ export const errorHandler = (
   const isError = err instanceof Error;
   const stack = isError ? err.stack : undefined;
   
+  // CRITICAL: Sanitize request data before logging to prevent password exposure
+  const safeRequest = sanitizeRequest(req);
+  
   logger.error('Error caught by error handler:', {
     error: err.message,
-    stack: stack,
-    path: req.path,
-    method: req.method,
-    body: req.body,
-    query: req.query
+    stack: process.env.NODE_ENV === 'production' ? undefined : stack,
+    path: safeRequest.path,
+    method: safeRequest.method,
+    // NEVER log raw body or query - always sanitize
+    body: safeRequest.body,
+    query: safeRequest.query,
+    // Include safe user info if available
+    user: safeRequest.user,
+    ip: safeRequest.ip
   });
 
   // Check if error is an AppError with statusCode

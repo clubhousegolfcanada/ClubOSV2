@@ -189,7 +189,13 @@ router.post('/signup',
       }
       
     } catch (error) {
-      logger.error('Registration error:', error);
+      // Log error safely without exposing passwords
+      logger.error('Registration error:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        email: req.body.email,
+        // Never log passwords or sensitive data
+        code: (error as any)?.code
+      });
       next(error);
     }
   }
@@ -574,7 +580,14 @@ router.post('/users',
       });
       
     } catch (error) {
-      logger.error('Error creating user:', error);
+      // Log error safely without exposing passwords
+      logger.error('Error creating user:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        email: req.body.email,
+        role: req.body.role,
+        // Never log passwords
+        createdBy: req.user?.email
+      });
       next(error);
     }
   }

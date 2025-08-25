@@ -1,6 +1,7 @@
 import winston from 'winston';
 import path from 'path';
 import fs from 'fs/promises';
+import { sanitizeData } from './logSanitizer';
 
 const logsDir = path.join(process.cwd(), 'logs');
 
@@ -15,10 +16,17 @@ const ensureLogsDirectory = async () => {
 
 ensureLogsDirectory();
 
+// Custom format that sanitizes sensitive data
+const sanitizeFormat = winston.format((info) => {
+  // Sanitize the entire log object to remove sensitive data
+  return sanitizeData(info);
+})();
+
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
+  sanitizeFormat, // Apply sanitization before logging
   winston.format.json()
 );
 

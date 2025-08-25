@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.42] - 2025-08-25
+
+### Security
+- **Critical Security Fix: Password Logging Prevention**
+  - Created comprehensive log sanitization utility to redact sensitive data
+  - Fixed error handler to never log passwords or tokens
+  - Updated all error logging throughout the application
+  - Passwords, tokens, and API keys are now automatically redacted as [REDACTED]
+  - Added security tests to prevent regression
+  - Removed hardcoded passwords from test files
+  - Test credentials now use environment variables
+  - Prevents GDPR and compliance violations
+
 ## [1.14.41] - 2025-08-25
 
 ### Enhanced

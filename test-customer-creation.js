@@ -2,13 +2,14 @@
 const axios = require('axios');
 
 async function testCustomerCreation() {
-  const API_URL = 'https://clubosv2-production.up.railway.app';
+  const API_URL = process.env.TEST_API_URL || 'https://clubosv2-production.up.railway.app';
   
-  // Test data
+  // Test data - use environment variable for password or generate random
+  const testPassword = process.env.TEST_PASSWORD || `Test${Math.random().toString(36).substring(2, 8)}!`;
   const testEmail = `test${Date.now()}@example.com`;
   const testData = {
     email: testEmail,
-    password: 'Test123!',
+    password: testPassword,
     name: 'Test Customer',
     phone: '555-0123',
     role: 'customer'

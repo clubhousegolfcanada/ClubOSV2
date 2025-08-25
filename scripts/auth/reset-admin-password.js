@@ -3,6 +3,19 @@
 const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
+
+// Generate a secure random password
+function generateSecurePassword() {
+  const length = 16;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  const randomBytes = crypto.randomBytes(length);
+  for (let i = 0; i < length; i++) {
+    password += charset[randomBytes[i] % charset.length];
+  }
+  return password;
+}
 
 async function resetAdminPassword() {
   console.log('🔐 Resetting admin password to match login page...\n');
@@ -18,9 +31,11 @@ async function resetAdminPassword() {
       console.log(`- ${u.email} (${u.role})`);
     });
     
-    // Password from the login page
-    const newPassword = 'ClubhouseAdmin123!';
+    // Generate secure password or use environment variable
+    const newPassword = process.env.ADMIN_PASSWORD || generateSecurePassword();
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    console.log('\n🔑 Generated new secure password.');
     
     // Update admin user
     const adminIndex = users.findIndex(u => u.email === 'admin@clubhouse247golf.com');
@@ -35,8 +50,8 @@ async function resetAdminPassword() {
       console.log('\n✅ Admin password has been reset!');
       console.log('\n📧 Login credentials:');
       console.log('Email: admin@clubhouse247golf.com');
-      console.log('Password: ClubhouseAdmin123!');
-      console.log('\nThese match the credentials shown on the login page.');
+      console.log(`Password: ${newPassword}`);
+      console.log('\n⚠️  IMPORTANT: Save this password securely and delete this output!');
       
       // Also update the sync directory if it exists
       const syncPath = path.join(__dirname, 'ClubOSV1-backend/src/data/sync/users.json');
@@ -66,12 +81,13 @@ async function resetAdminPassword() {
       console.log('\n✅ Admin user created!');
       console.log('\n📧 Login credentials:');
       console.log('Email: admin@clubhouse247golf.com');
-      console.log('Password: ClubhouseAdmin123!');
+      console.log(`Password: ${newPassword}`);
+      console.log('\n⚠️  IMPORTANT: Save this password securely and delete this output!');
     }
     
     // Test the password
     console.log('\n🧪 Testing password hash...');
-    const testResult = await bcrypt.compare('ClubhouseAdmin123!', hashedPassword);
+    const testResult = await bcrypt.compare(newPassword, hashedPassword);
     console.log('Password test:', testResult ? '✅ PASSED' : '❌ FAILED');
     
   } catch (error) {
