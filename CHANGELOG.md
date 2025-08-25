@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.40] - 2025-08-25
+
+### Fixed
+- **Production Database Migration**
+  - Applied missing migration 115 to add required user columns
+  - Fixed "column status does not exist" error in production
+  - Customer creation now works in both admin panel and signup screen
+  - Added status, signup_date, and signup_metadata columns to users table
+  - Verified all user management features are operational
+
 ## [1.14.39] - 2025-08-24
 
 ### Fixed
