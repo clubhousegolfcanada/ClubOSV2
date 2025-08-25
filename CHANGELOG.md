@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.45] - 2025-08-25
+
+### Fixed
+- **ClubCoin Total Tracking**
+  - Fixed critical bug where admin CC adjustments didn't update total_cc_earned
+  - Created script to recalculate and fix all user CC totals from transaction history
+  - Fixed Mike Belair's 100M CC and Alanna's 500 CC now properly tracked
+  - Admin credits now properly increment total_cc_earned
+  - Admin debits now properly increment total_cc_spent
+  - Leaderboard now correctly shows all users with their earned CC
+  - Added reconciliation transactions for historical balance discrepancies
+  - Ensures all CC is properly connected regardless of how it was obtained
+
 ## [1.14.44] - 2025-08-25
 
 ### Added

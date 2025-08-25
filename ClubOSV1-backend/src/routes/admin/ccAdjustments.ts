@@ -152,11 +152,24 @@ router.post('/:userId/adjust', async (req, res) => {
       ? currentBalance + adjustAmount 
       : currentBalance - adjustAmount;
     
-    // Update balance
-    await client.query(
-      'UPDATE customer_profiles SET cc_balance = $1 WHERE user_id = $2',
-      [newBalance, userId]
-    );
+    // Update balance and totals
+    if (type === 'credit') {
+      await client.query(
+        `UPDATE customer_profiles 
+         SET cc_balance = $1, 
+             total_cc_earned = total_cc_earned + $2
+         WHERE user_id = $3`,
+        [newBalance, adjustAmount, userId]
+      );
+    } else {
+      await client.query(
+        `UPDATE customer_profiles 
+         SET cc_balance = $1, 
+             total_cc_spent = total_cc_spent + $2
+         WHERE user_id = $3`,
+        [newBalance, adjustAmount, userId]
+      );
+    }
     
     // Log the transaction
     await client.query(
