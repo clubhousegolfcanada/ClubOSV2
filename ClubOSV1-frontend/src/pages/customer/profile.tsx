@@ -300,7 +300,7 @@ export default function CustomerProfile() {
           <div className={`bg-white border-b ${
             profileData ? `${tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].outlineColor} border-l-4` : 'border-gray-200'
           }`}>
-            <div className="max-w-6xl mx-auto px-4 py-6">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
@@ -379,7 +379,7 @@ export default function CustomerProfile() {
             </div>
           </div>
 
-          <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-6">
             {/* Statistics Tab */}
             {activeTab === 'stats' && (
               <div className="space-y-6">

@@ -60,7 +60,7 @@ export default function CustomerLeaderboard() {
         
         <main className="pb-20 lg:pb-8">
           {/* Compact Header */}
-          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-4 py-3">
+          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-3 sm:px-4 py-2 sm:py-3">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <h1 className="text-xl font-bold">

@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.47] - 2025-08-25
+
+### Fixed
+- **Mobile App Polish & Layout Improvements**
+  - Redesigned leaderboard mobile layout with better spacing
+  - Fixed player stats display to prevent bunching
+  - Moved action buttons to top-right for better mobile UX
+  - Reduced button sizes throughout for better mobile fit
+  - Fixed friend request cards wrapping on mobile screens
+  - Reduced excessive top padding between header and content
+  - Improved overall mobile spacing (px-3 on mobile, px-4 on desktop)
+  - Better truncation for long names and emails
+  - Stats displayed in compact format on mobile devices
+
 ## [1.14.46] - 2025-08-25
 
 ### Changed

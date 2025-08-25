@@ -115,38 +115,38 @@ export const FriendRequests: React.FC = () => {
                 key={request.id}
                 className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-sm font-bold text-white">
                         {request.name?.charAt(0).toUpperCase() || '?'}
                       </span>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{request.name}</p>
-                      <p className="text-xs text-gray-500">{request.email}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 truncate">{request.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{request.email}</p>
                       {request.message && (
-                        <p className="text-xs text-gray-600 mt-1 italic">"{request.message}"</p>
+                        <p className="text-xs text-gray-600 mt-1 italic line-clamp-2">"{request.message}"</p>
                       )}
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-13 sm:ml-0">
                     <button
                       onClick={() => handleAccept(request.id, request.name)}
                       disabled={processingId === request.id}
-                      className="px-3 py-1.5 bg-[#0B3D3A] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors disabled:opacity-50 flex items-center gap-1"
+                      className="px-2 py-1 bg-[#0B3D3A] text-white text-[10px] sm:text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors disabled:opacity-50 flex items-center gap-0.5"
                     >
                       <Check className="w-3 h-3" />
-                      Accept
+                      <span className="hidden sm:inline">Accept</span>
                     </button>
                     <button
                       onClick={() => handleReject(request.id)}
                       disabled={processingId === request.id}
-                      className="px-3 py-1.5 border border-gray-300 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      className="px-2 py-1 border border-gray-300 text-gray-600 text-[10px] sm:text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-0.5"
                     >
                       <X className="w-3 h-3" />
-                      Decline
+                      <span className="hidden sm:inline">Decline</span>
                     </button>
                   </div>
                 </div>
