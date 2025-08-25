@@ -306,7 +306,6 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                 <option value="cc_balance">Balance</option>
                 <option value="wins">Wins</option>
                 <option value="win_rate">Win Rate</option>
-                <option value="achievements">Achievements</option>
               </select>
               <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
@@ -386,11 +385,6 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                           <>
                             <TrendingUp className="w-3 h-3 flex-shrink-0" />
                             {player.win_rate}% Win Rate
-                          </>
-                        ) : sortBy === 'achievements' ? (
-                          <>
-                            <Award className="w-3 h-3 flex-shrink-0" />
-                            {player.achievement_points || 0} Points
                           </>
                         ) : (
                           <>

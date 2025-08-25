@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.46] - 2025-08-25
+
+### Changed
+- **Removed Achievement Sorting**
+  - Removed achievement points sorting option from leaderboard
+  - Simplified sorting to: Total CC, Balance, Wins, Win Rate
+  - Cleaner dropdown with only relevant competitive metrics
+
 ## [1.14.45] - 2025-08-25
 
 ### Fixed

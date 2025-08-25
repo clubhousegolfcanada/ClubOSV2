@@ -18,7 +18,7 @@ router.get('/alltime', async (req, res) => {
     const userId = (req as any).user?.id || null;
     
     // Validate sort parameter
-    const validSorts = ['cc_earned', 'cc_balance', 'wins', 'win_rate', 'achievements'];
+    const validSorts = ['cc_earned', 'cc_balance', 'wins', 'win_rate'];
     const sortBy = validSorts.includes(sort as string) ? sort as string : 'cc_earned';
     
     // Build ORDER BY clause based on sort parameter
@@ -44,10 +44,6 @@ router.get('/alltime', async (req, res) => {
           COALESCE(cp.total_challenges_won, 0) DESC,
           u.name ASC`;
         sortDescription = 'Win Rate (min 10 games)';
-        break;
-      case 'achievements':
-        orderByClause = `COALESCE(cp.achievement_points, 0) DESC, COALESCE(cp.achievement_count, 0) DESC, u.name ASC`;
-        sortDescription = 'Achievement Points';
         break;
       case 'cc_earned':
       default:
