@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles } from 'lucide-react';
+import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ interface LeaderboardEntry {
   rank: number;
   rank_tier: string;
   cc_balance: number;
+  total_cc_earned: number;
   total_challenges_won: number;
   total_challenges_played: number;
   win_rate: number;
@@ -95,6 +96,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [pullDistance, setPullDistance] = useState(0);
+  const [sortBy, setSortBy] = useState<string>('cc_earned');
 
   // Fetch leaderboard data
   const fetchLeaderboard = useCallback(async () => {
@@ -102,7 +104,8 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     
     try {
       const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
-        headers: { Authorization: `Bearer ${userToken}` }
+        headers: { Authorization: `Bearer ${userToken}` },
+        params: { sort: sortBy }
       });
       
       if (response.data.success) {
@@ -119,7 +122,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [userToken, router]);
+  }, [userToken, router, sortBy]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -282,16 +285,32 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
         <p className="text-xs text-white/80 mt-1">Season-wide competitive standings</p>
       </div>
 
-      {/* Search bar */}
+      {/* Search bar and Sort dropdown */}
       {showSearch && (
         <div className="p-3 border-b border-gray-200">
-          <input
-            type="text"
-            placeholder="Search players..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+            />
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none px-3 py-2 pr-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A] bg-white cursor-pointer"
+              >
+                <option value="cc_earned">Total CC</option>
+                <option value="cc_balance">Balance</option>
+                <option value="wins">Wins</option>
+                <option value="win_rate">Win Rate</option>
+                <option value="achievements">Achievements</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -351,19 +370,45 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mt-1">
+                      {/* Primary stat based on sort */}
+                      <span className="flex items-center gap-1 font-semibold text-[#0B3D3A]">
+                        {sortBy === 'cc_balance' ? (
+                          <>
+                            <Coins className="w-3 h-3 flex-shrink-0" />
+                            {player.cc_balance.toLocaleString()} CC
+                          </>
+                        ) : sortBy === 'wins' ? (
+                          <>
+                            <Trophy className="w-3 h-3 flex-shrink-0" />
+                            {player.total_challenges_won} Wins
+                          </>
+                        ) : sortBy === 'win_rate' ? (
+                          <>
+                            <TrendingUp className="w-3 h-3 flex-shrink-0" />
+                            {player.win_rate}% Win Rate
+                          </>
+                        ) : sortBy === 'achievements' ? (
+                          <>
+                            <Award className="w-3 h-3 flex-shrink-0" />
+                            {player.achievement_points || 0} Points
+                          </>
+                        ) : (
+                          <>
+                            <Coins className="w-3 h-3 flex-shrink-0" />
+                            {player.total_cc_earned.toLocaleString()} Total CC
+                          </>
+                        )}
+                      </span>
+                      {/* Secondary stats */}
                       <span className="flex items-center gap-1">
                         <Coins className="w-3 h-3 flex-shrink-0" />
-                        <span className="hidden sm:inline">{player.cc_balance.toLocaleString()} CC</span>
+                        <span className="hidden sm:inline">{player.cc_balance.toLocaleString()} Balance</span>
                         <span className="sm:hidden">{player.cc_balance.toLocaleString()}</span>
                       </span>
                       <span className="flex items-center gap-1">
                         <Trophy className="w-3 h-3 flex-shrink-0" />
                         <span className="hidden sm:inline">{player.total_challenges_won}W / {player.total_challenges_played}P</span>
                         <span className="sm:hidden">{player.total_challenges_won}/{player.total_challenges_played}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                        {player.win_rate}%
                       </span>
                     </div>
                   </div>

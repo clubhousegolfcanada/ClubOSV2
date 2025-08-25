@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.44] - 2025-08-25
+
+### Added
+- **Leaderboard Sorting Options**
+  - Added dropdown to sort leaderboard by different metrics
+  - Sort by Total ClubCoins Earned (default)
+  - Sort by Current CC Balance
+  - Sort by Total Wins
+  - Sort by Win Rate (minimum 10 games required)
+  - Sort by Achievement Points
+  - Dynamic ORDER BY clause in backend based on sort parameter
+  - Primary sorted stat highlighted in green on frontend
+  - Mobile-friendly dropdown with chevron indicator
+  - Metadata in API response shows current sort method
+
 ## [1.14.43] - 2025-08-25
 
 ### Fixed

@@ -14,8 +14,47 @@ router.use(authenticate);
  */
 router.get('/alltime', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
+    const { limit = 100, sort = 'cc_earned' } = req.query;
     const userId = (req as any).user?.id || null;
+    
+    // Validate sort parameter
+    const validSorts = ['cc_earned', 'cc_balance', 'wins', 'win_rate', 'achievements'];
+    const sortBy = validSorts.includes(sort as string) ? sort as string : 'cc_earned';
+    
+    // Build ORDER BY clause based on sort parameter
+    let orderByClause = '';
+    let sortDescription = '';
+    
+    switch (sortBy) {
+      case 'cc_balance':
+        orderByClause = `COALESCE(cp.cc_balance, 0) DESC, COALESCE(cp.total_cc_earned, 0) DESC, u.name ASC`;
+        sortDescription = 'Current Balance';
+        break;
+      case 'wins':
+        orderByClause = `COALESCE(cp.total_challenges_won, 0) DESC, COALESCE(cp.challenge_win_rate, 0) DESC, u.name ASC`;
+        sortDescription = 'Total Wins';
+        break;
+      case 'win_rate':
+        // Minimum 10 games for win rate sorting
+        orderByClause = `
+          CASE 
+            WHEN COALESCE(cp.total_challenges_played, 0) < 10 THEN -1
+            ELSE COALESCE(cp.challenge_win_rate, 0)
+          END DESC,
+          COALESCE(cp.total_challenges_won, 0) DESC,
+          u.name ASC`;
+        sortDescription = 'Win Rate (min 10 games)';
+        break;
+      case 'achievements':
+        orderByClause = `COALESCE(cp.achievement_points, 0) DESC, COALESCE(cp.achievement_count, 0) DESC, u.name ASC`;
+        sortDescription = 'Achievement Points';
+        break;
+      case 'cc_earned':
+      default:
+        orderByClause = `COALESCE(cp.total_cc_earned, 0) DESC, COALESCE(cp.cc_balance, 0) DESC, u.name ASC`;
+        sortDescription = 'Total ClubCoins Earned';
+        break;
+    }
     
     // Fixed query with proper NULL handling and guaranteed ordering
     const query = `
@@ -35,10 +74,7 @@ router.get('/alltime', async (req, res) => {
           COALESCE(cp.achievement_points, 0) as achievement_points,
           -- Use ROW_NUMBER for guaranteed unique ranking
           ROW_NUMBER() OVER (
-            ORDER BY 
-              COALESCE(cp.total_cc_earned, 0) DESC,
-              COALESCE(cp.cc_balance, 0) DESC,
-              u.name ASC
+            ORDER BY ${orderByClause}
           ) as position
         FROM users u
         LEFT JOIN customer_profiles cp ON cp.user_id = u.id
@@ -152,7 +188,9 @@ router.get('/alltime', async (req, res) => {
       metadata: {
         total_players: leaderboard.length,
         requested_limit: limit,
-        ordered_by: 'total_cc_earned DESC, cc_balance DESC, name ASC'
+        sort_by: sortBy,
+        sort_description: sortDescription,
+        ordered_by: orderByClause.replace(/\s+/g, ' ').trim()
       }
     });
   } catch (error) {
