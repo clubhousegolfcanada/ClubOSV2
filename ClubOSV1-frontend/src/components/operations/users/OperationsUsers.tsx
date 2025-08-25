@@ -41,7 +41,7 @@ export const OperationsUsers: React.FC = () => {
     email: '',
     name: '',
     password: '',
-    role: 'support' as 'admin' | 'operator' | 'support' | 'kiosk' | 'customer',
+    role: 'customer' as 'admin' | 'operator' | 'support' | 'kiosk' | 'customer',
     phone: ''
   });
   const [loading, setLoading] = useState(false);
@@ -190,7 +190,7 @@ export const OperationsUsers: React.FC = () => {
 
   const validatePassword = (password: string) => {
     setPasswordValidation({
-      minLength: password.length >= 8,
+      minLength: password.length >= 6,
       hasUppercase: /[A-Z]/.test(password),
       hasLowercase: /[a-z]/.test(password),
       hasNumber: /[0-9]/.test(password)
@@ -267,7 +267,7 @@ export const OperationsUsers: React.FC = () => {
         email: '',
         name: '',
         password: '',
-        role: 'support',
+        role: 'customer',
         phone: ''
       });
       fetchUsers();
@@ -1047,7 +1047,7 @@ export const OperationsUsers: React.FC = () => {
                     email: '',
                     name: '',
                     password: '',
-                    role: 'support',
+                    role: 'customer',
                     phone: ''
                   });
                 }}

@@ -462,7 +462,7 @@ router.post('/users',
   roleGuard(['admin']),
   validate([
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('name').notEmpty().withMessage('Name is required'),
     body('role').isIn(['admin', 'operator', 'support', 'kiosk', 'customer']).withMessage('Invalid role'),
     body('phone').optional()
@@ -484,34 +484,76 @@ router.post('/users',
         });
       }
       
-      // Hash password
-      const hashedPassword = await bcryptjs.hash(password, 10);
-      
-      // Create user
-      const userId = await db.createUser({
-        email,
-        password: hashedPassword,
+      // Create user with proper status
+      const userId = uuidv4();
+      const user = await db.createUser({
+        id: userId,
+        email: email.toLowerCase(),
+        password,  // createUser will hash it
         name,
         role,
         phone,
         status: 'active'
       });
       
-      // If it's a customer, create a customer profile
+      // If it's a customer, handle full customer setup
       if (role === 'customer') {
-        await db.query(`
-          INSERT INTO customer_profiles (
-            user_id,
-            display_name,
-            cc_balance,
-            total_cc_earned,
-            total_cc_spent,
-            profile_visibility,
-            current_rank,
-            created_at,
-            updated_at
-          ) VALUES ($1, $2, 0, 0, 0, 'public', 'house', NOW(), NOW())
-        `, [userId, name]);
+        // Create customer profile
+        await db.query(
+          `INSERT INTO customer_profiles (user_id, display_name) 
+           VALUES ($1, $2) 
+           ON CONFLICT (user_id) DO NOTHING`,
+          [userId, name]
+        );
+        
+        // Initialize ClubCoins with 100 CC signup bonus
+        try {
+          const { clubCoinService } = await import('../services/clubCoinService');
+          await clubCoinService.initializeUser(userId, 100);
+          logger.info('Initialized ClubCoins for new customer:', { userId, initialBalance: 100 });
+        } catch (error) {
+          logger.error('Failed to initialize ClubCoins for new customer:', { 
+            userId, 
+            email,
+            error: error instanceof Error ? error.message : error 
+          });
+          
+          // Clean up the user if CC initialization fails
+          try {
+            await db.deleteUser(userId);
+            logger.warn('Rolled back user creation due to CC initialization failure');
+          } catch (rollbackError) {
+            logger.error('Failed to rollback user creation:', rollbackError);
+          }
+          
+          throw new AppError(
+            'Customer account creation failed. Please try again.',
+            500,
+            'CC_INITIALIZATION_FAILED'
+          );
+        }
+        
+        // Add user to current season leaderboard
+        try {
+          const seasonResult = await db.query(
+            `SELECT id FROM seasons WHERE status = 'active' LIMIT 1`
+          );
+          
+          if (seasonResult.rows.length > 0) {
+            const seasonId = seasonResult.rows[0].id;
+            await db.query(
+              `INSERT INTO seasonal_cc_earnings 
+               (user_id, season_id, cc_from_wins, cc_from_bonuses, cc_lost, cc_net, challenges_completed) 
+               VALUES ($1, $2, 0, 100, 0, 100, 0)
+               ON CONFLICT (user_id, season_id) DO NOTHING`,
+              [userId, seasonId]
+            );
+            logger.info('Added customer to season leaderboard:', { userId, seasonId });
+          }
+        } catch (error) {
+          logger.error('Failed to add customer to season leaderboard:', error);
+          // Don't fail user creation if leaderboard initialization fails
+        }
       }
       
       logger.info('User created', {
@@ -862,8 +904,8 @@ router.post('/users/:userId/reset-password',
   roleGuard(['admin']),
   validate([
     body('newPassword')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters')
       .matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage('Password must contain uppercase, lowercase and numbers')
   ]),

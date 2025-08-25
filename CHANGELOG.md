@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.39] - 2025-08-24
+
+### Fixed
+- **Customer Account Creation**
+  - Fixed admin panel "Add Customer" functionality that was never working
+  - Admin-created customers now properly receive 100 CC signup bonus
+  - Customer profiles are correctly created for admin-added customers
+  - New customers are automatically added to season leaderboards
+  - Unified password validation (6+ characters) across all user creation methods
+  - Changed default role to "customer" in admin panel for convenience
+  - Added proper error handling and rollback for failed customer creation
+  - Both admin creation and signup screen now work identically
+
 ## [1.14.38] - 2025-08-24
 
 ### Fixed
