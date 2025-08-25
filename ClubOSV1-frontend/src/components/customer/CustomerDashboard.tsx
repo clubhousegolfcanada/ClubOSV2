@@ -15,11 +15,15 @@ import {
   Medal,
   Star,
   Home as HomeIcon,
-  Shield
+  Shield,
+  Gem,
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -145,10 +149,9 @@ export const CustomerDashboard: React.FC = () => {
           }
         } catch (error) {
           console.error('Failed to fetch CC balance:', error);
-          // Set default 100 CC for Michael's account
-          if (user?.email === 'mikebelair79@gmail.com') {
-            setQuickStats(prev => ({ ...prev, ccBalance: 100 }));
-          }
+          // Set default CC for testing
+          const testBalance = user?.email === 'mikebelair79@gmail.com' ? 10000 : 100;
+          setQuickStats(prev => ({ ...prev, ccBalance: testBalance }));
         }
         
         // Mock rank data for now (would come from profile API)
@@ -176,6 +179,13 @@ export const CustomerDashboard: React.FC = () => {
                     user?.name?.split(' ')[0] || 
                     'Golfer';
 
+  // Get tier icon based on CC balance
+  const getTierIcon = () => {
+    const tier = calculateTierFromCC(quickStats.ccBalance);
+    const config = tierConfigs[tier];
+    return config.icon;
+  };
+
   const quickActions = [
     { 
       icon: Calendar, 
@@ -192,11 +202,12 @@ export const CustomerDashboard: React.FC = () => {
       hasLocationSelector: true
     },
     { 
-      icon: Trophy, 
+      icon: () => getTierIcon(), 
       label: 'Friends', 
       description: 'Challenge players',
       onClick: () => router.push('/customer/compete'),
-      info: quickStats.ccBalance > 0 ? `${quickStats.ccBalance} CC` : null
+      info: quickStats.ccBalance > 0 ? `${quickStats.ccBalance} CC` : null,
+      isTierIcon: true
     },
     { 
       icon: BarChart3, 
@@ -335,8 +346,18 @@ export const CustomerDashboard: React.FC = () => {
               } : action.onClick}
               className="w-full h-full flex flex-col items-center text-center space-y-2"
             >
-              <div className="p-3 rounded-full bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20 transition-colors">
-                <action.icon className="w-5 h-5 text-[#0B3D3A]" />
+              <div className={`p-3 rounded-full transition-colors ${
+                action.isTierIcon 
+                  ? `${tierConfigs[calculateTierFromCC(quickStats.ccBalance)].bgColor} group-hover:opacity-80`
+                  : 'bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20'
+              }`}>
+                {action.isTierIcon ? (
+                  React.cloneElement(getTierIcon() as React.ReactElement, {
+                    className: `w-5 h-5 ${tierConfigs[calculateTierFromCC(quickStats.ccBalance)].iconColor}`
+                  })
+                ) : (
+                  <action.icon className="w-5 h-5 text-[#0B3D3A]" />
+                )}
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900">{action.label}</h3>

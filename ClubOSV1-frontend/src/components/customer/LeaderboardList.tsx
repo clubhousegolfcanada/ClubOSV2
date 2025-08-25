@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus } from 'lucide-react';
+import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
+import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
 
 // Fix for double /api/ issue
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -193,17 +194,34 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     }
   };
 
-  const getRankIcon = (tier: string) => {
+  const getTierIcon = (ccBalance: number) => {
+    const tier = calculateTierFromCC(ccBalance);
+    const config = tierConfigs[tier];
+    
+    // Return just the icon with subtle coloring
+    return React.cloneElement(config.icon as React.ReactElement, {
+      className: `w-4 h-4 ${config.iconColor}`
+    });
+  };
+  
+  const getTierOutlineClass = (ccBalance: number) => {
+    const tier = calculateTierFromCC(ccBalance);
+    const config = tierConfigs[tier];
+    
+    // Return subtle border classes based on tier
     switch(tier) {
-      case 'Legend': return <Crown className="w-4 h-4 text-purple-600" />;
-      case 'Champion': return <Trophy className="w-4 h-4 text-yellow-600" />;
-      case 'Pro': return <Star className="w-4 h-4 text-blue-600" />;
-      case 'Gold': return <Medal className="w-4 h-4 text-yellow-500" />;
-      case 'Silver': return <Medal className="w-4 h-4 text-gray-400" />;
-      case 'Bronze': return <Medal className="w-4 h-4 text-orange-600" />;
-      case 'Amateur': return <Target className="w-4 h-4 text-green-600" />;
-      case 'House': return <Home className="w-4 h-4 text-gray-600" />;
-      default: return <Home className="w-4 h-4 text-gray-600" />;
+      case 'legend':
+        return 'border-l-4 border-l-purple-400/50 hover:border-l-purple-500/70';
+      case 'master':
+        return 'border-l-4 border-l-amber-400/50 hover:border-l-amber-500/70';
+      case 'pro':
+        return 'border-l-4 border-l-purple-300/50 hover:border-l-purple-400/70';
+      case 'amateur':
+        return 'border-l-4 border-l-blue-300/50 hover:border-l-blue-400/70';
+      case 'house':
+        return 'border-l-4 border-l-[#0B3D3A]/30 hover:border-l-[#0B3D3A]/50';
+      default:
+        return 'border-l-4 border-l-gray-200 hover:border-l-gray-300';
     }
   };
 
@@ -287,7 +305,10 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       ) : (
         <div className="divide-y divide-gray-200">
           {displayData.map((player) => (
-            <div key={player.user_id} className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors">
+            <div 
+              key={player.user_id} 
+              className={`px-3 sm:px-4 py-3 hover:bg-gray-50 transition-all duration-200 ${getTierOutlineClass(player.cc_balance)}`}
+            >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                   {/* Rank with change indicator */}
@@ -313,7 +334,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                       <span className="font-medium text-gray-900 truncate max-w-[150px] sm:max-w-none">
                         {player.name}
                       </span>
-                      <span className="flex-shrink-0">{getRankIcon(player.rank_tier)}</span>
+                      <span className="flex-shrink-0">{getTierIcon(player.cc_balance)}</span>
                       {player.has_champion_marker && (
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded flex-shrink-0">
                           Champion

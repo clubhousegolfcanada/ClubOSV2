@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { ProfileAchievements } from '@/components/customer/ProfileAchievements';
-import { TierBadge, TierProgressBar, calculateTierFromCC, getNextTier } from '@/components/TierBadge';
+import { TierBadge, TierProgressBar, calculateTierFromCC, getNextTier, tierConfigs } from '@/components/TierBadge';
 import Head from 'next/head';
 import { 
   Trophy, User, Mail, Phone, Save, ChevronRight,
@@ -296,15 +296,27 @@ export default function CustomerProfile() {
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8">
-          {/* Professional Header - ClubOS Style */}
-          <div className="bg-white border-b border-gray-200">
+          {/* Professional Header with subtle tier accents */}
+          <div className={`bg-white border-b ${
+            profileData ? `${tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].outlineColor} border-l-4` : 'border-gray-200'
+          }`}>
             <div className="max-w-6xl mx-auto px-4 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-[#0B3D3A] rounded-full flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white">
-                      {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                    profileData 
+                      ? tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].bgColor
+                      : 'bg-[#0B3D3A]'
+                  }`}>
+                    {profileData ? (
+                      React.cloneElement(tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].icon as React.ReactElement, {
+                        className: `w-8 h-8 ${tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].iconColor}`
+                      })
+                    ) : (
+                      <span className="text-2xl font-bold text-white">
+                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
@@ -384,9 +396,11 @@ export default function CustomerProfile() {
                   ))}
                 </div>
 
-                {/* Tier Progression */}
+                {/* Tier Progression with subtle accent */}
                 {profileData && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className={`bg-white rounded-lg border p-6 border-l-4 ${
+                    tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].outlineColor
+                  }`}>
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Tier Progression</h2>
                     <TierProgressBar
                       currentCC={profileData.totalCCEarned}

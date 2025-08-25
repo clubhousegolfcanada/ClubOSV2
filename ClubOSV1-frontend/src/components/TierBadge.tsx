@@ -12,67 +12,88 @@ interface TierConfig {
   iconColor: string;
   minCC: number;
   maxCC?: number;
+  outlineColor: string;
+  shadowColor: string;
+  accentColor: string;
 }
 
 const tierConfigs: Record<TierName, TierConfig> = {
   junior: {
     name: 'Junior',
     icon: <Star className="w-4 h-4" />,
-    bgColor: 'bg-gray-100',
-    borderColor: 'border-gray-300',
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-200',
     textColor: 'text-gray-700',
-    iconColor: 'text-gray-500',
+    iconColor: 'text-gray-400',
     minCC: 0,
-    maxCC: 199
+    maxCC: 199,
+    outlineColor: 'border-gray-200',
+    shadowColor: 'shadow-sm',
+    accentColor: 'gray'
   },
   house: {
     name: 'House',
     icon: <Trophy className="w-4 h-4" />,
-    bgColor: 'bg-green-100',
-    borderColor: 'border-green-300',
-    textColor: 'text-green-800',
-    iconColor: 'text-green-600',
+    bgColor: 'bg-[#0B3D3A]/5',
+    borderColor: 'border-[#0B3D3A]/20',
+    textColor: 'text-[#0B3D3A]',
+    iconColor: 'text-[#0B3D3A]/70',
     minCC: 200,
-    maxCC: 749
+    maxCC: 749,
+    outlineColor: 'border-[#0B3D3A]/30',
+    shadowColor: 'shadow-sm',
+    accentColor: '#0B3D3A'
   },
   amateur: {
     name: 'Amateur',
     icon: <Award className="w-4 h-4" />,
-    bgColor: 'bg-blue-100',
-    borderColor: 'border-blue-300',
-    textColor: 'text-blue-800',
-    iconColor: 'text-blue-600',
+    bgColor: 'bg-blue-50/50',
+    borderColor: 'border-blue-200',
+    textColor: 'text-blue-700',
+    iconColor: 'text-blue-500',
     minCC: 750,
-    maxCC: 1999
+    maxCC: 1999,
+    outlineColor: 'border-blue-300',
+    shadowColor: 'shadow-sm shadow-blue-100',
+    accentColor: '#3B82F6'
   },
   pro: {
     name: 'Pro',
     icon: <Crown className="w-4 h-4" />,
-    bgColor: 'bg-purple-100',
-    borderColor: 'border-purple-300',
-    textColor: 'text-purple-800',
-    iconColor: 'text-purple-600',
+    bgColor: 'bg-purple-50/50',
+    borderColor: 'border-purple-200',
+    textColor: 'text-purple-700',
+    iconColor: 'text-purple-500',
     minCC: 2000,
-    maxCC: 4999
+    maxCC: 4999,
+    outlineColor: 'border-purple-300',
+    shadowColor: 'shadow-sm shadow-purple-100',
+    accentColor: '#9333EA'
   },
   master: {
     name: 'Master',
     icon: <Sparkles className="w-4 h-4" />,
-    bgColor: 'bg-gradient-to-r from-yellow-100 to-amber-100',
-    borderColor: 'border-amber-400',
-    textColor: 'text-amber-900',
-    iconColor: 'text-amber-700',
+    bgColor: 'bg-amber-50/50',
+    borderColor: 'border-amber-200',
+    textColor: 'text-amber-700',
+    iconColor: 'text-amber-500',
     minCC: 5000,
-    maxCC: 9999
+    maxCC: 9999,
+    outlineColor: 'border-amber-300',
+    shadowColor: 'shadow-sm shadow-amber-100',
+    accentColor: '#F59E0B'
   },
   legend: {
     name: 'Legend',
     icon: <Gem className="w-4 h-4" />,
-    bgColor: 'bg-gradient-to-r from-slate-900 to-slate-700',
-    borderColor: 'border-slate-800',
-    textColor: 'text-white',
-    iconColor: 'text-slate-200',
-    minCC: 10000
+    bgColor: 'bg-gradient-to-r from-purple-50/50 to-slate-50/50',
+    borderColor: 'border-purple-300',
+    textColor: 'text-purple-900',
+    iconColor: 'text-purple-600',
+    minCC: 10000,
+    outlineColor: 'border-purple-400',
+    shadowColor: 'shadow-md shadow-purple-200',
+    accentColor: '#7C3AED'
   }
 };
 

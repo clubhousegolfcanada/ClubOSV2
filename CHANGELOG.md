@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.41] - 2025-08-25
+
+### Enhanced
+- **Tier System Visual Integration**
+  - Added subtle tier-based colored left borders to leaderboard entries
+  - Replaced generic icons with tier-specific stencil icons throughout
+  - Customer dashboard now shows tier icon instead of trophy
+  - Profile page features subtle tier accent colors
+  - Maintained minimalist ClubOS design aesthetic
+  - Legend tier (10,000+ CC) displays with purple accents
+  - Mobile-friendly tier visuals across all pages
+
 ## [1.14.40] - 2025-08-25
 
 ### Fixed
