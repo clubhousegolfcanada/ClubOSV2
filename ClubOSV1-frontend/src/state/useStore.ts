@@ -140,27 +140,12 @@ export const useAuthState = create<AuthState>()(
           isLoading: false 
         });
         
-        // Start token monitoring after login
-        if (typeof window !== 'undefined') {
-          import('../utils/tokenManager').then(({ tokenManager }) => {
-            tokenManager.startTokenMonitoring();
-            tokenManager.setupAxiosInterceptor();
-          });
-          // Reset session expiry manager on successful login
-          import('../utils/sessionExpiryManager').then(({ sessionExpiryManager }) => {
-            sessionExpiryManager.reset();
-          });
-        }
+        // No token monitoring needed - auth is handled by cookies
       },
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
-        // Stop token monitoring and clear all token references
+        // Clear auth tokens
         if (typeof window !== 'undefined') {
-          import('../utils/tokenManager').then(({ tokenManager }) => {
-            tokenManager.stopTokenMonitoring();
-            tokenManager.clearAllTokens();
-          });
-          
           // Clear all localStorage items
           localStorage.removeItem('clubos_token');
           localStorage.removeItem('clubos_user');

@@ -28,6 +28,11 @@ apiClient.interceptors.request.use(
     // Fix double /api/api/ issue
     if (config.url) {
       config.url = config.url.replace(/\/api\/api\//g, '/api/');
+      
+      // Ensure /api prefix is present
+      if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
+        config.url = '/api' + config.url;
+      }
     }
     
     // Debug logging removed for security
