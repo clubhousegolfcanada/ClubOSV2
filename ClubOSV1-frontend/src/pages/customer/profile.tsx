@@ -230,7 +230,12 @@ export default function CustomerProfile() {
     
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.put(
+      if (!token) {
+        toast.error('Please log in again');
+        return;
+      }
+      
+      const response = await axios.put(
         `${API_URL}/api/auth/profile`,
         {
           name: formData.name,
@@ -242,11 +247,14 @@ export default function CustomerProfile() {
         },
         { headers: { Authorization: `Bearer ${token}` }}
       );
+      
       toast.success('Profile updated successfully');
       setEditMode(false);
       fetchProfileData();
-    } catch (error) {
-      toast.error('Failed to update profile');
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update profile';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

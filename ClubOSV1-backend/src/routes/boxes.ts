@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { db } from '../utils/database';
+import pool from '../utils/db';
 import { AppError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
 
@@ -45,19 +45,19 @@ router.get('/stats', authenticate, async (req: Request, res: Response, next: Nex
     const userId = (req as any).user.id;
     
     // Get available boxes count
-    const availableResult = await db.query(
+    const availableResult = await pool.query(
       'SELECT COUNT(*) as count FROM boxes WHERE user_id = $1 AND status = $2',
       [userId, 'available']
     );
     
     // Get box progress
-    const progressResult = await db.query(
+    const progressResult = await pool.query(
       'SELECT current_progress, required_progress, total_boxes_earned FROM box_progress WHERE user_id = $1',
       [userId]
     );
     
     // Get recent rewards
-    const rewardsResult = await db.query(`
+    const rewardsResult = await pool.query(`
       SELECT br.*, b.opened_at 
       FROM box_rewards br
       JOIN boxes b ON br.box_id = b.id
@@ -93,7 +93,7 @@ router.get('/available', authenticate, async (req: Request, res: Response, next:
   try {
     const userId = (req as any).user.id;
     
-    const result = await db.query(
+    const result = await pool.query(
       `SELECT id, status, earned_at, expires_at 
        FROM boxes 
        WHERE user_id = $1 AND status = 'available' 
@@ -113,7 +113,7 @@ router.get('/rewards', authenticate, async (req: Request, res: Response, next: N
   try {
     const userId = (req as any).user.id;
     
-    const result = await db.query(`
+    const result = await pool.query(`
       SELECT br.*, b.opened_at 
       FROM box_rewards br
       JOIN boxes b ON br.box_id = b.id
@@ -136,17 +136,17 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
     const { boxId } = req.params;
     
     // Start transaction
-    await db.query('BEGIN');
+    await pool.query('BEGIN');
     
     try {
       // Verify box belongs to user and is available
-      const boxResult = await db.query(
+      const boxResult = await pool.query(
         'SELECT * FROM boxes WHERE id = $1 AND user_id = $2 AND status = $3 FOR UPDATE',
         [boxId, userId, 'available']
       );
       
       if (boxResult.rows.length === 0) {
-        await db.query('ROLLBACK');
+        await pool.query('ROLLBACK');
         throw new AppError('Box not found or already opened', 404, 'BOX_NOT_FOUND');
       }
       
@@ -160,7 +160,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
       }
       
       // Create reward record
-      const rewardResult = await db.query(`
+      const rewardResult = await pool.query(`
         INSERT INTO box_rewards (
           box_id, reward_type, reward_name, reward_value, voucher_code, expires_at
         ) VALUES ($1, $2, $3, $4, $5, $6)
@@ -175,7 +175,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
       ]);
       
       // Update box status
-      await db.query(
+      await pool.query(
         'UPDATE boxes SET status = $1, opened_at = $2, reward_type = $3, reward_value = $4 WHERE id = $5',
         ['opened', new Date(), reward.type, JSON.stringify(reward.value), boxId]
       );
@@ -185,7 +185,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
         const amount = reward.value.amount;
         
         // Update or create customer profile with CC balance
-        await db.query(`
+        await pool.query(`
           INSERT INTO customer_profiles (user_id, cc_balance, total_cc_earned)
           VALUES ($1, $2, $2)
           ON CONFLICT (user_id) 
@@ -196,7 +196,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
         `, [userId, amount]);
         
         // Log CC transaction
-        await db.query(`
+        await pool.query(`
           INSERT INTO cc_transactions (
             user_id, amount, type, description, metadata
           ) VALUES ($1, $2, $3, $4, $5)
@@ -209,7 +209,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
         ]);
       }
       
-      await db.query('COMMIT');
+      await pool.query('COMMIT');
       
       // Return the reward details
       res.json({
@@ -225,7 +225,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
       });
       
     } catch (error) {
-      await db.query('ROLLBACK');
+      await pool.query('ROLLBACK');
       throw error;
     }
     
@@ -248,7 +248,7 @@ router.post('/grant', authenticate, async (req: Request, res: Response, next: Ne
     
     const boxes = [];
     for (let i = 0; i < quantity; i++) {
-      const result = await db.query(`
+      const result = await pool.query(`
         INSERT INTO boxes (user_id, status)
         VALUES ($1, 'available')
         RETURNING *
@@ -257,7 +257,7 @@ router.post('/grant', authenticate, async (req: Request, res: Response, next: Ne
     }
     
     // Update total boxes earned
-    await db.query(`
+    await pool.query(`
       UPDATE box_progress 
       SET total_boxes_earned = total_boxes_earned + $1
       WHERE user_id = $2

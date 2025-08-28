@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.50] - 2025-08-28
+
+### Fixed
+- **Achievements API Error**
+  - Fixed SQL query in achievementService using incorrect column names (first_name/last_name)
+  - Changed to use the correct 'name' column from users table
+  - Achievements endpoint now returns data correctly
+  
+- **Box Opening System**
+  - Fixed boxes route using incorrect database import (db instead of pool)
+  - Updated all database queries to use pool.query instead of db.query
+  - Box opening functionality restored
+
 ## [1.14.49] - 2025-08-28
 
 ### Fixed
