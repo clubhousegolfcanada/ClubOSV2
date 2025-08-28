@@ -18,7 +18,8 @@ import {
   Gem,
   Award,
   Sparkles,
-  Swords
+  Swords,
+  Gift
 } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
@@ -27,12 +28,9 @@ import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
 import { QuickBookCard } from '@/components/customer/QuickBookCard';
 import { RecentChallenges } from '@/components/customer/RecentChallenges';
 
+import { API_CONFIG, getApiUrl } from "@/config/api";
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-// Remove /api from the end if it exists
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
+
 // Now we can safely add /api to our calls
 
 interface Location {
@@ -84,7 +82,9 @@ export const CustomerDashboard: React.FC = () => {
     ccBalance: 0,
     rank: 'House',
     isChampion: false,
-    pendingFriendRequests: 0
+    pendingFriendRequests: 0,
+    availableBoxes: 0,
+    boxProgress: 0
   });
 
   // Available locations - simplified
@@ -116,7 +116,7 @@ export const CustomerDashboard: React.FC = () => {
       if (token) {
         // Fetch customer profile
         try {
-          const response = await axios.get(`${API_URL}/api/customer-profile`, {
+          const response = await axios.get(getApiUrl('/customer-profile'), {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data.success) {
@@ -128,7 +128,7 @@ export const CustomerDashboard: React.FC = () => {
 
         // Fetch active challenges count and CC balance
         try {
-          const challengesResponse = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+          const challengesResponse = await axios.get(getApiUrl('/challenges/my-challenges'), {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (challengesResponse.data.success) {
@@ -143,7 +143,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch CC balance
         try {
-          const ccResponse = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
+          const ccResponse = await axios.get(getApiUrl('/challenges/cc-balance'), {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (ccResponse.data.success) {
@@ -166,7 +166,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch pending friend requests
         try {
-          const friendRequestsResponse = await axios.get(`${API_URL}/api/friends/pending?direction=incoming`, {
+          const friendRequestsResponse = await axios.get(getApiUrl('/friends/pending?direction=incoming'), {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (friendRequestsResponse.data.success) {
@@ -175,6 +175,22 @@ export const CustomerDashboard: React.FC = () => {
           }
         } catch (error) {
           console.error('Failed to fetch friend requests:', error);
+        }
+        
+        // Fetch box stats
+        try {
+          const boxResponse = await axios.get(getApiUrl('/boxes/stats'), {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (boxResponse.data) {
+            setQuickStats(prev => ({ 
+              ...prev, 
+              availableBoxes: boxResponse.data.availableCount || 0,
+              boxProgress: boxResponse.data.progress?.current || 0
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch box stats:', error);
         }
       }
       
@@ -222,7 +238,7 @@ export const CustomerDashboard: React.FC = () => {
       label: 'Friends', 
       description: 'Challenge players',
       onClick: () => router.push('/customer/compete?tab=competitors'),
-      info: quickStats.ccBalance > 0 ? `${quickStats.ccBalance} CC` : null,
+      info: quickStats.activeChallenges > 0 ? `${quickStats.activeChallenges} active` : null,
       badge: quickStats.pendingFriendRequests > 0 ? quickStats.pendingFriendRequests : null
     },
     { 
@@ -230,7 +246,7 @@ export const CustomerDashboard: React.FC = () => {
       label: 'Leaderboard', 
       description: 'Live rankings',
       onClick: () => router.push('/customer/leaderboard'),
-      info: quickStats.rank
+      info: null
     },
     { 
       icon: () => getTierIcon(), 
@@ -238,7 +254,8 @@ export const CustomerDashboard: React.FC = () => {
       description: 'View your stats',
       onClick: () => router.push('/customer/profile'),
       hasChampionCrown: quickStats.isChampion,
-      isTierIcon: true
+      isTierIcon: true,
+      info: null
     }
   ];
 
@@ -253,7 +270,7 @@ export const CustomerDashboard: React.FC = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading your dashboard...</p>
+          <p className="text-gray-500 dark:text-gray-400">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -262,7 +279,7 @@ export const CustomerDashboard: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Welcome Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-300 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -279,31 +296,20 @@ export const CustomerDashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-0.5">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
               {welcomeMessage}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Quick Info Bar - Simplified */}
-      {quickStats.activeChallenges > 0 && (
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          <div className="bg-white rounded-lg border border-gray-100 px-4 py-2 flex items-center gap-2 whitespace-nowrap">
-            <Target className="w-4 h-4 text-[#0B3D3A]" />
-            <span className="text-sm">
-              <span className="font-semibold">{quickStats.activeChallenges}</span> active challenge{quickStats.activeChallenges !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {quickActions.map((action, index) => (
           <div
             key={index}
-            className="group relative bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md hover:border-[#0B3D3A]/30 transition-all duration-200"
+            className="group relative bg-white rounded-lg border border-gray-300 dark:border-gray-700 p-4 hover:shadow-md hover:border-[#0B3D3A]/30 transition-all duration-200"
           >
             {/* Location selector for Book a Box card */}
             {action.hasLocationSelector && (
@@ -321,7 +327,7 @@ export const CustomerDashboard: React.FC = () => {
                 </button>
                 
                 {showLocationDropdown && (
-                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-40 min-w-[120px]">
+                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-40 min-w-[120px]">
                     {locations.map((location) => (
                       <button
                         key={location.id}
@@ -384,8 +390,8 @@ export const CustomerDashboard: React.FC = () => {
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">{action.label}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{action.label}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{action.description}</p>
               </div>
             </button>
           </div>
