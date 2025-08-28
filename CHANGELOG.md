@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.47] - 2025-08-28
+
+### Enhanced
+- **Book a Box Card Improvements**
+  - Renamed "Quick Book a Box" to "Book a Box" for simplicity
+  - Added collapsible schedule display with expand/collapse toggle
+  - Schedule defaults to collapsed, remembers user preference
+  - Shows full booking calendar inline when expanded (600-700px height)
+  - Removed redundant "Open Full Booking" button
+  - Location selector only visible when card is expanded
+  - Calendar icon opens full booking page in new tab
+  - Lazy loads iframe content for better performance
+
 ## [1.14.46] - 2025-08-28
 
 ### Enhanced
