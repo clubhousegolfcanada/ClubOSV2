@@ -119,8 +119,8 @@
     
     /* Text colors */
     --text-primary: #111827;      /* Darker for better contrast */
-    --text-secondary: #4b5563;    /* Darker secondary */
-    --text-muted: #9ca3af;
+    --text-secondary: #374151;    /* Much darker secondary for better readability */
+    --text-muted: #6b7280;        /* Darker muted text */
     --text-disabled: #d1d5db;     /* New: for disabled text */
     
     /* Border colors */

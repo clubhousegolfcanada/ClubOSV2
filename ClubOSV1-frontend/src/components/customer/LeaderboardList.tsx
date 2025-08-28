@@ -245,7 +245,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       );
     }
     return (
-      <span className="flex items-center text-gray-400 text-xs">
+      <span className="flex items-center text-gray-700 dark:text-gray-400 text-xs">
         <Minus className="w-3 h-3" />
       </span>
     );
@@ -298,7 +298,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                 <option value="wins">Wins</option>
                 <option value="win_rate">Win Rate</option>
               </select>
-              <ChevronDown className="absolute right-1.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-500 dark:text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-1.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-700 dark:text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -330,9 +330,9 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                 <div className="w-8 flex-shrink-0 text-center">
                   <span className={`font-bold ${
                     player.rank === 1 ? 'text-yellow-500 text-sm' :
-                    player.rank === 2 ? 'text-gray-400 text-sm' :
+                    player.rank === 2 ? 'text-gray-700 dark:text-gray-400 text-sm' :
                     player.rank === 3 ? 'text-orange-600 text-sm' :
-                    'text-gray-600 text-xs'
+                    'text-gray-800 dark:text-gray-500 text-xs'
                   }`}>
                     {player.rank}
                   </span>
@@ -398,9 +398,9 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                     <div className="flex-shrink-0 flex flex-col items-center min-w-[32px]">
                       <span className={`font-bold ${
                         player.rank === 1 ? 'text-yellow-500 text-xl' :
-                        player.rank === 2 ? 'text-gray-400 text-lg' :
+                        player.rank === 2 ? 'text-gray-700 dark:text-gray-400 text-lg' :
                         player.rank === 3 ? 'text-orange-600 text-lg' :
-                        'text-gray-600 text-base'
+                        'text-gray-800 dark:text-gray-500 text-base'
                       }`}>
                         {player.rank}
                       </span>
@@ -520,7 +520,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       
       {displayData.length === 0 && !loading && (
         <div className="p-8 text-center text-gray-700 dark:text-gray-300 bg-white">
-          <Trophy className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <Trophy className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
           <p>No players ranked yet. Start playing to climb the leaderboard!</p>
         </div>
       )}
