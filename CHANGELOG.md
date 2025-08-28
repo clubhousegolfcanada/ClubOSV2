@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.48] - 2025-08-28
+
+### Fixed
+- **Text Readability Improvements**
+  - Unified text color system using Tailwind gray scale
+  - Replaced CSS variables with consistent Tailwind classes
+  - Fixed light text issues on mobile dashboard
+  - Improved contrast for better readability
+  - Standardized text-gray-900 for primary text
+  - Fixed text-gray-600 for secondary text
+  - Ensured consistent dark text across all customer pages
+  
+### Database
+- **Boxes System Database Setup**
+  - Marked migrations 120 and 121 as applied in production
+  - Verified boxes, box_rewards, and box_progress tables exist
+  - Granted test boxes to users for testing
+  - Fixed migration tracking synchronization issue
+
 ## [1.14.47] - 2025-08-28
 
 ### Enhanced
