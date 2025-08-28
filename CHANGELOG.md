@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.51] - 2025-08-28
+
+### Fixed
+- **Box Opening System Production Error**
+  - Fixed incorrect pool import in boxes route (was importing default instead of named export)
+  - Changed from `import pool from '../utils/db'` to `import { pool } from '../utils/db'`
+  - Box opening now works correctly in production
+
 ## [1.14.50] - 2025-08-28
 
 ### Fixed
