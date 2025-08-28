@@ -296,7 +296,7 @@ export const CustomerDashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               )}
             </div>
-            <p className="text-sm text-gray-800 dark:text-gray-300 mt-0.5">
+            <p className="text-sm text-gray-900 dark:text-gray-300 mt-0.5 font-medium">
               {welcomeMessage}
             </p>
           </div>
@@ -390,8 +390,8 @@ export const CustomerDashboard: React.FC = () => {
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{action.label}</h3>
-                <p className="text-xs text-gray-800 dark:text-gray-300 mt-0.5">{action.description}</p>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{action.label}</h3>
+                <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 font-medium">{action.description}</p>
               </div>
             </button>
           </div>

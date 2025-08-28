@@ -119,9 +119,9 @@
     
     /* Text colors */
     --text-primary: #111827;      /* Darker for better contrast */
-    --text-secondary: #374151;    /* Much darker secondary for better readability */
-    --text-muted: #6b7280;        /* Darker muted text */
-    --text-disabled: #d1d5db;     /* New: for disabled text */
+    --text-secondary: #1f2937;    /* Very dark gray for maximum readability */
+    --text-muted: #374151;        /* Dark gray for good contrast */
+    --text-disabled: #9ca3af;     /* Medium gray for disabled text */
     
     /* Border colors */
     --border-primary: #e5e7eb;
@@ -218,8 +218,25 @@
 
   /* Theme-aware utility classes for components */
   .text-primary { color: var(--text-primary); }
-  .text-secondary { color: var(--text-secondary); }
-  .text-muted { color: var(--text-muted); }
+  .text-secondary { color: var(--text-secondary) !important; }
+  .text-muted { color: var(--text-muted) !important; }
+  
+  /* Force darker text on customer cards */
+  .customer-app h3 {
+    color: #111827 !important;
+  }
+  
+  .customer-app p {
+    color: #374151 !important;
+  }
+  
+  .dark .customer-app h3 {
+    color: #f3f4f6 !important;
+  }
+  
+  .dark .customer-app p {
+    color: #d1d5db !important;
+  }
   .text-disabled { color: var(--text-disabled); }
   
   .bg-primary { background-color: var(--bg-primary); }
