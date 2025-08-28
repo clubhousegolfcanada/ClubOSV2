@@ -147,7 +147,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                 >
                   <div className="font-medium text-sm">{location.name}</div>
                   {location.city !== 'All' && (
-                    <div className="text-xs text-gray-500">{location.city}</div>
+                    <div className="text-xs text-gray-700">{location.city}</div>
                   )}
                 </button>
               ))}
@@ -162,7 +162,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
         {isLoading && isVisible && (
           <div className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center">
             <Loader2 className="w-8 h-8 text-[#0B3D3A] animate-spin mb-3" />
-            <p className="text-sm text-gray-600">Loading booking system...</p>
+            <p className="text-sm text-gray-700">Loading booking system...</p>
           </div>
         )}
 
@@ -171,7 +171,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
           <div className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center p-6 text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
             <h4 className="text-lg font-semibold text-gray-900 mb-2">Unable to load booking system</h4>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-700 mb-4">
               The booking system couldn't be loaded in this view. Please open it in a new tab for the best experience.
             </p>
             <button
@@ -203,7 +203,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
         {!isVisible && (
           <div className="absolute inset-0 bg-gray-50 flex flex-col items-center justify-center">
             <Calendar className="w-12 h-12 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">Booking system will load when visible</p>
+            <p className="text-sm text-gray-700">Booking system will load when visible</p>
           </div>
         )}
       </div>

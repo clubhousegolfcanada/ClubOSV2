@@ -103,7 +103,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
         </div>
         <div className="text-center py-6">
           <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-xs text-gray-500">No active challenges</p>
+          <p className="text-xs text-gray-700">No active challenges</p>
           <button
             onClick={() => router.push('/customer/compete')}
             className="mt-3 px-3 py-1.5 bg-[#0B3D3A] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors"
@@ -143,7 +143,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
                   </span>
                   {getStatusBadge(challenge.status)}
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                <div className="flex items-center gap-3 text-[10px] text-gray-700">
                   <span className="flex items-center gap-1">
                     <Coins className="w-3 h-3" />
                     {wagerAmount} CC
@@ -162,7 +162,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
       
       <button
         onClick={() => router.push('/customer/compete')}
-        className="w-full mt-3 p-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+        className="w-full mt-3 p-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
       >
         <Users className="w-3.5 h-3.5" />
         View All Challenges

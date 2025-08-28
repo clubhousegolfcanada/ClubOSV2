@@ -194,7 +194,7 @@ const CustomerNavigation: React.FC = () => {
                     <p className="text-sm font-medium text-gray-900">
                       {user?.name || 'User'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-700 mt-0.5">
                       {user?.email}
                     </p>
                   </div>
@@ -323,7 +323,7 @@ const CustomerNavigation: React.FC = () => {
                 className={`relative flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                   isActive
                     ? 'text-[#0B3D3A]'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
                 <item.icon className={`w-5 h-5 mb-1 ${isActive ? 'transform scale-110' : ''}`} />

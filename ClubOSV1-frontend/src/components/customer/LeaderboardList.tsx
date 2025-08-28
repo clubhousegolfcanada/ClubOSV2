@@ -344,7 +344,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                     {player.name}
                   </span>
                   <span className="flex-shrink-0">{getTierIcon(player.cc_balance)}</span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                  <span className="text-[10px] text-gray-700 dark:text-gray-300 flex-shrink-0">
                     {calculateTierFromCC(player.cc_balance).charAt(0).toUpperCase() + calculateTierFromCC(player.cc_balance).slice(1)}
                   </span>
                 </div>
@@ -357,7 +357,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                      sortBy === 'win_rate' ? `${player.win_rate}%` :
                      (player.total_cc_earned || 0).toLocaleString()}
                   </span>
-                  <span className="text-gray-500 dark:text-gray-400 text-[10px]">
+                  <span className="text-gray-700 dark:text-gray-300 text-[10px]">
                     {player.total_challenges_won}/{player.total_challenges_played}
                   </span>
                 </div>
@@ -373,7 +373,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                         Challenge
                       </button>
                     ) : player.has_pending_request ? (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1 inline-block w-full text-center">
+                      <span className="text-xs text-gray-700 dark:text-gray-300 px-3 py-1 inline-block w-full text-center">
                         Sent
                       </span>
                     ) : (
@@ -418,7 +418,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                           {player.name}
                         </span>
                         <span className="flex-shrink-0">{getTierIcon(player.cc_balance)}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-gray-700 dark:text-gray-300">
                           {calculateTierFromCC(player.cc_balance).charAt(0).toUpperCase() + calculateTierFromCC(player.cc_balance).slice(1)}
                         </span>
                       </div>
@@ -452,7 +452,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                           Challenge
                         </button>
                       ) : player.has_pending_request ? (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1.5 inline-block">
+                        <span className="text-xs text-gray-700 dark:text-gray-300 px-3 py-1.5 inline-block">
                           Sent
                         </span>
                       ) : (
@@ -475,7 +475,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                   </div>
                 </div>
                 {/* Stats row */}
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pl-9">
+                <div className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-300 pl-9">
                   <div className="flex items-center gap-4">
                     {/* Primary stat based on sort */}
                     <span className="flex items-center gap-1 font-semibold text-[#0B3D3A]">
@@ -519,7 +519,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       )}
       
       {displayData.length === 0 && !loading && (
-        <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-white">
+        <div className="p-8 text-center text-gray-700 dark:text-gray-300 bg-white">
           <Trophy className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
           <p>No players ranked yet. Start playing to climb the leaderboard!</p>
         </div>
@@ -527,7 +527,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
 
       {/* Load more indicator for virtual scrolling */}
       {virtualScroll && visibleItems < filteredData.length && (
-        <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 bg-white">
+        <div className="p-4 text-center text-sm text-gray-700 dark:text-gray-300 bg-white">
           Loading more... ({visibleItems} of {filteredData.length})
         </div>
       )}
