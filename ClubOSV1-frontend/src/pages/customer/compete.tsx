@@ -525,35 +525,35 @@ export default function Compete() {
       <div className="min-h-screen bg-[#fafafa] customer-app">
         <CustomerNavigation />
         
-        <div className="flex flex-col h-screen bg-gray-50 pt-14 pb-16 lg:pb-0">
-          {/* Header with CC Balance */}
-          <div className="bg-white border-b px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-[#0B3D3A]" />
-                  Compete
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Challenge • Compete • Win
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => router.push('/customer/profile')}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white rounded-full hover:opacity-90 transition-opacity"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="font-bold">{ccBalance} CC</span>
-                </button>
-                <button
-                  onClick={() => router.push('/customer/challenges/create')}
-                  className="p-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors"
-                  title="Create Challenge"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
+        <main className="pb-20 lg:pb-8">
+          {/* Gradient Header - Consistent with other pages */}
+          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-3 sm:px-4 py-2 sm:py-3">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold">
+                    Compete
+                  </h1>
+                  <p className="text-xs text-white/80 mt-1">
+                    Challenge friends, win Club Coins
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => router.push('/customer/profile')}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                  >
+                    <Coins className="w-4 h-4" />
+                    <span className="font-bold">{ccBalance} CC</span>
+                  </button>
+                  <button
+                    onClick={() => router.push('/customer/challenges/create')}
+                    className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                    title="Create Challenge"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -566,7 +566,7 @@ export default function Compete() {
                 className={`py-3 px-1 border-b-2 transition-colors font-medium ${
                   activeTab === 'challenges'
                     ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    : 'border-transparent text-gray-800 hover:text-gray-900'
                 }`}
               >
                 Challenges
@@ -581,7 +581,7 @@ export default function Compete() {
                 className={`py-3 px-1 border-b-2 transition-colors font-medium ${
                   activeTab === 'competitors'
                     ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    : 'border-transparent text-gray-800 hover:text-gray-900'
                 }`}
               >
                 Competitors
@@ -591,7 +591,7 @@ export default function Compete() {
                 className={`py-3 px-1 border-b-2 transition-colors font-medium ${
                   activeTab === 'leaderboard'
                     ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    : 'border-transparent text-gray-800 hover:text-gray-900'
                 }`}
               >
                 Leaderboard
@@ -601,7 +601,7 @@ export default function Compete() {
                 className={`py-3 px-1 border-b-2 transition-colors font-medium relative ${
                   activeTab === 'requests'
                     ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    : 'border-transparent text-gray-800 hover:text-gray-900'
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -630,7 +630,7 @@ export default function Compete() {
                       className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                         challengeFilter === filter
                           ? 'bg-[#0B3D3A] text-white'
-                          : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                          : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       {filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -652,7 +652,7 @@ export default function Compete() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No {challengeFilter === 'all' ? '' : challengeFilter} challenges
                     </h3>
-                    <p className="text-gray-500 mb-6">
+                    <p className="text-gray-800 mb-6">
                       {challengeFilter === 'pending' && 'When someone challenges you, it will appear here'}
                       {challengeFilter === 'active' && 'Accept a challenge or create a new one to compete'}
                       {challengeFilter === 'history' && 'Your completed challenges will appear here'}
@@ -705,7 +705,7 @@ export default function Compete() {
                                   <div className="font-bold text-[#0B3D3A]">
                                     {challenge.wager_amount || challenge.wagerAmount || challenge.totalPot} CC
                                   </div>
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-xs text-gray-800">
                                     {formatTimeRemaining(challenge.expires_at || challenge.expiresAt)}
                                   </div>
                                 </div>
@@ -721,28 +721,28 @@ export default function Compete() {
                               <div className="bg-white rounded-lg p-3 mb-4">
                                 <div className="space-y-2 text-sm">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="flex items-center gap-2 text-gray-800">
                                       <MapPin className="w-4 h-4" />
                                       <span>Course</span>
                                     </div>
                                     <span className="font-medium">{challenge.courseName === 'DECIDE_LATER' ? 'To Be Decided' : (challenge.courseName || 'TBD')}</span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="flex items-center gap-2 text-gray-800">
                                       <Target className="w-4 h-4" />
                                       <span>Format</span>
                                     </div>
                                     <span className="font-medium">{challenge.settings?.holes || 18} holes</span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="flex items-center gap-2 text-gray-800">
                                       <DollarSign className="w-4 h-4" />
                                       <span>Stakes</span>
                                     </div>
                                     <span className="font-medium">{challenge.wager_amount || challenge.wagerAmount} CC (50/50 split)</span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="flex items-center gap-2 text-gray-800">
                                       <Clock className="w-4 h-4" />
                                       <span>Time Remaining</span>
                                     </div>
@@ -873,7 +873,7 @@ export default function Compete() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No friends yet
                     </h3>
-                    <p className="text-gray-500 mb-6">
+                    <p className="text-gray-800 mb-6">
                       Add friends from the leaderboard to challenge them
                     </p>
                     <button
@@ -1008,7 +1008,7 @@ export default function Compete() {
               </div>
             )}
           </div>
-        </div>
+        </main>
       </div>
     </>
   );

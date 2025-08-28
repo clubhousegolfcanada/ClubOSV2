@@ -270,7 +270,7 @@ export const CustomerDashboard: React.FC = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
-          <p className="text-gray-700 dark:text-gray-300">Loading your dashboard...</p>
+          <p className="text-gray-800 dark:text-gray-300">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -296,7 +296,7 @@ export const CustomerDashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               )}
             </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
+            <p className="text-sm text-gray-800 dark:text-gray-300 mt-0.5">
               {welcomeMessage}
             </p>
           </div>
@@ -391,7 +391,7 @@ export const CustomerDashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{action.label}</h3>
-                <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{action.description}</p>
+                <p className="text-xs text-gray-800 dark:text-gray-300 mt-0.5">{action.description}</p>
               </div>
             </button>
           </div>
