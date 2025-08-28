@@ -161,14 +161,35 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
         voucherCode = `CH${Date.now().toString(36).toUpperCase()}`;
       }
       
-      // Create reward record
+      // Get catalog_id based on reward name (fallback to a default if not found)
+      let catalogId = null;
+      try {
+        const catalogResult = await pool.query(
+          'SELECT id FROM box_reward_catalog WHERE name = $1 LIMIT 1',
+          [reward.name]
+        );
+        if (catalogResult.rows.length > 0) {
+          catalogId = catalogResult.rows[0].id;
+        } else {
+          // Fallback to first catalog item if exact match not found
+          const fallbackResult = await pool.query('SELECT id FROM box_reward_catalog LIMIT 1');
+          catalogId = fallbackResult.rows[0]?.id;
+        }
+      } catch (e) {
+        // If catalog table doesn't exist or is empty, use a placeholder UUID
+        catalogId = 'd9f00f3a-e488-464e-a78e-151310d268cf'; // 25 Club Coins as default
+      }
+      
+      // Create reward record with required columns
       const rewardResult = await pool.query(`
         INSERT INTO box_rewards (
-          box_id, reward_type, reward_name, reward_value, voucher_code, expires_at
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+          box_id, user_id, catalog_id, reward_type, reward_name, reward_value, voucher_code, expires_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `, [
         boxId,
+        userId,
+        catalogId,
         reward.type,
         reward.name,
         JSON.stringify(reward.value),

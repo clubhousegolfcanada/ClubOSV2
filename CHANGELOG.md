@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.53] - 2025-08-28
+
+### Fixed
+- **Box Opening Production Error - Final Fix**
+  - Updated box opening code to include required `user_id` and `catalog_id` columns
+  - Added logic to match rewards with catalog items
+  - Includes fallback for missing catalog entries
+  - Box opening now works correctly in production
+
 ## [1.14.52] - 2025-08-28
 
 ### Fixed
