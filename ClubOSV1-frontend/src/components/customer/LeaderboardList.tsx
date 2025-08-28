@@ -352,10 +352,10 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                 {/* Stats - Fixed width for alignment */}
                 <div className="flex flex-col items-end flex-shrink-0" style={{ minWidth: '80px' }}>
                   <span className="font-semibold text-[#0B3D3A] text-xs">
-                    {sortBy === 'cc_balance' ? player.cc_balance.toLocaleString() :
+                    {sortBy === 'cc_balance' ? (player.cc_balance || 0).toLocaleString() :
                      sortBy === 'wins' ? player.total_challenges_won :
                      sortBy === 'win_rate' ? `${player.win_rate}%` :
-                     player.total_cc_earned.toLocaleString()}
+                     (player.total_cc_earned || 0).toLocaleString()}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 text-[10px]">
                     {player.total_challenges_won}/{player.total_challenges_played}
@@ -482,7 +482,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                       {sortBy === 'cc_balance' ? (
                         <>
                           <Coins className="w-4 h-4" />
-                          {player.cc_balance.toLocaleString()} CC
+                          {(player.cc_balance || 0).toLocaleString()} CC
                         </>
                       ) : sortBy === 'wins' ? (
                         <>
@@ -497,7 +497,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                       ) : (
                         <>
                           <Coins className="w-4 h-4" />
-                          {player.total_cc_earned.toLocaleString()} Total CC
+                          {(player.total_cc_earned || 0).toLocaleString()} Total CC
                         </>
                       )}
                     </span>
