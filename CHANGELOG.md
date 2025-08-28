@@ -5,6 +5,13 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.14.48] - 2025-08-28
 
 ### Fixed
+- **Authentication & Session Management**
+  - Fixed cascade 401 errors when operator token expires
+  - Added singleton pattern to prevent multiple concurrent logout attempts
+  - Enhanced TokenManager with isHandlingExpiration flag
+  - Stopped polling components when authentication fails
+  - Prevented duplicate "session expired" notifications
+  
 - **Text Readability Improvements**
   - Unified text color system using Tailwind gray scale
   - Replaced CSS variables with consistent Tailwind classes

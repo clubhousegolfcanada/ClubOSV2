@@ -33,7 +33,7 @@ interface AiSuggestion {
 
 export default function MessagesCardV3() {
   const router = useRouter();
-  const { user } = useAuthState();
+  const { user, isAuthenticated } = useAuthState();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
@@ -41,13 +41,23 @@ export default function MessagesCardV3() {
   const [loadingAi, setLoadingAi] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [stopPolling, setStopPolling] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setStopPolling(true);
+      return;
+    }
+    
     fetchConversations();
-    // Poll every 10 seconds for new messages
-    const interval = setInterval(fetchConversations, 10000);
+    // Poll every 10 seconds for new messages, but stop if authentication fails
+    const interval = setInterval(() => {
+      if (!stopPolling) {
+        fetchConversations();
+      }
+    }, 10000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, isAuthenticated, stopPolling]);
 
   const fetchConversations = async () => {
     try {
@@ -100,7 +110,11 @@ export default function MessagesCardV3() {
           return convs;
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Stop polling on authentication errors
+      if (error?.response?.status === 401) {
+        setStopPolling(true);
+      }
       console.error('Failed to fetch conversations:', error);
     } finally {
       setIsLoading(false);

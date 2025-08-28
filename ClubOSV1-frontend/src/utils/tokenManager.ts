@@ -14,6 +14,7 @@ export class TokenManager {
   private static instance: TokenManager;
   private checkInterval: NodeJS.Timeout | null = null;
   private interceptorSetup: boolean = false;
+  private isHandlingExpiration: boolean = false;
   
   private constructor() {}
   
@@ -149,6 +150,7 @@ export class TokenManager {
     
     // Reset all flags
     this.interceptorSetup = false;
+    this.isHandlingExpiration = false;
     
     // Clear any cached token data
     if (typeof window !== 'undefined') {
@@ -163,6 +165,11 @@ export class TokenManager {
    * Handle token expiration
    */
   private handleTokenExpiration(): void {
+    // Prevent multiple simultaneous handlers
+    if (this.isHandlingExpiration) {
+      return;
+    }
+    
     // Check if we're already on the login page
     if (typeof window !== 'undefined' && window.location.pathname === '/login') {
       return; // Don't do anything if already on login page
@@ -172,6 +179,9 @@ export class TokenManager {
     if (!sessionExpiryManager.shouldShowNotification()) {
       return; // Already handling or already shown
     }
+    
+    // Set flag to prevent multiple handlers
+    this.isHandlingExpiration = true;
     
     // Mark that we're handling expiry
     sessionExpiryManager.markNotificationShown();
@@ -192,7 +202,10 @@ export class TokenManager {
     if (typeof window !== 'undefined') {
       // Import router dynamically to avoid SSR issues
       import('next/router').then(({ default: router }) => {
-        router.push('/login');
+        router.push('/login').then(() => {
+          // Reset flag after navigation completes
+          this.isHandlingExpiration = false;
+        });
       });
     }
   }
@@ -249,8 +262,8 @@ export class TokenManager {
             const recentlyLoggedIn = loginTimestamp && 
               (Date.now() - parseInt(loginTimestamp) < 5000);
             
-            // Check if already handling session expiry (via singleton)
-            const isAlreadyHandling = sessionExpiryManager.isHandling();
+            // Check if already handling session expiry (via singleton or internal flag)
+            const isAlreadyHandling = sessionExpiryManager.isHandling() || this.isHandlingExpiration;
             
             // Don't handle as expired if:
             // 1. We're on the login page
@@ -258,6 +271,7 @@ export class TokenManager {
             // 3. We just logged in (grace period)
             // 4. Token exists and is not expired
             // 5. Already handling session expiry
+            // 6. Already handling expiration internally
             const token = localStorage.getItem('clubos_token');
             const tokenValid = token && !this.isTokenExpired(token);
             
