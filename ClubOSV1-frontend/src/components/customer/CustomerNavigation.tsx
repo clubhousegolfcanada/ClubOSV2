@@ -36,6 +36,7 @@ const CustomerNavigation: React.FC = () => {
   const [availableBoxes, setAvailableBoxes] = useState(0);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleSwitchToOperator = () => {
@@ -75,6 +76,17 @@ const CustomerNavigation: React.FC = () => {
     }
   }, [user]);
 
+  // Check for mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,11 +100,12 @@ const CustomerNavigation: React.FC = () => {
   }, []);
 
   // Fixed navigation items order - must be consistent
+  // Mobile: Leaderboard and Friends (Compete) are swapped
   const mainNavItems = [
     { icon: Home, label: 'Dashboard', path: '/customer', key: 'dashboard' },
     { icon: Calendar, label: 'Bookings', path: '/customer/bookings', key: 'bookings' },
-    { icon: Trophy, label: 'Compete', path: '/customer/compete', key: 'compete' },
     { icon: BarChart3, label: 'Leaderboard', path: '/customer/leaderboard', key: 'leaderboard' },
+    { icon: Users, label: isMobile ? 'Friends' : 'Compete', path: '/customer/compete', key: 'compete' },
     { icon: User, label: 'Profile', path: '/customer/profile', key: 'profile' }
   ];
 
