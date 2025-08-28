@@ -15,9 +15,12 @@ import {
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
-import { getToken, setToken, removeToken } from "@/utils/tokenManager";
-import { API_CONFIG, getApiUrl } from "@/config/api";
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Remove /api from the end if it exists
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 interface ProfileData {
   name: string;
@@ -150,23 +153,23 @@ export default function CustomerProfile() {
   const fetchProfileData = async () => {
     setLoading(true);
     try {
-      const token = getToken();
+      const token = localStorage.getItem('clubos_token');
       
       // Fetch all profile stats, box stats, achievements, and box data in parallel
       const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse, achievementsResponse] = await Promise.all([
-        axios.get(getApiUrl('/profile/stats'), {
+        axios.get(`${API_URL}/api/profile/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(getApiUrl('/boxes/stats'), {
+        axios.get(`${API_URL}/api/boxes/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } })),
-        axios.get(getApiUrl('/boxes/available'), {
+        axios.get(`${API_URL}/api/boxes/available`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: [] })),
-        axios.get(getApiUrl('/boxes/rewards'), {
+        axios.get(`${API_URL}/api/boxes/rewards`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: [] })),
-        axios.get(getApiUrl(`/achievements/user/${user?.id}`), {
+        axios.get(`${API_URL}/api/achievements/user/${user?.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: [] }))
       ]);
@@ -226,9 +229,9 @@ export default function CustomerProfile() {
     setLoading(true);
     
     try {
-      const token = getToken();
+      const token = localStorage.getItem('clubos_token');
       await axios.put(
-        getApiUrl('/auth/profile'),
+        `${API_URL}/api/auth/profile`,
         {
           name: formData.name,
           phone: formData.phone,
@@ -257,10 +260,10 @@ export default function CustomerProfile() {
   const openBox = async (): Promise<BoxReward> => {
     if (!selectedBox) throw new Error('No box selected');
     
-    const token = getToken();
+    const token = localStorage.getItem('clubos_token');
     
     const response = await axios.post(
-      getApiUrl(`/boxes/${selectedBox.id}/open`),
+      `${API_URL}/api/boxes/${selectedBox.id}/open`,
       {},
       { headers: { Authorization: `Bearer ${token}` }}
     );
@@ -288,9 +291,9 @@ export default function CustomerProfile() {
     setLoading(true);
     
     try {
-      const token = getToken();
+      const token = localStorage.getItem('clubos_token');
       await axios.post(
-        getApiUrl('/auth/change-password'),
+        `${API_URL}/api/auth/change-password`,
         {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword
@@ -314,7 +317,7 @@ export default function CustomerProfile() {
   
   const handlePreferenceChange = async (key: string, value: boolean) => {
     try {
-      const token = getToken();
+      const token = localStorage.getItem('clubos_token');
       const updatedPreferences = { ...preferences, [key]: value };
       
       // Update local state immediately for better UX
@@ -322,7 +325,7 @@ export default function CustomerProfile() {
       
       // Save to backend
       await axios.put(
-        getApiUrl('/customer-profile'),
+        `${API_URL}/api/customer-profile`,
         {
           notification_preferences: {
             email: updatedPreferences.emailNotifications,

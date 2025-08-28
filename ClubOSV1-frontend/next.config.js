@@ -62,7 +62,7 @@ const nextConfig = {
       },
       {
         // Allow public access to PWA icons
-        source: '/clubos-icon-:size*.png',
+        source: '/clubos-icon-(.*).png',
         headers: [
           {
             key: 'Cache-Control',

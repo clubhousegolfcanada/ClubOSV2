@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.42] - 2025-08-28
+
+### Fixed
+- **Critical Authentication & API Issues**
+  - Reverted to stable commit 292e2ab before problematic token management refactor
+  - Fixed double `/api/api/` URL construction issues that caused 401 errors
+  - Restored simple localStorage-based authentication that works in iframes
+  - Fixed Next.js config invalid `:size` pattern causing build errors
+  - Removed non-existent tokenManager imports from profile page
+
+### Enhanced
+- **Restored UI Improvements from Commit 5404245**
+  - Profile page with complete box opening system and achievements
+  - Enhanced dashboard with friend request badges and box progress
+  - PageLayout component for consistent gradient headers
+  - CSGO-style box opening animation with shimmer effects
+  - Recent Challenges card on customer dashboard
+  - QuickBookCard for Skedda booking integration
+  - Improved leaderboard layout with tier displays
+  - Mobile-responsive design improvements
+
+### Documentation
+- Created API-REFACTOR-LESSONS-LEARNED.md to prevent future issues
+- Created UI-IMPROVEMENTS-TO-RESTORE.md tracking all UI enhancements
+
 ## [1.14.41] - 2025-08-25
 
 ### Enhanced
