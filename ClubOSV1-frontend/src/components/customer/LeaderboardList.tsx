@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles } from 'lucide-react';
+import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ interface LeaderboardEntry {
   rank: number;
   rank_tier: string;
   cc_balance: number;
+  total_cc_earned: number;
   total_challenges_won: number;
   total_challenges_played: number;
   win_rate: number;
@@ -52,25 +53,25 @@ interface LeaderboardListProps {
 
 // Loading skeleton component
 const LeaderboardSkeleton = () => (
-  <div className="divide-y divide-gray-200 animate-pulse">
+  <div className="bg-white divide-y divide-gray-200 animate-pulse">
     {[...Array(5)].map((_, i) => (
       <div key={i} className="px-3 sm:px-4 py-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1">
-            <div className="w-8 h-6 bg-gray-200 rounded"></div>
+            <div className="w-8 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <div className="h-5 w-32 bg-gray-200 rounded"></div>
-                <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
               </div>
               <div className="flex items-center gap-2 mt-2">
-                <div className="h-3 w-16 bg-gray-200 rounded"></div>
-                <div className="h-3 w-20 bg-gray-200 rounded"></div>
-                <div className="h-3 w-12 bg-gray-200 rounded"></div>
+                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
               </div>
             </div>
           </div>
-          <div className="h-8 w-20 bg-gray-200 rounded-full"></div>
+          <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
         </div>
       </div>
     ))}
@@ -95,6 +96,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [pullDistance, setPullDistance] = useState(0);
+  const [sortBy, setSortBy] = useState<string>('cc_earned');
 
   // Fetch leaderboard data
   const fetchLeaderboard = useCallback(async () => {
@@ -102,7 +104,8 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     
     try {
       const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
-        headers: { Authorization: `Bearer ${userToken}` }
+        headers: { Authorization: `Bearer ${userToken}` },
+        params: { sort: sortBy }
       });
       
       if (response.data.success) {
@@ -119,7 +122,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [userToken, router]);
+  }, [userToken, router, sortBy]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -256,7 +259,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
 
   return (
     <div 
-      className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${className}`}
+      className={`${className}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -264,7 +267,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       {/* Pull to refresh indicator */}
       {pullDistance > 0 && (
         <div 
-          className="flex items-center justify-center py-2 bg-gray-50 transition-all"
+          className="flex items-center justify-center py-2 bg-gray-50 dark:bg-gray-950 transition-all"
           style={{ height: `${pullDistance}px`, opacity: pullDistance / 100 }}
         >
           <div className={`${pullDistance > 50 ? 'animate-spin' : ''}`}>
@@ -273,25 +276,31 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
         </div>
       )}
 
-      {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Trophy className="w-5 h-5" />
-          All-Time Rankings
-        </h3>
-        <p className="text-xs text-white/80 mt-1">Season-wide competitive standings</p>
-      </div>
-
-      {/* Search bar */}
+      {/* Search bar and Sort dropdown */}
       {showSearch && (
-        <div className="p-3 border-b border-gray-200">
-          <input
-            type="text"
-            placeholder="Search players..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
-          />
+        <div className="px-3 py-2 bg-white border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+            />
+            <div className="relative overflow-hidden">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none pl-2 pr-7 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A] bg-white cursor-pointer"
+              >
+                <option value="cc_earned">Total CC</option>
+                <option value="cc_balance">Balance</option>
+                <option value="wins">Wins</option>
+                <option value="win_rate">Win Rate</option>
+              </select>
+              <ChevronDown className="absolute right-1.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-500 dark:text-gray-400 pointer-events-none" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -299,107 +308,209 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       {loading ? (
         <LeaderboardSkeleton />
       ) : refreshing ? (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-12 bg-white">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
         </div>
       ) : (
-        <div className="divide-y divide-gray-200">
+        <div className="bg-white divide-y divide-gray-200">
           {displayData.map((player) => (
             <div 
               key={player.user_id} 
-              className={`px-3 sm:px-4 py-3 hover:bg-gray-50 transition-all duration-200 ${getTierOutlineClass(player.cc_balance)}`}
+              className={`px-2 sm:px-3 py-2 bg-white hover:bg-gray-50 transition-all duration-200 ${
+                player.rank <= 3 ? 
+                  player.rank === 1 ? 'bg-gradient-to-r from-yellow-50/50 to-transparent' :
+                  player.rank === 2 ? 'bg-gradient-to-r from-gray-50/50 to-transparent' :
+                  'bg-gradient-to-r from-orange-50/30 to-transparent' : 
+                  ''
+              } ${getTierOutlineClass(player.cc_balance)}`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                  {/* Rank with change indicator */}
-                  <div className="flex-shrink-0 flex flex-col items-center">
-                    <span className={`font-bold ${
-                      player.rank === 1 ? 'text-yellow-500 text-lg sm:text-xl' :
-                      player.rank === 2 ? 'text-gray-400 text-base sm:text-lg' :
-                      player.rank === 3 ? 'text-orange-600 text-base sm:text-lg' :
-                      'text-gray-600 text-sm sm:text-base'
-                    }`}>
-                      {player.rank}
-                    </span>
-                    {player.rank_change !== undefined && (
-                      <div className="mt-0.5">
-                        {getRankChangeIcon(player.rank_change)}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Player Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900 truncate max-w-[150px] sm:max-w-none">
-                        {player.name}
-                      </span>
-                      <span className="flex-shrink-0">{getTierIcon(player.cc_balance)}</span>
-                      {player.has_champion_marker && (
-                        <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded flex-shrink-0">
-                          Champion
-                        </span>
-                      )}
-                      {/* Achievement Badges */}
-                      {player.featured_achievements && player.featured_achievements.length > 0 && (
-                        <AchievementBadgeGroup
-                          achievements={player.featured_achievements}
-                          size="xs"
-                          maxDisplay={3}
-                          className="flex-shrink-0"
-                        />
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mt-1">
-                      <span className="flex items-center gap-1">
-                        <Coins className="w-3 h-3 flex-shrink-0" />
-                        <span className="hidden sm:inline">{player.cc_balance.toLocaleString()} CC</span>
-                        <span className="sm:hidden">{player.cc_balance.toLocaleString()}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Trophy className="w-3 h-3 flex-shrink-0" />
-                        <span className="hidden sm:inline">{player.total_challenges_won}W / {player.total_challenges_played}P</span>
-                        <span className="sm:hidden">{player.total_challenges_won}/{player.total_challenges_played}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                        {player.win_rate}%
-                      </span>
-                    </div>
-                  </div>
+              {/* Mobile: Single line layout with fixed widths for alignment */}
+              <div className="sm:hidden flex items-center gap-2">
+                {/* Left: Rank - Fixed width */}
+                <div className="w-8 flex-shrink-0 text-center">
+                  <span className={`font-bold ${
+                    player.rank === 1 ? 'text-yellow-500 text-sm' :
+                    player.rank === 2 ? 'text-gray-400 text-sm' :
+                    player.rank === 3 ? 'text-orange-600 text-sm' :
+                    'text-gray-600 text-xs'
+                  }`}>
+                    {player.rank}
+                  </span>
                 </div>
                 
-                {/* Friend Request Button */}
-                <div className="flex-shrink-0 ml-10 sm:ml-0">
+                {/* Name with tier - Flex grow but max width */}
+                <div className="flex-1 min-w-0 flex items-center gap-1">
+                  <span className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                    {player.name}
+                  </span>
+                  <span className="flex-shrink-0">{getTierIcon(player.cc_balance)}</span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                    {calculateTierFromCC(player.cc_balance).charAt(0).toUpperCase() + calculateTierFromCC(player.cc_balance).slice(1)}
+                  </span>
+                </div>
+                
+                {/* Stats - Fixed width for alignment */}
+                <div className="flex flex-col items-end flex-shrink-0" style={{ minWidth: '80px' }}>
+                  <span className="font-semibold text-[#0B3D3A] text-xs">
+                    {sortBy === 'cc_balance' ? player.cc_balance.toLocaleString() :
+                     sortBy === 'wins' ? player.total_challenges_won :
+                     sortBy === 'win_rate' ? `${player.win_rate}%` :
+                     player.total_cc_earned.toLocaleString()}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400 text-[10px]">
+                    {player.total_challenges_won}/{player.total_challenges_played}
+                  </span>
+                </div>
+                
+                {/* Action button - Fixed width */}
+                <div className="w-20 flex-shrink-0 flex justify-end">
                   {player.user_id !== userId && (
                     player.is_friend ? (
                       <button
                         onClick={() => router.push(`/customer/challenges/create?friend=${player.user_id}`)}
-                        className="px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors min-w-[80px] min-h-[32px] flex items-center justify-center"
+                        className="px-3 py-1 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors w-full"
                       >
                         Challenge
                       </button>
                     ) : player.has_pending_request ? (
-                      <span className="text-xs text-gray-500 px-2 sm:px-3 py-1.5 inline-block">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1 inline-block w-full text-center">
                         Sent
                       </span>
                     ) : (
                       <button
                         onClick={() => sendFriendRequest(player.user_id, player.name)}
                         disabled={sendingRequest === player.user_id}
-                        className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors disabled:opacity-50 min-w-[44px] min-h-[32px] sm:min-h-[28px] justify-center"
+                        className="p-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors disabled:opacity-50 w-8 h-8 flex items-center justify-center"
                       >
-                        {sendingRequest === player.user_id ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                        ) : (
-                          <>
-                            <UserPlus className="w-3 h-3" />
-                            <span className="hidden sm:inline">Add</span>
-                          </>
-                        )}
+                        <UserPlus className="w-4 h-4" />
                       </button>
                     )
                   )}
+                </div>
+              </div>
+              
+              {/* Desktop: Original multi-line layout */}
+              <div className="hidden sm:flex flex-col gap-3">
+                {/* Top row: Rank, Name, and Action Button */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    {/* Rank with change indicator */}
+                    <div className="flex-shrink-0 flex flex-col items-center min-w-[32px]">
+                      <span className={`font-bold ${
+                        player.rank === 1 ? 'text-yellow-500 text-xl' :
+                        player.rank === 2 ? 'text-gray-400 text-lg' :
+                        player.rank === 3 ? 'text-orange-600 text-lg' :
+                        'text-gray-600 text-base'
+                      }`}>
+                        {player.rank}
+                      </span>
+                      {player.rank_change !== undefined && (
+                        <div className="mt-0.5">
+                          {getRankChangeIcon(player.rank_change)}
+                        </div>
+                      )}
+                    </div>
+                  
+                    {/* Player Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                          {player.name}
+                        </span>
+                        <span className="flex-shrink-0">{getTierIcon(player.cc_balance)}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {calculateTierFromCC(player.cc_balance).charAt(0).toUpperCase() + calculateTierFromCC(player.cc_balance).slice(1)}
+                        </span>
+                      </div>
+                      {/* Badges */}
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {player.has_champion_marker && (
+                          <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded flex-shrink-0">
+                            Champion
+                          </span>
+                        )}
+                        {/* Achievement Badges */}
+                        {player.featured_achievements && player.featured_achievements.length > 0 && (
+                          <AchievementBadgeGroup
+                            achievements={player.featured_achievements}
+                            size="xs"
+                            maxDisplay={2}
+                            className="flex-shrink-0"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Friend Request Button */}
+                  <div className="flex-shrink-0">
+                    {player.user_id !== userId && (
+                      player.is_friend ? (
+                        <button
+                          onClick={() => router.push(`/customer/challenges/create?friend=${player.user_id}`)}
+                          className="px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors"
+                        >
+                          Challenge
+                        </button>
+                      ) : player.has_pending_request ? (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1.5 inline-block">
+                          Sent
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => sendFriendRequest(player.user_id, player.name)}
+                          disabled={sendingRequest === player.user_id}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors disabled:opacity-50"
+                        >
+                          {sendingRequest === player.user_id ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4" />
+                              <span>Add</span>
+                            </>
+                          )}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+                {/* Stats row */}
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pl-9">
+                  <div className="flex items-center gap-4">
+                    {/* Primary stat based on sort */}
+                    <span className="flex items-center gap-1 font-semibold text-[#0B3D3A]">
+                      {sortBy === 'cc_balance' ? (
+                        <>
+                          <Coins className="w-4 h-4" />
+                          {player.cc_balance.toLocaleString()} CC
+                        </>
+                      ) : sortBy === 'wins' ? (
+                        <>
+                          <Trophy className="w-4 h-4" />
+                          {player.total_challenges_won} Wins
+                        </>
+                      ) : sortBy === 'win_rate' ? (
+                        <>
+                          <TrendingUp className="w-4 h-4" />
+                          {player.win_rate}% Win Rate
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="w-4 h-4" />
+                          {player.total_cc_earned.toLocaleString()} Total CC
+                        </>
+                      )}
+                    </span>
+                    {/* Secondary stats */}
+                    <span className="flex items-center gap-1">
+                      <Trophy className="w-4 h-4" />
+                      <span>{player.total_challenges_won}W / {player.total_challenges_played}P</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <TrendingUp className="w-4 h-4" />
+                      {player.win_rate}%
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -408,15 +519,15 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       )}
       
       {displayData.length === 0 && !loading && (
-        <div className="p-8 text-center text-gray-500">
-          <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-white">
+          <Trophy className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
           <p>No players ranked yet. Start playing to climb the leaderboard!</p>
         </div>
       )}
 
       {/* Load more indicator for virtual scrolling */}
       {virtualScroll && visibleItems < filteredData.length && (
-        <div className="p-4 text-center text-sm text-gray-500">
+        <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 bg-white">
           Loading more... ({visibleItems} of {filteredData.length})
         </div>
       )}
