@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.46] - 2025-08-28
+
+### Enhanced
+- **Mobile Navigation Improvements**
+  - Swapped Leaderboard and Friends (Compete) positions in mobile bottom navigation
+  - Renamed "Compete" to "Friends" on mobile screens (<1024px width)
+  - Changed icon from Trophy to Users for better clarity on Friends tab
+  - Added responsive viewport detection for mobile-specific UI changes
+  - Desktop navigation remains unchanged with "Compete" label
+
 ## [1.14.45] - 2025-08-28
 
 ### Fixed
