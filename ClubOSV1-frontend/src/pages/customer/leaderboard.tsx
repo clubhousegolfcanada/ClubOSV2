@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
+import { TabNavigation } from '@/components/customer/TabNavigation';
 import Head from 'next/head';
 import { Trophy } from 'lucide-react';
 import { LeaderboardList } from '@/components/customer/LeaderboardList';
@@ -42,7 +43,7 @@ export default function CustomerLeaderboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
       </div>
     );
@@ -55,12 +56,12 @@ export default function CustomerLeaderboard() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa] customer-app">
+      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8">
           {/* Compact Header */}
-          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-4 py-3">
+          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-3 sm:px-4 py-2 sm:py-3">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <h1 className="text-xl font-bold">
@@ -74,70 +75,30 @@ export default function CustomerLeaderboard() {
           </div>
 
           {/* Tabs */}
-          <div className="bg-white border-b border-gray-200 sticky top-14 z-40">
-            <div className="max-w-7xl mx-auto px-2 sm:px-4">
-              <div className="flex gap-1 sm:gap-4 overflow-x-auto scrollbar-hide">
-                <button
-                  onClick={() => setActiveTab('pro')}
-                  className={`py-3 px-2 sm:px-3 border-b-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === 'pro'
-                      ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <span className="sm:hidden">Pro</span>
-                  <span className="hidden sm:inline">Pro League</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('house')}
-                  className={`py-3 px-2 sm:px-3 border-b-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === 'house'
-                      ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <span className="sm:hidden">House</span>
-                  <span className="hidden sm:inline">House League</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('closest')}
-                  className={`py-3 px-2 sm:px-3 border-b-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === 'closest'
-                      ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <span className="sm:hidden">Closest</span>
-                  <span className="hidden sm:inline">Closest to Pin</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('alltime')}
-                  className={`py-3 px-2 sm:px-3 border-b-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === 'alltime'
-                      ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  All Time
-                </button>
-              </div>
-            </div>
-          </div>
+          <TabNavigation
+            tabs={[
+              { key: 'pro', label: 'Pro League' },
+              { key: 'house', label: 'House League' },
+              { key: 'closest', label: 'Closest to Pin' },
+              { key: 'alltime', label: 'All Time' }
+            ]}
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab as 'pro' | 'house' | 'closest' | 'alltime')}
+            sticky={true}
+          />
 
           {/* Content Area */}
           <div className="max-w-7xl mx-auto">
             {activeTab === 'alltime' ? (
               // All-time leaderboard using unified component
-              <div className="p-4">
-                <LeaderboardList 
-                  key={refreshKey}
-                  userId={user?.id}
-                  userToken={user?.token}
-                  onRefresh={handleRefresh}
-                  showSearch={true}
-                  virtualScroll={true}
-                />
-              </div>
+              <LeaderboardList 
+                key={refreshKey}
+                userId={user?.id}
+                userToken={user?.token}
+                onRefresh={handleRefresh}
+                showSearch={true}
+                virtualScroll={true}
+              />
             ) : (
               // TrackMan embed for Pro and House leagues
               <div className="relative w-full h-[60vh] sm:h-[70vh] md:h-[75vh]">
@@ -156,14 +117,14 @@ export default function CustomerLeaderboard() {
                   />
                 ) : (
                   <div className="p-8 text-center">
-                    <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <Trophy className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">
                       {activeTab === 'pro' ? 'Pro League' : 'House League'}
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-[var(--text-muted)] mb-4">
                       TrackMan leaderboard will appear here
                     </p>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-[var(--text-muted)]">
                       Contact support to configure the {activeTab === 'pro' ? 'Pro' : 'House'} League embed URL
                     </p>
                   </div>
