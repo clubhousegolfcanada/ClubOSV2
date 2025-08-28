@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.45] - 2025-08-28
+
+### Fixed
+- **Customer Page Header Consistency**
+  - Standardized minimalist headers across compete, leaderboard, and profile pages
+  - Replaced gradient headers with clean borders and consistent spacing
+  - Improved text color contrast using proper CSS variables
+  - Made CC balance display more subtle with background accent
+  - Added proper number formatting with toLocaleString() for readability
+  - Simplified profile header layout to match other customer pages
+
 ## [1.14.44] - 2025-08-28
 
 ### Enhanced
