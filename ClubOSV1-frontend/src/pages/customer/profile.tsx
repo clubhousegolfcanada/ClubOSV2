@@ -138,21 +138,37 @@ export default function CustomerProfile() {
     try {
       const token = localStorage.getItem('clubos_token');
       
-      // Fetch all profile stats, box stats, and box data in parallel
-      const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/profile/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/api/boxes/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } })),
-        axios.get(`${API_URL}/api/boxes/available`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
-        axios.get(`${API_URL}/api/boxes/rewards`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] }))
-      ]);
+      // Fetch profile stats first
+      const statsResponse = await axios.get(`${API_URL}/api/profile/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Box endpoints may not exist yet, so handle gracefully
+      let boxStatsResponse = { data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } };
+      let boxesResponse = { data: [] };
+      let rewardsResponse = { data: [] };
+      
+      // Try to fetch box data but don't fail if endpoints don't exist
+      try {
+        const [boxStats, boxes, rewards] = await Promise.all([
+          axios.get(`${API_URL}/api/boxes/stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null),
+          axios.get(`${API_URL}/api/boxes/available`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null),
+          axios.get(`${API_URL}/api/boxes/rewards`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null)
+        ]);
+        
+        if (boxStats) boxStatsResponse = boxStats;
+        if (boxes) boxesResponse = boxes;
+        if (rewards) rewardsResponse = rewards;
+      } catch (error) {
+        // Box endpoints not available, use defaults
+        console.log('Box endpoints not available yet');
+      }
       
       if (statsResponse.data.success) {
         const stats = statsResponse.data.data;
