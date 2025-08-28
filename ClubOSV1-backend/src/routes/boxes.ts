@@ -1,9 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
-import { pool } from '../utils/db';
+import db from '../utils/db';
 import { AppError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
+
+const pool = db.pool;
 
 const router = Router();
 

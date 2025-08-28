@@ -300,6 +300,11 @@ export default function CustomerProfile() {
     
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        toast.error('Please log in again');
+        return;
+      }
+      
       await axios.post(
         `${API_URL}/api/auth/change-password`,
         {
@@ -317,7 +322,9 @@ export default function CustomerProfile() {
         confirmPassword: ''
       });
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to change password');
+      console.error('Password change error:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to change password. Please check your current password.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.52] - 2025-08-28
+
+### Fixed
+- **Production Database Issues**
+  - Added migration to create missing `box_rewards` table columns (`reward_name`, `reward_value`)
+  - Added missing `highest_rank` and `highest_rank_achieved_at` columns to `customer_profiles`
+  - Fixed box opening 500 error caused by missing database columns
+  - Fixed rank calculation errors in production
+
+### Database
+- **New Migration**: `122_fix_box_rewards_table.sql`
+  - Creates box_rewards table if missing
+  - Adds missing columns to existing tables
+  - Handles both new and existing deployments gracefully
+
 ## [1.14.51] - 2025-08-28
 
 ### Fixed
