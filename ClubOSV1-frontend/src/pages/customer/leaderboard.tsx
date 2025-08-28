@@ -60,15 +60,13 @@ export default function CustomerLeaderboard() {
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8">
-          {/* Compact Header */}
-          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-3 sm:px-4 py-2 sm:py-3">
+          {/* Header - Consistent minimalist style */}
+          <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-3">
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold">
-                  Leaderboard
-                </h1>
-              </div>
-              <p className="text-xs text-white/80 mt-1">
+              <h1 className="text-xl font-bold text-[var(--text-primary)]">
+                Leaderboard
+              </h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                 Install the TrackMan app and go to any Clubhouse to enter
               </p>
             </div>

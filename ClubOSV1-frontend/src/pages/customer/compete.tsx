@@ -526,32 +526,29 @@ export default function Compete() {
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8">
-          {/* Gradient Header - Consistent with other pages */}
-          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white px-3 sm:px-4 py-2 sm:py-3">
+          {/* Header - Consistent minimalist style */}
+          <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-3">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold">
+                  <h1 className="text-xl font-bold text-[var(--text-primary)]">
                     Compete
                   </h1>
-                  <p className="text-xs text-white/80 mt-1">
+                  <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                     Challenge friends, win Club Coins
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => router.push('/customer/profile')}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-                  >
-                    <Coins className="w-4 h-4" />
-                    <span className="font-bold">{ccBalance} CC</span>
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-[#0B3D3A]/10 rounded-full">
+                    <Coins className="w-4 h-4 text-[#0B3D3A]" />
+                    <span className="text-sm font-bold text-[#0B3D3A]">{ccBalance.toLocaleString()}</span>
+                  </div>
                   <button
                     onClick={() => router.push('/customer/challenges/create')}
-                    className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                    className="p-1.5 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors"
                     title="Create Challenge"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
