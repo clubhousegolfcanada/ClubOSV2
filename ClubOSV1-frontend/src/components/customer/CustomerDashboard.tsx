@@ -270,7 +270,7 @@ export const CustomerDashboard: React.FC = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
-          <p className="text-gray-800 dark:text-gray-300">Loading your dashboard...</p>
+          <p className="text-text-secondary">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -296,7 +296,7 @@ export const CustomerDashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               )}
             </div>
-            <p className="text-sm text-gray-900 dark:text-gray-300 mt-0.5 font-medium">
+            <p className="text-sm text-text-secondary mt-0.5">
               {welcomeMessage}
             </p>
           </div>
@@ -336,7 +336,7 @@ export const CustomerDashboard: React.FC = () => {
                           handleLocationChange(location);
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                          selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
+                          selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-text-primary'
                         }`}
                       >
                         <div className="font-medium text-xs">{location.name === 'All Locations' ? 'All' : location.name}</div>
@@ -390,8 +390,8 @@ export const CustomerDashboard: React.FC = () => {
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{action.label}</h3>
-                <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 font-medium">{action.description}</p>
+                <h3 className="text-sm font-medium text-text-primary">{action.label}</h3>
+                <p className="text-xs text-text-muted mt-0.5">{action.description}</p>
               </div>
             </button>
           </div>

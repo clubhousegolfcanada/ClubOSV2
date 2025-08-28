@@ -154,7 +154,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
                   </span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-text-muted group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </button>
           );
         })}

@@ -218,25 +218,8 @@
 
   /* Theme-aware utility classes for components */
   .text-primary { color: var(--text-primary); }
-  .text-secondary { color: var(--text-secondary) !important; }
-  .text-muted { color: var(--text-muted) !important; }
-  
-  /* Force darker text on customer cards */
-  .customer-app h3 {
-    color: #111827 !important;
-  }
-  
-  .customer-app p {
-    color: #374151 !important;
-  }
-  
-  .dark .customer-app h3 {
-    color: #f3f4f6 !important;
-  }
-  
-  .dark .customer-app p {
-    color: #d1d5db !important;
-  }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted { color: var(--text-muted); }
   .text-disabled { color: var(--text-disabled); }
   
   .bg-primary { background-color: var(--bg-primary); }
