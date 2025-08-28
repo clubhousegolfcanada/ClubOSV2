@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.49] - 2025-08-28
+
+### Fixed
+- **Database Issues Resolved**
+  - Created missing create_and_award_achievement function
+  - Added missing achievement table columns (color, background_color, etc.)
+  - Fixed achievements API 500 error
+  - Corrected Mike Belair's CC balance from test value to 1200
+  - Verified all leaderboard queries work correctly
+  - All-time leaderboard now functioning with proper CC display
+  
+### Database Functions
+- **Achievement System**
+  - Added create_and_award_achievement PostgreSQL function
+  - Added custom achievement support columns
+  - Fixed user_achievements queries
+
 ## [1.14.48] - 2025-08-28
 
 ### Fixed
