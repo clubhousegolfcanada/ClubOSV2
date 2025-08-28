@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.44] - 2025-08-28
+
+### Enhanced
+- **Boxes Backend Implementation**
+  - Created boxes reward system with weighted random rewards
+  - Rewards include: 25-10000 Club Coins, free simulator hours, merchandise
+  - Added /api/boxes endpoints for stats, available boxes, and opening
+  - Integrated CC balance updates when earning Club Coins from boxes
+  - Added admin endpoint to grant boxes to users
+  - Created box_progress tracking for earning boxes through bookings
+  - Granted test boxes to users for testing
+
 ## [1.14.43] - 2025-08-28
 
 ### Enhanced
