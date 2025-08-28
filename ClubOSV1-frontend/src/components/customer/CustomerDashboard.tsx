@@ -270,7 +270,7 @@ export const CustomerDashboard: React.FC = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading your dashboard...</p>
+          <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -296,7 +296,7 @@ export const CustomerDashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               )}
             </div>
-            <p className="text-sm text-text-secondary mt-0.5">
+            <p className="text-sm text-gray-700 mt-0.5">
               {welcomeMessage}
             </p>
           </div>
@@ -336,7 +336,7 @@ export const CustomerDashboard: React.FC = () => {
                           handleLocationChange(location);
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                          selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-text-primary'
+                          selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
                         }`}
                       >
                         <div className="font-medium text-xs">{location.name === 'All Locations' ? 'All' : location.name}</div>
@@ -390,8 +390,8 @@ export const CustomerDashboard: React.FC = () => {
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-medium text-text-primary">{action.label}</h3>
-                <p className="text-xs text-text-muted mt-0.5">{action.description}</p>
+                <h3 className="text-sm font-medium text-gray-800">{action.label}</h3>
+                <p className="text-xs text-gray-600 mt-0.5">{action.description}</p>
               </div>
             </button>
           </div>
