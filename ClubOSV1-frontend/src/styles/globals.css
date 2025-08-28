@@ -41,6 +41,20 @@
   }
 }
 
+/* Box notification shimmer animation */
+@keyframes shimmer {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(11, 61, 58, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(11, 61, 58, 0.9));
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
 /* Hide scrollbar for tab navigation */
 @layer utilities {
   .scrollbar-hide {

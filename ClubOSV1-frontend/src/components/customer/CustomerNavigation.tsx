@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
 import ModeToggle from '@/components/ModeToggle';
+import axios from 'axios';
 import { 
   Home, 
   Calendar, 
@@ -17,14 +18,22 @@ import {
   TrendingUp,
   BarChart3,
   Shield,
-  ChevronDown
+  ChevronDown,
+  Package
 } from 'lucide-react';
+
+// Fix for double /api/ issue - ensure base URL doesn't end with /api
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 const CustomerNavigation: React.FC = () => {
   const router = useRouter();
   const { user, logout } = useAuthState();
   const { setViewMode } = useStore();
   const [notificationCount] = useState(0);
+  const [availableBoxes, setAvailableBoxes] = useState(0);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -38,6 +47,33 @@ const CustomerNavigation: React.FC = () => {
     logout();
     setUserDropdownOpen(false);
   };
+
+  // Fetch available boxes count
+  useEffect(() => {
+    const fetchBoxCount = async () => {
+      try {
+        const token = localStorage.getItem('clubos_token');
+        if (token) {
+          const response = await axios.get(`${API_URL}/api/boxes/available`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.data) {
+            setAvailableBoxes(response.data.length || 0);
+          }
+        }
+      } catch (error) {
+        // Silently fail if endpoint doesn't exist
+        console.log('Box endpoint not available');
+      }
+    };
+
+    if (user) {
+      fetchBoxCount();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchBoxCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -106,6 +142,19 @@ const CustomerNavigation: React.FC = () => {
                 <Menu className="w-5 h-5 text-[var(--text-secondary)]" />
               )}
             </button>
+
+            {/* Box Notification - Show when boxes available */}
+            {availableBoxes > 0 && (
+              <button 
+                onClick={() => router.push('/customer/profile?tab=boxes')}
+                className="relative p-1.5 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors group animate-shimmer"
+              >
+                <Package className="w-4 h-4 text-[var(--text-primary)] group-hover:text-[#0B3D3A]" />
+                <span className="absolute -top-1 -right-1 bg-[#0B3D3A] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                  {availableBoxes}
+                </span>
+              </button>
+            )}
 
             {/* Notifications - Smaller, cleaner */}
             <button className="relative p-1.5 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors">
@@ -265,20 +314,29 @@ const CustomerNavigation: React.FC = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg">
         <div className="flex items-center justify-around h-16">
-          {mainNavItems.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => router.push(item.path)}
-              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                currentPath === item.path
-                  ? 'text-[#0B3D3A]'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <item.icon className={`w-5 h-5 mb-1 ${currentPath === item.path ? 'transform scale-110' : ''}`} />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </button>
-          ))}
+          {mainNavItems.map((item) => {
+            const isActive = currentPath === item.path;
+            return (
+              <button
+                key={item.key}
+                onClick={() => router.push(item.path)}
+                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                  isActive
+                    ? 'text-[#0B3D3A]'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 mb-1 ${isActive ? 'transform scale-110' : ''}`} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+                {/* Add box notification badge on Profile icon */}
+                {item.key === 'profile' && availableBoxes > 0 && (
+                  <span className="absolute top-2 right-2 bg-[#0B3D3A] text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 px-1 flex items-center justify-center">
+                    {availableBoxes}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </nav>
       

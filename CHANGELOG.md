@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.43] - 2025-08-28
+
+### Enhanced
+- **Box Notification System**
+  - Added shimmering Package icon to navigation bar when boxes are available
+  - Shows box count badge on desktop navigation
+  - Added box count badge on Profile icon in mobile bottom navigation
+  - Auto-refreshes box count every 30 seconds
+  - Clicking notification navigates to profile boxes section
+
 ## [1.14.42] - 2025-08-28
 
 ### Fixed
