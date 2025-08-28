@@ -7,7 +7,6 @@ import {
   ChevronRight,
   ChevronDown,
   BarChart3,
-  Zap,
   Target,
   Clock,
   Crown,
@@ -18,12 +17,15 @@ import {
   Shield,
   Gem,
   Award,
-  Sparkles
+  Sparkles,
+  Swords
 } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
+import { QuickBookCard } from '@/components/customer/QuickBookCard';
+import { RecentChallenges } from '@/components/customer/RecentChallenges';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -81,7 +83,8 @@ export const CustomerDashboard: React.FC = () => {
     activeChallenges: 0,
     ccBalance: 0,
     rank: 'House',
-    isChampion: false
+    isChampion: false,
+    pendingFriendRequests: 0
   });
 
   // Available locations - simplified
@@ -160,6 +163,19 @@ export const CustomerDashboard: React.FC = () => {
           rank: 'House',
           isChampion: false 
         }));
+        
+        // Fetch pending friend requests
+        try {
+          const friendRequestsResponse = await axios.get(`${API_URL}/api/friends/pending?direction=incoming`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (friendRequestsResponse.data.success) {
+            const pendingRequests = friendRequestsResponse.data.data?.requests?.length || 0;
+            setQuickStats(prev => ({ ...prev, pendingFriendRequests: pendingRequests }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch friend requests:', error);
+        }
       }
       
       // Set default location
@@ -202,12 +218,12 @@ export const CustomerDashboard: React.FC = () => {
       hasLocationSelector: true
     },
     { 
-      icon: () => getTierIcon(), 
+      icon: Swords, 
       label: 'Friends', 
       description: 'Challenge players',
-      onClick: () => router.push('/customer/compete'),
+      onClick: () => router.push('/customer/compete?tab=competitors'),
       info: quickStats.ccBalance > 0 ? `${quickStats.ccBalance} CC` : null,
-      isTierIcon: true
+      badge: quickStats.pendingFriendRequests > 0 ? quickStats.pendingFriendRequests : null
     },
     { 
       icon: BarChart3, 
@@ -217,11 +233,12 @@ export const CustomerDashboard: React.FC = () => {
       info: quickStats.rank
     },
     { 
-      icon: Users, 
+      icon: () => getTierIcon(), 
       label: firstName, 
       description: 'View your stats',
       onClick: () => router.push('/customer/profile'),
-      hasChampionCrown: quickStats.isChampion
+      hasChampionCrown: quickStats.isChampion,
+      isTierIcon: true
     }
   ];
 
@@ -325,9 +342,16 @@ export const CustomerDashboard: React.FC = () => {
             )}
             
             {/* Info badge (rank or CC) */}
-            {action.info && (
+            {action.info && !action.badge && (
               <div className="absolute top-2 right-2 px-2 py-0.5 bg-[#0B3D3A]/10 rounded text-xs font-semibold text-[#0B3D3A]">
                 {action.info}
+              </div>
+            )}
+            
+            {/* Notification badge for pending friend requests */}
+            {action.badge && (
+              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center shadow-lg animate-pulse">
+                {action.badge}
               </div>
             )}
             
@@ -368,56 +392,11 @@ export const CustomerDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Quick Links - Full Width */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Quick Links</h2>
-            <Zap className="w-4 h-4 text-[#0B3D3A]" />
-          </div>
-          <div className="space-y-2">
-            <button
-              onClick={() => router.push('/customer/compete')}
-              className="w-full p-3 bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white rounded-lg hover:shadow-md transition-all flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3">
-                <Trophy className="w-5 h-5" />
-                <div className="text-left">
-                  <p className="font-medium">Create Challenge</p>
-                  <p className="text-xs opacity-90">Compete for ClubCoins</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            
-            <button
-              onClick={() => router.push('/customer/leaderboard')}
-              className="w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3">
-                <BarChart3 className="w-5 h-5 text-[#0B3D3A]" />
-                <div className="text-left">
-                  <p className="font-medium text-gray-900">View Leaderboard</p>
-                  <p className="text-xs text-gray-500">Check your ranking</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
-            </button>
-            
-            <button
-              onClick={() => router.push('/customer/profile')}
-              className="w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-[#0B3D3A]" />
-                <div className="text-left">
-                  <p className="font-medium text-gray-900">Your Profile</p>
-                  <p className="text-xs text-gray-500">Stats & achievements</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-      </div>
+      {/* Recent Challenges */}
+      <RecentChallenges userId={user?.id} userToken={token} />
+      
+      {/* Quick Book Card */}
+      <QuickBookCard className="mt-4" />
     </div>
   );
 };

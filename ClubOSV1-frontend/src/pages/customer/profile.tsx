@@ -3,11 +3,12 @@ import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { ProfileAchievements } from '@/components/customer/ProfileAchievements';
 import { TierBadge, TierProgressBar, calculateTierFromCC, getNextTier, tierConfigs } from '@/components/TierBadge';
+import { BoxOpeningSlotMachine } from '@/components/customer/BoxOpeningSlotMachine';
 import Head from 'next/head';
 import { 
   Trophy, User, Mail, Phone, Save, ChevronRight,
   Settings, BarChart3, Coins, TrendingUp, Calendar,
-  Target, Clock, Award, MapPin, Shield, X, Eye, EyeOff
+  Target, Clock, Award, MapPin, Shield, X, Eye, EyeOff, Gift, Package, Sparkles
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -36,6 +37,24 @@ interface ProfileData {
   longestStreak: number;
   rank?: string;
   totalBookings?: number;
+  boxProgress?: number;
+  availableBoxes?: number;
+  activeRewards?: number;
+}
+
+interface Box {
+  id: string;
+  status: 'available' | 'opened' | 'revoked';
+  earnedAt: string;
+}
+
+interface BoxReward {
+  id: string;
+  rewardType: string;
+  rewardName: string;
+  rewardValue: any;
+  voucherCode?: string;
+  expiresAt?: Date;
 }
 
 export default function CustomerProfile() {
@@ -44,6 +63,15 @@ export default function CustomerProfile() {
   const [activeTab, setActiveTab] = useState<'stats' | 'account' | 'preferences'>('stats');
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [editMode, setEditMode] = useState(false);
+  
+  // Box opening state
+  const [availableBoxes, setAvailableBoxes] = useState<Box[]>([]);
+  const [activeRewards, setActiveRewards] = useState<BoxReward[]>([]);
+  const [opening, setOpening] = useState(false);
+  const [openedReward, setOpenedReward] = useState<BoxReward | null>(null);
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [selectedBox, setSelectedBox] = useState<Box | null>(null);
+  const [showSlotMachine, setShowSlotMachine] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -110,13 +138,25 @@ export default function CustomerProfile() {
     try {
       const token = localStorage.getItem('clubos_token');
       
-      // Fetch all profile stats in one API call
-      const statsResponse = await axios.get(`${API_URL}/api/profile/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Fetch all profile stats, box stats, and box data in parallel
+      const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse] = await Promise.all([
+        axios.get(`${API_URL}/api/profile/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_URL}/api/boxes/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } })),
+        axios.get(`${API_URL}/api/boxes/available`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] })),
+        axios.get(`${API_URL}/api/boxes/rewards`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] }))
+      ]);
       
       if (statsResponse.data.success) {
         const stats = statsResponse.data.data;
+        const boxStats = boxStatsResponse.data;
         
         const profileInfo: ProfileData = {
           name: stats.user.name || '',
@@ -136,10 +176,15 @@ export default function CustomerProfile() {
           currentStreak: stats.challenges.currentStreak,
           longestStreak: stats.challenges.longestWinStreak,
           rank: stats.ranking.currentRank || 'House',
-          totalBookings: stats.social.totalBookings
+          totalBookings: stats.social.totalBookings,
+          boxProgress: boxStats?.progress?.current || 0,
+          availableBoxes: boxStats?.availableCount || 0,
+          activeRewards: boxStats?.rewardsCount || 0
         };
         
         setProfileData(profileInfo);
+        setAvailableBoxes(boxesResponse.data || []);
+        setActiveRewards(rewardsResponse.data || []);
         setFormData({
           name: profileInfo.name,
           email: profileInfo.email,
@@ -184,6 +229,28 @@ export default function CustomerProfile() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBoxClick = (box: Box) => {
+    setSelectedBox(box);
+    setShowSlotMachine(true);
+  };
+  
+  const openBox = async (): Promise<BoxReward> => {
+    if (!selectedBox) throw new Error('No box selected');
+    
+    const token = localStorage.getItem('clubos_token');
+    
+    const response = await axios.post(
+      `${API_URL}/api/boxes/${selectedBox.id}/open`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` }}
+    );
+    
+    // Refresh data after successful opening
+    fetchProfileData();
+    
+    return response.data.reward;
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -296,58 +363,63 @@ export default function CustomerProfile() {
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8">
-          {/* Professional Header with subtle tier accents */}
+          {/* Compact Header with tier accents */}
           <div className={`bg-white border-b ${
             profileData ? `${tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].outlineColor} border-l-4` : 'border-gray-200'
           }`}>
-            <div className="max-w-6xl mx-auto px-4 py-6">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                     profileData 
                       ? tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].bgColor
                       : 'bg-[#0B3D3A]'
                   }`}>
                     {profileData ? (
                       React.cloneElement(tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].icon as React.ReactElement, {
-                        className: `w-8 h-8 ${tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].iconColor}`
+                        className: `w-6 h-6 ${tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].iconColor}`
                       })
                     ) : (
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-lg font-bold text-white">
                         {user.name?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{user.name}</h1>
                       {profileData && (
                         <TierBadge 
                           tier={calculateTierFromCC(profileData.totalCCEarned)} 
-                          size="md"
+                          size="sm"
                         />
                       )}
                     </div>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    {profileData?.location && (
-                      <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{profileData.location}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 text-xs text-gray-600 flex-wrap">
+                      <span>{user.email}</span>
+                      {profileData?.location && (
+                        <>
+                          <span className="text-gray-400">•</span>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span>{profileData.location}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="bg-white border-b border-gray-200">
-            <div className="max-w-6xl mx-auto px-4">
-              <div className="flex gap-6">
+          {/* Compact Tabs */}
+          <div className="bg-white border-b border-gray-200 sticky top-14 z-10">
+            <div className="max-w-6xl mx-auto px-3">
+              <div className="flex gap-4 sm:gap-6">
                 <button
                   onClick={() => setActiveTab('stats')}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                  className={`py-2.5 px-1 border-b-2 text-xs sm:text-sm font-medium transition-colors ${
                     activeTab === 'stats'
                       ? 'border-[#0B3D3A] text-[#0B3D3A]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -357,17 +429,17 @@ export default function CustomerProfile() {
                 </button>
                 <button
                   onClick={() => setActiveTab('account')}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                  className={`py-2.5 px-1 border-b-2 text-xs sm:text-sm font-medium transition-colors ${
                     activeTab === 'account'
                       ? 'border-[#0B3D3A] text-[#0B3D3A]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Profile & Account
+                  Account
                 </button>
                 <button
                   onClick={() => setActiveTab('preferences')}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                  className={`py-2.5 px-1 border-b-2 text-xs sm:text-sm font-medium transition-colors ${
                     activeTab === 'preferences'
                       ? 'border-[#0B3D3A] text-[#0B3D3A]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -379,47 +451,115 @@ export default function CustomerProfile() {
             </div>
           </div>
 
-          <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             {/* Statistics Tab */}
             {activeTab === 'stats' && (
-              <div className="space-y-6">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-4">
+                {/* Compact Stats Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
                   {statCards.map((stat, index) => (
-                    <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                    <div key={index} className="bg-white rounded-lg border border-gray-200 p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <stat.icon className={`w-4 h-4 ${stat.color}`} />
                       </div>
-                      <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                      <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
+                      <div className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500">{stat.label}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Tier Progression with subtle accent */}
+                {/* Compact Tier Progression */}
                 {profileData && (
-                  <div className={`bg-white rounded-lg border p-6 border-l-4 ${
+                  <div className={`bg-white rounded-lg border p-4 border-l-4 ${
                     tierConfigs[calculateTierFromCC(profileData.totalCCEarned)].outlineColor
                   }`}>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Tier Progression</h2>
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-sm font-semibold text-gray-900">Tier Progression</h2>
+                      <div className="flex gap-3 text-xs">
+                        <span className="text-gray-500">Total Earned:</span>
+                        <span className="font-bold text-[#0B3D3A]">{profileData.totalCCEarned.toLocaleString()} CC</span>
+                      </div>
+                    </div>
                     <TierProgressBar
                       currentCC={profileData.totalCCEarned}
                       tier={calculateTierFromCC(profileData.totalCCEarned)}
                       nextTier={getNextTier(calculateTierFromCC(profileData.totalCCEarned)) || undefined}
                       className="w-full"
                     />
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-[#0B3D3A]">
-                          {profileData.totalCCEarned.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">Total CC Earned</div>
+                    <div className="mt-3 flex justify-between text-xs text-gray-600">
+                      <span>Current: {calculateTierFromCC(profileData.totalCCEarned).charAt(0).toUpperCase() + calculateTierFromCC(profileData.totalCCEarned).slice(1)}</span>
+                      <span>{profileData.totalBookings || 0} Total Bookings</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Box Progress & Rewards */}
+                {profileData && (
+                  <div className="bg-white rounded-lg border p-4 border-l-4 border-amber-500">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-amber-600" />
+                        <h2 className="text-sm font-semibold text-gray-900">Box Openings</h2>
                       </div>
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-[#0B3D3A]">
-                          {profileData.totalBookings || 0}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">Total Bookings</div>
+                      {availableBoxes.length > 0 && (
+                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+                          {availableBoxes.length} Available
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Progress to Next Box</span>
+                        <span className="font-medium">{profileData.boxProgress || 0}/3 Bookings</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-300"
+                          style={{ width: `${((profileData.boxProgress || 0) / 3) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Available Boxes to Open */}
+                    {availableBoxes.length > 0 && (
+                      <div className="space-y-2 mb-3">
+                        {availableBoxes.slice(0, 2).map((box) => (
+                          <div key={box.id} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <Gift className="w-4 h-4 text-amber-600" />
+                              <span className="text-sm text-gray-700">Mystery Box</span>
+                            </div>
+                            <button
+                              onClick={() => handleBoxClick(box)}
+                              disabled={opening}
+                              className="px-3 py-1 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              Open
+                            </button>
+                          </div>
+                        ))}
+                        {availableBoxes.length > 2 && (
+                          <p className="text-xs text-gray-500 text-center">+{availableBoxes.length - 2} more boxes available</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-gray-900">{profileData.boxProgress || 0}/3</div>
+                        <div className="text-[10px] text-gray-500">Progress</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-amber-600">{availableBoxes.length}</div>
+                        <div className="text-[10px] text-gray-500">Ready to Open</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-gray-900">{activeRewards.length}</div>
+                        <div className="text-[10px] text-gray-500">Active Rewards</div>
                       </div>
                     </div>
                   </div>
@@ -428,32 +568,32 @@ export default function CustomerProfile() {
                 {/* Achievements Section */}
                 <ProfileAchievements userId={user?.id || ''} />
 
-                {/* Activity Summary */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Summary</h2>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Member Since</span>
+                {/* Compact Activity Summary */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h2 className="text-sm font-semibold text-gray-900 mb-3">Activity Summary</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                      <div>
+                        <p className="text-[10px] text-gray-500">Member Since</p>
+                        <p className="text-xs font-medium text-gray-900">{profileData?.memberSince}</p>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{profileData?.memberSince}</span>
                     </div>
-                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <Trophy className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Current Rank</span>
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-3.5 h-3.5 text-gray-400" />
+                      <div>
+                        <p className="text-[10px] text-gray-500">Current Rank</p>
+                        <p className="text-xs font-medium text-gray-900">{profileData?.rank || 'House'}</p>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{profileData?.rank || 'House'}</span>
                     </div>
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <Target className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Handicap</span>
+                    <div className="flex items-center gap-2">
+                      <Target className="w-3.5 h-3.5 text-gray-400" />
+                      <div>
+                        <p className="text-[10px] text-gray-500">Handicap</p>
+                        <p className="text-xs font-medium text-gray-900">
+                          {profileData?.handicap !== undefined ? profileData.handicap : 'Not set'}
+                        </p>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">
-                        {profileData?.handicap !== undefined ? profileData.handicap : 'Not set'}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -626,13 +766,13 @@ export default function CustomerProfile() {
                   <div className="space-y-3">
                     <button 
                       onClick={() => setShowPasswordModal(true)}
-                      className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                      className="w-full text-left px-3 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between group"
                     >
-                      <div className="flex items-center gap-3">
-                        <Shield className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-900">Change Password</span>
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs font-medium text-gray-900">Change Password</span>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between group">
                       <div className="flex items-center gap-3">
@@ -648,10 +788,10 @@ export default function CustomerProfile() {
 
             {/* Preferences Tab */}
             {activeTab === 'preferences' && (
-              <div className="max-w-2xl">
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h2>
-                  <div className="space-y-4">
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h2 className="text-sm font-semibold text-gray-900 mb-3">Preferences</h2>
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">Email Notifications</p>
@@ -701,9 +841,9 @@ export default function CustomerProfile() {
                 </div>
 
                 {/* Danger Zone */}
-                <div className="bg-white rounded-lg border border-red-200 p-6 mt-6">
-                  <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
-                  <button className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium">
+                <div className="bg-white rounded-lg border border-red-200 p-4">
+                  <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
+                  <button className="px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-xs font-medium">
                     Delete Account
                   </button>
                 </div>
@@ -830,6 +970,17 @@ export default function CustomerProfile() {
             </div>
           </div>
         )}
+        
+        {/* Box Opening Slot Machine */}
+        <BoxOpeningSlotMachine
+          isOpen={showSlotMachine}
+          onClose={() => {
+            setShowSlotMachine(false);
+            setSelectedBox(null);
+          }}
+          onOpen={openBox}
+          boxId={selectedBox?.id}
+        />
       </div>
     </>
   );
