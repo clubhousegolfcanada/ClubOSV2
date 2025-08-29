@@ -110,6 +110,11 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       return;
     }
     
+    // Check if we recently logged in
+    const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+    const recentlyLoggedIn = loginTimestamp && 
+      (Date.now() - parseInt(loginTimestamp) < 10000); // 10 second grace period
+    
     // Simple auth state restoration - let AuthGuard handle validation
     const storedUser = localStorage.getItem('clubos_user');
     const storedToken = localStorage.getItem('clubos_token');
@@ -119,6 +124,17 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       try {
         // Quick restore without validation (AuthGuard will validate)
         const user = JSON.parse(storedUser);
+        
+        // If not recently logged in, validate token first
+        if (!recentlyLoggedIn && tokenManager.isTokenExpired(storedToken)) {
+          console.log('Found expired token on app mount, clearing');
+          localStorage.removeItem('clubos_user');
+          localStorage.removeItem('clubos_token');
+          localStorage.removeItem('clubos_view_mode');
+          router.push('/login');
+          return;
+        }
+        
         setUser({ ...user, token: storedToken });
         
         // Restore view mode
@@ -131,6 +147,10 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         }
       } catch (error) {
         console.error('Failed to restore auth state:', error);
+        // Clear invalid data
+        localStorage.removeItem('clubos_user');
+        localStorage.removeItem('clubos_token');
+        localStorage.removeItem('clubos_view_mode');
       }
     }
     

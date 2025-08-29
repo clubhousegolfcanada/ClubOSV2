@@ -54,9 +54,31 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         const storedUser = localStorage.getItem('clubos_user');
         const storedToken = localStorage.getItem('clubos_token');
         
+        // Check if we just logged in (grace period)
+        const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+        const recentlyLoggedIn = loginTimestamp && 
+          (Date.now() - parseInt(loginTimestamp) < 10000); // 10 second grace period
+        
         if (storedUser && storedToken) {
-          // Check if token is still valid
-          if (!tokenManager.isTokenExpired(storedToken)) {
+          // If we just logged in, trust the token
+          if (recentlyLoggedIn) {
+            if (!user) {
+              try {
+                const parsedUser = JSON.parse(storedUser);
+                setUser({ ...parsedUser, token: storedToken });
+                hasCheckedRef.current = true;
+              } catch (error) {
+                console.error('Failed to parse stored user:', error);
+                localStorage.removeItem('clubos_user');
+                localStorage.removeItem('clubos_token');
+                localStorage.removeItem('clubos_view_mode');
+                router.push('/login');
+              }
+            } else {
+              hasCheckedRef.current = true;
+            }
+          } else if (!tokenManager.isTokenExpired(storedToken)) {
+            // Not recently logged in, validate token
             if (!user) {
               try {
                 const parsedUser = JSON.parse(storedUser);

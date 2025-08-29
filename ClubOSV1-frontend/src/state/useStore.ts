@@ -121,10 +121,9 @@ export const useAuthState = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
-        // Clear any existing auth data first to prevent account mixing
-        localStorage.removeItem('clubos_token');
-        localStorage.removeItem('clubos_user');
-        localStorage.removeItem('clubos_view_mode');
+        // Clear ALL existing auth data first to prevent stale tokens
+        localStorage.clear(); // Clear everything first
+        sessionStorage.clear();
         
         // Set new auth data
         localStorage.setItem('clubos_token', token);
@@ -134,13 +133,14 @@ export const useAuthState = create<AuthState>()(
         const viewMode = user.role === 'customer' ? 'customer' : 'operator';
         localStorage.setItem('clubos_view_mode', viewMode);
         
+        // Store login timestamp for grace period
+        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
+        
         set({ 
           user: { ...user, token }, 
           isAuthenticated: true,
           isLoading: false 
         });
-        
-        // No token monitoring needed - auth is handled by cookies
       },
       setUser: (user) => {
         // If user is provided but no token, try to get from localStorage
@@ -201,12 +201,34 @@ export const useAuthState = create<AuthState>()(
     {
       name: 'clubos-auth',
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
-      // On rehydration, restore the token from localStorage
+      // On rehydration, validate and restore the token from localStorage
       onRehydrateStorage: () => (state) => {
         if (state && state.user && typeof window !== 'undefined') {
           const token = localStorage.getItem('clubos_token');
-          if (token && state.user) {
-            state.user.token = token;
+          const storedUser = localStorage.getItem('clubos_user');
+          
+          // Validate that token and user match
+          if (token && storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              // Ensure the stored user matches the state user
+              if (parsedUser.id === state.user.id) {
+                state.user.token = token;
+              } else {
+                // Mismatch - clear everything
+                console.warn('User mismatch detected, clearing auth');
+                localStorage.removeItem('clubos_token');
+                localStorage.removeItem('clubos_user');
+                state.user = null;
+                state.isAuthenticated = false;
+              }
+            } catch (e) {
+              // Invalid data - clear
+              localStorage.removeItem('clubos_token');
+              localStorage.removeItem('clubos_user');
+              state.user = null;
+              state.isAuthenticated = false;
+            }
           }
         }
       }
