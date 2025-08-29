@@ -221,6 +221,7 @@ export default function CustomerProfile() {
         };
         
         setProfileData(profileInfo);
+        console.log('Available boxes from API:', boxesResponse.data);
         setAvailableBoxes(boxesResponse.data || []);
         setActiveRewards(rewardsResponse.data || []);
         setAchievementCount(achievementsResponse.data?.length || 0);
@@ -292,12 +293,21 @@ export default function CustomerProfile() {
   };
 
   const handleBoxClick = (box: Box) => {
+    // Double-check the box is actually available
+    const isAvailable = availableBoxes.some(b => b.id === box.id);
+    if (!isAvailable) {
+      toast.error('This box is no longer available');
+      fetchProfileData(); // Refresh the data
+      return;
+    }
     setSelectedBox(box);
     setShowSlotMachine(true);
   };
   
   const openBox = async (): Promise<BoxReward> => {
     if (!selectedBox) throw new Error('No box selected');
+    
+    console.log('Opening box:', selectedBox);
     
     const token = localStorage.getItem('clubos_token');
     
@@ -307,10 +317,13 @@ export default function CustomerProfile() {
       { headers: { Authorization: `Bearer ${token}` }}
     );
     
-    // Refresh data after successful opening
-    fetchProfileData();
+    // Immediately remove the opened box from state
+    setAvailableBoxes(prev => prev.filter(box => box.id !== selectedBox.id));
     
-    return response.data.reward;
+    // Refresh all data after successful opening
+    await fetchProfileData();
+    
+    return response.data.data || response.data.reward || response.data;
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -1065,8 +1078,10 @@ export default function CustomerProfile() {
           onClose={() => {
             setShowSlotMachine(false);
             setSelectedBox(null);
-            // Refresh profile data to update boxes
-            fetchProfileData();
+            // Add small delay before refresh to ensure backend has updated
+            setTimeout(() => {
+              fetchProfileData();
+            }, 500);
           }}
           onOpen={openBox}
           boxId={selectedBox?.id}

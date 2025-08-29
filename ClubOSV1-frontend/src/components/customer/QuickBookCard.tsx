@@ -114,7 +114,15 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
       <div className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={toggleMinimize}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#0B3D3A]" />
             <h2 className="text-sm font-semibold text-gray-900">Book a Box</h2>
+            
+            {/* Show location when minimized */}
+            {isMinimized && selectedLocation && (
+              <span className="text-xs text-gray-500">
+                • {selectedLocation.name === 'All Locations' ? 'All' : selectedLocation.name}
+              </span>
+            )}
             
             {/* Location Selector - Only show when not minimized */}
             {!isMinimized && (
@@ -126,7 +134,6 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                   }}
                   className="flex items-center gap-1 px-2 py-1 bg-[#0B3D3A]/10 hover:bg-[#0B3D3A]/20 rounded text-xs font-medium text-[#0B3D3A] transition-colors"
               >
-            <MapPin className="w-3 h-3" />
                 <MapPin className="w-3 h-3" />
                 <span>{selectedLocation.name === 'All Locations' ? 'All' : selectedLocation.name}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${showLocationDropdown ? 'rotate-180' : ''}`} />
@@ -155,7 +162,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Calendar Icon - Clickable to open booking page */}
+            {/* External Link Icon - Clickable to open booking page */}
             {!isMinimized && (
               <button
                 onClick={(e) => {
@@ -165,7 +172,20 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                 className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Open full booking page"
               >
-                <Calendar className="w-4 h-4 text-[#0B3D3A]" />
+                <ExternalLink className="w-4 h-4 text-[#0B3D3A]" />
+              </button>
+            )}
+            
+            {/* Quick Book Button when minimized */}
+            {isMinimized && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExpand();
+                }}
+                className="px-3 py-1 bg-[#0B3D3A] text-white text-xs rounded-lg hover:bg-[#084a45] transition-colors"
+              >
+                Book Now
               </button>
             )}
             
