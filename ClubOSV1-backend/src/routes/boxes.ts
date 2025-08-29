@@ -207,6 +207,14 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
       if (reward.type === 'club_coins') {
         const amount = reward.value.amount;
         
+        // Get current balance before update
+        const balanceResult = await pool.query(
+          'SELECT cc_balance FROM customer_profiles WHERE user_id = $1',
+          [userId]
+        );
+        const balanceBefore = balanceResult.rows[0]?.cc_balance || 0;
+        const balanceAfter = balanceBefore + amount;
+        
         // Update or create customer profile with CC balance
         await pool.query(`
           INSERT INTO customer_profiles (user_id, cc_balance, total_cc_earned)
@@ -218,15 +226,17 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
             updated_at = CURRENT_TIMESTAMP
         `, [userId, amount]);
         
-        // Log CC transaction
+        // Log CC transaction with balance_before and balance_after
         await pool.query(`
           INSERT INTO cc_transactions (
-            user_id, amount, type, description, metadata
-          ) VALUES ($1, $2, $3, $4, $5)
+            user_id, amount, type, balance_before, balance_after, description, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         `, [
           userId,
           amount,
           'earned',
+          balanceBefore,
+          balanceAfter,
           `Box Reward: ${reward.name}`,
           JSON.stringify({ box_id: boxId, reward_type: reward.type })
         ]);
