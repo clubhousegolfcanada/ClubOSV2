@@ -37,7 +37,7 @@ export async function authenticatedRequest<T = any>(
       ...axiosOptions,
       url: `${API_URL}${url}`,
       headers: {
-        ...axiosOptions.headers,
+        ...(axiosOptions as any)?.headers,
         Authorization: `Bearer ${token}`
       }
     });
