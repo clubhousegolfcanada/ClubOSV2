@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState, useStore } from '@/state/useStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award } from 'lucide-react';
+import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award, Gift } from 'lucide-react';
 import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
@@ -69,6 +69,13 @@ export const OperationsUsers: React.FC = () => {
   // Achievement states
   const [showAchievementCreator, setShowAchievementCreator] = useState(false);
   const [achievementUser, setAchievementUser] = useState<User | null>(null);
+  
+  // Box Management states
+  const [showBoxManagement, setShowBoxManagement] = useState(false);
+  const [boxManagementUser, setBoxManagementUser] = useState<User | null>(null);
+  const [boxCount, setBoxCount] = useState<string>('3');
+  const [userBoxes, setUserBoxes] = useState<any[]>([]);
+  const [loadingBoxes, setLoadingBoxes] = useState(false);
   
   const { user } = useAuthState();
   const token = user?.token || localStorage.getItem('clubos_token');
@@ -391,6 +398,97 @@ export const OperationsUsers: React.FC = () => {
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const openBoxManagement = async (customer: User) => {
+    setBoxManagementUser(customer);
+    setShowBoxManagement(true);
+    setBoxCount('3');
+    
+    // Fetch user's current boxes
+    setLoadingBoxes(true);
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    try {
+      const response = await axios.get(`${API_URL}/api/boxes/user/${customer.id}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      
+      if (response.data.success) {
+        setUserBoxes(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user boxes:', error);
+      setUserBoxes([]);
+    } finally {
+      setLoadingBoxes(false);
+    }
+  };
+
+  const handleGrantBoxes = async () => {
+    if (!boxManagementUser || !boxCount) return;
+    
+    setLoading(true);
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/boxes/grant`,
+        {
+          userId: boxManagementUser.id,
+          count: parseInt(boxCount)
+        },
+        {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success(`Successfully granted ${boxCount} box${parseInt(boxCount) > 1 ? 'es' : ''} to ${boxManagementUser.name}`);
+        setShowBoxManagement(false);
+        setBoxManagementUser(null);
+      } else {
+        toast.error('Failed to grant boxes');
+      }
+    } catch (error: any) {
+      console.error('Error granting boxes:', error);
+      toast.error(error.response?.data?.message || 'Failed to grant boxes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearBoxes = async () => {
+    if (!boxManagementUser) return;
+    
+    if (!confirm(`Are you sure you want to clear all available boxes for ${boxManagementUser.name}?`)) {
+      return;
+    }
+    
+    setLoading(true);
+    const authToken = token || localStorage.getItem('clubos_token');
+    
+    try {
+      const response = await axios.delete(
+        `${API_URL}/api/boxes/user/${boxManagementUser.id}/available`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success(`Cleared all available boxes for ${boxManagementUser.name}`);
+        // Refresh boxes list
+        openBoxManagement(boxManagementUser);
+      } else {
+        toast.error('Failed to clear boxes');
+      }
+    } catch (error: any) {
+      console.error('Error clearing boxes:', error);
+      toast.error(error.response?.data?.message || 'Failed to clear boxes');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openCCAdjustment = async (customer: User) => {
@@ -810,6 +908,13 @@ export const OperationsUsers: React.FC = () => {
                                 title="Adjust CC Balance"
                               >
                                 <Coins className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => openBoxManagement(customer)}
+                                className="p-1 text-purple-600 hover:text-purple-700"
+                                title="Manage Boxes"
+                              >
+                                <Gift className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleEditUser(customer)}
@@ -1286,6 +1391,150 @@ export const OperationsUsers: React.FC = () => {
             toast.success('Achievement created and awarded successfully!');
           }}
         />
+      )}
+
+      {/* Box Management Modal */}
+      {showBoxManagement && boxManagementUser && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Manage Boxes</h3>
+              <button
+                onClick={() => {
+                  setShowBoxManagement(false);
+                  setBoxManagementUser(null);
+                }}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* User Info */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="text-sm text-gray-600">Customer</div>
+                <div className="font-medium text-gray-900">{boxManagementUser.name}</div>
+                <div className="text-sm text-gray-500">{boxManagementUser.email}</div>
+              </div>
+              
+              {/* Current Boxes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Boxes</label>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  {loadingBoxes ? (
+                    <div className="text-center py-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mx-auto"></div>
+                    </div>
+                  ) : userBoxes.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Available Boxes:</span>
+                        <span className="font-semibold text-purple-600">
+                          {userBoxes.filter(b => b.status === 'available').length}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Opened Boxes:</span>
+                        <span className="font-semibold text-gray-600">
+                          {userBoxes.filter(b => b.status === 'opened').length}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Total Boxes:</span>
+                        <span className="font-semibold text-gray-900">
+                          {userBoxes.length}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No boxes found</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Grant New Boxes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Grant New Boxes</label>
+                <div className="flex gap-2">
+                  <select
+                    value={boxCount}
+                    onChange={(e) => setBoxCount(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="1">1 Box</option>
+                    <option value="3">3 Boxes</option>
+                    <option value="5">5 Boxes</option>
+                    <option value="10">10 Boxes</option>
+                  </select>
+                  <button
+                    onClick={handleGrantBoxes}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                      loading
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Granting...
+                      </>
+                    ) : (
+                      <>
+                        <Gift className="h-4 w-4" />
+                        Grant
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Clear Available Boxes */}
+              {userBoxes.filter(b => b.status === 'available').length > 0 && (
+                <div className="border-t pt-4">
+                  <button
+                    onClick={handleClearBoxes}
+                    disabled={loading}
+                    className={`w-full px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                      loading
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                        Clearing...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" />
+                        Clear All Available Boxes
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    This will remove all unopened boxes for this user
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowBoxManagement(false);
+                  setBoxManagementUser(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

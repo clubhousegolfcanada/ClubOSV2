@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.55] - 2025-08-29
+
+### Fixed
+- **Box System Complete Overhaul**
+  - Identified and removed 9 broken boxes with no reward data (6 for Mike, 3 for Nick)
+  - Fixed box opening errors caused by NULL reward_type and reward_value
+  - Added comprehensive box management UI to operations dashboard
+  - Created backend API endpoints for granting and managing boxes
+  - Added scripts to diagnose and fix box issues system-wide
+
+### Added
+- **Box Management Features**
+  - New box management UI in Operations > Customer Management
+  - Grant boxes button (1, 3, 5, or 10 at a time)
+  - Clear all available boxes option
+  - Real-time box statistics display
+  - Box management API endpoints (`/api/boxes/grant`, `/api/boxes/user/:id`)
+  
+### Scripts
+- `scripts/check-mike-boxes.sh` - Check specific user's box status
+- `scripts/fix-broken-boxes.sh` - Remove broken boxes and replace with new ones
+- `scripts/fix-all-boxes.sh` - System-wide box cleanup and repair
+
 ## [1.14.54] - 2025-08-29
 
 ### Fixed

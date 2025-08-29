@@ -79,6 +79,7 @@ import openphoneProcessingRoutes from './routes/openphone-processing';
 import integrationsRoutes from './routes/integrations';
 import unifiDoorsRoutes from './routes/unifi-doors';
 import boxesRoutes from './routes/boxes';
+import boxManagementRoutes from './routes/boxManagement';
 import debugCacheRoutes from './routes/debug-cache';
 import testKnowledgeRoutes from './routes/test-knowledge';
 import processKnowledgeRoutes from './routes/process-knowledge';
@@ -233,6 +234,7 @@ app.use('/api/customer-bookings', customerBookingsRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/challenges', require('./routes/challenges').default);
 app.use('/api/boxes', boxesRoutes);
+app.use('/api/boxes', boxManagementRoutes); // Management endpoints
 app.use('/api/leaderboard', require('./routes/leaderboard').default);
 app.use('/api/seasons', require('./routes/seasons').default);
 app.use('/api/badges', require('./routes/badges').default);
