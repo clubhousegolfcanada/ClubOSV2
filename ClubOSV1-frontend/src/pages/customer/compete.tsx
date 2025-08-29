@@ -496,13 +496,13 @@ export default function Compete() {
           <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-3">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-bold text-[var(--text-primary)]">
-                    Compete
-                  </h1>
-                  <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-                    Challenge friends, win Club Coins
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Swords className="w-6 h-6 text-[var(--text-primary)]" />
+                  <div>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Challenge friends, win Club Coins
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 px-3 py-1 bg-[#0B3D3A]/10 rounded-full">
@@ -760,11 +760,13 @@ export default function Compete() {
             {activeTab === 'competitors' && (
               <div className="p-4">
                 {/* Header with description */}
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Your Friends</h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Challenge your friends to head-to-head golf matches
-                  </p>
+                <div className="mb-4 flex items-center gap-3">
+                  <Users className="w-5 h-5 text-gray-700" />
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Challenge your friends to head-to-head golf matches
+                    </p>
+                  </div>
                 </div>
 
                 {/* Search Bar */}
