@@ -115,6 +115,8 @@ export default function Compete() {
   const fetchPendingRequestCount = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) return; // Don't make request without token
+      
       const response = await axios.get(`${API_URL}/api/friends/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -123,8 +125,11 @@ export default function Compete() {
         const incoming = response.data.data.incoming || 0;
         setPendingRequestCount(incoming);
       }
-    } catch (error) {
-      console.error('Failed to fetch pending request count:', error);
+    } catch (error: any) {
+      // Silently fail for auth/rate limit errors
+      if (error.response?.status !== 401 && error.response?.status !== 429) {
+        console.error('Failed to fetch pending request count:', error);
+      }
     }
   };
 
@@ -157,62 +162,67 @@ export default function Compete() {
   const loadCCBalance = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) return; // Don't make request without token
+      
       const response = await axios.get(`${API_URL}/api/challenges/cc-balance`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
         setCCBalance(response.data.data.balance);
       }
-    } catch (error) {
-      console.error('Error loading CC balance:', error);
+    } catch (error: any) {
+      // Silently fail for auth/rate limit errors
+      if (error.response?.status !== 401 && error.response?.status !== 429) {
+        console.error('Error loading CC balance:', error);
+      }
     }
   };
 
   const loadChallenges = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) return; // Don't make request without token
       
-      // Load different endpoints based on filter
-      let allChallenges: Challenge[] = [];
+      // Load challenges ONCE and filter client-side
+      const response = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
-      if (challengeFilter === 'all' || challengeFilter === 'active') {
-        const activeRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (activeRes.data.success) {
-          allChallenges = [...allChallenges, ...activeRes.data.data.filter((c: any) => 
+      if (response.data.success) {
+        let filteredChallenges = response.data.data || [];
+        
+        // Apply filter client-side instead of making multiple requests
+        if (challengeFilter === 'active') {
+          filteredChallenges = filteredChallenges.filter((c: any) => 
             c.status === 'active' || c.status === 'accepted'
-          )];
-        }
-      }
-      
-      if (challengeFilter === 'all' || challengeFilter === 'pending') {
-        const pendingRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (pendingRes.data.success) {
-          allChallenges = [...allChallenges, ...pendingRes.data.data.filter((c: any) => 
+          );
+        } else if (challengeFilter === 'pending') {
+          filteredChallenges = filteredChallenges.filter((c: any) => 
             c.status === 'pending'
-          )];
-        }
-      }
-      
-      if (challengeFilter === 'history') {
-        const historyRes = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (historyRes.data.success) {
-          allChallenges = [...allChallenges, ...historyRes.data.data.filter((c: any) => 
+          );
+        } else if (challengeFilter === 'history') {
+          filteredChallenges = filteredChallenges.filter((c: any) => 
             c.status === 'resolved' || c.status === 'expired' || c.status === 'declined'
-          )];
+          );
         }
+        // 'all' filter shows everything
+        
+        setChallenges(filteredChallenges);
       }
-      
-      // Remove duplicates by ID
-      const uniqueChallenges = Array.from(new Map(allChallenges.map(c => [c.id, c])).values());
-      setChallenges(uniqueChallenges);
-    } catch (error) {
-      console.error('Error loading challenges:', error);
+    } catch (error: any) {
+      // Handle auth errors
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        localStorage.removeItem('clubos_token');
+        localStorage.removeItem('clubos_user');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
+      } else if (error.response?.status === 429) {
+        toast.error('Too many requests. Please wait a moment.');
+      } else {
+        console.error('Error loading challenges:', error);
+      }
       setChallenges([]);
     }
   };
@@ -220,6 +230,8 @@ export default function Compete() {
   const loadCompetitors = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) return; // Don't make request without token
+      
       const response = await axios.get(`${API_URL}/api/friends?include_stats=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });

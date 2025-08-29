@@ -62,9 +62,11 @@ const CustomerNavigation: React.FC = () => {
             setAvailableBoxes(response.data.length || 0);
           }
         }
-      } catch (error) {
-        // Silently fail if endpoint doesn't exist
-        console.log('Box endpoint not available');
+      } catch (error: any) {
+        // Silently fail - don't spam console for expected errors
+        if (error.response?.status !== 401 && error.response?.status !== 429) {
+          console.log('Box endpoint not available');
+        }
       }
     };
 

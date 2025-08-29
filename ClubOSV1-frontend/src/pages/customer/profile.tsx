@@ -155,6 +155,12 @@ export default function CustomerProfile() {
     try {
       const token = localStorage.getItem('clubos_token');
       
+      // If no token, don't make requests
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
       // Fetch all profile stats, box stats, achievements, and box data in parallel
       const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse, achievementsResponse] = await Promise.all([
         axios.get(`${API_URL}/api/profile/stats`, {
@@ -162,16 +168,28 @@ export default function CustomerProfile() {
         }),
         axios.get(`${API_URL}/api/boxes/stats`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } })),
+        }).catch((err) => {
+          if (err.response?.status === 401) throw err; // Re-throw auth errors
+          return { data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } };
+        }),
         axios.get(`${API_URL}/api/boxes/available`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
+        }).catch((err) => {
+          if (err.response?.status === 401) throw err; // Re-throw auth errors
+          return { data: [] };
+        }),
         axios.get(`${API_URL}/api/boxes/rewards`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
+        }).catch((err) => {
+          if (err.response?.status === 401) throw err; // Re-throw auth errors
+          return { data: [] };
+        }),
         axios.get(`${API_URL}/api/achievements/user/${user?.id}`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] }))
+        }).catch((err) => {
+          if (err.response?.status === 401) throw err; // Re-throw auth errors
+          return { data: [] };
+        })
       ]);
       
       if (statsResponse.data.success) {
@@ -216,9 +234,22 @@ export default function CustomerProfile() {
           handicap: profileInfo.handicap?.toString() || ''
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch profile stats:', error);
-      toast.error('Failed to load profile data');
+      
+      // Handle authentication errors
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        localStorage.removeItem('clubos_token');
+        localStorage.removeItem('clubos_user');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
+      } else if (error.response?.status === 429) {
+        toast.error('Too many requests. Please wait a moment and try again.');
+      } else if (error.message) {
+        toast.error('Failed to load profile data');
+      }
     } finally {
       setLoading(false);
     }
