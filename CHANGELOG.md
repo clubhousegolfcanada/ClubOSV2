@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.54] - 2025-08-29
+
+### Fixed
+- **API & Token System Recovery**
+  - Fixed corrupted ENCRYPTION_KEY in backend .env file (missing newline separator)
+  - Verified token manager has mutex protection against cascade 401 errors
+  - Confirmed database logRequest method is properly implemented
+  - Verified API path interceptor handles double /api/ issues
+  - Created comprehensive diagnostic scripts for system health checks
+  - Production API confirmed working on Railway
+
+### Added
+- **System Diagnostic Tools**
+  - `scripts/fix-api-token-system.sh` - Comprehensive health check script
+  - `scripts/fix-environment.sh` - Environment setup helper
+  - `API-TOKEN-RECOVERY-PLAN.md` - 14-day systematic recovery plan
+  - `API-TOKEN-FINDINGS-REPORT.md` - Detailed issue analysis
+  - `API-TOKEN-SOLUTION-SUMMARY.md` - Implementation summary
+
+### Documentation
+- Updated recovery documentation with Railway PostgreSQL configuration
+- Documented all authentication safeguards and mutex protections
+- Added troubleshooting guides for common API/token issues
+
 ## [1.14.53] - 2025-08-28
 
 ### Fixed
