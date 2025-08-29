@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
 import axios from 'axios';
+import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/iframeStorage';
 
 // Export UserRole type
 export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
@@ -123,20 +124,20 @@ export const useAuthState = create<AuthState>()(
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
         // Clear only auth-related data, not everything
-        localStorage.removeItem('clubos_token');
-        localStorage.removeItem('clubos_user');
-        localStorage.removeItem('clubos_view_mode');
+        removeStorageItem('clubos_token');
+        removeStorageItem('clubos_user');
+        removeStorageItem('clubos_view_mode');
         
-        // Set new auth data
-        localStorage.setItem('clubos_token', token);
-        localStorage.setItem('clubos_user', JSON.stringify(user));
+        // Set new auth data using iframe-safe storage
+        setStorageItem('clubos_token', token);
+        setStorageItem('clubos_user', JSON.stringify(user));
         
         // CRITICAL: Set axios default header for all requests
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         // Set view mode based on user role
         const viewMode = user.role === 'customer' ? 'customer' : 'operator';
-        localStorage.setItem('clubos_view_mode', viewMode);
+        setStorageItem('clubos_view_mode', viewMode);
         
         // Store login timestamp for grace period
         sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
@@ -148,9 +149,9 @@ export const useAuthState = create<AuthState>()(
         });
       },
       setUser: (user) => {
-        // If user is provided but no token, try to get from localStorage
+        // If user is provided but no token, try to get from storage
         if (user && !user.token && typeof window !== 'undefined') {
-          const token = localStorage.getItem('clubos_token');
+          const token = getStorageItem('clubos_token');
           if (token) {
             user.token = token;
             // Set axios header when restoring user
@@ -214,12 +215,14 @@ export const useAuthState = create<AuthState>()(
     {
       name: 'clubos-auth',
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
-      // On rehydration, restore the token from localStorage
+      // On rehydration, restore the token from storage
       onRehydrateStorage: () => (state) => {
         if (state && state.user && typeof window !== 'undefined') {
-          const token = localStorage.getItem('clubos_token');
+          const token = getStorageItem('clubos_token');
           if (token) {
             state.user.token = token;
+            // Set axios header on rehydration
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           }
         }
       }

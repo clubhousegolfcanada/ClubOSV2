@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
 import axios from 'axios';
+import { getStorageItem } from '@/utils/iframeStorage';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -51,9 +52,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        // Check if user is stored in localStorage
-        const storedUser = localStorage.getItem('clubos_user');
-        const storedToken = localStorage.getItem('clubos_token');
+        // Check if user is stored in storage
+        const storedUser = getStorageItem('clubos_user');
+        const storedToken = getStorageItem('clubos_token');
         
         if (storedUser && storedToken) {
           // Always trust the stored token - let backend validate

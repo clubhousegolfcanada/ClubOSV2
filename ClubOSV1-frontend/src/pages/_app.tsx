@@ -19,6 +19,7 @@ import { initializeCSRF } from '@/utils/csrf';
 import { useAppVisibility } from '@/hooks/useAppVisibility';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import axios from 'axios';
+import { getStorageItem } from '@/utils/iframeStorage';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -112,9 +113,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     }
     
     // Simple auth state restoration - let AuthGuard handle validation
-    const storedUser = localStorage.getItem('clubos_user');
-    const storedToken = localStorage.getItem('clubos_token');
-    const savedViewMode = localStorage.getItem('clubos_view_mode');
+    const storedUser = getStorageItem('clubos_user');
+    const storedToken = getStorageItem('clubos_token');
+    const savedViewMode = getStorageItem('clubos_view_mode');
     
     if (storedUser && storedToken && !isAuthenticated) {
       try {

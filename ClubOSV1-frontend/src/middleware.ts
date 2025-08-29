@@ -35,6 +35,13 @@ export function middleware(request: NextRequest) {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  
+  // Set SameSite=None for iframe compatibility
+  const cookies = response.headers.get('set-cookie');
+  if (cookies) {
+    response.headers.set('set-cookie', cookies.replace(/SameSite=Lax/g, 'SameSite=None; Secure'));
+  }
 
   return response;
 }
