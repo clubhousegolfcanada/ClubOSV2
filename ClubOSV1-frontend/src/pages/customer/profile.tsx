@@ -121,7 +121,14 @@ export default function CustomerProfile() {
 
   useEffect(() => {
     if (user) {
-      fetchProfileData();
+      // Small delay to ensure token is available in localStorage
+      const timer = setTimeout(() => {
+        const token = localStorage.getItem('clubos_token');
+        if (token) {
+          fetchProfileData();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [user]);
 

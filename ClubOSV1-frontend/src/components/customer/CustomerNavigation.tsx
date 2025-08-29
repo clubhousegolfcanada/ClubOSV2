@@ -70,10 +70,25 @@ const CustomerNavigation: React.FC = () => {
     };
 
     if (user) {
-      fetchBoxCount();
-      // Refresh every 30 seconds
-      const interval = setInterval(fetchBoxCount, 30000);
-      return () => clearInterval(interval);
+      // Small delay to ensure token is available
+      const timer = setTimeout(() => {
+        const token = localStorage.getItem('clubos_token');
+        if (token) {
+          fetchBoxCount();
+          // Refresh every 30 seconds
+          const interval = setInterval(fetchBoxCount, 30000);
+          // Store interval ID to clear later
+          (window as any).__boxCountInterval = interval;
+        }
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        if ((window as any).__boxCountInterval) {
+          clearInterval((window as any).__boxCountInterval);
+          delete (window as any).__boxCountInterval;
+        }
+      };
     }
   }, [user]);
 

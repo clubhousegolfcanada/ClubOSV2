@@ -107,8 +107,12 @@ export default function Compete() {
       return;
     }
 
-    loadData();
-    fetchPendingRequestCount();
+    // Ensure token exists before making API calls
+    const token = localStorage.getItem('clubos_token');
+    if (token) {
+      loadData();
+      fetchPendingRequestCount();
+    }
   }, [user, activeTab, challengeFilter]);
 
   const fetchPendingRequestCount = async () => {
@@ -145,6 +149,13 @@ export default function Compete() {
   }, [showFriendMenu]);
 
   const loadData = async () => {
+    // Check for token before loading
+    const token = localStorage.getItem('clubos_token');
+    if (!token) {
+      console.log('No token available, skipping data load');
+      return;
+    }
+    
     setLoading(true);
     try {
       await Promise.all([
