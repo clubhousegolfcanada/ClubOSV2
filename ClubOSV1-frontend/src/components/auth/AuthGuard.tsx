@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
+import axios from 'axios';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -56,6 +57,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         
         if (storedUser && storedToken) {
           // Always trust the stored token - let backend validate
+          // CRITICAL: Set axios header
+          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          
           if (!user) {
             try {
               const parsedUser = JSON.parse(storedUser);

@@ -18,6 +18,7 @@ import { performanceMonitor, updateAnimationDurations } from '@/utils/performanc
 import { initializeCSRF } from '@/utils/csrf';
 import { useAppVisibility } from '@/hooks/useAppVisibility';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import axios from 'axios';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -119,6 +120,10 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       try {
         // Quick restore without validation
         const user = JSON.parse(storedUser);
+        
+        // CRITICAL: Set axios header for restored session
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        
         setUser({ ...user, token: storedToken });
         
         // Restore view mode
@@ -132,6 +137,9 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       } catch (error) {
         console.error('Failed to restore auth state:', error);
       }
+    } else if (storedToken && isAuthenticated) {
+      // If already authenticated but axios header might be missing
+      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
     }
     
     setAuthInitialized(true);
