@@ -104,20 +104,12 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
   // Empty state
   if (achievements.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] px-6 py-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
-            Tournament Achievements
-          </h3>
-        </div>
-        <div className="p-12 text-center">
-          <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Achievements Yet</h3>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            Participate in tournaments and events to earn special achievements and recognition!
-          </p>
-        </div>
+      <div className="text-center py-8">
+        <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Achievements Yet</h3>
+        <p className="text-sm text-gray-500 max-w-sm mx-auto">
+          Participate in tournaments and events to earn special achievements and recognition!
+        </p>
       </div>
     );
   }
@@ -125,31 +117,25 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
   return (
     <>
       {/* Compact Achievement Card */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5" />
-              Tournament Achievements
-            </h3>
-            <div className="flex items-center gap-4 text-white">
-              <div className="text-right">
-                <div className="text-2xl font-bold">{achievements.length}</div>
-                <div className="text-xs opacity-80">Total</div>
-              </div>
-              {totalPoints > 0 && (
-                <div className="text-right border-l border-white/20 pl-4">
-                  <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
-                  <div className="text-xs opacity-80">Points</div>
-                </div>
-              )}
+      <div className="space-y-4">
+        {/* Stats Summary */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <div className="text-xl font-bold text-[var(--text-primary)]">{achievements.length}</div>
+              <div className="text-xs text-[var(--text-muted)]">Total</div>
             </div>
+            {totalPoints > 0 && (
+              <div className="text-center border-l border-gray-200 dark:border-gray-700 pl-4">
+                <div className="text-xl font-bold text-[var(--text-primary)]">{totalPoints.toLocaleString()}</div>
+                <div className="text-xs text-[var(--text-muted)]">Points</div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Category Breakdown - Compact Grid */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div className="">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(groupedAchievements).map(([category, items]) => (
               <button
@@ -179,7 +165,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
         </div>
 
         {/* Featured Achievements - Horizontal Scroll */}
-        <div className="px-6 py-4">
+        <div className="">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-gray-700">
               {selectedCategory === 'all' ? 'Recent Awards' : categoryNames[selectedCategory]}

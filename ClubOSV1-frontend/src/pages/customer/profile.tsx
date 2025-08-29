@@ -671,7 +671,7 @@ export default function CustomerProfile() {
                       <Trophy className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                       <div>
                         <p className="text-[10px] text-[var(--text-muted)]">Current Rank</p>
-                        <p className="text-xs font-medium text-[var(--text-primary)]">{profileData?.rank || 'House'}</p>
+                        <p className="text-xs font-medium text-[var(--text-primary)]">{calculateTierFromCC(profileData?.totalCCEarned || 0)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
