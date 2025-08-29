@@ -130,8 +130,8 @@ router.post('/:userId/adjust', async (req, res) => {
     if (profileResult.rows.length === 0) {
       // Create profile if doesn't exist
       await client.query(
-        `INSERT INTO customer_profiles (user_id, cc_balance, rank_tier, total_challenges_won, total_challenges_played)
-         VALUES ($1, 0, 'house', 0, 0)`,
+        `INSERT INTO customer_profiles (user_id, cc_balance, total_cc_earned, rank_tier, total_challenges_won, total_challenges_played)
+         VALUES ($1, 0, 0, 'house', 0, 0)`,
         [userId]
       );
     }
@@ -152,11 +152,23 @@ router.post('/:userId/adjust', async (req, res) => {
       ? currentBalance + adjustAmount 
       : currentBalance - adjustAmount;
     
-    // Update balance
-    await client.query(
-      'UPDATE customer_profiles SET cc_balance = $1 WHERE user_id = $2',
-      [newBalance, userId]
-    );
+    // Update balance AND total_cc_earned if it's a credit
+    if (type === 'credit') {
+      // When adding CC, also increase total_cc_earned
+      await client.query(
+        `UPDATE customer_profiles 
+         SET cc_balance = $1,
+             total_cc_earned = total_cc_earned + $2
+         WHERE user_id = $3`,
+        [newBalance, adjustAmount, userId]
+      );
+    } else {
+      // When removing CC, only update balance (total_cc_earned stays the same)
+      await client.query(
+        'UPDATE customer_profiles SET cc_balance = $1 WHERE user_id = $2',
+        [newBalance, userId]
+      );
+    }
     
     // Log the transaction
     await client.query(

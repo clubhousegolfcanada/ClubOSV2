@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.56] - 2025-08-29
+
+### Fixed
+- **Club Coins Leaderboard Updates**
+  - Fixed CC adjustments not updating leaderboard (was only updating cc_balance, not total_cc_earned)
+  - Updated admin CC adjustment endpoint to increment total_cc_earned when crediting
+  - Fixed data consistency issues where cc_balance > total_cc_earned
+  - Leaderboard now properly reflects CC changes immediately
+
+### Scripts
+- `scripts/fix-cc-system.sh` - Repairs CC data consistency and shows statistics
+
 ## [1.14.55] - 2025-08-29
 
 ### Fixed
