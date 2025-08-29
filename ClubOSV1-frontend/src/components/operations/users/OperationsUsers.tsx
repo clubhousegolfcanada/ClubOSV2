@@ -436,7 +436,7 @@ export const OperationsUsers: React.FC = () => {
         `${API_URL}/api/boxes/grant`,
         {
           userId: boxManagementUser.id,
-          count: parseInt(boxCount)
+          quantity: parseInt(boxCount)
         },
         {
           headers: { Authorization: `Bearer ${authToken}` }

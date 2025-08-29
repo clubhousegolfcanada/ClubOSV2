@@ -212,7 +212,7 @@ router.post('/:boxId/open', authenticate, async (req: Request, res: Response, ne
           'SELECT cc_balance FROM customer_profiles WHERE user_id = $1',
           [userId]
         );
-        const balanceBefore = balanceResult.rows[0]?.cc_balance || 0;
+        const balanceBefore = parseFloat(balanceResult.rows[0]?.cc_balance || 0);
         const balanceAfter = balanceBefore + amount;
         
         // Update or create customer profile with CC balance
