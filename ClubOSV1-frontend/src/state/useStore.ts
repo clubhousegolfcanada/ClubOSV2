@@ -142,7 +142,16 @@ export const useAuthState = create<AuthState>()(
         
         // No token monitoring needed - auth is handled by cookies
       },
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => {
+        // If user is provided but no token, try to get from localStorage
+        if (user && !user.token && typeof window !== 'undefined') {
+          const token = localStorage.getItem('clubos_token');
+          if (token) {
+            user.token = token;
+          }
+        }
+        set({ user, isAuthenticated: !!user });
+      },
       logout: () => {
         // Clear auth tokens
         if (typeof window !== 'undefined') {
@@ -191,7 +200,16 @@ export const useAuthState = create<AuthState>()(
     }),
     {
       name: 'clubos-auth',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated })
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      // On rehydration, restore the token from localStorage
+      onRehydrateStorage: () => (state) => {
+        if (state && state.user && typeof window !== 'undefined') {
+          const token = localStorage.getItem('clubos_token');
+          if (token && state.user) {
+            state.user.token = token;
+          }
+        }
+      }
     }
   )
 );
