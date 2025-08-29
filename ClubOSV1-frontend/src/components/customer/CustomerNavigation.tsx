@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
-import ModeToggle from '@/components/ModeToggle';
 import axios from 'axios';
 import { 
   Home, 
@@ -238,11 +237,6 @@ const CustomerNavigation: React.FC = () => {
                     </button>
                     
                     {/* Mode Toggle for Admin and Operator */}
-                    {(user?.role === 'admin' || user?.role === 'operator') && (
-                      <div className="px-4 py-3 border-t border-gray-200">
-                        <ModeToggle />
-                      </div>
-                    )}
                   </div>
                   
                   <div className="border-t border-gray-200 py-1">
@@ -259,11 +253,6 @@ const CustomerNavigation: React.FC = () => {
             </div>
 
             {/* Mode Toggle for Admin and Operator - Desktop */}
-            {(user?.role === 'admin' || user?.role === 'operator') && (
-              <div className="hidden sm:block">
-                <ModeToggle />
-              </div>
-            )}
           </div>
         </div>
       </header>
@@ -305,11 +294,6 @@ const CustomerNavigation: React.FC = () => {
               </button>
               
               {/* Mode Toggle for Admin and Operator */}
-              {(user?.role === 'admin' || user?.role === 'operator') && (
-                <div className="pt-3 pb-1 border-t border-gray-200">
-                  <ModeToggle />
-                </div>
-              )}
               
               <button
                 onClick={() => {
