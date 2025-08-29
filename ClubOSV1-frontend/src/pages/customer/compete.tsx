@@ -7,7 +7,7 @@ import {
   Trophy, Users, User, Clock, Target, Check, X, Plus, TrendingUp,
   Coins, UserPlus, Crown, Star, Medal, Home, Shield, Search,
   ChevronRight, Filter, Zap, Award, DollarSign, Activity, MoreVertical,
-  UserMinus, Ban, Bell, ChevronDown, MapPin, Flag, AlertCircle
+  UserMinus, Ban, Bell, ChevronDown, MapPin, Flag, AlertCircle, Swords
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -811,64 +811,69 @@ export default function Compete() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid gap-3">
+                  <div className="grid gap-2 sm:gap-3">
                     {filteredCompetitors.map((competitor) => (
                       <div
                         key={competitor.id || competitor.user_id}
-                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all"
+                        className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-all"
                       >
-                        <div className="flex items-center justify-between">
-                          <div 
-                            className="flex items-center gap-3 flex-1 cursor-pointer"
-                            onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id || competitor.id}`)}
-                          >
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center">
-                              <span className="text-lg font-bold text-white">
+                        <div className="flex items-center justify-between gap-2 sm:gap-3">
+                          {/* Avatar and Name */}
+                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-base sm:text-lg font-bold text-white">
                                 {competitor.name?.charAt(0).toUpperCase() || '?'}
                               </span>
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{competitor.name}</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                                <span className="font-medium text-gray-900 text-sm sm:text-base truncate">{competitor.name}</span>
                                 {getRankIcon(competitor.rank_tier)}
                                 {competitor.has_champion_marker && (
                                   <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
                                     Champion
                                   </span>
                                 )}
-                                {/* Achievement Badges */}
-                                {competitor.featured_achievements && competitor.featured_achievements.length > 0 && (
+                              </div>
+                              {/* Achievement Badges */}
+                              {competitor.featured_achievements && competitor.featured_achievements.length > 0 && (
+                                <div className="mt-1">
                                   <AchievementBadgeGroup
                                     achievements={competitor.featured_achievements}
                                     size="xs"
                                     maxDisplay={3}
                                   />
-                                )}
-                              </div>
-                              <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                                <span className="flex items-center gap-1">
-                                  <Coins className="w-3 h-3" />
-                                  {competitor.cc_balance} CC
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Trophy className="w-3 h-3" />
-                                  {competitor.total_challenges_won}W / {competitor.total_challenges_played}P
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <TrendingUp className="w-3 h-3" />
-                                  {competitor.win_rate}%
-                                </span>
-                              </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
+                          {/* Stats in the middle */}
+                          <div className="flex items-center gap-2 sm:gap-4 text-xs text-gray-500 flex-1 justify-center">
+                            <span className="flex items-center gap-0.5 sm:gap-1">
+                              <Coins className="w-3 h-3" />
+                              <span className="hidden sm:inline">{competitor.cc_balance} CC</span>
+                              <span className="sm:hidden">{competitor.cc_balance}</span>
+                            </span>
+                            <span className="hidden sm:flex items-center gap-0.5 sm:gap-1">
+                              <Trophy className="w-3 h-3" />
+                              {competitor.total_challenges_won}W/{competitor.total_challenges_played}P
+                            </span>
+                            <span className="flex items-center gap-0.5 sm:gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              {competitor.win_rate}%
+                            </span>
+                          </div>
+                          
+                          {/* Buttons on the right */}
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                             <button
                               onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id || competitor.id}`)}
-                              className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center gap-2"
+                              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center gap-1 sm:gap-2 text-sm"
                             >
-                              <Trophy className="w-4 h-4" />
-                              Challenge
+                              <Swords className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                              <span className="hidden sm:inline">Challenge</span>
+                              <span className="sm:hidden">Fight</span>
                             </button>
                             
                             <div className="relative">
@@ -877,7 +882,7 @@ export default function Compete() {
                                   e.stopPropagation();
                                   setShowFriendMenu(showFriendMenu === competitor.id ? null : competitor.id);
                                 }}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                               >
                                 <MoreVertical className="w-4 h-4 text-gray-600" />
                               </button>
