@@ -269,24 +269,6 @@ export default function Compete() {
     }
   };
 
-  const loadLeaderboard = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
-      });
-      
-      if (response.data.success) {
-        setLeaderboardData(response.data.data || []);
-      } else {
-        console.error('Leaderboard API returned error:', response.data.error);
-        setLeaderboardData([]);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch leaderboard:', error.response?.data || error.message);
-      setLeaderboardData([]);
-    }
-  };
-
   const handleAcceptChallenge = async (challengeId: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
