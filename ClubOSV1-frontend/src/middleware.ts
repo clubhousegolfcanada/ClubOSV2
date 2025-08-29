@@ -53,8 +53,8 @@ export const config = {
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, manifest.json, robots.txt (public files)
+     * - public files and assets
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sw.js|offline.html|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$|.*\\.webp$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sw.js|offline.html|clubos-icon.*|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$|.*\\.webp$|.*\\.webmanifest$).*)',
   ],
 };
