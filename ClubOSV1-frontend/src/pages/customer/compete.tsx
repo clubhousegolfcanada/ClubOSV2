@@ -13,7 +13,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import { FriendRequests } from '@/components/customer/FriendRequests';
-import { LeaderboardList } from '@/components/customer/LeaderboardList';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { TabNavigation } from '@/components/customer/TabNavigation';
 
@@ -83,12 +82,11 @@ interface Competitor {
 export default function Compete() {
   const { user } = useAuthState();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'challenges' | 'competitors' | 'leaderboard' | 'requests'>('challenges');
+  const [activeTab, setActiveTab] = useState<'challenges' | 'competitors' | 'requests'>('challenges');
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [challengeFilter, setChallengeFilter] = useState<'all' | 'active' | 'pending' | 'history'>('all');
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
-  const [leaderboardData, setLeaderboardData] = useState<Competitor[]>([]);
   const [ccBalance, setCCBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,8 +150,7 @@ export default function Compete() {
       await Promise.all([
         loadCCBalance(),
         activeTab === 'challenges' ? loadChallenges() : null,
-        activeTab === 'competitors' ? loadCompetitors() : null,
-        activeTab === 'leaderboard' ? loadLeaderboard() : null
+        activeTab === 'competitors' ? loadCompetitors() : null
       ]);
     } finally {
       setLoading(false);
@@ -418,28 +415,6 @@ export default function Compete() {
     }
   };
 
-  const sendFriendRequest = async (targetUserId: string, targetName: string) => {
-    try {
-      const token = localStorage.getItem('clubos_token');
-      await axios.post(
-        `${API_URL}/api/friends/request`,
-        { target_user_id: targetUserId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success(`Friend request sent to ${targetName}!`);
-      
-      // Update the leaderboard to show pending status
-      setLeaderboardData(prev => 
-        prev.map(entry => 
-          entry.user_id === targetUserId 
-            ? { ...entry, has_pending_request: true }
-            : entry
-        )
-      );
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to send friend request');
-    }
-  };
 
   const removeFriend = async (friendshipId: string, friendName: string) => {
     try {
@@ -524,10 +499,6 @@ export default function Compete() {
     c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredLeaderboard = leaderboardData.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <>
       <Head>
@@ -578,7 +549,6 @@ export default function Compete() {
                 badgeColor: 'red'
               },
               { key: 'competitors', label: 'Competitors' },
-              { key: 'leaderboard', label: 'Leaderboard' },
               { 
                 key: 'requests', 
                 label: 'Requests',
@@ -587,7 +557,7 @@ export default function Compete() {
               }
             ]}
             activeTab={activeTab}
-            onTabChange={(tab) => setActiveTab(tab as 'challenges' | 'competitors' | 'leaderboard' | 'requests')}
+            onTabChange={(tab) => setActiveTab(tab as 'challenges' | 'competitors' | 'requests')}
             sticky={true}
           />
 
@@ -849,13 +819,13 @@ export default function Compete() {
                       No friends yet
                     </h3>
                     <p className="text-gray-800 mb-6">
-                      Add friends from the leaderboard to challenge them
+                      Send friend requests to other players to challenge them
                     </p>
                     <button
-                      onClick={() => setActiveTab('leaderboard')}
-                      className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors"
+                      onClick={() => router.push('/customer/leaderboard')}
+                      className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors"
                     >
-                      Browse Leaderboard
+                      Find Players
                     </button>
                   </div>
                 ) : (
@@ -913,7 +883,7 @@ export default function Compete() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id || competitor.id}`)}
-                              className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
+                              className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center gap-2"
                             >
                               <Trophy className="w-4 h-4" />
                               Challenge
@@ -961,18 +931,6 @@ export default function Compete() {
                     ))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Leaderboard Tab */}
-            {activeTab === 'leaderboard' && (
-              <div className="p-4">
-                <LeaderboardList 
-                  userId={user?.id}
-                  userToken={user?.token}
-                  showSearch={true}
-                  virtualScroll={true}
-                />
               </div>
             )}
 
