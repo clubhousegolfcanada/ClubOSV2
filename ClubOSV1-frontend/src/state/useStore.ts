@@ -121,9 +121,10 @@ export const useAuthState = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
-        // Clear ALL existing auth data first to prevent stale tokens
-        localStorage.clear(); // Clear everything first
-        sessionStorage.clear();
+        // Clear only auth-related data, not everything
+        localStorage.removeItem('clubos_token');
+        localStorage.removeItem('clubos_user');
+        localStorage.removeItem('clubos_view_mode');
         
         // Set new auth data
         localStorage.setItem('clubos_token', token);
@@ -201,34 +202,12 @@ export const useAuthState = create<AuthState>()(
     {
       name: 'clubos-auth',
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
-      // On rehydration, validate and restore the token from localStorage
+      // On rehydration, restore the token from localStorage
       onRehydrateStorage: () => (state) => {
         if (state && state.user && typeof window !== 'undefined') {
           const token = localStorage.getItem('clubos_token');
-          const storedUser = localStorage.getItem('clubos_user');
-          
-          // Validate that token and user match
-          if (token && storedUser) {
-            try {
-              const parsedUser = JSON.parse(storedUser);
-              // Ensure the stored user matches the state user
-              if (parsedUser.id === state.user.id) {
-                state.user.token = token;
-              } else {
-                // Mismatch - clear everything
-                console.warn('User mismatch detected, clearing auth');
-                localStorage.removeItem('clubos_token');
-                localStorage.removeItem('clubos_user');
-                state.user = null;
-                state.isAuthenticated = false;
-              }
-            } catch (e) {
-              // Invalid data - clear
-              localStorage.removeItem('clubos_token');
-              localStorage.removeItem('clubos_user');
-              state.user = null;
-              state.isAuthenticated = false;
-            }
+          if (token) {
+            state.user.token = token;
           }
         }
       }

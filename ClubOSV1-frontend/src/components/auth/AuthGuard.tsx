@@ -54,54 +54,19 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         const storedUser = localStorage.getItem('clubos_user');
         const storedToken = localStorage.getItem('clubos_token');
         
-        // Check if we just logged in (grace period)
-        const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
-        const recentlyLoggedIn = loginTimestamp && 
-          (Date.now() - parseInt(loginTimestamp) < 10000); // 10 second grace period
-        
         if (storedUser && storedToken) {
-          // If we just logged in, trust the token
-          if (recentlyLoggedIn) {
-            if (!user) {
-              try {
-                const parsedUser = JSON.parse(storedUser);
-                setUser({ ...parsedUser, token: storedToken });
-                hasCheckedRef.current = true;
-              } catch (error) {
-                console.error('Failed to parse stored user:', error);
-                localStorage.removeItem('clubos_user');
-                localStorage.removeItem('clubos_token');
-                localStorage.removeItem('clubos_view_mode');
-                router.push('/login');
-              }
-            } else {
+          // Always trust the stored token - let backend validate
+          if (!user) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              setUser({ ...parsedUser, token: storedToken });
               hasCheckedRef.current = true;
-            }
-          } else if (!tokenManager.isTokenExpired(storedToken)) {
-            // Not recently logged in, validate token
-            if (!user) {
-              try {
-                const parsedUser = JSON.parse(storedUser);
-                setUser({ ...parsedUser, token: storedToken });
-                hasCheckedRef.current = true;
-              } catch (error) {
-                console.error('Failed to parse stored user:', error);
-                localStorage.removeItem('clubos_user');
-                localStorage.removeItem('clubos_token');
-                localStorage.removeItem('clubos_view_mode');
-                router.push('/login');
-              }
-            } else {
-              hasCheckedRef.current = true;
+            } catch (error) {
+              console.error('Failed to parse stored user:', error);
+              router.push('/login');
             }
           } else {
-            // Token expired, clear and redirect
-            console.log('Token expired, clearing auth data');
-            localStorage.removeItem('clubos_user');
-            localStorage.removeItem('clubos_token');
-            localStorage.removeItem('clubos_view_mode');
-            sessionStorage.clear();
-            router.push('/login');
+            hasCheckedRef.current = true;
           }
         } else if (!isAuthenticated && window.location.pathname !== '/login') {
           // No stored auth data and not on login page

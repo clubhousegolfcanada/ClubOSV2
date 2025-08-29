@@ -37,8 +37,9 @@ class CacheService {
       // Use Redis if available, otherwise use in-memory cache
       const redisUrl = process.env.REDIS_URL || process.env.REDIS_TLS_URL;
       
-      // Skip Redis if URL contains railway.internal (not accessible)
-      if (redisUrl && !redisUrl.includes('railway.internal')) {
+      // Use Redis if we have a valid URL
+      if (redisUrl) {
+        logger.info(`Attempting to connect to Redis at: ${redisUrl.replace(/:[^:@]*@/, ':****@')}`); // Log URL with password hidden
         this.redis = new Redis(redisUrl, {
           maxRetriesPerRequest: 3,
           retryStrategy: (times) => {
@@ -60,17 +61,25 @@ class CacheService {
 
         this.redis.on('connect', () => {
           this.isConnected = true;
-          logger.info('Redis cache connected');
+          logger.info('✅ Redis cache connected successfully');
         });
 
         this.redis.on('error', (err) => {
-          logger.error('Redis cache error:', err);
+          // Don't log connection errors repeatedly
+          if (err.message && !err.message.includes('ENOTFOUND')) {
+            logger.error('Redis cache error:', err.message);
+          }
           this.isConnected = false;
         });
 
         this.redis.on('close', () => {
           this.isConnected = false;
           logger.warn('Redis connection closed');
+        });
+        
+        this.redis.on('ready', () => {
+          this.isConnected = true;
+          logger.info('✅ Redis is ready to accept commands');
         });
       } else {
         logger.info('No Redis URL found, using in-memory cache');
