@@ -1,0 +1,200 @@
+/* Box Opening Animations */
+
+/* Shimmer effect for boxes on profile page */
+@keyframes box-shimmer {
+  0%, 100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 2px 4px rgba(11, 61, 58, 0.2));
+  }
+  50% {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 6px 12px rgba(11, 61, 58, 0.4));
+  }
+}
+
+/* Glow pulse for selected box */
+@keyframes box-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(11, 61, 58, 0.2),
+      0 0 40px rgba(11, 61, 58, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(11, 61, 58, 0.4),
+      0 0 60px rgba(11, 61, 58, 0.2);
+  }
+}
+
+/* Spinning animation for box reveal */
+@keyframes box-spin {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: rotateY(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+/* Celebration burst for big wins */
+@keyframes celebration-burst {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Float animation for reward display */
+@keyframes float-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Box container styles */
+.box-simple-container {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Premium box hover effect */
+.premium-box-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-box-hover::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(11, 61, 58, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  transition: all 0.6s;
+  opacity: 0;
+}
+
+.premium-box-hover:hover::before {
+  animation: shine 0.6s ease-in-out;
+}
+
+@keyframes shine {
+  0% {
+    transform: rotate(45deg) translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(45deg) translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Jackpot animation */
+.jackpot-animation {
+  animation: jackpot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes jackpot-pulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05) rotate(5deg);
+    filter: hue-rotate(20deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(-5deg);
+    filter: hue-rotate(40deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(5deg);
+    filter: hue-rotate(20deg);
+  }
+}
+
+/* Coin flip animation */
+@keyframes coin-flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(360deg);
+  }
+}
+
+/* Success checkmark animation */
+@keyframes check-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  @keyframes box-shimmer {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-1px) scale(1.05);
+    }
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .box-simple-container {
+    background: rgba(0, 0, 0, 0.7);
+  }
+  
+  @keyframes box-glow {
+    0%, 100% {
+      box-shadow: 
+        0 0 20px rgba(11, 61, 58, 0.3),
+        0 0 40px rgba(11, 61, 58, 0.2);
+    }
+    50% {
+      box-shadow: 
+        0 0 30px rgba(11, 61, 58, 0.5),
+        0 0 60px rgba(11, 61, 58, 0.3);
+    }
+  }
+}

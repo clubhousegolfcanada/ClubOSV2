@@ -32,7 +32,7 @@ const rewardItems = [
     label: 'Free Hour',
     type: 'free_hour',
     value: 1,
-    color: 'from-emerald-800 to-emerald-700',
+    color: 'from-[#0B3D3A] to-[#084a45]',
     probability: 30
   },
   { 
@@ -40,7 +40,7 @@ const rewardItems = [
     label: '25 CC',
     type: 'club_coins',
     value: 25,
-    color: 'from-zinc-700 to-zinc-600',
+    color: 'from-gray-600 to-gray-500',
     probability: 18
   },
   { 
@@ -48,7 +48,7 @@ const rewardItems = [
     label: '50 CC',
     type: 'club_coins',
     value: 50,
-    color: 'from-zinc-700 to-zinc-600',
+    color: 'from-gray-600 to-gray-500',
     probability: 15
   },
   { 
@@ -56,7 +56,7 @@ const rewardItems = [
     label: '75 CC',
     type: 'club_coins',
     value: 75,
-    color: 'from-zinc-700 to-zinc-600',
+    color: 'from-gray-600 to-gray-500',
     probability: 12
   },
   { 
@@ -64,7 +64,7 @@ const rewardItems = [
     label: '100 CC',
     type: 'club_coins',
     value: 100,
-    color: 'from-emerald-800 to-emerald-700',
+    color: 'from-[#0B3D3A] to-[#084a45]',
     probability: 10
   },
   { 
@@ -72,7 +72,7 @@ const rewardItems = [
     label: '150 CC',
     type: 'club_coins',
     value: 150,
-    color: 'from-emerald-800 to-emerald-700',
+    color: 'from-[#0B3D3A] to-[#084a45]',
     probability: 8
   },
   { 
@@ -80,7 +80,7 @@ const rewardItems = [
     label: '200 CC',
     type: 'club_coins',
     value: 200,
-    color: 'from-slate-800 to-slate-700',
+    color: 'from-[#084a45] to-[#063a35]',
     probability: 6
   },
   { 
@@ -88,7 +88,7 @@ const rewardItems = [
     label: '250 CC',
     type: 'club_coins',
     value: 250,
-    color: 'from-slate-800 to-slate-700',
+    color: 'from-[#084a45] to-[#063a35]',
     probability: 4
   },
   { 
@@ -96,7 +96,7 @@ const rewardItems = [
     label: '300 CC',
     type: 'club_coins',
     value: 300,
-    color: 'from-slate-800 to-slate-700',
+    color: 'from-[#084a45] to-[#063a35]',
     probability: 3
   },
   { 
@@ -104,7 +104,7 @@ const rewardItems = [
     label: '400 CC',
     type: 'club_coins',
     value: 400,
-    color: 'from-slate-900 to-slate-800',
+    color: 'from-[#063a35] to-[#052d2a]',
     probability: 2
   },
   { 
@@ -112,7 +112,7 @@ const rewardItems = [
     label: '500 CC',
     type: 'club_coins',
     value: 500,
-    color: 'from-slate-900 to-slate-800',
+    color: 'from-[#063a35] to-[#052d2a]',
     probability: 1.5
   },
   { 
@@ -120,7 +120,7 @@ const rewardItems = [
     label: 'Merch',
     type: 'merch',
     value: 1,
-    color: 'from-slate-900 to-slate-800',
+    color: 'from-[#063a35] to-[#052d2a]',
     probability: 2
   },
   { 
@@ -128,7 +128,7 @@ const rewardItems = [
     label: '10,000 CC',
     type: 'mega_jackpot',
     value: 10000,
-    color: 'from-amber-600 via-amber-500 to-yellow-500',
+    color: 'from-yellow-500 via-amber-500 to-yellow-600',
     probability: 0.5
   }
 ];
@@ -252,57 +252,59 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
   const Icon = currentItem?.icon || Package;
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 box-simple-container">
-      <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-lg max-w-md w-full relative overflow-hidden border border-zinc-800 shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 box-simple-container">
+      <div className="bg-white dark:bg-[var(--bg-primary)] rounded-2xl max-w-md w-full relative overflow-hidden border border-[var(--border-primary)] shadow-2xl">
         {/* Header */}
-        <div className="relative p-6 border-b border-zinc-800">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/20 to-emerald-800/20" />
+        <div className="relative p-6 border-b border-[var(--border-primary)]">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0B3D3A]/5 to-[#0B3D3A]/10" />
           <div className="relative flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold text-white tracking-wide">REWARD BOX</h2>
-              <p className="text-zinc-400 text-xs mt-1 uppercase tracking-wider">
-                {!isSpinning && !showResult ? 'Tap to reveal' : 
-                 isSpinning ? 'Processing...' : 
-                 'Success'}
+              <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Mystery Box</h2>
+              <p className="text-[var(--text-muted)] text-sm mt-1">
+                {!isSpinning && !showResult ? 'Click to reveal your reward' : 
+                 isSpinning ? 'Revealing...' : 
+                 'Congratulations!'}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white dark:bg-gray-900/5 rounded transition-colors"
+              className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
             >
-              <X className="w-4 h-4 text-zinc-400" />
+              <X className="w-5 h-5 text-[var(--text-muted)]" />
             </button>
           </div>
         </div>
 
         {/* Display Area */}
-        <div className="p-12">
+        <div className="p-12 bg-gradient-to-b from-transparent to-[var(--bg-tertiary)]">
           <div className="flex justify-center items-center">
             {!currentItem ? (
               // Mystery box state - before opening
               <div className="relative">
-                <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-900 
-                              flex items-center justify-center border border-zinc-700 shadow-2xl">
-                  <Package className="w-16 h-16 text-zinc-500" />
+                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-[#0B3D3A] to-[#084a45] 
+                              flex items-center justify-center border-2 border-[#0B3D3A]/20 shadow-xl
+                              transform hover:scale-105 transition-transform cursor-pointer"
+                     onClick={handleOpenBox}>
+                  <Package className="w-16 h-16 text-white/90" strokeWidth={1.5} />
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 rounded-lg blur-xl" />
+                <div className="absolute -inset-2 bg-gradient-to-r from-[#0B3D3A]/20 to-[#084a45]/20 rounded-xl blur-2xl" />
               </div>
             ) : (
               // Spinning/Result state
               <div className="relative">
                 <div 
                   className={`
-                    w-32 h-32 rounded-lg bg-gradient-to-br ${currentItem.color}
-                    flex flex-col items-center justify-center transition-all duration-100
-                    border ${showResult ? 'border-emerald-500/50 scale-110' : 
-                      isSpinning ? 'border-zinc-700 scale-105' : 'border-zinc-700'}
+                    w-32 h-32 rounded-xl bg-gradient-to-br ${currentItem.color}
+                    flex flex-col items-center justify-center transition-all duration-200
+                    border-2 ${showResult ? 'border-[#0B3D3A]/50 scale-110 shadow-2xl' : 
+                      isSpinning ? 'border-[#0B3D3A]/20 scale-105' : 'border-[#0B3D3A]/20'}
                   `}
                 >
-                  <Icon className="w-12 h-12 text-white/90 mb-1" />
-                  <span className="text-white/90 font-medium text-sm">{currentItem.label}</span>
+                  <Icon className="w-12 h-12 text-white mb-2" strokeWidth={1.5} />
+                  <span className="text-white font-semibold text-sm">{currentItem.label}</span>
                 </div>
                 {showResult && (
-                  <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500/30 to-emerald-600/30 rounded-lg blur-2xl animate-pulse" />
+                  <div className="absolute -inset-3 bg-gradient-to-r from-[#0B3D3A]/40 to-[#084a45]/40 rounded-xl blur-3xl animate-pulse" />
                 )}
               </div>
             )}
@@ -310,54 +312,54 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
         </div>
 
         {/* Action/Result Section */}
-        <div className="p-6 border-t border-zinc-800">
+        <div className="p-6 border-t border-[var(--border-primary)]">
           {!showResult ? (
             <button
               onClick={handleOpenBox}
               disabled={isSpinning}
-              className={`w-full py-3 px-6 rounded font-semibold text-sm tracking-wider transition-all uppercase ${
+              className={`w-full py-3 px-6 rounded-lg font-semibold text-sm transition-all ${
                 isSpinning
-                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-emerald-800 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-600 shadow-lg'
+                  ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white hover:from-[#084a45] hover:to-[#063a35] shadow-lg transform hover:scale-[1.02] active:scale-[0.98]'
               }`}
             >
-              {isSpinning ? 'Processing' : 'Open'}
+              {isSpinning ? 'Revealing...' : 'Open Box'}
             </button>
           ) : (
             <div className="space-y-4">
               {/* Reward Display */}
               {selectedReward && (
-                <div className="bg-zinc-900/50 rounded border border-zinc-800 p-4 mb-4">
+                <div className="bg-gradient-to-br from-[#0B3D3A]/5 to-[#0B3D3A]/10 rounded-lg border border-[#0B3D3A]/20 p-4 mb-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Reward Claimed</h3>
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <h3 className="text-sm font-semibold text-[var(--text-muted)]">Reward Claimed</h3>
+                    <div className="w-2 h-2 bg-[#0B3D3A] rounded-full animate-pulse" />
                   </div>
                   
                   <div className="space-y-3">
                     <div>
-                      <p className="text-2xl font-semibold text-white">
+                      <p className="text-2xl font-bold text-[var(--text-primary)]">
                         {selectedReward.rewardName}
                       </p>
                     </div>
                     
                     {selectedReward.voucherCode && (
-                      <div className="bg-zinc-800/50 rounded p-3 border border-zinc-700">
-                        <p className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Code</p>
-                        <p className="font-mono font-medium text-emerald-400">
+                      <div className="bg-white dark:bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-primary)]">
+                        <p className="text-xs text-[var(--text-muted)] mb-1 font-medium">Voucher Code</p>
+                        <p className="font-mono font-bold text-[#0B3D3A] text-lg">
                           {selectedReward.voucherCode}
                         </p>
                       </div>
                     )}
                     
                     {selectedReward.expiresAt && (
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-[var(--text-muted)]">
                         Valid until {new Date(selectedReward.expiresAt).toLocaleDateString()}
                       </p>
                     )}
                     
                     {selectedReward.rewardType === 'club_coins' && (
-                      <p className="text-xs text-emerald-400 font-medium">
-                        Balance updated
+                      <p className="text-sm text-[#0B3D3A] font-semibold">
+                        ✓ Added to your balance
                       </p>
                     )}
                   </div>
@@ -366,9 +368,9 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
               
               <button
                 onClick={onClose}
-                className="w-full py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded font-medium text-sm transition-colors uppercase tracking-wider"
+                className="w-full py-3 px-4 bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg font-semibold text-sm transition-colors"
               >
-                Close
+                Done
               </button>
             </div>
           )}

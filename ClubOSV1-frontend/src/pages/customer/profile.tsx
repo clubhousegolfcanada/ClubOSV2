@@ -595,17 +595,21 @@ export default function CustomerProfile() {
                               key={box.id}
                               onClick={() => handleBoxClick(box)}
                               disabled={opening}
-                              className="p-1 transition-all transform hover:scale-110 active:scale-95 cursor-pointer"
+                              className="relative p-1 transition-all transform hover:scale-110 active:scale-95 cursor-pointer group"
                               aria-label="Open mystery box"
                               style={{
                                 animation: `shimmer ${2 + index * 0.1}s ease-in-out infinite`
                               }}
                             >
-                              <Package 
-                                className="w-8 h-8 text-[var(--text-primary)] hover:text-[#0B3D3A] transition-colors" 
-                                strokeWidth={1.5} 
-                                fill="none"
-                              />
+                              <div className="relative">
+                                <Package 
+                                  className="w-8 h-8 text-[#0B3D3A] group-hover:text-[#084a45] transition-colors" 
+                                  strokeWidth={1.5} 
+                                  fill="currentColor"
+                                  fillOpacity={0.1}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#0B3D3A]/10 to-transparent rounded opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
                             </button>
                           ))}
                         </div>
