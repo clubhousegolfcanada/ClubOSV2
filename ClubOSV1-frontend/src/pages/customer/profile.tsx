@@ -528,10 +528,6 @@ export default function CustomerProfile() {
                         <div className="text-xs text-[var(--text-muted)]">
                           Tier Status • {profileData.totalBookings || 0} Lifetime Bookings
                         </div>
-                        <TierBadge 
-                          tier={calculateTierFromCC(profileData.totalCCEarned)} 
-                          size="sm" 
-                        />
                       </div>
                       
                       {/* Progress bar */}
