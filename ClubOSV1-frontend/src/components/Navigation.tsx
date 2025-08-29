@@ -159,6 +159,28 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-3">
+            {/* Desktop Booking Button - Show for all users */}
+            {user && (
+              <button
+                onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
+                className="p-2 text-[var(--accent)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all"
+                title="Book a simulator"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
+            )}
+            
+            {/* Desktop Payment/Returns Button - Admin and Operator only */}
+            {user && ['admin', 'operator'].includes(user.role) && (
+              <button
+                onClick={() => window.open('https://dashboard.stripe.com', '_blank')}
+                className="p-2 text-[var(--accent)] hover:bg-[var(--bg-tertiary)] rounded-md transition-all"
+                title="Process returns"
+              >
+                <CreditCard className="w-5 h-5" />
+              </button>
+            )}
+            
             <div 
               className={`w-2 h-2 rounded-full ${
                 sessionStatus === 'active' 
