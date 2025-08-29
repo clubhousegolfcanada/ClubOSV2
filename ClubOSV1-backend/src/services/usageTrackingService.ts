@@ -94,15 +94,23 @@ class UsageTrackingService {
           errors INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           
-          UNIQUE KEY unique_daily (date, user_id, endpoint, model),
-          INDEX idx_daily_date (date),
-          INDEX idx_daily_user (user_id)
+          UNIQUE(date, user_id, endpoint, model)
         )
       `);
 
+      // Create indexes for daily table separately
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_daily_date ON api_usage_daily(date)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_daily_user ON api_usage_daily(user_id)`);
+
       logger.info('Usage tracking tables initialized');
-    } catch (error) {
+    } catch (error: any) {
+      // Log error but don't crash the service
       logger.error('Failed to initialize usage tracking tables:', error);
+      // If it's just the indexes that failed, the tables might still work
+      if (error.code !== '42P07') { // 42P07 = relation already exists
+        // Only log critical errors
+        logger.warn('Usage tracking may have limited functionality');
+      }
     }
   }
 

@@ -37,7 +37,8 @@ class CacheService {
       // Use Redis if available, otherwise use in-memory cache
       const redisUrl = process.env.REDIS_URL || process.env.REDIS_TLS_URL;
       
-      if (redisUrl) {
+      // Skip Redis if URL contains railway.internal (not accessible)
+      if (redisUrl && !redisUrl.includes('railway.internal')) {
         this.redis = new Redis(redisUrl, {
           maxRetriesPerRequest: 3,
           retryStrategy: (times) => {

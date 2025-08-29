@@ -40,6 +40,24 @@ class ChallengeExpiryJob {
       await client.query('BEGIN');
 
       // Find expired challenges that need processing
+      // First, lock the challenges we want to process
+      const lockQuery = `
+        SELECT id FROM challenges
+        WHERE status IN ('accepted', 'active', 'awaiting_sync')
+        AND expires_at < CURRENT_TIMESTAMP
+        FOR UPDATE SKIP LOCKED
+      `;
+      
+      const lockedChallenges = await client.query(lockQuery);
+      
+      if (lockedChallenges.rows.length === 0) {
+        await client.query('COMMIT');
+        return;
+      }
+      
+      const challengeIds = lockedChallenges.rows.map(r => r.id);
+      
+      // Now get the full data with joins
       const expiredQuery = `
         SELECT 
           c.*,
@@ -52,12 +70,10 @@ class ChallengeExpiryJob {
         LEFT JOIN challenge_plays cp2 ON cp2.challenge_id = c.id AND cp2.user_id = c.acceptor_id
         LEFT JOIN stakes s1 ON s1.challenge_id = c.id AND s1.user_id = c.creator_id
         LEFT JOIN stakes s2 ON s2.challenge_id = c.id AND s2.user_id = c.acceptor_id
-        WHERE c.status IN ('accepted', 'active', 'awaiting_sync')
-        AND c.expires_at < CURRENT_TIMESTAMP
-        FOR UPDATE SKIP LOCKED
+        WHERE c.id = ANY($1::uuid[])
       `;
 
-      const result = await client.query(expiredQuery);
+      const result = await client.query(expiredQuery, [challengeIds]);
       
       for (const challenge of result.rows) {
         await this.processExpiredChallenge(challenge, client);
