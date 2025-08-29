@@ -70,8 +70,32 @@ router.get('/seasonal', async (req, res) => {
  */
 router.get('/alltime', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
+    const { limit = 100, sort = 'cc_earned' } = req.query;
     const userId = (req as any).user?.id || null;
+    
+    // Determine the ORDER BY clause based on sort parameter
+    let orderByClause = 'cp.total_cc_earned DESC';
+    let rankColumn = 'cp.total_cc_earned';
+    
+    switch(sort) {
+      case 'cc_balance':
+        orderByClause = 'cp.cc_balance DESC';
+        rankColumn = 'cp.cc_balance';
+        break;
+      case 'wins':
+        orderByClause = 'cp.total_challenges_won DESC';
+        rankColumn = 'cp.total_challenges_won';
+        break;
+      case 'win_rate':
+        orderByClause = 'cp.challenge_win_rate DESC NULLS LAST';
+        rankColumn = 'cp.challenge_win_rate';
+        break;
+      case 'cc_earned':
+      default:
+        orderByClause = 'cp.total_cc_earned DESC';
+        rankColumn = 'cp.total_cc_earned';
+        break;
+    }
     
     const query = `
       SELECT 
@@ -87,7 +111,7 @@ router.get('/alltime', async (req, res) => {
         cp.previous_rank,
         cp.achievement_count,
         cp.achievement_points,
-        RANK() OVER (ORDER BY cp.total_cc_earned DESC) as position,
+        RANK() OVER (ORDER BY ${rankColumn} DESC NULLS LAST) as position,
         EXISTS(
           SELECT 1 FROM champion_markers cm 
           WHERE cm.user_id = u.id AND cm.is_active = true
@@ -137,7 +161,7 @@ router.get('/alltime', async (req, res) => {
       FROM customer_profiles cp
       JOIN users u ON u.id = cp.user_id
       WHERE u.role = 'customer'
-      ORDER BY cp.total_cc_earned DESC, cp.cc_balance DESC, u.name ASC
+      ORDER BY ${orderByClause}, u.name ASC
       LIMIT $1
     `;
     
@@ -161,6 +185,7 @@ router.get('/alltime', async (req, res) => {
           rank: currentRank,
           rank_tier: row.current_rank || 'house',
           cc_balance: parseFloat(row.cc_balance || 0),
+          total_cc_earned: parseFloat(row.total_cc_earned || 0),
           total_challenges_won: parseInt(row.total_challenges_won || 0),
           total_challenges_played: parseInt(row.total_challenges_played || 0),
           win_rate: parseFloat(row.win_rate || 0),
