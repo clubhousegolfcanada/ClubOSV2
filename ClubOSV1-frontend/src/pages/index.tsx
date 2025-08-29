@@ -2,7 +2,7 @@ import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
 import DatabaseExternalTools from '@/components/DatabaseExternalTools';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDemoMode, useAnalytics } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
@@ -44,6 +44,8 @@ export default function Home() {
   const [techTicketsOpen, setTechTicketsOpen] = useState<number>(0);
   const [facilitiesTicketsOpen, setFacilitiesTicketsOpen] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
+  const [authError, setAuthError] = useState(false);
+  const ticketIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // SECURITY: Enforce operator-only access with whitelist approach
   useEffect(() => {
@@ -116,6 +118,7 @@ export default function Home() {
           const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
           if (!loginTimestamp || (Date.now() - parseInt(loginTimestamp) > 5000)) {
             console.log('Token appears invalid after grace period');
+            setAuthError(true);
           }
         }
         // Set empty stats to prevent crash
@@ -136,10 +139,15 @@ export default function Home() {
   // Fetch weekly checklist submissions
   useEffect(() => {
     const fetchChecklistData = async () => {
-      if (!user || !isClient) return;
+      if (!user || !isClient || authError) return;
       
       try {
         const token = localStorage.getItem('clubos_token');
+        if (!token) {
+          setWeeklyChecklistCount(0);
+          return;
+        }
+        
         const now = new Date();
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay());
@@ -156,22 +164,33 @@ export default function Home() {
         if (response.data.success) {
           setWeeklyChecklistCount(response.data.data?.length || 0);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch checklist data:', error);
+        if (error.response?.status === 401) {
+          setAuthError(true);
+        }
         setWeeklyChecklistCount(0);
       }
     };
     
-    fetchChecklistData();
-  }, [user, isClient]);
+    if (!authError) {
+      fetchChecklistData();
+    }
+  }, [user, isClient, authError]);
   
   // Fetch ticket stats
   useEffect(() => {
     const fetchTicketStats = async () => {
-      if (!user || !isClient) return;
+      if (!user || !isClient || authError) return;
       
       try {
         const token = localStorage.getItem('clubos_token');
+        if (!token) {
+          setTechTicketsOpen(0);
+          setFacilitiesTicketsOpen(0);
+          return;
+        }
+        
         const response = await axios.get(`${API_URL}/api/tickets/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -197,18 +216,34 @@ export default function Home() {
             setFacilitiesTicketsOpen(openTickets.filter((t: any) => t.category === 'facilities').length);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch ticket stats:', error);
+        if (error.response?.status === 401) {
+          setAuthError(true);
+          // Clear the interval on auth error
+          if (ticketIntervalRef.current) {
+            clearInterval(ticketIntervalRef.current);
+            ticketIntervalRef.current = null;
+          }
+        }
         setTechTicketsOpen(0);
         setFacilitiesTicketsOpen(0);
       }
     };
     
-    fetchTicketStats();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchTicketStats, 30000);
-    return () => clearInterval(interval);
-  }, [user, isClient]);
+    if (!authError) {
+      fetchTicketStats();
+      // Refresh every 30 seconds only if no auth error
+      ticketIntervalRef.current = setInterval(fetchTicketStats, 30000);
+    }
+    
+    return () => {
+      if (ticketIntervalRef.current) {
+        clearInterval(ticketIntervalRef.current);
+        ticketIntervalRef.current = null;
+      }
+    };
+  }, [user, isClient, authError]);
   
   // Auto-refresh stats every 30 seconds - DISABLED
   // useEffect(() => {

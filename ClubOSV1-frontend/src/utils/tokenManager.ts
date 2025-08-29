@@ -192,6 +192,10 @@ export class TokenManager {
     // Stop monitoring to prevent multiple calls
     this.stopTokenMonitoring();
     
+    // Clear the token immediately to stop API calls
+    localStorage.removeItem('clubos_token');
+    localStorage.removeItem('clubos_user');
+    
     // Show notification only once
     toast.error('Your session has expired. Please log in again.');
     
@@ -205,6 +209,8 @@ export class TokenManager {
         router.push('/login').then(() => {
           // Reset flag after navigation completes
           this.isHandlingExpiration = false;
+          // Reset session expiry manager
+          sessionExpiryManager.reset();
         });
       });
     }

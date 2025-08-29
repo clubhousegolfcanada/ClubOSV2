@@ -35,6 +35,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isRefreshing, setIsRefreshing] = useState(false);
   const previousUnreadCount = useRef(0);
   const isFirstLoad = useRef(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const refreshUnreadCount = useCallback(async () => {
     if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
@@ -77,8 +78,18 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         previousUnreadCount.current = newUnreadCount;
         isFirstLoad.current = false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to check unread messages:', error);
+      
+      // Stop polling on 401 errors
+      if (error.response?.status === 401) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setUnreadCount(0);
+        // Don't handle logout here - let tokenManager handle it
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -114,9 +125,14 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     refreshUnreadCount();
 
     // Check every 60 seconds (reduced frequency to prevent rate limiting)
-    const interval = setInterval(refreshUnreadCount, 60000);
+    intervalRef.current = setInterval(refreshUnreadCount, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [user, refreshUnreadCount]);
 
   // Refresh when returning to messages page
