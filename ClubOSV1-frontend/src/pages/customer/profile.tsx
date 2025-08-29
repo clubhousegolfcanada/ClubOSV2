@@ -446,7 +446,7 @@ export default function CustomerProfile() {
                     Profile
                   </h1>
                   <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-                    {user.name} • {profileData && calculateTierFromCC(profileData.totalCCEarned)} Tier
+                    {user.name}{profileData?.handicap !== undefined && profileData.handicap !== null ? ` • ${profileData.handicap} Handicap` : ''}
                   </p>
                 </div>
                 {profileData && (

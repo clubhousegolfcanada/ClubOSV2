@@ -15,6 +15,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { FriendRequests } from '@/components/customer/FriendRequests';
 import { LeaderboardList } from '@/components/customer/LeaderboardList';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
+import { TabNavigation } from '@/components/customer/TabNavigation';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -567,63 +568,28 @@ export default function Compete() {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="bg-white border-b px-4">
-            <div className="flex gap-6">
-              <button
-                onClick={() => setActiveTab('challenges')}
-                className={`py-3 px-1 border-b-2 transition-colors font-medium ${
-                  activeTab === 'challenges'
-                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-800 hover:text-gray-900'
-                }`}
-              >
-                Challenges
-                {challenges.filter(c => c.status === 'pending').length > 0 && (
-                  <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    {challenges.filter(c => c.status === 'pending').length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('competitors')}
-                className={`py-3 px-1 border-b-2 transition-colors font-medium ${
-                  activeTab === 'competitors'
-                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-800 hover:text-gray-900'
-                }`}
-              >
-                Competitors
-              </button>
-              <button
-                onClick={() => setActiveTab('leaderboard')}
-                className={`py-3 px-1 border-b-2 transition-colors font-medium ${
-                  activeTab === 'leaderboard'
-                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-800 hover:text-gray-900'
-                }`}
-              >
-                Leaderboard
-              </button>
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={`py-3 px-1 border-b-2 transition-colors font-medium relative ${
-                  activeTab === 'requests'
-                    ? 'border-[#0B3D3A] text-[#0B3D3A]'
-                    : 'border-transparent text-gray-800 hover:text-gray-900'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  Requests
-                  {pendingRequestCount > 0 && (
-                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                      {pendingRequestCount}
-                    </span>
-                  )}
-                </span>
-              </button>
-            </div>
-          </div>
+          {/* Tabs - Using unified TabNavigation */}
+          <TabNavigation
+            tabs={[
+              { 
+                key: 'challenges', 
+                label: 'Challenges',
+                badge: challenges.filter(c => c.status === 'pending').length || undefined,
+                badgeColor: 'red'
+              },
+              { key: 'competitors', label: 'Competitors' },
+              { key: 'leaderboard', label: 'Leaderboard' },
+              { 
+                key: 'requests', 
+                label: 'Requests',
+                badge: pendingRequestCount || undefined,
+                badgeColor: 'red'
+              }
+            ]}
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab as 'challenges' | 'competitors' | 'leaderboard' | 'requests')}
+            sticky={true}
+          />
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto bg-gray-50">
