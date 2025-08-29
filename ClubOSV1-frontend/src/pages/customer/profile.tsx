@@ -333,6 +333,11 @@ export default function CustomerProfile() {
   const handlePreferenceChange = async (key: string, value: boolean) => {
     try {
       const token = localStorage.getItem('clubos_token');
+      if (!token) {
+        toast.error('Please log in again');
+        return;
+      }
+      
       const updatedPreferences = { ...preferences, [key]: value };
       
       // Update local state immediately for better UX
@@ -352,10 +357,12 @@ export default function CustomerProfile() {
       );
       
       toast.success('Preferences updated');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Preference update error:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update preferences';
+      toast.error(errorMessage);
       // Revert on error
       setPreferences(preferences);
-      toast.error('Failed to update preferences');
     }
   };
 
