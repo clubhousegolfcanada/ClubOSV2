@@ -46,7 +46,10 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      const response = await axios.get(`${API_URL}/api/messages/unread-count`, {
+      console.log('[MessagesContext] API_URL value:', API_URL);
+      const fullUrl = `${API_URL}/api/messages/unread-count`;
+      console.log('[MessagesContext] Full URL being called:', fullUrl);
+      const response = await axios.get(fullUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

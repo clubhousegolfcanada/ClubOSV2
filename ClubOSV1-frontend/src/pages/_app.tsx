@@ -20,6 +20,7 @@ import { useAppVisibility } from '@/hooks/useAppVisibility';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import axios from 'axios';
 import { getStorageItem } from '@/utils/iframeStorage';
+import { API_URL } from '@/utils/apiUrl';
 
 // Public routes that don't require authentication
 const publicRoutes = ['/login', '/register', '/forgot-password'];
@@ -63,6 +64,10 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           console.error('Service Worker registration failed:', error);
         });
     }
+    
+    // Debug API_URL value
+    console.log('[_app.tsx] API_URL value on startup:', API_URL);
+    console.log('[_app.tsx] NEXT_PUBLIC_API_URL env:', process.env.NEXT_PUBLIC_API_URL);
     
     // Initialize performance monitoring and adaptive animations
     if (typeof window !== 'undefined') {
