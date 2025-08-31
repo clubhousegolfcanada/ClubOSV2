@@ -928,11 +928,11 @@ export const ChecklistSystem: React.FC = () => {
                                     </div>
                                     
                                     {submission.comments && (
-                                      <MessageSquare className="w-3 h-3 text-[var(--accent)]" title="Has comments" />
+                                      <MessageSquare className="w-3 h-3 text-[var(--accent)]" />
                                     )}
                                     
                                     {submission.ticket_created && (
-                                      <AlertTriangle className="w-3 h-3 text-yellow-500" title="Ticket created" />
+                                      <AlertTriangle className="w-3 h-3 text-yellow-500" />
                                     )}
                                   </div>
                                   
