@@ -80,11 +80,21 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0'
+            value: 'public, max-age=0, must-revalidate'
           },
           {
             key: 'Service-Worker-Allowed',
             value: '/'
+          }
+        ],
+      },
+      {
+        // Prevent caching of Next.js build artifacts
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
           }
         ],
       },

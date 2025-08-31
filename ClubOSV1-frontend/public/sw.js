@@ -1,5 +1,6 @@
 // ClubOS Service Worker - Push Notifications & Offline Support
-const CACHE_NAME = 'clubos-v3'; // Increment version to bust cache
+// Last updated: 2025-08-31 22:15 - Force cache clear for /api/api/ fix
+const CACHE_NAME = 'clubos-v4-20250831'; // Updated to force cache clear
 const OFFLINE_URL = '/offline.html';
 
 // Install event - cache essential assets
