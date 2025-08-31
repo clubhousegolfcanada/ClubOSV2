@@ -5,11 +5,6 @@ import { AchievementBadge } from '@/components/achievements/AchievementBadge';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-// Fix for double /api/ issue
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface Achievement {
   id: string;

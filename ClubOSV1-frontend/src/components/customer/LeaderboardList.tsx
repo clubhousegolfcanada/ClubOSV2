@@ -6,11 +6,6 @@ import toast from 'react-hot-toast';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
 
-// Fix for double /api/ issue
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface LeaderboardEntry {
   user_id: string;

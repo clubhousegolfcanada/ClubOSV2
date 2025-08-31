@@ -5,12 +5,6 @@ import toast from 'react-hot-toast';
 import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award, Gift } from 'lucide-react';
 import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
 
-// Fix for double /api/ issue - ensure base URL doesn't end with /api
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-// Remove /api from the end if it exists
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 type User = {
   id: string;

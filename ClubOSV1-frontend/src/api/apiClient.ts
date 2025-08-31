@@ -2,13 +2,8 @@ import axios from "axios";
 import type { UserRequest, ApiResponse } from "@/types/request";
 import { addCSRFToRequest } from "@/utils/csrf";
 import logger from "@/services/logger";
+import { API_URL } from "@/utils/apiUrl";
 
-// Fix for double /api/ issue - ensure base URL doesn't end with /api
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-// Remove /api from the end if it exists
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 const apiClient = axios.create({
   baseURL: API_URL,

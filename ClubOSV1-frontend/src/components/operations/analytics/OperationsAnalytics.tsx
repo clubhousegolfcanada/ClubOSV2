@@ -4,12 +4,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Download, Filter, RefreshCw, Clock, Activity, DollarSign, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 
-// Fix for double /api/ issue - ensure base URL doesn't end with /api
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-// Remove /api from the end if it exists
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface AnalyticsData {
   routing: {

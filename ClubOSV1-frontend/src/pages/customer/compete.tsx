@@ -16,12 +16,6 @@ import { FriendRequests } from '@/components/customer/FriendRequests';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { TabNavigation } from '@/components/customer/TabNavigation';
 
-// Fix for double /api/ issue - ensure base URL doesn't end with /api
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-// Remove /api from the end if it exists  
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface Challenge {
   id: string;

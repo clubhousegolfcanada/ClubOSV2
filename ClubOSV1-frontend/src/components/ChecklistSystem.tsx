@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, ChevronDown, Check, Trash2, Edit2, X, RotateCcw, AlertTriangle, FileText, CheckCircle, XCircle, Timer, Award, MessageSquare, Clipboard, TrendingUp } from 'lucide-react';
+import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, ChevronDown, Check, Trash2, Edit2, X, RotateCcw, AlertTriangle, FileText, CheckCircle, XCircle, Timer, Award, MessageSquare, Clipboard, TrendingUp, Package, Camera, QrCode, Plus, AlertCircle, Download, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useAuthState } from '../state/useStore';
+import QRCode from 'qrcode';
 
-// Fix for double /api/ issue - ensure base URL doesn't end with /api
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-// Remove /api from the end if it exists
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface Task {
   id: string;
@@ -37,6 +32,15 @@ interface Submission {
   comments?: string;
   ticket_created?: boolean;
   ticket_id?: string;
+  supplies_needed?: string; // JSON string of supply items
+  photo_urls?: string; // JSON string of photo URLs
+}
+
+interface SupplyItem {
+  id: string;
+  name: string;
+  quantity?: string;
+  urgency: 'low' | 'medium' | 'high';
 }
 
 interface CompletionStats {
@@ -53,7 +57,7 @@ export const ChecklistSystem: React.FC = () => {
   const [currentTemplate, setCurrentTemplate] = useState<ChecklistTemplate | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'tracker' | 'performance'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'tracker' | 'performance' | 'tools'>('checklist');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [trackerLocation, setTrackerLocation] = useState<string>('all');
@@ -65,8 +69,16 @@ export const ChecklistSystem: React.FC = () => {
   const [savingTask, setSavingTask] = useState(false);
   const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
   const [completionStats, setCompletionStats] = useState<CompletionStats | null>(null);
-  const [photoAttachment, setPhotoAttachment] = useState<string | null>(null);
+  const [photoAttachments, setPhotoAttachments] = useState<string[]>([]);
   const [estimatedTime, setEstimatedTime] = useState<number>(0);
+  const [supplies, setSupplies] = useState<SupplyItem[]>([]);
+  const [newSupplyName, setNewSupplyName] = useState('');
+  const [newSupplyQuantity, setNewSupplyQuantity] = useState('');
+  const [newSupplyUrgency, setNewSupplyUrgency] = useState<'low' | 'medium' | 'high'>('medium');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [selectedQrCategory, setSelectedQrCategory] = useState<'cleaning' | 'tech'>('cleaning');
+  const [selectedQrType, setSelectedQrType] = useState<'daily' | 'weekly' | 'quarterly'>('daily');
+  const [selectedQrLocation, setSelectedQrLocation] = useState('Bedford');
   
   const { user } = useAuthState();
   const isAdmin = user?.role === 'admin';
@@ -322,6 +334,74 @@ export const ChecklistSystem: React.FC = () => {
     }
   };
 
+  // Supply management functions
+  const addSupply = () => {
+    if (!newSupplyName.trim()) return;
+    
+    const newSupply: SupplyItem = {
+      id: Date.now().toString(),
+      name: newSupplyName.trim(),
+      quantity: newSupplyQuantity.trim(),
+      urgency: newSupplyUrgency
+    };
+    
+    setSupplies([...supplies, newSupply]);
+    setNewSupplyName('');
+    setNewSupplyQuantity('');
+    setNewSupplyUrgency('medium');
+  };
+
+  const removeSupply = (id: string) => {
+    setSupplies(supplies.filter(s => s.id !== id));
+  };
+
+  // Photo management functions
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // In production, you'd upload to a cloud service
+    // For now, we'll use a data URL for demonstration
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const url = event.target?.result as string;
+      setPhotoAttachments([...photoAttachments, url]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoAttachments(photoAttachments.filter((_, i) => i !== index));
+  };
+
+  // QR code generation
+  const generateQrCode = async () => {
+    try {
+      const checklistUrl = `${window.location.origin}/checklists?category=${selectedQrCategory}&type=${selectedQrType}&location=${encodeURIComponent(selectedQrLocation)}`;
+      const qrDataUrl = await QRCode.toDataURL(checklistUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeUrl(qrDataUrl);
+      toast.success('QR code generated!');
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+      toast.error('Failed to generate QR code');
+    }
+  };
+
+  const getUrgencyColor = (urgency: 'low' | 'medium' | 'high') => {
+    switch (urgency) {
+      case 'high': return 'text-red-500 bg-red-500/10 border-red-500/30';
+      case 'medium': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30';
+      case 'low': return 'text-green-500 bg-green-500/10 border-green-500/30';
+    }
+  };
+
   const handleSubmit = async () => {
     if (!currentTemplate || !isAllTasksCompleted()) return;
 
@@ -348,7 +428,9 @@ export const ChecklistSystem: React.FC = () => {
           completedTasks: completedTaskIds,
           totalTasks: currentTemplate.tasks.length,
           comments: comments.trim(),
-          createTicket: createTicket && comments.trim().length > 0
+          createTicket: createTicket && comments.trim().length > 0,
+          supplies_needed: supplies.length > 0 ? JSON.stringify(supplies) : null,
+          photo_urls: photoAttachments.length > 0 ? JSON.stringify(photoAttachments) : null
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -364,7 +446,8 @@ export const ChecklistSystem: React.FC = () => {
         setCompletedTasks({});
         setComments('');
         setCreateTicket(false);
-        setPhotoAttachment(null);
+        setPhotoAttachments([]);
+        setSupplies([]);
         
         // Reload template to reset the form
         loadTemplate();
@@ -493,6 +576,19 @@ export const ChecklistSystem: React.FC = () => {
           >
             Performance
             {activeTab === 'performance' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('tools')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'tools' 
+                ? 'text-[var(--text-primary)]' 
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            Tools
+            {activeTab === 'tools' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
             )}
           </button>
@@ -721,9 +817,10 @@ export const ChecklistSystem: React.FC = () => {
                 ))}
               </div>
 
-              {/* Comments and Ticket Section */}
+              {/* Comments, Supplies, Photos and Ticket Section */}
               {isAllTasksCompleted() && (
                 <div className="border-t border-[var(--border-secondary)] pt-3 space-y-3">
+                  {/* Comments */}
                   <div>
                     <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
                       Comments (Optional)
@@ -737,7 +834,130 @@ export const ChecklistSystem: React.FC = () => {
                     />
                   </div>
                   
-                  {comments.trim() && (
+                  {/* Supplies Tracking */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                      <Package className="inline w-3 h-3 mr-1" />
+                      Supplies Needed
+                    </label>
+                    
+                    <div className="space-y-2">
+                      {/* Add supply form */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newSupplyName}
+                          onChange={(e) => setNewSupplyName(e.target.value)}
+                          placeholder="Supply name"
+                          className="flex-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:border-[var(--accent)]"
+                          onKeyDown={(e) => e.key === 'Enter' && addSupply()}
+                        />
+                        <input
+                          type="text"
+                          value={newSupplyQuantity}
+                          onChange={(e) => setNewSupplyQuantity(e.target.value)}
+                          placeholder="Qty"
+                          className="w-16 px-2 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:border-[var(--accent)]"
+                        />
+                        <select
+                          value={newSupplyUrgency}
+                          onChange={(e) => setNewSupplyUrgency(e.target.value as 'low' | 'medium' | 'high')}
+                          className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:border-[var(--accent)]"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                        <button
+                          onClick={addSupply}
+                          disabled={!newSupplyName.trim()}
+                          className="px-2 py-1 bg-[var(--accent)] text-white rounded text-xs hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      
+                      {/* Supplies list */}
+                      {supplies.length > 0 && (
+                        <div className="space-y-1">
+                          {supplies.map((supply) => (
+                            <div
+                              key={supply.id}
+                              className={`flex items-center justify-between px-2 py-1 rounded border ${getUrgencyColor(supply.urgency)}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-3 h-3" />
+                                <span className="text-xs font-medium">{supply.name}</span>
+                                {supply.quantity && (
+                                  <span className="text-xs opacity-75">({supply.quantity})</span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => removeSupply(supply.id)}
+                                className="p-0.5 hover:bg-red-500/20 rounded transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Photo Attachments */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                      <Camera className="inline w-3 h-3 mr-1" />
+                      Photo Attachments
+                    </label>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                          id="photo-upload"
+                        />
+                        <label
+                          htmlFor="photo-upload"
+                          className="px-3 py-1 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer transition-colors"
+                        >
+                          <Camera className="inline w-3 h-3 mr-1" />
+                          Add Photo
+                        </label>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          Document damage or issues
+                        </span>
+                      </div>
+                      
+                      {/* Photo preview */}
+                      {photoAttachments.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {photoAttachments.map((photo, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={photo}
+                                alt={`Attachment ${index + 1}`}
+                                className="w-16 h-16 object-cover rounded border border-[var(--border-secondary)]"
+                              />
+                              <button
+                                onClick={() => removePhoto(index)}
+                                className="absolute -top-1 -right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Create ticket checkbox */}
+                  {(comments.trim() || supplies.length > 0 || photoAttachments.length > 0) && (
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -747,7 +967,7 @@ export const ChecklistSystem: React.FC = () => {
                         className="w-3 h-3 text-[var(--accent)] bg-[var(--bg-tertiary)] border-[var(--border-secondary)] rounded focus:ring-[var(--accent)]"
                       />
                       <label htmlFor="create-ticket" className="text-xs text-[var(--text-secondary)] cursor-pointer">
-                        Create a support ticket for issues mentioned in comments
+                        Create a support ticket for issues and supplies needed
                       </label>
                     </div>
                   )}
@@ -978,6 +1198,64 @@ export const ChecklistSystem: React.FC = () => {
                                       </div>
                                     )}
                                     
+                                    {submission.supplies_needed && (() => {
+                                      try {
+                                        const supplies = JSON.parse(submission.supplies_needed) as SupplyItem[];
+                                        if (supplies.length > 0) {
+                                          return (
+                                            <div>
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <Package className="w-3 h-3 text-[var(--text-muted)]" />
+                                                <span className="text-xs font-medium text-[var(--text-secondary)]">Supplies Needed:</span>
+                                              </div>
+                                              <div className="ml-5 space-y-1">
+                                                {supplies.map((supply, idx) => (
+                                                  <div key={idx} className={`inline-flex items-center gap-2 px-2 py-0.5 rounded text-xs ${getUrgencyColor(supply.urgency)}`}>
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    <span>{supply.name}</span>
+                                                    {supply.quantity && <span className="opacity-75">({supply.quantity})</span>}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      } catch {
+                                        return null;
+                                      }
+                                    })()}
+                                    
+                                    {submission.photo_urls && (() => {
+                                      try {
+                                        const photos = JSON.parse(submission.photo_urls) as string[];
+                                        if (photos.length > 0) {
+                                          return (
+                                            <div>
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <Camera className="w-3 h-3 text-[var(--text-muted)]" />
+                                                <span className="text-xs font-medium text-[var(--text-secondary)]">Photo Attachments:</span>
+                                              </div>
+                                              <div className="ml-5 flex gap-2 flex-wrap">
+                                                {photos.map((photo, idx) => (
+                                                  <img
+                                                    key={idx}
+                                                    src={photo}
+                                                    alt={`Photo ${idx + 1}`}
+                                                    className="w-16 h-16 object-cover rounded border border-[var(--border-secondary)] cursor-pointer hover:opacity-80"
+                                                    onClick={() => window.open(photo, '_blank')}
+                                                  />
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      } catch {
+                                        return null;
+                                      }
+                                    })()}
+                                    
                                     {submission.ticket_created && (
                                       <div className="flex items-center gap-2">
                                         <AlertTriangle className="w-3 h-3 text-yellow-500" />
@@ -1087,6 +1365,162 @@ export const ChecklistSystem: React.FC = () => {
                     <div>
                       <div className="text-sm font-medium text-[var(--text-primary)]">Template Library</div>
                       <div className="text-xs text-[var(--text-muted)]">Access standard cleaning protocols</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : activeTab === 'tools' ? (
+        <>
+          {/* Tools Tab */}
+          <div className="space-y-6">
+            {/* QR Code Generator */}
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                <QrCode className="inline w-5 h-5 mr-2 text-[var(--accent)]" />
+                QR Code Generator
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Generate QR codes for quick mobile access to specific checklists. 
+                    Perfect for cleaning contractors and field teams.
+                  </p>
+                  
+                  {/* QR Code Settings */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                        Category
+                      </label>
+                      <select
+                        value={selectedQrCategory}
+                        onChange={(e) => setSelectedQrCategory(e.target.value as 'cleaning' | 'tech')}
+                        className="w-full px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                      >
+                        <option value="cleaning">Cleaning</option>
+                        <option value="tech">Tech</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                        Type
+                      </label>
+                      <select
+                        value={selectedQrType}
+                        onChange={(e) => setSelectedQrType(e.target.value as 'daily' | 'weekly' | 'quarterly')}
+                        className="w-full px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="quarterly">Quarterly</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                        Location
+                      </label>
+                      <select
+                        value={selectedQrLocation}
+                        onChange={(e) => setSelectedQrLocation(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                      >
+                        {locations.map(location => (
+                          <option key={location} value={location}>{location}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <button
+                      onClick={generateQrCode}
+                      className="w-full px-4 py-2 bg-[var(--accent)] text-white rounded text-sm font-medium hover:opacity-90 transition-opacity"
+                    >
+                      Generate QR Code
+                    </button>
+                  </div>
+                </div>
+                
+                {/* QR Code Display */}
+                <div className="flex flex-col items-center justify-center">
+                  {qrCodeUrl ? (
+                    <div className="space-y-3">
+                      <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64 border-2 border-[var(--border-secondary)] rounded-lg" />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.download = `checklist-${selectedQrCategory}-${selectedQrType}-${selectedQrLocation}.png`;
+                            link.href = qrCodeUrl;
+                            link.click();
+                          }}
+                          className="flex-1 px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
+                        >
+                          <Download className="inline w-3 h-3 mr-1" />
+                          Download
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/checklists?category=${selectedQrCategory}&type=${selectedQrType}&location=${encodeURIComponent(selectedQrLocation)}`);
+                            toast.success('Link copied to clipboard!');
+                          }}
+                          className="flex-1 px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
+                        >
+                          <Share2 className="inline w-3 h-3 mr-1" />
+                          Copy Link
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 border-2 border-dashed border-[var(--border-secondary)] rounded-lg">
+                      <QrCode className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        Configure settings and generate a QR code
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Export Options */}
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                <Download className="inline w-5 h-5 mr-2 text-[var(--accent)]" />
+                Export & Reports
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-green-500" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-[var(--text-primary)]">CSV Export</div>
+                      <div className="text-xs text-[var(--text-muted)]">Download submissions data</div>
+                    </div>
+                  </div>
+                </button>
+                
+                <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Clipboard className="w-5 h-5 text-blue-500" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-[var(--text-primary)]">PDF Report</div>
+                      <div className="text-xs text-[var(--text-muted)]">Generate monthly report</div>
+                    </div>
+                  </div>
+                </button>
+                
+                <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-purple-500" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-[var(--text-primary)]">Supplies Report</div>
+                      <div className="text-xs text-[var(--text-muted)]">View all supplies needed</div>
                     </div>
                   </div>
                 </button>

@@ -4,11 +4,6 @@ import { useAuthState } from '@/state/useStore';
 import { UserPlus, Check, X, Clock, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-// Fix for double /api/ issue
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface FriendRequest {
   id: string;

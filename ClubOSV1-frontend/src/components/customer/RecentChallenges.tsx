@@ -4,11 +4,6 @@ import { Target, Clock, Coins, ChevronRight, TrendingUp, Users } from 'lucide-re
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 
-// Fix for double /api/ issue
-let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-if (API_URL.endsWith('/api')) {
-  API_URL = API_URL.slice(0, -4);
-}
 
 interface Challenge {
   id: string;
