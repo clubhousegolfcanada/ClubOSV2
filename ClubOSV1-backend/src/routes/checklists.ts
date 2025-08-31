@@ -127,11 +127,13 @@ router.post('/submit',
     body('completedTasks').isArray().withMessage('Completed tasks must be an array'),
     body('totalTasks').isInt({ min: 1 }).withMessage('Total tasks must be a positive integer'),
     body('comments').optional().isString().withMessage('Comments must be a string'),
-    body('createTicket').optional().isBoolean().withMessage('Create ticket must be a boolean')
+    body('createTicket').optional().isBoolean().withMessage('Create ticket must be a boolean'),
+    body('suppliesNeeded').optional().isJSON().withMessage('Supplies must be valid JSON'),
+    body('photoUrls').optional().isJSON().withMessage('Photo URLs must be valid JSON')
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { category, type, location, completedTasks, totalTasks, comments, createTicket } = req.body;
+      const { category, type, location, completedTasks, totalTasks, comments, createTicket, suppliesNeeded, photoUrls } = req.body;
       let userId = req.user!.id;
 
       logger.info('Checklist submission attempt', {
@@ -182,15 +184,15 @@ router.post('/submit',
       // Save the submission
       const submission = await db.query(
         `INSERT INTO checklist_submissions 
-         (user_id, category, type, location, completed_tasks, total_tasks, comments, ticket_created)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (user_id, category, type, location, completed_tasks, total_tasks, comments, ticket_created, supplies_needed, photo_urls)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
-        [userId, category, type, location, JSON.stringify(completedTasks), totalTasks, comments || null, false]
+        [userId, category, type, location, JSON.stringify(completedTasks), totalTasks, comments || null, false, suppliesNeeded || null, photoUrls || null]
       );
       
-      // Create ticket if requested
+      // Create ticket if requested (now includes photos or supplies)
       let ticketData = null;
-      if (createTicket && comments) {
+      if (createTicket && (comments || suppliesNeeded || photoUrls)) {
         try {
           // Get user details
           const user = await db.findUserById(userId);
@@ -200,6 +202,41 @@ router.post('/submit',
           const templateTasks = categoryTemplates ? categoryTemplates[type as keyof typeof categoryTemplates] : undefined;
           const incompleteTasks = templateTasks?.filter((task: any) => !completedTasks.includes(task.id)) || [];
           
+          // Build ticket description
+          let ticketDescription = 'Checklist submission report:\n\n';
+          
+          if (comments) {
+            ticketDescription += `Comments: ${comments}\n\n`;
+          }
+          
+          if (suppliesNeeded) {
+            ticketDescription += `Supplies needed:\n`;
+            const supplies = JSON.parse(suppliesNeeded);
+            supplies.forEach((item: any) => {
+              ticketDescription += `- ${item.name} (${item.urgency} priority)\n`;
+            });
+            ticketDescription += '\n';
+          }
+          
+          if (photoUrls) {
+            ticketDescription += `Photos attached: ${JSON.parse(photoUrls).length} photo(s)\n\n`;
+          }
+          
+          if (incompleteTasks.length > 0) {
+            ticketDescription += `Incomplete tasks:\n${incompleteTasks.map((t: any) => `- ${t.label}`).join('\n')}`;
+          }
+          
+          // Determine priority based on supplies urgency or incomplete tasks
+          let priority = 'medium';
+          if (suppliesNeeded) {
+            const supplies = JSON.parse(suppliesNeeded);
+            if (supplies.some((s: any) => s.urgency === 'high')) {
+              priority = 'high';
+            }
+          } else if (incompleteTasks.length > 2) {
+            priority = 'high';
+          }
+          
           // Create ticket
           const ticketResult = await db.query(
             `INSERT INTO tickets 
@@ -208,10 +245,10 @@ router.post('/submit',
              RETURNING *`,
             [
               `${category.charAt(0).toUpperCase() + category.slice(1)} Checklist - ${type.charAt(0).toUpperCase() + type.slice(1)} - ${location}`,
-              `Checklist submission with issues:\n\n${comments}\n\nIncomplete tasks:\n${incompleteTasks.map((t: any) => `- ${t.label}`).join('\n')}`,
+              ticketDescription,
               category === 'tech' ? 'tech' : 'facilities',
               'open',
-              incompleteTasks.length > 2 ? 'high' : 'medium',
+              priority,
               location,
               userId,
               user?.name || 'Unknown',
