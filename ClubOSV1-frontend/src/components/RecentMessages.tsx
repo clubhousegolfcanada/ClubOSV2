@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { Phone, Clock, User, MessageCircle, RefreshCw } from 'lucide-react';
 
 
@@ -22,11 +21,7 @@ export const RecentMessages: React.FC = () => {
   const fetchRecentMessages = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      console.log('Fetching recent messages from:', `${API_URL}/openphone/recent-conversations?limit=10`);
-      
-      const response = await axios.get(`${API_URL}/openphone/recent-conversations?limit=10`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await http.get(`openphone/recent-conversations?limit=10`);
       
       console.log('Recent messages response:', response.data);
       

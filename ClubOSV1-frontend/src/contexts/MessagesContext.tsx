@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
@@ -46,12 +45,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      console.log('[MessagesContext] API_URL value:', API_URL);
-      const fullUrl = `${API_URL}/messages/unread-count`;
-      console.log('[MessagesContext] Full URL being called:', fullUrl);
-      const response = await axios.get(fullUrl, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await http.get(`messages/unread-count`);
 
       if (response.data.success) {
         const newUnreadCount = response.data.data.totalUnread;
@@ -100,10 +94,9 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const token = localStorage.getItem('clubos_token');
       if (!token) return;
 
-      await axios.put(
-        `${API_URL}/messages/conversations/${phoneNumber}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      await http.put(
+        `messages/conversations/${phoneNumber}/read`,
+        {}
       );
 
       // Immediately refresh the unread count

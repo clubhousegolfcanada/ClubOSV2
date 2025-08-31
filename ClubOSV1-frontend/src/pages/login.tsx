@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { Eye, EyeOff, Users, User, ArrowRight } from 'lucide-react';
-import { API_CONFIG, getApiUrl } from '@/config/api';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -64,7 +63,7 @@ const LoginPage = () => {
       
       // Handle customer signup
       if (loginMode === 'customer' && isSignup) {
-        response = await axios.post(getApiUrl('/auth/signup'), {
+        response = await http.post('auth/signup', {
           email,
           password,
           name,
@@ -97,7 +96,7 @@ const LoginPage = () => {
         }
       } else {
         // Handle login (both operator and customer)
-        response = await axios.post(getApiUrl('/auth/login'), {
+        response = await http.post('auth/login', {
           email,
           password,
           rememberMe
@@ -167,7 +166,7 @@ const LoginPage = () => {
     setIsResetting(true);
 
     try {
-      const response = await axios.post(getApiUrl('/auth/forgot-password'), {
+      const response = await http.post('auth/forgot-password', {
         email: resetEmail
       });
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 
@@ -24,9 +23,7 @@ export function useMessageNotifications() {
         const token = localStorage.getItem('clubos_token');
         if (!token) return;
 
-        const response = await axios.get(`${API_URL}/messages/unread-count`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await http.get(`messages/unread-count`);
 
         if (response.data.success) {
           const newUnreadCount = response.data.data.totalUnread;

@@ -9,8 +9,7 @@
  * - User context
  */
 
-import axios from 'axios';
-import { API_URL } from '@/utils/apiUrl';
+import { http } from '@/api/http';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -115,7 +114,7 @@ class Logger {
 
   private async sendToRemote(entry: LogEntry) {
     try {
-      await axios.post(`${API_URL}/logs/frontend`, {
+      await http.post(`logs/frontend`, {
         ...entry,
         error: entry.error ? {
           message: entry.error.message,

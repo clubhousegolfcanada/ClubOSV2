@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { API_URL } from '@/utils/apiUrl';
+import { http } from '@/api/http';
 
 
 export interface UserSettings {
@@ -10,34 +9,24 @@ export interface UserSettings {
 export const userSettingsApi = {
   // Get all settings or specific setting
   async getSettings(key?: string): Promise<any> {
-    const token = localStorage.getItem('clubos_token');
-    const url = key ? `${API_URL}/user-settings/settings/${key}` : `${API_URL}/user-settings/settings`;
+    const url = key ? `user-settings/settings/${key}` : `user-settings/settings`;
     
-    const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await http.get(url);
     
     return response.data.data;
   },
 
   // Update a specific setting
   async updateSetting(key: string, value: any): Promise<void> {
-    const token = localStorage.getItem('clubos_token');
-    
-    await axios.put(
-      `${API_URL}/user-settings/settings/${key}`,
-      { value },
-      { headers: { Authorization: `Bearer ${token}` } }
+    await http.put(
+      `user-settings/settings/${key}`,
+      { value }
     );
   },
 
   // Delete a specific setting
   async deleteSetting(key: string): Promise<void> {
-    const token = localStorage.getItem('clubos_token');
-    
-    await axios.delete(`${API_URL}/user-settings/settings/${key}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await http.delete(`user-settings/settings/${key}`);
   },
 
   // Convenience methods for external links

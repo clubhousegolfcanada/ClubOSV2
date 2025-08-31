@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.58] - 2025-08-31
+
+### Added
+- **Centralized HTTP Client with API Resolver**
+  - Created `resolveApi.ts` utility that prevents double `/api` prefix issues
+  - Added `http.ts` shared axios instance with automatic URL resolution
+  - Implemented request interceptor that throws errors on invalid `/api/` paths
+  - Added development logging for API call tracing
+
+### Fixed
+- **Complete API Call Refactor**
+  - Replaced all direct axios calls with centralized http client
+  - Fixed 9 files using direct API_URL concatenation
+  - Removed manual auth header additions (now automatic)
+  - Prevented future double `/api/api/` issues with active guards
+
+### Changed
+- Updated `apiClient.ts` to use resolveApi instead of baseURL
+- Migrated all customer pages to use http client
+- Refactored services (logger, userSettings) to use http client
+- Updated contexts and hooks for consistent API patterns
+
 ## [1.14.57] - 2025-08-31
 
 ### Fixed

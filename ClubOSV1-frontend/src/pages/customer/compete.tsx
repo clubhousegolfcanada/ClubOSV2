@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
@@ -10,7 +10,7 @@ import {
   ChevronRight, Filter, Zap, Award, DollarSign, Activity, MoreVertical,
   UserMinus, Ban, Bell, ChevronDown, MapPin, Flag, AlertCircle, Swords
 } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import { FriendRequests } from '@/components/customer/FriendRequests';
@@ -115,7 +115,7 @@ export default function Compete() {
       const token = localStorage.getItem('clubos_token');
       if (!token) return; // Don't make request without token
       
-      const response = await axios.get(`${API_URL}/friends/pending`, {
+      const response = await http.get(`friends/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -168,7 +168,7 @@ export default function Compete() {
       const token = localStorage.getItem('clubos_token');
       if (!token) return; // Don't make request without token
       
-      const response = await axios.get(`${API_URL}/challenges/cc-balance`, {
+      const response = await http.get(`challenges/cc-balance`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -188,7 +188,7 @@ export default function Compete() {
       if (!token) return; // Don't make request without token
       
       // Load challenges ONCE and filter client-side
-      const response = await axios.get(`${API_URL}/challenges/my-challenges`, {
+      const response = await http.get(`challenges/my-challenges`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -236,7 +236,7 @@ export default function Compete() {
       const token = localStorage.getItem('clubos_token');
       if (!token) return; // Don't make request without token
       
-      const response = await axios.get(`${API_URL}/friends?include_stats=true`, {
+      const response = await http.get(`friends?include_stats=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -278,7 +278,7 @@ export default function Compete() {
   const handleAcceptChallenge = async (challengeId: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.post(
+      await http.post(
         `${API_URL}/challenges/${challengeId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
@@ -294,7 +294,7 @@ export default function Compete() {
   const handleDeclineChallenge = async (challengeId: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.post(
+      await http.post(
         `${API_URL}/challenges/${challengeId}/decline`,
         { reason: 'Not interested' },
         { headers: { Authorization: `Bearer ${token}` }}
@@ -360,7 +360,7 @@ export default function Compete() {
       if (!winner) return;
 
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(
+      const response = await http.post(
         `${API_URL}/challenges/${challengeId}/select-winner`,
         { winnerId: winner },
         { headers: { Authorization: `Bearer ${token}` }}
@@ -386,7 +386,7 @@ export default function Compete() {
       if (!reason) return;
 
       const token = localStorage.getItem('clubos_token');
-      await axios.post(
+      await http.post(
         `${API_URL}/challenges/${challengeId}/dispute`,
         { 
           type: 'disagreement',
@@ -407,7 +407,7 @@ export default function Compete() {
   const removeFriend = async (friendshipId: string, friendName: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.delete(
+      await http.delete(
         `${API_URL}/friends/${friendshipId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -424,7 +424,7 @@ export default function Compete() {
   const blockUser = async (userId: string, userName: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.put(
+      await http.put(
         `${API_URL}/friends/${userId}/block`,
         { reason: 'User blocked' },
         { headers: { Authorization: `Bearer ${token}` } }

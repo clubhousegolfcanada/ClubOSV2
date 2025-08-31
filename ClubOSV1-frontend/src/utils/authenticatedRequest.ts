@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { API_URL } from '@/utils/apiUrl';
+
 import { toast } from 'react-hot-toast';
 
 
@@ -31,7 +31,7 @@ export async function authenticatedRequest<T = any>(
     
     const response = await axios({
       ...axiosOptions,
-      url: `${API_URL}${url}`,
+      url: url,
       headers: {
         ...(axiosOptions as any)?.headers,
         Authorization: `Bearer ${token}`

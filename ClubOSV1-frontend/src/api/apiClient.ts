@@ -2,11 +2,11 @@ import axios from "axios";
 import type { UserRequest, ApiResponse } from "@/types/request";
 import { addCSRFToRequest } from "@/utils/csrf";
 import logger from "@/services/logger";
-import { API_URL } from "@/utils/apiUrl";
+import { resolveApi } from "@/utils/resolveApi";
 
 
 const apiClient = axios.create({
-  baseURL: API_URL,
+  // No baseURL - we'll resolve URLs per request
   timeout: 60000, // Increased to 60 seconds for assistant responses
   headers: {
     'Content-Type': 'application/json',
@@ -20,10 +20,20 @@ export default apiClient;
 // Add auth token and CSRF token to requests
 apiClient.interceptors.request.use(
   (config) => {
-    // No URL manipulation needed - URLs already include /api
-    // The baseURL is set correctly and all calls include /api
+    // Resolve API URL if not absolute
+    if (config.url && !/^https?:\/\//i.test(config.url)) {
+      // Check for forbidden /api prefix
+      if (config.url.startsWith('/api/')) {
+        throw new Error(`Do not include '/api' in request path: '${config.url}'`);
+      }
+      config.url = resolveApi(config.url);
+    }
     
-    // Debug logging removed for security
+    // Debug logging for development
+    if (process.env.NODE_ENV !== 'production' && config.url) {
+      // eslint-disable-next-line no-console
+      console.info('[API]', { path: config.url, resolved: /^https?:/.test(config.url) ? config.url : 'resolved' });
+    }
     
     // Only access localStorage and cookies on client side
     if (typeof window !== 'undefined') {
@@ -65,7 +75,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
   
   try {
     // Always use the LLM endpoint - it handles both smart assist and Slack routing
-    const endpoint = '/llm/request';
+    const endpoint = 'llm/request'; // No leading slash
     
     // REMOVED: Sending user info in request body is a security risk
     // User info should only come from authenticated JWT token

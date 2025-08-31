@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
+
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
@@ -14,7 +14,7 @@ import {
   Target, Clock, Award, MapPin, Shield, X, Eye, EyeOff, Gift, Package, Sparkles
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import { http } from '@/api/http';
 
 
 interface ProfileData {
@@ -165,28 +165,28 @@ export default function CustomerProfile() {
       
       // Fetch all profile stats, box stats, achievements, and box data in parallel
       const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse, achievementsResponse] = await Promise.all([
-        axios.get(`${API_URL}/profile/stats`, {
+        http.get(`profile/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API_URL}/boxes/stats`, {
+        http.get(`boxes/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } };
         }),
-        axios.get(`${API_URL}/boxes/available`, {
+        http.get(`boxes/available`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
         }),
-        axios.get(`${API_URL}/boxes/rewards`, {
+        http.get(`boxes/rewards`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
         }),
-        axios.get(`${API_URL}/achievements/user/${user?.id}`, {
+        http.get(`achievements/user/${user?.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
@@ -269,7 +269,7 @@ export default function CustomerProfile() {
         return;
       }
       
-      const response = await axios.put(
+      const response = await http.put(
         `${API_URL}/auth/profile`,
         {
           name: formData.name,
@@ -313,7 +313,7 @@ export default function CustomerProfile() {
     
     const token = localStorage.getItem('clubos_token');
     
-    const response = await axios.post(
+    const response = await http.post(
       `${API_URL}/boxes/${selectedBox.id}/open`,
       {},
       { headers: { Authorization: `Bearer ${token}` }}
@@ -351,7 +351,7 @@ export default function CustomerProfile() {
         return;
       }
       
-      await axios.post(
+      await http.post(
         `${API_URL}/auth/change-password`,
         {
           currentPassword: passwordForm.currentPassword,
@@ -390,7 +390,7 @@ export default function CustomerProfile() {
       setPreferences(updatedPreferences);
       
       // Save to backend
-      await axios.put(
+      await http.put(
         `${API_URL}/customer-profile`,
         {
           notification_preferences: {

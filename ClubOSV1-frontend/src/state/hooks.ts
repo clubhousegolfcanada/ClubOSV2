@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useAuthState, useSettingsState } from '@/state/useStore';
 import { submitRequest as apiSubmitRequest } from '@/api/apiClient';
-import axios from 'axios';
+import { http } from '@/api/http';
 import type { UserRequest } from '@/types/request';
 
 type HistoryEntry = {
@@ -183,11 +182,8 @@ export const useAnalytics = () => {
           return;
         }
         
-        const response = await axios.get(`${API_URL}/history/stats/overview`, {
-          params: { period },
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await http.get(`history/stats/overview`, {
+          params: { period }
         });
         
         if (response.data.success && response.data.data) {
