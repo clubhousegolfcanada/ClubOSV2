@@ -34,7 +34,7 @@ class NinjaOneRemoteAPI {
   async createRemoteSession(location: string, bayNumber: string): Promise<RemoteSessionResponse> {
     try {
       const response = await axios.post(
-        `${API_URL}/ninjaone-remote/session`,
+        `${API_URL}/api/ninjaone-remote/session`,
         { location, bayNumber },
         { headers: this.getAuthHeaders() }
       );
@@ -49,7 +49,7 @@ class NinjaOneRemoteAPI {
   async getDeviceInfo(location: string, bayNumber: string): Promise<DeviceInfoResponse> {
     try {
       const response = await axios.get(
-        `${API_URL}/ninjaone-remote/device-info`,
+        `${API_URL}/api/ninjaone-remote/device-info`,
         {
           params: { location, bayNumber },
           headers: this.getAuthHeaders()

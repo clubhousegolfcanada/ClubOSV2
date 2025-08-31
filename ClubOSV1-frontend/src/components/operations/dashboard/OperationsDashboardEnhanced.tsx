@@ -84,17 +84,17 @@ export function OperationsDashboardEnhanced() {
     try {
       // Fetch metrics
       const [healthResponse, messagesResponse, usersResponse, ticketsResponse, messagesStatsResponse] = await Promise.all([
-        axios.get(`${API_URL}/health`),
-        axios.get(`${API_URL}/messages/recent`, {
+        axios.get(`${API_URL}/api/health`),
+        axios.get(`${API_URL}/api/messages/recent`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { success: false, data: [] } })),
-        axios.get(`${API_URL}/auth/users`, {
+        axios.get(`${API_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { success: false, data: [] } })),
-        axios.get(`${API_URL}/tickets/active-count`, {
+        axios.get(`${API_URL}/api/tickets/active-count`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { count: 0 } })),
-        axios.get(`${API_URL}/messages/stats/today`, {
+        axios.get(`${API_URL}/api/messages/stats/today`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { count: 0, aiResponseRate: 0 } }))
       ]);
@@ -167,10 +167,10 @@ export function OperationsDashboardEnhanced() {
       try {
         // Fetch conversation history and AI suggestion
         const [historyResponse, suggestionResponse] = await Promise.all([
-          axios.get(`${API_URL}/messages/conversation/${conversationId}`, {
+          axios.get(`${API_URL}/api/messages/conversation/${conversationId}`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.post(`${API_URL}/llm/suggest-response`, {
+          axios.post(`${API_URL}/api/llm/suggest-response`, {
             conversationId,
             context: messages.find(m => m.conversationId === conversationId)?.content
           }, {
@@ -218,7 +218,7 @@ export function OperationsDashboardEnhanced() {
 
     setSendingReply(conversationId);
     try {
-      await axios.post(`${API_URL}/messages/send`, {
+      await axios.post(`${API_URL}/api/messages/send`, {
         to: message.phoneNumber || message.from,
         content: expanded.replyText,
         conversationId,

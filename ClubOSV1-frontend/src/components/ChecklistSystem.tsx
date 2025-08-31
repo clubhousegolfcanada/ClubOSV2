@@ -83,7 +83,7 @@ export const ChecklistSystem: React.FC = () => {
       
       console.log('Loading template for:', activeCategory, activeType);
       const response = await axios.get(
-        `${API_URL}/checklists/template/${activeCategory}/${activeType}`,
+        `${API_URL}/api/checklists/template/${activeCategory}/${activeType}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -148,7 +148,7 @@ export const ChecklistSystem: React.FC = () => {
       }
       
       const response = await axios.get(
-        `${API_URL}/checklists/submissions?${queryParams}`,
+        `${API_URL}/api/checklists/submissions?${queryParams}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -214,7 +214,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       await axios.put(
-        `${API_URL}/checklists/template/task`,
+        `${API_URL}/api/checklists/template/task`,
         {
           category: activeCategory,
           type: activeType,
@@ -247,7 +247,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       await axios.delete(
-        `${API_URL}/checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
+        `${API_URL}/api/checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -277,7 +277,7 @@ export const ChecklistSystem: React.FC = () => {
       });
       
       const response = await axios.post(
-        `${API_URL}/checklists/submit`,
+        `${API_URL}/api/checklists/submit`,
         {
           category: activeCategory,
           type: activeType,
@@ -345,7 +345,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       await axios.delete(
-        `${API_URL}/checklists/submissions/${submissionId}`,
+        `${API_URL}/api/checklists/submissions/${submissionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

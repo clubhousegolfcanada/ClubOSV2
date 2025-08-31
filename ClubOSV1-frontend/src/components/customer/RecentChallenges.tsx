@@ -45,7 +45,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
 
   const fetchChallenges = async () => {
     try {
-      const response = await axios.get(`${API_URL}/challenges/my-challenges`, {
+      const response = await axios.get(`${API_URL}/api/challenges/my-challenges`, {
         headers: { Authorization: `Bearer ${userToken}` }
       });
       

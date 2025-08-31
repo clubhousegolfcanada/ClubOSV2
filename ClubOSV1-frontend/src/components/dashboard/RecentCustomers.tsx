@@ -39,7 +39,7 @@ export const RecentCustomers: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=2`, {
+        const response = await axios.get(`${API_URL}/api/messages/conversations?limit=2`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

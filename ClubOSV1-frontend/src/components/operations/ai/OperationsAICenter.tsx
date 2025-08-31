@@ -78,7 +78,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/ai-automations`, {
+      const response = await axios.get(`${API_URL}/api/ai-automations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAIFeatures(response.data || []);
@@ -96,7 +96,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/knowledge/metrics`, {
+      const response = await axios.get(`${API_URL}/api/knowledge/metrics`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSystemMetrics(response.data || { total_documents: 0, unique_assistants: 0 });
@@ -110,7 +110,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/llm/feedback`, {
+      const response = await axios.get(`${API_URL}/api/llm/feedback`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFeedback(response.data?.filter((f: any) => !f.helpful) || []);
@@ -124,7 +124,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/openphone/recent`, {
+      const response = await axios.get(`${API_URL}/api/openphone/recent`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOpenPhoneConversations(response.data || []);
@@ -136,7 +136,7 @@ export const OperationsAICenter: React.FC = () => {
 
   const fetchPromptTemplates = async () => {
     try {
-      const response = await axios.get(`${API_URL}/prompts`, {
+      const response = await axios.get(`${API_URL}/api/prompts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPromptTemplates(response.data.data || []);
@@ -148,7 +148,7 @@ export const OperationsAICenter: React.FC = () => {
   const handleToggleFeature = async (featureKey: string, newValue: boolean) => {
     try {
       await axios.put(
-        `${API_URL}/ai-automations/${featureKey}/toggle`,
+        `${API_URL}/api/ai-automations/${featureKey}/toggle`,
         { is_active: newValue },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -165,7 +165,7 @@ export const OperationsAICenter: React.FC = () => {
   const handleSavePrompt = async (promptId: string) => {
     try {
       await axios.put(
-        `${API_URL}/prompts/${promptId}`,
+        `${API_URL}/api/prompts/${promptId}`,
         { content: editedPrompt },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -184,7 +184,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!confirm('Are you sure you want to delete this prompt template?')) return;
     
     try {
-      await axios.delete(`${API_URL}/prompts/${promptId}`, {
+      await axios.delete(`${API_URL}/api/prompts/${promptId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchPromptTemplates();
@@ -203,7 +203,7 @@ export const OperationsAICenter: React.FC = () => {
     
     try {
       await axios.post(
-        `${API_URL}/prompts`,
+        `${API_URL}/api/prompts`,
         newPrompt,
         {
           headers: { Authorization: `Bearer ${token}` }

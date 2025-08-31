@@ -51,7 +51,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      const response = await axios.get(`${API_URL}/messages/unread-count`, {
+      const response = await axios.get(`${API_URL}/api/messages/unread-count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -103,7 +103,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!token) return;
 
       await axios.put(
-        `${API_URL}/messages/conversations/${phoneNumber}/read`,
+        `${API_URL}/api/messages/conversations/${phoneNumber}/read`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -42,7 +42,7 @@ export default function ClubOSBoy() {
   useEffect(() => {
     // Ping the server every 5 minutes to keep connection alive
     const heartbeat = setInterval(() => {
-      axios.get(`${API_URL}/health`)
+      axios.get(`${API_URL}/api/health`)
         .catch(() => {
           // Silently ignore errors - this is just a keepalive
         });
@@ -88,7 +88,7 @@ export default function ClubOSBoy() {
         kioskId: 'kiosk-1' // You can make this configurable if needed
       };
 
-      const response = await axios.post(`${API_URL}/customer/ask`, request);
+      const response = await axios.post(`${API_URL}/api/customer/ask`, request);
       
       if (response.data.success) {
         setResponseMessage("Thanks! Your question has been sent to our staff. Someone will help you shortly.");

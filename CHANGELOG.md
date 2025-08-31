@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.57] - 2025-08-31
+
+### Fixed
+- **Critical API URL Configuration Fix**
+  - Resolved double `/api/api/` issue causing 404 errors across entire application
+  - Fixed 181 API call instances to correctly use `/api/` prefix
+  - Updated `.env.production` to use base URL without `/api` suffix
+  - All API calls now correctly use `${API_URL}/api/endpoint` pattern
+  - Affects all features: tickets, messages, auth, checklists, challenges, etc.
+
 ## [1.14.56] - 2025-08-29
 
 ### Fixed

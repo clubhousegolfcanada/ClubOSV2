@@ -16,7 +16,7 @@ export const userSettingsApi = {
   // Get all settings or specific setting
   async getSettings(key?: string): Promise<any> {
     const token = localStorage.getItem('clubos_token');
-    const url = key ? `${API_URL}/user-settings/settings/${key}` : `${API_URL}/user-settings/settings`;
+    const url = key ? `${API_URL}/api/user-settings/settings/${key}` : `${API_URL}/api/user-settings/settings`;
     
     const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` }
@@ -30,7 +30,7 @@ export const userSettingsApi = {
     const token = localStorage.getItem('clubos_token');
     
     await axios.put(
-      `${API_URL}/user-settings/settings/${key}`,
+      `${API_URL}/api/user-settings/settings/${key}`,
       { value },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -40,7 +40,7 @@ export const userSettingsApi = {
   async deleteSetting(key: string): Promise<void> {
     const token = localStorage.getItem('clubos_token');
     
-    await axios.delete(`${API_URL}/user-settings/settings/${key}`, {
+    await axios.delete(`${API_URL}/api/user-settings/settings/${key}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
   },
