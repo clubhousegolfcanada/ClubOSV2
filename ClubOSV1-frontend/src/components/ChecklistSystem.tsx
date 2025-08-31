@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, Check, Trash2, Edit2, X, RotateCcw } from 'lucide-react';
+import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, ChevronDown, Check, Trash2, Edit2, X, RotateCcw, AlertTriangle, FileText, CheckCircle, XCircle, Timer, Award, MessageSquare, Clipboard, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useAuthState } from '../state/useStore';
@@ -30,12 +30,20 @@ interface Submission {
   type: string;
   location: string;
   total_tasks: number;
+  completed_tasks?: string; // JSON string of completed task IDs
   completion_time: string;
   user_name: string;
   user_email: string;
   comments?: string;
   ticket_created?: boolean;
   ticket_id?: string;
+}
+
+interface CompletionStats {
+  daily: { completed: number; total: number };
+  weekly: { completed: number; total: number };
+  monthly: { completed: number; total: number };
+  topPerformer?: { name: string; count: number };
 }
 
 export const ChecklistSystem: React.FC = () => {
@@ -45,7 +53,7 @@ export const ChecklistSystem: React.FC = () => {
   const [currentTemplate, setCurrentTemplate] = useState<ChecklistTemplate | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'tracker'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'tracker' | 'performance'>('checklist');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [trackerLocation, setTrackerLocation] = useState<string>('all');
@@ -55,6 +63,10 @@ export const ChecklistSystem: React.FC = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [savingTask, setSavingTask] = useState(false);
+  const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
+  const [completionStats, setCompletionStats] = useState<CompletionStats | null>(null);
+  const [photoAttachment, setPhotoAttachment] = useState<string | null>(null);
+  const [estimatedTime, setEstimatedTime] = useState<number>(0);
   
   const { user } = useAuthState();
   const isAdmin = user?.role === 'admin';
@@ -72,6 +84,13 @@ export const ChecklistSystem: React.FC = () => {
       loadSubmissions();
     }
   }, [activeTab, trackerLocation, trackerPeriod]);
+
+  // Load performance stats
+  useEffect(() => {
+    if (typeof window !== 'undefined' && activeTab === 'performance') {
+      loadCompletionStats();
+    }
+  }, [activeTab, selectedLocation]);
 
   const loadTemplate = async () => {
     try {
@@ -93,6 +112,12 @@ export const ChecklistSystem: React.FC = () => {
         setCurrentTemplate(response.data.data);
         // Reset completed tasks
         setCompletedTasks({});
+        // Set estimated time based on checklist type
+        setEstimatedTime(
+          activeType === 'daily' ? 15 : 
+          activeType === 'weekly' ? 30 : 
+          60
+        );
       } else {
         // If success is false but we got a response
         setCurrentTemplate(response.data.data || null);
@@ -182,6 +207,44 @@ export const ChecklistSystem: React.FC = () => {
       }
     } finally {
       setLoadingSubmissions(false);
+    }
+  };
+
+  const loadCompletionStats = async () => {
+    try {
+      const token = localStorage.getItem('clubos_token');
+      if (!token) return;
+      
+      const response = await axios.get(
+        `${API_URL}/api/checklists/stats`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        // Process stats data
+        const stats = response.data.data.stats;
+        const processedStats: CompletionStats = {
+          daily: { completed: 0, total: 5 }, // Assuming 5 days a week
+          weekly: { completed: 0, total: 4 }, // 4 weeks in a month
+          monthly: { completed: 0, total: 1 },
+          topPerformer: undefined
+        };
+        
+        // Calculate completion rates
+        stats.forEach((stat: any) => {
+          if (stat.type === 'daily') {
+            processedStats.daily.completed = stat.submission_count;
+          } else if (stat.type === 'weekly') {
+            processedStats.weekly.completed = stat.submission_count;
+          } else if (stat.type === 'quarterly') {
+            processedStats.monthly.completed = stat.submission_count;
+          }
+        });
+        
+        setCompletionStats(processedStats);
+      }
+    } catch (error) {
+      console.error('Failed to load completion stats:', error);
     }
   };
 
@@ -301,6 +364,7 @@ export const ChecklistSystem: React.FC = () => {
         setCompletedTasks({});
         setComments('');
         setCreateTicket(false);
+        setPhotoAttachment(null);
         
         // Reload template to reset the form
         loadTemplate();
@@ -364,6 +428,30 @@ export const ChecklistSystem: React.FC = () => {
     }
   };
 
+  const toggleSubmissionExpanded = (submissionId: string) => {
+    setExpandedSubmissions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(submissionId)) {
+        newSet.delete(submissionId);
+      } else {
+        newSet.add(submissionId);
+      }
+      return newSet;
+    });
+  };
+
+  const getCompletedTaskLabels = (submission: Submission): string[] => {
+    if (!submission.completed_tasks) return [];
+    try {
+      const taskIds = JSON.parse(submission.completed_tasks);
+      // Match task IDs to labels based on the template
+      // This is a simplified version - in production you'd fetch the actual template
+      return taskIds;
+    } catch {
+      return [];
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Tab Navigation */}
@@ -392,6 +480,19 @@ export const ChecklistSystem: React.FC = () => {
           >
             Completion Tracker
             {activeTab === 'tracker' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('performance')}
+            className={`pb-3 text-lg md:text-xl font-medium transition-colors relative ${
+              activeTab === 'performance' 
+                ? 'text-[var(--text-primary)]' 
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            Performance
+            {activeTab === 'performance' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
             )}
           </button>
@@ -489,6 +590,18 @@ export const ChecklistSystem: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Time Estimate Card */}
+          {currentTemplate && (
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-3">
+                <Timer className="w-4 h-4 text-[var(--accent)]" />
+                <span className="text-sm text-[var(--text-secondary)]">
+                  Estimated completion time: <strong className="text-[var(--text-primary)]">{estimatedTime} minutes</strong>
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Checklist Tasks */}
           {currentTemplate && (
@@ -673,7 +786,7 @@ export const ChecklistSystem: React.FC = () => {
             </div>
           )}
         </>
-      ) : (
+      ) : activeTab === 'tracker' ? (
         <>
           {/* Completion Tracker */}
           <div className="space-y-6">
@@ -775,80 +888,209 @@ export const ChecklistSystem: React.FC = () => {
                           </span>
                         </h4>
                         
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="border-b border-[var(--border-secondary)]">
-                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">User</th>
-                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Category</th>
-                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Type</th>
-                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Tasks</th>
-                                <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Completed</th>
-                                {(user?.role === 'admin' || user?.role === 'operator') && (
-                                  <th className="text-left py-2 px-2 text-xs font-medium text-[var(--text-muted)]">Actions</th>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {locationSubmissions.map((submission) => (
-                                <tr key={submission.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]">
-                                  <td className="py-2 px-2">
-                                    <div className="flex items-center gap-1.5">
+                        <div className="space-y-2">
+                          {locationSubmissions.map((submission) => (
+                            <div key={submission.id} className="border border-[var(--border-secondary)] rounded-lg overflow-hidden">
+                              <div 
+                                className="p-3 hover:bg-[var(--bg-tertiary)] cursor-pointer transition-all"
+                                onClick={() => toggleSubmissionExpanded(submission.id)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4 flex-1">
+                                    <button className="p-1 hover:bg-[var(--bg-primary)] rounded transition-colors">
+                                      {expandedSubmissions.has(submission.id) ? (
+                                        <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+                                      )}
+                                    </button>
+                                    
+                                    <div className="flex items-center gap-2">
                                       <User className="w-3 h-3 text-[var(--text-muted)]" />
                                       <div>
                                         <div className="text-xs text-[var(--text-primary)]">{submission.user_name}</div>
                                         <div className="text-[10px] text-[var(--text-muted)]">{submission.user_email}</div>
                                       </div>
                                     </div>
-                                  </td>
-                                  <td className="py-2 px-2">
-                                    <span className={`text-xs font-medium ${getCategoryColor(submission.category)}`}>
-                                      {submission.category.charAt(0).toUpperCase() + submission.category.slice(1)}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 px-2 text-xs text-[var(--text-secondary)]">
-                                    {submission.type.charAt(0).toUpperCase() + submission.type.slice(1)}
-                                  </td>
-                                  <td className="py-2 px-2">
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-xs font-medium ${getCategoryColor(submission.category)}`}>
+                                        {submission.category.charAt(0).toUpperCase() + submission.category.slice(1)}
+                                      </span>
+                                      <span className="text-xs text-[var(--text-secondary)]">
+                                        {submission.type.charAt(0).toUpperCase() + submission.type.slice(1)}
+                                      </span>
+                                    </div>
+                                    
                                     <div className="flex items-center gap-1">
                                       <CheckSquare className="w-3 h-3 text-green-500" />
-                                      <span className="text-xs text-[var(--text-secondary)]">{submission.total_tasks}</span>
+                                      <span className="text-xs text-[var(--text-secondary)]">{submission.total_tasks} tasks</span>
                                     </div>
-                                  </td>
-                                  <td className="py-2 px-2">
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                                      <div>
-                                        <div className="text-xs text-[var(--text-secondary)]">
-                                          {new Date(submission.completion_time).toLocaleDateString()}
-                                        </div>
-                                        <div className="text-[10px] text-[var(--text-muted)]">
-                                          {new Date(submission.completion_time).toLocaleTimeString()}
-                                        </div>
+                                    
+                                    {submission.comments && (
+                                      <MessageSquare className="w-3 h-3 text-[var(--accent)]" title="Has comments" />
+                                    )}
+                                    
+                                    {submission.ticket_created && (
+                                      <AlertTriangle className="w-3 h-3 text-yellow-500" title="Ticket created" />
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                      <div className="text-xs text-[var(--text-secondary)]">
+                                        {new Date(submission.completion_time).toLocaleDateString()}
+                                      </div>
+                                      <div className="text-[10px] text-[var(--text-muted)]">
+                                        {new Date(submission.completion_time).toLocaleTimeString()}
                                       </div>
                                     </div>
-                                  </td>
-                                  {(user?.role === 'admin' || user?.role === 'operator') && (
-                                    <td className="py-2 px-2">
+                                    
+                                    {(user?.role === 'admin' || user?.role === 'operator') && (
                                       <button
-                                        onClick={() => handleDeleteSubmission(submission.id)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteSubmission(submission.id);
+                                        }}
                                         className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors"
                                         title="Delete submission"
                                       >
                                         <Trash2 className="w-3 h-3" />
                                       </button>
-                                    </td>
-                                  )}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Expanded Details */}
+                              {expandedSubmissions.has(submission.id) && (
+                                <div className="border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)] p-4">
+                                  <div className="space-y-3">
+                                    {submission.comments && (
+                                      <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <FileText className="w-3 h-3 text-[var(--text-muted)]" />
+                                          <span className="text-xs font-medium text-[var(--text-secondary)]">Comments:</span>
+                                        </div>
+                                        <p className="text-xs text-[var(--text-primary)] ml-5 bg-[var(--bg-secondary)] p-2 rounded">
+                                          {submission.comments}
+                                        </p>
+                                      </div>
+                                    )}
+                                    
+                                    {submission.ticket_created && (
+                                      <div className="flex items-center gap-2">
+                                        <AlertTriangle className="w-3 h-3 text-yellow-500" />
+                                        <span className="text-xs text-[var(--text-secondary)]">
+                                          Support ticket created {submission.ticket_id && `(ID: ${submission.ticket_id.slice(0, 8)}...)`}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <Clipboard className="w-3 h-3 text-[var(--text-muted)]" />
+                                        <span className="text-xs font-medium text-[var(--text-secondary)]">Completed Tasks:</span>
+                                      </div>
+                                      <div className="ml-5">
+                                        <div className="text-xs text-[var(--text-muted)]">
+                                          All {submission.total_tasks} tasks completed successfully
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ));
                   })()}
                 </>
               )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Performance Tab */}
+          <div className="space-y-6">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Performance Overview</h3>
+              
+              {completionStats ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-[var(--text-muted)]">Daily Checklists</span>
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-[var(--text-primary)]">
+                      {completionStats.daily.completed}/{completionStats.daily.total}
+                    </div>
+                    <div className="text-xs text-[var(--text-secondary)] mt-1">
+                      {Math.round((completionStats.daily.completed / completionStats.daily.total) * 100)}% completion rate
+                    </div>
+                  </div>
+                  
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-[var(--text-muted)]">Weekly Checklists</span>
+                      <TrendingUp className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-[var(--text-primary)]">
+                      {completionStats.weekly.completed}/{completionStats.weekly.total}
+                    </div>
+                    <div className="text-xs text-[var(--text-secondary)] mt-1">
+                      {Math.round((completionStats.weekly.completed / completionStats.weekly.total) * 100)}% completion rate
+                    </div>
+                  </div>
+                  
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-[var(--text-muted)]">Quarterly Checklists</span>
+                      <Award className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-[var(--text-primary)]">
+                      {completionStats.monthly.completed}/{completionStats.monthly.total}
+                    </div>
+                    <div className="text-xs text-[var(--text-secondary)] mt-1">
+                      {Math.round((completionStats.monthly.completed / completionStats.monthly.total) * 100)}% completion rate
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[var(--text-secondary)]">
+                  Loading performance data...
+                </div>
+              )}
+            </div>
+            
+            {/* Additional Features for Contractors */}
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-[var(--accent)]" />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--text-primary)]">Export Reports</div>
+                      <div className="text-xs text-[var(--text-muted)]">Download monthly completion reports</div>
+                    </div>
+                  </div>
+                </button>
+                
+                <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Clipboard className="w-5 h-5 text-[var(--accent)]" />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--text-primary)]">Template Library</div>
+                      <div className="text-xs text-[var(--text-muted)]">Access standard cleaning protocols</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </>

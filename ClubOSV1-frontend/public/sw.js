@@ -1,5 +1,5 @@
 // ClubOS Service Worker - Push Notifications & Offline Support
-const CACHE_NAME = 'clubos-v2'; // Increment version to bust cache
+const CACHE_NAME = 'clubos-v3'; // Increment version to bust cache
 const OFFLINE_URL = '/offline.html';
 
 // Install event - cache essential assets
