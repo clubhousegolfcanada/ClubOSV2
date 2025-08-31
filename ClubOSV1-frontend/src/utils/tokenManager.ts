@@ -154,10 +154,7 @@ export class TokenManager {
     
     // Clear any cached token data
     if (typeof window !== 'undefined') {
-      // Remove any token from axios default headers if set
-      import('axios').then(({ default: axios }) => {
-        delete axios.defaults.headers.common['Authorization'];
-      });
+      // Auth header cleanup now handled by http client
     }
   }
 
@@ -217,78 +214,13 @@ export class TokenManager {
   }
 
   /**
-   * Set up axios interceptor to handle new tokens from backend
+   * Set up response interceptor to handle new tokens from backend
+   * Note: This is now handled by the http client
    */
   setupAxiosInterceptor(): void {
-    if (typeof window === 'undefined') return;
-    
-    // Skip if already setup
-    if (this.interceptorSetup) return;
-    
-    // Skip interceptor setup on login page
-    if (window.location.pathname === '/login') return;
-    
-    this.interceptorSetup = true;
-    
-    // Import axios dynamically to avoid SSR issues
-    import('axios').then(({ default: axios }) => {
-      // Clear any existing interceptors first
-      axios.interceptors.response.eject(0);
-      
-      axios.interceptors.response.use(
-        (response) => {
-          // Check for new token in response headers
-          const newToken = response.headers['x-new-token'];
-          if (newToken) {
-            // Update stored token
-            localStorage.setItem('clubos_token', newToken);
-            
-            // Update auth state
-            const storedUser = localStorage.getItem('clubos_user');
-            if (storedUser) {
-              try {
-                const user = JSON.parse(storedUser);
-                const { setUser } = useAuthState.getState();
-                setUser({ ...user, token: newToken });
-              } catch (error) {
-                console.error('Failed to update auth state with new token:', error);
-              }
-            }
-          }
-          return response;
-        },
-        (error) => {
-          // Handle 401 errors (but not on login page or during login)
-          if (error.response?.status === 401) {
-            const isLoginPage = window.location.pathname === '/login';
-            const isAuthEndpoint = error.config?.url?.includes('/auth/');
-            
-            // Check if we just logged in (within last 5 seconds)
-            const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
-            const recentlyLoggedIn = loginTimestamp && 
-              (Date.now() - parseInt(loginTimestamp) < 5000);
-            
-            // Check if already handling session expiry (via singleton or internal flag)
-            const isAlreadyHandling = sessionExpiryManager.isHandling() || this.isHandlingExpiration;
-            
-            // Don't handle as expired if:
-            // 1. We're on the login page
-            // 2. This is an auth endpoint
-            // 3. We just logged in (grace period)
-            // 4. Token exists and is not expired
-            // 5. Already handling session expiry
-            // 6. Already handling expiration internally
-            const token = localStorage.getItem('clubos_token');
-            const tokenValid = token && !this.isTokenExpired(token);
-            
-            if (!isLoginPage && !isAuthEndpoint && !recentlyLoggedIn && !tokenValid && !isAlreadyHandling) {
-              this.handleTokenExpiration();
-            }
-          }
-          return Promise.reject(error);
-        }
-      );
-    });
+    // This functionality is now handled by the http client
+    // Keeping method for backwards compatibility
+    return;
   }
 }
 

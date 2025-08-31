@@ -43,8 +43,7 @@ const LoginPage = () => {
       localStorage.removeItem('clubos_view_mode');
       sessionStorage.clear();
       
-      // Clear axios default headers
-      delete axios.defaults.headers.common['Authorization'];
+      // Auth header cleanup now handled by http client
     }
 
     try {

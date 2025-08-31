@@ -125,8 +125,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         // Quick restore without validation
         const user = JSON.parse(storedUser);
         
-        // CRITICAL: Set axios header for restored session
-        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        // Auth header now handled by http client
         
         setUser({ ...user, token: storedToken });
         
@@ -142,15 +141,14 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         console.error('Failed to restore auth state:', error);
       }
     } else if (storedToken && isAuthenticated) {
-      // If already authenticated but axios header might be missing
-      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+      // Auth header now handled by http client
     }
     
     setAuthInitialized(true);
   }, []); // Remove dependencies to run only once
 
   useEffect(() => {
-    // Setup axios interceptor for handling 401s from backend
+    // Auth interceptor now handled by http client
     if (isAuthenticated && router.pathname !== '/login') {
       tokenManager.setupAxiosInterceptor();
     }
