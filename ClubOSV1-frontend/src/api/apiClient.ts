@@ -20,15 +20,8 @@ export default apiClient;
 // Add auth token and CSRF token to requests
 apiClient.interceptors.request.use(
   (config) => {
-    // Fix double /api/api/ issue
-    if (config.url) {
-      config.url = config.url.replace(/\/api\/api\//g, '/api/');
-      
-      // Ensure /api prefix is present
-      if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
-        config.url = '/api' + config.url;
-      }
-    }
+    // No URL manipulation needed - URLs already include /api
+    // The baseURL is set correctly and all calls include /api
     
     // Debug logging removed for security
     
