@@ -1,6 +1,6 @@
 // ClubOS Service Worker - Push Notifications & Offline Support
-// Last updated: 2025-08-31 - Fixed axios interceptor double API issue
-const CACHE_NAME = 'clubos-v5-interceptor-fix'; // Force cache clear after fixing interceptor
+// Last updated: 2025-08-31 - Fixed apiClient double API issue
+const CACHE_NAME = 'clubos-v6-apiclient-fix'; // Force cache clear after fixing apiClient paths
 const OFFLINE_URL = '/offline.html';
 
 // Install event - cache essential assets
