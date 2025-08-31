@@ -72,11 +72,12 @@ export const KnowledgeRouterPanel: React.FC = () => {
     } catch (error) {
       console.error('Knowledge routing error:', error);
       
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const err = error as any;
+        if (err.response?.status === 401) {
           toast.error('Authentication required. Please log in again.');
-        } else if (error.response?.data?.error) {
-          toast.error(error.response.data.error);
+        } else if (err.response?.data?.error) {
+          toast.error(err.response.data.error);
         } else {
           toast.error('Failed to connect to server. Please try again.');
         }

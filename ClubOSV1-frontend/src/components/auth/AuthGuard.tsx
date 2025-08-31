@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
-import axios from 'axios';
 import { getStorageItem } from '@/utils/iframeStorage';
 
 interface AuthGuardProps {
@@ -59,7 +58,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         if (storedUser && storedToken) {
           // Always trust the stored token - let backend validate
           // CRITICAL: Set axios header
-          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          // Auth header now handled by http client
           
           if (!user) {
             try {

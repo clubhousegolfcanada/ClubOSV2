@@ -203,7 +203,7 @@ const RequestForm: React.FC = () => {
       setIsProcessing(true);
       try {
         const token = isMounted ? localStorage.getItem('clubos_token') : null;
-        const response = await axios.post(
+        const response = await http.post(
           `tickets`,
           {
             title: data.requestDescription.substring(0, 100), // First 100 chars as title
@@ -237,7 +237,7 @@ const RequestForm: React.FC = () => {
         const token = isMounted ? localStorage.getItem('clubos_token') : null;
         
         // Use the existing knowledge-router endpoint
-        const response = await axios.post(
+        const response = await http.post(
           `knowledge-router/parse-and-route`,
           { input: data.requestDescription },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -262,8 +262,9 @@ const RequestForm: React.FC = () => {
         }
       } catch (error) {
         console.error('Knowledge submission error:', error);
-        if (axios.isAxiosError(error) && error.response?.data?.error) {
-          notify('error', error.response.data.error);
+        if (error && typeof error === 'object' && 'response' in error) {
+          const err = error as any;
+          notify('error', err.response?.data?.error || 'Failed to add knowledge');
         } else {
           notify('error', 'Failed to add knowledge. Please check the format and try again.');
         }

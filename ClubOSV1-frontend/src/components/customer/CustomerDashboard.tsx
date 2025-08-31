@@ -23,12 +23,11 @@ import {
 } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
 import { QuickBookCard } from '@/components/customer/QuickBookCard';
 import { RecentChallenges } from '@/components/customer/RecentChallenges';
 
-import { API_CONFIG, getApiUrl } from "@/config/api";
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 
 // Now we can safely add /api to our calls
@@ -116,7 +115,7 @@ export const CustomerDashboard: React.FC = () => {
       if (token) {
         // Fetch customer profile
         try {
-          const response = await axios.get(getApiUrl('/customer-profile'), {
+          const response = await http.get('customer-profile', {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data.success) {
@@ -128,7 +127,7 @@ export const CustomerDashboard: React.FC = () => {
 
         // Fetch active challenges count and CC balance
         try {
-          const challengesResponse = await axios.get(getApiUrl('/challenges/my-challenges'), {
+          const challengesResponse = await http.get('challenges/my-challenges', {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (challengesResponse.data.success) {
@@ -143,7 +142,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch CC balance
         try {
-          const ccResponse = await axios.get(getApiUrl('/challenges/cc-balance'), {
+          const ccResponse = await http.get('challenges/cc-balance', {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (ccResponse.data.success) {
@@ -166,7 +165,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch pending friend requests
         try {
-          const friendRequestsResponse = await axios.get(getApiUrl('/friends/pending?direction=incoming'), {
+          const friendRequestsResponse = await http.get('friends/pending?direction=incoming', {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (friendRequestsResponse.data.success) {
@@ -179,7 +178,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch box stats
         try {
-          const boxResponse = await axios.get(getApiUrl('/boxes/stats'), {
+          const boxResponse = await http.get('boxes/stats', {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (boxResponse.data) {
