@@ -409,7 +409,6 @@ export default function Compete() {
       const token = localStorage.getItem('clubos_token');
       await http.delete(
         `friends/${friendshipId}`
-        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(`${friendName} removed from friends`);
       
