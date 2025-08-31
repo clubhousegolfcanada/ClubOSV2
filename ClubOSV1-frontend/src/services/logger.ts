@@ -115,7 +115,7 @@ class Logger {
 
   private async sendToRemote(entry: LogEntry) {
     try {
-      await axios.post(`${API_URL}/api/logs/frontend`, {
+      await axios.post(`${API_URL}/logs/frontend`, {
         ...entry,
         error: entry.error ? {
           message: entry.error.message,

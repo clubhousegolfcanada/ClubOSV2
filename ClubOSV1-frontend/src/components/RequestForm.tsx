@@ -205,7 +205,7 @@ const RequestForm: React.FC = () => {
       try {
         const token = isMounted ? localStorage.getItem('clubos_token') : null;
         const response = await axios.post(
-          `${API_URL}/api/tickets`,
+          `${API_URL}/tickets`,
           {
             title: data.requestDescription.substring(0, 100), // First 100 chars as title
             description: data.requestDescription,
@@ -239,7 +239,7 @@ const RequestForm: React.FC = () => {
         
         // Use the existing knowledge-router endpoint
         const response = await axios.post(
-          `${API_URL}/api/knowledge-router/parse-and-route`,
+          `${API_URL}/knowledge-router/parse-and-route`,
           { input: data.requestDescription },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -353,7 +353,7 @@ const RequestForm: React.FC = () => {
         console.log(`Polling attempt ${pollCount + 1}/${maxPolls} for thread ${threadTs}`);
         
         // Use the specific thread_ts to check for replies directly from Slack
-        const repliesResponse = await axios.get(`${API_URL}/api/slack/thread-replies/${threadTs}`);
+        const repliesResponse = await axios.get(`${API_URL}/slack/thread-replies/${threadTs}`);
         
         if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
           console.log('Found replies:', repliesResponse.data.data.replies);
@@ -397,7 +397,7 @@ const RequestForm: React.FC = () => {
     setSendingReply(true);
     try {
       const token = isMounted ? localStorage.getItem('clubos_token') : null;
-      const response = await axios.post(`${API_URL}/api/slack/reply`, {
+      const response = await axios.post(`${API_URL}/slack/reply`, {
         thread_ts: lastSlackThreadTs,
         text: replyText.trim()
       }, {
@@ -517,11 +517,11 @@ const RequestForm: React.FC = () => {
         console.log('Sending feedback:', feedbackData);
         console.log('Auth token present:', !!token);
         console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'no token');
-        console.log('Full API URL:', `${API_URL}/api/feedback`);
+        console.log('Full API URL:', `${API_URL}/feedback`);
       }
       
       // Use apiClient to ensure auth header is properly attached
-      const response = await axios.post(`${API_URL}/api/feedback`, feedbackData, {
+      const response = await axios.post(`${API_URL}/feedback`, feedbackData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -569,7 +569,7 @@ const RequestForm: React.FC = () => {
     
     setIsConvertingTone(true);
     try {
-      const response = await axios.post(`${API_URL}/api/tone/convert`, {
+      const response = await axios.post(`${API_URL}/tone/convert`, {
         text: toneConversion
       });
       

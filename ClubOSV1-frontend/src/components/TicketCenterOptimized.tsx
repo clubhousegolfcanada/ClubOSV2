@@ -87,7 +87,7 @@ const TicketCenterOptimized = () => {
         params.append('category', activeTab);
       }
       
-      const response = await axios.get(`${API_URL}/api/tickets?${params}`, {
+      const response = await axios.get(`${API_URL}/tickets?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -188,7 +188,7 @@ const TicketCenterOptimized = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.patch(
-        `${API_URL}/api/tickets/${ticketId}/status`,
+        `${API_URL}/tickets/${ticketId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -224,7 +224,7 @@ const TicketCenterOptimized = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.delete(
-        `${API_URL}/api/tickets/${ticketId}`,
+        `${API_URL}/tickets/${ticketId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -255,7 +255,7 @@ const TicketCenterOptimized = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/api/tickets/${ticketId}/comments`,
+        `${API_URL}/tickets/${ticketId}/comments`,
         { text: newComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -306,7 +306,7 @@ const TicketCenterOptimized = () => {
       }
       
       const response = await axios.delete(
-        `${API_URL}/api/tickets/clear-all?${params}`,
+        `${API_URL}/tickets/clear-all?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

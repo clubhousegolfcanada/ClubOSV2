@@ -149,7 +149,7 @@ export const OperationsIntegrations: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/api/ai-automations`, {
+      const response = await axios.get(`${API_URL}/ai-automations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Ensure we're getting an array
@@ -165,7 +165,7 @@ export const OperationsIntegrations: React.FC = () => {
   const handleToggleAIFeature = async (featureKey: string, enabled: boolean) => {
     try {
       await axios.post(
-        `${API_URL}/api/ai-automations/${featureKey}/toggle`,
+        `${API_URL}/ai-automations/${featureKey}/toggle`,
         { enabled },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -190,7 +190,7 @@ export const OperationsIntegrations: React.FC = () => {
     try {
       // Fetch Slack config
       const slackResponse = await axios.get(
-        `${API_URL}/api/integrations/slack/config`,
+        `${API_URL}/integrations/slack/config`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (slackResponse.data.success) {
@@ -199,7 +199,7 @@ export const OperationsIntegrations: React.FC = () => {
       
       // Fetch OpenPhone config
       const openphoneResponse = await axios.get(
-        `${API_URL}/api/integrations/openphone/config`,
+        `${API_URL}/integrations/openphone/config`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (openphoneResponse.data.success) {
@@ -208,7 +208,7 @@ export const OperationsIntegrations: React.FC = () => {
       
       // Fetch system features
       const featuresResponse = await axios.get(
-        `${API_URL}/api/integrations/features`,
+        `${API_URL}/integrations/features`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (featuresResponse.data.success) {
@@ -221,7 +221,7 @@ export const OperationsIntegrations: React.FC = () => {
       // Check HubSpot connection status
       try {
         const hubspotResponse = await axios.get(
-          `${API_URL}/api/system-status/hubspot`,
+          `${API_URL}/system-status/hubspot`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (hubspotResponse.data) {
@@ -245,7 +245,7 @@ export const OperationsIntegrations: React.FC = () => {
 
     try {
       await axios.put(
-        `${API_URL}/api/integrations/features/${featureKey}`,
+        `${API_URL}/integrations/features/${featureKey}`,
         { enabled: !feature.enabled },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -267,7 +267,7 @@ export const OperationsIntegrations: React.FC = () => {
     setTestingService(service);
     try {
       const response = await axios.post(
-        `${API_URL}/api/integrations/${service.toLowerCase()}/test`,
+        `${API_URL}/integrations/${service.toLowerCase()}/test`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -298,7 +298,7 @@ export const OperationsIntegrations: React.FC = () => {
     setLoading(true);
     try {
       await axios.put(
-        `${API_URL}/api/integrations/slack/config`,
+        `${API_URL}/integrations/slack/config`,
         slackConfig,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -317,7 +317,7 @@ export const OperationsIntegrations: React.FC = () => {
     setLoading(true);
     try {
       await axios.put(
-        `${API_URL}/api/integrations/openphone/config`,
+        `${API_URL}/integrations/openphone/config`,
         openPhoneConfig,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -336,7 +336,7 @@ export const OperationsIntegrations: React.FC = () => {
     setLoading(true);
     try {
       await axios.put(
-        `${API_URL}/api/integrations/push/config`,
+        `${API_URL}/integrations/push/config`,
         pushConfig,
         {
           headers: { Authorization: `Bearer ${token}` }

@@ -81,7 +81,7 @@ export const usePushNotifications = () => {
           return;
         }
         
-        const response = await fetch(`${API_URL}/api/notifications/subscription-status`, {
+        const response = await fetch(`${API_URL}/notifications/subscription-status`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -175,7 +175,7 @@ export const usePushNotifications = () => {
       await registration.update();
 
       // Get VAPID public key from backend
-      const vapidResponse = await fetch(`${API_URL}/api/notifications/vapid-key`, {
+      const vapidResponse = await fetch(`${API_URL}/notifications/vapid-key`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`
         }
@@ -200,7 +200,7 @@ export const usePushNotifications = () => {
       });
 
       // Send subscription to backend
-      const response = await fetch(`${API_URL}/api/notifications/subscribe`, {
+      const response = await fetch(`${API_URL}/notifications/subscribe`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`,
@@ -261,7 +261,7 @@ export const usePushNotifications = () => {
       }
 
       // Notify backend
-      const response = await fetch(`${API_URL}/api/notifications/subscribe`, {
+      const response = await fetch(`${API_URL}/notifications/subscribe`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`
@@ -300,7 +300,7 @@ export const usePushNotifications = () => {
     quietHoursEnd?: string;
   }) => {
     try {
-      const response = await fetch(`${API_URL}/api/notifications/preferences`, {
+      const response = await fetch(`${API_URL}/notifications/preferences`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`,

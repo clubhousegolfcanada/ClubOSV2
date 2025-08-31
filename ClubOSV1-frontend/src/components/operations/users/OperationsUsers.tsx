@@ -87,7 +87,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       // Use the API endpoint correctly with /api prefix
-      const response = await axios.get(`${API_URL}/api/system-settings/customer_auto_approval`, {
+      const response = await axios.get(`${API_URL}/system-settings/customer_auto_approval`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -109,7 +109,7 @@ export const OperationsUsers: React.FC = () => {
     try {
       // Use the API endpoint correctly
       await axios.put(
-        `${API_URL}/api/system-settings/customer_auto_approval`,
+        `${API_URL}/system-settings/customer_auto_approval`,
         { value: { enabled } },
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -134,8 +134,8 @@ export const OperationsUsers: React.FC = () => {
     }
     
     try {
-      console.log('Fetching users from:', `${API_URL}/api/auth/users`);
-      const response = await axios.get(`${API_URL}/api/auth/users`, {
+      console.log('Fetching users from:', `${API_URL}/auth/users`);
+      const response = await axios.get(`${API_URL}/auth/users`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -159,7 +159,7 @@ export const OperationsUsers: React.FC = () => {
           if (user.role === 'customer') {
             try {
               const balanceResponse = await axios.get(
-                `${API_URL}/api/challenges/cc-balance/${user.id}`,
+                `${API_URL}/challenges/cc-balance/${user.id}`,
                 { headers: { Authorization: `Bearer ${authToken}` } }
               );
               return {
@@ -212,7 +212,7 @@ export const OperationsUsers: React.FC = () => {
   const handleSaveUser = async () => {
     try {
       await axios.put(
-        `${API_URL}/api/auth/users/${editingUser}`,
+        `${API_URL}/auth/users/${editingUser}`,
         editedUser,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -231,7 +231,7 @@ export const OperationsUsers: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      await axios.delete(`${API_URL}/api/auth/users/${userId}`, {
+      await axios.delete(`${API_URL}/auth/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('User deleted successfully');
@@ -257,7 +257,7 @@ export const OperationsUsers: React.FC = () => {
     setLoading(true);
     try {
       await axios.post(
-        `${API_URL}/api/auth/users`,
+        `${API_URL}/auth/users`,
         newUser,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -292,7 +292,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       await axios.post(
-        `${API_URL}/api/auth/users/${resetPasswordUserId}/reset-password`,
+        `${API_URL}/auth/users/${resetPasswordUserId}/reset-password`,
         { newPassword },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -311,7 +311,7 @@ export const OperationsUsers: React.FC = () => {
   const handleApproveUser = async (userId: string) => {
     try {
       await axios.put(
-        `${API_URL}/api/auth/users/${userId}/approve`,
+        `${API_URL}/auth/users/${userId}/approve`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -330,7 +330,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       await axios.put(
-        `${API_URL}/api/auth/users/${userId}/reject`,
+        `${API_URL}/auth/users/${userId}/reject`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -346,7 +346,7 @@ export const OperationsUsers: React.FC = () => {
 
   const handleBackup = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/auth/backup`, {
+      const response = await axios.get(`${API_URL}/auth/backup`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -377,7 +377,7 @@ export const OperationsUsers: React.FC = () => {
         try {
           const data = JSON.parse(event.target?.result as string);
           await axios.post(
-            `${API_URL}/api/auth/restore`,
+            `${API_URL}/auth/restore`,
             data,
             {
               headers: { Authorization: `Bearer ${token}` }
@@ -405,7 +405,7 @@ export const OperationsUsers: React.FC = () => {
     const authToken = token || localStorage.getItem('clubos_token');
     
     try {
-      const response = await axios.get(`${API_URL}/api/boxes/user/${customer.id}`, {
+      const response = await axios.get(`${API_URL}/boxes/user/${customer.id}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -428,7 +428,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       const response = await axios.post(
-        `${API_URL}/api/boxes/grant`,
+        `${API_URL}/boxes/grant`,
         {
           userId: boxManagementUser.id,
           quantity: parseInt(boxCount)
@@ -465,7 +465,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       const response = await axios.delete(
-        `${API_URL}/api/boxes/user/${boxManagementUser.id}/available`,
+        `${API_URL}/boxes/user/${boxManagementUser.id}/available`,
         {
           headers: { Authorization: `Bearer ${authToken}` }
         }
@@ -498,7 +498,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       const response = await axios.get(
-        `${API_URL}/api/admin/cc-adjustments/${customer.id}/balance`,
+        `${API_URL}/admin/cc-adjustments/${customer.id}/balance`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -539,7 +539,7 @@ export const OperationsUsers: React.FC = () => {
       setLoading(true);
       
       const response = await axios.post(
-        `${API_URL}/api/admin/cc-adjustments/${ccAdjustmentUser.id}/adjust`,
+        `${API_URL}/admin/cc-adjustments/${ccAdjustmentUser.id}/adjust`,
         {
           amount: amount,
           type: adjustmentType,

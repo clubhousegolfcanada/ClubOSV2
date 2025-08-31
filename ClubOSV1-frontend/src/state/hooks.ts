@@ -183,7 +183,7 @@ export const useAnalytics = () => {
           return;
         }
         
-        const response = await axios.get(`${API_URL}/api/history/stats/overview`, {
+        const response = await axios.get(`${API_URL}/history/stats/overview`, {
           params: { period },
           headers: {
             'Authorization': `Bearer ${token}`

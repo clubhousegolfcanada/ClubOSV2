@@ -37,7 +37,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
   const fetchRecentUpdates = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
-      const response = await axios.get(`${API_URL}/api/knowledge-router/recent-updates`, {
+      const response = await axios.get(`${API_URL}/knowledge-router/recent-updates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecentUpdates(response.data.data || []);
@@ -58,7 +58,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
       
       // Parse and route directly
       const response = await axios.post(
-        `${API_URL}/api/knowledge-router/parse-and-route`,
+        `${API_URL}/knowledge-router/parse-and-route`,
         { input },
         { headers: { Authorization: `Bearer ${token}` } }
       );

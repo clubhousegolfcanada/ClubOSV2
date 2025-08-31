@@ -50,7 +50,7 @@ const CustomerNavigation: React.FC = () => {
       try {
         const token = localStorage.getItem('clubos_token');
         if (token) {
-          const response = await axios.get(`${API_URL}/api/boxes/available`, {
+          const response = await axios.get(`${API_URL}/boxes/available`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data) {

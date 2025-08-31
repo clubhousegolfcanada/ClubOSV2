@@ -90,7 +90,7 @@ export default function CreateChallenge() {
 
   const fetchFriends = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/friends`, {
+      const response = await axios.get(`${API_URL}/friends`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
       console.log('Friends API response:', response.data); // Debug log
@@ -128,7 +128,7 @@ export default function CreateChallenge() {
 
   const fetchCourseSettings = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/trackman/settings-catalog`, {
+      const response = await axios.get(`${API_URL}/trackman/settings-catalog`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
       if (response.data.success && response.data.data) {
@@ -145,7 +145,7 @@ export default function CreateChallenge() {
 
   const fetchBalance = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/challenges/balance`, {
+      const response = await axios.get(`${API_URL}/challenges/balance`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
       if (response.data.success) {
@@ -257,7 +257,7 @@ export default function CreateChallenge() {
       }
 
       const response = await axios.post(
-        `${API_URL}/api/challenges`,
+        `${API_URL}/challenges`,
         payload,
         { headers: { Authorization: `Bearer ${user?.token}` }}
       );

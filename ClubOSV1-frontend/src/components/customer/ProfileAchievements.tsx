@@ -59,7 +59,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
   const fetchAchievements = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/api/achievements/user/${userId}`, {
+      const response = await axios.get(`${API_URL}/achievements/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAchievements(response.data || []);

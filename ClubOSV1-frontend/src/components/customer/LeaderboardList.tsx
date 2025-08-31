@@ -99,7 +99,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     if (!userToken) return;
     
     try {
-      const response = await axios.get(`${API_URL}/api/leaderboard/alltime`, {
+      const response = await axios.get(`${API_URL}/leaderboard/alltime`, {
         headers: { Authorization: `Bearer ${userToken}` },
         params: { sort: sortBy }
       });
@@ -174,7 +174,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     setSendingRequest(targetUserId);
     try {
       await axios.post(
-        `${API_URL}/api/friends/request`,
+        `${API_URL}/friends/request`,
         { target_user_id: targetUserId },
         { headers: { Authorization: `Bearer ${userToken}` } }
       );

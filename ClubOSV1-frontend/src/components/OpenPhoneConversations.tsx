@@ -23,7 +23,7 @@ export const OpenPhoneConversations: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('clubos_token');
       
-      const response = await axios.get(`${API_URL}/api/openphone/conversations/count`, {
+      const response = await axios.get(`${API_URL}/openphone/conversations/count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -49,7 +49,7 @@ export const OpenPhoneConversations: React.FC = () => {
       
       // Handle AI Processing differently
       if (format === 'llm') {
-        const response = await axios.post(`${API_URL}/api/openphone-processing/process-conversations`, 
+        const response = await axios.post(`${API_URL}/openphone-processing/process-conversations`, 
           { limit: 50 }, // Process up to 50 conversations at a time
           { headers: { Authorization: `Bearer ${token}` } }
         );

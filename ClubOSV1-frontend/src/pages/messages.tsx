@@ -262,7 +262,7 @@ export default function Messages() {
         return;
       }
 
-      const response = await axios.get(`${API_URL}/api/messages/conversations`, {
+      const response = await axios.get(`${API_URL}/messages/conversations`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -397,7 +397,7 @@ export default function Messages() {
         if (token) {
           // Fetch complete history for this phone number
           const historyResponse = await axios.get(
-            `${API_URL}/api/messages/conversations/${conversation.phone_number}/full-history`,
+            `${API_URL}/messages/conversations/${conversation.phone_number}/full-history`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           
@@ -502,7 +502,7 @@ export default function Messages() {
       }
       
       const response = await axios.post(
-        `${API_URL}/api/messages/send`,
+        `${API_URL}/messages/send`,
         {
           to: selectedConversation.phone_number,
           text: messageText
@@ -569,7 +569,7 @@ export default function Messages() {
       }
       
       const response = await axios.post(
-        `${API_URL}/api/messages/conversations/${selectedConversation.phone_number}/suggest-response`,
+        `${API_URL}/messages/conversations/${selectedConversation.phone_number}/suggest-response`,
         {},
         { 
           headers: { 
@@ -602,7 +602,7 @@ export default function Messages() {
       }
       
       const response = await axios.post(
-        `${API_URL}/api/messages/suggestions/${suggestionId}/approve-and-send`,
+        `${API_URL}/messages/suggestions/${suggestionId}/approve-and-send`,
         { editedText },
         { 
           headers: { 

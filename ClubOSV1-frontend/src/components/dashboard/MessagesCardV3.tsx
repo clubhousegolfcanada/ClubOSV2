@@ -62,7 +62,7 @@ export default function MessagesCardV3() {
         return;
       }
 
-      const response = await axios.get(`${API_URL}/api/messages/conversations?limit=3`, {
+      const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -129,7 +129,7 @@ export default function MessagesCardV3() {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/api/ai-automations/suggest-reply`,
+        `${API_URL}/ai-automations/suggest-reply`,
         {
           conversationId,
           customerMessage: conv.lastMessage,
@@ -169,7 +169,7 @@ export default function MessagesCardV3() {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/api/messages/send`,
+        `${API_URL}/messages/send`,
         {
           phoneNumber: conv.phoneNumber,
           message: message.trim(),

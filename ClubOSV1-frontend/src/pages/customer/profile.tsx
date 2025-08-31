@@ -165,28 +165,28 @@ export default function CustomerProfile() {
       
       // Fetch all profile stats, box stats, achievements, and box data in parallel
       const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse, achievementsResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/profile/stats`, {
+        axios.get(`${API_URL}/profile/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API_URL}/api/boxes/stats`, {
+        axios.get(`${API_URL}/boxes/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } };
         }),
-        axios.get(`${API_URL}/api/boxes/available`, {
+        axios.get(`${API_URL}/boxes/available`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
         }),
-        axios.get(`${API_URL}/api/boxes/rewards`, {
+        axios.get(`${API_URL}/boxes/rewards`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
         }),
-        axios.get(`${API_URL}/api/achievements/user/${user?.id}`, {
+        axios.get(`${API_URL}/achievements/user/${user?.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
@@ -270,7 +270,7 @@ export default function CustomerProfile() {
       }
       
       const response = await axios.put(
-        `${API_URL}/api/auth/profile`,
+        `${API_URL}/auth/profile`,
         {
           name: formData.name,
           phone: formData.phone,
@@ -314,7 +314,7 @@ export default function CustomerProfile() {
     const token = localStorage.getItem('clubos_token');
     
     const response = await axios.post(
-      `${API_URL}/api/boxes/${selectedBox.id}/open`,
+      `${API_URL}/boxes/${selectedBox.id}/open`,
       {},
       { headers: { Authorization: `Bearer ${token}` }}
     );
@@ -352,7 +352,7 @@ export default function CustomerProfile() {
       }
       
       await axios.post(
-        `${API_URL}/api/auth/change-password`,
+        `${API_URL}/auth/change-password`,
         {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword
@@ -391,7 +391,7 @@ export default function CustomerProfile() {
       
       // Save to backend
       await axios.put(
-        `${API_URL}/api/customer-profile`,
+        `${API_URL}/customer-profile`,
         {
           notification_preferences: {
             email: updatedPreferences.emailNotifications,

@@ -57,7 +57,7 @@ export default function AIPrompts() {
   const loadTemplates = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/api/prompt-templates`, {
+      const response = await axios.get(`${API_URL}/prompt-templates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -83,7 +83,7 @@ export default function AIPrompts() {
   const loadHistory = async (templateId: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/api/prompt-templates/${templateId}/history`, {
+      const response = await axios.get(`${API_URL}/prompt-templates/${templateId}/history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -107,7 +107,7 @@ export default function AIPrompts() {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.put(
-        `${API_URL}/api/prompt-templates/${selectedTemplate.id}`,
+        `${API_URL}/prompt-templates/${selectedTemplate.id}`,
         {
           template: editedTemplate,
           reason: changeReason
