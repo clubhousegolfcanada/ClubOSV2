@@ -32,8 +32,8 @@ export const SuggestedActions: React.FC = () => {
 
         // Fetch recent history and tickets to identify patterns
         const [historyRes, ticketsRes] = await Promise.all([
-          axios.get(`${API_URL}/history?limit=50`, { headers }),
-          axios.get(`${API_URL}/tickets?status=open&limit=20`, { headers })
+          axios.get(`${API_URL}/api/history?limit=50`, { headers }),
+          axios.get(`${API_URL}/api/tickets?status=open&limit=20`, { headers })
         ]);
 
         const history = historyRes.data?.data || [];
@@ -125,7 +125,7 @@ export const SuggestedActions: React.FC = () => {
       switch (action.type) {
         case 'reset':
           // Create a tech ticket
-          await axios.post(`${API_URL}/tickets`, {
+          await axios.post(`${API_URL}/api/tickets`, {
             title: action.title,
             description: `Automated flag: ${action.description}`,
             category: 'tech',

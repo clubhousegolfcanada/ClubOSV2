@@ -79,7 +79,7 @@ export default function ChallengeDetail() {
   const fetchChallenge = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/challenges/${id}`, {
+      const response = await axios.get(`${API_URL}/api/challenges/${id}`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
 
@@ -98,7 +98,7 @@ export default function ChallengeDetail() {
     setActionLoading(true);
     try {
       await axios.post(
-        `${API_URL}/challenges/${id}/accept`,
+        `${API_URL}/api/challenges/${id}/accept`,
         {},
         { headers: { Authorization: `Bearer ${user?.token}` }}
       );
@@ -118,7 +118,7 @@ export default function ChallengeDetail() {
     setActionLoading(true);
     try {
       await axios.post(
-        `${API_URL}/challenges/${id}/decline`,
+        `${API_URL}/api/challenges/${id}/decline`,
         { reason: 'User declined' },
         { headers: { Authorization: `Bearer ${user?.token}` }}
       );
@@ -140,7 +140,7 @@ export default function ChallengeDetail() {
     setActionLoading(true);
     try {
       await axios.post(
-        `${API_URL}/challenges/${id}/dispute`,
+        `${API_URL}/api/challenges/${id}/dispute`,
         {
           type: disputeReason,
           description: disputeDescription

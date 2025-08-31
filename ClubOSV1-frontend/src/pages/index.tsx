@@ -100,7 +100,7 @@ export default function Home() {
           return;
         }
         
-        const response = await axios.get(`${API_URL}/history/stats/overview`, {
+        const response = await axios.get(`${API_URL}/api/history/stats/overview`, {
           params: { 
             period: '24h',
             endDate: yesterday.toISOString()
@@ -153,7 +153,7 @@ export default function Home() {
         startOfWeek.setDate(now.getDate() - now.getDay());
         startOfWeek.setHours(0, 0, 0, 0);
         
-        const response = await axios.get(`${API_URL}/checklists/submissions`, {
+        const response = await axios.get(`${API_URL}/api/checklists/submissions`, {
           params: { 
             startDate: startOfWeek.toISOString(),
             limit: 100
@@ -191,7 +191,7 @@ export default function Home() {
           return;
         }
         
-        const response = await axios.get(`${API_URL}/tickets/stats`, {
+        const response = await axios.get(`${API_URL}/api/tickets/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -206,7 +206,7 @@ export default function Home() {
             (stats.byStatus.closed || 0);
           
           // Actually, let's get the correct open counts
-          const tickets = await axios.get(`${API_URL}/tickets?status=open`, {
+          const tickets = await axios.get(`${API_URL}/api/tickets?status=open`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           

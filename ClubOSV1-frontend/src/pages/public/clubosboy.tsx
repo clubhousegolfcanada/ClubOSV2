@@ -70,7 +70,7 @@ export default function PublicClubOSBoy() {
     setIsProcessing(true);
     
     try {
-      const response = await axios.post(`${API_URL}/public/clubosboy`, {
+      const response = await axios.post(`${API_URL}/api/public/clubosboy`, {
         question: data.question,
         location: data.location || 'Not specified',
         source: 'public_hubspot'

@@ -32,7 +32,7 @@ export const CommandShortcutBar: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       // Create high priority ticket
-      await axios.post(`${API_URL}/tickets`, {
+      await axios.post(`${API_URL}/api/tickets`, {
         title: 'URGENT: Door Access Issue',
         description: 'Staff alerted about door access issue. Immediate attention required.',
         category: 'facilities',

@@ -78,13 +78,13 @@ export const OperationsAnalytics: React.FC = () => {
       // Analytics endpoints might not exist yet, using mock data
       /*
       const [routingRes, aiRes, usageRes] = await Promise.all([
-        axios.get(`${API_URL}/analytics/routing?range=${dateRange}`, {
+        axios.get(`${API_URL}/api/analytics/routing?range=${dateRange}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API_URL}/analytics/ai?range=${dateRange}`, {
+        axios.get(`${API_URL}/api/analytics/ai?range=${dateRange}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API_URL}/analytics/usage?range=${dateRange}`, {
+        axios.get(`${API_URL}/api/analytics/usage?range=${dateRange}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -149,7 +149,7 @@ export const OperationsAnalytics: React.FC = () => {
   const exportData = async (format: 'csv' | 'pdf') => {
     try {
       const response = await axios.get(
-        `${API_URL}/analytics/export?format=${format}&range=${dateRange}`,
+        `${API_URL}/api/analytics/export?format=${format}&range=${dateRange}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
