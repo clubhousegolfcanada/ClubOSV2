@@ -1291,7 +1291,7 @@ export const ChecklistSystem: React.FC = () => {
             </div>
           </div>
         </>
-      ) : (
+      ) : activeTab === 'performance' ? (
         <>
           {/* Performance Tab */}
           <div className="space-y-6">
@@ -1529,7 +1529,7 @@ export const ChecklistSystem: React.FC = () => {
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 };
