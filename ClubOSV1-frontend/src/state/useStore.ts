@@ -157,8 +157,7 @@ export const useAuthState = create<AuthState>()(
             // Auth header now handled by http client
           }
         } else if (user?.token) {
-          // Set axios header if token is provided
-          axios.defaults.headers.common['Authorization'] = `Bearer ${user.token}`;
+          // Auth header now handled automatically by http client
         }
         set({ user, isAuthenticated: !!user });
       },
