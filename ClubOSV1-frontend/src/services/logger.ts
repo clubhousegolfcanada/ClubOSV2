@@ -120,7 +120,7 @@ let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 if (API_URL.endsWith('/api')) {
   API_URL = API_URL.slice(0, -4);
 }
-      await axios.post(`${API_URL}/api/logs/frontend`, {
+      await axios.post(`${API_URL}/logs/frontend`, {
         ...entry,
         error: entry.error ? {
           message: entry.error.message,

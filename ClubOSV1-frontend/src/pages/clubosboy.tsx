@@ -88,7 +88,7 @@ export default function ClubOSBoy() {
         kioskId: 'kiosk-1' // You can make this configurable if needed
       };
 
-      const response = await axios.post(`${API_URL}/api/customer/ask`, request);
+      const response = await axios.post(`${API_URL}/customer/ask`, request);
       
       if (response.data.success) {
         setResponseMessage("Thanks! Your question has been sent to our staff. Someone will help you shortly.");

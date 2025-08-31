@@ -29,7 +29,7 @@ export function useMessageNotifications() {
         const token = localStorage.getItem('clubos_token');
         if (!token) return;
 
-        const response = await axios.get(`${API_URL}/api/messages/unread-count`, {
+        const response = await axios.get(`${API_URL}/messages/unread-count`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

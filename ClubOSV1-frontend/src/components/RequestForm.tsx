@@ -213,7 +213,7 @@ const RequestForm: React.FC = () => {
       try {
         const token = isMounted ? localStorage.getItem('clubos_token') : null;
         const response = await axios.post(
-          `${API_URL}/api/tickets`,
+          `${API_URL}/tickets`,
           {
             title: data.requestDescription.substring(0, 100), // First 100 chars as title
             description: data.requestDescription,
@@ -247,7 +247,7 @@ const RequestForm: React.FC = () => {
         
         // Use the existing knowledge-router endpoint
         const response = await axios.post(
-          `${API_URL}/api/knowledge-router/parse-and-route`,
+          `${API_URL}/knowledge-router/parse-and-route`,
           { input: data.requestDescription },
           { headers: { Authorization: `Bearer ${token}` } }
         );
