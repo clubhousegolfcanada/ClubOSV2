@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
@@ -99,7 +98,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     if (!userToken) return;
     
     try {
-      const response = await axios.get(`${API_URL}/leaderboard/alltime`, {
+      const response = await http.get(`leaderboard/alltime`, {
         headers: { Authorization: `Bearer ${userToken}` },
         params: { sort: sortBy }
       });
@@ -173,8 +172,8 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
   const sendFriendRequest = async (targetUserId: string, targetName: string) => {
     setSendingRequest(targetUserId);
     try {
-      await axios.post(
-        `${API_URL}/friends/request`,
+      await http.post(
+        `friends/request`,
         { target_user_id: targetUserId },
         { headers: { Authorization: `Bearer ${userToken}` } }
       );

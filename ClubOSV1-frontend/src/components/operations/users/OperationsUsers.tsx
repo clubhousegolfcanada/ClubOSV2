@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useAuthState, useStore } from '@/state/useStore';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award, Gift } from 'lucide-react';
 import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
@@ -87,7 +86,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       // Use the API endpoint correctly with /api prefix
-      const response = await axios.get(`${API_URL}/system-settings/customer_auto_approval`, {
+      const response = await http.get(`system-settings/customer_auto_approval`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -108,8 +107,8 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       // Use the API endpoint correctly
-      await axios.put(
-        `${API_URL}/system-settings/customer_auto_approval`,
+      await http.put(
+        `system-settings/customer_auto_approval`,
         { value: { enabled } },
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -134,8 +133,8 @@ export const OperationsUsers: React.FC = () => {
     }
     
     try {
-      console.log('Fetching users from:', `${API_URL}/auth/users`);
-      const response = await axios.get(`${API_URL}/auth/users`, {
+      console.log('Fetching users from:', `auth/users`);
+      const response = await http.get(`auth/users`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -158,8 +157,8 @@ export const OperationsUsers: React.FC = () => {
         usersData.map(async (user: any) => {
           if (user.role === 'customer') {
             try {
-              const balanceResponse = await axios.get(
-                `${API_URL}/challenges/cc-balance/${user.id}`,
+              const balanceResponse = await http.get(
+                `challenges/cc-balance/${user.id}`,
                 { headers: { Authorization: `Bearer ${authToken}` } }
               );
               return {
@@ -211,8 +210,8 @@ export const OperationsUsers: React.FC = () => {
 
   const handleSaveUser = async () => {
     try {
-      await axios.put(
-        `${API_URL}/auth/users/${editingUser}`,
+      await http.put(
+        `auth/users/${editingUser}`,
         editedUser,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -231,7 +230,7 @@ export const OperationsUsers: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      await axios.delete(`${API_URL}/auth/users/${userId}`, {
+      await http.delete(`auth/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('User deleted successfully');
@@ -256,8 +255,8 @@ export const OperationsUsers: React.FC = () => {
     
     setLoading(true);
     try {
-      await axios.post(
-        `${API_URL}/auth/users`,
+      await http.post(
+        `auth/users`,
         newUser,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -291,8 +290,8 @@ export const OperationsUsers: React.FC = () => {
     }
     
     try {
-      await axios.post(
-        `${API_URL}/auth/users/${resetPasswordUserId}/reset-password`,
+      await http.post(
+        `auth/users/${resetPasswordUserId}/reset-password`,
         { newPassword },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -310,8 +309,8 @@ export const OperationsUsers: React.FC = () => {
 
   const handleApproveUser = async (userId: string) => {
     try {
-      await axios.put(
-        `${API_URL}/auth/users/${userId}/approve`,
+      await http.put(
+        `auth/users/${userId}/approve`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -329,8 +328,8 @@ export const OperationsUsers: React.FC = () => {
     if (!confirm('Are you sure you want to reject this customer application?')) return;
     
     try {
-      await axios.put(
-        `${API_URL}/auth/users/${userId}/reject`,
+      await http.put(
+        `auth/users/${userId}/reject`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -346,7 +345,7 @@ export const OperationsUsers: React.FC = () => {
 
   const handleBackup = async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/backup`, {
+      const response = await http.get(`auth/backup`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -376,8 +375,8 @@ export const OperationsUsers: React.FC = () => {
       reader.onload = async (event) => {
         try {
           const data = JSON.parse(event.target?.result as string);
-          await axios.post(
-            `${API_URL}/auth/restore`,
+          await http.post(
+            `auth/restore`,
             data,
             {
               headers: { Authorization: `Bearer ${token}` }
@@ -405,7 +404,7 @@ export const OperationsUsers: React.FC = () => {
     const authToken = token || localStorage.getItem('clubos_token');
     
     try {
-      const response = await axios.get(`${API_URL}/boxes/user/${customer.id}`, {
+      const response = await http.get(`boxes/user/${customer.id}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       
@@ -427,8 +426,8 @@ export const OperationsUsers: React.FC = () => {
     const authToken = token || localStorage.getItem('clubos_token');
     
     try {
-      const response = await axios.post(
-        `${API_URL}/boxes/grant`,
+      const response = await http.post(
+        `boxes/grant`,
         {
           userId: boxManagementUser.id,
           quantity: parseInt(boxCount)
@@ -464,8 +463,8 @@ export const OperationsUsers: React.FC = () => {
     const authToken = token || localStorage.getItem('clubos_token');
     
     try {
-      const response = await axios.delete(
-        `${API_URL}/boxes/user/${boxManagementUser.id}/available`,
+      const response = await http.delete(
+        `boxes/user/${boxManagementUser.id}/available`,
         {
           headers: { Authorization: `Bearer ${authToken}` }
         }
@@ -497,8 +496,8 @@ export const OperationsUsers: React.FC = () => {
     const authToken = token || localStorage.getItem('clubos_token');
     
     try {
-      const response = await axios.get(
-        `${API_URL}/admin/cc-adjustments/${customer.id}/balance`,
+      const response = await http.get(
+        `admin/cc-adjustments/${customer.id}/balance`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -538,8 +537,8 @@ export const OperationsUsers: React.FC = () => {
     try {
       setLoading(true);
       
-      const response = await axios.post(
-        `${API_URL}/admin/cc-adjustments/${ccAdjustmentUser.id}/adjust`,
+      const response = await http.post(
+        `admin/cc-adjustments/${ccAdjustmentUser.id}/adjust`,
         {
           amount: amount,
           type: adjustmentType,

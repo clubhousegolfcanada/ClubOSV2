@@ -279,7 +279,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await http.post(
-        `${API_URL}/challenges/${challengeId}/accept`,
+        `challenges/${challengeId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -295,7 +295,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await http.post(
-        `${API_URL}/challenges/${challengeId}/decline`,
+        `challenges/${challengeId}/decline`,
         { reason: 'Not interested' },
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -361,7 +361,7 @@ export default function Compete() {
 
       const token = localStorage.getItem('clubos_token');
       const response = await http.post(
-        `${API_URL}/challenges/${challengeId}/select-winner`,
+        `challenges/${challengeId}/select-winner`,
         { winnerId: winner },
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -387,7 +387,7 @@ export default function Compete() {
 
       const token = localStorage.getItem('clubos_token');
       await http.post(
-        `${API_URL}/challenges/${challengeId}/dispute`,
+        `challenges/${challengeId}/dispute`,
         { 
           type: 'disagreement',
           description: reason,
@@ -408,7 +408,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await http.delete(
-        `${API_URL}/friends/${friendshipId}`,
+        `friends/${friendshipId}`
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(`${friendName} removed from friends`);
@@ -425,7 +425,7 @@ export default function Compete() {
     try {
       const token = localStorage.getItem('clubos_token');
       await http.put(
-        `${API_URL}/friends/${userId}/block`,
+        `friends/${userId}/block`,
         { reason: 'User blocked' },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, ChevronDown, Check, Trash2, Edit2, X, RotateCcw, AlertTriangle, FileText, CheckCircle, XCircle, Timer, Award, MessageSquare, Clipboard, TrendingUp, Package, Camera, QrCode, Plus, AlertCircle, Download, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { useAuthState } from '../state/useStore';
 import QRCode from 'qrcode';
 
@@ -114,8 +113,8 @@ export const ChecklistSystem: React.FC = () => {
       }
       
       console.log('Loading template for:', activeCategory, activeType);
-      const response = await axios.get(
-        `${API_URL}/checklists/template/${activeCategory}/${activeType}`,
+      const response = await http.get(
+        `checklists/template/${activeCategory}/${activeType}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -185,8 +184,8 @@ export const ChecklistSystem: React.FC = () => {
         }
       }
       
-      const response = await axios.get(
-        `${API_URL}/checklists/submissions?${queryParams}`,
+      const response = await http.get(
+        `checklists/submissions?${queryParams}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -228,8 +227,8 @@ export const ChecklistSystem: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       if (!token) return;
       
-      const response = await axios.get(
-        `${API_URL}/checklists/stats`,
+      const response = await http.get(
+        `checklists/stats`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -289,8 +288,8 @@ export const ChecklistSystem: React.FC = () => {
       setSavingTask(true);
       const token = localStorage.getItem('clubos_token');
       
-      await axios.put(
-        `${API_URL}/checklists/template/task`,
+      await http.put(
+        `checklists/template/task`,
         {
           category: activeCategory,
           type: activeType,
@@ -322,8 +321,8 @@ export const ChecklistSystem: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       
-      await axios.delete(
-        `${API_URL}/checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
+      await http.delete(
+        `checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -420,8 +419,8 @@ export const ChecklistSystem: React.FC = () => {
         hasToken: !!token
       });
       
-      const response = await axios.post(
-        `${API_URL}/checklists/submit`,
+      const response = await http.post(
+        `checklists/submit`,
         {
           category: activeCategory,
           type: activeType,
@@ -492,8 +491,8 @@ export const ChecklistSystem: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       
-      await axios.delete(
-        `${API_URL}/checklists/submissions/${submissionId}`,
+      await http.delete(
+        `checklists/submissions/${submissionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

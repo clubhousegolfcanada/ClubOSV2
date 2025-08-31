@@ -270,7 +270,7 @@ export default function CustomerProfile() {
       }
       
       const response = await http.put(
-        `${API_URL}/auth/profile`,
+        `auth/profile`,
         {
           name: formData.name,
           phone: formData.phone,
@@ -314,7 +314,7 @@ export default function CustomerProfile() {
     const token = localStorage.getItem('clubos_token');
     
     const response = await http.post(
-      `${API_URL}/boxes/${selectedBox.id}/open`,
+      `boxes/${selectedBox.id}/open`,
       {},
       { headers: { Authorization: `Bearer ${token}` }}
     );
@@ -352,7 +352,7 @@ export default function CustomerProfile() {
       }
       
       await http.post(
-        `${API_URL}/auth/change-password`,
+        `auth/change-password`,
         {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword
@@ -391,7 +391,7 @@ export default function CustomerProfile() {
       
       // Save to backend
       await http.put(
-        `${API_URL}/customer-profile`,
+        `customer-profile`,
         {
           notification_preferences: {
             email: updatedPreferences.emailNotifications,

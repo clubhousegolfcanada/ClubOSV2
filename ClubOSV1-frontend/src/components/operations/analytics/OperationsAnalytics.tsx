@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useAuthState } from '@/state/useStore';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Download, Filter, RefreshCw, Clock, Activity, DollarSign, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -73,13 +72,13 @@ export const OperationsAnalytics: React.FC = () => {
       // Analytics endpoints might not exist yet, using mock data
       /*
       const [routingRes, aiRes, usageRes] = await Promise.all([
-        axios.get(`${API_URL}/analytics/routing?range=${dateRange}`, {
+        http.get(`analytics/routing?range=${dateRange}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API_URL}/analytics/ai?range=${dateRange}`, {
+        http.get(`analytics/ai?range=${dateRange}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API_URL}/analytics/usage?range=${dateRange}`, {
+        http.get(`analytics/usage?range=${dateRange}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -143,8 +142,8 @@ export const OperationsAnalytics: React.FC = () => {
 
   const exportData = async (format: 'csv' | 'pdf') => {
     try {
-      const response = await axios.get(
-        `${API_URL}/analytics/export?format=${format}&range=${dateRange}`,
+      const response = await http.get(
+        `analytics/export?format=${format}&range=${dateRange}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'

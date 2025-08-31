@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { 
   MessageSquare, Clock, ArrowRight, ChevronDown, ChevronUp, 
   Send, Sparkles, ExternalLink, RefreshCw, Phone, User
@@ -49,7 +48,7 @@ export const MessagesCardEnhanced: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
+        const response = await http.get(`messages/conversations?limit=3`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -98,8 +97,8 @@ export const MessagesCardEnhanced: React.FC = () => {
 
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(
-        `${API_URL}/llm/suggest-response`,
+      const response = await http.post(
+        `llm/suggest-response`,
         {
           conversationId: conv.conversationId,
           context: conv.lastMessage
@@ -136,8 +135,8 @@ export const MessagesCardEnhanced: React.FC = () => {
     setSendingReply(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.post(
-        `${API_URL}/messages/send`,
+      await http.post(
+        `messages/send`,
         {
           to: conv.phoneNumber,
           content: expandedConv.replyText,

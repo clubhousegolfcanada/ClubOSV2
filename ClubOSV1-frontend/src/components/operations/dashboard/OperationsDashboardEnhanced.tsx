@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { 
   Users, MessageSquare, Bot, Activity, 
@@ -79,17 +78,17 @@ export function OperationsDashboardEnhanced() {
     try {
       // Fetch metrics
       const [healthResponse, messagesResponse, usersResponse, ticketsResponse, messagesStatsResponse] = await Promise.all([
-        axios.get(`${API_URL}/health`),
-        axios.get(`${API_URL}/messages/recent`, {
+        http.get(`health`),
+        http.get(`messages/recent`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { success: false, data: [] } })),
-        axios.get(`${API_URL}/auth/users`, {
+        http.get(`auth/users`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { success: false, data: [] } })),
-        axios.get(`${API_URL}/tickets/active-count`, {
+        http.get(`tickets/active-count`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { count: 0 } })),
-        axios.get(`${API_URL}/messages/stats/today`, {
+        http.get(`messages/stats/today`, {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { count: 0, aiResponseRate: 0 } }))
       ]);
@@ -162,10 +161,10 @@ export function OperationsDashboardEnhanced() {
       try {
         // Fetch conversation history and AI suggestion
         const [historyResponse, suggestionResponse] = await Promise.all([
-          axios.get(`${API_URL}/messages/conversation/${conversationId}`, {
+          http.get(`messages/conversation/${conversationId}`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.post(`${API_URL}/llm/suggest-response`, {
+          http.post(`llm/suggest-response`, {
             conversationId,
             context: messages.find(m => m.conversationId === conversationId)?.content
           }, {
@@ -213,7 +212,7 @@ export function OperationsDashboardEnhanced() {
 
     setSendingReply(conversationId);
     try {
-      await axios.post(`${API_URL}/messages/send`, {
+      await http.post(`messages/send`, {
         to: message.phoneNumber || message.from,
         content: expanded.replyText,
         conversationId,

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
@@ -62,7 +61,7 @@ export default function MessagesCardV3() {
         return;
       }
 
-      const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
+      const response = await http.get(`messages/conversations?limit=3`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -128,8 +127,8 @@ export default function MessagesCardV3() {
 
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(
-        `${API_URL}/ai-automations/suggest-reply`,
+      const response = await http.post(
+        `ai-automations/suggest-reply`,
         {
           conversationId,
           customerMessage: conv.lastMessage,
@@ -168,8 +167,8 @@ export default function MessagesCardV3() {
 
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.post(
-        `${API_URL}/messages/send`,
+      await http.post(
+        `messages/send`,
         {
           phoneNumber: conv.phoneNumber,
           message: message.trim(),

@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { 
   Home, 
   Calendar, 
@@ -50,7 +49,7 @@ const CustomerNavigation: React.FC = () => {
       try {
         const token = localStorage.getItem('clubos_token');
         if (token) {
-          const response = await axios.get(`${API_URL}/boxes/available`, {
+          const response = await http.get(`boxes/available`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.data) {

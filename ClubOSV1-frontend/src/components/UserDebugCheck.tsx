@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { AlertCircle, CheckCircle, XCircle, Database } from 'lucide-react';
 
 
@@ -15,7 +14,7 @@ export const UserDebugCheck: React.FC = () => {
     
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/debug/check-user`, {
+      const response = await http.get(`debug/check-user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

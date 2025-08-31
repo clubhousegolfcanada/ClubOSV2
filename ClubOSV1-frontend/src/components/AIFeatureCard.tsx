@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { Settings } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 
 
@@ -47,7 +46,7 @@ export const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ feature, onToggle,
         maxResponses
       };
       
-      await axios.put(`${API_URL}/ai-automations/${feature.feature_key}/config`, {
+      await http.put(`ai-automations/${feature.feature_key}/config`, {
         config: updatedConfig,
         allow_follow_up: allowFollowUp
       }, {

@@ -6,9 +6,8 @@ import { canAccessRoute, getRestrictedTooltip } from '@/utils/roleUtils';
 import type { UserRequest, RequestRoute } from '@/types/request';
 import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
-import { API_URL } from '@/utils/apiUrl';
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -205,7 +204,7 @@ const RequestForm: React.FC = () => {
       try {
         const token = isMounted ? localStorage.getItem('clubos_token') : null;
         const response = await axios.post(
-          `${API_URL}/tickets`,
+          `tickets`,
           {
             title: data.requestDescription.substring(0, 100), // First 100 chars as title
             description: data.requestDescription,
@@ -239,7 +238,7 @@ const RequestForm: React.FC = () => {
         
         // Use the existing knowledge-router endpoint
         const response = await axios.post(
-          `${API_URL}/knowledge-router/parse-and-route`,
+          `knowledge-router/parse-and-route`,
           { input: data.requestDescription },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -353,7 +352,7 @@ const RequestForm: React.FC = () => {
         console.log(`Polling attempt ${pollCount + 1}/${maxPolls} for thread ${threadTs}`);
         
         // Use the specific thread_ts to check for replies directly from Slack
-        const repliesResponse = await axios.get(`${API_URL}/slack/thread-replies/${threadTs}`);
+        const repliesResponse = await http.get(`slack/thread-replies/${threadTs}`);
         
         if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
           console.log('Found replies:', repliesResponse.data.data.replies);
@@ -397,7 +396,7 @@ const RequestForm: React.FC = () => {
     setSendingReply(true);
     try {
       const token = isMounted ? localStorage.getItem('clubos_token') : null;
-      const response = await axios.post(`${API_URL}/slack/reply`, {
+      const response = await http.post(`slack/reply`, {
         thread_ts: lastSlackThreadTs,
         text: replyText.trim()
       }, {
@@ -517,11 +516,11 @@ const RequestForm: React.FC = () => {
         console.log('Sending feedback:', feedbackData);
         console.log('Auth token present:', !!token);
         console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'no token');
-        console.log('Full API URL:', `${API_URL}/feedback`);
+        // Removed debug logging
       }
       
       // Use apiClient to ensure auth header is properly attached
-      const response = await axios.post(`${API_URL}/feedback`, feedbackData, {
+      const response = await http.post(`feedback`, feedbackData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -569,7 +568,7 @@ const RequestForm: React.FC = () => {
     
     setIsConvertingTone(true);
     try {
-      const response = await axios.post(`${API_URL}/tone/convert`, {
+      const response = await http.post(`tone/convert`, {
         text: toneConversion
       });
       

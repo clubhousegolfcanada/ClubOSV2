@@ -1,5 +1,4 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
 import RequestForm from '@/components/RequestForm';
 import DatabaseExternalTools from '@/components/DatabaseExternalTools';
 import Link from 'next/link';
@@ -9,7 +8,7 @@ import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { enforceOperatorRouteGuard } from '@/utils/customerRouteGuard';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
 import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
 import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
@@ -95,7 +94,7 @@ export default function Home() {
           return;
         }
         
-        const response = await axios.get(`${API_URL}/history/stats/overview`, {
+        const response = await http.get(`history/stats/overview`, {
           params: { 
             period: '24h',
             endDate: yesterday.toISOString()
@@ -148,7 +147,7 @@ export default function Home() {
         startOfWeek.setDate(now.getDate() - now.getDay());
         startOfWeek.setHours(0, 0, 0, 0);
         
-        const response = await axios.get(`${API_URL}/checklists/submissions`, {
+        const response = await http.get(`checklists/submissions`, {
           params: { 
             startDate: startOfWeek.toISOString(),
             limit: 100
@@ -186,7 +185,7 @@ export default function Home() {
           return;
         }
         
-        const response = await axios.get(`${API_URL}/tickets/stats`, {
+        const response = await http.get(`tickets/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -201,7 +200,7 @@ export default function Home() {
             (stats.byStatus.closed || 0);
           
           // Actually, let's get the correct open counts
-          const tickets = await axios.get(`${API_URL}/tickets?status=open`, {
+          const tickets = await http.get(`tickets?status=open`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           

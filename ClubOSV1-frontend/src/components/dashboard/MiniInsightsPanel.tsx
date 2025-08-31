@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 
@@ -29,11 +28,11 @@ export const MiniInsightsPanel: React.FC = () => {
         // Fetch various metrics in parallel
         const [bookingsRes, ticketsRes, historyRes] = await Promise.all([
           // Bookings today (mock for now - would come from booking system)
-          axios.get(`${API_URL}/history/stats/overview?period=24h`, { headers }),
+          http.get(`history/stats/overview?period=24h`, { headers }),
           // Tickets for common issues
-          axios.get(`${API_URL}/tickets?limit=100`, { headers }),
+          http.get(`tickets?limit=100`, { headers }),
           // History for no-show and refund data
-          axios.get(`${API_URL}/history?limit=100`, { headers })
+          http.get(`history?limit=100`, { headers })
         ]);
 
         // Calculate metrics

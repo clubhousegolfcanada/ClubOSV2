@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import { Target, Clock, Coins, ChevronRight, TrendingUp, Users } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { formatDistanceToNow } from 'date-fns';
 
 
@@ -41,7 +40,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
 
   const fetchChallenges = async () => {
     try {
-      const response = await axios.get(`${API_URL}/challenges/my-challenges`, {
+      const response = await http.get(`challenges/my-challenges`, {
         headers: { Authorization: `Bearer ${userToken}` }
       });
       

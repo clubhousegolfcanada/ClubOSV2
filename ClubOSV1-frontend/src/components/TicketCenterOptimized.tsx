@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { Plus, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
-import axios from 'axios';
+import { http } from '@/api/http';
 
 
 type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
@@ -87,7 +86,7 @@ const TicketCenterOptimized = () => {
         params.append('category', activeTab);
       }
       
-      const response = await axios.get(`${API_URL}/tickets?${params}`, {
+      const response = await http.get(`tickets?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -187,8 +186,8 @@ const TicketCenterOptimized = () => {
   const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.patch(
-        `${API_URL}/tickets/${ticketId}/status`,
+      const response = await http.patch(
+        `tickets/${ticketId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -223,8 +222,8 @@ const TicketCenterOptimized = () => {
     
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.delete(
-        `${API_URL}/tickets/${ticketId}`,
+      const response = await http.delete(
+        `tickets/${ticketId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -254,8 +253,8 @@ const TicketCenterOptimized = () => {
     
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(
-        `${API_URL}/tickets/${ticketId}/comments`,
+      const response = await http.post(
+        `tickets/${ticketId}/comments`,
         { text: newComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -305,8 +304,8 @@ const TicketCenterOptimized = () => {
         params.append('status', filter);
       }
       
-      const response = await axios.delete(
-        `${API_URL}/tickets/clear-all?${params}`,
+      const response = await http.delete(
+        `tickets/clear-all?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

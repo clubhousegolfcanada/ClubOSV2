@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { http } from '@/api/http';
 
 export interface RemoteSessionResponse {
   method: 'ninjaone' | 'fallback';
@@ -33,10 +31,9 @@ class NinjaOneRemoteAPI {
 
   async createRemoteSession(location: string, bayNumber: string): Promise<RemoteSessionResponse> {
     try {
-      const response = await axios.post(
-        `${API_URL}/ninjaone-remote/session`,
-        { location, bayNumber },
-        { headers: this.getAuthHeaders() }
+      const response = await http.post(
+        `ninjaone-remote/session`,
+        { location, bayNumber }
       );
       
       return response.data.data;
@@ -48,8 +45,8 @@ class NinjaOneRemoteAPI {
 
   async getDeviceInfo(location: string, bayNumber: string): Promise<DeviceInfoResponse> {
     try {
-      const response = await axios.get(
-        `${API_URL}/ninjaone-remote/device-info`,
+      const response = await http.get(
+        `ninjaone-remote/device-info`,
         {
           params: { location, bayNumber },
           headers: this.getAuthHeaders()

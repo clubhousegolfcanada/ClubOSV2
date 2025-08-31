@@ -1,8 +1,7 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { Loader } from 'lucide-react';
 
 
@@ -65,7 +64,7 @@ export default function PublicClubOSBoy() {
     setIsProcessing(true);
     
     try {
-      const response = await axios.post(`${API_URL}/public/clubosboy`, {
+      const response = await http.post(`public/clubosboy`, {
         question: data.question,
         location: data.location || 'Not specified',
         source: 'public_hubspot'

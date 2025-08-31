@@ -5,7 +5,7 @@ import {
   Target, Zap, Flame, Diamond, Gem, X, 
   Save, Palette, Sparkles
 } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { AchievementBadge } from './AchievementBadge';
 
@@ -103,8 +103,8 @@ export function CustomAchievementCreator({
         ? `${placement} - ${achievementTitle}`
         : achievementTitle;
 
-      const response = await axios.post(
-        `${API_URL}/achievements/create-custom`,
+      const response = await http.post(
+        `achievements/create-custom`,
         {
           user_id: userId,
           name: fullName,

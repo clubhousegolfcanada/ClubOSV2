@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { Phone, Users, MessageSquare, Download, FileText, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,7 +22,7 @@ export const OpenPhoneConversations: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('clubos_token');
       
-      const response = await axios.get(`${API_URL}/openphone/conversations/count`, {
+      const response = await http.get(`openphone/conversations/count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -49,7 +48,7 @@ export const OpenPhoneConversations: React.FC = () => {
       
       // Handle AI Processing differently
       if (format === 'llm') {
-        const response = await axios.post(`${API_URL}/openphone-processing/process-conversations`, 
+        const response = await http.post(`openphone-processing/process-conversations`, 
           { limit: 50 }, // Process up to 50 conversations at a time
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -70,7 +69,7 @@ export const OpenPhoneConversations: React.FC = () => {
       const endpoint = format === 'csv' ? '/openphone/export/csv' : '/openphone/export/all';
       const params = format === 'csv' ? {} : { format };
       
-      const response = await axios.get(`${API_URL}${endpoint}`, {
+      const response = await http.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
         params,
         responseType: format === 'csv' ? 'blob' : 'json'

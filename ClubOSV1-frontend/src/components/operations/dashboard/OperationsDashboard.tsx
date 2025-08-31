@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { Activity, Users, MessageSquare, Brain, AlertCircle, CheckCircle, WifiOff, RefreshCw, TrendingUp } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { format } from 'date-fns';
 
 
@@ -51,7 +50,7 @@ export function OperationsDashboard() {
       const token = localStorage.getItem('clubos_token');
       
       // Fetch system status - health endpoint doesn't require auth
-      const healthResponse = await axios.get(`${API_URL}/health`);
+      const healthResponse = await http.get(`health`);
       
       if (healthResponse.data) {
         setSystemStatus({
@@ -65,7 +64,7 @@ export function OperationsDashboard() {
       let activeUserCount = 0;
       if (token) {
         try {
-          const userCountResponse = await axios.get(`${API_URL}/auth/users/count`, {
+          const userCountResponse = await http.get(`auth/users/count`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (userCountResponse.data.success) {

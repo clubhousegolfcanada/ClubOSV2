@@ -1,9 +1,8 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
 import { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { Save, History, RefreshCw, AlertCircle, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -57,7 +56,7 @@ export default function AIPrompts() {
   const loadTemplates = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/prompt-templates`, {
+      const response = await http.get(`prompt-templates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -83,7 +82,7 @@ export default function AIPrompts() {
   const loadHistory = async (templateId: string) => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/prompt-templates/${templateId}/history`, {
+      const response = await http.get(`prompt-templates/${templateId}/history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -106,8 +105,8 @@ export default function AIPrompts() {
     setSaving(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.put(
-        `${API_URL}/prompt-templates/${selectedTemplate.id}`,
+      const response = await http.put(
+        `prompt-templates/${selectedTemplate.id}`,
         {
           template: editedTemplate,
           reason: changeReason

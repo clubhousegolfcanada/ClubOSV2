@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useAuthState } from '@/state/useStore';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap, Brain, Sparkles } from 'lucide-react';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
@@ -149,7 +148,7 @@ export const OperationsIntegrations: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/ai-automations`, {
+      const response = await http.get(`ai-automations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Ensure we're getting an array
@@ -164,8 +163,8 @@ export const OperationsIntegrations: React.FC = () => {
 
   const handleToggleAIFeature = async (featureKey: string, enabled: boolean) => {
     try {
-      await axios.post(
-        `${API_URL}/ai-automations/${featureKey}/toggle`,
+      await http.post(
+        `ai-automations/${featureKey}/toggle`,
         { enabled },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -189,8 +188,8 @@ export const OperationsIntegrations: React.FC = () => {
     
     try {
       // Fetch Slack config
-      const slackResponse = await axios.get(
-        `${API_URL}/integrations/slack/config`,
+      const slackResponse = await http.get(
+        `integrations/slack/config`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (slackResponse.data.success) {
@@ -198,8 +197,8 @@ export const OperationsIntegrations: React.FC = () => {
       }
       
       // Fetch OpenPhone config
-      const openphoneResponse = await axios.get(
-        `${API_URL}/integrations/openphone/config`,
+      const openphoneResponse = await http.get(
+        `integrations/openphone/config`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (openphoneResponse.data.success) {
@@ -207,8 +206,8 @@ export const OperationsIntegrations: React.FC = () => {
       }
       
       // Fetch system features
-      const featuresResponse = await axios.get(
-        `${API_URL}/integrations/features`,
+      const featuresResponse = await http.get(
+        `integrations/features`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (featuresResponse.data.success) {
@@ -220,8 +219,8 @@ export const OperationsIntegrations: React.FC = () => {
       
       // Check HubSpot connection status
       try {
-        const hubspotResponse = await axios.get(
-          `${API_URL}/system-status/hubspot`,
+        const hubspotResponse = await http.get(
+          `system-status/hubspot`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (hubspotResponse.data) {
@@ -244,8 +243,8 @@ export const OperationsIntegrations: React.FC = () => {
     if (!feature) return;
 
     try {
-      await axios.put(
-        `${API_URL}/integrations/features/${featureKey}`,
+      await http.put(
+        `integrations/features/${featureKey}`,
         { enabled: !feature.enabled },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -266,8 +265,8 @@ export const OperationsIntegrations: React.FC = () => {
   const handleTestConnection = async (service: string) => {
     setTestingService(service);
     try {
-      const response = await axios.post(
-        `${API_URL}/integrations/${service.toLowerCase()}/test`,
+      const response = await http.post(
+        `integrations/${service.toLowerCase()}/test`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -297,8 +296,8 @@ export const OperationsIntegrations: React.FC = () => {
   const handleSaveSlackConfig = async () => {
     setLoading(true);
     try {
-      await axios.put(
-        `${API_URL}/integrations/slack/config`,
+      await http.put(
+        `integrations/slack/config`,
         slackConfig,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -316,8 +315,8 @@ export const OperationsIntegrations: React.FC = () => {
   const handleSaveOpenPhoneConfig = async () => {
     setLoading(true);
     try {
-      await axios.put(
-        `${API_URL}/integrations/openphone/config`,
+      await http.put(
+        `integrations/openphone/config`,
         openPhoneConfig,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -335,8 +334,8 @@ export const OperationsIntegrations: React.FC = () => {
   const handleSavePushConfig = async () => {
     setLoading(true);
     try {
-      await axios.put(
-        `${API_URL}/integrations/push/config`,
+      await http.put(
+        `integrations/push/config`,
         pushConfig,
         {
           headers: { Authorization: `Bearer ${token}` }

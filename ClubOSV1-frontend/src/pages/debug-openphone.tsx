@@ -1,10 +1,9 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
 import { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { Database, Phone, RefreshCw, Send, AlertCircle, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 
 
@@ -36,7 +35,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/debug-openphone/database-check`, {
+      const response = await http.get(`debug-openphone/database-check`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -63,7 +62,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/debug-openphone/test-connection`, {
+      const response = await http.get(`debug-openphone/test-connection`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -83,7 +82,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(`${API_URL}/debug-openphone/sync-conversations`, {}, {
+      const response = await http.post(`debug-openphone/sync-conversations`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -100,7 +99,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(`${API_URL}/openphone/import-history`, 
+      const response = await http.post(`openphone/import-history`, 
         { daysBack: 30 }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -118,7 +117,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/debug-openphone/raw-conversations`, {
+      const response = await http.get(`debug-openphone/raw-conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -137,7 +136,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(`${API_URL}/debug-openphone/repair-phone-numbers`, {}, {
+      const response = await http.post(`debug-openphone/repair-phone-numbers`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -157,7 +156,7 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/debug-openphone/diagnose`, {
+      const response = await http.get(`debug-openphone/diagnose`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -181,8 +180,8 @@ export default function DebugOpenPhone() {
     setLoading(true);
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.post(
-        `${API_URL}/debug-openphone/test-send`,
+      const response = await http.post(
+        `debug-openphone/test-send`,
         { to: testPhone, text: testMessage },
         { headers: { Authorization: `Bearer ${token}` } }
       );

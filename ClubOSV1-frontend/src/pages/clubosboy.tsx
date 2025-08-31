@@ -1,8 +1,7 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { Loader } from 'lucide-react';
 
 
@@ -37,7 +36,7 @@ export default function ClubOSBoy() {
   useEffect(() => {
     // Ping the server every 5 minutes to keep connection alive
     const heartbeat = setInterval(() => {
-      axios.get(`${API_URL}/health`)
+      http.get(`health`)
         .catch(() => {
           // Silently ignore errors - this is just a keepalive
         });
@@ -83,7 +82,7 @@ export default function ClubOSBoy() {
         kioskId: 'kiosk-1' // You can make this configurable if needed
       };
 
-      const response = await axios.post(`${API_URL}/customer/ask`, request);
+      const response = await http.post(`customer/ask`, request);
       
       if (response.data.success) {
         setResponseMessage("Thanks! Your question has been sent to our staff. Someone will help you shortly.");

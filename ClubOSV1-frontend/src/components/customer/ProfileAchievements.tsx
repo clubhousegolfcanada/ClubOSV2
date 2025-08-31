@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Target, Award, Star, Crown, Sparkles, ChevronRight, Filter } from 'lucide-react';
 import { AchievementBadge } from '@/components/achievements/AchievementBadge';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { toast } from 'react-hot-toast';
 
 
@@ -59,7 +58,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
   const fetchAchievements = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/achievements/user/${userId}`, {
+      const response = await http.get(`achievements/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAchievements(response.data || []);

@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import Head from 'next/head';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { 
   ArrowLeft,
   Clock,
@@ -74,7 +73,7 @@ export default function ChallengeDetail() {
   const fetchChallenge = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/challenges/${id}`, {
+      const response = await http.get(`challenges/${id}`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
 
@@ -92,8 +91,8 @@ export default function ChallengeDetail() {
   const handleAccept = async () => {
     setActionLoading(true);
     try {
-      await axios.post(
-        `${API_URL}/challenges/${id}/accept`,
+      await http.post(
+        `challenges/${id}/accept`,
         {},
         { headers: { Authorization: `Bearer ${user?.token}` }}
       );
@@ -112,8 +111,8 @@ export default function ChallengeDetail() {
     
     setActionLoading(true);
     try {
-      await axios.post(
-        `${API_URL}/challenges/${id}/decline`,
+      await http.post(
+        `challenges/${id}/decline`,
         { reason: 'User declined' },
         { headers: { Authorization: `Bearer ${user?.token}` }}
       );
@@ -134,8 +133,8 @@ export default function ChallengeDetail() {
 
     setActionLoading(true);
     try {
-      await axios.post(
-        `${API_URL}/challenges/${id}/dispute`,
+      await http.post(
+        `challenges/${id}/dispute`,
         {
           type: disputeReason,
           description: disputeDescription

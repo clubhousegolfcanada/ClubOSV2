@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useAuthState } from '@/state/useStore';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { Brain, MessageSquare, Sparkles, Settings, RefreshCw, Download, BarChart3, Clock, AlertCircle, Check, X, ChevronRight, ChevronDown, Edit, Save, Trash2 } from 'lucide-react';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
@@ -73,7 +72,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/ai-automations`, {
+      const response = await http.get(`ai-automations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAIFeatures(response.data || []);
@@ -91,7 +90,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/knowledge/metrics`, {
+      const response = await http.get(`knowledge/metrics`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSystemMetrics(response.data || { total_documents: 0, unique_assistants: 0 });
@@ -105,7 +104,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/llm/feedback`, {
+      const response = await http.get(`llm/feedback`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFeedback(response.data?.filter((f: any) => !f.helpful) || []);
@@ -119,7 +118,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${API_URL}/openphone/recent`, {
+      const response = await http.get(`openphone/recent`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOpenPhoneConversations(response.data || []);
@@ -131,7 +130,7 @@ export const OperationsAICenter: React.FC = () => {
 
   const fetchPromptTemplates = async () => {
     try {
-      const response = await axios.get(`${API_URL}/prompts`, {
+      const response = await http.get(`prompts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPromptTemplates(response.data.data || []);
@@ -142,8 +141,8 @@ export const OperationsAICenter: React.FC = () => {
 
   const handleToggleFeature = async (featureKey: string, newValue: boolean) => {
     try {
-      await axios.put(
-        `${API_URL}/ai-automations/${featureKey}/toggle`,
+      await http.put(
+        `ai-automations/${featureKey}/toggle`,
         { is_active: newValue },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -159,8 +158,8 @@ export const OperationsAICenter: React.FC = () => {
 
   const handleSavePrompt = async (promptId: string) => {
     try {
-      await axios.put(
-        `${API_URL}/prompts/${promptId}`,
+      await http.put(
+        `prompts/${promptId}`,
         { content: editedPrompt },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -179,7 +178,7 @@ export const OperationsAICenter: React.FC = () => {
     if (!confirm('Are you sure you want to delete this prompt template?')) return;
     
     try {
-      await axios.delete(`${API_URL}/prompts/${promptId}`, {
+      await http.delete(`prompts/${promptId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchPromptTemplates();
@@ -197,8 +196,8 @@ export const OperationsAICenter: React.FC = () => {
     }
     
     try {
-      await axios.post(
-        `${API_URL}/prompts`,
+      await http.post(
+        `prompts`,
         newPrompt,
         {
           headers: { Authorization: `Bearer ${token}` }

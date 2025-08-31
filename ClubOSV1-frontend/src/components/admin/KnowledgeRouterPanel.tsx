@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { 
   Send, 
@@ -37,7 +36,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
   const fetchRecentUpdates = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
-      const response = await axios.get(`${API_URL}/knowledge-router/recent-updates`, {
+      const response = await http.get(`knowledge-router/recent-updates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecentUpdates(response.data.data || []);
@@ -57,8 +56,8 @@ export const KnowledgeRouterPanel: React.FC = () => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
       
       // Parse and route directly
-      const response = await axios.post(
-        `${API_URL}/knowledge-router/parse-and-route`,
+      const response = await http.post(
+        `knowledge-router/parse-and-route`,
         { input },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { MessageSquare, Clock, ArrowRight } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
@@ -31,7 +30,7 @@ export const MessagesCard: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/messages/conversations?limit=2`, {
+        const response = await http.get(`messages/conversations?limit=2`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

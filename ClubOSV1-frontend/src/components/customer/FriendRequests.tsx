@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { useAuthState } from '@/state/useStore';
 import { UserPlus, Check, X, Clock, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -33,7 +32,7 @@ export const FriendRequests: React.FC = () => {
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/friends/pending`, {
+      const response = await http.get(`friends/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -51,8 +50,8 @@ export const FriendRequests: React.FC = () => {
     setProcessingId(requestId);
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.put(
-        `${API_URL}/friends/${requestId}/accept`,
+      await http.put(
+        `friends/${requestId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -70,8 +69,8 @@ export const FriendRequests: React.FC = () => {
     setProcessingId(requestId);
     try {
       const token = localStorage.getItem('clubos_token');
-      await axios.put(
-        `${API_URL}/friends/${requestId}/reject`,
+      await http.put(
+        `friends/${requestId}/reject`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );

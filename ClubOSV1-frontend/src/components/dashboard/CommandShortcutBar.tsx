@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { API_URL } from '@/utils/apiUrl';
 import { AlertTriangle, ClipboardList, Upload } from 'lucide-react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 
 
@@ -27,7 +26,7 @@ export const CommandShortcutBar: React.FC = () => {
       const token = localStorage.getItem('clubos_token');
       
       // Create high priority ticket
-      await axios.post(`${API_URL}/tickets`, {
+      await http.post(`tickets`, {
         title: 'URGENT: Door Access Issue',
         description: 'Staff alerted about door access issue. Immediate attention required.',
         category: 'facilities',

@@ -1,5 +1,4 @@
 import Head from 'next/head';
-import { API_URL } from '@/utils/apiUrl';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
@@ -8,7 +7,7 @@ import {
   Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, MapPin,
   CheckCircle, Lock, BotIcon, ChevronDown, ChevronUp
 } from 'lucide-react';
-import axios from 'axios';
+import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -132,7 +131,7 @@ export default function MessagesRedesigned() {
         return;
       }
 
-      const response = await axios.get(`${API_URL}/messages/conversations`, {
+      const response = await http.get(`messages/conversations`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -182,8 +181,8 @@ export default function MessagesRedesigned() {
       try {
         const token = localStorage.getItem('clubos_token');
         if (token) {
-          const historyResponse = await axios.get(
-            `${API_URL}/messages/conversations/${conversation.phone_number}/full-history`,
+          const historyResponse = await http.get(
+            `messages/conversations/${conversation.phone_number}/full-history`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           
@@ -251,8 +250,8 @@ export default function MessagesRedesigned() {
         return;
       }
       
-      const response = await axios.post(
-        `${API_URL}/messages/send`,
+      const response = await http.post(
+        `messages/send`,
         {
           to: selectedConversation.phone_number,
           text: messageText
@@ -300,8 +299,8 @@ export default function MessagesRedesigned() {
         return;
       }
       
-      const response = await axios.post(
-        `${API_URL}/messages/conversations/${selectedConversation.phone_number}/suggest-response`,
+      const response = await http.post(
+        `messages/conversations/${selectedConversation.phone_number}/suggest-response`,
         {},
         { 
           headers: { 
@@ -336,8 +335,8 @@ export default function MessagesRedesigned() {
       
       const finalText = customReply || editedText || aiSuggestion?.suggestedText || '';
       
-      const response = await axios.post(
-        `${API_URL}/messages/suggestions/${suggestionId}/approve-and-send`,
+      const response = await http.post(
+        `messages/suggestions/${suggestionId}/approve-and-send`,
         { editedText: finalText },
         { 
           headers: { 

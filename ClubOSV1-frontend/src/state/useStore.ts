@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
-import axios from 'axios';
 import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/iframeStorage';
 
 // Export UserRole type
@@ -133,7 +132,7 @@ export const useAuthState = create<AuthState>()(
         setStorageItem('clubos_user', JSON.stringify(user));
         
         // CRITICAL: Set axios default header for all requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Auth header now handled by http client
         
         // Set view mode based on user role
         const viewMode = user.role === 'customer' ? 'customer' : 'operator';
@@ -155,7 +154,7 @@ export const useAuthState = create<AuthState>()(
           if (token) {
             user.token = token;
             // Set axios header when restoring user
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // Auth header now handled by http client
           }
         } else if (user?.token) {
           // Set axios header if token is provided
@@ -167,7 +166,7 @@ export const useAuthState = create<AuthState>()(
         // Clear auth tokens
         if (typeof window !== 'undefined') {
           // Clear axios authorization header
-          delete axios.defaults.headers.common['Authorization'];
+          // Auth header cleanup now handled by http client
           
           // Clear all localStorage items
           localStorage.removeItem('clubos_token');
@@ -222,7 +221,7 @@ export const useAuthState = create<AuthState>()(
           if (token) {
             state.user.token = token;
             // Set axios header on rehydration
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // Auth header now handled by http client
           }
         }
       }
