@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import axios from 'axios';
 import { Phone, Clock, User, MessageCircle, RefreshCw } from 'lucide-react';
 

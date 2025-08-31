@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { Trophy, UserPlus, Coins, TrendingUp, Crown, Star, Medal, Home, Target, TrendingDown, Minus, Gem, Award, Sparkles, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';

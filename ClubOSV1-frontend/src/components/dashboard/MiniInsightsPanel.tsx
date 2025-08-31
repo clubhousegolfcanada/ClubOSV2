@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import axios from 'axios';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 

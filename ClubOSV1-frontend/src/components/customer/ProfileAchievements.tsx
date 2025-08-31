@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Target, Award, Star, Crown, Sparkles, ChevronRight, Filter } from 'lucide-react';
 import { AchievementBadge } from '@/components/achievements/AchievementBadge';

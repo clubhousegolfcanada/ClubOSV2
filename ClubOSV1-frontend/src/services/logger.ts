@@ -10,6 +10,7 @@
  */
 
 import axios from 'axios';
+import { API_URL } from '@/utils/apiUrl';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

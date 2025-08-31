@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import axios from 'axios';
 import { AlertCircle, CheckCircle, XCircle, Database } from 'lucide-react';
 

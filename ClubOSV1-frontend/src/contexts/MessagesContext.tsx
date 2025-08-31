@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import axios from 'axios';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';

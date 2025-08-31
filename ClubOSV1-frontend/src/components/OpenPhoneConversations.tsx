@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import axios from 'axios';
 import { Phone, Users, MessageSquare, Download, FileText, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';

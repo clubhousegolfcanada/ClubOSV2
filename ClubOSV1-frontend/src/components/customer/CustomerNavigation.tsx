@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
 import axios from 'axios';

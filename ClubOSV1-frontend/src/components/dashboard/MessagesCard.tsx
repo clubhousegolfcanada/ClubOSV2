@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { MessageSquare, Clock, ArrowRight } from 'lucide-react';

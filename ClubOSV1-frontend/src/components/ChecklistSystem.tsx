@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { CheckSquare, Clock, Calendar, User, MapPin, ChevronRight, ChevronDown, Check, Trash2, Edit2, X, RotateCcw, AlertTriangle, FileText, CheckCircle, XCircle, Timer, Award, MessageSquare, Clipboard, TrendingUp, Package, Camera, QrCode, Plus, AlertCircle, Download, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';

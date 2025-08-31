@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { Activity, Users, MessageSquare, Brain, AlertCircle, CheckCircle, WifiOff, RefreshCw, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 import { format } from 'date-fns';

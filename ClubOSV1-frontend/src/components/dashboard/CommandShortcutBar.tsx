@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { AlertTriangle, ClipboardList, Upload } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';

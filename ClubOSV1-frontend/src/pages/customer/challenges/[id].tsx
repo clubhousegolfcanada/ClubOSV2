@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';

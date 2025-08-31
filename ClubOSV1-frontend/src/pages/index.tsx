@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { API_URL } from '@/utils/apiUrl';
 import RequestForm from '@/components/RequestForm';
 import DatabaseExternalTools from '@/components/DatabaseExternalTools';
 import Link from 'next/link';

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { Settings } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';

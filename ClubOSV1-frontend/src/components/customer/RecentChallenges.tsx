@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { useRouter } from 'next/router';
 import { Target, Clock, Coins, ChevronRight, TrendingUp, Users } from 'lucide-react';
 import axios from 'axios';

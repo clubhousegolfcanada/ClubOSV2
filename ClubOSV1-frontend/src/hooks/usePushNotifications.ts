@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { toast } from 'react-hot-toast';
 
 interface PushNotificationState {

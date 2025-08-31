@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { API_URL } from '@/utils/apiUrl';
 import { toast } from 'react-hot-toast';
 
 

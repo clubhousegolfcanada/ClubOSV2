@@ -8,15 +8,7 @@ import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, Mes
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { ResponseDisplay } from './ResponseDisplay';
-
-// Ensure API URL is properly formatted
-const getApiUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  // Remove any trailing slashes
-  return url.replace(/\/$/, '');
-};
-
-const API_URL = getApiUrl();
+import { API_URL } from '@/utils/apiUrl';
 
 // Add keyframes for button animation
 const shimmerKeyframes = `

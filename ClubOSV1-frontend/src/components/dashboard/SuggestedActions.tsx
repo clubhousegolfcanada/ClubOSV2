@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { AlertCircle, X, Check, Clock } from 'lucide-react';
 import axios from 'axios';
 

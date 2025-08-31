@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { API_URL } from '@/utils/apiUrl';
 import { useAuthState, useSettingsState } from '@/state/useStore';
 import { submitRequest as apiSubmitRequest } from '@/api/apiClient';
 import axios from 'axios';
