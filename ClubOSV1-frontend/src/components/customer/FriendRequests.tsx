@@ -37,7 +37,7 @@ export const FriendRequests: React.FC = () => {
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/api/friends/pending`, {
+      const response = await axios.get(`${API_URL}/friends/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -56,7 +56,7 @@ export const FriendRequests: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.put(
-        `${API_URL}/api/friends/${requestId}/accept`,
+        `${API_URL}/friends/${requestId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -75,7 +75,7 @@ export const FriendRequests: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.put(
-        `${API_URL}/api/friends/${requestId}/reject`,
+        `${API_URL}/friends/${requestId}/reject`,
         {},
         { headers: { Authorization: `Bearer ${token}` }}
       );

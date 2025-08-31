@@ -27,9 +27,9 @@ export const RecentMessages: React.FC = () => {
   const fetchRecentMessages = async () => {
     try {
       const token = localStorage.getItem('clubos_token');
-      console.log('Fetching recent messages from:', `${API_URL}/api/openphone/recent-conversations?limit=10`);
+      console.log('Fetching recent messages from:', `${API_URL}/openphone/recent-conversations?limit=10`);
       
-      const response = await axios.get(`${API_URL}/api/openphone/recent-conversations?limit=10`, {
+      const response = await axios.get(`${API_URL}/openphone/recent-conversations?limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

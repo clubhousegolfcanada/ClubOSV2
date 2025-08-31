@@ -20,7 +20,7 @@ export const UserDebugCheck: React.FC = () => {
     
     try {
       const token = localStorage.getItem('clubos_token');
-      const response = await axios.get(`${API_URL}/api/debug/check-user`, {
+      const response = await axios.get(`${API_URL}/debug/check-user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

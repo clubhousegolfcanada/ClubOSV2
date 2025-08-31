@@ -54,7 +54,7 @@ export const MessagesCardEnhanced: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/api/messages/conversations?limit=3`, {
+        const response = await axios.get(`${API_URL}/messages/conversations?limit=3`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -104,7 +104,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       const response = await axios.post(
-        `${API_URL}/api/llm/suggest-response`,
+        `${API_URL}/llm/suggest-response`,
         {
           conversationId: conv.conversationId,
           context: conv.lastMessage
@@ -142,7 +142,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     try {
       const token = localStorage.getItem('clubos_token');
       await axios.post(
-        `${API_URL}/api/messages/send`,
+        `${API_URL}/messages/send`,
         {
           to: conv.phoneNumber,
           content: expandedConv.replyText,

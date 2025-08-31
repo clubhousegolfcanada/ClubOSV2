@@ -52,7 +52,7 @@ export const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ feature, onToggle,
         maxResponses
       };
       
-      await axios.put(`${API_URL}/api/ai-automations/${feature.feature_key}/config`, {
+      await axios.put(`${API_URL}/ai-automations/${feature.feature_key}/config`, {
         config: updatedConfig,
         allow_follow_up: allowFollowUp
       }, {

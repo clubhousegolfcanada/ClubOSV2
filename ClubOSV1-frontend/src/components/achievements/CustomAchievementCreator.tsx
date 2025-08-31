@@ -104,7 +104,7 @@ export function CustomAchievementCreator({
         : achievementTitle;
 
       const response = await axios.post(
-        `${API_URL}/api/achievements/create-custom`,
+        `${API_URL}/achievements/create-custom`,
         {
           user_id: userId,
           name: fullName,
