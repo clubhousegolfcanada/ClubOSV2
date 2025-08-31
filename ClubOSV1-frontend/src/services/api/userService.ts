@@ -21,7 +21,7 @@ class UserService {
   // Get all users
   async getUsers(): Promise<User[]> {
     try {
-      const { data } = await apiClient.get('/api/auth/users');
+      const { data } = await apiClient.get('/auth/users');
       
       // Handle both response formats
       if (data.success && data.data) {
@@ -37,14 +37,14 @@ class UserService {
 
   // Get single user
   async getUser(userId: string): Promise<User> {
-    const { data } = await apiClient.get(`/api/auth/users/${userId}`);
+    const { data } = await apiClient.get(`/auth/users/${userId}`);
     return data;
   }
 
   // Update user role
   async updateUserRole(userId: string, role: User['role']): Promise<User> {
     try {
-      const { data } = await apiClient.put(`/api/auth/users/${userId}/role`, { role });
+      const { data } = await apiClient.put(`/auth/users/${userId}/role`, { role });
       toast.success('User role updated');
       return data;
     } catch (error) {
@@ -56,7 +56,7 @@ class UserService {
   // Delete user
   async deleteUser(userId: string): Promise<void> {
     try {
-      await apiClient.delete(`/api/auth/users/${userId}`);
+      await apiClient.delete(`/auth/users/${userId}`);
       toast.success('User deleted');
     } catch (error) {
       toast.error('Failed to delete user');
@@ -67,7 +67,7 @@ class UserService {
   // System settings
   async updateAutoApproval(enabled: boolean): Promise<void> {
     try {
-      await apiClient.put('/api/system-settings/customer_auto_approval', {
+      await apiClient.put('/system-settings/customer_auto_approval', {
         value: { enabled }
       });
       toast.success(`Customer auto-approval ${enabled ? 'enabled' : 'disabled'}`);
@@ -78,14 +78,14 @@ class UserService {
   }
 
   async getSystemSettings(): Promise<SystemSettings> {
-    const { data } = await apiClient.get('/api/system-settings');
+    const { data } = await apiClient.get('/system-settings');
     return data;
   }
 
   // Pending user actions
   async approvePendingUser(userId: string): Promise<void> {
     try {
-      await apiClient.post(`/api/auth/users/${userId}/approve`);
+      await apiClient.post(`/auth/users/${userId}/approve`);
       toast.success('User approved');
     } catch (error) {
       toast.error('Failed to approve user');
@@ -95,7 +95,7 @@ class UserService {
 
   async rejectPendingUser(userId: string): Promise<void> {
     try {
-      await apiClient.post(`/api/auth/users/${userId}/reject`);
+      await apiClient.post(`/auth/users/${userId}/reject`);
       toast.success('User rejected');
     } catch (error) {
       toast.error('Failed to reject user');
@@ -105,7 +105,7 @@ class UserService {
 
   // User statistics
   async getUserStats() {
-    const { data } = await apiClient.get('/api/auth/users/stats');
+    const { data } = await apiClient.get('/auth/users/stats');
     return data;
   }
 }

@@ -38,7 +38,7 @@ export const systemStatusAPI = {
   // Get status for all locations
   getAllStatus: async (): Promise<LocationStatus[]> => {
     try {
-      const response = await apiClient.get('/api/system/check');
+      const response = await apiClient.get('/system/check');
       // The /api/system/check endpoint returns system info, not location bay data
       // For now, return mock data since the endpoint doesn't return the expected structure
       console.log('System status response:', response.data);
