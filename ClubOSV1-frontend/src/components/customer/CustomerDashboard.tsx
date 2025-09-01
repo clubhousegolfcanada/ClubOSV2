@@ -116,7 +116,7 @@ export const CustomerDashboard: React.FC = () => {
         // Fetch customer profile
         try {
           const response = await http.get('customer-profile', {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (response.data.success) {
             setCustomerProfile(response.data.data);
@@ -128,7 +128,7 @@ export const CustomerDashboard: React.FC = () => {
         // Fetch active challenges count and CC balance
         try {
           const challengesResponse = await http.get('challenges/my-challenges', {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (challengesResponse.data.success) {
             const activeChallenges = challengesResponse.data.data.filter((c: any) => 
@@ -143,7 +143,7 @@ export const CustomerDashboard: React.FC = () => {
         // Fetch CC balance
         try {
           const ccResponse = await http.get('challenges/cc-balance', {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (ccResponse.data.success) {
             const balance = ccResponse.data.data.balance || 0;
@@ -166,7 +166,7 @@ export const CustomerDashboard: React.FC = () => {
         // Fetch pending friend requests
         try {
           const friendRequestsResponse = await http.get('friends/pending?direction=incoming', {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (friendRequestsResponse.data.success) {
             const pendingRequests = friendRequestsResponse.data.data?.requests?.length || 0;
@@ -179,7 +179,7 @@ export const CustomerDashboard: React.FC = () => {
         // Fetch box stats
         try {
           const boxResponse = await http.get('boxes/stats', {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (boxResponse.data) {
             setQuickStats(prev => ({ 

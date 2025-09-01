@@ -34,7 +34,7 @@ export const FriendRequests: React.FC = () => {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`friends/pending`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       if (response.data.success) {
@@ -54,7 +54,7 @@ export const FriendRequests: React.FC = () => {
       await http.put(
         `friends/${requestId}/accept`,
         {},
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       
       toast.success(`You are now friends with ${userName}!`);
@@ -73,7 +73,7 @@ export const FriendRequests: React.FC = () => {
       await http.put(
         `friends/${requestId}/reject`,
         {},
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       
       toast.success('Friend request declined');

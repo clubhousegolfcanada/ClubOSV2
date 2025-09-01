@@ -38,7 +38,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
     try {
       const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
       const response = await http.get(`knowledge-router/recent-updates`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setRecentUpdates(response.data.data || []);
     } catch (error) {
@@ -60,7 +60,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
       const response = await http.post(
         `knowledge-router/parse-and-route`,
         { input },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {

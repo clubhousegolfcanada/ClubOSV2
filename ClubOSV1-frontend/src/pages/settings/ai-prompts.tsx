@@ -58,7 +58,7 @@ export default function AIPrompts() {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`prompt-templates`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
 
       if (response.data.success) {
@@ -84,7 +84,7 @@ export default function AIPrompts() {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`prompt-templates/${templateId}/history`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
 
       if (response.data.success) {
@@ -113,7 +113,7 @@ export default function AIPrompts() {
           reason: changeReason
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
 

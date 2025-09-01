@@ -100,7 +100,7 @@ export default function Home() {
             period: '24h',
             endDate: yesterday.toISOString()
           },
-          headers: { Authorization: `Bearer ${token}` }
+
         });
         
         if (response.data.success && response.data.data) {
@@ -153,7 +153,7 @@ export default function Home() {
             startDate: startOfWeek.toISOString(),
             limit: 100
           },
-          headers: { Authorization: `Bearer ${token}` }
+
         });
         
         if (response.data.success) {
@@ -187,7 +187,7 @@ export default function Home() {
         }
         
         const response = await http.get(`tickets/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         });
         
         if (response.data.success && response.data.data) {
@@ -202,7 +202,7 @@ export default function Home() {
           
           // Actually, let's get the correct open counts
           const tickets = await http.get(`tickets?status=open`, {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           
           if (tickets.data.success && tickets.data.data) {

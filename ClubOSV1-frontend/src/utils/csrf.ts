@@ -1,18 +1,15 @@
+import { http } from '@/api/http';
+
 export async function getCSRFToken(): Promise<string> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/csrf-token`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Use auth: false since this is for getting CSRF token
+    const response = await http.get('csrf-token', { auth: false } as any);
     
-    if (!response.ok) {
-      throw new Error('Failed to get CSRF token');
+    if (response.data?.csrfToken) {
+      return response.data.csrfToken;
     }
     
-    const data = await response.json();
-    return data.csrfToken;
+    throw new Error('No CSRF token in response');
   } catch (error) {
     console.error('Failed to get CSRF token:', error);
     return '';

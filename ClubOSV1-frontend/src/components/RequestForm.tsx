@@ -213,7 +213,7 @@ const RequestForm: React.FC = () => {
             priority: ticketPriority,
             location: data.location || undefined,
           },
-          { headers: { Authorization: `Bearer ${token}` } }
+
         );
         
         if (response.data.success) {
@@ -241,7 +241,7 @@ const RequestForm: React.FC = () => {
         const response = await http.post(
           `knowledge-router/parse-and-route`,
           { input: data.requestDescription },
-          { headers: { Authorization: `Bearer ${token}` } }
+
         );
         
         if (response.data.success) {

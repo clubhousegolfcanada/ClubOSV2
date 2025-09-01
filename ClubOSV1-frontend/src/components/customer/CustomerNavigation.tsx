@@ -51,7 +51,7 @@ const CustomerNavigation: React.FC = () => {
         const token = tokenManager.getToken();
         if (token) {
           const response = await http.get(`boxes/available`, {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (response.data) {
             setAvailableBoxes(response.data.length || 0);

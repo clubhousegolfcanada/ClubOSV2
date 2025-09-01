@@ -9,7 +9,7 @@ import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { AchievementBadge } from './AchievementBadge';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API URL is now handled by http client
 
 interface CustomAchievementCreatorProps {
   isOpen: boolean;
@@ -127,7 +127,7 @@ export function CustomAchievementCreator({
           }
         },
         {
-          headers: { Authorization: `Bearer ${userToken}` }
+
         }
       );
 

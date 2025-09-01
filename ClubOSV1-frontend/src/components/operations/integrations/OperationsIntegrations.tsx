@@ -150,7 +150,7 @@ export const OperationsIntegrations: React.FC = () => {
     
     try {
       const response = await http.get(`ai-automations`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       // Ensure we're getting an array
       const features = Array.isArray(response.data) ? response.data : 
@@ -167,7 +167,7 @@ export const OperationsIntegrations: React.FC = () => {
       await http.post(
         `ai-automations/${featureKey}/toggle`,
         { enabled },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       toast.success(`Feature ${enabled ? 'enabled' : 'disabled'}`);
       fetchAIFeatures();
@@ -191,7 +191,7 @@ export const OperationsIntegrations: React.FC = () => {
       // Fetch Slack config
       const slackResponse = await http.get(
         `integrations/slack/config`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       if (slackResponse.data.success) {
         setSlackConfig(prev => ({ ...prev, ...slackResponse.data.data }));
@@ -200,7 +200,7 @@ export const OperationsIntegrations: React.FC = () => {
       // Fetch OpenPhone config
       const openphoneResponse = await http.get(
         `integrations/openphone/config`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       if (openphoneResponse.data.success) {
         setOpenPhoneConfig(prev => ({ ...prev, ...openphoneResponse.data.data }));
@@ -209,7 +209,7 @@ export const OperationsIntegrations: React.FC = () => {
       // Fetch system features
       const featuresResponse = await http.get(
         `integrations/features`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       if (featuresResponse.data.success) {
         // Ensure we're getting an array
@@ -222,7 +222,7 @@ export const OperationsIntegrations: React.FC = () => {
       try {
         const hubspotResponse = await http.get(
           `system-status/hubspot`,
-          { headers: { Authorization: `Bearer ${token}` } }
+
         );
         if (hubspotResponse.data) {
           setIntegrations(prev => prev.map(i => 
@@ -248,7 +248,7 @@ export const OperationsIntegrations: React.FC = () => {
         `integrations/features/${featureKey}`,
         { enabled: !feature.enabled },
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       
@@ -269,7 +269,7 @@ export const OperationsIntegrations: React.FC = () => {
       const response = await http.post(
         `integrations/${service.toLowerCase()}/test`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -301,7 +301,7 @@ export const OperationsIntegrations: React.FC = () => {
         `integrations/slack/config`,
         slackConfig,
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('Slack configuration saved');
@@ -320,7 +320,7 @@ export const OperationsIntegrations: React.FC = () => {
         `integrations/openphone/config`,
         openPhoneConfig,
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('OpenPhone configuration saved');
@@ -339,7 +339,7 @@ export const OperationsIntegrations: React.FC = () => {
         `integrations/push/config`,
         pushConfig,
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('Push notification configuration saved');

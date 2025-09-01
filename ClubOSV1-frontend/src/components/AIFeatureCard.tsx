@@ -51,7 +51,7 @@ export const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ feature, onToggle,
         config: updatedConfig,
         allow_follow_up: allowFollowUp
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       toast.success('Configuration saved');

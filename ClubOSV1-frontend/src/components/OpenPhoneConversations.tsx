@@ -24,7 +24,7 @@ export const OpenPhoneConversations: React.FC = () => {
       const token = tokenManager.getToken();
       
       const response = await http.get(`openphone/conversations/count`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       if (response.data.success) {
@@ -51,7 +51,7 @@ export const OpenPhoneConversations: React.FC = () => {
       if (format === 'llm') {
         const response = await http.post(`openphone-processing/process-conversations`, 
           { limit: 50 }, // Process up to 50 conversations at a time
-          { headers: { Authorization: `Bearer ${token}` } }
+
         );
         
         if (response.data.success) {
@@ -71,7 +71,7 @@ export const OpenPhoneConversations: React.FC = () => {
       const params = format === 'csv' ? {} : { format };
       
       const response = await http.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
+,
         params,
         responseType: format === 'csv' ? 'blob' : 'json'
       });

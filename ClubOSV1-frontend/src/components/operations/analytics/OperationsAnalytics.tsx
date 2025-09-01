@@ -74,13 +74,13 @@ export const OperationsAnalytics: React.FC = () => {
       /*
       const [routingRes, aiRes, usageRes] = await Promise.all([
         http.get(`analytics/routing?range=${dateRange}`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }),
         http.get(`analytics/ai?range=${dateRange}`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }),
         http.get(`analytics/usage?range=${dateRange}`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         })
       ]);
 
@@ -146,7 +146,7 @@ export const OperationsAnalytics: React.FC = () => {
       const response = await http.get(
         `analytics/export?format=${format}&range=${dateRange}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+,
           responseType: 'blob'
         }
       );

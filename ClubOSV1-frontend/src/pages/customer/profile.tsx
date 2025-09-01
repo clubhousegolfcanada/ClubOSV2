@@ -167,28 +167,28 @@ export default function CustomerProfile() {
       // Fetch all profile stats, box stats, achievements, and box data in parallel
       const [statsResponse, boxStatsResponse, boxesResponse, rewardsResponse, achievementsResponse] = await Promise.all([
         http.get(`profile/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }),
         http.get(`boxes/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: { progress: { current: 0 }, availableCount: 0, rewardsCount: 0 } };
         }),
         http.get(`boxes/available`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
         }),
         http.get(`boxes/rewards`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
         }),
         http.get(`achievements/user/${user?.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch((err) => {
           if (err.response?.status === 401) throw err; // Re-throw auth errors
           return { data: [] };
@@ -280,7 +280,7 @@ export default function CustomerProfile() {
           bio: formData.bio,
           handicap: formData.handicap ? parseFloat(formData.handicap) : undefined
         },
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       
       toast.success('Profile updated successfully');
@@ -317,7 +317,7 @@ export default function CustomerProfile() {
     const response = await http.post(
       `boxes/${selectedBox.id}/open`,
       {},
-      { headers: { Authorization: `Bearer ${token}` }}
+
     );
     
     // Immediately remove the opened box from state
@@ -358,7 +358,7 @@ export default function CustomerProfile() {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword
         },
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       
       toast.success('Password changed successfully');
@@ -400,7 +400,7 @@ export default function CustomerProfile() {
           },
           profile_visibility: updatedPreferences.publicProfile ? 'public' : 'private'
         },
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       
       toast.success('Preferences updated');

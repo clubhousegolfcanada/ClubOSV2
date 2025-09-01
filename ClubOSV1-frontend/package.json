@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "build:ci": "npm run lint && npm run typecheck && next build",
+    "check": "npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",

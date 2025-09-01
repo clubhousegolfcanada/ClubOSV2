@@ -1,4 +1,6 @@
+/* eslint-disable no-restricted-imports */
 import axios from "axios";
+/* eslint-enable no-restricted-imports */
 import type { UserRequest, ApiResponse } from "@/types/request";
 import { addCSRFToRequest } from "@/utils/csrf";
 import logger from "@/services/logger";

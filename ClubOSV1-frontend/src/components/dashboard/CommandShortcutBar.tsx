@@ -33,7 +33,7 @@ export const CommandShortcutBar: React.FC = () => {
         category: 'facilities',
         priority: 'urgent'
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       // In real implementation, would also trigger Slack alert

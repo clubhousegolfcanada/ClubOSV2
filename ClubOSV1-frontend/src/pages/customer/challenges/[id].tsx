@@ -74,7 +74,7 @@ export default function ChallengeDetail() {
     setLoading(true);
     try {
       const response = await http.get(`challenges/${id}`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+
       });
 
       if (response.data.success) {
@@ -94,7 +94,7 @@ export default function ChallengeDetail() {
       await http.post(
         `challenges/${id}/accept`,
         {},
-        { headers: { Authorization: `Bearer ${user?.token}` }}
+
       );
       
       setShowAcceptModal(false);
@@ -114,7 +114,7 @@ export default function ChallengeDetail() {
       await http.post(
         `challenges/${id}/decline`,
         { reason: 'User declined' },
-        { headers: { Authorization: `Bearer ${user?.token}` }}
+
       );
       
       router.push('/customer/challenges');
@@ -139,7 +139,7 @@ export default function ChallengeDetail() {
           type: disputeReason,
           description: disputeDescription
         },
-        { headers: { Authorization: `Bearer ${user?.token}` }}
+
       );
       
       setShowDisputeModal(false);

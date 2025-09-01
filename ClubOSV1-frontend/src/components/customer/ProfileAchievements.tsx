@@ -60,7 +60,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`achievements/user/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setAchievements(response.data || []);
     } catch (error) {

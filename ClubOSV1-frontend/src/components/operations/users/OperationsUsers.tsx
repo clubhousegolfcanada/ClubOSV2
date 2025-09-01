@@ -88,7 +88,7 @@ export const OperationsUsers: React.FC = () => {
     try {
       // Use the API endpoint correctly with /api prefix
       const response = await http.get(`system-settings/customer_auto_approval`, {
-        headers: { Authorization: `Bearer ${authToken}` }
+
       });
       
       if (response.data.success && response.data.data) {
@@ -111,7 +111,7 @@ export const OperationsUsers: React.FC = () => {
       await http.put(
         `system-settings/customer_auto_approval`,
         { value: { enabled } },
-        { headers: { Authorization: `Bearer ${authToken}` } }
+
       );
       
       setAutoApproveCustomers(enabled);
@@ -136,7 +136,7 @@ export const OperationsUsers: React.FC = () => {
     try {
       console.log('Fetching users from:', `auth/users`);
       const response = await http.get(`auth/users`, {
-        headers: { Authorization: `Bearer ${authToken}` }
+
       });
       
       console.log('Users response:', response.data);
@@ -160,7 +160,7 @@ export const OperationsUsers: React.FC = () => {
             try {
               const balanceResponse = await http.get(
                 `challenges/cc-balance/${user.id}`,
-                { headers: { Authorization: `Bearer ${authToken}` } }
+
               );
               return {
                 ...user,
@@ -215,7 +215,7 @@ export const OperationsUsers: React.FC = () => {
         `auth/users/${editingUser}`,
         editedUser,
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('User updated successfully');
@@ -232,7 +232,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       await http.delete(`auth/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       toast.success('User deleted successfully');
       fetchUsers();
@@ -260,7 +260,7 @@ export const OperationsUsers: React.FC = () => {
         `auth/users`,
         newUser,
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('User created successfully');
@@ -295,7 +295,7 @@ export const OperationsUsers: React.FC = () => {
         `auth/users/${resetPasswordUserId}/reset-password`,
         { newPassword },
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('Password reset successfully');
@@ -314,7 +314,7 @@ export const OperationsUsers: React.FC = () => {
         `auth/users/${userId}/approve`,
         {},
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('Customer approved successfully');
@@ -333,7 +333,7 @@ export const OperationsUsers: React.FC = () => {
         `auth/users/${userId}/reject`,
         {},
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       toast.success('Customer application rejected');
@@ -347,7 +347,7 @@ export const OperationsUsers: React.FC = () => {
   const handleBackup = async () => {
     try {
       const response = await http.get(`auth/backup`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
@@ -380,7 +380,7 @@ export const OperationsUsers: React.FC = () => {
             `auth/restore`,
             data,
             {
-              headers: { Authorization: `Bearer ${token}` }
+
             }
           );
           toast.success('Users restored successfully');
@@ -406,7 +406,7 @@ export const OperationsUsers: React.FC = () => {
     
     try {
       const response = await http.get(`boxes/user/${customer.id}`, {
-        headers: { Authorization: `Bearer ${authToken}` }
+
       });
       
       if (response.data.success) {
@@ -434,7 +434,7 @@ export const OperationsUsers: React.FC = () => {
           quantity: parseInt(boxCount)
         },
         {
-          headers: { Authorization: `Bearer ${authToken}` }
+
         }
       );
       
@@ -467,7 +467,7 @@ export const OperationsUsers: React.FC = () => {
       const response = await http.delete(
         `boxes/user/${boxManagementUser.id}/available`,
         {
-          headers: { Authorization: `Bearer ${authToken}` }
+
         }
       );
       
@@ -499,7 +499,7 @@ export const OperationsUsers: React.FC = () => {
     try {
       const response = await http.get(
         `admin/cc-adjustments/${customer.id}/balance`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
+
       );
       
       if (response.data.success) {
@@ -545,7 +545,7 @@ export const OperationsUsers: React.FC = () => {
           type: adjustmentType,
           reason: adjustmentReason
         },
-        { headers: { Authorization: `Bearer ${authToken}` } }
+
       );
       
       if (response.data.success) {

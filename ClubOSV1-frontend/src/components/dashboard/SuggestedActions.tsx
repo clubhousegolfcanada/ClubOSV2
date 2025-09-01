@@ -23,7 +23,7 @@ export const SuggestedActions: React.FC = () => {
     const fetchPatterns = async () => {
       try {
         const token = tokenManager.getToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = token ? { } : {};
 
         // Fetch recent history and tickets to identify patterns
         const [historyRes, ticketsRes] = await Promise.all([
@@ -126,7 +126,7 @@ export const SuggestedActions: React.FC = () => {
             category: 'tech',
             priority: action.priority
           }, {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           break;
           

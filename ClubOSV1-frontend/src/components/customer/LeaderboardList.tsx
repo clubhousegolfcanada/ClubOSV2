@@ -99,7 +99,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     
     try {
       const response = await http.get(`leaderboard/alltime`, {
-        headers: { Authorization: `Bearer ${userToken}` },
+,
         params: { sort: sortBy }
       });
       
@@ -175,7 +175,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       await http.post(
         `friends/request`,
         { target_user_id: targetUserId },
-        { headers: { Authorization: `Bearer ${userToken}` } }
+
       );
       toast.success(`Friend request sent to ${targetName}!`);
       setLeaderboardData(prev => 

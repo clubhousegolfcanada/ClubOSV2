@@ -24,7 +24,7 @@ export const MiniInsightsPanel: React.FC = () => {
     const fetchMetrics = async () => {
       try {
         const token = tokenManager.getToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = token ? { } : {};
 
         // Fetch various metrics in parallel
         const [bookingsRes, ticketsRes, historyRes] = await Promise.all([

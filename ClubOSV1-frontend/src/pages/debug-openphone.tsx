@@ -37,7 +37,7 @@ export default function DebugOpenPhone() {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/database-check`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       setDbData(response.data.data);
@@ -64,7 +64,7 @@ export default function DebugOpenPhone() {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/test-connection`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       setConnectionData(response.data);
@@ -84,7 +84,7 @@ export default function DebugOpenPhone() {
     try {
       const token = tokenManager.getToken();
       const response = await http.post(`debug-openphone/sync-conversations`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       toast.success(`Synced ${response.data.data.conversationsSynced} conversations`);
@@ -102,7 +102,7 @@ export default function DebugOpenPhone() {
       const token = tokenManager.getToken();
       const response = await http.post(`openphone/import-history`, 
         { daysBack: 30 }, 
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       toast.success(response.data.message || 'Import complete');
@@ -119,7 +119,7 @@ export default function DebugOpenPhone() {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/raw-conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       setRawData(response.data.data);
@@ -138,7 +138,7 @@ export default function DebugOpenPhone() {
     try {
       const token = tokenManager.getToken();
       const response = await http.post(`debug-openphone/repair-phone-numbers`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       toast.success(response.data.data.message || 'Phone numbers repaired');
@@ -158,7 +158,7 @@ export default function DebugOpenPhone() {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/diagnose`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       setDiagnosticData(response.data.data);
@@ -184,7 +184,7 @@ export default function DebugOpenPhone() {
       const response = await http.post(
         `debug-openphone/test-send`,
         { to: testPhone, text: testMessage },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       toast.success('Test message sent!');

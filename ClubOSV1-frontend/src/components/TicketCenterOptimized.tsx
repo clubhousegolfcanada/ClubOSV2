@@ -88,7 +88,7 @@ const TicketCenterOptimized = () => {
       }
       
       const response = await http.get(`tickets?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       if (response.data.success) {
@@ -190,7 +190,7 @@ const TicketCenterOptimized = () => {
       const response = await http.patch(
         `tickets/${ticketId}/status`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -225,7 +225,7 @@ const TicketCenterOptimized = () => {
       const token = tokenManager.getToken();
       const response = await http.delete(
         `tickets/${ticketId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -257,7 +257,7 @@ const TicketCenterOptimized = () => {
       const response = await http.post(
         `tickets/${ticketId}/comments`,
         { text: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -307,7 +307,7 @@ const TicketCenterOptimized = () => {
       
       const response = await http.delete(
         `tickets/clear-all?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {

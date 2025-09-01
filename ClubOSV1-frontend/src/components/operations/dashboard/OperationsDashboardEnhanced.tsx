@@ -81,16 +81,16 @@ export function OperationsDashboardEnhanced() {
       const [healthResponse, messagesResponse, usersResponse, ticketsResponse, messagesStatsResponse] = await Promise.all([
         http.get(`health`),
         http.get(`messages/recent`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch(() => ({ data: { success: false, data: [] } })),
         http.get(`auth/users`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch(() => ({ data: { success: false, data: [] } })),
         http.get(`tickets/active-count`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch(() => ({ data: { count: 0 } })),
         http.get(`messages/stats/today`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         }).catch(() => ({ data: { count: 0, aiResponseRate: 0 } }))
       ]);
 
@@ -163,13 +163,13 @@ export function OperationsDashboardEnhanced() {
         // Fetch conversation history and AI suggestion
         const [historyResponse, suggestionResponse] = await Promise.all([
           http.get(`messages/conversation/${conversationId}`, {
-            headers: { Authorization: `Bearer ${token}` }
+
           }),
           http.post(`llm/suggest-response`, {
             conversationId,
             context: messages.find(m => m.conversationId === conversationId)?.content
           }, {
-            headers: { Authorization: `Bearer ${token}` }
+
           })
         ]);
 
@@ -219,7 +219,7 @@ export function OperationsDashboardEnhanced() {
         conversationId,
         isAiGenerated: expanded.replyText === expanded.aiSuggestion
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
 
       toast.success('Reply sent successfully');

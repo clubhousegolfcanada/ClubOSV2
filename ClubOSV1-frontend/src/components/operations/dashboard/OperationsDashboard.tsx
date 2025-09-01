@@ -66,7 +66,7 @@ export function OperationsDashboard() {
       if (token) {
         try {
           const userCountResponse = await http.get(`auth/users/count`, {
-            headers: { Authorization: `Bearer ${token}` }
+
           });
           if (userCountResponse.data.success) {
             activeUserCount = userCountResponse.data.data.active;

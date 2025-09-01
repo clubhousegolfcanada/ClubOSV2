@@ -116,7 +116,7 @@ export const ChecklistSystem: React.FC = () => {
       console.log('Loading template for:', activeCategory, activeType);
       const response = await http.get(
         `checklists/template/${activeCategory}/${activeType}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       console.log('Template response:', response.data);
@@ -187,7 +187,7 @@ export const ChecklistSystem: React.FC = () => {
       
       const response = await http.get(
         `checklists/submissions?${queryParams}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -230,7 +230,7 @@ export const ChecklistSystem: React.FC = () => {
       
       const response = await http.get(
         `checklists/stats`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -297,7 +297,7 @@ export const ChecklistSystem: React.FC = () => {
           taskId: task.id,
           label: editValue.trim()
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       toast.success('Task updated successfully');
@@ -324,7 +324,7 @@ export const ChecklistSystem: React.FC = () => {
       
       await http.delete(
         `checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       toast.success('Task reset to default');
@@ -433,7 +433,7 @@ export const ChecklistSystem: React.FC = () => {
           supplies_needed: supplies.length > 0 ? JSON.stringify(supplies) : null,
           photo_urls: photoAttachments.length > 0 ? JSON.stringify(photoAttachments) : null
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       if (response.data.success) {
@@ -494,7 +494,7 @@ export const ChecklistSystem: React.FC = () => {
       
       await http.delete(
         `checklists/submissions/${submissionId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       
       toast.success('Submission deleted successfully');

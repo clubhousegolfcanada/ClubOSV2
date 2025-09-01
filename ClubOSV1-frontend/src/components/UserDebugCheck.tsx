@@ -16,7 +16,7 @@ export const UserDebugCheck: React.FC = () => {
     try {
       const token = tokenManager.getToken();
       const response = await http.get(`debug/check-user`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       setDebugInfo(response.data);

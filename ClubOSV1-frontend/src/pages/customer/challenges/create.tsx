@@ -90,7 +90,7 @@ export default function CreateChallenge() {
   const fetchFriends = async () => {
     try {
       const response = await http.get(`friends`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+
       });
       console.log('Friends API response:', response.data); // Debug log
       
@@ -128,7 +128,7 @@ export default function CreateChallenge() {
   const fetchCourseSettings = async () => {
     try {
       const response = await http.get(`trackman/settings-catalog`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+
       });
       if (response.data.success && response.data.data) {
         const settings = response.data.data;
@@ -145,7 +145,7 @@ export default function CreateChallenge() {
   const fetchBalance = async () => {
     try {
       const response = await http.get(`challenges/balance`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+
       });
       if (response.data.success) {
         setCCBalance(response.data.data.balance);
@@ -258,7 +258,7 @@ export default function CreateChallenge() {
       const response = await http.post(
         `challenges`,
         payload,
-        { headers: { Authorization: `Bearer ${user?.token}` }}
+
       );
 
       if (response.data.success) {

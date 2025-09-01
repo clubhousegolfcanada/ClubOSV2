@@ -74,7 +74,7 @@ export const OperationsAICenter: React.FC = () => {
     
     try {
       const response = await http.get(`ai-automations`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setAIFeatures(response.data || []);
     } catch (error: any) {
@@ -92,7 +92,7 @@ export const OperationsAICenter: React.FC = () => {
     
     try {
       const response = await http.get(`knowledge/metrics`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setSystemMetrics(response.data || { total_documents: 0, unique_assistants: 0 });
     } catch (error) {
@@ -106,7 +106,7 @@ export const OperationsAICenter: React.FC = () => {
     
     try {
       const response = await http.get(`llm/feedback`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setFeedback(response.data?.filter((f: any) => !f.helpful) || []);
     } catch (error) {
@@ -120,7 +120,7 @@ export const OperationsAICenter: React.FC = () => {
     
     try {
       const response = await http.get(`openphone/recent`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setOpenPhoneConversations(response.data || []);
     } catch (error) {
@@ -132,7 +132,7 @@ export const OperationsAICenter: React.FC = () => {
   const fetchPromptTemplates = async () => {
     try {
       const response = await http.get(`prompts`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       setPromptTemplates(response.data.data || []);
     } catch (error) {
@@ -146,7 +146,7 @@ export const OperationsAICenter: React.FC = () => {
         `ai-automations/${featureKey}/toggle`,
         { is_active: newValue },
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       fetchAIFeatures();
@@ -163,7 +163,7 @@ export const OperationsAICenter: React.FC = () => {
         `prompts/${promptId}`,
         { content: editedPrompt },
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       setEditingPrompt(null);
@@ -180,7 +180,7 @@ export const OperationsAICenter: React.FC = () => {
     
     try {
       await http.delete(`prompts/${promptId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       fetchPromptTemplates();
       toast.success('Prompt deleted successfully');
@@ -201,7 +201,7 @@ export const OperationsAICenter: React.FC = () => {
         `prompts`,
         newPrompt,
         {
-          headers: { Authorization: `Bearer ${token}` }
+
         }
       );
       setShowAddPrompt(false);

@@ -1,4 +1,6 @@
+/* eslint-disable no-restricted-imports */
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+/* eslint-enable no-restricted-imports */
 import { tokenManager } from '@/utils/tokenManager';
 
 // API Error type
@@ -15,7 +17,9 @@ export interface ApiError extends AxiosError {
 
 // Get base URL and ensure no double /api
 const getBaseUrl = () => {
+  /* eslint-disable no-restricted-syntax */
   const raw = process.env.NEXT_PUBLIC_API_URL || '';
+  /* eslint-enable no-restricted-syntax */
   const base = raw.replace(/\/+$/, ''); // trim trailing slashes
   return base;
 };

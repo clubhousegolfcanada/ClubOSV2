@@ -117,7 +117,7 @@ export default function Compete() {
       if (!token) return; // Don't make request without token
       
       const response = await http.get(`friends/pending`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       if (response.data.success) {
@@ -170,7 +170,7 @@ export default function Compete() {
       if (!token) return; // Don't make request without token
       
       const response = await http.get(`challenges/cc-balance`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       if (response.data.success) {
         setCCBalance(response.data.data.balance);
@@ -190,7 +190,7 @@ export default function Compete() {
       
       // Load challenges ONCE and filter client-side
       const response = await http.get(`challenges/my-challenges`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       if (response.data.success) {
@@ -238,7 +238,7 @@ export default function Compete() {
       if (!token) return; // Don't make request without token
       
       const response = await http.get(`friends?include_stats=true`, {
-        headers: { Authorization: `Bearer ${token}` }
+
       });
       
       // Handle different response structures
@@ -282,7 +282,7 @@ export default function Compete() {
       await http.post(
         `challenges/${challengeId}/accept`,
         {},
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       toast.success('Challenge accepted!');
       loadChallenges();
@@ -298,7 +298,7 @@ export default function Compete() {
       await http.post(
         `challenges/${challengeId}/decline`,
         { reason: 'Not interested' },
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       toast.success('Challenge declined');
       loadChallenges();
@@ -364,7 +364,7 @@ export default function Compete() {
       const response = await http.post(
         `challenges/${challengeId}/select-winner`,
         { winnerId: winner },
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
 
       if (response.data.data?.status === 'agreed') {
@@ -394,7 +394,7 @@ export default function Compete() {
           description: reason,
           evidence: []
         },
-        { headers: { Authorization: `Bearer ${token}` }}
+
       );
       
       toast.success('Dispute filed. An admin will review it soon.');
@@ -427,7 +427,7 @@ export default function Compete() {
       await http.put(
         `friends/${userId}/block`,
         { reason: 'User blocked' },
-        { headers: { Authorization: `Bearer ${token}` } }
+
       );
       toast.success(`${userName} has been blocked`);
       

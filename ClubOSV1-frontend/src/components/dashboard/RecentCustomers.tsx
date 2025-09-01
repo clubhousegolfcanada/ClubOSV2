@@ -35,7 +35,7 @@ export const RecentCustomers: React.FC = () => {
         }
 
         const response = await http.get(`messages/conversations?limit=2`, {
-          headers: { Authorization: `Bearer ${token}` }
+
         });
 
         if (response.data.success && response.data.data) {
