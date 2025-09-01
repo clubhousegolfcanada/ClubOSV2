@@ -74,8 +74,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const data = await apiClient.get('/patterns/stats');
-      setStats(data);
+      const response = await apiClient.get('/patterns/stats');
+      setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch pattern stats:', error);
     }
@@ -83,8 +83,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const fetchPatterns = async () => {
     try {
-      const data = await apiClient.get('/patterns');
-      setPatterns(data);
+      const response = await apiClient.get('/patterns');
+      setPatterns(response.data);
     } catch (error) {
       console.error('Failed to fetch patterns:', error);
     } finally {
@@ -94,8 +94,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const fetchConfig = async () => {
     try {
-      const data = await apiClient.get('/patterns/config');
-      setConfig(data);
+      const response = await apiClient.get('/patterns/config');
+      setConfig(response.data);
     } catch (error) {
       console.error('Failed to fetch config:', error);
     }
@@ -122,7 +122,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const testMessage = async (message: string) => {
     try {
-      const result = await apiClient.post('/patterns/test', { message });
+      const response = await apiClient.post('/patterns/test', { message });
+      const result = response.data;
       alert(`Test Result: ${result.action}\nConfidence: ${result.confidence || 'N/A'}\nReason: ${result.reason || 'Pattern matched'}`);
     } catch (error) {
       console.error('Failed to test message:', error);
