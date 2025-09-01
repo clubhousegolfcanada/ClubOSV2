@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuthState } from '@/state/useStore';
-import { Users, Zap, BarChart3 } from 'lucide-react';
+import { Users, Zap, BarChart3, Brain } from 'lucide-react';
 
 // Import operation components
 import { OperationsUsers } from '@/components/operations/users/OperationsUsers';
 import { OperationsIntegrations } from '@/components/operations/integrations/OperationsIntegrations';
 import { OperationsAnalytics } from '@/components/operations/analytics/OperationsAnalytics';
+import { OperationsPatterns } from '@/components/operations/patterns/OperationsPatterns';
 
-type TabType = 'users' | 'integrations' | 'analytics';
+type TabType = 'users' | 'integrations' | 'analytics' | 'patterns';
 
 export default function Operations() {
   const { user } = useAuthState();
@@ -40,7 +41,7 @@ export default function Operations() {
   useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail as TabType;
-      if (tab && ['users', 'integrations', 'analytics'].includes(tab)) {
+      if (tab && ['users', 'integrations', 'analytics', 'patterns'].includes(tab)) {
         setActiveTab(tab);
       }
     };
@@ -65,7 +66,8 @@ export default function Operations() {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
     { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, adminOnly: true },
     { id: 'integrations', label: 'Integrations & AI', icon: <Zap className="h-4 w-4" />, adminOnly: true },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" />, adminOnly: false }
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" />, adminOnly: false },
+    { id: 'patterns', label: 'V3-PLS', icon: <Brain className="h-4 w-4" />, adminOnly: false }
   ];
 
   const visibleTabs = tabs.filter(tab => !tab.adminOnly || user.role === 'admin');
@@ -78,6 +80,8 @@ export default function Operations() {
         return 'Manage integrations, AI automations, and knowledge base';
       case 'analytics':
         return 'View system analytics, usage reports, and performance metrics';
+      case 'patterns':
+        return 'V3 Pattern Learning System - AI-powered message automation';
       default:
         return '';
     }
@@ -91,6 +95,8 @@ export default function Operations() {
         return user.role === 'admin' ? <OperationsIntegrations /> : null;
       case 'analytics':
         return <OperationsAnalytics />;
+      case 'patterns':
+        return <OperationsPatterns />;
       default:
         return user.role === 'admin' ? <OperationsUsers /> : <OperationsAnalytics />;
     }

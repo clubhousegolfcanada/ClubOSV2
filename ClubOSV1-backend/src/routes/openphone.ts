@@ -11,6 +11,7 @@ import { ensureOpenPhoneColumns } from '../utils/database-helpers';
 import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../utils/openphone-db-helpers';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
+import { patternLearningService } from '../services/patternLearningService';
 
 const router = Router();
 
@@ -390,6 +391,25 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 false // Not initial message - continuing conversation
               );
               
+              // PATTERN LEARNING: Process incoming message
+              try {
+                const patternResult = await patternLearningService.processMessage(
+                  messageText,
+                  phoneNumber,
+                  existingConv.rows[0].id,
+                  customerName
+                );
+                
+                if (patternResult.action === 'shadow') {
+                  logger.info('[Pattern Learning] SHADOW MODE', {
+                    confidence: patternResult.confidence,
+                    pattern: patternResult.pattern?.pattern_type
+                  });
+                }
+              } catch (err) {
+                logger.error('[Pattern Learning] Error:', err);
+              }
+              
               // Update conversation with assistant type
               const assistantType = automationResponse.assistantType || aiAutomationService.getAssistantType(messageText);
               await db.query(`
@@ -535,6 +555,25 @@ router.post('/webhook', async (req: Request, res: Response) => {
               newConversationId,
               true // This is an initial message
             );
+            
+            // PATTERN LEARNING: Process new conversation message
+            try {
+              const patternResult = await patternLearningService.processMessage(
+                messageText,
+                phoneNumber,
+                newConversationId,
+                customerName
+              );
+              
+              if (patternResult.action === 'shadow') {
+                logger.info('[Pattern Learning] SHADOW MODE (new conv)', {
+                  confidence: patternResult.confidence,
+                  pattern: patternResult.pattern?.pattern_type
+                });
+              }
+            } catch (err) {
+              logger.error('[Pattern Learning] Error (new conv):', err);
+            }
             
             if (automationResponse.handled && automationResponse.response) {
               // Send automated response

@@ -13,6 +13,7 @@ import { messageAssistantService } from '../services/messageAssistantService';
 import { anonymizePhoneNumber } from '../utils/encryption';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
+import { patternLearningService } from '../services/patternLearningService';
 import { dbToApi, COMMON_DB_TO_API_OPTIONS } from '../utils/caseConverters';
 import { successResponse, errorResponse } from '../utils/responseHelpers';
 
@@ -869,6 +870,40 @@ router.post('/send', authenticate, async (req: Request, res: Response, next: Nex
         SET status = 'replied' 
         WHERE conversation_id = $1 AND direction = 'inbound'
       `, [conversationId]);
+      
+      // PATTERN LEARNING: Learn from this operator response
+      try {
+        // Get the last customer message from this conversation
+        const lastCustomerMessage = await db.query(`
+          SELECT body, from_number 
+          FROM messages 
+          WHERE conversation_id = $1 
+            AND direction = 'inbound'
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `, [conversationId]);
+        
+        if (lastCustomerMessage.rows[0] && !isAiGenerated) {
+          // Only learn from human operator responses, not AI-generated ones
+          await patternLearningService.learnFromHumanResponse(
+            lastCustomerMessage.rows[0].body,
+            content,
+            [], // TODO: Extract any actions taken (tickets created, etc.)
+            conversationId,
+            to, // phone number
+            req.user?.id
+          );
+          
+          logger.info('[Pattern Learning] Learned from operator response', {
+            conversationId,
+            phoneNumber: to,
+            operatorId: req.user?.id
+          });
+        }
+      } catch (learningError) {
+        // Don't fail the message send if learning fails
+        logger.error('[Pattern Learning] Failed to learn from response:', learningError);
+      }
     }
     
     res.json({
