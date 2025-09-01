@@ -72,10 +72,12 @@ export const verifyToken = (token: string): JWTPayload => {
 };
 
 // Authentication middleware
-export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  
-  try {
+export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  // Wrap in async function to handle await properly
+  (async () => {
+    const authHeader = req.headers.authorization;
+    
+    try {
     // Log the auth header for debugging
     logger.info('Auth middleware called:', {
       path: req.path,
@@ -102,22 +104,32 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     // Verify token
     const decoded = verifyToken(token);
     
-    // Check if token is blacklisted
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const blacklistCheck = await db.query(
-      'SELECT id FROM blacklisted_tokens WHERE token_hash = $1',
-      [tokenHash]
-    );
-    
-    if (blacklistCheck.rows.length > 0) {
-      logger.warn('Blacklisted token used', {
-        userId: decoded.userId,
-        path: req.path
-      });
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Token has been revoked'
-      });
+    // Check if token is blacklisted (only if table exists)
+    try {
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const blacklistCheck = await db.query(
+        'SELECT id FROM blacklisted_tokens WHERE token_hash = $1',
+        [tokenHash]
+      );
+      
+      if (blacklistCheck.rows.length > 0) {
+        logger.warn('Blacklisted token used', {
+          userId: decoded.userId,
+          path: req.path
+        });
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Token has been revoked'
+        });
+      }
+    } catch (blacklistError: any) {
+      // If blacklist table doesn't exist yet, log but continue
+      // This allows the system to work before migration runs
+      if (blacklistError.code === '42P01') {
+        logger.debug('Blacklist table not yet created, skipping check');
+      } else {
+        logger.error('Error checking token blacklist', { error: blacklistError });
+      }
     }
     
     // Check if token is about to expire (less than 1 hour)
@@ -168,7 +180,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     });
 
     next();
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
         error: 'Unauthorized',
@@ -197,6 +209,14 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       message: 'Authentication failed'
     });
   }
+  })().catch(err => {
+    // Handle any uncaught async errors
+    logger.error('Authentication middleware error', err);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Authentication failed'
+    });
+  });
 };
 
 // Role-based authorization middleware

@@ -483,6 +483,53 @@ async function startServer() {
       // Continue - don't fail startup
     }
     
+    // Create token blacklist table for logout functionality
+    try {
+      logger.info('Creating token blacklist table...');
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS blacklisted_tokens (
+          id SERIAL PRIMARY KEY,
+          token_hash VARCHAR(255) NOT NULL UNIQUE,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          session_id VARCHAR(255),
+          expires_at TIMESTAMP NOT NULL,
+          blacklisted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          reason VARCHAR(50) DEFAULT 'user_logout',
+          ip_address VARCHAR(45),
+          user_agent TEXT
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_blacklisted_tokens_hash ON blacklisted_tokens(token_hash);
+        CREATE INDEX IF NOT EXISTS idx_blacklisted_tokens_expires_at ON blacklisted_tokens(expires_at);
+        CREATE INDEX IF NOT EXISTS idx_blacklisted_tokens_user_id ON blacklisted_tokens(user_id);
+        CREATE INDEX IF NOT EXISTS idx_blacklisted_tokens_session_id ON blacklisted_tokens(session_id);
+      `);
+      
+      // Create cleanup function
+      await db.query(`
+        CREATE OR REPLACE FUNCTION cleanup_expired_blacklisted_tokens()
+        RETURNS INTEGER AS $$
+        DECLARE
+          deleted_count INTEGER;
+        BEGIN
+          DELETE FROM blacklisted_tokens 
+          WHERE expires_at < CURRENT_TIMESTAMP;
+          
+          GET DIAGNOSTICS deleted_count = ROW_COUNT;
+          RETURN deleted_count;
+        END;
+        $$ LANGUAGE plpgsql;
+      `);
+      
+      logger.info('✅ Token blacklist table created');
+    } catch (blacklistError: any) {
+      if (blacklistError.code === '42P07') {
+        logger.info('Token blacklist table already exists');
+      } else {
+        logger.error('Failed to create token blacklist table:', blacklistError);
+      }
+    }
+    
     // Add updated_at column to openphone_conversations if missing
     try {
       logger.info('Checking openphone_conversations columns...');
