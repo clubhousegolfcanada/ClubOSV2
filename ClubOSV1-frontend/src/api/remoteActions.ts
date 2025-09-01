@@ -1,4 +1,4 @@
-import api from './apiClient';
+import { http as api } from './http';
 
 // API client for PC/software remote actions
 

@@ -1,3 +1,19 @@
+/**
+ * @deprecated This file is deprecated. Use @/api/http instead.
+ * All functionality has been migrated to the http client which has:
+ * - Proper CSRF protection
+ * - Centralized token management
+ * - Consistent error handling
+ * 
+ * Migration guide:
+ * - Replace: import apiClient from '@/api/apiClient'
+ * - With: import { http } from '@/api/http'
+ * 
+ * For LLM requests:
+ * - Replace: import { submitRequest } from '@/api/apiClient'
+ * - With: import { submitRequest } from '@/api/llm'
+ */
+
 /* eslint-disable no-restricted-imports */
 import axios from "axios";
 /* eslint-enable no-restricted-imports */

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuthState, useSettingsState } from '@/state/useStore';
-import { submitRequest as apiSubmitRequest } from '@/api/apiClient';
+import { submitRequest as apiSubmitRequest } from '@/api/llm';
 import { http } from '@/api/http';
 import type { UserRequest } from '@/types/request';
 import { tokenManager } from '@/utils/tokenManager';
