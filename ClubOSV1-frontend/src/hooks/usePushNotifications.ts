@@ -82,15 +82,10 @@ export const usePushNotifications = () => {
           return;
         }
         
-        const response = await fetch(`notifications/subscription-status`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        const response = await http.get('notifications/subscription-status');
+        
+        if (response.data.success) {
+          const data = response.data;
           console.log('Backend subscription status:', data);
           setState(prev => ({
             ...prev,
@@ -176,17 +171,13 @@ export const usePushNotifications = () => {
       await registration.update();
 
       // Get VAPID public key from backend
-      const vapidResponse = await fetch(`notifications/vapid-key`, {
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}`
-        }
-      });
-
-      if (!vapidResponse.ok) {
+      const vapidResponse = await http.get('notifications/vapid-key');
+      
+      if (!vapidResponse.data.success) {
         throw new Error('Failed to get VAPID key');
       }
 
-      const vapidData = await vapidResponse.json();
+      const vapidData = vapidResponse.data;
       
       if (!vapidData.success || !vapidData.data?.publicKey) {
         throw new Error('No VAPID public key available');
@@ -201,24 +192,16 @@ export const usePushNotifications = () => {
       });
 
       // Send subscription to backend
-      const response = await fetch(`notifications/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: subscription.toJSON().keys?.p256dh || '',
-            auth: subscription.toJSON().keys?.auth || ''
-          }
-        })
+      const response = await http.post('notifications/subscribe', {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.toJSON().keys?.p256dh || '',
+          auth: subscription.toJSON().keys?.auth || ''
+        }
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to save subscription: ${error}`);
+      if (!response.data.success) {
+        throw new Error(`Failed to save subscription: ${response.data.message}`);
       }
 
       setState(prev => ({
@@ -262,14 +245,9 @@ export const usePushNotifications = () => {
       }
 
       // Notify backend
-      const response = await fetch(`notifications/subscribe`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}`
-        }
-      });
+      const response = await http.delete('notifications/subscribe');
 
-      if (!response.ok) {
+      if (!response.data.success) {
         throw new Error('Failed to unsubscribe');
       }
 
@@ -301,16 +279,9 @@ export const usePushNotifications = () => {
     quietHoursEnd?: string;
   }) => {
     try {
-      const response = await fetch(`notifications/preferences`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(preferences)
-      });
+      const response = await http.put('notifications/preferences', preferences);
 
-      if (!response.ok) {
+      if (!response.data.success) {
         throw new Error('Failed to update preferences');
       }
 
