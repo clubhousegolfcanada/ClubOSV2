@@ -258,7 +258,7 @@ export class ConversationStateMachine extends EventEmitter {
         this.emit('conversation:completed', { conversationId });
         this.activeConversations.delete(conversationId);
         return {
-          response: patternResult.suggestedAction?.response || 'Thank you! Is there anything else I can help with?',
+          response: patternResult.response || 'Thank you! Is there anything else I can help with?',
           currentStep: 'completed'
         };
       }
@@ -336,9 +336,9 @@ export class ConversationStateMachine extends EventEmitter {
       conversationId
     );
 
-    if (result.action === 'auto_execute' && result.suggestedAction) {
+    if (result.action === 'auto_execute' && result.response) {
       return {
-        response: result.suggestedAction.response,
+        response: result.response,
         currentStep: 'single_step_complete'
       };
     }

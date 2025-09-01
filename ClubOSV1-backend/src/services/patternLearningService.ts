@@ -502,7 +502,7 @@ export class PatternLearningService {
     message: string,
     response: string,
     actions: any[],
-    operatorId?: number
+    operatorId?: string
   ): Promise<void> {
     try {
       if (!this.openai) {
@@ -579,7 +579,7 @@ export class PatternLearningService {
     response: string,
     actions: any[],
     signature: string,
-    operatorId?: number
+    operatorId?: string
   ): Promise<void> {
     try {
       // Extract basic keywords
@@ -631,7 +631,7 @@ export class PatternLearningService {
     patternId: number,
     humanResponse: string,
     actionsTaken: any[],
-    operatorId?: number
+    operatorId?: string
   ): Promise<void> {
     try {
       // For now, just log that the pattern was overridden
