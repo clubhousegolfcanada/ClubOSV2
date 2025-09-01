@@ -538,7 +538,9 @@ router.post('/reply',
         textLength: text?.length,
         hasBotToken: !!botToken,
         botTokenPrefix: botToken ? botToken.substring(0, 10) + '...' : 'None',
-        user: req.user?.email
+        user: req.user?.email,
+        userId: req.user?.id,
+        userName: req.user?.name
       });
       
       if (!thread_ts || !text) {
@@ -601,7 +603,9 @@ router.post('/reply',
       });
       
       // Send reply to Slack thread using Web API
-      const slackResponse = await axios.post('https://slack.com/api/chat.postMessage', {
+      let slackResponse;
+      try {
+        slackResponse = await axios.post('https://slack.com/api/chat.postMessage', {
         channel: channelId,
         thread_ts: thread_ts,
         text: `[ClubOS ${req.user?.name || 'User'}]: ${text}`,
@@ -614,6 +618,16 @@ router.post('/reply',
           'Content-Type': 'application/json'
         }
       });
+      } catch (slackError: any) {
+        logger.error('Slack API call failed', {
+          error: slackError.message,
+          response: slackError.response?.data,
+          status: slackError.response?.status,
+          thread_ts,
+          channelId
+        });
+        throw slackError;
+      }
       
       if (!slackResponse.data.ok) {
         logger.error('Failed to send reply to Slack', { 
@@ -665,7 +679,10 @@ router.post('/reply',
       logger.error('Failed to send reply to Slack:', {
         error: error.message,
         response: error.response?.data,
-        stack: error.stack
+        stack: error.stack,
+        thread_ts: req.body?.thread_ts,
+        textLength: req.body?.text?.length,
+        user: req.user?.email
       });
       
       // Check if it's an auth error from middleware
@@ -676,11 +693,38 @@ router.post('/reply',
         });
       }
       
+      // Check for specific Slack API errors
+      if (error.response?.data?.error === 'channel_not_found') {
+        return res.status(400).json({
+          success: false,
+          error: 'Slack channel not found. Please check channel configuration.',
+          channelId: process.env.SLACK_CHANNEL_ID,
+          channelName: process.env.SLACK_CHANNEL
+        });
+      }
+      
+      if (error.response?.data?.error === 'invalid_auth') {
+        return res.status(503).json({
+          success: false,
+          error: 'Slack authentication failed. Bot token may be invalid.',
+          hint: 'Check SLACK_BOT_TOKEN environment variable'
+        });
+      }
+      
+      if (error.response?.data?.error === 'thread_not_found') {
+        return res.status(400).json({
+          success: false,
+          error: 'Thread not found in Slack. The original message may have been deleted.',
+          thread_ts: req.body?.thread_ts
+        });
+      }
+      
       // Return a proper error response instead of passing to next
       return res.status(500).json({
         success: false,
         error: error.response?.data?.error || error.message || 'Failed to send reply to Slack',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        slackError: error.response?.data
       });
     }
   }
