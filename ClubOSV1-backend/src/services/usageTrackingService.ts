@@ -68,15 +68,15 @@ class UsageTrackingService {
           cache_hit BOOLEAN DEFAULT false,
           error TEXT,
           metadata JSONB,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          
-          -- Indexes for performance
-          INDEX idx_usage_user_id (user_id),
-          INDEX idx_usage_endpoint (endpoint),
-          INDEX idx_usage_created_at (created_at),
-          INDEX idx_usage_model (model)
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      
+      // Create indexes separately
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_usage_user_id ON api_usage(user_id)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_usage_endpoint ON api_usage(endpoint)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_usage_created_at ON api_usage(created_at)`);
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_usage_model ON api_usage(model)`);
 
       // Create daily aggregation table
       await db.query(`
