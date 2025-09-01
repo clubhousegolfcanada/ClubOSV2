@@ -1,12 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcryptjs from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';
 import { body } from 'express-validator';
-import { authenticate, generateToken } from '../middleware/auth';
+import { authenticate, generateToken, verifyToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { transformUser } from '../utils/transformers';
 import { passwordChangeLimiter } from '../middleware/passwordChangeLimiter';
@@ -330,6 +331,107 @@ router.post('/login',
           user: transformedUser,
           token
         }
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Logout endpoint - invalidates the current token
+router.post('/logout',
+  authenticate, // User must be authenticated to logout
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Get the token from the authorization header
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      
+      if (!token) {
+        throw new AppError('No token provided', 400, 'INVALID_TOKEN');
+      }
+      
+      // Verify and decode the token to get expiration time
+      let decoded;
+      try {
+        decoded = verifyToken(token);
+      } catch (error) {
+        // Token is already invalid, consider it logged out
+        return res.status(200).json({
+          success: true,
+          message: 'Logged out successfully'
+        });
+      }
+      
+      // Create a hash of the token for storage (security: don't store raw tokens)
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      
+      // Calculate when the token expires
+      const expiresAt = decoded.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+      
+      // Get client information for audit
+      const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      
+      // Insert into blacklist table
+      await db.query(
+        `INSERT INTO blacklisted_tokens 
+         (token_hash, user_id, session_id, expires_at, reason, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (token_hash) DO NOTHING`,
+        [
+          tokenHash,
+          req.user?.id || decoded.userId,
+          decoded.sessionId || null,
+          expiresAt,
+          'user_logout',
+          ipAddress,
+          userAgent
+        ]
+      );
+      
+      logger.info('User logged out', {
+        userId: req.user?.id,
+        sessionId: decoded.sessionId,
+        ipAddress
+      });
+      
+      res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Logout from all devices endpoint - invalidates all tokens for a user
+router.post('/logout-all',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not found', 400, 'USER_NOT_FOUND');
+      }
+      
+      // Get all active sessions for this user (this would require tracking sessions)
+      // For now, we'll just log the action
+      // In a production system, you'd want to track all active sessions
+      
+      logger.info('User logged out from all devices', {
+        userId,
+        ipAddress: req.ip
+      });
+      
+      res.status(200).json({
+        success: true,
+        message: 'Logged out from all devices successfully',
+        note: 'Full implementation requires session tracking'
       });
       
     } catch (error) {

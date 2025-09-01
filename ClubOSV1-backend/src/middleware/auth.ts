@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { config } from '../utils/envValidator';
 import { logger } from '../utils/logger';
 import { UserRole, JWTPayload as IJWTPayload } from '../types';
@@ -71,7 +72,7 @@ export const verifyToken = (token: string): JWTPayload => {
 };
 
 // Authentication middleware
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   
   try {
@@ -100,6 +101,24 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 
     // Verify token
     const decoded = verifyToken(token);
+    
+    // Check if token is blacklisted
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const blacklistCheck = await db.query(
+      'SELECT id FROM blacklisted_tokens WHERE token_hash = $1',
+      [tokenHash]
+    );
+    
+    if (blacklistCheck.rows.length > 0) {
+      logger.warn('Blacklisted token used', {
+        userId: decoded.userId,
+        path: req.path
+      });
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Token has been revoked'
+      });
+    }
     
     // Check if token is about to expire (less than 1 hour)
     const now = Date.now() / 1000;
