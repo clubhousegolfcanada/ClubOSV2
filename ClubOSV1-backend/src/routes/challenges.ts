@@ -694,25 +694,53 @@ router.post('/:id/select-winner', async (req, res) => {
     
     await client.query(selectionQuery, [id, userId, winnerId]);
     
-    // Check if both players have selected
+    // Check if both players have selected - specifically checking for creator and acceptor
     const selectionsQuery = `
       SELECT 
-        COUNT(*) as selection_count,
-        COUNT(DISTINCT selected_winner_id) as unique_selections,
-        ARRAY_AGG(DISTINCT selected_winner_id) as winner_ids
-      FROM challenge_winner_selections
-      WHERE challenge_id = $1
+        COUNT(DISTINCT ws.user_id) as selection_count,
+        COUNT(DISTINCT ws.selected_winner_id) as unique_selections,
+        ARRAY_AGG(DISTINCT ws.selected_winner_id) as winner_ids,
+        bool_and(ws.user_id IN (c.creator_id, c.acceptor_id)) as valid_users,
+        bool_or(ws.user_id = c.creator_id) as creator_selected,
+        bool_or(ws.user_id = c.acceptor_id) as acceptor_selected,
+        ARRAY_AGG(DISTINCT ws.user_id) as user_ids
+      FROM challenge_winner_selections ws
+      JOIN challenges c ON c.id = ws.challenge_id
+      WHERE ws.challenge_id = $1 
+        AND ws.user_id IN (c.creator_id, c.acceptor_id)
+      GROUP BY c.id
     `;
     
     const selectionsResult = await client.query(selectionsQuery, [id]);
-    const selections = selectionsResult.rows[0];
+    const selections = selectionsResult.rows[0] || { 
+      selection_count: 0, 
+      unique_selections: 0, 
+      winner_ids: [], 
+      valid_users: true,
+      creator_selected: false,
+      acceptor_selected: false,
+      user_ids: []
+    };
+    
+    // Log for debugging
+    logger.info('Winner selection check:', {
+      challengeId: id,
+      userId,
+      winnerId,
+      selections: selections.selection_count,
+      uniqueWinners: selections.unique_selections,
+      creatorSelected: selections.creator_selected,
+      acceptorSelected: selections.acceptor_selected,
+      winnerIds: selections.winner_ids,
+      userIds: selections.user_ids
+    });
     
     let message = 'Winner selection recorded. Waiting for other player.';
     let status = 'pending';
     let agreedWinner = null;
     
-    // If both players have selected
-    if (selections.selection_count >= 2) {
+    // If both players have selected (creator AND acceptor must have both selected)
+    if (selections.creator_selected && selections.acceptor_selected) {
       if (selections.unique_selections === 1) {
         // Both agree on the winner - trigger resolution
         message = 'Both players agree! Challenge will be resolved.';
