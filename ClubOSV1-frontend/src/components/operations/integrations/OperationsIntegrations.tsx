@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
-import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap, Brain, Sparkles } from 'lucide-react';
+import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap, Brain, Sparkles, ChevronRight } from 'lucide-react';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { AIFeatureCard } from '@/components/AIFeatureCard';
 import { tokenManager } from '@/utils/tokenManager';
@@ -40,6 +41,7 @@ interface AIFeature {
 }
 
 export const OperationsIntegrations: React.FC = () => {
+  const router = useRouter();
   const [systemFeatures, setSystemFeatures] = useState<SystemFeature[]>([
     {
       key: 'smart_assist',
@@ -131,6 +133,12 @@ export const OperationsIntegrations: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [testingService, setTestingService] = useState<string | null>(null);
   const [aiFeatures, setAIFeatures] = useState<AIFeature[]>([]);
+  const [patternStats, setPatternStats] = useState({
+    totalPatterns: 0,
+    activePatterns: 0,
+    executionsToday: 0,
+    successRate: 0
+  });
   const [expandedSections, setExpandedSections] = useState({
     services: true,
     ai: false,
@@ -143,7 +151,27 @@ export const OperationsIntegrations: React.FC = () => {
   useEffect(() => {
     fetchConfigurations();
     fetchAIFeatures();
+    fetchPatternStats();
   }, []);
+
+  const fetchPatternStats = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await http.get(`patterns/stats`);
+      if (response.data) {
+        const stats = response.data;
+        setPatternStats({
+          totalPatterns: stats.patterns?.total || 0,
+          activePatterns: stats.patterns?.active || 0,
+          executionsToday: stats.executions?.today || 0,
+          successRate: stats.patterns?.avgConfidence || 0
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching pattern stats:', error);
+    }
+  };
 
   const fetchAIFeatures = async () => {
     if (!token) return;
@@ -927,44 +955,46 @@ export const OperationsIntegrations: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Automations Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div 
-          className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
-          onClick={() => toggleSection('ai')}
-        >
+      {/* V3-PLS (Pattern Learning System) Card */}
+      <div 
+        className="bg-white rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => router.push('/operations?tab=patterns')}
+      >
+        <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
-              <span className="text-sm text-gray-500">
-                ({aiFeatures.filter(f => f.enabled).length}/{aiFeatures.length} active)
-              </span>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Brain className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">V3-PLS</h2>
+                <p className="text-sm text-gray-500">Pattern Learning System</p>
+              </div>
             </div>
-            {expandedSections.ai ? 
-              <Settings className="h-5 w-5 text-gray-500 animate-spin-slow" /> : 
-              <Settings className="h-5 w-5 text-gray-500" />
-            }
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-primary">
+                  {patternStats.activePatterns}/{patternStats.totalPatterns}
+                </div>
+                <div className="text-xs text-gray-500">Active Patterns</div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <div className="text-xs text-gray-500">Today</div>
+              <div className="text-sm font-semibold text-gray-900">{patternStats.executionsToday} runs</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Success Rate</div>
+              <div className="text-sm font-semibold text-gray-900">{Math.round(patternStats.successRate * 100)}%</div>
+            </div>
+            <div className="text-right">
+              <span className="text-primary font-medium text-sm">View Dashboard</span>
+            </div>
           </div>
         </div>
-        
-        {expandedSections.ai && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {aiFeatures.map((feature) => (
-                <AIFeatureCard
-                  key={feature.id}
-                  feature={feature}
-                  onToggle={() => handleToggleAIFeature(feature.feature_key, !feature.enabled)}
-                  onUpdate={fetchAIFeatures}
-                />
-              ))}
-            </div>
-            {aiFeatures.length === 0 && (
-              <p className="text-gray-500 text-center py-8">No AI features configured</p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Knowledge Management Section */}
