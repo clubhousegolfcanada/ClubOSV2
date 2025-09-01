@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, X, Check, Clock } from 'lucide-react';
 import { http } from '@/api/http';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface SuggestedAction {
@@ -21,7 +22,7 @@ export const SuggestedActions: React.FC = () => {
   useEffect(() => {
     const fetchPatterns = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         // Fetch recent history and tickets to identify patterns
@@ -113,7 +114,7 @@ export const SuggestedActions: React.FC = () => {
     setIsProcessing(action.id);
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       // Handle different action types
       switch (action.type) {

@@ -1,4 +1,5 @@
 import { http } from '@/api/http';
+import { tokenManager } from '@/utils/tokenManager';
 
 export interface RemoteSessionResponse {
   method: 'ninjaone' | 'fallback';
@@ -22,7 +23,7 @@ export interface DeviceInfoResponse {
 
 class NinjaOneRemoteAPI {
   private getAuthHeaders() {
-    const token = localStorage.getItem('clubos_token');
+    const token = tokenManager.getToken();
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'

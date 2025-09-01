@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings } from 'lucide-react';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface AIFeature {
@@ -38,7 +39,7 @@ export const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ feature, onToggle,
   const saveConfig = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const updatedConfig = {
         ...feature.config,
         responseSource,

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap, Brain, Sparkles } from 'lucide-react';
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { AIFeatureCard } from '@/components/AIFeatureCard';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface SystemFeature {
@@ -137,7 +138,7 @@ export const OperationsIntegrations: React.FC = () => {
   });
   
   const { user } = useAuthState();
-  const token = user?.token || localStorage.getItem('clubos_token');
+  const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     fetchConfigurations();

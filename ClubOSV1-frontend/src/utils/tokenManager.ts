@@ -78,6 +78,30 @@ export class TokenManager {
   }
 
   /**
+   * Get token from localStorage
+   */
+  getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('clubos_token');
+  }
+
+  /**
+   * Set token in localStorage
+   */
+  setToken(token: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('clubos_token', token);
+  }
+
+  /**
+   * Clear token from localStorage
+   */
+  clearToken(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('clubos_token');
+  }
+
+  /**
    * Get appropriate check interval based on token expiry time
    */
   private getCheckInterval(token: string): number {
@@ -106,7 +130,7 @@ export class TokenManager {
       clearInterval(this.checkInterval);
     }
 
-    const token = localStorage.getItem('clubos_token');
+    const token = this.getToken();
     if (!token) return;
 
     // Get appropriate check interval based on token
@@ -114,7 +138,7 @@ export class TokenManager {
 
     // Don't check immediately on start - the token was just validated by login
     this.checkInterval = setInterval(() => {
-      const currentToken = localStorage.getItem('clubos_token');
+      const currentToken = this.getToken();
       
       if (currentToken && this.isTokenExpired(currentToken)) {
         this.handleTokenExpiration();
@@ -190,7 +214,7 @@ export class TokenManager {
     this.stopTokenMonitoring();
     
     // Clear the token immediately to stop API calls
-    localStorage.removeItem('clubos_token');
+    this.clearToken();
     localStorage.removeItem('clubos_user');
     
     // Show notification only once

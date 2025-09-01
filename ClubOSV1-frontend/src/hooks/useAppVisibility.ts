@@ -34,7 +34,7 @@ export function useAppVisibility() {
         console.log('App became visible, checking auth state...');
         
         const storedUser = localStorage.getItem('clubos_user');
-        const storedToken = localStorage.getItem('clubos_token');
+        const storedToken = tokenManager.getToken();
         
         if (storedUser && storedToken) {
           // Check if token is still valid
@@ -61,7 +61,7 @@ export function useAppVisibility() {
             // Token expired while app was in background
             console.log('Token expired while app was in background');
             localStorage.removeItem('clubos_user');
-            localStorage.removeItem('clubos_token');
+            tokenManager.clearToken();
             localStorage.removeItem('clubos_view_mode');
             
             // Only redirect if not already on login page

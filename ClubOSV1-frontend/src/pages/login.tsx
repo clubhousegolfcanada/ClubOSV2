@@ -4,6 +4,7 @@ import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { http } from '@/api/http';
 import { Eye, EyeOff, Users, User, ArrowRight } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -24,11 +25,7 @@ const LoginPage = () => {
   
   // Stop token monitoring when login page loads
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      import('../utils/tokenManager').then(({ tokenManager }) => {
-        tokenManager.stopTokenMonitoring();
-      });
-    }
+    tokenManager.stopTokenMonitoring();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +35,7 @@ const LoginPage = () => {
     // Clear any stale authentication state before attempting login
     if (typeof window !== 'undefined') {
       // Clear old tokens and user data
-      localStorage.removeItem('clubos_token');
+      tokenManager.clearToken();
       localStorage.removeItem('clubos_user');
       localStorage.removeItem('clubos_view_mode');
       sessionStorage.clear();
@@ -48,14 +45,10 @@ const LoginPage = () => {
 
     try {
       // Stop any existing token monitoring first
-      if (typeof window !== 'undefined') {
-        await import('../utils/tokenManager').then(({ tokenManager }) => {
-          tokenManager.stopTokenMonitoring();
-        });
-      }
+      tokenManager.stopTokenMonitoring();
       
       // Clear any stale auth data
-      localStorage.removeItem('clubos_token');
+      tokenManager.clearToken();
       localStorage.removeItem('clubos_user');
 
       let response;

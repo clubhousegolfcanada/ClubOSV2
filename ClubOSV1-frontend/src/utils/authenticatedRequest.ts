@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 import { toast } from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface AuthRequestOptions extends Omit<AxiosRequestConfig, 'headers'> {
@@ -21,7 +22,7 @@ export async function authenticatedRequest<T = any>(
   const { showErrorToast = false, retryOnAuthError = false, ...axiosOptions } = options;
   
   try {
-    const token = localStorage.getItem('clubos_token');
+    const token = tokenManager.getToken();
     
     // If no token, return null silently (user not logged in)
     if (!token) {
@@ -45,7 +46,7 @@ export async function authenticatedRequest<T = any>(
       console.log('Authentication failed for:', url);
       
       // Clear invalid token
-      localStorage.removeItem('clubos_token');
+      tokenManager.clearToken();
       localStorage.removeItem('clubos_user');
       
       if (showErrorToast) {

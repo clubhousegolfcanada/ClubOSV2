@@ -15,7 +15,7 @@ export const SessionExpiryWarning: React.FC = () => {
     if (!mounted) return;
     
     const checkExpiry = () => {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return;
 
       const timeUntilExpiry = tokenManager.getTimeUntilExpiration(token);

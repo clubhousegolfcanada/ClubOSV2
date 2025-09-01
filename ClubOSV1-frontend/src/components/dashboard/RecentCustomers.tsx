@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { MessageSquare, Clock } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface RecentCustomer {
@@ -27,7 +28,7 @@ export const RecentCustomers: React.FC = () => {
     /* Original code - re-enable after implementing proper caching
     const fetchRecentCustomers = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token) {
           setIsLoading(false);
           return;

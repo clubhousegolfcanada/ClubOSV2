@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useMessages } from '@/contexts/MessagesContext';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface Message {
@@ -124,7 +125,7 @@ export default function MessagesRedesigned() {
     if (showRefreshIndicator) setRefreshing(true);
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         router.push('/login');
@@ -179,7 +180,7 @@ export default function MessagesRedesigned() {
     
     if (conversation.phone_number) {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (token) {
           const historyResponse = await http.get(
             `messages/conversations/${conversation.phone_number}/full-history`,
@@ -243,7 +244,7 @@ export default function MessagesRedesigned() {
     setNewMessage('');
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Session expired. Please log in again.');
         router.push('/login');
@@ -293,7 +294,7 @@ export default function MessagesRedesigned() {
     
     setLoadingSuggestion(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;
@@ -327,7 +328,7 @@ export default function MessagesRedesigned() {
   const sendAiSuggestion = async (suggestionId: string, editedText?: string) => {
     setSending(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;

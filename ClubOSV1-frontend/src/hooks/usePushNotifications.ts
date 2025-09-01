@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { http } from '@/api/http';
 import { toast } from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 interface PushNotificationState {
   isSupported: boolean;
@@ -75,7 +76,7 @@ export const usePushNotifications = () => {
       
       if (subscription) {
         // Verify with backend
-        const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
+        const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
         if (!token) {
           console.log('No auth token found, skipping subscription check');
           return;
@@ -177,7 +178,7 @@ export const usePushNotifications = () => {
       // Get VAPID public key from backend
       const vapidResponse = await fetch(`notifications/vapid-key`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`
+          'Authorization': `Bearer ${tokenManager.getToken()}`
         }
       });
 
@@ -203,7 +204,7 @@ export const usePushNotifications = () => {
       const response = await fetch(`notifications/subscribe`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`,
+          'Authorization': `Bearer ${tokenManager.getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -264,7 +265,7 @@ export const usePushNotifications = () => {
       const response = await fetch(`notifications/subscribe`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`
+          'Authorization': `Bearer ${tokenManager.getToken()}`
         }
       });
 
@@ -303,7 +304,7 @@ export const usePushNotifications = () => {
       const response = await fetch(`notifications/preferences`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('clubos_token')}`,
+          'Authorization': `Bearer ${tokenManager.getToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(preferences)

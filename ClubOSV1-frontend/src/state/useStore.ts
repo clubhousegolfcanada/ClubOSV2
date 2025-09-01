@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
 import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/iframeStorage';
+import { tokenManager } from '@/utils/tokenManager';
 
 // Export UserRole type
 export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
@@ -123,12 +124,12 @@ export const useAuthState = create<AuthState>()(
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
         // Clear only auth-related data, not everything
-        removeStorageItem('clubos_token');
+        tokenManager.clearToken();
         removeStorageItem('clubos_user');
         removeStorageItem('clubos_view_mode');
         
         // Set new auth data using iframe-safe storage
-        setStorageItem('clubos_token', token);
+        tokenManager.setToken(token);
         setStorageItem('clubos_user', JSON.stringify(user));
         
         // CRITICAL: Set axios default header for all requests
@@ -150,7 +151,7 @@ export const useAuthState = create<AuthState>()(
       setUser: (user) => {
         // If user is provided but no token, try to get from storage
         if (user && !user.token && typeof window !== 'undefined') {
-          const token = getStorageItem('clubos_token');
+          const token = tokenManager.getToken();
           if (token) {
             user.token = token;
             // Set axios header when restoring user
@@ -168,7 +169,7 @@ export const useAuthState = create<AuthState>()(
           // Auth header cleanup now handled by http client
           
           // Clear all localStorage items
-          localStorage.removeItem('clubos_token');
+          tokenManager.clearToken();
           localStorage.removeItem('clubos_user');
           localStorage.removeItem('clubos_view_mode');
           
@@ -216,7 +217,7 @@ export const useAuthState = create<AuthState>()(
       // On rehydration, restore the token from storage
       onRehydrateStorage: () => (state) => {
         if (state && state.user && typeof window !== 'undefined') {
-          const token = getStorageItem('clubos_token');
+          const token = tokenManager.getToken();
           if (token) {
             state.user.token = token;
             // Set axios header on rehydration

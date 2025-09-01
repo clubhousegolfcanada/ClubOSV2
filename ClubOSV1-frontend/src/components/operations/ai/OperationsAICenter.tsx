@@ -7,6 +7,7 @@ import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { AIFeatureCard } from '@/components/AIFeatureCard';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface AIFeature {
@@ -56,7 +57,7 @@ export const OperationsAICenter: React.FC = () => {
   });
   
   const { user } = useAuthState();
-  const token = user?.token || localStorage.getItem('clubos_token');
+  const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     if (token) {

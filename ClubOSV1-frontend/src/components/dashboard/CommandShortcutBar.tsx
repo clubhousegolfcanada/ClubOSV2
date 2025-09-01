@@ -3,6 +3,7 @@ import { AlertTriangle, ClipboardList, Upload } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface Command {
@@ -23,7 +24,7 @@ export const CommandShortcutBar: React.FC = () => {
   const handleAlertStaff = async () => {
     setIsProcessing('alert-staff');
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       // Create high priority ticket
       await http.post(`tickets`, {

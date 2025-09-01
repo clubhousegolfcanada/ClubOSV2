@@ -4,6 +4,7 @@ import { http } from '@/api/http';
 import { MessageSquare, Clock, ArrowRight } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface RecentConversation {
@@ -24,7 +25,7 @@ export const MessagesCard: React.FC = () => {
   useEffect(() => {
     const fetchRecentConversations = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token || !user || !['admin', 'operator', 'support'].includes(user.role)) {
           setIsLoading(false);
           return;

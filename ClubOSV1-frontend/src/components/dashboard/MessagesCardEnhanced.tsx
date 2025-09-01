@@ -10,6 +10,7 @@ import {
 import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
 import toast from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface RecentConversation {
@@ -42,7 +43,7 @@ export const MessagesCardEnhanced: React.FC = () => {
   useEffect(() => {
     const fetchRecentConversations = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token || !user || !['admin', 'operator', 'support'].includes(user.role)) {
           setIsLoading(false);
           return;
@@ -96,7 +97,7 @@ export const MessagesCardEnhanced: React.FC = () => {
     });
 
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(
         `llm/suggest-response`,
         {
@@ -134,7 +135,7 @@ export const MessagesCardEnhanced: React.FC = () => {
 
     setSendingReply(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.post(
         `messages/send`,
         {

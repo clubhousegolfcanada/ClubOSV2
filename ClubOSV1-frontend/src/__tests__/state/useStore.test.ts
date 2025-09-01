@@ -1,5 +1,17 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAuthState, useSettingsState } from '@/state/useStore';
+import { tokenManager } from '@/utils/tokenManager';
+
+// Mock tokenManager
+jest.mock('@/utils/tokenManager', () => ({
+  tokenManager: {
+    getToken: jest.fn(),
+    setToken: jest.fn(),
+    clearToken: jest.fn(),
+  },
+}));
+
+const mockTokenManager = tokenManager as jest.Mocked<typeof tokenManager>;
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -54,7 +66,7 @@ describe('useAuthState', () => {
 
     expect(result.current.user).toEqual({ ...testUser, token });
     expect(result.current.isAuthenticated).toBe(true);
-    expect(localStorageMock.getItem('clubos_token')).toBe(token);
+    expect(mockTokenManager.setToken).toHaveBeenCalledWith(token);
   });
 
   it('logs out a user', () => {
@@ -78,7 +90,7 @@ describe('useAuthState', () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(localStorageMock.getItem('clubos_token')).toBeNull();
+    expect(mockTokenManager.clearToken).toHaveBeenCalled();
   });
 
   it('sets loading state', () => {

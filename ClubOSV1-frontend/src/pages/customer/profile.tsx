@@ -13,6 +13,7 @@ import {
   Settings, BarChart3, Coins, TrendingUp, Calendar,
   Target, Clock, Award, MapPin, Shield, X, Eye, EyeOff, Gift, Package, Sparkles
 } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 import { toast } from 'react-hot-toast';
 import { http } from '@/api/http';
 
@@ -118,7 +119,7 @@ export default function CustomerProfile() {
     if (user) {
       // Small delay to ensure token is available in localStorage
       const timer = setTimeout(() => {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (token) {
           fetchProfileData();
         }
@@ -155,7 +156,7 @@ export default function CustomerProfile() {
   const fetchProfileData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       // If no token, don't make requests
       if (!token) {
@@ -243,7 +244,7 @@ export default function CustomerProfile() {
       // Handle authentication errors
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
-        localStorage.removeItem('clubos_token');
+        tokenManager.clearToken();
         localStorage.removeItem('clubos_user');
         setTimeout(() => {
           router.push('/login');
@@ -263,7 +264,7 @@ export default function CustomerProfile() {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;
@@ -311,7 +312,7 @@ export default function CustomerProfile() {
     
     console.log('Opening box:', selectedBox);
     
-    const token = localStorage.getItem('clubos_token');
+    const token = tokenManager.getToken();
     
     const response = await http.post(
       `boxes/${selectedBox.id}/open`,
@@ -345,7 +346,7 @@ export default function CustomerProfile() {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;
@@ -378,7 +379,7 @@ export default function CustomerProfile() {
   
   const handlePreferenceChange = async (key: string, value: boolean) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;

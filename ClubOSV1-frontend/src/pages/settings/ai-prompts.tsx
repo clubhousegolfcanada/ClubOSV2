@@ -6,6 +6,7 @@ import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { Save, History, RefreshCw, AlertCircle, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface PromptTemplate {
@@ -55,7 +56,7 @@ export default function AIPrompts() {
 
   const loadTemplates = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`prompt-templates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -81,7 +82,7 @@ export default function AIPrompts() {
 
   const loadHistory = async (templateId: string) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`prompt-templates/${templateId}/history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -104,7 +105,7 @@ export default function AIPrompts() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.put(
         `prompt-templates/${selectedTemplate.id}`,
         {

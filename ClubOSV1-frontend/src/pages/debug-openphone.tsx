@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { Database, Phone, RefreshCw, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 export default function DebugOpenPhone() {
@@ -34,7 +35,7 @@ export default function DebugOpenPhone() {
   const checkDatabase = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/database-check`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -61,7 +62,7 @@ export default function DebugOpenPhone() {
   const testConnection = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/test-connection`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -81,7 +82,7 @@ export default function DebugOpenPhone() {
   const syncConversations = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(`debug-openphone/sync-conversations`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -98,7 +99,7 @@ export default function DebugOpenPhone() {
   const importHistory = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(`openphone/import-history`, 
         { daysBack: 30 }, 
         { headers: { Authorization: `Bearer ${token}` } }
@@ -116,7 +117,7 @@ export default function DebugOpenPhone() {
   const checkRawData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/raw-conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -135,7 +136,7 @@ export default function DebugOpenPhone() {
   const repairPhoneNumbers = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(`debug-openphone/repair-phone-numbers`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -155,7 +156,7 @@ export default function DebugOpenPhone() {
   const runDiagnostic = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`debug-openphone/diagnose`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -179,7 +180,7 @@ export default function DebugOpenPhone() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(
         `debug-openphone/test-send`,
         { to: testPhone, text: testMessage },

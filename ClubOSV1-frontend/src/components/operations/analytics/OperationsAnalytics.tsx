@@ -3,6 +3,7 @@ import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Download, Filter, RefreshCw, Clock, Activity, DollarSign, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface AnalyticsData {
@@ -60,7 +61,7 @@ export const OperationsAnalytics: React.FC = () => {
   });
   
   const { user } = useAuthState();
-  const token = user?.token || localStorage.getItem('clubos_token');
+  const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     fetchAnalytics();

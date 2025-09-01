@@ -4,6 +4,7 @@ import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award, Gift } from 'lucide-react';
 import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 type User = {
@@ -72,7 +73,7 @@ export const OperationsUsers: React.FC = () => {
   const [loadingBoxes, setLoadingBoxes] = useState(false);
   
   const { user } = useAuthState();
-  const token = user?.token || localStorage.getItem('clubos_token');
+  const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     fetchUsers();
@@ -80,7 +81,7 @@ export const OperationsUsers: React.FC = () => {
   }, []);
 
   const fetchSettings = async () => {
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     if (!authToken) return;
     
@@ -101,7 +102,7 @@ export const OperationsUsers: React.FC = () => {
   };
   
   const updateAutoApproval = async (enabled: boolean) => {
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     if (!authToken) return;
     
@@ -124,7 +125,7 @@ export const OperationsUsers: React.FC = () => {
   };
 
   const fetchUsers = async () => {
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     if (!authToken) {
       console.log('No token available, skipping users fetch');
@@ -401,7 +402,7 @@ export const OperationsUsers: React.FC = () => {
     
     // Fetch user's current boxes
     setLoadingBoxes(true);
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     try {
       const response = await http.get(`boxes/user/${customer.id}`, {
@@ -423,7 +424,7 @@ export const OperationsUsers: React.FC = () => {
     if (!boxManagementUser || !boxCount) return;
     
     setLoading(true);
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     try {
       const response = await http.post(
@@ -460,7 +461,7 @@ export const OperationsUsers: React.FC = () => {
     }
     
     setLoading(true);
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     try {
       const response = await http.delete(
@@ -493,7 +494,7 @@ export const OperationsUsers: React.FC = () => {
     setAdjustmentReason('');
     setLoadingBalance(true);
     
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     try {
       const response = await http.get(
@@ -514,7 +515,7 @@ export const OperationsUsers: React.FC = () => {
   };
   
   const handleCCAdjustment = async () => {
-    const authToken = token || localStorage.getItem('clubos_token');
+    const authToken = token || tokenManager.getToken();
     
     if (!ccAdjustmentUser) return;
     
@@ -1380,7 +1381,7 @@ export const OperationsUsers: React.FC = () => {
           }}
           userId={achievementUser.id}
           userName={achievementUser.name}
-          userToken={token || localStorage.getItem('clubos_token') || ''}
+          userToken={token || tokenManager.getToken() || ''}
           onSuccess={() => {
             toast.success('Achievement created and awarded successfully!');
           }}

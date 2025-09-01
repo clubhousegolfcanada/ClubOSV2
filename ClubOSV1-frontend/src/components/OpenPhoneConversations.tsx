@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { http } from '@/api/http';
 import { Phone, Users, MessageSquare, Download, FileText, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface ConversationStats {
@@ -20,7 +21,7 @@ export const OpenPhoneConversations: React.FC = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       const response = await http.get(`openphone/conversations/count`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -44,7 +45,7 @@ export const OpenPhoneConversations: React.FC = () => {
   const handleExport = async (format: 'json' | 'llm' | 'csv') => {
     try {
       setExporting(true);
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       // Handle AI Processing differently
       if (format === 'llm') {

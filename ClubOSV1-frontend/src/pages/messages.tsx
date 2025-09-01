@@ -9,6 +9,7 @@ import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useRemoteActionsBar } from '@/hooks/useRemoteActionsBar';
 import { useMessages } from '@/contexts/MessagesContext';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface Message {
@@ -253,7 +254,7 @@ export default function Messages() {
     }
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         console.error('No auth token found');
         toast.error('Please log in again');
@@ -392,7 +393,7 @@ export default function Messages() {
     // Fetch conversation history
     if (conversation.phone_number) {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (token) {
           // Fetch complete history for this phone number
           const historyResponse = await http.get(
@@ -494,7 +495,7 @@ export default function Messages() {
     setNewMessage(''); // Clear input immediately for better UX
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         // Session expiry handled by tokenManager interceptor
         return;
@@ -561,7 +562,7 @@ export default function Messages() {
     
     setLoadingSuggestion(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;
@@ -594,7 +595,7 @@ export default function Messages() {
   const sendAiSuggestion = async (suggestionId: string, editedText?: string) => {
     setSending(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         toast.error('Please log in again');
         return;

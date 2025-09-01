@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { http } from '@/api/http';
 import { Phone, Clock, User, MessageCircle, RefreshCw } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface RecentMessage {
@@ -20,7 +21,7 @@ export const RecentMessages: React.FC = () => {
 
   const fetchRecentMessages = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`openphone/recent-conversations?limit=10`);
       
       console.log('Recent messages response:', response.data);

@@ -15,6 +15,7 @@ import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
 import OccupancyMap from '@/components/dashboard/OccupancyMap';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface QuickStat {
@@ -82,7 +83,7 @@ export default function Home() {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         // Don't make the call if no token
         if (!token) {
           console.log('No token available, skipping stats fetch');
@@ -136,7 +137,7 @@ export default function Home() {
       if (!user || !isClient || authError) return;
       
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token) {
           setWeeklyChecklistCount(0);
           return;
@@ -178,7 +179,7 @@ export default function Home() {
       if (!user || !isClient || authError) return;
       
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token) {
           setTechTicketsOpen(0);
           setFacilitiesTicketsOpen(0);

@@ -3,6 +3,7 @@ import { http } from '@/api/http';
 import { useAuthState } from '@/state/useStore';
 import { UserPlus, Check, X, Clock, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface FriendRequest {
@@ -31,7 +32,7 @@ export const FriendRequests: React.FC = () => {
 
   const fetchRequests = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`friends/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -49,7 +50,7 @@ export const FriendRequests: React.FC = () => {
   const handleAccept = async (requestId: string, userName: string) => {
     setProcessingId(requestId);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.put(
         `friends/${requestId}/accept`,
         {},
@@ -68,7 +69,7 @@ export const FriendRequests: React.FC = () => {
   const handleReject = async (requestId: string) => {
     setProcessingId(requestId);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.put(
         `friends/${requestId}/reject`,
         {},

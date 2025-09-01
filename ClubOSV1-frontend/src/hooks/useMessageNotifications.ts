@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 export function useMessageNotifications() {
@@ -20,7 +21,7 @@ export function useMessageNotifications() {
 
     const checkUnreadMessages = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token) return;
 
         const response = await http.get(`messages/unread-count`);

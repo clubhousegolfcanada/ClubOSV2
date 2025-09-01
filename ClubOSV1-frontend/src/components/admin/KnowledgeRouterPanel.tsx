@@ -9,6 +9,7 @@ import {
   Clock,
   ArrowRight
 } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface RecentUpdate {
@@ -35,7 +36,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
 
   const fetchRecentUpdates = async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
+      const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
       const response = await http.get(`knowledge-router/recent-updates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -53,7 +54,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
 
     try {
       setProcessing(true);
-      const token = typeof window !== 'undefined' ? localStorage.getItem('clubos_token') : null;
+      const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
       
       // Parse and route directly
       const response = await http.post(

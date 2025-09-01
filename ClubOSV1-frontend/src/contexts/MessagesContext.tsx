@@ -3,6 +3,7 @@ import { http } from '@/api/http';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface MessagesContextType {
@@ -39,7 +40,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setIsRefreshing(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         setUnreadCount(0);
         return;
@@ -91,7 +92,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!user || !phoneNumber) return;
 
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return;
 
       await http.put(

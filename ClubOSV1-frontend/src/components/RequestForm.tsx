@@ -8,6 +8,7 @@ import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, Mes
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
+import { tokenManager } from '@/utils/tokenManager';
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -202,7 +203,7 @@ const RequestForm: React.FC = () => {
     if (isTicketMode) {
       setIsProcessing(true);
       try {
-        const token = isMounted ? localStorage.getItem('clubos_token') : null;
+        const token = isMounted ? tokenManager.getToken() : null;
         const response = await http.post(
           `tickets`,
           {
@@ -234,7 +235,7 @@ const RequestForm: React.FC = () => {
     if (isKnowledgeMode) {
       setIsProcessing(true);
       try {
-        const token = isMounted ? localStorage.getItem('clubos_token') : null;
+        const token = isMounted ? tokenManager.getToken() : null;
         
         // Use the existing knowledge-router endpoint
         const response = await http.post(
@@ -396,7 +397,7 @@ const RequestForm: React.FC = () => {
     
     setSendingReply(true);
     try {
-      const token = isMounted ? localStorage.getItem('clubos_token') : null;
+      const token = isMounted ? tokenManager.getToken() : null;
       const response = await http.post(`slack/reply`, {
         thread_ts: lastSlackThreadTs,
         text: replyText.trim()
@@ -478,7 +479,7 @@ const RequestForm: React.FC = () => {
     if (!lastResponse || feedbackGiven) return;
     
     // Check if user is authenticated before attempting feedback
-    const token = isMounted ? localStorage.getItem('clubos_token') : null;
+    const token = isMounted ? tokenManager.getToken() : null;
     if (!token || !user) {
       notify('error', 'Please log in to submit feedback');
       // Store current location and redirect to login

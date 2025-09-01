@@ -6,6 +6,7 @@ import { http } from '@/api/http';
 import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface Conversation {
@@ -55,7 +56,7 @@ export default function MessagesCardV3() {
 
   const fetchConversations = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token || !user || !['admin', 'operator', 'support'].includes(user.role)) {
         setIsLoading(false);
         return;
@@ -126,7 +127,7 @@ export default function MessagesCardV3() {
     setLoadingAi({ ...loadingAi, [conversationId]: true });
 
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(
         `ai-automations/suggest-reply`,
         {
@@ -166,7 +167,7 @@ export default function MessagesCardV3() {
     setSending({ ...sending, [conv.id]: true });
 
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.post(
         `messages/send`,
         {

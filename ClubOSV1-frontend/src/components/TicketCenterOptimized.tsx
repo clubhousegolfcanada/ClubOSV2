@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
@@ -78,7 +79,7 @@ const TicketCenterOptimized = () => {
   const loadTickets = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const params = new URLSearchParams();
       
       // For old tickets, we load all tickets and filter client-side
@@ -185,7 +186,7 @@ const TicketCenterOptimized = () => {
 
   const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.patch(
         `tickets/${ticketId}/status`,
         { status: newStatus },
@@ -221,7 +222,7 @@ const TicketCenterOptimized = () => {
     }
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.delete(
         `tickets/${ticketId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -252,7 +253,7 @@ const TicketCenterOptimized = () => {
     if (!newComment.trim()) return;
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(
         `tickets/${ticketId}/comments`,
         { text: newComment },
@@ -293,7 +294,7 @@ const TicketCenterOptimized = () => {
 
   const clearAllTickets = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const params = new URLSearchParams();
       
       if (activeTab !== 'all') {

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
 import { http } from '@/api/http';
 import { 
+import { tokenManager } from '@/utils/tokenManager';
   Home, 
   Calendar, 
   Users, 
@@ -47,7 +48,7 @@ const CustomerNavigation: React.FC = () => {
   useEffect(() => {
     const fetchBoxCount = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (token) {
           const response = await http.get(`boxes/available`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -67,7 +68,7 @@ const CustomerNavigation: React.FC = () => {
     if (user) {
       // Small delay to ensure token is available
       const timer = setTimeout(() => {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (token) {
           fetchBoxCount();
           // Refresh every 30 seconds

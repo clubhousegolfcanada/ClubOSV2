@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { http } from '@/api/http';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface InsightMetric {
@@ -22,7 +23,7 @@ export const MiniInsightsPanel: React.FC = () => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         // Fetch various metrics in parallel

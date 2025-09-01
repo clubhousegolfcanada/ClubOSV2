@@ -4,6 +4,7 @@ import { Trophy, Medal, Target, Award, Star, Crown, Sparkles, ChevronRight, Filt
 import { AchievementBadge } from '@/components/achievements/AchievementBadge';
 import { http } from '@/api/http';
 import { toast } from 'react-hot-toast';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface Achievement {
@@ -57,7 +58,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
 
   const fetchAchievements = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`achievements/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });

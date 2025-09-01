@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { http } from '@/api/http';
 import { AlertCircle, CheckCircle, XCircle, Database } from 'lucide-react';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 export const UserDebugCheck: React.FC = () => {
@@ -13,7 +14,7 @@ export const UserDebugCheck: React.FC = () => {
     setError(null);
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.get(`debug/check-user`, {
         headers: { Authorization: `Bearer ${token}` }
       });

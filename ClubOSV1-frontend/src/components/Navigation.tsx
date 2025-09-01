@@ -65,7 +65,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     if (!mounted) return;
     
     const checkSessionStatus = () => {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         setSessionStatus('expired');
         return;

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { http } from '@/api/http';
 import { useAuthState } from '../state/useStore';
 import QRCode from 'qrcode';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface Task {
@@ -106,7 +107,7 @@ export const ChecklistSystem: React.FC = () => {
 
   const loadTemplate = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         console.error('No auth token found');
         return;
@@ -150,7 +151,7 @@ export const ChecklistSystem: React.FC = () => {
   const loadSubmissions = async () => {
     setLoadingSubmissions(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) {
         setLoadingSubmissions(false);
         return;
@@ -224,7 +225,7 @@ export const ChecklistSystem: React.FC = () => {
 
   const loadCompletionStats = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return;
       
       const response = await http.get(
@@ -286,7 +287,7 @@ export const ChecklistSystem: React.FC = () => {
     
     try {
       setSavingTask(true);
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       await http.put(
         `checklists/template/task`,
@@ -319,7 +320,7 @@ export const ChecklistSystem: React.FC = () => {
     if (!confirm(`Reset "${task.label}" to original text "${task.originalLabel}"?`)) return;
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       await http.delete(
         `checklists/template/task/${activeCategory}/${activeType}/${task.id}`,
@@ -407,7 +408,7 @@ export const ChecklistSystem: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const completedTaskIds = Object.keys(completedTasks).filter(id => completedTasks[id]);
       
       console.log('Submitting checklist:', {
@@ -489,7 +490,7 @@ export const ChecklistSystem: React.FC = () => {
     if (!confirm('Are you sure you want to delete this submission?')) return;
     
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       await http.delete(
         `checklists/submissions/${submissionId}`,

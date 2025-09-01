@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Activity, Users, MessageSquare, Brain, AlertCircle, CheckCircle, WifiOff, RefreshCw, TrendingUp } from 'lucide-react';
 import { http } from '@/api/http';
 import { format } from 'date-fns';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface SystemStatus {
@@ -47,7 +48,7 @@ export function OperationsDashboard() {
   const fetchDashboardData = async () => {
     setRefreshing(true);
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       
       // Fetch system status - health endpoint doesn't require auth
       const healthResponse = await http.get(`health`);

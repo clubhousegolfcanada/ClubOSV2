@@ -13,6 +13,7 @@ import {
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
+import { tokenManager } from '@/utils/tokenManager';
 import { FriendRequests } from '@/components/customer/FriendRequests';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { TabNavigation } from '@/components/customer/TabNavigation';
@@ -103,7 +104,7 @@ export default function Compete() {
     }
 
     // Ensure token exists before making API calls
-    const token = localStorage.getItem('clubos_token');
+    const token = tokenManager.getToken();
     if (token) {
       loadData();
       fetchPendingRequestCount();
@@ -112,7 +113,7 @@ export default function Compete() {
 
   const fetchPendingRequestCount = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return; // Don't make request without token
       
       const response = await http.get(`friends/pending`, {
@@ -145,7 +146,7 @@ export default function Compete() {
 
   const loadData = async () => {
     // Check for token before loading
-    const token = localStorage.getItem('clubos_token');
+    const token = tokenManager.getToken();
     if (!token) {
       console.log('No token available, skipping data load');
       return;
@@ -165,7 +166,7 @@ export default function Compete() {
 
   const loadCCBalance = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return; // Don't make request without token
       
       const response = await http.get(`challenges/cc-balance`, {
@@ -184,7 +185,7 @@ export default function Compete() {
 
   const loadChallenges = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return; // Don't make request without token
       
       // Load challenges ONCE and filter client-side
@@ -217,7 +218,7 @@ export default function Compete() {
       // Handle auth errors
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
-        localStorage.removeItem('clubos_token');
+        tokenManager.clearToken();
         localStorage.removeItem('clubos_user');
         setTimeout(() => {
           router.push('/login');
@@ -233,7 +234,7 @@ export default function Compete() {
 
   const loadCompetitors = async () => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       if (!token) return; // Don't make request without token
       
       const response = await http.get(`friends?include_stats=true`, {
@@ -277,7 +278,7 @@ export default function Compete() {
 
   const handleAcceptChallenge = async (challengeId: string) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.post(
         `challenges/${challengeId}/accept`,
         {},
@@ -293,7 +294,7 @@ export default function Compete() {
 
   const handleDeclineChallenge = async (challengeId: string) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.post(
         `challenges/${challengeId}/decline`,
         { reason: 'Not interested' },
@@ -359,7 +360,7 @@ export default function Compete() {
 
       if (!winner) return;
 
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       const response = await http.post(
         `challenges/${challengeId}/select-winner`,
         { winnerId: winner },
@@ -385,7 +386,7 @@ export default function Compete() {
       const reason = prompt('Please describe the issue with this challenge:');
       if (!reason) return;
 
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.post(
         `challenges/${challengeId}/dispute`,
         { 
@@ -406,7 +407,7 @@ export default function Compete() {
 
   const removeFriend = async (friendshipId: string, friendName: string) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.delete(
         `friends/${friendshipId}`
       );
@@ -422,7 +423,7 @@ export default function Compete() {
 
   const blockUser = async (userId: string, userName: string) => {
     try {
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       await http.put(
         `friends/${userId}/block`,
         { reason: 'User blocked' },

@@ -3,6 +3,7 @@ import { useAuthState, useSettingsState } from '@/state/useStore';
 import { submitRequest as apiSubmitRequest } from '@/api/apiClient';
 import { http } from '@/api/http';
 import type { UserRequest } from '@/types/request';
+import { tokenManager } from '@/utils/tokenManager';
 
 type HistoryEntry = {
   id: string;
@@ -176,7 +177,7 @@ export const useAnalytics = () => {
     
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('clubos_token');
+        const token = tokenManager.getToken();
         if (!token) {
           // No token, keep default values
           return;

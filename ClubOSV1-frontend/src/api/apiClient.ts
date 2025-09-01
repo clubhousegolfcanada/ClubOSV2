@@ -3,6 +3,7 @@ import type { UserRequest, ApiResponse } from "@/types/request";
 import { addCSRFToRequest } from "@/utils/csrf";
 import logger from "@/services/logger";
 import { resolveApi } from "@/utils/resolveApi";
+import { tokenManager } from "@/utils/tokenManager";
 
 
 const apiClient = axios.create({
@@ -38,7 +39,7 @@ apiClient.interceptors.request.use(
     // Only access localStorage and cookies on client side
     if (typeof window !== 'undefined') {
       // Add auth token
-      const token = localStorage.getItem('clubos_token');
+      const token = tokenManager.getToken();
       // Security: Never log tokens
       
       if (token) {

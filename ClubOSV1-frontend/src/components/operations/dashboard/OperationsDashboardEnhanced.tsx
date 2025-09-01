@@ -11,6 +11,7 @@ import {
   Mail, Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { tokenManager } from '@/utils/tokenManager';
 
 
 interface SystemMetrics {
@@ -52,7 +53,7 @@ interface ExpandedConversation {
 export function OperationsDashboardEnhanced() {
   const { user } = useAuthState();
   const router = useRouter();
-  const token = user?.token || localStorage.getItem('clubos_token');
+  const token = user?.token || tokenManager.getToken();
   
   const [metrics, setMetrics] = useState<SystemMetrics>({
     totalUsers: 0,
