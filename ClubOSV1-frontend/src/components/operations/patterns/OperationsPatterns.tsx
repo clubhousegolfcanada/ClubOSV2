@@ -21,7 +21,7 @@ import {
   Search,
   BarChart3
 } from 'lucide-react';
-import { API_URL } from '@/config/api';
+import { apiClient } from '@/api/http';
 
 interface Pattern {
   id: number;
@@ -74,13 +74,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/patterns/stats`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
+      const data = await apiClient.get('/patterns/stats');
+      setStats(data);
     } catch (error) {
       console.error('Failed to fetch pattern stats:', error);
     }
@@ -88,13 +83,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const fetchPatterns = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/patterns`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPatterns(data);
-      }
+      const data = await apiClient.get('/patterns');
+      setPatterns(data);
     } catch (error) {
       console.error('Failed to fetch patterns:', error);
     } finally {
@@ -104,13 +94,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const fetchConfig = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/patterns/config`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data);
-      }
+      const data = await apiClient.get('/patterns/config');
+      setConfig(data);
     } catch (error) {
       console.error('Failed to fetch config:', error);
     }
@@ -118,16 +103,9 @@ export const OperationsPatterns: React.FC = () => {
 
   const updateConfig = async (key: string, value: any) => {
     try {
-      const response = await fetch(`${API_URL}/api/patterns/config`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ [key]: value })
-      });
-      if (response.ok) {
-        await fetchConfig();
-        await fetchStats();
-      }
+      await apiClient.put('/patterns/config', { [key]: value });
+      await fetchConfig();
+      await fetchStats();
     } catch (error) {
       console.error('Failed to update config:', error);
     }
@@ -135,15 +113,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const togglePattern = async (patternId: number, isActive: boolean) => {
     try {
-      const response = await fetch(`${API_URL}/api/patterns/${patternId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ is_active: !isActive })
-      });
-      if (response.ok) {
-        await fetchPatterns();
-      }
+      await apiClient.put(`/patterns/${patternId}`, { is_active: !isActive });
+      await fetchPatterns();
     } catch (error) {
       console.error('Failed to toggle pattern:', error);
     }
@@ -151,16 +122,8 @@ export const OperationsPatterns: React.FC = () => {
 
   const testMessage = async (message: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/patterns/test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ message })
-      });
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Test Result: ${result.action}\nConfidence: ${result.confidence || 'N/A'}\nReason: ${result.reason || 'Pattern matched'}`);
-      }
+      const result = await apiClient.post('/patterns/test', { message });
+      alert(`Test Result: ${result.action}\nConfidence: ${result.confidence || 'N/A'}\nReason: ${result.reason || 'Pattern matched'}`);
     } catch (error) {
       console.error('Failed to test message:', error);
     }
