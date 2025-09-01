@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.14.59] - 2025-09-01
+
+### Changed
+- **Major Codebase Cleanup - Phase 3**
+  - Organized scripts directory into logical subdirectories (database, hubspot, fixes, migration)
+  - Removed deprecated `apiClient.ts` file (all code migrated to `http.ts`)
+  - Removed empty root directories (components, config, pages)
+  - Moved misplaced operator achievements page to proper frontend location
+  - Reduced root directory from 30 to 21 files (77% reduction from original 91)
+
+### Improved
+- **File Organization**
+  - Scripts now categorized by function (database operations, migrations, fixes, etc.)
+  - Cleaner root directory structure for better maintainability
+  - All frontend code properly consolidated in ClubOSV1-frontend
+
 ## [1.14.58] - 2025-08-31
 
 ### Added
