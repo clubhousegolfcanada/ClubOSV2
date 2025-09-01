@@ -517,9 +517,9 @@ export class ConversationStateMachine extends EventEmitter {
     state: ConversationState,
     patternResult: any
   ): Promise<string> {
-    if (patternResult.suggestedAction?.response) {
+    if (patternResult.response) {
       // Replace context variables
-      let response = patternResult.suggestedAction.response;
+      let response = patternResult.response;
       
       for (const [key, value] of state.context) {
         response = response.replace(`{{${key}}}`, value);

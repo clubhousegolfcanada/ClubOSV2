@@ -251,7 +251,7 @@ export class PatternLearningService {
     actionsTaken: any[],
     conversationId: string,
     phoneNumber: string,
-    operatorId?: number
+    operatorId?: string
   ): Promise<void> {
     try {
       // Only learn if enabled and not in pure shadow mode
