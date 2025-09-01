@@ -568,7 +568,7 @@ async function startServer() {
         CREATE INDEX IF NOT EXISTS idx_slack_replies_timestamp ON slack_replies(timestamp DESC);
       `);
       
-      logger.info('✅ Slack tables created');
+      logger.info('✅ Slack tables created successfully');
     } catch (slackError: any) {
       if (slackError.code === '42P07') {
         logger.info('Slack tables already exist');
