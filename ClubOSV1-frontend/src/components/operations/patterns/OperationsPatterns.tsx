@@ -21,7 +21,7 @@ import {
   Search,
   BarChart3
 } from 'lucide-react';
-import { apiClient } from '@/api/http';
+import apiClient from '@/api/http';
 
 interface Pattern {
   id: number;
