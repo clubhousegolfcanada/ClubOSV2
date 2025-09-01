@@ -46,9 +46,29 @@ export class TokenManager {
   }
 
   /**
+   * Validate token format (JWT structure check)
+   */
+  isValidTokenFormat(token: string): boolean {
+    if (!token) return false;
+    
+    // Check for JWT format (header.payload.signature)
+    const jwtRegex = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/;
+    
+    // Check for bearer token format (shouldn't be stored with Bearer prefix)
+    if (token.startsWith('Bearer ')) {
+      console.warn('Token stored with Bearer prefix - this should be stripped');
+      token = token.replace('Bearer ', '');
+    }
+    
+    return jwtRegex.test(token);
+  }
+
+  /**
    * Check if token is expired or about to expire
    */
   isTokenExpired(token: string): boolean {
+    if (!this.isValidTokenFormat(token)) return true;
+    
     const decoded = this.decodeToken(token);
     if (!decoded || !decoded.exp) return true;
     

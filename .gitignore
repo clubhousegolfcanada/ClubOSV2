@@ -82,3 +82,5 @@ fix-openphone-local.sh
 
 # Admin credentials file (auto-generated)
 admin-credentials.txt
+.DS_Store
+Icon

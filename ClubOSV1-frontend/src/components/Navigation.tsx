@@ -255,8 +255,8 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     
                     <div className="border-t border-[var(--border-secondary)] py-1">
                       <button
-                        onClick={() => {
-                          logout();
+                        onClick={async () => {
+                          await logout();
                           setUserDropdownOpen(false);
                         }}
                         className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
@@ -438,7 +438,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                 
                 {/* Logout Button - Always visible */}
                 <button
-                  onClick={logout}
+                  onClick={() => logout()}
                   className="w-full mt-3 px-4 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation flex items-center gap-2"
                 >
                   <LogOut className="w-5 h-5" />

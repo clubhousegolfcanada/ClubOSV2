@@ -2,6 +2,7 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 /* eslint-enable no-restricted-imports */
 import { tokenManager } from '@/utils/tokenManager';
+import { addCSRFToRequest } from '@/utils/csrf';
 
 // API Error type - using type instead of interface for proper extension
 export type ApiError = AxiosError<{
@@ -65,6 +66,18 @@ client.interceptors.request.use(
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+    }
+
+    // Add CSRF token for state-changing requests (POST, PUT, PATCH, DELETE)
+    if (typeof window !== 'undefined' && 
+        config.method && 
+        ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+      const csrfHeaders = addCSRFToRequest({});
+      Object.entries(csrfHeaders).forEach(([key, value]) => {
+        if (config.headers && typeof value === 'string') {
+          config.headers[key] = value;
+        }
+      });
     }
 
     return config;

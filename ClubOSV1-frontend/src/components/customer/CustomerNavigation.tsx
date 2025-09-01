@@ -39,8 +39,8 @@ const CustomerNavigation: React.FC = () => {
     router.push('/');
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setUserDropdownOpen(false);
   };
 

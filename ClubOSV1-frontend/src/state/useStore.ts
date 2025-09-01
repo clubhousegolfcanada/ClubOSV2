@@ -162,9 +162,25 @@ export const useAuthState = create<AuthState>()(
         }
         set({ user, isAuthenticated: !!user });
       },
-      logout: () => {
-        // Clear auth tokens
+      logout: async () => {
+        // First, try to invalidate token on server
         if (typeof window !== 'undefined') {
+          const token = tokenManager.getToken();
+          if (token) {
+            try {
+              // Call server logout endpoint to invalidate token
+              // Using dynamic import to avoid circular dependency
+              const { http } = await import('@/api/http');
+              await http.post('auth/logout', {}, { 
+                timeout: 5000 // 5 second timeout for logout
+              });
+            } catch (error) {
+              // Log error but continue with client-side cleanup
+              // Logout should not fail even if server is unreachable
+              console.error('Server logout failed:', error);
+            }
+          }
+          
           // Clear axios authorization header
           // Auth header cleanup now handled by http client
           

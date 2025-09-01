@@ -39,18 +39,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
     console.log(`[AuthGuard] ${message}`, sanitized || '');
   };
 
-  // Validate token format (basic validation)
-  const isValidTokenFormat = (token: string): boolean => {
-    if (!token) return false;
-    
-    // Check for JWT format (header.payload.signature)
-    const jwtRegex = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/;
-    
-    // Check for bearer token format
-    const bearerRegex = /^Bearer\s+[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/;
-    
-    return jwtRegex.test(token) || bearerRegex.test(token);
-  };
+  // Token validation is now centralized in tokenManager
 
   // Verify token with backend (optional, for critical operations)
   const verifyTokenWithBackend = async (token: string): Promise<boolean> => {
@@ -123,8 +112,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         });
         
         if (storedUser && storedToken) {
-          // Validate token format
-          if (!isValidTokenFormat(storedToken)) {
+          // Validate token format using tokenManager
+          if (!tokenManager.isValidTokenFormat(storedToken)) {
             secureLog('Invalid token format detected');
             setAuthError('Invalid authentication token');
             tokenManager.clearToken();
