@@ -1,7 +1,17 @@
 /* eslint-disable no-restricted-syntax */
 const RAW_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 /* eslint-enable no-restricted-syntax */
-const BASE = RAW_BASE.replace(/\/+$/, ''); // trim trailing slashes
+
+// Clean up the base URL
+let BASE = RAW_BASE.replace(/\/+$/, ''); // trim trailing slashes
+
+// CRITICAL FIX: Remove /api if it's already at the end of the URL
+// This handles cases where Vercel env has the URL with /api already
+if (BASE.endsWith('/api')) {
+  BASE = BASE.slice(0, -4);
+  console.warn('[resolveApi] Removed /api suffix from NEXT_PUBLIC_API_URL. URL should not include /api');
+}
+
 const PREFIX = '/api';
 
 export function resolveApi(path: string): string {
