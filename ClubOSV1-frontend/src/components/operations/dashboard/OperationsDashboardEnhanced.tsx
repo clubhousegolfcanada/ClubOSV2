@@ -241,7 +241,7 @@ export function OperationsDashboardEnhanced() {
     }
   };
 
-  const useAiSuggestion = (conversationId: string) => {
+  const applyAiSuggestion = (conversationId: string) => {
     const expanded = expandedConversations.get(conversationId);
     if (expanded) {
       updateReplyText(conversationId, expanded.aiSuggestion);
@@ -458,7 +458,7 @@ export function OperationsDashboardEnhanced() {
                                 </span>
                               </div>
                               <button
-                                onClick={() => useAiSuggestion(message.conversationId)}
+                                onClick={() => applyAiSuggestion(message.conversationId)}
                                 className="text-xs px-3 py-1 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity"
                               >
                                 Use This

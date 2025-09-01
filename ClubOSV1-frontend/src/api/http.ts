@@ -3,17 +3,14 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 /* eslint-enable no-restricted-imports */
 import { tokenManager } from '@/utils/tokenManager';
 
-// API Error type
-export interface ApiError extends AxiosError {
-  response?: {
-    data?: {
-      message?: string;
-      code?: string;
-      success?: boolean;
-    };
-    status: number;
-  };
-}
+// API Error type - using type instead of interface for proper extension
+export type ApiError = AxiosError<{
+  message?: string;
+  code?: string;
+  success?: boolean;
+  error?: string;
+  errors?: Record<string, string[]>;
+}>;
 
 // Get base URL and ensure no double /api
 const getBaseUrl = () => {

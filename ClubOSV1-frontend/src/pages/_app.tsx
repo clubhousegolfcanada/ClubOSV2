@@ -65,7 +65,8 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     }
     
     // Debug API configuration on startup
-    console.log('[_app.tsx] API base URL:', process.env.NEXT_PUBLIC_API_URL);
+    // Using API_CONFIG from config file instead of direct env access
+    console.log('[_app.tsx] API initialization');
     
     // Initialize performance monitoring and adaptive animations
     if (typeof window !== 'undefined') {

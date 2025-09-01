@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap, ClipboardList, MessageSquare, Wrench, Building, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
@@ -583,7 +584,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
         
         {!user && (
           <div className="mt-2 text-[10px] text-[var(--text-muted)] text-center">
-            <a href="/login" className="text-[var(--accent)] hover:underline">Log in</a> to customize
+            <Link href="/login" className="text-[var(--accent)] hover:underline">Log in</Link> to customize
           </div>
         )}
         </div>

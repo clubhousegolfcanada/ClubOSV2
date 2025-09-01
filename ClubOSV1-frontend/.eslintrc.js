@@ -44,6 +44,12 @@ module.exports = {
       rules: {
         'no-restricted-syntax': 'off'
       }
+    },
+    {
+      files: ['src/config/api.ts', 'src/utils/resolveApi.ts', 'src/utils/apiUrl.ts'],
+      rules: {
+        'no-restricted-syntax': 'off'
+      }
     }
   ]
 };
