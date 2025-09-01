@@ -386,6 +386,11 @@ async function startServer() {
     startBookingRewardsJob();
     logger.info('✅ Booking rewards job started');
     
+    // Start token cleanup job
+    const { tokenCleanupJob } = await import('./jobs/tokenCleanup');
+    tokenCleanupJob.start();
+    logger.info('✅ Token cleanup job started');
+    
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
     
