@@ -133,7 +133,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
           }
           
           // Check if token is expired
-          if (tokenManager.isTokenExpired()) {
+          if (tokenManager.isTokenExpired(storedToken)) {
             secureLog('Token is expired');
             setAuthError('Session has expired');
             tokenManager.clearToken();

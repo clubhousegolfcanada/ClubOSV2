@@ -9,7 +9,10 @@ let BASE = RAW_BASE.replace(/\/+$/, ''); // trim trailing slashes
 // This handles cases where Vercel env has the URL with /api already
 if (BASE.endsWith('/api')) {
   BASE = BASE.slice(0, -4);
-  console.warn('[resolveApi] Removed /api suffix from NEXT_PUBLIC_API_URL. URL should not include /api');
+  // Only log in development with debug flag
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG_API === 'true') {
+    console.log('[resolveApi] Removed /api suffix from base URL');
+  }
 }
 
 const PREFIX = '/api';

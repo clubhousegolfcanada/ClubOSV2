@@ -25,7 +25,10 @@ const getBaseUrl = () => {
   // This handles cases where Vercel env has the URL with /api already
   if (base.endsWith('/api')) {
     base = base.slice(0, -4);
-    console.warn('[HTTP Client] Removed /api suffix from NEXT_PUBLIC_API_URL. URL should not include /api');
+    // Only log in development with debug flag
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG_API === 'true') {
+      console.log('[HTTP Client] Removed /api suffix from base URL');
+    }
   }
   
   return base;
