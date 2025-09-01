@@ -578,6 +578,109 @@ router.post('/test',
   }
 );
 
+/**
+ * GET /api/patterns/ai-automations
+ * Get AI automation settings
+ */
+router.get('/ai-automations',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      // Get automation settings from database or config
+      const result = await db.query(`
+        SELECT * FROM ai_automation_settings 
+        WHERE id = 1
+      `);
+      
+      if (result.rows.length === 0) {
+        // Return defaults if no settings exist
+        res.json({
+          giftCardInquiries: true,
+          llmInitialAnalysis: true,
+          trackmanReset: false
+        });
+      } else {
+        res.json({
+          giftCardInquiries: result.rows[0].gift_card_inquiries ?? true,
+          llmInitialAnalysis: result.rows[0].llm_initial_analysis ?? true,
+          trackmanReset: result.rows[0].trackman_reset ?? false
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to get AI automation settings:', error);
+      res.status(500).json({ error: 'Failed to get AI automation settings' });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/ai-automations
+ * Update AI automation settings
+ */
+router.put('/ai-automations',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const { giftCardInquiries, llmInitialAnalysis, trackmanReset } = req.body;
+      
+      // Check if settings exist
+      const existing = await db.query('SELECT id FROM ai_automation_settings WHERE id = 1');
+      
+      if (existing.rows.length === 0) {
+        // Insert new settings
+        await db.query(`
+          INSERT INTO ai_automation_settings 
+          (id, gift_card_inquiries, llm_initial_analysis, trackman_reset, updated_at)
+          VALUES (1, $1, $2, $3, NOW())
+        `, [
+          giftCardInquiries ?? true,
+          llmInitialAnalysis ?? true,
+          trackmanReset ?? false
+        ]);
+      } else {
+        // Update existing settings
+        const updates = [];
+        const values = [];
+        let paramCount = 1;
+        
+        if (giftCardInquiries !== undefined) {
+          updates.push(`gift_card_inquiries = $${paramCount++}`);
+          values.push(giftCardInquiries);
+        }
+        if (llmInitialAnalysis !== undefined) {
+          updates.push(`llm_initial_analysis = $${paramCount++}`);
+          values.push(llmInitialAnalysis);
+        }
+        if (trackmanReset !== undefined) {
+          updates.push(`trackman_reset = $${paramCount++}`);
+          values.push(trackmanReset);
+        }
+        
+        if (updates.length > 0) {
+          await db.query(`
+            UPDATE ai_automation_settings 
+            SET ${updates.join(', ')}, updated_at = NOW()
+            WHERE id = 1
+          `, values);
+        }
+      }
+      
+      // Log the change
+      logger.info('AI automation settings updated:', { 
+        by: req.user?.email,
+        settings: req.body 
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Failed to update AI automation settings:', error);
+      res.status(500).json({ error: 'Failed to update AI automation settings' });
+    }
+  }
+);
+
 export default router;
 
 // TODO NEXT STEPS:

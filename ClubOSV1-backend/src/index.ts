@@ -579,6 +579,29 @@ async function startServer() {
       }
     }
     
+    // Create AI automation settings table
+    try {
+      logger.info('Creating AI automation settings table...');
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS ai_automation_settings (
+          id INTEGER PRIMARY KEY DEFAULT 1,
+          gift_card_inquiries BOOLEAN DEFAULT true,
+          llm_initial_analysis BOOLEAN DEFAULT true,
+          trackman_reset BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
+      logger.info('✅ AI automation settings table created successfully');
+    } catch (aiError: any) {
+      if (aiError.code === '42P07') {
+        logger.info('AI automation settings table already exists');
+      } else {
+        logger.error('Failed to create AI automation settings table:', aiError);
+      }
+    }
+    
     // Add updated_at column to openphone_conversations if missing
     try {
       logger.info('Checking openphone_conversations columns...');

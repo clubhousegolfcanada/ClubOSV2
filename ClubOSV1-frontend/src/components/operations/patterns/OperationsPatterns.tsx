@@ -65,11 +65,17 @@ export const OperationsPatterns: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [config, setConfig] = useState<any>(null);
+  const [aiAutomations, setAiAutomations] = useState({
+    giftCardInquiries: true,
+    llmInitialAnalysis: true,
+    trackmanReset: false
+  });
 
   useEffect(() => {
     fetchStats();
     fetchPatterns();
     fetchConfig();
+    fetchAiAutomations();
   }, []);
 
   const fetchStats = async () => {
@@ -98,6 +104,32 @@ export const OperationsPatterns: React.FC = () => {
       setConfig(response.data);
     } catch (error) {
       console.error('Failed to fetch config:', error);
+    }
+  };
+
+  const fetchAiAutomations = async () => {
+    try {
+      const response = await apiClient.get('/patterns/ai-automations');
+      if (response.data) {
+        setAiAutomations(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI automations:', error);
+    }
+  };
+
+  const toggleAiAutomation = async (key: string) => {
+    try {
+      const newValue = !aiAutomations[key as keyof typeof aiAutomations];
+      await apiClient.put('/patterns/ai-automations', { 
+        [key]: newValue 
+      });
+      setAiAutomations(prev => ({
+        ...prev,
+        [key]: newValue
+      }));
+    } catch (error) {
+      console.error('Failed to toggle AI automation:', error);
     }
   };
 
@@ -280,6 +312,107 @@ export const OperationsPatterns: React.FC = () => {
             <p className="text-xs text-gray-500 mt-1">
               Ready for automation
             </p>
+          </div>
+        </div>
+
+        {/* AI Automations Card */}
+        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
+                <span className="text-sm text-gray-500">
+                  ({Object.values(aiAutomations).filter(v => v).length}/3 active)
+                </span>
+              </div>
+              <button
+                onClick={() => setActiveView('config')}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              {/* Gift Card Inquiries */}
+              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Gift Card Inquiries</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Automatically respond to gift card purchase questions with link to purchase page
+                  </p>
+                  <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                    customer service
+                  </span>
+                </div>
+                <button 
+                  onClick={() => toggleAiAutomation('giftCardInquiries')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    aiAutomations.giftCardInquiries ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    aiAutomations.giftCardInquiries ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+
+              {/* LLM Initial Message Analysis */}
+              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-medium text-gray-900">LLM Initial Message Analysis</h3>
+                    <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded">
+                      RECOMMENDED
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Use AI to understand and respond to all initial customer messages
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    This uses AI to understand ALL initial messages, not just keyword matching
+                  </p>
+                  <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                    customer service
+                  </span>
+                </div>
+                <button 
+                  onClick={() => toggleAiAutomation('llmInitialAnalysis')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    aiAutomations.llmInitialAnalysis ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    aiAutomations.llmInitialAnalysis ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Trackman Reset */}
+              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Trackman Reset</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Automatically reset frozen or unresponsive Trackman units via NinjaOne
+                  </p>
+                  <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                    technical
+                  </span>
+                </div>
+                <button 
+                  onClick={() => toggleAiAutomation('trackmanReset')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    aiAutomations.trackmanReset ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    aiAutomations.trackmanReset ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
