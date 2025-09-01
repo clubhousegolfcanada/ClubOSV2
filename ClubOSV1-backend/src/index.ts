@@ -530,6 +530,53 @@ async function startServer() {
       }
     }
     
+    // Create Slack tables for message tracking
+    try {
+      logger.info('Creating Slack tables...');
+      
+      // Create slack_messages table first (parent table)
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS slack_messages (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          slack_thread_ts VARCHAR(255) UNIQUE,
+          request_id VARCHAR(255),
+          user_name VARCHAR(255),
+          user_email VARCHAR(255),
+          location VARCHAR(255),
+          request_text TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_slack_messages_thread_ts ON slack_messages(slack_thread_ts);
+        CREATE INDEX IF NOT EXISTS idx_slack_messages_created_at ON slack_messages(created_at DESC);
+      `);
+      
+      // Create slack_replies table (child table)
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS slack_replies (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          thread_ts VARCHAR(255) NOT NULL,
+          user_name VARCHAR(255),
+          user_id VARCHAR(255) NOT NULL,
+          text TEXT NOT NULL,
+          timestamp TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_slack_replies_thread_ts ON slack_replies(thread_ts);
+        CREATE INDEX IF NOT EXISTS idx_slack_replies_user_id ON slack_replies(user_id);
+        CREATE INDEX IF NOT EXISTS idx_slack_replies_timestamp ON slack_replies(timestamp DESC);
+      `);
+      
+      logger.info('✅ Slack tables created');
+    } catch (slackError: any) {
+      if (slackError.code === '42P07') {
+        logger.info('Slack tables already exist');
+      } else {
+        logger.error('Failed to create Slack tables:', slackError);
+      }
+    }
+    
     // Add updated_at column to openphone_conversations if missing
     try {
       logger.info('Checking openphone_conversations columns...');

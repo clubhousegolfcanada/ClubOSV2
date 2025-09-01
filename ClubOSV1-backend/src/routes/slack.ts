@@ -642,9 +642,15 @@ router.post('/reply',
             new Date()
           ]
         );
-      } catch (dbError) {
-        logger.error('Failed to store reply in database:', dbError);
-        // Don't fail the request if database storage fails
+        logger.info('Reply stored in database');
+      } catch (dbError: any) {
+        // Log the error but don't fail the request
+        logger.warn('Failed to store reply in database (non-critical):', {
+          error: dbError.message,
+          code: dbError.code,
+          table: 'slack_replies'
+        });
+        // Continue - the Slack message was sent successfully
       }
       
       res.json({
@@ -661,6 +667,14 @@ router.post('/reply',
         response: error.response?.data,
         stack: error.stack
       });
+      
+      // Check if it's an auth error from middleware
+      if (error.status === 401 || error.code === 'UNAUTHORIZED') {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
       
       // Return a proper error response instead of passing to next
       return res.status(500).json({
