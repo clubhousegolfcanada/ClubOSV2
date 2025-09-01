@@ -23,9 +23,7 @@ export const OpenPhoneConversations: React.FC = () => {
       setLoading(true);
       const token = tokenManager.getToken();
       
-      const response = await http.get(`openphone/conversations/count`, {
-
-      });
+      const response = await http.get(`openphone/conversations/count`);
       
       if (response.data.success) {
         setStats(response.data.data);
@@ -71,7 +69,6 @@ export const OpenPhoneConversations: React.FC = () => {
       const params = format === 'csv' ? {} : { format };
       
       const response = await http.get(endpoint, {
-,
         params,
         responseType: format === 'csv' ? 'blob' : 'json'
       });

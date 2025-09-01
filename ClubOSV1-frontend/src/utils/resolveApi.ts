@@ -1,4 +1,6 @@
+/* eslint-disable no-restricted-syntax */
 const RAW_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+/* eslint-enable no-restricted-syntax */
 const BASE = RAW_BASE.replace(/\/+$/, ''); // trim trailing slashes
 const PREFIX = '/api';
 

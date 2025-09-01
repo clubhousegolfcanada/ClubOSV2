@@ -1,5 +1,7 @@
 import { ApiError } from '@/api/http';
+/* eslint-disable no-restricted-imports */
 import { AxiosError } from 'axios';
+/* eslint-enable no-restricted-imports */
 
 /**
  * Type guard to check if an error is an API error

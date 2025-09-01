@@ -99,7 +99,6 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     
     try {
       const response = await http.get(`leaderboard/alltime`, {
-,
         params: { sort: sortBy }
       });
       
@@ -174,8 +173,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
     try {
       await http.post(
         `friends/request`,
-        { target_user_id: targetUserId },
-
+        { target_user_id: targetUserId }
       );
       toast.success(`Friend request sent to ${targetName}!`);
       setLeaderboardData(prev => 

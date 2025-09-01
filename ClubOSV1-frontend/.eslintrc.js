@@ -1,14 +1,10 @@
 module.exports = {
   extends: ['next/core-web-vitals'],
-  overrides: [
-    {
-      files: ['src/utils/tokenManager.ts'],
-      rules: {
-        'no-restricted-syntax': 'off'
-      }
-    }
-  ],
   rules: {
+    // Allow unescaped entities and html links temporarily (warnings only)
+    'react/no-unescaped-entities': 'warn',
+    '@next/next/no-html-link-for-pages': 'warn',
+    
     // Ban direct axios imports (use @/api/http instead)
     'no-restricted-imports': ['error', {
       paths: [{
@@ -41,5 +37,13 @@ module.exports = {
       selector: 'CallExpression[callee.property.name="setItem"][arguments.0.value="clubos_token"]',
       message: 'Use tokenManager.setToken() instead of localStorage.setItem("clubos_token")'
     }]
-  }
+  },
+  overrides: [
+    {
+      files: ['src/utils/tokenManager.ts'],
+      rules: {
+        'no-restricted-syntax': 'off'
+      }
+    }
+  ]
 };

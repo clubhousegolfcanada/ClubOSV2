@@ -61,7 +61,7 @@ const LoginPage = () => {
           name,
           phone,
           role: 'customer'
-        });
+        }, { auth: false } as any);
         
         // Check if signup was successful
         if (response.data.success) {
@@ -92,7 +92,7 @@ const LoginPage = () => {
           email,
           password,
           rememberMe
-        });
+        }, { auth: false } as any);
       }
 
       if (response.data.success) {
@@ -160,7 +160,7 @@ const LoginPage = () => {
     try {
       const response = await http.post('auth/forgot-password', {
         email: resetEmail
-      });
+      }, { auth: false } as any);
 
       if (response.data.success) {
         toast.success(response.data.message);
