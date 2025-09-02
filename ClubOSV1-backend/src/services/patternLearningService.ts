@@ -195,14 +195,22 @@ export class PatternLearningService {
         };
       }
 
+      // Build context for variable replacement
+      const templateContext = await this.buildTemplateContext(message, {
+        customerName,
+        phoneNumber,
+        conversationId,
+        pattern: bestMatch
+      });
+      
       // Apply confidence-based automation
       if (bestMatch.confidence_score >= this.config.autoExecuteThreshold && bestMatch.auto_executable) {
         return {
           action: 'auto_execute',
           pattern: bestMatch,
           patternId: bestMatch.id,
-          response: this.fillResponseTemplate(bestMatch.response_template, { customerName }),
-          actions: bestMatch.action_template,
+          response: this.fillResponseTemplate(bestMatch.response_template, templateContext),
+          actions: this.processActionTemplate(bestMatch.action_template, templateContext),
           confidence: bestMatch.confidence_score
         };
       } else if (bestMatch.confidence_score >= this.config.suggestThreshold) {
@@ -210,8 +218,8 @@ export class PatternLearningService {
           action: 'suggest',
           pattern: bestMatch,
           patternId: bestMatch.id,
-          response: this.fillResponseTemplate(bestMatch.response_template, { customerName }),
-          actions: bestMatch.action_template,
+          response: this.fillResponseTemplate(bestMatch.response_template, templateContext),
+          actions: this.processActionTemplate(bestMatch.action_template, templateContext),
           confidence: bestMatch.confidence_score
         };
       } else if (bestMatch.confidence_score >= this.config.queueThreshold) {
@@ -219,8 +227,8 @@ export class PatternLearningService {
           action: 'queue',
           pattern: bestMatch,
           patternId: bestMatch.id,
-          response: this.fillResponseTemplate(bestMatch.response_template, { customerName }),
-          actions: bestMatch.action_template,
+          response: this.fillResponseTemplate(bestMatch.response_template, templateContext),
+          actions: this.processActionTemplate(bestMatch.action_template, templateContext),
           confidence: bestMatch.confidence_score
         };
       } else {
@@ -485,14 +493,220 @@ export class PatternLearningService {
 
   /**
    * Fill response template with variables
+   * Supports:
+   * - Basic replacement: {{customer_name}}
+   * - Nested objects: {{customer.name}}
+   * - Default values: {{bay_number|Bay 1}}
+   * - Formatting: {{time|format:hh:mm a}}
    */
-  private fillResponseTemplate(template: string, variables: any): string {
+  private fillResponseTemplate(template: string, context: any): string {
+    if (!template) return '';
+    
+    // Extract all variables from the template
+    const variablePattern = /\{\{([^}]+)\}\}/g;
     let filled = template;
-    Object.keys(variables || {}).forEach(key => {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      filled = filled.replace(regex, variables[key] || '');
+    
+    // Process each variable
+    filled = filled.replace(variablePattern, (match, variable) => {
+      try {
+        // Check for default value (e.g., {{bay_number|Bay 1}})
+        const [varPath, defaultValue] = variable.split('|').map((s: string) => s.trim());
+        
+        // Check for formatting (e.g., {{time|format:hh:mm a}})
+        let formatSpec = '';
+        if (defaultValue?.startsWith('format:')) {
+          formatSpec = defaultValue.substring(7);
+        }
+        
+        // Navigate nested objects (e.g., customer.name)
+        const value = this.getNestedValue(context, varPath);
+        
+        // Apply formatting if specified
+        if (value && formatSpec) {
+          return this.formatValue(value, formatSpec);
+        }
+        
+        // Return value or default
+        return value !== undefined && value !== null ? String(value) : (defaultValue || match);
+      } catch (error) {
+        logger.warn('[PatternLearning] Failed to replace variable', { variable, error });
+        return match; // Keep original if replacement fails
+      }
     });
+    
     return filled;
+  }
+  
+  /**
+   * Build context for template variable replacement
+   */
+  private async buildTemplateContext(message: string, baseContext: any): Promise<any> {
+    const context: any = {
+      // Basic context
+      customer_name: baseContext.customerName,
+      phone_number: baseContext.phoneNumber,
+      conversation_id: baseContext.conversationId,
+      
+      // Time context
+      current_time: new Date(),
+      current_date: new Date().toLocaleDateString(),
+      day_of_week: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()],
+      
+      // Extract entities from message
+      ...this.extractEntitiesFromMessage(message)
+    };
+    
+    // Add pattern-specific context if action template has entities
+    if (baseContext.pattern?.action_template) {
+      try {
+        const actionData = typeof baseContext.pattern.action_template === 'string' 
+          ? JSON.parse(baseContext.pattern.action_template) 
+          : baseContext.pattern.action_template;
+        
+        if (actionData.entities) {
+          Object.assign(context, actionData.entities);
+        }
+      } catch (error) {
+        // Ignore parsing errors
+      }
+    }
+    
+    return context;
+  }
+  
+  /**
+   * Extract common entities from message text
+   */
+  private extractEntitiesFromMessage(message: string): any {
+    const entities: any = {};
+    
+    // Extract bay numbers
+    const bayMatch = message.match(/bay\s*(\d+)/i);
+    if (bayMatch) {
+      entities.bay_number = bayMatch[1];
+    }
+    
+    // Extract times (simple patterns)
+    const timeMatch = message.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+    if (timeMatch) {
+      entities.time = timeMatch[0];
+    }
+    
+    // Extract dates
+    const dateMatch = message.match(/(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/);
+    if (dateMatch) {
+      entities.date = dateMatch[1];
+    }
+    
+    // Extract location references
+    if (message.match(/dartmouth/i)) {
+      entities.location = 'Dartmouth';
+    } else if (message.match(/bedford/i)) {
+      entities.location = 'Bedford';
+    }
+    
+    // Extract common issues
+    if (message.match(/track\s*man|simulator/i)) {
+      entities.issue_type = 'trackman';
+    } else if (message.match(/door|unlock|access/i)) {
+      entities.issue_type = 'access';
+    } else if (message.match(/screen|projector|display/i)) {
+      entities.issue_type = 'display';
+    }
+    
+    return entities;
+  }
+  
+  /**
+   * Process action template with variable replacement
+   */
+  private processActionTemplate(actionTemplate: any, context: any): any[] {
+    if (!actionTemplate) return [];
+    
+    try {
+      const actions = typeof actionTemplate === 'string' 
+        ? JSON.parse(actionTemplate) 
+        : actionTemplate;
+      
+      // If actions is an object with an 'actions' property
+      if (actions.actions && Array.isArray(actions.actions)) {
+        return actions.actions.map((action: any) => this.fillActionVariables(action, context));
+      }
+      
+      // If actions is directly an array
+      if (Array.isArray(actions)) {
+        return actions.map((action: any) => this.fillActionVariables(action, context));
+      }
+      
+      return [];
+    } catch (error) {
+      logger.warn('[PatternLearning] Failed to process action template', { error });
+      return [];
+    }
+  }
+  
+  /**
+   * Fill variables in a single action
+   */
+  private fillActionVariables(action: any, context: any): any {
+    if (typeof action === 'string') {
+      return this.fillResponseTemplate(action, context);
+    }
+    
+    if (typeof action === 'object' && action !== null) {
+      const filled: any = {};
+      for (const key in action) {
+        if (typeof action[key] === 'string') {
+          filled[key] = this.fillResponseTemplate(action[key], context);
+        } else {
+          filled[key] = action[key];
+        }
+      }
+      return filled;
+    }
+    
+    return action;
+  }
+  
+  /**
+   * Get nested value from object using dot notation
+   */
+  private getNestedValue(obj: any, path: string): any {
+    if (!obj || !path) return undefined;
+    
+    return path.split('.').reduce((current, key) => {
+      return current?.[key];
+    }, obj);
+  }
+  
+  /**
+   * Format value based on format specification
+   */
+  private formatValue(value: any, format: string): string {
+    try {
+      // Time formatting
+      if (format.includes('h') || format.includes('m')) {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          // Simple time formatting (extend as needed)
+          const hours = date.getHours();
+          const minutes = date.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        }
+      }
+      
+      // Number formatting
+      if (format === 'currency') {
+        return `$${parseFloat(value).toFixed(2)}`;
+      }
+      
+      // Default: return as string
+      return String(value);
+    } catch (error) {
+      return String(value);
+    }
   }
 
   /**
@@ -515,16 +729,28 @@ export class PatternLearningService {
         );
       }
 
-      // Use GPT-4 to analyze and extract pattern
+      // Use GPT-4 to analyze and extract pattern with template variables
       const analysis = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{
           role: 'system',
           content: `Extract a reusable pattern from this customer service interaction.
+            
+            Create a TEMPLATE response with variables, not the exact response.
+            Replace specific values with template variables:
+            - Customer names → {{customer_name}}
+            - Bay numbers → {{bay_number}}
+            - Times → {{time}}
+            - Dates → {{date}}
+            - Locations → {{location}}
+            - Codes/passwords → {{code}}
+            - Amounts → {{amount}}
+            
             Return JSON with:
             - pattern_type: one of [booking, tech_issue, access, faq, gift_cards, hours]
             - keywords: array of important keywords from the message
-            - response_template: generalized response (use {{customer_name}} for personalization)
+            - response_template: generalized response with {{variables}}
+            - entities: object with extracted values (e.g., {"bay_number": "3", "time": "7pm"})
             - confidence: initial confidence score (0.50-0.70)
             - is_edge_case: boolean indicating if this is unusual
             - summary: brief description of the pattern`
@@ -538,7 +764,16 @@ export class PatternLearningService {
 
       const patternData = JSON.parse(analysis.choices[0].message.content || '{}');
       
-      // Create the pattern
+      // Create the pattern with entities stored in action_template
+      const actionData = {
+        actions: actions.length > 0 ? actions : [],
+        entities: patternData.entities || {},
+        metadata: {
+          is_edge_case: patternData.is_edge_case,
+          created_at: new Date().toISOString()
+        }
+      };
+      
       await db.query(`
         INSERT INTO decision_patterns 
         (pattern_type, pattern_signature, trigger_text, trigger_keywords,
@@ -547,6 +782,8 @@ export class PatternLearningService {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (pattern_signature) DO UPDATE
         SET response_template = EXCLUDED.response_template,
+            action_template = EXCLUDED.action_template,
+            trigger_keywords = EXCLUDED.trigger_keywords,
             last_modified = NOW()
       `, [
         patternData.pattern_type || 'faq',
@@ -554,7 +791,7 @@ export class PatternLearningService {
         message,
         patternData.keywords || [],
         patternData.response_template || response,
-        actions.length > 0 ? JSON.stringify(actions) : null,
+        JSON.stringify(actionData),
         patternData.confidence || 0.60,
         'learned',
         operatorId,
