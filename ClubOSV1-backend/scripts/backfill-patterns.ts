@@ -6,9 +6,15 @@
  * from operator responses that were sent directly through OpenPhone
  */
 
-import { db } from '../src/utils/database';
+import { Pool } from 'pg';
 import { logger } from '../src/utils/logger';
 import { patternLearningService } from '../src/services/patternLearningService';
+
+// Use external database URL for scripts
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway',
+  ssl: { rejectUnauthorized: false }
+});
 
 async function backfillPatterns() {
   try {

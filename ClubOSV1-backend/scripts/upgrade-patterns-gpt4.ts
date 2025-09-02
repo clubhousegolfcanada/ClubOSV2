@@ -8,9 +8,15 @@
  * MUST BE RUN WHERE OPENAI_API_KEY IS CONFIGURED!
  */
 
-import { db } from '../src/utils/database';
+import { Pool } from 'pg';
 import { logger } from '../src/utils/logger';
 import OpenAI from 'openai';
+
+// Use direct pool connection for scripts
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Check for OpenAI API key
 if (!process.env.OPENAI_API_KEY) {
