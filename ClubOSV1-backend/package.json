@@ -37,6 +37,8 @@
     "test:unifi-doors": "TEST_DOOR_UNLOCK=false tsx scripts/test-cloudflare-tunnels.ts",
     "list:unifi-doors": "tsx scripts/list-unifi-doors.ts",
     "migrate:cloudflare": "tsx scripts/migrate-to-cloudflare.ts",
+    "generate-embeddings": "tsx scripts/generate-pattern-embeddings.ts",
+    "deploy-semantic-search": "./scripts/deploy-semantic-search.sh",
     "migrate:cloudflare:test": "MIGRATION_TEST_MODE=true tsx scripts/migrate-to-cloudflare.ts",
     "migrate:rollback": "tsx scripts/rollback-cloudflare.ts",
     "unifi:disable-cloudflare": "tsx scripts/disable-cloudflare.ts",

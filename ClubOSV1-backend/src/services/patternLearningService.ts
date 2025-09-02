@@ -409,14 +409,20 @@ export class PatternLearningService {
   }
 
   /**
-   * Find patterns matching the given message
+   * Find patterns matching the given message using hybrid search (semantic + keyword)
    */
   private async findMatchingPatterns(message: string, signature: string): Promise<Pattern[]> {
     try {
-      // TODO: Implement semantic search with embeddings when OpenAI is available
+      const patterns: Pattern[] = [];
       
-      // For now, use signature and keyword matching
-      const result = await db.query(`
+      // 1. Try semantic search if we have OpenAI
+      if (this.openai) {
+        const semanticPatterns = await this.findSemanticMatches(message);
+        patterns.push(...semanticPatterns);
+      }
+      
+      // 2. Also do keyword matching as fallback/supplement
+      const keywordResult = await db.query(`
         SELECT * FROM decision_patterns
         WHERE is_active = TRUE
           AND (
@@ -426,14 +432,111 @@ export class PatternLearningService {
               WHERE $2 ILIKE '%' || keyword || '%'
             )
           )
+          AND id NOT IN (SELECT unnest($3::int[]))
         ORDER BY confidence_score DESC, execution_count DESC
-        LIMIT 10
-      `, [signature, message]);
-
-      return result.rows;
+        LIMIT 5
+      `, [signature, message, patterns.map(p => p.id)]);
+      
+      patterns.push(...keywordResult.rows);
+      
+      // 3. Sort by confidence and return top matches
+      return patterns
+        .sort((a, b) => b.confidence_score - a.confidence_score)
+        .slice(0, 10);
+        
     } catch (error) {
       logger.error('[PatternLearning] Failed to find matching patterns', error);
       return [];
+    }
+  }
+  
+  /**
+   * Find semantically similar patterns using embeddings
+   */
+  private async findSemanticMatches(message: string, threshold: number = 0.75): Promise<Pattern[]> {
+    try {
+      if (!this.openai) return [];
+      
+      // Check embedding cache first
+      const cacheKey = this.generateSignature(message);
+      const cachedEmbedding = await this.getCachedEmbedding(cacheKey);
+      
+      let embedding: number[];
+      if (cachedEmbedding) {
+        embedding = cachedEmbedding;
+      } else {
+        // Generate embedding for the message
+        const response = await this.openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: message
+        });
+        embedding = response.data[0].embedding;
+        
+        // Cache the embedding
+        await this.cacheEmbedding(cacheKey, message, embedding);
+      }
+      
+      // Find similar patterns using the embedding
+      const result = await db.query(`
+        SELECT 
+          p.*,
+          cosine_similarity($1::float[], p.embedding) as similarity
+        FROM decision_patterns p
+        WHERE 
+          p.embedding IS NOT NULL
+          AND p.is_active = TRUE
+          AND p.semantic_search_enabled = TRUE
+          AND cosine_similarity($1::float[], p.embedding) >= $2
+        ORDER BY similarity DESC
+        LIMIT 10
+      `, [embedding, threshold]);
+      
+      logger.debug('[PatternLearning] Semantic search found', {
+        count: result.rows.length,
+        topSimilarity: result.rows[0]?.similarity || 0
+      });
+      
+      return result.rows;
+    } catch (error) {
+      logger.error('[PatternLearning] Semantic search failed', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get cached embedding for a message
+   */
+  private async getCachedEmbedding(messageHash: string): Promise<number[] | null> {
+    try {
+      const result = await db.query(`
+        UPDATE message_embeddings
+        SET use_count = use_count + 1,
+            last_used = NOW()
+        WHERE message_hash = $1
+        RETURNING embedding
+      `, [messageHash]);
+      
+      return result.rows[0]?.embedding || null;
+    } catch (error) {
+      return null;
+    }
+  }
+  
+  /**
+   * Cache an embedding for future use
+   */
+  private async cacheEmbedding(messageHash: string, message: string, embedding: number[]): Promise<void> {
+    try {
+      await db.query(`
+        INSERT INTO message_embeddings (message_hash, message_text, embedding)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (message_hash) DO UPDATE
+        SET use_count = message_embeddings.use_count + 1,
+            last_used = NOW()
+      `, [messageHash, message, embedding]);
+    } catch (error) {
+      // Non-critical, just log
+      logger.debug('[PatternLearning] Failed to cache embedding', error);
     }
   }
 
