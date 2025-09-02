@@ -90,9 +90,17 @@ export const OperationsPatterns: React.FC = () => {
   const fetchPatterns = async () => {
     try {
       const response = await apiClient.get('/patterns');
-      setPatterns(response.data);
+      // Handle both array and object response formats
+      if (Array.isArray(response.data)) {
+        setPatterns(response.data);
+      } else if (response.data.patterns) {
+        setPatterns(response.data.patterns);
+      } else {
+        setPatterns([]);
+      }
     } catch (error) {
       console.error('Failed to fetch patterns:', error);
+      setPatterns([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
