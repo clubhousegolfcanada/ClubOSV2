@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.0] - 2025-09-02
+
+### Added
+- **V3-PLS Pattern Learning System Implementation**
+  - GPT-4 upgrade script to enhance 158 existing patterns with templates and variables
+  - Backfill script to learn patterns from 30 days of historical conversations
+  - Railway deployment scripts for running upgrades in production
+  - Pattern learning integration in OpenPhone webhook for real-time learning
+  - Comprehensive implementation plan targeting 80% automation rate
+
+### Improved
+- **Pattern Learning Intelligence**
+  - Patterns now support template variables ({{customer_name}}, {{bay_number}}, etc.)
+  - Added context extraction and entity recognition
+  - Prepared for semantic matching with embeddings
+  - Foundation for confidence evolution and auto-execution
+
+### Technical
+- Fixed pattern tables SQL with proper UUID references for user IDs
+- Added pattern learning to outbound message processing
+- Created deployment scripts for Railway execution
+
 ## [1.14.59] - 2025-09-01
 
 ### Changed

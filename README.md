@@ -1,4 +1,4 @@
-# ClubOS v1.14.59 - AI-Powered Golf Simulator Management
+# ClubOS v1.15.0 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -156,7 +156,13 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
-- **v1.15.0**: Tournament Achievements System
+- **v1.15.0**: V3-PLS Pattern Learning System Implementation
+  - GPT-4 powered pattern enhancement for 158 existing patterns
+  - Template variables for dynamic responses ({{customer_name}}, {{bay_number}})
+  - Real-time pattern learning from operator responses
+  - Foundation for 80% automation target with semantic matching
+  - Railway deployment scripts for production upgrades
+- **v1.14.59**: Tournament Achievements System
   - Complete achievement system with 34 pre-defined achievements
   - Operator management interface for awarding badges
   - Achievement display on profiles, leaderboards, and compete pages
