@@ -447,6 +447,42 @@ router.post('/webhook', async (req: Request, res: Response) => {
               // Don't fail webhook if notification fails
               logger.error('Failed to send push notification:', notifError);
             }
+          } else if (messageData.direction === 'outgoing' || messageData.direction === 'outbound') {
+            // PATTERN LEARNING: Learn from operator responses
+            try {
+              // Get the last inbound message to learn the pattern
+              const lastInboundMsg = updatedMessages
+                .filter(msg => msg.direction === 'inbound')
+                .slice(-1)[0];
+              
+              if (lastInboundMsg) {
+                const operatorResponse = messageData.body || messageData.text || '';
+                
+                // Only learn if this appears to be a human operator response
+                // (not an automated response from ClubOS)
+                const isHumanResponse = !operatorResponse.includes('[Automated Response]') &&
+                                       !operatorResponse.includes('🤖');
+                
+                if (isHumanResponse) {
+                  await patternLearningService.learnFromHumanResponse(
+                    lastInboundMsg.text || lastInboundMsg.body,
+                    operatorResponse,
+                    [], // TODO: Extract any actions taken
+                    existingConv.rows[0].id,
+                    phoneNumber,
+                    undefined // We don't know which operator sent via OpenPhone
+                  );
+                  
+                  logger.info('[Pattern Learning] Learned from OpenPhone operator response', {
+                    conversationId: existingConv.rows[0].id,
+                    phoneNumber,
+                    responseLength: operatorResponse.length
+                  });
+                }
+              }
+            } catch (learningError) {
+              logger.error('[Pattern Learning] Failed to learn from outbound message:', learningError);
+            }
           }
           
           break;
