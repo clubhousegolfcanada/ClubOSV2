@@ -521,7 +521,7 @@ const RequestForm: React.FC = () => {
         // Removed debug logging
       }
       
-      // Use apiClient to ensure auth header is properly attached
+      // Auth header is automatically attached by http interceptor
       const response = await http.post(`feedback`, feedbackData, {
         headers: {
           'Authorization': `Bearer ${token}`
