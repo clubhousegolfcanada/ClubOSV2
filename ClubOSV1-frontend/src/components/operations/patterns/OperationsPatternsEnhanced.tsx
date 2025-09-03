@@ -702,19 +702,29 @@ AC1BD1e24,CN6cc5c67b4 Appreciate it!,1.9027E+10,19022E+10,incoming,2025-09-02T21
                       });
                       
                       const result = response.data;
+                      const duplicatePercentage = result.totalMessages > 0 
+                        ? ((result.duplicateMessages / result.totalMessages) * 100).toFixed(1)
+                        : 0;
+                      
                       resultsDiv.innerHTML = `
                         <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                           <h3 class="font-semibold text-green-800 mb-2">✅ Import Successful!</h3>
                           <ul class="space-y-1 text-sm text-green-700">
-                            <li>📊 Processed ${result.totalMessages || 0} messages</li>
-                            <li>🔍 Analyzed ${result.conversationsAnalyzed || 0} conversations</li>
-                            <li>✨ Created ${result.newPatterns || 0} new patterns</li>
-                            <li>📈 Enhanced ${result.enhancedPatterns || 0} existing patterns</li>
+                            <li>📊 Total messages: ${result.totalMessages || 0}</li>
+                            <li>🔄 Duplicate messages skipped: ${result.duplicateMessages || 0} (${duplicatePercentage}%)</li>
+                            <li>✨ New messages processed: ${result.newMessages || 0}</li>
+                            <li>🔍 Conversations analyzed: ${result.conversationsAnalyzed || 0}</li>
+                            <li>🆕 New patterns created: ${result.newPatterns || 0}</li>
+                            <li>📈 Existing patterns enhanced: ${result.enhancedPatterns || 0}</li>
                             <li>🧠 Average confidence: ${((result.avgConfidence || 0) * 100).toFixed(1)}%</li>
                           </ul>
+                          ${result.duplicateMessages > 0 ? `
+                            <p class="text-xs text-yellow-600 mt-3 p-2 bg-yellow-50 rounded">
+                              ⚠️ ${result.duplicateMessages} messages were already imported previously and were skipped to prevent duplicates.
+                            </p>
+                          ` : ''}
                           <p class="text-xs text-green-600 mt-3">
-                            GPT-4o analyzed the conversations and extracted reusable patterns. 
-                            View them in the Patterns tab.
+                            Import Job ID: ${result.importJobId || 'N/A'}
                           </p>
                         </div>
                       `;

@@ -21,6 +21,7 @@ import { logger } from '../utils/logger';
 import { patternLearningService } from '../services/patternLearningService';
 import { body, param, query, validationResult } from 'express-validator';
 import OpenAI from 'openai';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -421,6 +422,47 @@ router.post('/test',
 );
 
 /**
+ * GET /api/patterns/import-history
+ * Get history of CSV imports
+ */
+router.get('/import-history',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(
+        `SELECT 
+          id,
+          status,
+          total_messages,
+          processed_messages,
+          duplicate_messages,
+          conversations_found,
+          conversations_analyzed,
+          patterns_created,
+          patterns_enhanced,
+          started_at,
+          completed_at,
+          import_metadata
+        FROM pattern_import_jobs
+        WHERE user_id = $1 OR $2 = 'admin'
+        ORDER BY started_at DESC
+        LIMIT 20`,
+        [(req as any).user?.id, (req as any).user?.role]
+      );
+      
+      res.json({
+        success: true,
+        imports: result.rows
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get import history', error);
+      res.status(500).json({ success: false, error: 'Failed to get import history' });
+    }
+  }
+);
+
+/**
  * POST /api/patterns/import-csv
  * Import OpenPhone CSV data and extract patterns using GPT-4o
  */
@@ -493,8 +535,104 @@ router.post('/import-csv',
       
       logger.info(`[Patterns Import] Processing ${messages.length} messages`);
       
-      // Sort messages by timestamp first
-      messages.sort((a, b) => {
+      // Create import job record
+      const fileHash = crypto.createHash('sha256').update(csvData).digest('hex');
+      
+      // Check if this exact file was already imported
+      const existingImport = await db.query(
+        'SELECT id, completed_at FROM pattern_import_jobs WHERE file_hash = $1 AND status = $2',
+        [fileHash, 'completed']
+      );
+      
+      if (existingImport.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: `This exact CSV file was already imported on ${new Date(existingImport.rows[0].completed_at).toLocaleString()}`,
+          importId: existingImport.rows[0].id
+        });
+      }
+      
+      // Create new import job
+      const importJob = await db.query(
+        `INSERT INTO pattern_import_jobs (
+          user_id, status, total_messages, file_hash, import_metadata
+        ) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [
+          (req as any).user?.id,
+          'processing',
+          messages.length,
+          fileHash,
+          JSON.stringify({
+            startDate: messages[0]?.sentAt,
+            endDate: messages[messages.length - 1]?.sentAt,
+            columnHeaders: headers
+          })
+        ]
+      );
+      
+      const jobId = importJob.rows[0].id;
+      let duplicateCount = 0;
+      let newMessageCount = 0;
+      
+      // Check for duplicate messages
+      const filteredMessages = [];
+      for (const msg of messages) {
+        const messageHash = crypto.createHash('sha256')
+          .update(`${msg.body}${msg.from}${msg.to}${msg.sentAt}`)
+          .digest('hex');
+        
+        // Check if message was already imported
+        const isDuplicate = await db.query(
+          'SELECT 1 FROM imported_messages WHERE message_id = $1 OR message_hash = $2',
+          [msg.id, messageHash]
+        );
+        
+        if (isDuplicate.rows.length === 0) {
+          filteredMessages.push(msg);
+          newMessageCount++;
+          
+          // Record imported message
+          await db.query(
+            `INSERT INTO imported_messages (
+              message_id, message_hash, phone_number, direction, sent_at, import_job_id
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (message_id) DO NOTHING`,
+            [
+              msg.id,
+              messageHash,
+              msg.direction === 'incoming' ? msg.from : msg.to,
+              msg.direction,
+              msg.sentAt ? new Date(msg.sentAt) : null,
+              jobId
+            ]
+          );
+        } else {
+          duplicateCount++;
+        }
+      }
+      
+      logger.info(`[Patterns Import] Found ${duplicateCount} duplicate messages, processing ${newMessageCount} new messages`);
+      
+      // If all messages are duplicates, return early
+      if (newMessageCount === 0) {
+        await db.query(
+          `UPDATE pattern_import_jobs 
+           SET status = $1, completed_at = NOW(), duplicate_messages = $2
+           WHERE id = $3`,
+          ['completed', duplicateCount, jobId]
+        );
+        
+        return res.json({
+          success: true,
+          totalMessages: messages.length,
+          duplicateMessages: duplicateCount,
+          newMessages: 0,
+          message: 'All messages in this CSV have already been imported'
+        });
+      }
+      
+      // Sort filtered messages by timestamp
+      filteredMessages.sort((a, b) => {
         const timeA = new Date(a.sentAt || 0).getTime();
         const timeB = new Date(b.sentAt || 0).getTime();
         return timeA - timeB;
@@ -504,7 +642,7 @@ router.post('/import-csv',
       const conversations = new Map();
       const activeConversations = new Map(); // Track active conversations per phone number
       
-      for (const msg of messages) {
+      for (const msg of filteredMessages) {
         // Skip automated messages
         if (msg.body.includes('CN6cc5c67b4') || msg.body.includes('CN2cc08d4c')) continue;
         
@@ -702,13 +840,36 @@ router.post('/import-csv',
       
       logger.info(`[Patterns Import] Complete - New: ${newPatterns}, Enhanced: ${enhancedPatterns}`);
       
+      // Update job status
+      await db.query(
+        `UPDATE pattern_import_jobs 
+         SET status = $1, completed_at = NOW(), 
+             processed_messages = $2, duplicate_messages = $3,
+             conversations_found = $4, conversations_analyzed = $5,
+             patterns_created = $6, patterns_enhanced = $7
+         WHERE id = $8`,
+        [
+          'completed',
+          newMessageCount,
+          duplicateCount,
+          conversations.size,
+          conversationsAnalyzed,
+          newPatterns,
+          enhancedPatterns,
+          jobId
+        ]
+      );
+      
       res.json({
         success: true,
         totalMessages: messages.length,
+        duplicateMessages: duplicateCount,
+        newMessages: newMessageCount,
         conversationsAnalyzed,
         newPatterns,
         enhancedPatterns,
-        avgConfidence
+        avgConfidence,
+        importJobId: jobId
       });
       
     } catch (error) {
@@ -717,6 +878,250 @@ router.post('/import-csv',
         success: false, 
         error: 'Failed to import CSV data. Please check the format and try again.' 
       });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/queue
+ * Get pending pattern suggestions awaiting operator action
+ */
+router.get('/queue',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(`
+        SELECT 
+          psq.id,
+          psq.conversation_id,
+          psq.pattern_id,
+          psq.suggested_response,
+          psq.confidence_score,
+          psq.reasoning,
+          psq.status,
+          psq.created_at,
+          oc.phone_number,
+          oc.customer_name,
+          cm.message_text as original_message,
+          dp.pattern_type,
+          dp.response_template
+        FROM pattern_suggestions_queue psq
+        LEFT JOIN openphone_conversations oc ON oc.id::text = psq.conversation_id
+        LEFT JOIN conversation_messages cm ON cm.conversation_id = psq.conversation_id 
+          AND cm.sender_type = 'customer'
+        LEFT JOIN decision_patterns dp ON dp.id = psq.pattern_id
+        WHERE psq.status = 'pending'
+        ORDER BY psq.created_at DESC
+        LIMIT 20
+      `);
+
+      res.json({
+        success: true,
+        queue: result.rows.map(row => ({
+          id: row.id,
+          conversationId: row.conversation_id,
+          patternId: row.pattern_id,
+          phoneNumber: row.phone_number,
+          customerName: row.customer_name,
+          originalMessage: row.original_message,
+          suggestedResponse: row.suggested_response,
+          confidence: row.confidence_score,
+          reasoning: row.reasoning ? JSON.parse(row.reasoning) : null,
+          patternType: row.pattern_type,
+          createdAt: row.created_at
+        }))
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get queue', error);
+      res.status(500).json({ success: false, error: 'Failed to get suggestions queue' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/queue/:id/respond
+ * Operator accepts, modifies, or rejects a pattern suggestion
+ */
+router.post('/queue/:id/respond',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [
+    param('id').isInt(),
+    body('action').isIn(['accept', 'modify', 'reject']),
+    body('modifiedResponse').optional().isString()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { action, modifiedResponse } = req.body;
+      const operatorId = (req as any).user?.id;
+
+      // Get the suggestion details
+      const suggestion = await db.query(
+        `SELECT * FROM pattern_suggestions_queue WHERE id = $1 AND status = 'pending'`,
+        [id]
+      );
+
+      if (suggestion.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Suggestion not found or already processed' });
+      }
+
+      const sugg = suggestion.rows[0];
+      const finalResponse = action === 'modify' ? modifiedResponse : sugg.suggested_response;
+
+      // Start transaction
+      await db.query('BEGIN');
+
+      try {
+        // Update suggestion status
+        await db.query(
+          `UPDATE pattern_suggestions_queue 
+           SET status = $1, processed_at = NOW(), processed_by = $2, final_response = $3
+           WHERE id = $4`,
+          [action === 'reject' ? 'rejected' : 'processed', operatorId, finalResponse, id]
+        );
+
+        // Log operator action
+        await db.query(
+          `INSERT INTO operator_actions 
+           (suggestion_id, operator_id, action_type, original_suggestion, final_response, pattern_id, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [id, operatorId, action, sugg.suggested_response, finalResponse, sugg.pattern_id]
+        );
+
+        if (action !== 'reject') {
+          // Send the response via OpenPhone
+          const conversation = await db.query(
+            'SELECT phone_number FROM openphone_conversations WHERE id::text = $1',
+            [sugg.conversation_id]
+          );
+
+          if (conversation.rows[0]) {
+            const { openPhoneService } = require('../services/openphoneService');
+            const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+            
+            if (defaultNumber) {
+              await openPhoneService.sendMessage(
+                conversation.rows[0].phone_number,
+                defaultNumber,
+                finalResponse
+              );
+
+              // Store the sent message
+              await db.query(
+                `INSERT INTO conversation_messages 
+                 (conversation_id, sender_type, message_text, pattern_id, created_at)
+                 VALUES ($1, 'operator', $2, $3, NOW())`,
+                [sugg.conversation_id, finalResponse, sugg.pattern_id]
+              );
+            }
+          }
+
+          // Update pattern confidence based on action
+          if (sugg.pattern_id) {
+            const confidenceChange = action === 'accept' ? 0.02 : -0.01; // Small adjustments
+            await db.query(
+              `UPDATE decision_patterns 
+               SET confidence_score = LEAST(0.95, GREATEST(0.1, confidence_score + $1)),
+                   execution_count = execution_count + 1,
+                   success_count = success_count + CASE WHEN $2 = 'accept' THEN 1 ELSE 0 END,
+                   human_override_count = human_override_count + CASE WHEN $2 = 'modify' THEN 1 ELSE 0 END
+               WHERE id = $3`,
+              [confidenceChange, action, sugg.pattern_id]
+            );
+          }
+        }
+
+        // If modified, learn from the modification
+        if (action === 'modify' && sugg.pattern_id) {
+          await patternLearningService.learnFromHumanResponse(
+            sugg.suggested_response,
+            finalResponse,
+            [],
+            sugg.conversation_id,
+            conversation.rows[0]?.phone_number,
+            operatorId
+          );
+        }
+
+        await db.query('COMMIT');
+
+        res.json({
+          success: true,
+          action,
+          finalResponse,
+          messageSent: action !== 'reject'
+        });
+
+      } catch (error) {
+        await db.query('ROLLBACK');
+        throw error;
+      }
+
+    } catch (error) {
+      logger.error('[Patterns API] Failed to process operator response', error);
+      res.status(500).json({ success: false, error: 'Failed to process response' });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/recent-activity
+ * Get recent pattern matching activity
+ */
+router.get('/recent-activity',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(`
+        SELECT 
+          peh.id,
+          peh.pattern_id,
+          peh.conversation_id,
+          peh.phone_number,
+          peh.message_text,
+          peh.confidence_at_execution,
+          peh.execution_mode,
+          peh.created_at,
+          peh.execution_status,
+          dp.pattern_type,
+          dp.response_template,
+          oc.customer_name,
+          CASE 
+            WHEN psq.status = 'pending' THEN 'pending'
+            WHEN psq.status = 'processed' THEN 'handled'
+            WHEN psq.status = 'rejected' THEN 'rejected'
+            WHEN peh.execution_mode = 'auto' THEN 'auto_handled'
+            ELSE 'queued'
+          END as status
+        FROM pattern_execution_history peh
+        LEFT JOIN decision_patterns dp ON dp.id = peh.pattern_id
+        LEFT JOIN openphone_conversations oc ON oc.id::text = peh.conversation_id
+        LEFT JOIN pattern_suggestions_queue psq ON psq.conversation_id = peh.conversation_id
+          AND psq.pattern_id = peh.pattern_id
+        ORDER BY peh.created_at DESC
+        LIMIT 50
+      `);
+
+      res.json({
+        success: true,
+        activity: result.rows.map(row => ({
+          id: row.id,
+          time: row.created_at,
+          phone: row.phone_number,
+          customerName: row.customer_name,
+          message: row.message_text,
+          pattern: row.pattern_type,
+          confidence: Math.round(row.confidence_at_execution * 100),
+          status: row.status,
+          mode: row.execution_mode
+        }))
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get recent activity', error);
+      res.status(500).json({ success: false, error: 'Failed to get recent activity' });
     }
   }
 );
