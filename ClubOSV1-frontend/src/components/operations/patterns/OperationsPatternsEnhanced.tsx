@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Filter,
   Search,
-  BarChart3
+  BarChart3,
+  History
 } from 'lucide-react';
 import apiClient from '@/api/http';
 
@@ -78,25 +79,21 @@ interface PatternStats {
   };
 }
 
-export const OperationsPatterns: React.FC = () => {
+export const OperationsPatternsEnhanced: React.FC = () => {
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'patterns' | 'config'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'patterns' | 'config' | 'history'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [config, setConfig] = useState<any>(null);
-  const [aiAutomations, setAiAutomations] = useState({
-    giftCardInquiries: true,
-    llmInitialAnalysis: true,
-    trackmanReset: false
-  });
+  const [executionHistory, setExecutionHistory] = useState<ExecutionHistory[]>([]);
 
   useEffect(() => {
     fetchStats();
     fetchPatterns();
     fetchConfig();
-    fetchAiAutomations();
+    fetchExecutionHistory();
   }, []);
 
   const fetchStats = async () => {
@@ -111,7 +108,6 @@ export const OperationsPatterns: React.FC = () => {
   const fetchPatterns = async () => {
     try {
       const response = await apiClient.get('/patterns');
-      // Handle both array and object response formats
       if (Array.isArray(response.data)) {
         setPatterns(response.data);
       } else if (response.data.patterns) {
@@ -121,7 +117,7 @@ export const OperationsPatterns: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch patterns:', error);
-      setPatterns([]); // Set empty array on error
+      setPatterns([]);
     } finally {
       setLoading(false);
     }
@@ -136,29 +132,13 @@ export const OperationsPatterns: React.FC = () => {
     }
   };
 
-  const fetchAiAutomations = async () => {
+  const fetchExecutionHistory = async () => {
     try {
-      const response = await apiClient.get('/patterns/ai-automations');
-      if (response.data) {
-        setAiAutomations(response.data);
-      }
+      const response = await apiClient.get('/patterns/execution-history?limit=20');
+      setExecutionHistory(response.data.history || []);
     } catch (error) {
-      console.error('Failed to fetch AI automations:', error);
-    }
-  };
-
-  const toggleAiAutomation = async (key: string) => {
-    try {
-      const newValue = !aiAutomations[key as keyof typeof aiAutomations];
-      await apiClient.put('/patterns/ai-automations', { 
-        [key]: newValue 
-      });
-      setAiAutomations(prev => ({
-        ...prev,
-        [key]: newValue
-      }));
-    } catch (error) {
-      console.error('Failed to toggle AI automation:', error);
+      console.error('Failed to fetch execution history:', error);
+      setExecutionHistory([]);
     }
   };
 
@@ -184,8 +164,24 @@ export const OperationsPatterns: React.FC = () => {
   const testMessage = async (message: string) => {
     try {
       const response = await apiClient.post('/patterns/test', { message });
-      const result = response.data;
-      alert(`Test Result: ${result.action}\nConfidence: ${result.confidence || 'N/A'}\nReason: ${result.reason || 'Pattern matched'}`);
+      const result = response.data.result || response.data;
+      
+      // Show detailed reasoning from GPT-4o
+      const reasoning = result.reasoning ? `
+
+🧠 GPT-4o Reasoning:
+${result.reasoning.thought_process}
+
+📋 Next Steps:
+${result.reasoning.next_steps?.join('\n') || 'None'}
+
+❓ Questions to Ask:
+${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
+      
+      alert(`🎯 Test Result: ${result.action}
+📊 Confidence: ${((result.confidence || 0) * 100).toFixed(1)}%
+🏷️ Pattern Type: ${result.pattern?.pattern_type || 'None'}
+💬 Response: ${result.response?.substring(0, 200) || 'No response generated'}${reasoning}`);
     } catch (error) {
       console.error('Failed to test message:', error);
     }
@@ -215,14 +211,17 @@ export const OperationsPatterns: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <Brain className="h-8 w-8 text-primary" />
+            <div className="relative">
+              <Brain className="h-8 w-8 text-primary" />
+              <span className="absolute -top-1 -right-1 px-1 py-0.5 text-xs bg-purple-600 text-white rounded font-bold">GPT-4o</span>
+            </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">V3-PLS (Pattern Learning System)</h1>
-              <p className="text-sm text-gray-500">AI-powered message pattern recognition and automation</p>
+              <p className="text-sm text-gray-500">GPT-4o powered adaptive reasoning with real-time context awareness</p>
             </div>
           </div>
           <button
-            onClick={() => { fetchStats(); fetchPatterns(); }}
+            onClick={() => { fetchStats(); fetchPatterns(); fetchExecutionHistory(); }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <RefreshCw className="h-5 w-5 text-gray-600" />
@@ -292,6 +291,19 @@ export const OperationsPatterns: React.FC = () => {
         >
           Configuration
         </button>
+        <button
+          onClick={() => setActiveView('history')}
+          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+            activeView === 'history' 
+              ? 'bg-primary text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-1">
+            <History className="h-4 w-4" />
+            <span>History ({executionHistory.length})</span>
+          </div>
+        </button>
       </div>
 
       {/* Overview View */}
@@ -314,9 +326,9 @@ export const OperationsPatterns: React.FC = () => {
               <Activity className="h-5 w-5 text-green-500" />
               <span className="text-2xl font-bold">{stats?.executions.total || 0}</span>
             </div>
-            <p className="text-sm text-gray-600">Executions (7d)</p>
+            <p className="text-sm text-gray-600">Total Executions</p>
             <p className="text-xs text-gray-500 mt-1">
-              Live: {stats?.executions.live || 0}
+              Live Actions: {stats?.executions.live || 0}
             </p>
           </div>
 
@@ -345,103 +357,36 @@ export const OperationsPatterns: React.FC = () => {
           </div>
         </div>
 
-        {/* AI Automations Card */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
-                <span className="text-sm text-gray-500">
-                  ({Object.values(aiAutomations).filter(v => v).length}/3 active)
-                </span>
-              </div>
-              <button
-                onClick={() => setActiveView('config')}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
+        {/* GPT-4o Features Card */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-sm border border-purple-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-2 bg-purple-600 text-white rounded-lg">
+              <Brain className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">GPT-4o Reasoning Engine</h2>
+              <p className="text-sm text-gray-600">Advanced AI capabilities for adaptive responses</p>
             </div>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {/* Gift Card Inquiries */}
-              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Gift Card Inquiries</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Automatically respond to gift card purchase questions with link to purchase page
-                  </p>
-                  <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                    customer service
-                  </span>
-                </div>
-                <button 
-                  onClick={() => toggleAiAutomation('giftCardInquiries')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    aiAutomations.giftCardInquiries ? 'bg-primary' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    aiAutomations.giftCardInquiries ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
-
-              {/* LLM Initial Message Analysis */}
-              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-medium text-gray-900">LLM Initial Message Analysis</h3>
-                    <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded">
-                      RECOMMENDED
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Use AI to understand and respond to all initial customer messages
-                  </p>
-                  <p className="text-sm text-gray-600 mt-2">
-                    This uses AI to understand ALL initial messages, not just keyword matching
-                  </p>
-                  <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                    customer service
-                  </span>
-                </div>
-                <button 
-                  onClick={() => toggleAiAutomation('llmInitialAnalysis')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    aiAutomations.llmInitialAnalysis ? 'bg-primary' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    aiAutomations.llmInitialAnalysis ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
-
-              {/* Trackman Reset */}
-              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Trackman Reset</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Automatically reset frozen or unresponsive Trackman units via NinjaOne
-                  </p>
-                  <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                    technical
-                  </span>
-                </div>
-                <button 
-                  onClick={() => toggleAiAutomation('trackmanReset')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    aiAutomations.trackmanReset ? 'bg-primary' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    aiAutomations.trackmanReset ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white/80 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2">🧠 Context-Aware Responses</h3>
+              <p className="text-sm text-gray-600">
+                Analyzes conversation history and adapts responses based on context
+              </p>
+            </div>
+            <div className="bg-white/80 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2">🎯 Multi-Step Planning</h3>
+              <p className="text-sm text-gray-600">
+                Plans complex resolutions across multiple customer interactions
+              </p>
+            </div>
+            <div className="bg-white/80 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2">💡 Intelligent Reasoning</h3>
+              <p className="text-sm text-gray-600">
+                Provides transparent reasoning for every decision and response
+              </p>
             </div>
           </div>
         </div>
@@ -526,6 +471,70 @@ export const OperationsPatterns: React.FC = () => {
         </div>
       )}
 
+      {/* Execution History View */}
+      {activeView === 'history' && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold">Recent Pattern Executions</h2>
+            <p className="text-sm text-gray-500">Shows GPT-4o reasoning and outcomes</p>
+          </div>
+          <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+            {executionHistory.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                No execution history yet. Pattern matching will appear here once messages are processed.
+              </div>
+            ) : (
+              executionHistory.map((exec) => (
+                <div key={exec.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-xs font-medium px-2 py-1 rounded ${
+                        exec.execution_mode === 'auto' ? 'bg-green-100 text-green-700' :
+                        exec.execution_mode === 'suggested' ? 'bg-yellow-100 text-yellow-700' :
+                        exec.execution_mode === 'shadow' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {exec.execution_mode}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(exec.created_at).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-medium ${getConfidenceColor(exec.confidence_at_execution)}`}>
+                      {(exec.confidence_at_execution * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900 mb-2">
+                    <strong>Message:</strong> {exec.message_text.substring(0, 100)}...
+                  </p>
+                  {exec.response_sent && (
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Response:</strong> {exec.response_sent.substring(0, 100)}...
+                    </p>
+                  )}
+                  {exec.gpt4o_reasoning && (
+                    <div className="mt-2 p-2 bg-purple-50 rounded-lg">
+                      <p className="text-xs font-medium text-purple-700 mb-1">GPT-4o Reasoning:</p>
+                      <p className="text-xs text-purple-600">{exec.gpt4o_reasoning.thought_process}</p>
+                      {exec.gpt4o_reasoning.next_steps && exec.gpt4o_reasoning.next_steps.length > 0 && (
+                        <div className="mt-1">
+                          <p className="text-xs font-medium text-purple-700">Next Steps:</p>
+                          <ul className="text-xs text-purple-600 list-disc list-inside">
+                            {exec.gpt4o_reasoning.next_steps.map((step, i) => (
+                              <li key={i}>{step}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Configuration View */}
       {activeView === 'config' && config && (
         <div className="space-y-4">
@@ -582,39 +591,44 @@ export const OperationsPatterns: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Minimum Occurrences to Learn: {config.min_occurrences_to_learn}
+                  Minimum Confidence to Suggest: {(config.min_confidence_to_suggest * 100).toFixed(0)}%
                 </label>
                 <input
                   type="range"
-                  min="1"
-                  max="10"
-                  value={config.min_occurrences_to_learn}
-                  onChange={(e) => updateConfig('min_occurrences_to_learn', parseInt(e.target.value))}
+                  min="30"
+                  max="90"
+                  value={(config.min_confidence_to_suggest || 0.7) * 100}
+                  onChange={(e) => updateConfig('min_confidence_to_suggest', parseFloat(e.target.value) / 100)}
                   className="w-full"
                 />
               </div>
             </div>
           </div>
 
-          {/* Test Message */}
+          {/* Test Message with GPT-4o */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">Test Pattern Matching</h2>
+            <div className="flex items-center space-x-2 mb-4">
+              <Brain className="h-5 w-5 text-purple-600" />
+              <h2 className="text-lg font-semibold">Test Pattern Matching with GPT-4o</h2>
+            </div>
             <div className="space-y-4">
               <textarea
-                placeholder="Enter a test message to see how the system would respond..."
+                id="test-message"
+                placeholder="Enter a test message to see how GPT-4o would respond..."
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
                 rows={3}
               />
               <button
                 onClick={() => {
-                  const textarea = document.querySelector('textarea');
+                  const textarea = document.getElementById('test-message') as HTMLTextAreaElement;
                   if (textarea?.value) {
                     testMessage(textarea.value);
                   }
                 }}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors flex items-center space-x-2"
               >
-                Test Message
+                <Zap className="h-4 w-4" />
+                <span>Test with GPT-4o Reasoning</span>
               </button>
             </div>
           </div>

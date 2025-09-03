@@ -382,16 +382,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 userCount: userIds.length
               });
               
-              // Process AI automations for inbound messages
+              // PATTERN LEARNING: Process incoming message (replaces AI automations)
               const messageText = messageData.body || messageData.text || '';
-              const automationResponse = await aiAutomationService.processMessage(
-                phoneNumber, 
-                messageText,
-                existingConv.rows[0].id,
-                false // Not initial message - continuing conversation
-              );
               
-              // PATTERN LEARNING: Process incoming message
               try {
                 const patternResult = await patternLearningService.processMessage(
                   messageText,
@@ -400,32 +393,97 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   customerName
                 );
                 
-                if (patternResult.action === 'shadow') {
-                  logger.info('[Pattern Learning] SHADOW MODE', {
+                // Store message in conversation history
+                await db.query(`
+                  INSERT INTO conversation_messages 
+                  (conversation_id, sender_type, message_text, pattern_id, pattern_confidence, ai_reasoning)
+                  VALUES ($1, $2, $3, $4, $5, $6)
+                `, [
+                  existingConv.rows[0].id,
+                  'customer',
+                  messageText,
+                  patternResult.patternId || null,
+                  patternResult.confidence || null,
+                  patternResult.reasoning ? JSON.stringify(patternResult.reasoning) : null
+                ]);
+                
+                // Handle pattern result based on action
+                if (patternResult.action === 'auto_execute' && patternResult.response) {
+                  logger.info('[Pattern Learning] AUTO-EXECUTING', {
+                    confidence: patternResult.confidence,
+                    pattern: patternResult.pattern?.pattern_type,
+                    reasoning: patternResult.reasoning?.thought_process
+                  });
+                  
+                  // Send automated response
+                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                  if (defaultNumber) {
+                    await openPhoneService.sendMessage(
+                      phoneNumber,
+                      defaultNumber,
+                      patternResult.response
+                    );
+                    
+                    // Store AI response in history
+                    await db.query(`
+                      INSERT INTO conversation_messages 
+                      (conversation_id, sender_type, message_text, pattern_id)
+                      VALUES ($1, 'ai', $2, $3)
+                    `, [existingConv.rows[0].id, patternResult.response, patternResult.patternId]);
+                  }
+                } else if (patternResult.action === 'suggest') {
+                  logger.info('[Pattern Learning] SUGGESTION READY', {
                     confidence: patternResult.confidence,
                     pattern: patternResult.pattern?.pattern_type
                   });
+                  
+                  // Store suggestion for operator review
+                  await db.query(`
+                    INSERT INTO pattern_suggestions_queue 
+                    (conversation_id, pattern_id, suggested_response, confidence_score, reasoning)
+                    VALUES ($1, $2, $3, $4, $5)
+                  `, [
+                    existingConv.rows[0].id,
+                    patternResult.patternId,
+                    patternResult.response,
+                    patternResult.confidence,
+                    JSON.stringify(patternResult.reasoning)
+                  ]);
+                } else {
+                  logger.info('[Pattern Learning] Result:', {
+                    action: patternResult.action,
+                    confidence: patternResult.confidence,
+                    reason: patternResult.reason
+                  });
                 }
+                
+                // Update conversation with pattern info
+                const assistantType = patternResult.pattern?.pattern_type || 'general';
+                await db.query(`
+                  UPDATE openphone_conversations
+                  SET last_assistant_type = $1,
+                      assistant_type = COALESCE(assistant_type, $1)
+                  WHERE id = $2
+                `, [assistantType, existingConv.rows[0].id]);
+                
               } catch (err) {
                 logger.error('[Pattern Learning] Error:', err);
               }
               
-              // Update conversation with assistant type
-              const assistantType = automationResponse.assistantType || aiAutomationService.getAssistantType(messageText);
-              await db.query(`
-                UPDATE openphone_conversations
-                SET last_assistant_type = $1,
-                    assistant_type = COALESCE(assistant_type, $1)
-                WHERE id = $2
-              `, [assistantType, existingConv.rows[0].id]);
-              
-              if (automationResponse.handled && automationResponse.response) {
-                // Send automated response
-                logger.info('Sending automated response', {
-                  phoneNumber,
-                  response: automationResponse.response.substring(0, 100),
-                  assistantType
-                });
+              // Legacy AI automations fallback (will be removed)
+              if (false) { // Disabled - using pattern learning instead
+                const automationResponse = await aiAutomationService.processMessage(
+                  phoneNumber, 
+                  messageText,
+                  existingConv.rows[0].id,
+                  false
+                );
+                
+                if (automationResponse.handled && automationResponse.response) {
+                  logger.info('Legacy automation response', {
+                    phoneNumber,
+                    response: automationResponse.response.substring(0, 100)
+                  });
                 
                 const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
                 if (defaultNumber) {

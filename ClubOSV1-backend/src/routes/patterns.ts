@@ -39,20 +39,31 @@ router.get('/config',
         'SELECT config_key, config_value, description FROM pattern_learning_config ORDER BY config_key'
       );
       
+      // Format config for UI - return flat object with actual types
       const config = result.rows.reduce((acc, row) => {
-        acc[row.config_key] = {
-          value: row.config_value,
-          description: row.description
-        };
+        const key = row.config_key;
+        const value = row.config_value;
+        
+        // Convert boolean strings to actual booleans
+        if (value === 'true' || value === 'false') {
+          acc[key] = value === 'true';
+        } else if (!isNaN(parseFloat(value))) {
+          // Convert numeric strings to numbers
+          acc[key] = parseFloat(value);
+        } else {
+          acc[key] = value;
+        }
         return acc;
       }, {} as any);
       
-      res.json({
-        success: true,
-        config,
-        shadowMode: config.shadow_mode?.value === 'true',
-        enabled: config.enabled?.value === 'true'
-      });
+      // Ensure required fields exist for UI
+      config.enabled = config.enabled ?? false;
+      config.shadow_mode = config.shadow_mode ?? true;
+      config.min_confidence_to_act = config.min_confidence_to_act ?? 0.95;
+      config.min_confidence_to_suggest = config.min_confidence_to_suggest ?? 0.7;
+      config.min_occurrences_to_learn = config.min_occurrences_to_learn ?? 3;
+      
+      res.json(config);
     } catch (error) {
       logger.error('[Patterns API] Failed to get config', error);
       res.status(500).json({ success: false, error: 'Failed to get configuration' });
@@ -530,11 +541,47 @@ router.get('/stats',
         ORDER BY date DESC
       `);
 
+      // Get config for UI
+      const configResult = await db.query(`
+        SELECT config_key, config_value 
+        FROM pattern_learning_config 
+        WHERE config_key IN ('enabled', 'shadow_mode', 'min_confidence_to_act', 'min_confidence_to_suggest')
+      `);
+      
+      const config = configResult.rows.reduce((acc, row) => {
+        if (row.config_key === 'enabled' || row.config_key === 'shadow_mode') {
+          acc[row.config_key] = row.config_value === 'true';
+        } else {
+          acc[row.config_key] = parseFloat(row.config_value) || 0;
+        }
+        return acc;
+      }, {} as any);
+
+      // Get pending suggestions count
+      const suggestionsResult = await db.query(
+        'SELECT COUNT(*) as count FROM pattern_suggestions_queue WHERE status = $1',
+        ['pending']
+      );
+
+      // Format response for UI
+      const stats = statsResult.rows[0];
       res.json({
-        success: true,
-        stats: statsResult.rows[0],
-        typeDistribution: typeResult.rows,
-        recentActivity: activityResult.rows
+        patterns: {
+          total: parseInt(stats.total_patterns) || 0,
+          avgConfidence: parseFloat(stats.avg_confidence) || 0
+        },
+        executions: {
+          total: parseInt(stats.total_executions) || 0,
+          live: parseInt(stats.total_successes) || 0
+        },
+        suggestions: {
+          pending: parseInt(suggestionsResult.rows[0]?.count) || 0
+        },
+        config: {
+          enabled: config.enabled || false,
+          shadow_mode: config.shadow_mode || false,
+          min_confidence_to_act: config.min_confidence_to_act || 0.95
+        }
       });
     } catch (error) {
       logger.error('[Patterns API] Failed to get stats', error);
