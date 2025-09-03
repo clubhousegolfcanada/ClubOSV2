@@ -194,6 +194,187 @@ router.get('/',
   }
 );
 
+// ============================================
+// SPECIFIC ROUTES (must be defined before /:id)
+// ============================================
+
+/**
+ * GET /api/patterns/stats
+ * Get pattern learning statistics
+ */
+router.get('/stats',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      // Get overall stats
+      const statsResult = await db.query(`
+        SELECT 
+          COUNT(*) as total_patterns,
+          COUNT(*) FILTER (WHERE auto_executable = TRUE) as auto_executable_patterns,
+          COUNT(*) FILTER (WHERE confidence_score >= 0.95) as high_confidence_patterns,
+          COUNT(*) FILTER (WHERE confidence_score >= 0.75) as medium_confidence_patterns,
+          COUNT(*) FILTER (WHERE confidence_score < 0.75) as low_confidence_patterns,
+          AVG(confidence_score) as avg_confidence,
+          SUM(execution_count) as total_executions,
+          SUM(success_count) as total_successes,
+          AVG(CASE WHEN execution_count > 0 
+            THEN success_count::float / execution_count 
+            ELSE 0 END) as avg_success_rate
+        FROM decision_patterns
+        WHERE is_active = TRUE
+      `);
+
+      // Get config for UI
+      const configResult = await db.query(`
+        SELECT config_key, config_value 
+        FROM pattern_learning_config 
+        WHERE config_key IN ('enabled', 'shadow_mode', 'min_confidence_to_act', 'min_confidence_to_suggest')
+      `);
+      
+      const config = configResult.rows.reduce((acc, row) => {
+        if (row.config_key === 'enabled' || row.config_key === 'shadow_mode') {
+          acc[row.config_key] = row.config_value === 'true';
+        } else {
+          acc[row.config_key] = parseFloat(row.config_value) || 0;
+        }
+        return acc;
+      }, {} as any);
+
+      // Get pending suggestions count
+      const suggestionsResult = await db.query(
+        'SELECT COUNT(*) as count FROM pattern_suggestions_queue WHERE status = $1',
+        ['pending']
+      );
+
+      // Format response for UI
+      const stats = statsResult.rows[0];
+      res.json({
+        patterns: {
+          total: parseInt(stats.total_patterns) || 0,
+          avgConfidence: parseFloat(stats.avg_confidence) || 0
+        },
+        executions: {
+          total: parseInt(stats.total_executions) || 0,
+          live: parseInt(stats.total_successes) || 0
+        },
+        suggestions: {
+          pending: parseInt(suggestionsResult.rows[0]?.count) || 0
+        },
+        config: {
+          enabled: config.enabled || false,
+          shadow_mode: config.shadow_mode || false,
+          min_confidence_to_act: config.min_confidence_to_act || 0.95
+        }
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get stats', error);
+      res.status(500).json({ success: false, error: 'Failed to get statistics' });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/ai-automations
+ * Get AI automation settings
+ */
+router.get('/ai-automations',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(`
+        SELECT 
+          af.feature_key,
+          af.enabled,
+          af.description
+        FROM ai_automation_features af
+        WHERE af.feature_key IN ('gift_card_inquiries', 'llm_initial_analysis', 'trackman_reset')
+      `);
+
+      const automations = result.rows.reduce((acc, row) => {
+        const camelKey = row.feature_key.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
+        acc[camelKey] = row.enabled;
+        return acc;
+      }, {} as any);
+
+      res.json({
+        giftCardInquiries: automations.giftCardInquiries || false,
+        llmInitialAnalysis: automations.llmInitialAnalysis || false,
+        trackmanReset: automations.trackmanReset || false
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get AI automations', error);
+      res.status(500).json({ success: false, error: 'Failed to get AI automations' });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/ai-automations
+ * Update AI automation settings
+ */
+router.put('/ai-automations',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const updates = req.body;
+      
+      for (const [key, value] of Object.entries(updates)) {
+        const snakeKey = key.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
+        
+        await db.query(
+          'UPDATE ai_automation_features SET enabled = $1 WHERE feature_key = $2',
+          [value, snakeKey]
+        );
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to update AI automations', error);
+      res.status(500).json({ success: false, error: 'Failed to update AI automations' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/test
+ * Test a message against patterns without executing
+ */
+router.post('/test',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [body('message').isString().notEmpty()],
+  async (req: Request, res: Response) => {
+    try {
+      const { message } = req.body;
+
+      const result = await patternLearningService.processMessage(
+        message,
+        'TEST_PHONE',
+        'TEST_CONVERSATION',
+        'Test Customer'
+      );
+
+      res.json({
+        success: true,
+        message,
+        result,
+        wouldExecute: result.action === 'auto_execute',
+        confidence: result.confidence
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to test pattern', error);
+      res.status(500).json({ success: false, error: 'Failed to test pattern' });
+    }
+  }
+);
+
+// ============================================
+// DYNAMIC ROUTES (must be defined after specific routes)
+// ============================================
+
 /**
  * GET /api/patterns/:id
  * Get a specific pattern with its execution history
@@ -489,250 +670,4 @@ router.post('/queue/:id/reject',
   }
 );
 
-/**
- * GET /api/patterns/stats
- * Get pattern learning statistics
- */
-router.get('/stats',
-  authenticate,
-  roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
-    try {
-      // Get overall stats
-      const statsResult = await db.query(`
-        SELECT 
-          COUNT(*) as total_patterns,
-          COUNT(*) FILTER (WHERE auto_executable = TRUE) as auto_executable_patterns,
-          COUNT(*) FILTER (WHERE confidence_score >= 0.95) as high_confidence_patterns,
-          COUNT(*) FILTER (WHERE confidence_score >= 0.75) as medium_confidence_patterns,
-          COUNT(*) FILTER (WHERE confidence_score < 0.75) as low_confidence_patterns,
-          AVG(confidence_score) as avg_confidence,
-          SUM(execution_count) as total_executions,
-          SUM(success_count) as total_successes,
-          AVG(CASE WHEN execution_count > 0 
-            THEN success_count::float / execution_count 
-            ELSE 0 END) as avg_success_rate
-        FROM decision_patterns
-        WHERE is_active = TRUE
-      `);
-
-      // Get pattern type distribution
-      const typeResult = await db.query(`
-        SELECT 
-          pattern_type,
-          COUNT(*) as count,
-          AVG(confidence_score) as avg_confidence
-        FROM decision_patterns
-        WHERE is_active = TRUE
-        GROUP BY pattern_type
-        ORDER BY count DESC
-      `);
-
-      // Get recent activity
-      const activityResult = await db.query(`
-        SELECT 
-          DATE(created_at) as date,
-          COUNT(*) as executions,
-          COUNT(DISTINCT pattern_id) as unique_patterns,
-          COUNT(*) FILTER (WHERE execution_status = 'success') as successes
-        FROM pattern_execution_history
-        WHERE created_at > NOW() - INTERVAL '7 days'
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-      `);
-
-      // Get config for UI
-      const configResult = await db.query(`
-        SELECT config_key, config_value 
-        FROM pattern_learning_config 
-        WHERE config_key IN ('enabled', 'shadow_mode', 'min_confidence_to_act', 'min_confidence_to_suggest')
-      `);
-      
-      const config = configResult.rows.reduce((acc, row) => {
-        if (row.config_key === 'enabled' || row.config_key === 'shadow_mode') {
-          acc[row.config_key] = row.config_value === 'true';
-        } else {
-          acc[row.config_key] = parseFloat(row.config_value) || 0;
-        }
-        return acc;
-      }, {} as any);
-
-      // Get pending suggestions count
-      const suggestionsResult = await db.query(
-        'SELECT COUNT(*) as count FROM pattern_suggestions_queue WHERE status = $1',
-        ['pending']
-      );
-
-      // Format response for UI
-      const stats = statsResult.rows[0];
-      res.json({
-        patterns: {
-          total: parseInt(stats.total_patterns) || 0,
-          avgConfidence: parseFloat(stats.avg_confidence) || 0
-        },
-        executions: {
-          total: parseInt(stats.total_executions) || 0,
-          live: parseInt(stats.total_successes) || 0
-        },
-        suggestions: {
-          pending: parseInt(suggestionsResult.rows[0]?.count) || 0
-        },
-        config: {
-          enabled: config.enabled || false,
-          shadow_mode: config.shadow_mode || false,
-          min_confidence_to_act: config.min_confidence_to_act || 0.95
-        }
-      });
-    } catch (error) {
-      logger.error('[Patterns API] Failed to get stats', error);
-      res.status(500).json({ success: false, error: 'Failed to get statistics' });
-    }
-  }
-);
-
-/**
- * POST /api/patterns/test
- * Test a message against patterns without executing
- * BREADCRUMB: Use this to see what pattern would match a message
- */
-router.post('/test',
-  authenticate,
-  roleGuard(['admin', 'operator']),
-  [body('message').isString().notEmpty()],
-  async (req: Request, res: Response) => {
-    try {
-      const { message } = req.body;
-
-      // Process through pattern learning in test mode
-      const result = await patternLearningService.processMessage(
-        message,
-        'TEST_PHONE',
-        'TEST_CONVERSATION',
-        'Test Customer'
-      );
-
-      res.json({
-        success: true,
-        message,
-        result,
-        wouldExecute: result.action === 'auto_execute',
-        confidence: result.confidence
-      });
-    } catch (error) {
-      logger.error('[Patterns API] Failed to test pattern', error);
-      res.status(500).json({ success: false, error: 'Failed to test pattern' });
-    }
-  }
-);
-
-/**
- * GET /api/patterns/ai-automations
- * Get AI automation settings
- */
-router.get('/ai-automations',
-  authenticate,
-  roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
-    try {
-      // Get automation settings from database or config
-      const result = await db.query(`
-        SELECT * FROM ai_automation_settings 
-        WHERE id = 1
-      `);
-      
-      if (result.rows.length === 0) {
-        // Return defaults if no settings exist
-        res.json({
-          giftCardInquiries: true,
-          llmInitialAnalysis: true,
-          trackmanReset: false
-        });
-      } else {
-        res.json({
-          giftCardInquiries: result.rows[0].gift_card_inquiries ?? true,
-          llmInitialAnalysis: result.rows[0].llm_initial_analysis ?? true,
-          trackmanReset: result.rows[0].trackman_reset ?? false
-        });
-      }
-    } catch (error) {
-      logger.error('Failed to get AI automation settings:', error);
-      res.status(500).json({ error: 'Failed to get AI automation settings' });
-    }
-  }
-);
-
-/**
- * PUT /api/patterns/ai-automations
- * Update AI automation settings
- */
-router.put('/ai-automations',
-  authenticate,
-  roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
-    try {
-      const { giftCardInquiries, llmInitialAnalysis, trackmanReset } = req.body;
-      
-      // Check if settings exist
-      const existing = await db.query('SELECT id FROM ai_automation_settings WHERE id = 1');
-      
-      if (existing.rows.length === 0) {
-        // Insert new settings
-        await db.query(`
-          INSERT INTO ai_automation_settings 
-          (id, gift_card_inquiries, llm_initial_analysis, trackman_reset, updated_at)
-          VALUES (1, $1, $2, $3, NOW())
-        `, [
-          giftCardInquiries ?? true,
-          llmInitialAnalysis ?? true,
-          trackmanReset ?? false
-        ]);
-      } else {
-        // Update existing settings
-        const updates = [];
-        const values = [];
-        let paramCount = 1;
-        
-        if (giftCardInquiries !== undefined) {
-          updates.push(`gift_card_inquiries = $${paramCount++}`);
-          values.push(giftCardInquiries);
-        }
-        if (llmInitialAnalysis !== undefined) {
-          updates.push(`llm_initial_analysis = $${paramCount++}`);
-          values.push(llmInitialAnalysis);
-        }
-        if (trackmanReset !== undefined) {
-          updates.push(`trackman_reset = $${paramCount++}`);
-          values.push(trackmanReset);
-        }
-        
-        if (updates.length > 0) {
-          await db.query(`
-            UPDATE ai_automation_settings 
-            SET ${updates.join(', ')}, updated_at = NOW()
-            WHERE id = 1
-          `, values);
-        }
-      }
-      
-      // Log the change
-      logger.info('AI automation settings updated:', { 
-        by: req.user?.email,
-        settings: req.body 
-      });
-      
-      res.json({ success: true });
-    } catch (error) {
-      logger.error('Failed to update AI automation settings:', error);
-      res.status(500).json({ error: 'Failed to update AI automation settings' });
-    }
-  }
-);
-
 export default router;
-
-// TODO NEXT STEPS:
-// 1. Import this router in src/index.ts
-// 2. Mount at /api/patterns
-// 3. Test with: curl http://localhost:3001/api/patterns/config
-// 4. Create UI to manage patterns
-// 5. Monitor pattern execution in shadow mode
