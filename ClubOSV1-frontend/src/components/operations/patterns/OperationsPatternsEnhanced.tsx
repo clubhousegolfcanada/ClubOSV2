@@ -65,6 +65,113 @@ interface ExecutionHistory {
   execution_status: string;
 }
 
+// Pattern Item Component to handle expanded state
+const PatternItem: React.FC<{ 
+  pattern: Pattern; 
+  togglePattern: (id: number, isActive: boolean) => void;
+  getConfidenceBg: (score: number) => string;
+  getConfidenceColor: (score: number) => string;
+}> = ({ pattern, togglePattern, getConfidenceBg, getConfidenceColor }) => {
+  const [expanded, setExpanded] = useState(false);
+  const typeEmoji = {
+    booking: '📅',
+    tech_issue: '🔧',
+    access: '🚪',
+    faq: '❓',
+    gift_cards: '🎁',
+    hours: '🕐',
+    general: '💬',
+    membership: '💳'
+  }[pattern.pattern_type] || '📝';
+  
+  return (
+    <div className="hover:bg-gray-50 transition-colors">
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            {/* Pattern Header */}
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">{typeEmoji}</span>
+              <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded capitalize">
+                {pattern.pattern_type.replace('_', ' ')}
+              </span>
+              <span className={`text-xs font-medium px-2 py-1 rounded ${getConfidenceBg(pattern.confidence_score)} ${getConfidenceColor(pattern.confidence_score)}`}>
+                {(pattern.confidence_score * 100).toFixed(0)}% confident
+              </span>
+              {pattern.auto_executable && (
+                <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-600 rounded flex items-center">
+                  <Zap className="h-3 w-3 mr-1" />
+                  Auto
+                </span>
+              )}
+            </div>
+            
+            {/* Customer Trigger */}
+            <div className="mb-2">
+              <p className="text-xs font-medium text-gray-500 mb-1">When customer says:</p>
+              <p className="text-sm text-gray-900 bg-blue-50 p-2 rounded italic">
+                &quot;{pattern.trigger_text.length > 150 
+                  ? pattern.trigger_text.substring(0, 150) + '...' 
+                  : pattern.trigger_text}&quot;
+              </p>
+            </div>
+            
+            {/* Response Template (Show on expand or if short) */}
+            {(expanded || pattern.response_template.length < 100) && (
+              <div className="mb-2">
+                <p className="text-xs font-medium text-gray-500 mb-1">AI will suggest:</p>
+                <p className="text-sm text-gray-900 bg-green-50 p-2 rounded">
+                  {pattern.response_template}
+                </p>
+              </div>
+            )}
+            
+            {/* Stats */}
+            <div className="flex items-center space-x-4 text-xs text-gray-500">
+              <span>📊 Used {pattern.execution_count} times</span>
+              <span>✅ {pattern.execution_count > 0 
+                ? ((pattern.success_count / pattern.execution_count) * 100).toFixed(0)
+                : 0}% success</span>
+              {pattern.last_used && (
+                <span>🕐 Last used: {new Date(pattern.last_used).toLocaleDateString()}</span>
+              )}
+            </div>
+            
+            {/* Expand/Collapse Button */}
+            {pattern.response_template.length > 100 && (
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="mt-2 text-xs text-primary hover:text-primary-hover flex items-center"
+              >
+                {expanded ? 'Show less' : 'Show full response'}
+                <ChevronRight className={`h-3 w-3 ml-1 transform transition-transform ${expanded ? 'rotate-90' : ''}`} />
+              </button>
+            )}
+          </div>
+          
+          {/* Enable/Disable Toggle */}
+          <div className="ml-4 flex flex-col items-center">
+            <button
+              onClick={() => togglePattern(pattern.id, pattern.is_active)}
+              className={`p-2 rounded-lg transition-colors ${
+                pattern.is_active 
+                  ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+              }`}
+              title={pattern.is_active ? 'Pattern is active - click to disable' : 'Pattern is disabled - click to enable'}
+            >
+              {pattern.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </button>
+            <span className="text-xs text-gray-500 mt-1">
+              {pattern.is_active ? 'Active' : 'Disabled'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface PatternStats {
   patterns: {
     total: number;
@@ -491,106 +598,15 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
                 No patterns found matching your search
               </div>
             ) : (
-              filteredPatterns.map((pattern) => {
-                const [expanded, setExpanded] = React.useState(false);
-                const typeEmoji = {
-                  booking: '📅',
-                  tech_issue: '🔧',
-                  access: '🚪',
-                  faq: '❓',
-                  gift_cards: '🎁',
-                  hours: '🕐',
-                  general: '💬',
-                  membership: '💳'
-                }[pattern.pattern_type] || '📝';
-                
-                return (
-                  <div key={pattern.id} className="hover:bg-gray-50 transition-colors">
-                    <div className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {/* Pattern Header */}
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="text-lg">{typeEmoji}</span>
-                            <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded capitalize">
-                              {pattern.pattern_type.replace('_', ' ')}
-                            </span>
-                            <span className={`text-xs font-medium px-2 py-1 rounded ${getConfidenceBg(pattern.confidence_score)} ${getConfidenceColor(pattern.confidence_score)}`}>
-                              {(pattern.confidence_score * 100).toFixed(0)}% confident
-                            </span>
-                            {pattern.auto_executable && (
-                              <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-600 rounded flex items-center">
-                                <Zap className="h-3 w-3 mr-1" />
-                                Auto
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Customer Trigger */}
-                          <div className="mb-2">
-                            <p className="text-xs font-medium text-gray-500 mb-1">When customer says:</p>
-                            <p className="text-sm text-gray-900 bg-blue-50 p-2 rounded italic">
-                              "{pattern.trigger_text.length > 150 
-                                ? pattern.trigger_text.substring(0, 150) + '...' 
-                                : pattern.trigger_text}"
-                            </p>
-                          </div>
-                          
-                          {/* Response Template (Show on expand or if short) */}
-                          {(expanded || pattern.response_template.length < 100) && (
-                            <div className="mb-2">
-                              <p className="text-xs font-medium text-gray-500 mb-1">AI will suggest:</p>
-                              <p className="text-sm text-gray-900 bg-green-50 p-2 rounded">
-                                {pattern.response_template}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {/* Stats */}
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <span>📊 Used {pattern.execution_count} times</span>
-                            <span>✅ {pattern.execution_count > 0 
-                              ? ((pattern.success_count / pattern.execution_count) * 100).toFixed(0)
-                              : 0}% success</span>
-                            {pattern.last_used && (
-                              <span>🕐 Last used: {new Date(pattern.last_used).toLocaleDateString()}</span>
-                            )}
-                          </div>
-                          
-                          {/* Expand/Collapse Button */}
-                          {pattern.response_template.length > 100 && (
-                            <button
-                              onClick={() => setExpanded(!expanded)}
-                              className="mt-2 text-xs text-primary hover:text-primary-hover flex items-center"
-                            >
-                              {expanded ? 'Show less' : 'Show full response'}
-                              <ChevronRight className={`h-3 w-3 ml-1 transform transition-transform ${expanded ? 'rotate-90' : ''}`} />
-                            </button>
-                          )}
-                        </div>
-                        
-                        {/* Enable/Disable Toggle */}
-                        <div className="ml-4 flex flex-col items-center">
-                          <button
-                            onClick={() => togglePattern(pattern.id, pattern.is_active)}
-                            className={`p-2 rounded-lg transition-colors ${
-                              pattern.is_active 
-                                ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                            }`}
-                            title={pattern.is_active ? 'Pattern is active - click to disable' : 'Pattern is disabled - click to enable'}
-                          >
-                            {pattern.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                          </button>
-                          <span className="text-xs text-gray-500 mt-1">
-                            {pattern.is_active ? 'Active' : 'Disabled'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              filteredPatterns.map((pattern) => (
+                <PatternItem
+                  key={pattern.id}
+                  pattern={pattern}
+                  togglePattern={togglePattern}
+                  getConfidenceBg={getConfidenceBg}
+                  getConfidenceColor={getConfidenceColor}
+                />
+              ))
             )}
           </div>
         </div>
