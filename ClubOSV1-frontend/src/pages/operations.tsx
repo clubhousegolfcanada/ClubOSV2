@@ -7,7 +7,7 @@ import { Users, Zap, BarChart3, Brain } from 'lucide-react';
 import { OperationsUsers } from '@/components/operations/users/OperationsUsers';
 import { OperationsIntegrations } from '@/components/operations/integrations/OperationsIntegrations';
 import { OperationsAnalytics } from '@/components/operations/analytics/OperationsAnalytics';
-import { OperationsPatterns } from '@/components/operations/patterns/OperationsPatterns';
+import { OperationsPatternsEnhanced } from '@/components/operations/patterns/OperationsPatternsEnhanced';
 
 type TabType = 'users' | 'integrations' | 'analytics' | 'patterns';
 
@@ -96,7 +96,7 @@ export default function Operations() {
       case 'analytics':
         return <OperationsAnalytics />;
       case 'patterns':
-        return <OperationsPatterns />;
+        return <OperationsPatternsEnhanced />;
       default:
         return user.role === 'admin' ? <OperationsUsers /> : <OperationsAnalytics />;
     }

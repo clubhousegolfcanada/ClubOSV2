@@ -79,30 +79,28 @@ router.get('/config',
 router.put('/config',
   authenticate,
   roleGuard(['admin']), // Only admins can change config
-  [
-    body('key').isString().notEmpty(),
-    body('value').isString().notEmpty()
-  ],
   async (req: Request, res: Response) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ success: false, errors: errors.array() });
+      const updates = req.body;
+      
+      // Handle both single key-value and multiple updates
+      const entries = updates.key && updates.value 
+        ? [[updates.key, updates.value]]  // Old format
+        : Object.entries(updates);  // New format with multiple keys
+      
+      for (const [key, value] of entries) {
+        // Update configuration
+        await db.query(
+          'UPDATE pattern_learning_config SET config_value = $1, updated_at = NOW() WHERE config_key = $2',
+          [String(value), key]
+        );
+        
+        logger.info('[Patterns API] Configuration updated', {
+          key,
+          value,
+          updatedBy: (req as any).user?.id
+        });
       }
-
-      const { key, value } = req.body;
-      
-      // Update configuration
-      await db.query(
-        'UPDATE pattern_learning_config SET config_value = $1, updated_at = NOW() WHERE config_key = $2',
-        [value, key]
-      );
-      
-      logger.info('[Patterns API] Configuration updated', {
-        key,
-        value,
-        updatedBy: (req as any).user?.id
-      });
       
       res.json({ success: true, message: 'Configuration updated' });
     } catch (error) {
@@ -334,6 +332,56 @@ router.put('/ai-automations',
     } catch (error) {
       logger.error('[Patterns API] Failed to update AI automations', error);
       res.status(500).json({ success: false, error: 'Failed to update AI automations' });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/execution-history
+ * Get recent pattern execution history
+ */
+router.get('/execution-history',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('patternId').optional().isInt()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const { limit = 20, patternId } = req.query;
+      
+      let queryStr = `
+        SELECT 
+          peh.*,
+          dp.pattern_type,
+          dp.trigger_text,
+          dp.response_template,
+          u.name as reviewed_by_name
+        FROM pattern_execution_history peh
+        JOIN decision_patterns dp ON peh.pattern_id = dp.id
+        LEFT JOIN users u ON peh.reviewed_by = u.id
+      `;
+      
+      const params: any[] = [];
+      
+      if (patternId) {
+        queryStr += ' WHERE peh.pattern_id = $1';
+        params.push(patternId);
+      }
+      
+      queryStr += ' ORDER BY peh.created_at DESC LIMIT $' + (params.length + 1);
+      params.push(limit);
+      
+      const result = await db.query(queryStr, params);
+      
+      res.json({
+        success: true,
+        history: result.rows
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get execution history', error);
+      res.status(500).json({ success: false, error: 'Failed to get execution history' });
     }
   }
 );
