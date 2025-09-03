@@ -1,4 +1,5 @@
 import { http } from './http';
+import logger from '@/services/logger';
 
 export interface BayStatus {
   location: string;
@@ -41,10 +42,10 @@ export const systemStatusAPI = {
       const response = await http.get('/system/check');
       // The /api/system/check endpoint returns system info, not location bay data
       // For now, return mock data since the endpoint doesn't return the expected structure
-      console.log('System status response:', response.data);
+      logger.debug('System status response:', response.data);
       return getMockStatus();
     } catch (error) {
-      console.error('Failed to fetch system status:', error);
+      logger.error('Failed to fetch system status:', error);
       // Return mock data for now
       return getMockStatus();
     }
@@ -56,7 +57,7 @@ export const systemStatusAPI = {
       // No specific location endpoint exists, return mock data
       return getMockLocationStatus(location);
     } catch (error) {
-      console.error(`Failed to fetch status for ${location}:`, error);
+      logger.error(`Failed to fetch status for ${location}:`, error);
       return getMockLocationStatus(location);
     }
   },
@@ -71,7 +72,7 @@ export const systemStatusAPI = {
       }
       return null;
     } catch (error) {
-      console.error(`Failed to fetch bay status:`, error);
+      logger.error(`Failed to fetch bay status:`, error);
       return null;
     }
   }

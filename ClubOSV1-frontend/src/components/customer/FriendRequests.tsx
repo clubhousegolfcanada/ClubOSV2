@@ -4,6 +4,7 @@ import { useAuthState } from '@/state/useStore';
 import { UserPlus, Check, X, Clock, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface FriendRequest {
@@ -41,7 +42,7 @@ export const FriendRequests: React.FC = () => {
         setRequests(response.data.data.requests || []);
       }
     } catch (error) {
-      console.error('Failed to fetch friend requests:', error);
+      logger.error('Failed to fetch friend requests:', error);
     } finally {
       setLoading(false);
     }

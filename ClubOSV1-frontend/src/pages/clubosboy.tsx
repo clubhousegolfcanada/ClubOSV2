@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { http } from '@/api/http';
 import { Loader } from 'lucide-react';
+import logger from '@/services/logger';
 
 
 interface FormData {
@@ -98,7 +99,7 @@ export default function ClubOSBoy() {
         setResetTimer(timer);
       }
     } catch (error) {
-      console.error('Request failed:', error);
+      logger.error('Request failed:', error);
       setResponseMessage("Sorry, something went wrong. Please ask a staff member for help.");
       setShowResponse(true);
       

@@ -10,6 +10,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface RecentUpdate {
@@ -42,7 +43,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
       });
       setRecentUpdates(response.data.data || []);
     } catch (error) {
-      console.error('Failed to fetch recent updates:', error);
+      logger.error('Failed to fetch recent updates:', error);
     }
   };
 
@@ -71,7 +72,7 @@ export const KnowledgeRouterPanel: React.FC = () => {
         toast.error(response.data.error || 'Failed to route knowledge');
       }
     } catch (error) {
-      console.error('Knowledge routing error:', error);
+      logger.error('Knowledge routing error:', error);
       
       if (error && typeof error === 'object' && 'response' in error) {
         const err = error as any;

@@ -5,6 +5,7 @@ import { http } from '@/api/http';
 import { useAuthState } from '../state/useStore';
 import QRCode from 'qrcode';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface Task {
@@ -109,17 +110,17 @@ export const ChecklistSystem: React.FC = () => {
     try {
       const token = tokenManager.getToken();
       if (!token) {
-        console.error('No auth token found');
+        logger.error('No auth token found');
         return;
       }
       
-      console.log('Loading template for:', activeCategory, activeType);
+      logger.debug('Loading template for:', activeCategory, activeType);
       const response = await http.get(
         `checklists/template/${activeCategory}/${activeType}`,
 
       );
       
-      console.log('Template response:', response.data);
+      logger.debug('Template response:', response.data);
       
       if (response.data.success) {
         setCurrentTemplate(response.data.data);
@@ -137,9 +138,9 @@ export const ChecklistSystem: React.FC = () => {
         setCompletedTasks({});
       }
     } catch (error: any) {
-      console.error('Failed to load template:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
+      logger.error('Failed to load template:', error);
+      logger.error('Error response:', error.response?.data);
+      logger.error('Error status:', error.response?.status);
       
       // Don't show error for expected cases
       if (error.response?.data?.code !== 'INVALID_TYPE') {
@@ -195,12 +196,12 @@ export const ChecklistSystem: React.FC = () => {
         setSubmissions(submissions);
       } else {
         // Only show error if response indicates failure
-        console.error('API returned unsuccessful response:', response.data);
+        logger.error('API returned unsuccessful response:', response.data);
         toast.error(response.data.error || 'Failed to load submission history');
       }
     } catch (error: any) {
-      console.error('Failed to load submissions:', error);
-      console.error('Error details:', {
+      logger.error('Failed to load submissions:', error);
+      logger.error('Error details:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message
@@ -257,7 +258,7 @@ export const ChecklistSystem: React.FC = () => {
         setCompletionStats(processedStats);
       }
     } catch (error) {
-      console.error('Failed to load completion stats:', error);
+      logger.error('Failed to load completion stats:', error);
     }
   };
 
@@ -304,7 +305,7 @@ export const ChecklistSystem: React.FC = () => {
       setEditingTaskId(null);
       loadTemplate(); // Reload to get updated data
     } catch (error: any) {
-      console.error('Failed to update task:', error);
+      logger.error('Failed to update task:', error);
       toast.error(error.response?.data?.error || 'Failed to update task');
     } finally {
       setSavingTask(false);
@@ -330,7 +331,7 @@ export const ChecklistSystem: React.FC = () => {
       toast.success('Task reset to default');
       loadTemplate();
     } catch (error: any) {
-      console.error('Failed to reset task:', error);
+      logger.error('Failed to reset task:', error);
       toast.error('Failed to reset task');
     }
   };
@@ -390,7 +391,7 @@ export const ChecklistSystem: React.FC = () => {
       setQrCodeUrl(qrDataUrl);
       toast.success('QR code generated!');
     } catch (error) {
-      console.error('Failed to generate QR code:', error);
+      logger.error('Failed to generate QR code:', error);
       toast.error('Failed to generate QR code');
     }
   };
@@ -411,7 +412,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = tokenManager.getToken();
       const completedTaskIds = Object.keys(completedTasks).filter(id => completedTasks[id]);
       
-      console.log('Submitting checklist:', {
+      logger.debug('Submitting checklist:', {
         category: activeCategory,
         type: activeType,
         location: selectedLocation,
@@ -459,8 +460,8 @@ export const ChecklistSystem: React.FC = () => {
         }
       }
     } catch (error: any) {
-      console.error('Failed to submit checklist:', error);
-      console.error('Error details:', {
+      logger.error('Failed to submit checklist:', error);
+      logger.error('Error details:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message
@@ -502,7 +503,7 @@ export const ChecklistSystem: React.FC = () => {
       // Reload submissions
       loadSubmissions();
     } catch (error: any) {
-      console.error('Failed to delete submission:', error);
+      logger.error('Failed to delete submission:', error);
       
       if (error.response?.status === 403) {
         toast.error('You do not have permission to delete submissions');

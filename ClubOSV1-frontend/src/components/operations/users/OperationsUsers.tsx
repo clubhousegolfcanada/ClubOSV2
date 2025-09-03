@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check, RefreshCw, Users, Shield, Clock, Database, Coins, ArrowUp, ArrowDown, Award, Gift } from 'lucide-react';
 import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 type User = {
@@ -95,7 +96,7 @@ export const OperationsUsers: React.FC = () => {
         setAutoApproveCustomers(response.data.data.value?.enabled !== false);
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      logger.error('Error fetching settings:', error);
       // Default to true if can't fetch
       setAutoApproveCustomers(true);
     }
@@ -117,7 +118,7 @@ export const OperationsUsers: React.FC = () => {
       setAutoApproveCustomers(enabled);
       toast.success(`Customer auto-approval ${enabled ? 'enabled' : 'disabled'}`);
     } catch (error: any) {
-      console.error('Error updating setting:', error);
+      logger.error('Error updating setting:', error);
       toast.error('Failed to update setting');
       // Revert on error
       setAutoApproveCustomers(!enabled);
@@ -128,18 +129,18 @@ export const OperationsUsers: React.FC = () => {
     const authToken = token || tokenManager.getToken();
     
     if (!authToken) {
-      console.log('No token available, skipping users fetch');
+      logger.debug('No token available, skipping users fetch');
       toast.error('Please login to view users');
       return;
     }
     
     try {
-      console.log('Fetching users from:', `auth/users`);
+      logger.debug('Fetching users from:', `auth/users`);
       const response = await http.get(`auth/users`, {
 
       });
       
-      console.log('Users response:', response.data);
+      logger.debug('Users response:', response.data);
       
       // Handle both response formats
       let usersData = [];
@@ -148,7 +149,7 @@ export const OperationsUsers: React.FC = () => {
       } else if (Array.isArray(response.data)) {
         usersData = response.data;
       } else {
-        console.error('Unexpected users response format:', response.data);
+        logger.error('Unexpected users response format:', response.data);
         setUsers([]);
         return;
       }
@@ -167,7 +168,7 @@ export const OperationsUsers: React.FC = () => {
                 cc_balance: balanceResponse.data?.data?.balance || 0
               };
             } catch (error) {
-              console.log(`Could not fetch balance for ${user.name}`);
+              logger.debug(`Could not fetch balance for ${user.name}`);
               return { ...user, cc_balance: 0 };
             }
           }
@@ -177,7 +178,7 @@ export const OperationsUsers: React.FC = () => {
       
       setUsers(customersWithBalances);
     } catch (error: any) {
-      console.error('Error fetching users:', error.response || error);
+      logger.error('Error fetching users:', error.response || error);
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
         // Optionally redirect to login
@@ -222,7 +223,7 @@ export const OperationsUsers: React.FC = () => {
       setEditingUser(null);
       fetchUsers();
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       toast.error('Failed to update user');
     }
   };
@@ -237,7 +238,7 @@ export const OperationsUsers: React.FC = () => {
       toast.success('User deleted successfully');
       fetchUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
       toast.error('Failed to delete user');
     }
   };
@@ -274,7 +275,7 @@ export const OperationsUsers: React.FC = () => {
       });
       fetchUsers();
     } catch (error) {
-      console.error('Error creating user:', error);
+      logger.error('Error creating user:', error);
       toast.error('Failed to create user');
     } finally {
       setLoading(false);
@@ -303,7 +304,7 @@ export const OperationsUsers: React.FC = () => {
       setNewPassword('');
       setShowResetPassword(false);
     } catch (error) {
-      console.error('Error resetting password:', error);
+      logger.error('Error resetting password:', error);
       toast.error('Failed to reset password');
     }
   };
@@ -320,7 +321,7 @@ export const OperationsUsers: React.FC = () => {
       toast.success('Customer approved successfully');
       fetchUsers();
     } catch (error) {
-      console.error('Error approving user:', error);
+      logger.error('Error approving user:', error);
       toast.error('Failed to approve customer');
     }
   };
@@ -339,7 +340,7 @@ export const OperationsUsers: React.FC = () => {
       toast.success('Customer application rejected');
       fetchUsers();
     } catch (error) {
-      console.error('Error rejecting user:', error);
+      logger.error('Error rejecting user:', error);
       toast.error('Failed to reject customer');
     }
   };
@@ -359,7 +360,7 @@ export const OperationsUsers: React.FC = () => {
       
       toast.success('Backup downloaded successfully');
     } catch (error) {
-      console.error('Error downloading backup:', error);
+      logger.error('Error downloading backup:', error);
       toast.error('Failed to download backup');
     }
   };
@@ -386,7 +387,7 @@ export const OperationsUsers: React.FC = () => {
           toast.success('Users restored successfully');
           fetchUsers();
         } catch (error) {
-          console.error('Error restoring users:', error);
+          logger.error('Error restoring users:', error);
           toast.error('Failed to restore users');
         }
       };
@@ -413,7 +414,7 @@ export const OperationsUsers: React.FC = () => {
         setUserBoxes(response.data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching user boxes:', error);
+      logger.error('Error fetching user boxes:', error);
       setUserBoxes([]);
     } finally {
       setLoadingBoxes(false);
@@ -446,7 +447,7 @@ export const OperationsUsers: React.FC = () => {
         toast.error('Failed to grant boxes');
       }
     } catch (error: any) {
-      console.error('Error granting boxes:', error);
+      logger.error('Error granting boxes:', error);
       toast.error(error.response?.data?.message || 'Failed to grant boxes');
     } finally {
       setLoading(false);
@@ -479,7 +480,7 @@ export const OperationsUsers: React.FC = () => {
         toast.error('Failed to clear boxes');
       }
     } catch (error: any) {
-      console.error('Error clearing boxes:', error);
+      logger.error('Error clearing boxes:', error);
       toast.error(error.response?.data?.message || 'Failed to clear boxes');
     } finally {
       setLoading(false);
@@ -506,7 +507,7 @@ export const OperationsUsers: React.FC = () => {
         setCCBalance(response.data.data.balance);
       }
     } catch (error: any) {
-      console.error('Error fetching CC balance:', error);
+      logger.error('Error fetching CC balance:', error);
       toast.error('Failed to fetch CC balance');
       setCCBalance(0);
     } finally {
@@ -557,7 +558,7 @@ export const OperationsUsers: React.FC = () => {
         setCCAdjustmentUser(null);
       }
     } catch (error: any) {
-      console.error('Error adjusting CC:', error);
+      logger.error('Error adjusting CC:', error);
       toast.error(error.response?.data?.error || 'Failed to adjust CC balance');
     } finally {
       setLoading(false);

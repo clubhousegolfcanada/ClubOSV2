@@ -5,6 +5,7 @@ import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
@@ -211,7 +212,7 @@ const TicketCenterOptimized = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to update ticket status:', error);
+      logger.error('Failed to update ticket status:', error);
       notify('error', 'Failed to update ticket status');
     }
   };

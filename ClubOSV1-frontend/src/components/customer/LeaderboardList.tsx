@@ -5,6 +5,7 @@ import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
+import logger from '@/services/logger';
 
 
 interface LeaderboardEntry {
@@ -107,7 +108,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
         setLeaderboardData(response.data.data || []);
       }
     } catch (error: any) {
-      console.error('Failed to fetch leaderboard:', error);
+      logger.error('Failed to fetch leaderboard:', error);
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
         router.push('/login');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { http } from '@/api/http';
 import { Phone, Clock, User, MessageCircle, RefreshCw } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface RecentMessage {
@@ -24,7 +25,7 @@ export const RecentMessages: React.FC = () => {
       const token = tokenManager.getToken();
       const response = await http.get(`openphone/recent-conversations?limit=10`);
       
-      console.log('Recent messages response:', response.data);
+      logger.debug('Recent messages response:', response.data);
       
       if (response.data.success) {
         setMessages(response.data.data || []);
@@ -33,7 +34,7 @@ export const RecentMessages: React.FC = () => {
         setError(response.data.error || 'Failed to load messages');
       }
     } catch (err: any) {
-      console.error('Failed to fetch recent messages:', err);
+      logger.error('Failed to fetch recent messages:', err);
       const errorMessage = err.response?.data?.error || err.message || 'Failed to load recent messages';
       setError(errorMessage);
     } finally {

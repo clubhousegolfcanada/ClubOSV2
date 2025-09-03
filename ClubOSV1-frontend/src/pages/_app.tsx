@@ -18,6 +18,7 @@ import { performanceMonitor, updateAnimationDurations } from '@/utils/performanc
 import { initializeCSRF } from '@/utils/csrf';
 import { useAppVisibility } from '@/hooks/useAppVisibility';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import logger from '@/services/logger';
 import { http } from '@/api/http';
 import { getStorageItem } from '@/utils/iframeStorage';
 
@@ -50,23 +51,23 @@ function AppContent({ Component, pageProps }: AppContentProps) {
   useEffect(() => {
     // Initialize CSRF token
     if (typeof window !== 'undefined' && isAuthenticated) {
-      initializeCSRF().catch(console.error);
+      initializeCSRF().catch((error) => logger.error('CSRF initialization failed', error));
     }
     
     // Register service worker for PWA and push notifications
     if ('serviceWorker' in navigator && typeof window !== 'undefined') {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
-          console.log('Service Worker registered:', registration.scope);
+          logger.debug('Service Worker registered:', registration.scope);
         })
         .catch(error => {
-          console.error('Service Worker registration failed:', error);
+          logger.error('Service Worker registration failed:', error);
         });
     }
     
     // Debug API configuration on startup
     // Using API_CONFIG from config file instead of direct env access
-    console.log('[_app.tsx] API initialization');
+    logger.debug('[_app.tsx] API initialization');
     
     // Initialize performance monitoring and adaptive animations
     if (typeof window !== 'undefined') {
@@ -86,7 +87,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
                         window.matchMedia('(display-mode: fullscreen)').matches;
     
     if (isStandalone) {
-      console.log('Running in PWA standalone mode');
+      logger.debug('Running in PWA standalone mode');
       document.documentElement.classList.add('pwa-mode');
       
       // Android-specific fixes
@@ -139,7 +140,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           setViewMode('operator');
         }
       } catch (error) {
-        console.error('Failed to restore auth state:', error);
+        logger.error('Failed to restore auth state:', error);
       }
     } else if (storedToken && isAuthenticated) {
       // Auth header now handled by http client
@@ -184,7 +185,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           if (headerWrapper) headerWrapper.style.display = 'none';
         } catch (e) {
           // Cross-origin restrictions, rely on postMessage
-          console.log('ClubOS: Using postMessage for nav control');
+          logger.debug('ClubOS: Using postMessage for nav control');
         }
       }
     }

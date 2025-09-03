@@ -7,6 +7,7 @@ import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X } from 'lucide-react'
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface Conversation {
@@ -110,7 +111,7 @@ export default function MessagesCardV3() {
       if (error?.response?.status === 401) {
         setStopPolling(true);
       }
-      console.error('Failed to fetch conversations:', error);
+      logger.error('Failed to fetch conversations:', error);
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +154,7 @@ export default function MessagesCardV3() {
         });
       }
     } catch (error) {
-      console.error('Failed to get AI suggestion:', error);
+      logger.error('Failed to get AI suggestion:', error);
       toast.error('Failed to get AI suggestion');
     } finally {
       setLoadingAi({ ...loadingAi, [conversationId]: false });
@@ -198,7 +199,7 @@ export default function MessagesCardV3() {
         fetchConversations();
       }, 1000);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
       toast.error('Failed to send message');
     } finally {
       setSending({ ...sending, [conv.id]: false });

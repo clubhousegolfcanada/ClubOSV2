@@ -13,6 +13,7 @@ import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useMessages } from '@/contexts/MessagesContext';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface Message {
@@ -161,7 +162,7 @@ export default function MessagesRedesigned() {
         }
       }
     } catch (error: any) {
-      console.error('Failed to load conversations:', error);
+      logger.error('Failed to load conversations:', error);
       if (error.response?.status === 429) {
         setIsRateLimited(true);
         setTimeout(() => setIsRateLimited(false), 30000);
@@ -222,7 +223,7 @@ export default function MessagesRedesigned() {
           }
         }
       } catch (error) {
-        console.error('Error fetching conversation history:', error);
+        logger.error('Error fetching conversation history:', error);
         toast.error('Failed to load conversation history');
       }
     }
@@ -281,7 +282,7 @@ export default function MessagesRedesigned() {
         setTimeout(() => loadConversations(), 1000);
       }
     } catch (error: any) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
       setNewMessage(messageText);
       toast.error(error.response?.data?.error || 'Failed to send message');
     } finally {
@@ -318,7 +319,7 @@ export default function MessagesRedesigned() {
         toast.success('AI suggestion generated');
       }
     } catch (error: any) {
-      console.error('Failed to get AI suggestion:', error);
+      logger.error('Failed to get AI suggestion:', error);
       toast.error(error.response?.data?.error || 'Failed to generate suggestion');
     } finally {
       setLoadingSuggestion(false);
@@ -370,7 +371,7 @@ export default function MessagesRedesigned() {
         setTimeout(() => loadConversations(), 1000);
       }
     } catch (error: any) {
-      console.error('Failed to send AI suggestion:', error);
+      logger.error('Failed to send AI suggestion:', error);
       toast.error(error.response?.data?.error || 'Failed to send message');
     } finally {
       setSending(false);

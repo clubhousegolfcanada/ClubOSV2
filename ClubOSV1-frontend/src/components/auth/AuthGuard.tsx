@@ -4,6 +4,7 @@ import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
 import { getStorageItem } from '@/utils/iframeStorage';
 import { http } from '@/api/http';
+import logger from '@/services/logger';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -36,7 +37,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
       email: data.email ? data.email.replace(/(.{2}).*(@.*)/, '$1***$2') : undefined
     } : undefined;
     
-    console.log(`[AuthGuard] ${message}`, sanitized || '');
+    logger.debug(`[AuthGuard] ${message}`, sanitized || '');
   };
 
   // Token validation is now centralized in tokenManager

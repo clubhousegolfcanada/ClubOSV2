@@ -6,6 +6,7 @@ import { Database, Phone, RefreshCw, Send, AlertCircle, CheckCircle } from 'luci
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 export default function DebugOpenPhone() {
@@ -53,7 +54,7 @@ export default function DebugOpenPhone() {
       }
     } catch (error: any) {
       toast.error('Database check failed: ' + error.message);
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }
@@ -123,11 +124,11 @@ export default function DebugOpenPhone() {
       });
       
       setRawData(response.data.data);
-      console.log('Raw data:', response.data.data);
+      logger.debug('Raw data:', response.data.data);
       toast.success('Raw data loaded - check console');
     } catch (error: any) {
       toast.error('Failed to load raw data: ' + error.message);
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }
@@ -147,7 +148,7 @@ export default function DebugOpenPhone() {
       checkRawData();
     } catch (error: any) {
       toast.error('Failed to repair phone numbers: ' + error.message);
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }
@@ -162,11 +163,11 @@ export default function DebugOpenPhone() {
       });
       
       setDiagnosticData(response.data.data);
-      console.log('Diagnostic data:', response.data.data);
+      logger.debug('Diagnostic data:', response.data.data);
       toast.success('Diagnostic complete - check console');
     } catch (error: any) {
       toast.error('Diagnostic failed: ' + error.message);
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }
@@ -188,10 +189,10 @@ export default function DebugOpenPhone() {
       );
       
       toast.success('Test message sent!');
-      console.log('Send response:', response.data);
+      logger.debug('Send response:', response.data);
     } catch (error: any) {
       toast.error('Send failed: ' + (error.response?.data?.error || error.message));
-      console.error('Send error:', error.response?.data || error);
+      logger.error('Send error:', error.response?.data || error);
     } finally {
       setLoading(false);
     }

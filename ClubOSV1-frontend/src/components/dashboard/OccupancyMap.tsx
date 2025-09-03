@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Users, Circle, AlertTriangle, Clock, Activity } from 'lucide-react';
 import { systemStatusAPI, LocationStatus } from '@/api/systemStatus';
 import { useRouter } from 'next/router';
+import logger from '@/services/logger';
 
 interface OccupancyMapProps {
   compact?: boolean;
@@ -29,7 +30,7 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
       setLocationStatuses(statuses);
       setLastUpdate(new Date());
     } catch (error) {
-      console.error('Failed to load occupancy data:', error);
+      logger.error('Failed to load occupancy data:', error);
     } finally {
       setLoading(false);
     }

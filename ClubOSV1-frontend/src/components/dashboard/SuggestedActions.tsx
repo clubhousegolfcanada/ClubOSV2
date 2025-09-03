@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertCircle, X, Check, Clock } from 'lucide-react';
 import { http } from '@/api/http';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface SuggestedAction {
@@ -95,7 +96,7 @@ export const SuggestedActions: React.FC = () => {
 
         setActions(topActions);
       } catch (error) {
-        console.error('Failed to fetch pattern data:', error);
+        logger.error('Failed to fetch pattern data:', error);
       }
     };
 
@@ -132,13 +133,13 @@ export const SuggestedActions: React.FC = () => {
           
         case 'bay_idle':
           // Would send check-in message in real implementation
-          console.log('Sending check-in prompt for', action.metadata.bay);
+          logger.debug('Sending check-in prompt for', action.metadata.bay);
           break;
       }
       
       handleDismiss(action.id);
     } catch (error) {
-      console.error('Failed to process action:', error);
+      logger.error('Failed to process action:', error);
     } finally {
       setIsProcessing(null);
     }

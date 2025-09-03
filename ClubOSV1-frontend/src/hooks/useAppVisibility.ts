@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAuthState, useStore } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
 import { useRouter } from 'next/router';
+import logger from '@/services/logger';
 
 /**
  * Hook to handle app visibility changes (background/foreground)
@@ -31,7 +32,7 @@ export function useAppVisibility() {
         checkInProgressRef.current = true;
         
         // App is visible again
-        console.log('App became visible, checking auth state...');
+        logger.debug('App became visible, checking auth state...');
         
         const storedUser = localStorage.getItem('clubos_user');
         const storedToken = tokenManager.getToken();
@@ -54,12 +55,12 @@ export function useAppVisibility() {
                   }
                 }
               } catch (error) {
-                console.error('Failed to restore auth on visibility change:', error);
+                logger.error('Failed to restore auth on visibility change:', error);
               }
             }
           } else {
             // Token expired while app was in background
-            console.log('Token expired while app was in background');
+            logger.debug('Token expired while app was in background');
             localStorage.removeItem('clubos_user');
             tokenManager.clearToken();
             localStorage.removeItem('clubos_view_mode');

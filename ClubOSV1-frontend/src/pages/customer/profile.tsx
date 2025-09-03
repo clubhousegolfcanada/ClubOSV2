@@ -16,6 +16,7 @@ import {
 import { tokenManager } from '@/utils/tokenManager';
 import { toast } from 'react-hot-toast';
 import { http } from '@/api/http';
+import logger from '@/services/logger';
 
 
 interface ProfileData {
@@ -224,7 +225,7 @@ export default function CustomerProfile() {
         };
         
         setProfileData(profileInfo);
-        console.log('Available boxes from API:', boxesResponse.data);
+        logger.debug('Available boxes from API:', boxesResponse.data);
         setAvailableBoxes(boxesResponse.data || []);
         setActiveRewards(rewardsResponse.data || []);
         setAchievementCount(achievementsResponse.data?.length || 0);
@@ -239,7 +240,7 @@ export default function CustomerProfile() {
         });
       }
     } catch (error: any) {
-      console.error('Failed to fetch profile stats:', error);
+      logger.error('Failed to fetch profile stats:', error);
       
       // Handle authentication errors
       if (error.response?.status === 401) {
@@ -287,7 +288,7 @@ export default function CustomerProfile() {
       setEditMode(false);
       fetchProfileData();
     } catch (error: any) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update profile';
       toast.error(errorMessage);
     } finally {
@@ -310,7 +311,7 @@ export default function CustomerProfile() {
   const openBox = async (): Promise<BoxReward> => {
     if (!selectedBox) throw new Error('No box selected');
     
-    console.log('Opening box:', selectedBox);
+    logger.debug('Opening box:', selectedBox);
     
     const token = tokenManager.getToken();
     
@@ -369,7 +370,7 @@ export default function CustomerProfile() {
         confirmPassword: ''
       });
     } catch (error: any) {
-      console.error('Password change error:', error);
+      logger.error('Password change error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to change password. Please check your current password.';
       toast.error(errorMessage);
     } finally {
@@ -405,7 +406,7 @@ export default function CustomerProfile() {
       
       toast.success('Preferences updated');
     } catch (error: any) {
-      console.error('Preference update error:', error);
+      logger.error('Preference update error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update preferences';
       toast.error(errorMessage);
       // Revert on error

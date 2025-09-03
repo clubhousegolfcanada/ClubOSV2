@@ -314,10 +314,36 @@ class CSVImportService {
   }
 
   /**
+   * Generate embedding for a text string
+   */
+  private async generateEmbedding(text: string): Promise<number[]> {
+    try {
+      const response = await this.openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: text,
+      });
+      return response.data[0].embedding;
+    } catch (error) {
+      logger.error('[CSV Import] Failed to generate embedding:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Save pattern to database
    */
   private async savePattern(pattern: any): Promise<{ created: boolean; enhanced: boolean }> {
     try {
+      // Generate embedding for semantic search
+      const embeddingText = `${pattern.trigger} ${pattern.response}`;
+      let embedding: number[] | null = null;
+      
+      try {
+        embedding = await this.generateEmbedding(embeddingText);
+      } catch (error) {
+        logger.warn('[CSV Import] Failed to generate embedding, pattern will use keyword matching only', error);
+      }
+
       // Check for existing similar pattern
       const existing = await db.query(
         `SELECT id, confidence_score FROM decision_patterns 
@@ -330,7 +356,7 @@ class CSVImportService {
       );
       
       if (existing.rows.length === 0) {
-        // Insert new pattern
+        // Insert new pattern with embedding
         await db.query(
           `INSERT INTO decision_patterns (
             pattern_type,
@@ -344,8 +370,12 @@ class CSVImportService {
             is_active,
             learned_from,
             template_variables,
+            embedding,
+            embedding_model,
+            embedding_generated_at,
+            semantic_search_enabled,
             created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())`,
           [
             pattern.type,
             `csv_import_${Date.now()}`,
@@ -357,7 +387,11 @@ class CSVImportService {
             0,
             true,
             'csv_batch_import',
-            JSON.stringify(pattern.variables)
+            JSON.stringify(pattern.variables),
+            embedding,
+            embedding ? 'text-embedding-3-small' : null,
+            embedding ? new Date() : null,
+            embedding ? true : false
           ]
         );
         return { created: true, enhanced: false };

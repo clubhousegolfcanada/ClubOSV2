@@ -3,6 +3,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 /* eslint-enable no-restricted-imports */
 import { tokenManager } from '@/utils/tokenManager';
 import { addCSRFToRequest } from '@/utils/csrf';
+import logger from '@/services/logger';
 
 // API Error type - using type instead of interface for proper extension
 export type ApiError = AxiosError<{
@@ -28,7 +29,7 @@ const getBaseUrl = () => {
     base = base.slice(0, -4);
     // Only log in development with debug flag
     if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG_API === 'true') {
-      console.log('[HTTP Client] Removed /api suffix from base URL');
+      logger.debug('[HTTP Client] Removed /api suffix from base URL');
     }
   }
   

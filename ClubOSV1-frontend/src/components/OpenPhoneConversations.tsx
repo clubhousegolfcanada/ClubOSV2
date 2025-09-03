@@ -3,6 +3,7 @@ import { http } from '@/api/http';
 import { Phone, Users, MessageSquare, Download, FileText, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface ConversationStats {
@@ -32,7 +33,7 @@ export const OpenPhoneConversations: React.FC = () => {
         setError(response.data.error || 'Failed to load statistics');
       }
     } catch (err: any) {
-      console.error('Failed to fetch conversation stats:', err);
+      logger.error('Failed to fetch conversation stats:', err);
       const errorMessage = err.response?.data?.error || err.message || 'Failed to load statistics';
       setError(errorMessage);
     } finally {
@@ -99,7 +100,7 @@ export const OpenPhoneConversations: React.FC = () => {
         toast.success(`${format.toUpperCase()} export successful`);
       }
     } catch (err: any) {
-      console.error('Export failed:', err);
+      logger.error('Export failed:', err);
       toast.error('Failed to export conversations');
     } finally {
       setExporting(false);

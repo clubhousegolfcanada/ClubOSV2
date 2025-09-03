@@ -1,3 +1,5 @@
+import logger from '@/services/logger';
+
 /* eslint-disable no-restricted-syntax */
 const RAW_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 /* eslint-enable no-restricted-syntax */
@@ -11,7 +13,7 @@ if (BASE.endsWith('/api')) {
   BASE = BASE.slice(0, -4);
   // Only log in development with debug flag
   if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG_API === 'true') {
-    console.log('[resolveApi] Removed /api suffix from base URL');
+    logger.debug('[resolveApi] Removed /api suffix from base URL');
   }
 }
 

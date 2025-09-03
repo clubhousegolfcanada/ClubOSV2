@@ -4,6 +4,7 @@ import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface MessagesContextType {
@@ -72,7 +73,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isFirstLoad.current = false;
       }
     } catch (error: any) {
-      console.error('Failed to check unread messages:', error);
+      logger.error('Failed to check unread messages:', error);
       
       // Stop polling on 401 errors
       if (error.response?.status === 401) {
@@ -103,7 +104,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Immediately refresh the unread count
       await refreshUnreadCount();
     } catch (error) {
-      console.error('Failed to mark conversation as read:', error);
+      logger.error('Failed to mark conversation as read:', error);
     }
   }, [user, refreshUnreadCount]);
 

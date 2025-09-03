@@ -5,6 +5,7 @@ import { AchievementBadge } from '@/components/achievements/AchievementBadge';
 import { http } from '@/api/http';
 import { toast } from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface Achievement {
@@ -64,7 +65,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
       });
       setAchievements(response.data || []);
     } catch (error) {
-      console.error('Error fetching achievements:', error);
+      logger.error('Error fetching achievements:', error);
     } finally {
       setLoading(false);
     }

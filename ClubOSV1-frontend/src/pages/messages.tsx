@@ -10,6 +10,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useRemoteActionsBar } from '@/hooks/useRemoteActionsBar';
 import { useMessages } from '@/contexts/MessagesContext';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface Message {
@@ -245,7 +246,7 @@ export default function Messages() {
   const loadConversations = async (showRefreshIndicator = false) => {
     // Skip if rate limited
     if (isRateLimited) {
-      console.log('Skipping refresh - rate limited');
+      logger.debug('Skipping refresh - rate limited');
       return;
     }
     
@@ -256,7 +257,7 @@ export default function Messages() {
     try {
       const token = tokenManager.getToken();
       if (!token) {
-        console.error('No auth token found');
+        logger.error('No auth token found');
         toast.error('Please log in again');
         router.push('/login');
         return;
@@ -271,7 +272,7 @@ export default function Messages() {
       });
       
       if (response.data.success) {
-        console.log('Loaded conversations:', response.data.data);
+        logger.debug('Loaded conversations:', response.data.data);
         const sortedConversations = response.data.data.sort((a: any, b: any) => {
           return new Date(b.updated_at || b.created_at).getTime() - 
                  new Date(a.updated_at || a.created_at).getTime();
@@ -283,7 +284,7 @@ export default function Messages() {
           const firstConversation = sortedConversations[0];
           // Use selectConversation to fetch full history
           selectConversation(firstConversation);
-          console.log('Auto-selected first conversation:', firstConversation.customer_name);
+          logger.debug('Auto-selected first conversation:', firstConversation.customer_name);
         }
         
         // Update selected conversation if it exists
@@ -332,18 +333,18 @@ export default function Messages() {
                 scrollToBottom('smooth');
               }, 100);
               
-              console.log(`Updated conversation with ${newMessagesCount} new message(s)`);
+              logger.debug(`Updated conversation with ${newMessagesCount} new message(s)`);
             }
           } else {
-            console.warn('Could not find updated conversation for phone:', selectedConversation.phone_number);
+            logger.warn('Could not find updated conversation for phone:', selectedConversation.phone_number);
           }
         }
       } else {
-        console.error('API returned success: false', response.data);
+        logger.error('API returned success: false', response.data);
         toast.error(response.data.error || 'Failed to load conversations');
       }
     } catch (error: any) {
-      console.error('Failed to load conversations:', error);
+      logger.error('Failed to load conversations:', error);
       
       if (error.response?.status === 401) {
         // Session expiry handled by tokenManager interceptor
@@ -355,7 +356,7 @@ export default function Messages() {
         const delay = Math.min((backoffDelay || 5000) * 2, 60000); // Max 1 minute
         setBackoffDelay(delay);
         
-        console.log(`Rate limited. Backing off for ${delay/1000} seconds`);
+        logger.debug(`Rate limited. Backing off for ${delay/1000} seconds`);
         
         // Don't show toast for auto-refresh rate limits
         if (showRefreshIndicator) {
@@ -441,7 +442,7 @@ export default function Messages() {
           }
         }
       } catch (error) {
-        console.error('Error fetching conversation history:', error);
+        logger.error('Error fetching conversation history:', error);
         toast.error('Failed to load conversation history');
         
         // Fallback to local messages if API fails
@@ -539,7 +540,7 @@ export default function Messages() {
         }, 1000);
       }
     } catch (error: any) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
       setNewMessage(messageText); // Restore message on error
       
       const errorMessage = error.response?.data?.error || 
@@ -585,7 +586,7 @@ export default function Messages() {
         toast.success('AI suggestion generated');
       }
     } catch (error: any) {
-      console.error('Failed to get AI suggestion:', error);
+      logger.error('Failed to get AI suggestion:', error);
       toast.error(error.response?.data?.error || 'Failed to generate suggestion');
     } finally {
       setLoadingSuggestion(false);
@@ -642,7 +643,7 @@ export default function Messages() {
         }, 1000);
       }
     } catch (error: any) {
-      console.error('Failed to send AI suggestion:', error);
+      logger.error('Failed to send AI suggestion:', error);
       toast.error(error.response?.data?.error || 'Failed to send message');
     } finally {
       setSending(false);

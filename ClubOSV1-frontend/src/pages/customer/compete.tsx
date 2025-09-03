@@ -17,6 +17,7 @@ import { tokenManager } from '@/utils/tokenManager';
 import { FriendRequests } from '@/components/customer/FriendRequests';
 import { AchievementBadgeGroup } from '@/components/achievements/AchievementBadge';
 import { TabNavigation } from '@/components/customer/TabNavigation';
+import logger from '@/services/logger';
 
 
 interface Challenge {
@@ -127,7 +128,7 @@ export default function Compete() {
     } catch (error: any) {
       // Silently fail for auth/rate limit errors
       if (error.response?.status !== 401 && error.response?.status !== 429) {
-        console.error('Failed to fetch pending request count:', error);
+        logger.error('Failed to fetch pending request count:', error);
       }
     }
   };
@@ -148,7 +149,7 @@ export default function Compete() {
     // Check for token before loading
     const token = tokenManager.getToken();
     if (!token) {
-      console.log('No token available, skipping data load');
+      logger.debug('No token available, skipping data load');
       return;
     }
     
@@ -178,7 +179,7 @@ export default function Compete() {
     } catch (error: any) {
       // Silently fail for auth/rate limit errors
       if (error.response?.status !== 401 && error.response?.status !== 429) {
-        console.error('Error loading CC balance:', error);
+        logger.error('Error loading CC balance:', error);
       }
     }
   };
@@ -226,7 +227,7 @@ export default function Compete() {
       } else if (error.response?.status === 429) {
         toast.error('Too many requests. Please wait a moment.');
       } else {
-        console.error('Error loading challenges:', error);
+        logger.error('Error loading challenges:', error);
       }
       setChallenges([]);
     }
@@ -251,9 +252,9 @@ export default function Compete() {
         friendsArray = response.data.friends;
       }
       
-      console.log('Friends from API:', friendsArray.length, 'friends');
+      logger.debug('Friends from API:', friendsArray.length, 'friends');
       friendsArray.forEach((f: any) => {
-        console.log('Friend:', f.email, 'ID:', f.id, 'Name:', f.name);
+        logger.debug('Friend:', f.email, 'ID:', f.id, 'Name:', f.name);
       });
       
       // Transform friends data to competitor format
@@ -271,7 +272,7 @@ export default function Compete() {
       }));
       setCompetitors(competitorData);
     } catch (error) {
-      console.error('Error loading competitors:', error);
+      logger.error('Error loading competitors:', error);
       setCompetitors([]);
     }
   };

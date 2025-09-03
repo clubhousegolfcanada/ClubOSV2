@@ -5,6 +5,7 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import Head from 'next/head';
 import { http } from '@/api/http';
 import { 
+import logger from '@/services/logger';
   ArrowLeft,
   Clock,
   Target,
@@ -81,7 +82,7 @@ export default function ChallengeDetail() {
         setChallenge(response.data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch challenge:', error);
+      logger.error('Failed to fetch challenge:', error);
       router.push('/customer/challenges');
     } finally {
       setLoading(false);
@@ -119,7 +120,7 @@ export default function ChallengeDetail() {
       
       router.push('/customer/challenges');
     } catch (error) {
-      console.error('Failed to decline challenge:', error);
+      logger.error('Failed to decline challenge:', error);
     } finally {
       setActionLoading(false);
     }
@@ -146,7 +147,7 @@ export default function ChallengeDetail() {
       alert('Dispute filed successfully. Our team will review it soon.');
       await fetchChallenge();
     } catch (error) {
-      console.error('Failed to file dispute:', error);
+      logger.error('Failed to file dispute:', error);
       alert('Failed to file dispute');
     } finally {
       setActionLoading(false);

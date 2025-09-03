@@ -1,5 +1,6 @@
 import { http } from '@/api/http';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 export interface RemoteSessionResponse {
   method: 'ninjaone' | 'fallback';
@@ -39,7 +40,7 @@ class NinjaOneRemoteAPI {
       
       return response.data.data;
     } catch (error: any) {
-      console.error('Failed to create remote session:', error);
+      logger.error('Failed to create remote session:', error);
       throw new Error(error.response?.data?.error || 'Failed to create remote session');
     }
   }
@@ -56,7 +57,7 @@ class NinjaOneRemoteAPI {
       
       return response.data.data;
     } catch (error: any) {
-      console.error('Failed to get device info:', error);
+      logger.error('Failed to get device info:', error);
       throw new Error(error.response?.data?.error || 'Failed to get device information');
     }
   }

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { MessageSquare, Clock } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface RecentCustomer {
@@ -53,7 +54,7 @@ export const RecentCustomers: React.FC = () => {
         }
         setIsLoading(false);
       } catch (error) {
-        console.error('Failed to fetch recent customers:', error);
+        logger.error('Failed to fetch recent customers:', error);
         setIsLoading(false);
       }
     };

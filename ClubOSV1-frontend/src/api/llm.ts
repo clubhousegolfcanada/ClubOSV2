@@ -1,5 +1,6 @@
 import { http } from '@/api/http';
 import type { UserRequest, ApiResponse } from '@/types/request';
+import logger from '@/services/logger';
 
 /**
  * Submit a request to the LLM endpoint
@@ -41,7 +42,7 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
   } catch (error: any) {
     // Use centralized error logging
     if (process.env.NODE_ENV === 'development') {
-      console.error('[LLM API] Request failed:', error);
+      logger.error('[LLM API] Request failed:', error);
     }
     
     // Extract error message

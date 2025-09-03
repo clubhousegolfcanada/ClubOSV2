@@ -1,4 +1,5 @@
 import { http } from '@/api/http';
+import logger from '@/services/logger';
 
 export async function getCSRFToken(): Promise<string> {
   try {
@@ -11,7 +12,7 @@ export async function getCSRFToken(): Promise<string> {
     
     throw new Error('No CSRF token in response');
   } catch (error) {
-    console.error('Failed to get CSRF token:', error);
+    logger.error('Failed to get CSRF token:', error);
     return '';
   }
 }

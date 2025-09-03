@@ -5,6 +5,7 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import Head from 'next/head';
 import { http } from '@/api/http';
 import { 
+import logger from '@/services/logger';
   ArrowLeft,
   Search,
   ChevronRight,
@@ -92,7 +93,7 @@ export default function CreateChallenge() {
       const response = await http.get(`friends`, {
 
       });
-      console.log('Friends API response:', response.data); // Debug log
+      logger.debug('Friends API response:', response.data); // Debug log
       
       if (response.data.success && response.data.data) {
         // The API returns { success: true, data: { friends: [...], total: n } }
@@ -116,11 +117,11 @@ export default function CreateChallenge() {
           }
         }
       } else {
-        console.log('No friends data in response');
+        logger.debug('No friends data in response');
         setFriends([]);
       }
     } catch (error) {
-      console.error('Failed to fetch friends:', error);
+      logger.error('Failed to fetch friends:', error);
       setFriends([]);
     }
   };
@@ -137,7 +138,7 @@ export default function CreateChallenge() {
         setCourseSettings([]);
       }
     } catch (error) {
-      console.error('Failed to fetch settings:', error);
+      logger.error('Failed to fetch settings:', error);
       setCourseSettings([]);
     }
   };
@@ -151,7 +152,7 @@ export default function CreateChallenge() {
         setCCBalance(response.data.data.balance);
       }
     } catch (error) {
-      console.error('Failed to fetch balance:', error);
+      logger.error('Failed to fetch balance:', error);
     }
   };
 

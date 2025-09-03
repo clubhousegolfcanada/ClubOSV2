@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { http } from '@/api/http';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface InsightMetric {
@@ -85,7 +86,7 @@ export const MiniInsightsPanel: React.FC = () => {
         ]);
         setIsLoading(false);
       } catch (error) {
-        console.error('Failed to fetch insights:', error);
+        logger.error('Failed to fetch insights:', error);
         setIsLoading(false);
       }
     };

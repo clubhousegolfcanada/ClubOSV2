@@ -1,3 +1,5 @@
+import logger from '@/services/logger';
+
 // Performance monitoring for animations and transitions
 
 interface PerformanceMetrics {
@@ -152,5 +154,5 @@ export const updateAnimationDurations = async () => {
     root.style.setProperty('--animation-duration-slow', '350ms');
   }
   
-  console.log(`Display refresh rate detected: ${refreshRate}Hz`);
+  logger.debug(`Display refresh rate detected: ${refreshRate}Hz`);
 };

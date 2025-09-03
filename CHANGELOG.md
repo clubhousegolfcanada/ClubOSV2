@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.3] - 2025-09-03
+
+### Fixed
+- **Pattern Embeddings**: CSV imports now generate embeddings for semantic search
+  - Fixed missing embedding generation in CSV import service
+  - Fixed patterns route to generate embeddings during import
+  - All 60 existing patterns confirmed to have embeddings
+  - AI can now recall patterns using semantic search
+
+### Added
+- **Natural Language Pattern Import**: New versatile import endpoint
+  - POST `/api/patterns/import-enhanced` supports multiple formats
+  - Auto-detects format: CSV, Q&A pairs, or natural language
+  - Q&A format: "Q: What are hours? A: 9-5"
+  - Natural language: "When someone asks about hours, tell them we're open 9-5"
+  - All imports generate embeddings for AI recall
+  - GPT-4o intelligently extracts patterns from any format
+
+### Enhanced
+- **Pattern Learning System**
+  - 100% embedding coverage (60/60 patterns)
+  - Semantic search fully operational
+  - Pattern recall validated and working
+  - Test script added: `scripts/test-pattern-recall.ts`
+
 ## [1.15.2] - 2025-09-03
 
 ### Fixed

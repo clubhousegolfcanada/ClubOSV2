@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { userService, User } from '@/services/api/userService';
+import logger from '@/services/logger';
 
 // Custom hook for user management
 export const useUsers = () => {
@@ -78,7 +79,7 @@ export const useSystemSettings = () => {
       const settings = await userService.getSystemSettings();
       setAutoApproval(settings.customer_auto_approval?.enabled || false);
     } catch (err) {
-      console.error('Failed to load settings:', err);
+      logger.error('Failed to load settings:', err);
     }
   }, []);
 

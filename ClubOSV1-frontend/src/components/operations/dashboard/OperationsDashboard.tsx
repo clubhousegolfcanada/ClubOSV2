@@ -3,6 +3,7 @@ import { Activity, Users, MessageSquare, Brain, AlertCircle, CheckCircle, WifiOf
 import { http } from '@/api/http';
 import { format } from 'date-fns';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface SystemStatus {
@@ -72,7 +73,7 @@ export function OperationsDashboard() {
             activeUserCount = userCountResponse.data.data.active;
           }
         } catch (error) {
-          console.error('Failed to fetch user count:', error);
+          logger.error('Failed to fetch user count:', error);
         }
       }
       
@@ -117,7 +118,7 @@ export function OperationsDashboard() {
       ]);
       
     } catch (error: any) {
-      console.error('Failed to fetch dashboard data:', error);
+      logger.error('Failed to fetch dashboard data:', error);
       if (error.response?.status === 401) {
         // Don't show error for 401, just use default status
         setSystemStatus({

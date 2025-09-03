@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { Target, Clock, Coins, ChevronRight, TrendingUp, Users } from 'lucide-react';
 import { http } from '@/api/http';
 import { formatDistanceToNow } from 'date-fns';
+import logger from '@/services/logger';
 
 
 interface Challenge {
@@ -52,7 +53,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
         setChallenges(recentChallenges);
       }
     } catch (error) {
-      console.error('Failed to fetch challenges:', error);
+      logger.error('Failed to fetch challenges:', error);
     } finally {
       setLoading(false);
     }

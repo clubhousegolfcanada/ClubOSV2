@@ -1,6 +1,7 @@
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { sessionExpiryManager } from './sessionExpiryManager';
+import logger from '@/services/logger';
 
 interface DecodedToken {
   exp: number;
@@ -40,7 +41,7 @@ export class TokenManager {
       );
       return JSON.parse(jsonPayload);
     } catch (error) {
-      console.error('Failed to decode token:', error);
+      logger.error('Failed to decode token:', error);
       return null;
     }
   }
@@ -56,7 +57,7 @@ export class TokenManager {
     
     // Check for bearer token format (shouldn't be stored with Bearer prefix)
     if (token.startsWith('Bearer ')) {
-      console.warn('Token stored with Bearer prefix - this should be stripped');
+      logger.warn('Token stored with Bearer prefix - this should be stripped');
       token = token.replace('Bearer ', '');
     }
     

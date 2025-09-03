@@ -1,5 +1,6 @@
 import { http } from '@/api/http';
 import { toast } from 'react-hot-toast';
+import logger from '@/services/logger';
 
 // Types
 export interface User {
@@ -29,7 +30,7 @@ class UserService {
       }
       return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      logger.error('Failed to fetch users:', error);
       toast.error('Failed to load users');
       throw error;
     }

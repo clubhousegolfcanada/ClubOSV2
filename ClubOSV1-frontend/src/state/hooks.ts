@@ -4,6 +4,7 @@ import { submitRequest as apiSubmitRequest } from '@/api/llm';
 import { http } from '@/api/http';
 import type { UserRequest } from '@/types/request';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 type HistoryEntry = {
   id: string;
@@ -196,7 +197,7 @@ export const useAnalytics = () => {
           });
         }
       } catch (error) {
-        console.error('Failed to fetch analytics:', error);
+        logger.error('Failed to fetch analytics:', error);
         // Keep default values on error
       }
     };

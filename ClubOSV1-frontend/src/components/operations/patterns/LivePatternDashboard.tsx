@@ -15,6 +15,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import apiClient from '@/api/http';
+import logger from '@/services/logger';
 
 interface QueuedSuggestion {
   id: number;
@@ -66,7 +67,7 @@ export const LivePatternDashboard: React.FC = () => {
       setQueue(queueRes.data.queue || []);
       setActivity(activityRes.data.activity || []);
     } catch (error) {
-      console.error('Failed to fetch pattern data:', error);
+      logger.error('Failed to fetch pattern data:', error);
     }
   };
 
@@ -104,7 +105,7 @@ export const LivePatternDashboard: React.FC = () => {
       // Refresh data
       await fetchData();
     } catch (error) {
-      console.error('Failed to process suggestion:', error);
+      logger.error('Failed to process suggestion:', error);
       alert('Failed to process suggestion. Please try again.');
     } finally {
       setProcessingId(null);

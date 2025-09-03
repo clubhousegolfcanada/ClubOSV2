@@ -472,7 +472,7 @@ router.post('/import-csv',
   [body('csvData').isString().notEmpty()],
   async (req: Request, res: Response) => {
     try {
-      const { csvData } = req.body;
+      const { csvData, importType = 'csv' } = req.body;
       
       // Better CSV parsing that handles commas in message text
       const parseCSVLine = (line: string): string[] => {
@@ -774,6 +774,19 @@ router.post('/import-csv',
       
       for (const pattern of uniquePatterns.values()) {
         try {
+          // Generate embedding for semantic search
+          let embedding: number[] | null = null;
+          try {
+            const embeddingText = `${pattern.trigger} ${pattern.response}`;
+            const embeddingResponse = await openai.embeddings.create({
+              model: 'text-embedding-3-small',
+              input: embeddingText,
+            });
+            embedding = embeddingResponse.data[0].embedding;
+          } catch (error) {
+            logger.warn('[Patterns Import] Failed to generate embedding, pattern will use keyword matching only', error);
+          }
+
           // Check if similar pattern exists
           const existing = await db.query(
             `SELECT id, confidence_score FROM decision_patterns 
@@ -786,7 +799,7 @@ router.post('/import-csv',
           );
           
           if (existing.rows.length === 0) {
-            // Insert new pattern
+            // Insert new pattern with embedding
             await db.query(
               `INSERT INTO decision_patterns (
                 pattern_type,
@@ -800,8 +813,12 @@ router.post('/import-csv',
                 is_active,
                 learned_from,
                 template_variables,
+                embedding,
+                embedding_model,
+                embedding_generated_at,
+                semantic_search_enabled,
                 created_at
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())`,
               [
                 pattern.type,
                 `csv_import_${Date.now()}_${newPatterns}`,
@@ -813,7 +830,11 @@ router.post('/import-csv',
                 0,
                 true,
                 'openphone_csv_import',
-                JSON.stringify(pattern.variables)
+                JSON.stringify(pattern.variables),
+                embedding,
+                embedding ? 'text-embedding-3-small' : null,
+                embedding ? new Date() : null,
+                embedding ? true : false
               ]
             );
             newPatterns++;
@@ -1429,6 +1450,201 @@ router.post('/queue/:id/reject',
     } catch (error) {
       logger.error('[Patterns API] Failed to reject pattern', error);
       res.status(500).json({ success: false, error: 'Failed to reject pattern' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/import-enhanced
+ * Import patterns from CSV, Q&A pairs, or natural language
+ */
+router.post('/import-enhanced',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [
+    body('data').isString().notEmpty(),
+    body('format').optional().isIn(['auto', 'csv', 'qa', 'natural'])
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const { data, format = 'auto' } = req.body;
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      // Auto-detect format if needed
+      let detectedFormat = format;
+      if (format === 'auto') {
+        if (data.includes('conversationId') && data.includes(',')) {
+          detectedFormat = 'csv';
+        } else if (data.includes('Q:') || data.includes('A:')) {
+          detectedFormat = 'qa';
+        } else {
+          detectedFormat = 'natural';
+        }
+      }
+      
+      logger.info(`[Patterns Import Enhanced] Processing ${detectedFormat} format`);
+      
+      let patterns: any[] = [];
+      
+      // Process based on format
+      if (detectedFormat === 'csv') {
+        // Use existing CSV processing logic
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Please use /api/patterns/import-csv for CSV imports' 
+        });
+      } else if (detectedFormat === 'qa') {
+        // Parse Q&A pairs
+        const prompt = `
+          Extract customer service patterns from these Q&A pairs.
+          For each Q&A pair, create a pattern with:
+          - trigger: the question (generalized to match variations)
+          - response: the answer (with template variables like {{name}} where appropriate)
+          - type: category (booking/tech/faq/general/emergency)
+          - confidence: 0.7 (manual entry default)
+          - variables: array of template variables used
+          
+          Text:
+          ${data}
+          
+          Return a JSON object with a "patterns" array.
+        `;
+        
+        const result = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
+        });
+        
+        const parsed = JSON.parse(result.choices[0].message?.content || '{"patterns":[]}');
+        patterns = parsed.patterns || [];
+        
+      } else if (detectedFormat === 'natural') {
+        // Parse natural language
+        const prompt = `
+          Extract customer service patterns from this natural language text.
+          
+          Look for:
+          - "When X happens, do Y" statements
+          - "If customer asks about X, respond with Y" patterns
+          - "Tell people X" instructions
+          - Direct statements like "Our hours are X"
+          - Common questions and their answers
+          
+          For each pattern found, create:
+          - trigger: what the customer might say (generalized)
+          - response: how to respond (with template variables)
+          - type: category (booking/tech/faq/general/emergency)
+          - confidence: 0.6-0.8 based on clarity
+          - variables: array of template variables used
+          
+          Text:
+          ${data}
+          
+          Return a JSON object with a "patterns" array.
+        `;
+        
+        const result = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
+        });
+        
+        const parsed = JSON.parse(result.choices[0].message?.content || '{"patterns":[]}');
+        patterns = parsed.patterns || [];
+      }
+      
+      logger.info(`[Patterns Import Enhanced] GPT-4o extracted ${patterns.length} patterns`);
+      
+      // Insert patterns with embeddings
+      let newPatterns = 0;
+      let failedPatterns = 0;
+      
+      for (const pattern of patterns) {
+        try {
+          // Generate embedding
+          let embedding: number[] | null = null;
+          try {
+            const embeddingText = `${pattern.trigger} ${pattern.response}`;
+            const embeddingResponse = await openai.embeddings.create({
+              model: 'text-embedding-3-small',
+              input: embeddingText,
+            });
+            embedding = embeddingResponse.data[0].embedding;
+          } catch (error) {
+            logger.warn('[Patterns Import Enhanced] Failed to generate embedding', error);
+          }
+          
+          // Check for existing similar pattern
+          const existing = await db.query(
+            `SELECT id FROM decision_patterns 
+             WHERE pattern_type = $1 
+             AND similarity(trigger_text, $2) > 0.8`,
+            [pattern.type || 'general', pattern.trigger]
+          );
+          
+          if (existing.rows.length === 0) {
+            // Insert new pattern with embedding
+            await db.query(
+              `INSERT INTO decision_patterns (
+                pattern_type,
+                pattern_signature,
+                trigger_text,
+                response_template,
+                confidence_score,
+                auto_executable,
+                execution_count,
+                success_count,
+                is_active,
+                learned_from,
+                template_variables,
+                embedding,
+                embedding_model,
+                embedding_generated_at,
+                semantic_search_enabled,
+                created_at
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())`,
+              [
+                pattern.type || 'general',
+                `${detectedFormat}_import_${Date.now()}_${newPatterns}`,
+                pattern.trigger,
+                pattern.response,
+                pattern.confidence || 0.7,
+                false,
+                0,
+                0,
+                true,
+                `${detectedFormat}_import`,
+                JSON.stringify(pattern.variables || []),
+                embedding,
+                embedding ? 'text-embedding-3-small' : null,
+                embedding ? new Date() : null,
+                embedding ? true : false
+              ]
+            );
+            newPatterns++;
+          }
+        } catch (error) {
+          logger.error('[Patterns Import Enhanced] Failed to save pattern', error);
+          failedPatterns++;
+        }
+      }
+      
+      res.json({
+        success: true,
+        format: detectedFormat,
+        totalPatterns: patterns.length,
+        newPatterns,
+        failedPatterns,
+        patterns: patterns.slice(0, 5) // Return first 5 for preview
+      });
+      
+    } catch (error) {
+      logger.error('[Patterns Import Enhanced] Failed', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Import failed' 
+      });
     }
   }
 );

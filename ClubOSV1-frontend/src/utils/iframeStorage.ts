@@ -1,3 +1,5 @@
+import logger from '@/services/logger';
+
 /**
  * Storage utility that works in iframe contexts where localStorage might be blocked
  * Falls back to sessionStorage or memory storage if needed
@@ -22,7 +24,7 @@ class IframeStorage {
       localStorage.removeItem(testKey);
       this.storageAvailable = true;
     } catch (e) {
-      console.warn('localStorage not available, using fallback storage');
+      logger.warn('localStorage not available, using fallback storage');
       this.storageAvailable = false;
     }
   }

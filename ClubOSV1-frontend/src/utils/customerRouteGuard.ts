@@ -1,5 +1,6 @@
 import { UserRole } from '@/state/useStore';
 import { NextRouter } from 'next/router';
+import logger from '@/services/logger';
 
 /**
  * SECURITY: Whitelist of routes that customers are allowed to access
@@ -58,7 +59,7 @@ export const enforceCustomerRouteGuard = (
       // Check if current route is allowed for customers
       if (!isCustomerAllowedRoute(router.pathname)) {
         // Not allowed - redirect to customer dashboard
-        console.warn(`🔒 SECURITY: Customer attempted to access restricted route: ${router.pathname}`);
+        logger.warn(`🔒 SECURITY: Customer attempted to access restricted route: ${router.pathname}`);
         router.push('/customer/');
         return;
       }
@@ -99,13 +100,13 @@ export const enforceOperatorRouteGuard = (
   }
   
   if (user.role === 'customer') {
-    console.warn(`🔒 SECURITY: Customer attempted to access operator route: ${router.pathname}`);
+    logger.warn(`🔒 SECURITY: Customer attempted to access operator route: ${router.pathname}`);
     router.push('/customer/');
     return;
   }
   
   if (!allowedRoles.includes(user.role)) {
-    console.warn(`🔒 SECURITY: Unauthorized role ${user.role} attempted to access: ${router.pathname}`);
+    logger.warn(`🔒 SECURITY: Unauthorized role ${user.role} attempted to access: ${router.pathname}`);
     router.push('/login');
     return;
   }

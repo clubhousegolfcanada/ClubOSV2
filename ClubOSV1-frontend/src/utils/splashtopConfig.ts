@@ -1,3 +1,5 @@
+import logger from '@/services/logger';
+
 // Splashtop Bay Computer Configuration
 // Uses device names from Splashtop (e.g., DESKTOP-Q4Q4KE3)
 
@@ -137,7 +139,7 @@ export function openSplashtopForBay(location: string, bayNumber: string) {
   const webPortalUrl = 'https://my.splashtop.com/computers';
   const computer = BAY_COMPUTERS[location]?.[bayNumber];
   
-  console.log(`Opening Splashtop for ${location} Bay ${bayNumber}`, {
+  logger.debug(`Opening Splashtop for ${location} Bay ${bayNumber}`, {
     platform: isIOS ? 'iOS' : isAndroid ? 'Android' : isMac ? 'Mac' : isWindows ? 'Windows' : 'Unknown',
     deepLink,
     computerName: computer?.name
@@ -156,7 +158,7 @@ export function openSplashtopForBay(location: string, bayNumber: string) {
       setTimeout(() => {
         document.body.removeChild(iframe);
         if (!document.hidden) {
-          console.log(`Deep link may have failed, opening web portal for ${computer?.name}`);
+          logger.debug(`Deep link may have failed, opening web portal for ${computer?.name}`);
           window.open(webPortalUrl, '_blank', 'noopener,noreferrer');
         }
       }, 1500);
@@ -173,7 +175,7 @@ export function openSplashtopForBay(location: string, bayNumber: string) {
     }
   } else {
     // No MAC address configured, open web portal with a helpful message
-    console.log(`No MAC address configured for ${location} Bay ${bayNumber}. Opening web portal.`);
+    logger.debug(`No MAC address configured for ${location} Bay ${bayNumber}. Opening web portal.`);
     alert(`Please select "${computer?.name || location + ' Bay ' + bayNumber}" from the computer list.`);
     window.open(webPortalUrl, '_blank', 'noopener,noreferrer');
   }

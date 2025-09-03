@@ -6,6 +6,7 @@ import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calen
 import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
 import { AIFeatureCard } from '@/components/AIFeatureCard';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface SystemFeature {
@@ -157,7 +158,7 @@ export const OperationsIntegrations: React.FC = () => {
                       (response.data?.features || response.data?.data || []);
       setAIFeatures(features);
     } catch (error: any) {
-      console.error('Error fetching AI features:', error);
+      logger.error('Error fetching AI features:', error);
       setAIFeatures([]);
     }
   };
@@ -172,7 +173,7 @@ export const OperationsIntegrations: React.FC = () => {
       toast.success(`Feature ${enabled ? 'enabled' : 'disabled'}`);
       fetchAIFeatures();
     } catch (error) {
-      console.error('Error toggling AI feature:', error);
+      logger.error('Error toggling AI feature:', error);
       toast.error('Failed to toggle feature');
     }
   };
@@ -232,10 +233,10 @@ export const OperationsIntegrations: React.FC = () => {
           ));
         }
       } catch (error) {
-        console.log('HubSpot status check failed:', error);
+        logger.debug('HubSpot status check failed:', error);
       }
     } catch (error) {
-      console.error('Error fetching configurations:', error);
+      logger.error('Error fetching configurations:', error);
     }
   };
 
@@ -258,7 +259,7 @@ export const OperationsIntegrations: React.FC = () => {
       
       toast.success(`${feature.name} ${!feature.enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
-      console.error('Error toggling feature:', error);
+      logger.error('Error toggling feature:', error);
       toast.error('Failed to toggle feature');
     }
   };
@@ -284,7 +285,7 @@ export const OperationsIntegrations: React.FC = () => {
         ));
       }
     } catch (error) {
-      console.error('Error testing connection:', error);
+      logger.error('Error testing connection:', error);
       toast.error(`Failed to test ${service} connection`);
       setIntegrations(prev => prev.map(i => 
         i.service === service ? { ...i, status: 'error' } : i
@@ -306,7 +307,7 @@ export const OperationsIntegrations: React.FC = () => {
       );
       toast.success('Slack configuration saved');
     } catch (error) {
-      console.error('Error saving Slack config:', error);
+      logger.error('Error saving Slack config:', error);
       toast.error('Failed to save Slack configuration');
     } finally {
       setLoading(false);
@@ -325,7 +326,7 @@ export const OperationsIntegrations: React.FC = () => {
       );
       toast.success('OpenPhone configuration saved');
     } catch (error) {
-      console.error('Error saving OpenPhone config:', error);
+      logger.error('Error saving OpenPhone config:', error);
       toast.error('Failed to save OpenPhone configuration');
     } finally {
       setLoading(false);
@@ -344,7 +345,7 @@ export const OperationsIntegrations: React.FC = () => {
       );
       toast.success('Push notification configuration saved');
     } catch (error) {
-      console.error('Error saving Push config:', error);
+      logger.error('Error saving Push config:', error);
       toast.error('Failed to save push notification configuration');
     } finally {
       setLoading(false);

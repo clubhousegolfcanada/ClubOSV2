@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { http } from '@/api/http';
 import { toast } from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 interface PushNotificationState {
   isSupported: boolean;
@@ -47,7 +48,7 @@ export const usePushNotifications = () => {
 
       // Get current permission state
       const currentPermission = Notification.permission;
-      console.log('Initial notification permission state:', currentPermission);
+      logger.debug('Initial notification permission state:', currentPermission);
 
       setState(prev => ({
         ...prev,
@@ -72,13 +73,13 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       
-      console.log('Current push subscription:', subscription ? 'Found' : 'Not found');
+      logger.debug('Current push subscription:', subscription ? 'Found' : 'Not found');
       
       if (subscription) {
         // Verify with backend
         const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
         if (!token) {
-          console.log('No auth token found, skipping subscription check');
+          logger.debug('No auth token found, skipping subscription check');
           return;
         }
         
@@ -86,14 +87,14 @@ export const usePushNotifications = () => {
         
         if (response.data.success) {
           const data = response.data;
-          console.log('Backend subscription status:', data);
+          logger.debug('Backend subscription status:', data);
           setState(prev => ({
             ...prev,
             isSubscribed: data.data?.subscriptions?.length > 0 || false,
             isLoading: false
           }));
         } else {
-          console.error('Failed to check subscription status:', response.status);
+          logger.error('Failed to check subscription status:', response.status);
           setState(prev => ({
             ...prev,
             isSubscribed: false,
@@ -108,7 +109,7 @@ export const usePushNotifications = () => {
         }));
       }
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      logger.error('Error checking subscription:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -136,7 +137,7 @@ export const usePushNotifications = () => {
       }
       return false;
     } catch (error) {
-      console.error('Error requesting permission:', error);
+      logger.error('Error requesting permission:', error);
       toast.error('Failed to request notification permission');
       return false;
     }
@@ -151,7 +152,7 @@ export const usePushNotifications = () => {
 
     // Check current permission state
     const currentPermission = Notification.permission;
-    console.log('Current notification permission:', currentPermission);
+    logger.debug('Current notification permission:', currentPermission);
     
     if (currentPermission === 'denied') {
       toast.error('Notifications are blocked. Please enable them in your browser settings.');
@@ -213,7 +214,7 @@ export const usePushNotifications = () => {
       toast.success('Push notifications enabled!');
       return true;
     } catch (error: any) {
-      console.error('Error subscribing:', error);
+      logger.error('Error subscribing:', error);
       
       // Provide more specific error messages
       let errorMessage = 'Failed to enable push notifications';
@@ -260,7 +261,7 @@ export const usePushNotifications = () => {
       toast.success('Push notifications disabled');
       return true;
     } catch (error) {
-      console.error('Error unsubscribing:', error);
+      logger.error('Error unsubscribing:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -288,7 +289,7 @@ export const usePushNotifications = () => {
       toast.success('Notification preferences updated');
       return true;
     } catch (error) {
-      console.error('Error updating preferences:', error);
+      logger.error('Error updating preferences:', error);
       toast.error('Failed to update preferences');
       return false;
     }

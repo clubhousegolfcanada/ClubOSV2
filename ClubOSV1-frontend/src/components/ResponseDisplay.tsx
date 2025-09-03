@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import logger from '@/services/logger';
 
 interface StructuredResponse {
   response: string;
@@ -31,7 +32,7 @@ interface Props {
 
 export const ResponseDisplay: React.FC<Props> = ({ response, route }) => {
   // Log the response for debugging
-  console.log('ResponseDisplay received:', { response, route });
+  logger.debug('ResponseDisplay received:', { response, route });
   
   // Handle null/undefined response
   if (!response) {

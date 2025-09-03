@@ -5,6 +5,7 @@ import { MessageSquare, Clock, ArrowRight } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useMessages } from '@/contexts/MessagesContext';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface RecentConversation {
@@ -50,7 +51,7 @@ export const MessagesCard: React.FC = () => {
         }
         setIsLoading(false);
       } catch (error) {
-        console.error('Failed to fetch conversations:', error);
+        logger.error('Failed to fetch conversations:', error);
         setIsLoading(false);
       }
     };

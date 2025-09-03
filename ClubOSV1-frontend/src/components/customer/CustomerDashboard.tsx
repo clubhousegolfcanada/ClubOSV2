@@ -27,6 +27,7 @@ import { http } from '@/api/http';
 import { calculateTierFromCC, tierConfigs } from '@/components/TierBadge';
 import { QuickBookCard } from '@/components/customer/QuickBookCard';
 import { RecentChallenges } from '@/components/customer/RecentChallenges';
+import logger from '@/services/logger';
 
 // Fix for double /api/ issue - ensure base URL doesn't end with /api
 
@@ -122,7 +123,7 @@ export const CustomerDashboard: React.FC = () => {
             setCustomerProfile(response.data.data);
           }
         } catch (error) {
-          console.error('Failed to fetch customer profile:', error);
+          logger.error('Failed to fetch customer profile:', error);
         }
 
         // Fetch active challenges count and CC balance
@@ -137,7 +138,7 @@ export const CustomerDashboard: React.FC = () => {
             setQuickStats(prev => ({ ...prev, activeChallenges }));
           }
         } catch (error) {
-          console.error('Failed to fetch challenges:', error);
+          logger.error('Failed to fetch challenges:', error);
         }
         
         // Fetch CC balance
@@ -150,7 +151,7 @@ export const CustomerDashboard: React.FC = () => {
             setQuickStats(prev => ({ ...prev, ccBalance: balance }));
           }
         } catch (error) {
-          console.error('Failed to fetch CC balance:', error);
+          logger.error('Failed to fetch CC balance:', error);
           // Set default CC for testing
           const testBalance = user?.email === 'mikebelair79@gmail.com' ? 10000 : 100;
           setQuickStats(prev => ({ ...prev, ccBalance: testBalance }));
@@ -173,7 +174,7 @@ export const CustomerDashboard: React.FC = () => {
             setQuickStats(prev => ({ ...prev, pendingFriendRequests: pendingRequests }));
           }
         } catch (error) {
-          console.error('Failed to fetch friend requests:', error);
+          logger.error('Failed to fetch friend requests:', error);
         }
         
         // Fetch box stats
@@ -189,7 +190,7 @@ export const CustomerDashboard: React.FC = () => {
             }));
           }
         } catch (error) {
-          console.error('Failed to fetch box stats:', error);
+          logger.error('Failed to fetch box stats:', error);
         }
       }
       
@@ -199,7 +200,7 @@ export const CustomerDashboard: React.FC = () => {
       setSelectedLocation(defaultLocation);
       
     } catch (error) {
-      console.error('Failed to fetch customer data:', error);
+      logger.error('Failed to fetch customer data:', error);
     } finally {
       setLoading(false);
     }

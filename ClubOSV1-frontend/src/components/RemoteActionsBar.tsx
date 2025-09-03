@@ -8,6 +8,7 @@ import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
+import logger from '@/services/logger';
 
 interface LocationConfig {
   name: string;
@@ -59,7 +60,7 @@ const RemoteActionsBar: React.FC = () => {
       const statuses = await systemStatusAPI.getAllStatus();
       setLocationStatuses(statuses);
     } catch (error) {
-      console.error('Failed to load system statuses:', error);
+      logger.error('Failed to load system statuses:', error);
     }
   };
 
@@ -87,7 +88,7 @@ const RemoteActionsBar: React.FC = () => {
       const response = await doorAccessAPI.getStatus(location);
       setDoorStatuses(prev => ({ ...prev, [location]: response.doors }));
     } catch (error) {
-      console.error(`Failed to load door status for ${location}:`, error);
+      logger.error(`Failed to load door status for ${location}:`, error);
     } finally {
       setLoadingDoors(prev => {
         const next = new Set(prev);

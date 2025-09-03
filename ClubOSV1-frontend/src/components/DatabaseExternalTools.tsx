@@ -5,6 +5,7 @@ import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
 import { userSettingsApi } from '@/services/userSettings';
 import { useRouter } from 'next/router';
+import logger from '@/services/logger';
 
 interface QuickStat {
   label: string;
@@ -157,7 +158,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           setSavedUrls(links);
         }
       } catch (error) {
-        console.error('Failed to load user settings:', error);
+        logger.error('Failed to load user settings:', error);
         notify('error', 'Failed to load your custom links');
       } finally {
         setIsLoading(false);
@@ -195,11 +196,11 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
                       window.matchMedia('(display-mode: minimal-ui)').matches ||
                       window.matchMedia('(display-mode: fullscreen)').matches;
         
-        console.log(`Platform detection - iOS: ${isIOS}, Android: ${isAndroid}, Mac: ${isMac}, Windows: ${isWindows}, PWA: ${isPWA}`);
+        logger.debug(`Platform detection - iOS: ${isIOS}, Android: ${isAndroid}, Mac: ${isMac}, Windows: ${isWindows}, PWA: ${isPWA}`);
         
         if (isIOS) {
           // iOS: Try multiple URL schemes for Splashtop Business app
-          console.log('iOS detected - attempting to open Splashtop Business app...');
+          logger.debug('iOS detected - attempting to open Splashtop Business app...');
           
           // Try different URL schemes
           const schemes = [
@@ -212,7 +213,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           const tryNextScheme = () => {
             if (schemeIndex < schemes.length) {
               const scheme = schemes[schemeIndex];
-              console.log(`Trying iOS scheme: ${scheme}`);
+              logger.debug(`Trying iOS scheme: ${scheme}`);
               
               // Create invisible iframe to attempt app launch
               const iframe = document.createElement('iframe');
@@ -229,7 +230,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
                   tryNextScheme();
                 } else if (!document.hidden && schemeIndex >= schemes.length) {
                   // All schemes failed, fallback to web
-                  console.log('No iOS app found, opening web portal...');
+                  logger.debug('No iOS app found, opening web portal...');
                   window.open(url, '_blank', 'noopener,noreferrer');
                 }
               }, 500);
@@ -240,7 +241,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           
         } else if (isAndroid) {
           // Android: Use intent for Splashtop Business app
-          console.log('Android detected - attempting to open Splashtop Business app...');
+          logger.debug('Android detected - attempting to open Splashtop Business app...');
           
           // Try Splashtop Business package first
           const businessIntent = `intent://open#Intent;scheme=splashtopbusiness;package=com.splashtop.remote.business;S.browser_fallback_url=${encodeURIComponent(url)};end`;
@@ -248,7 +249,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           
         } else if (isMac || isWindows) {
           // Desktop: Try to open desktop app first, then fallback to web
-          console.log(`Desktop ${isMac ? 'Mac' : 'Windows'} detected - attempting to open Splashtop Business desktop app...`);
+          logger.debug(`Desktop ${isMac ? 'Mac' : 'Windows'} detected - attempting to open Splashtop Business desktop app...`);
           
           // Try desktop URL schemes
           const desktopScheme = 'splashtopbusiness://';
@@ -263,13 +264,13 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           setTimeout(() => {
             document.body.removeChild(iframe);
             // Always open web portal as backup on desktop
-            console.log('Opening web portal as fallback/primary option...');
+            logger.debug('Opening web portal as fallback/primary option...');
             window.open(url, '_blank', 'noopener,noreferrer');
           }, 1000);
           
         } else {
           // Unknown platform: Open web portal
-          console.log('Unknown platform - opening web portal...');
+          logger.debug('Unknown platform - opening web portal...');
           window.open(url, '_blank', 'noopener,noreferrer');
         }
       } else {
@@ -321,7 +322,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
       setEditedUrls({});
       notify('success', 'External links updated successfully');
     } catch (error) {
-      console.error('Failed to save links:', error);
+      logger.error('Failed to save links:', error);
       notify('error', 'Failed to save your custom links');
     } finally {
       setIsSaving(false);

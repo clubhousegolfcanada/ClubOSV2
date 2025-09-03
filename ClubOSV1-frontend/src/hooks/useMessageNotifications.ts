@@ -4,6 +4,7 @@ import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 export function useMessageNotifications() {
@@ -50,7 +51,7 @@ export function useMessageNotifications() {
           isFirstLoad.current = false;
         }
       } catch (error) {
-        console.error('Failed to check unread messages:', error);
+        logger.error('Failed to check unread messages:', error);
       }
     };
 

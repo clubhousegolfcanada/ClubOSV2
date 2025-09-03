@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Save, History, RefreshCw, AlertCircle, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface PromptTemplate {
@@ -73,7 +74,7 @@ export default function AIPrompts() {
         }
       }
     } catch (error) {
-      console.error('Failed to load templates:', error);
+      logger.error('Failed to load templates:', error);
       toast.error('Failed to load AI prompt templates');
     } finally {
       setLoading(false);
@@ -92,7 +93,7 @@ export default function AIPrompts() {
         setShowHistory(true);
       }
     } catch (error) {
-      console.error('Failed to load history:', error);
+      logger.error('Failed to load history:', error);
       toast.error('Failed to load template history');
     }
   };
@@ -124,7 +125,7 @@ export default function AIPrompts() {
         await loadTemplates();
       }
     } catch (error) {
-      console.error('Failed to save template:', error);
+      logger.error('Failed to save template:', error);
       toast.error('Failed to save template');
     } finally {
       setSaving(false);

@@ -4,6 +4,7 @@ import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { BarChart3, TrendingUp, Users, MessageSquare, Calendar, Download, Filter, RefreshCw, Clock, Activity, DollarSign, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface AnalyticsData {
@@ -90,9 +91,9 @@ export const OperationsAnalytics: React.FC = () => {
         usage: usageRes.data || analyticsData.usage
       });
       */
-      console.log('Using mock analytics data');
+      logger.debug('Using mock analytics data');
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      logger.error('Error fetching analytics:', error);
       // Use mock data if API fails
       setAnalyticsData({
         routing: {
@@ -159,7 +160,7 @@ export const OperationsAnalytics: React.FC = () => {
       
       toast.success(`${format.toUpperCase()} export downloaded`);
     } catch (error) {
-      console.error('Error exporting data:', error);
+      logger.error('Error exporting data:', error);
       toast.error('Failed to export data');
     }
   };

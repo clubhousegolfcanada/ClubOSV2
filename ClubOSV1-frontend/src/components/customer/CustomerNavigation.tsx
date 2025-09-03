@@ -4,6 +4,7 @@ import { useAuthState, useStore } from '@/state/useStore';
 import { http } from '@/api/http';
 import { tokenManager } from '@/utils/tokenManager';
 import { 
+import logger from '@/services/logger';
   Home, 
   Calendar, 
   Users, 
@@ -60,7 +61,7 @@ const CustomerNavigation: React.FC = () => {
       } catch (error: any) {
         // Silently fail - don't spam console for expected errors
         if (error.response?.status !== 401 && error.response?.status !== 429) {
-          console.log('Box endpoint not available');
+          logger.debug('Box endpoint not available');
         }
       }
     };

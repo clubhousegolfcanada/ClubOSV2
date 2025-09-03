@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
+import logger from '@/services/logger';
 
 // Default URLs
 const DEFAULT_EXTERNAL_TOOLS = {
@@ -84,7 +85,7 @@ const EditableExternalTools: React.FC = () => {
         const parsed = JSON.parse(stored);
         setSavedUrls(parsed);
       } catch (e) {
-        console.error('Failed to parse stored URLs');
+        logger.error('Failed to parse stored URLs');
       }
     }
   }, []);

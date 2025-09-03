@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -170,7 +171,7 @@ const RequestForm: React.FC = () => {
     if (!isMounted) return; // Skip on server-side
     
     if (lastResponse && isNewSubmission) {
-      console.log('Full lastResponse object:', JSON.stringify(lastResponse, null, 2));
+      logger.debug('Full lastResponse object:', JSON.stringify(lastResponse, null, 2));
       
       setShowResponse(true);
       setIsNewSubmission(false); // Reset the flag
@@ -196,7 +197,7 @@ const RequestForm: React.FC = () => {
 
   const onSubmit = async (data: FormData) => {
     if (isMounted) {
-      console.log('Form submitted!', data);
+      logger.debug('Form submitted!', data);
     }
     
     // If in ticket mode, create a ticket instead
@@ -223,7 +224,7 @@ const RequestForm: React.FC = () => {
           setTimeout(() => router.push('/tickets'), 1000);
         }
       } catch (error) {
-        console.error('Failed to create ticket:', error);
+        logger.error('Failed to create ticket:', error);
         notify('error', 'Failed to create ticket');
       } finally {
         setIsProcessing(false);
@@ -273,7 +274,7 @@ const RequestForm: React.FC = () => {
           notify('error', response.data.error || 'Failed to add knowledge');
         }
       } catch (error) {
-        console.error('Knowledge submission error:', error);
+        logger.error('Knowledge submission error:', error);
         if (error && typeof error === 'object' && 'response' in error) {
           const err = error as any;
           notify('error', err.response?.data?.error || 'Failed to add knowledge');
@@ -321,14 +322,14 @@ const RequestForm: React.FC = () => {
     } as any;
 
     if (isMounted) {
-      console.log('About to submit request:', request);
-      console.log('isSubmitting before:', isSubmitting);
+      logger.debug('About to submit request:', request);
+      logger.debug('isSubmitting before:', isSubmitting);
     }
 
     try {
       await submitRequest(request);
     } catch (error) {
-      console.error('Submit error:', error);
+      logger.error('Submit error:', error);
       setIsProcessing(false); // Stop loading on error
       // Error is handled by the hook and notifications
     }
@@ -349,12 +350,12 @@ const RequestForm: React.FC = () => {
     const threadTs = lastResponse?.slackThreadTs;
     
     if (!threadTs) {
-      console.error('No thread timestamp available for polling');
+      logger.error('No thread timestamp available for polling');
       setIsWaitingForReply(false);
       return;
     }
     
-    console.log('Starting to poll for replies using thread_ts:', threadTs);
+    logger.debug('Starting to poll for replies using thread_ts:', threadTs);
     setLastSlackThreadTs(threadTs);
     
     let pollCount = 0;
@@ -362,20 +363,20 @@ const RequestForm: React.FC = () => {
     
     const poll = async () => {
       try {
-        console.log(`Polling attempt ${pollCount + 1}/${maxPolls} for thread ${threadTs}`);
+        logger.debug(`Polling attempt ${pollCount + 1}/${maxPolls} for thread ${threadTs}`);
         
         // Use the specific thread_ts to check for replies directly from Slack
         const repliesResponse = await http.get(`slack/thread-replies/${threadTs}`);
         
         if (repliesResponse.data.success && repliesResponse.data.data.replies.length > 0) {
-          console.log('Found replies:', repliesResponse.data.data.replies);
+          logger.debug('Found replies:', repliesResponse.data.data.replies);
           setSlackReplies(repliesResponse.data.data.replies);
           
           // Don't stop waiting for replies - staff might send multiple messages
           // Continue polling to check for new replies
-          console.log('Continuing to poll for additional replies...');
+          logger.debug('Continuing to poll for additional replies...');
         } else {
-          console.log('No replies yet, continuing to poll...');
+          logger.debug('No replies yet, continuing to poll...');
         }
         
         // Continue polling if no replies found and haven't exceeded max polls
@@ -383,11 +384,11 @@ const RequestForm: React.FC = () => {
         if (pollCount < maxPolls) {
           setTimeout(poll, 5000); // Poll every 5 seconds
         } else {
-          console.log('Polling timeout reached, stopping');
+          logger.debug('Polling timeout reached, stopping');
           setIsWaitingForReply(false); // Stop waiting after max time
         }
       } catch (error) {
-        console.error('Error polling for replies:', error);
+        logger.error('Error polling for replies:', error);
         // Don't stop polling immediately on error, could be temporary
         pollCount++;
         if (pollCount < maxPolls) {
@@ -435,7 +436,7 @@ const RequestForm: React.FC = () => {
         notify('error', 'Failed to send reply');
       }
     } catch (error: any) {
-      console.error('Error sending reply to Slack:', error);
+      logger.error('Error sending reply to Slack:', error);
       
       // Check for specific error types
       if (error.response?.data?.isWebhookThread) {
@@ -526,9 +527,9 @@ const RequestForm: React.FC = () => {
       };
       
       if (isMounted) {
-        console.log('Sending feedback:', feedbackData);
-        console.log('Auth token present:', !!token);
-        console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'no token');
+        logger.debug('Sending feedback:', feedbackData);
+        logger.debug('Auth token present:', !!token);
+        logger.debug('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'no token');
         // Removed debug logging
       }
       
@@ -540,7 +541,7 @@ const RequestForm: React.FC = () => {
       });
       
       if (isMounted) {
-        console.log('Feedback response:', response.data);
+        logger.debug('Feedback response:', response.data);
       }
       
       setFeedbackGiven(feedbackType);
@@ -548,11 +549,11 @@ const RequestForm: React.FC = () => {
       
       // If not useful, also log to console for debugging
       if (!isUseful && isMounted) {
-        console.log('Not useful response logged:', feedbackData);
+        logger.debug('Not useful response logged:', feedbackData);
       }
     } catch (error: any) {
-      console.error('Failed to submit feedback:', error);
-      console.error('Error details:', {
+      logger.error('Failed to submit feedback:', error);
+      logger.error('Error details:', {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
@@ -590,7 +591,7 @@ const RequestForm: React.FC = () => {
         notify('success', 'Tone converted!');
       }
     } catch (error) {
-      console.error('Tone conversion failed:', error);
+      logger.error('Tone conversion failed:', error);
       notify('error', 'Failed to convert tone');
     } finally {
       setIsConvertingTone(false);
@@ -1051,7 +1052,7 @@ const RequestForm: React.FC = () => {
               type="submit"
               className={`btn btn-primary flex-1 flex items-center justify-center gap-2 ${!smartAssistEnabled ? 'slack-mode' : ''}`}
               disabled={isProcessing || demoMode}
-              onClick={() => isMounted && console.log('Button clicked!', isProcessing)}
+              onClick={() => isMounted && logger.debug('Button clicked!', isProcessing)}
               style={{
                 ...(isKnowledgeMode && !isProcessing ? {
                   backgroundColor: '#EAB308',

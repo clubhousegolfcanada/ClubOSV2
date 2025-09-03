@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { 
+import logger from '@/services/logger';
   MessageCircle, Send, User, Clock, Phone, 
   ChevronDown, ChevronUp, Sparkles, X, Edit2,
   BellOff, Bell, MapPin
@@ -26,7 +27,7 @@ export default function MessageCard({ conversation, onReply, onGetAiSuggestion }
       const suggestion = await onGetAiSuggestion();
       setAiSuggestion(suggestion);
     } catch (error) {
-      console.error('Failed to get AI suggestion:', error);
+      logger.error('Failed to get AI suggestion:', error);
     } finally {
       setLoadingAi(false);
     }

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import { LivePatternDashboard } from './LivePatternDashboard';
+import logger from '@/services/logger';
 
 interface PatternReasoning {
   thought_process: string;
@@ -106,7 +107,7 @@ export const OperationsPatterns: React.FC = () => {
       const response = await apiClient.get('/patterns/stats');
       setStats(response.data);
     } catch (error) {
-      console.error('Failed to fetch pattern stats:', error);
+      logger.error('Failed to fetch pattern stats:', error);
     }
   };
 
@@ -122,7 +123,7 @@ export const OperationsPatterns: React.FC = () => {
         setPatterns([]);
       }
     } catch (error) {
-      console.error('Failed to fetch patterns:', error);
+      logger.error('Failed to fetch patterns:', error);
       setPatterns([]); // Set empty array on error
     } finally {
       setLoading(false);
@@ -134,7 +135,7 @@ export const OperationsPatterns: React.FC = () => {
       const response = await apiClient.get('/patterns/config');
       setConfig(response.data);
     } catch (error) {
-      console.error('Failed to fetch config:', error);
+      logger.error('Failed to fetch config:', error);
     }
   };
 
@@ -145,7 +146,7 @@ export const OperationsPatterns: React.FC = () => {
         setAiAutomations(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch AI automations:', error);
+      logger.error('Failed to fetch AI automations:', error);
     }
   };
 
@@ -160,7 +161,7 @@ export const OperationsPatterns: React.FC = () => {
         [key]: newValue
       }));
     } catch (error) {
-      console.error('Failed to toggle AI automation:', error);
+      logger.error('Failed to toggle AI automation:', error);
     }
   };
 
@@ -170,7 +171,7 @@ export const OperationsPatterns: React.FC = () => {
       await fetchConfig();
       await fetchStats();
     } catch (error) {
-      console.error('Failed to update config:', error);
+      logger.error('Failed to update config:', error);
     }
   };
 
@@ -179,7 +180,7 @@ export const OperationsPatterns: React.FC = () => {
       await apiClient.put(`/patterns/${patternId}`, { is_active: !isActive });
       await fetchPatterns();
     } catch (error) {
-      console.error('Failed to toggle pattern:', error);
+      logger.error('Failed to toggle pattern:', error);
     }
   };
 
@@ -189,7 +190,7 @@ export const OperationsPatterns: React.FC = () => {
       const result = response.data;
       alert(`Test Result: ${result.action}\nConfidence: ${result.confidence || 'N/A'}\nReason: ${result.reason || 'Pattern matched'}`);
     } catch (error) {
-      console.error('Failed to test message:', error);
+      logger.error('Failed to test message:', error);
     }
   };
 

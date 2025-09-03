@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
+import logger from '@/services/logger';
   Coins, 
   X,
   Calendar,
@@ -242,7 +243,7 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
     } catch (err) {
       setError('Failed to open box. Please try again.');
       setIsSpinning(false);
-      console.error('Error opening box:', err);
+      logger.error('Error opening box:', err);
     }
   };
 

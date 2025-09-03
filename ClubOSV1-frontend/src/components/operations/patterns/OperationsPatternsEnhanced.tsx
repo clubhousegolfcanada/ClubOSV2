@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import { LivePatternDashboard } from './LivePatternDashboard';
+import logger from '@/services/logger';
 
 interface PatternReasoning {
   thought_process: string;
@@ -213,7 +214,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       const response = await apiClient.get('/patterns/stats');
       setStats(response.data);
     } catch (error) {
-      console.error('Failed to fetch pattern stats:', error);
+      logger.error('Failed to fetch pattern stats:', error);
     }
   };
 
@@ -228,7 +229,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
         setPatterns([]);
       }
     } catch (error) {
-      console.error('Failed to fetch patterns:', error);
+      logger.error('Failed to fetch patterns:', error);
       setPatterns([]);
     } finally {
       setLoading(false);
@@ -240,7 +241,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       const response = await apiClient.get('/patterns/config');
       setConfig(response.data);
     } catch (error) {
-      console.error('Failed to fetch config:', error);
+      logger.error('Failed to fetch config:', error);
     }
   };
 
@@ -249,7 +250,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       const response = await apiClient.get('/patterns/execution-history?limit=20');
       setExecutionHistory(response.data.history || []);
     } catch (error) {
-      console.error('Failed to fetch execution history:', error);
+      logger.error('Failed to fetch execution history:', error);
       setExecutionHistory([]);
     }
   };
@@ -260,7 +261,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       await fetchConfig();
       await fetchStats();
     } catch (error) {
-      console.error('Failed to update config:', error);
+      logger.error('Failed to update config:', error);
     }
   };
 
@@ -269,7 +270,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       await apiClient.put(`/patterns/${patternId}`, { is_active: !isActive });
       await fetchPatterns();
     } catch (error) {
-      console.error('Failed to toggle pattern:', error);
+      logger.error('Failed to toggle pattern:', error);
     }
   };
 
@@ -295,7 +296,7 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
 🏷️ Pattern Type: ${result.pattern?.pattern_type || 'None'}
 💬 Response: ${result.response?.substring(0, 200) || 'No response generated'}${reasoning}`);
     } catch (error) {
-      console.error('Failed to test message:', error);
+      logger.error('Failed to test message:', error);
     }
   };
 

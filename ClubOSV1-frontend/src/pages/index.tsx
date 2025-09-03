@@ -16,6 +16,7 @@ import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
 import OccupancyMap from '@/components/dashboard/OccupancyMap';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface QuickStat {
@@ -86,7 +87,7 @@ export default function Home() {
         const token = tokenManager.getToken();
         // Don't make the call if no token
         if (!token) {
-          console.log('No token available, skipping stats fetch');
+          logger.debug('No token available, skipping stats fetch');
           setPreviousStats({
             totalRequests: 0,
             averageConfidence: 0,
@@ -107,12 +108,12 @@ export default function Home() {
           setPreviousStats(response.data.data);
         }
       } catch (error: any) {
-        console.error('Failed to fetch previous stats:', error);
+        logger.error('Failed to fetch previous stats:', error);
         // Don't log out on 401 if we just logged in
         if (error.response?.status === 401) {
           const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
           if (!loginTimestamp || (Date.now() - parseInt(loginTimestamp) > 5000)) {
-            console.log('Token appears invalid after grace period');
+            logger.debug('Token appears invalid after grace period');
             setAuthError(true);
           }
         }
@@ -160,7 +161,7 @@ export default function Home() {
           setWeeklyChecklistCount(response.data.data?.length || 0);
         }
       } catch (error: any) {
-        console.error('Failed to fetch checklist data:', error);
+        logger.error('Failed to fetch checklist data:', error);
         if (error.response?.status === 401) {
           setAuthError(true);
         }
@@ -212,7 +213,7 @@ export default function Home() {
           }
         }
       } catch (error: any) {
-        console.error('Failed to fetch ticket stats:', error);
+        logger.error('Failed to fetch ticket stats:', error);
         if (error.response?.status === 401) {
           setAuthError(true);
           // Clear the interval on auth error

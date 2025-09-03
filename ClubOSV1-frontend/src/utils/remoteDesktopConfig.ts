@@ -1,6 +1,7 @@
 // Remote Desktop Configuration - Supports NinjaOne and Splashtop
 import { ninjaoneRemoteAPI } from '@/api/ninjaoneRemote';
 import toast from 'react-hot-toast';
+import logger from '@/services/logger';
 
 export type RemoteDesktopProvider = 'ninjaone' | 'splashtop' | 'auto';
 
@@ -13,7 +14,7 @@ export function getRemoteDesktopProvider(): RemoteDesktopProvider {
 export async function openRemoteDesktopForBay(location: string, bayNumber: string) {
   const provider = getRemoteDesktopProvider();
   
-  console.log(`Opening remote desktop for ${location} Bay ${bayNumber} using provider: ${provider}`);
+  logger.debug(`Opening remote desktop for ${location} Bay ${bayNumber} using provider: ${provider}`);
   
   // Show loading toast
   const toastId = toast.loading(`Connecting to ${location} Bay ${bayNumber}...`);
@@ -46,7 +47,7 @@ export async function openRemoteDesktopForBay(location: string, bayNumber: strin
           return;
         }
       } catch (ninjaError) {
-        console.error('NinjaOne error:', ninjaError);
+        logger.error('NinjaOne error:', ninjaError);
         // Fall through to Splashtop
       }
     }
@@ -62,7 +63,7 @@ export async function openRemoteDesktopForBay(location: string, bayNumber: strin
     toast.error('No remote desktop provider configured', { id: toastId });
     
   } catch (error) {
-    console.error('Remote desktop error:', error);
+    logger.error('Remote desktop error:', error);
     toast.error('Failed to open remote desktop', { id: toastId });
   }
 }
@@ -74,7 +75,7 @@ export function openSplashtopForBay(location: string, bayNumber: string) {
   // Since we don't have MAC addresses configured yet, just open the web portal
   const computerName = `${location} Bay ${bayNumber} PC`;
   
-  console.log(`Opening Splashtop web portal for ${computerName}`);
+  logger.debug(`Opening Splashtop web portal for ${computerName}`);
   
   // Show helpful message
   toast.success(`Opening Splashtop portal. Please select "${computerName}"`);
@@ -89,7 +90,7 @@ export async function isRemoteDesktopConfigured(location: string, bayNumber: str
     const deviceInfo = await ninjaoneRemoteAPI.getDeviceInfo(location, bayNumber);
     return deviceInfo.configured;
   } catch (error) {
-    console.error('Error checking device configuration:', error);
+    logger.error('Error checking device configuration:', error);
     return false;
   }
 }

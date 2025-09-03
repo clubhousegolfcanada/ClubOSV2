@@ -8,6 +8,7 @@ import { AIFeatureCard } from '@/components/AIFeatureCard';
 import { FeedbackResponse } from '@/components/FeedbackResponse';
 import { OpenPhoneConversations } from '@/components/OpenPhoneConversations';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface AIFeature {
@@ -78,7 +79,7 @@ export const OperationsAICenter: React.FC = () => {
       });
       setAIFeatures(response.data || []);
     } catch (error: any) {
-      console.error('Error fetching AI features:', error);
+      logger.error('Error fetching AI features:', error);
       if (error.response?.status !== 401) {
         // Only show error if not auth issue
         // toast.error('Failed to load AI features');
@@ -96,7 +97,7 @@ export const OperationsAICenter: React.FC = () => {
       });
       setSystemMetrics(response.data || { total_documents: 0, unique_assistants: 0 });
     } catch (error) {
-      console.error('Error fetching system metrics:', error);
+      logger.error('Error fetching system metrics:', error);
       setSystemMetrics({ total_documents: 0, unique_assistants: 0 });
     }
   };
@@ -110,7 +111,7 @@ export const OperationsAICenter: React.FC = () => {
       });
       setFeedback(response.data?.filter((f: any) => !f.helpful) || []);
     } catch (error) {
-      console.error('Error fetching feedback:', error);
+      logger.error('Error fetching feedback:', error);
       setFeedback([]);
     }
   };
@@ -124,7 +125,7 @@ export const OperationsAICenter: React.FC = () => {
       });
       setOpenPhoneConversations(response.data || []);
     } catch (error) {
-      console.error('Error fetching OpenPhone conversations:', error);
+      logger.error('Error fetching OpenPhone conversations:', error);
       setOpenPhoneConversations([]);
     }
   };
@@ -136,7 +137,7 @@ export const OperationsAICenter: React.FC = () => {
       });
       setPromptTemplates(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching prompt templates:', error);
+      logger.error('Error fetching prompt templates:', error);
     }
   };
 
@@ -152,7 +153,7 @@ export const OperationsAICenter: React.FC = () => {
       fetchAIFeatures();
       toast.success(`Feature ${newValue ? 'enabled' : 'disabled'}`);
     } catch (error) {
-      console.error('Error toggling feature:', error);
+      logger.error('Error toggling feature:', error);
       toast.error('Failed to toggle feature');
     }
   };
@@ -170,7 +171,7 @@ export const OperationsAICenter: React.FC = () => {
       fetchPromptTemplates();
       toast.success('Prompt updated successfully');
     } catch (error) {
-      console.error('Error saving prompt:', error);
+      logger.error('Error saving prompt:', error);
       toast.error('Failed to save prompt');
     }
   };
@@ -185,7 +186,7 @@ export const OperationsAICenter: React.FC = () => {
       fetchPromptTemplates();
       toast.success('Prompt deleted successfully');
     } catch (error) {
-      console.error('Error deleting prompt:', error);
+      logger.error('Error deleting prompt:', error);
       toast.error('Failed to delete prompt');
     }
   };
@@ -209,7 +210,7 @@ export const OperationsAICenter: React.FC = () => {
       fetchPromptTemplates();
       toast.success('Prompt template created successfully');
     } catch (error) {
-      console.error('Error creating prompt:', error);
+      logger.error('Error creating prompt:', error);
       toast.error('Failed to create prompt');
     }
   };

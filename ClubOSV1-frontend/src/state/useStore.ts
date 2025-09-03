@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { RequestRoute } from '@/types/request';
 import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/iframeStorage';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 // Export UserRole type
 export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
@@ -177,7 +178,7 @@ export const useAuthState = create<AuthState>()(
             } catch (error) {
               // Log error but continue with client-side cleanup
               // Logout should not fail even if server is unreachable
-              console.error('Server logout failed:', error);
+              logger.error('Server logout failed:', error);
             }
           }
           

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
+import logger from '@/services/logger';
   Coins, 
   Clock, 
   Percent, 
@@ -183,7 +184,7 @@ export const BoxOpeningSlotMachine: React.FC<BoxOpeningSlotMachineProps> = ({
     } catch (err) {
       setError('Failed to open box. Please try again.');
       setIsSpinning(false);
-      console.error('Error opening box:', err);
+      logger.error('Error opening box:', err);
     }
   };
 

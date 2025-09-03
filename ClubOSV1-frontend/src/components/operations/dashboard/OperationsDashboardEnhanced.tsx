@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 
 interface SystemMetrics {
@@ -132,7 +133,7 @@ export function OperationsDashboardEnhanced() {
         setMessages(recentMessages.slice(0, 5)); // Show latest 5
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      logger.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -183,7 +184,7 @@ export function OperationsDashboardEnhanced() {
         });
         setExpandedConversations(new Map(newExpanded));
       } catch (error) {
-        console.error('Error fetching conversation details:', error);
+        logger.error('Error fetching conversation details:', error);
         newExpanded.set(conversationId, {
           conversationId,
           isLoading: false,
@@ -234,7 +235,7 @@ export function OperationsDashboardEnhanced() {
       // Collapse the conversation
       toggleConversation(conversationId);
     } catch (error) {
-      console.error('Error sending reply:', error);
+      logger.error('Error sending reply:', error);
       toast.error('Failed to send reply');
     } finally {
       setSendingReply(null);

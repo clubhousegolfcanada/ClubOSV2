@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { http } from '@/api/http';
 import { Eye, EyeOff, Users, User, ArrowRight } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
+import logger from '@/services/logger';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -124,7 +125,7 @@ const LoginPage = () => {
         }
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       
       // Extract error details
       const errorCode = error.response?.data?.code;
@@ -168,7 +169,7 @@ const LoginPage = () => {
         setResetEmail('');
       }
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      logger.error('Password reset error:', error);
       const message = error.response?.data?.message || 'Failed to send reset email. Please try again.';
       toast.error(message);
     } finally {
