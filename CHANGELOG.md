@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.1] - 2025-09-03
+
+### Added
+- **Live Pattern Dashboard** - Real-time operator interface for pattern suggestions
+  - New "Live" tab as default view in Pattern Learning System
+  - Displays pending AI suggestions with customer messages
+  - One-click actions: Accept, Edit, or Reject
+  - Inline editing of suggestions before sending
+  - Real-time 5-second polling for new messages
+  - Recent activity feed showing last 50 pattern matches
+
+### Enhanced
+- **Operator Actions API**
+  - POST `/api/patterns/queue/:id/respond` - Process operator decisions
+  - GET `/api/patterns/queue` - Fetch pending suggestions
+  - GET `/api/patterns/recent-activity` - View pattern matching history
+  - Automatic OpenPhone message sending on accept/modify
+  - Pattern confidence adjustments based on operator feedback
+
+### Database
+- Migration 205: Added operator_actions and import tracking tables
+- Track all operator decisions for continuous learning
+- Prevent duplicate CSV imports with hash checking
+
+### Fixed
+- Route ordering in patterns API (specific routes before dynamic :id)
+- CSV import now handles commas in message text correctly
+- Conversation grouping improved with adaptive time windows
+
 ## [1.15.0] - 2025-09-02
 
 ### Added

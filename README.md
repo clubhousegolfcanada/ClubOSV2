@@ -156,6 +156,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (August 2025)
 
 ### Latest
+- **v1.15.1**: Live Pattern Dashboard - Real-Time Queue & Operator Actions
+  - Added live dashboard showing pending AI suggestions in real-time
+  - One-click operator actions: Accept, Edit, or Reject suggestions
+  - Messages sent directly via OpenPhone when accepted/modified
+  - Pattern confidence automatically adjusts based on operator feedback
+  - Recent activity feed shows last 50 pattern matches
+  - 5-second polling for real-time updates
+  - Operator actions tracked for continuous learning
 - **v1.15.0**: V3-PLS Pattern Learning System Implementation
   - GPT-4 powered pattern enhancement for 158 existing patterns
   - Template variables for dynamic responses ({{customer_name}}, {{bay_number}})
