@@ -31,7 +31,19 @@ export class OpenAIAssistantUpdater {
       logger.info('Updating OpenAI assistant with knowledge', { assistantId, category: knowledge.category });
       
       // Retrieve current assistant
-      const assistant = await this.openai.beta.assistants.retrieve(assistantId);
+      let assistant;
+      try {
+        assistant = await this.openai.beta.assistants.retrieve(assistantId);
+      } catch (error: any) {
+        if (error?.status === 404) {
+          logger.warn(`Assistant ${assistantId} not found. Knowledge will be stored locally only.`);
+          return {
+            success: false,
+            message: `Assistant ${assistantId} not found. Knowledge stored in database for local searches.`
+          };
+        }
+        throw error; // Re-throw if it's not a 404
+      }
       
       // Get current instructions
       let currentInstructions = assistant.instructions || '';

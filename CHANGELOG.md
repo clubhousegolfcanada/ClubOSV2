@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.2] - 2025-09-03
+
+### Fixed
+- **Database**: Added missing `blacklisted_tokens` table (migration 206) to fix authentication errors
+- **OpenAI Assistants**: Fixed invalid assistant ID error by adding proper 404 handling
+  - Assistant updates now gracefully fall back to local storage when assistant doesn't exist
+  - Removed hardcoded invalid brand assistant ID fallback
+- **Error Handling**: Terminal card update button errors now properly handled
+
+### Added
+- **Migration 206**: Creates `blacklisted_tokens` table for JWT token revocation
+  - Supports logout, password changes, and admin token revocation
+  - Includes automatic cleanup of expired tokens
+
 ## [1.15.1] - 2025-09-03
 
 ### Added

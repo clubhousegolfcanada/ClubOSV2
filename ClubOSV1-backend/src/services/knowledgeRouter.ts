@@ -34,11 +34,12 @@ export class KnowledgeRouterService {
     }
 
     // Map assistant types to their IDs from environment variables
+    // NOTE: These fallback IDs may not exist - set proper IDs in .env file
     this.assistantIds = {
       emergency: process.env.EMERGENCY_GPT_ID || 'asst_jOWRzC9eOMRsupRqMWR5hc89',
       booking: process.env.BOOKING_ACCESS_GPT_ID || 'asst_E2CrYEtb5CKJGPZYdE7z7VAq',
       tech: process.env.TECH_SUPPORT_GPT_ID || 'asst_Xax6THdGRHYJwPbRi9OoQrRF',
-      brand: process.env.BRAND_MARKETING_GPT_ID || 'asst_1vMUEQ7oTIYrCFG1BhgpwMkw'
+      brand: process.env.BRAND_MARKETING_GPT_ID || '' // No fallback - must be set in .env
     };
   }
 

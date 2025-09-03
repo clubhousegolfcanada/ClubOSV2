@@ -153,9 +153,12 @@ Run the security verification script to check your security posture:
 ./verify-security.sh
 ```
 
-## 📊 Current State (August 2025)
+## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.15.2**: Fixed authentication errors and OpenAI assistant handling
+  - Added missing blacklisted_tokens table for JWT management
+  - Fixed invalid assistant ID errors with graceful fallback
 - **v1.15.1**: Live Pattern Dashboard - Real-Time Queue & Operator Actions
   - Added live dashboard showing pending AI suggestions in real-time
   - One-click operator actions: Accept, Edit, or Reject suggestions
