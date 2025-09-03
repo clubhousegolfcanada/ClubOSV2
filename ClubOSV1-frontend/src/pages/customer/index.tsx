@@ -4,6 +4,7 @@ import { useAuthState, useStore } from '@/state/useStore';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import Head from 'next/head';
+import { CustomerErrorBoundary } from '@/components/SectionErrorBoundary';
 
 export default function CustomerApp() {
   const router = useRouter();
@@ -61,7 +62,9 @@ export default function CustomerApp() {
         {/* Main Content - Mobile first design */}
         <main className="pb-20 lg:pb-8 lg:pt-14">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <CustomerDashboard />
+            <CustomerErrorBoundary>
+              <CustomerDashboard />
+            </CustomerErrorBoundary>
           </div>
         </main>
       </div>

@@ -17,6 +17,7 @@ import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
 import OccupancyMap from '@/components/dashboard/OccupancyMap';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import { DashboardErrorBoundary, SectionErrorBoundary } from '@/components/SectionErrorBoundary';
 
 
 interface QuickStat {
@@ -321,13 +322,19 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
             {/* Request Form - Takes up 8 columns on large screens */}
             <div className="lg:col-span-8">
-              <RequestForm />
+              <DashboardErrorBoundary>
+                <RequestForm />
+              </DashboardErrorBoundary>
               
               {/* Messages Card - Desktop only */}
-              <MessagesCardV3 />
+              <SectionErrorBoundary section="Messages">
+                <MessagesCardV3 />
+              </SectionErrorBoundary>
               
               {/* Mobile-only recent customers */}
-              <RecentCustomers />
+              <SectionErrorBoundary section="Recent Customers">
+                <RecentCustomers />
+              </SectionErrorBoundary>
               
               {/* Desktop-only enhancements */}
               <MiniInsightsPanel />
@@ -335,9 +342,15 @@ export default function Home() {
             
             {/* Sidebar - Contains Quick Stats and External Tools - 4 columns */}
             <div className="lg:col-span-4">
-              <DatabaseExternalTools quickStats={quickStats} />
-              <OccupancyMap compact />
-              <SuggestedActions />
+              <SectionErrorBoundary section="Quick Stats">
+                <DatabaseExternalTools quickStats={quickStats} />
+              </SectionErrorBoundary>
+              <SectionErrorBoundary section="Occupancy Map" compact>
+                <OccupancyMap compact />
+              </SectionErrorBoundary>
+              <SectionErrorBoundary section="Suggested Actions">
+                <SuggestedActions />
+              </SectionErrorBoundary>
             </div>
           </div>
         </div>
