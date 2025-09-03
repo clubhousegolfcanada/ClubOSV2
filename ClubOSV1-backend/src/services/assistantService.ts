@@ -697,14 +697,32 @@ Please provide a helpful response to the customer's current message based on the
     }
 
     try {
-      // Update the assistant's knowledge file
-      const fileUpdated = await assistantFileManager.updateKnowledgeFile(
-        assistantId,
-        knowledge
-      );
-
-      if (!fileUpdated) {
-        throw new Error('Failed to update knowledge file');
+      // Update the assistant's knowledge directly in OpenAI
+      // First, try the new direct update method
+      try {
+        const { openaiAssistantUpdater } = await import('./openaiAssistantUpdater');
+        const updateResult = await openaiAssistantUpdater.updateAssistantKnowledge(
+          assistantId,
+          knowledge
+        );
+        
+        if (!updateResult.success) {
+          logger.warn('Failed to update OpenAI assistant directly, falling back to local storage', {
+            assistantId,
+            error: updateResult.message
+          });
+          // Fall back to local storage
+          await assistantFileManager.updateKnowledgeFile(assistantId, knowledge);
+        } else {
+          logger.info('Successfully updated OpenAI assistant instructions', {
+            assistantId,
+            category: knowledge.category
+          });
+        }
+      } catch (error) {
+        logger.error('Error updating OpenAI assistant, using local storage fallback:', error);
+        // Fall back to local storage
+        await assistantFileManager.updateKnowledgeFile(assistantId, knowledge);
       }
 
       // Also create a thread to inform the assistant of the update

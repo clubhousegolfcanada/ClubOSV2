@@ -71,17 +71,30 @@ protectedRouter.post('/parse-and-route',
 
       // Step 2: Route to the appropriate assistant
       const routeResult = await knowledgeRouter.routeToAssistant(parsedUpdate);
+      
+      // Log the result for debugging
+      logger.info('Knowledge routing result:', {
+        success: routeResult.success,
+        assistant: routeResult.assistant,
+        message: routeResult.message
+      });
 
-      // Even if assistant update fails, the knowledge was saved to database
-      const isPartialSuccess = !routeResult.success && parsedUpdate;
+      // Determine the appropriate message based on what happened
+      let message = 'Knowledge saved successfully to database';
+      if (routeResult.success) {
+        message = 'Knowledge saved and OpenAI assistant updated successfully';
+      } else if (!routeResult.success && parsedUpdate) {
+        message = `Knowledge saved to database but OpenAI update failed: ${routeResult.error || 'Unknown error'}`;
+      }
       
       res.json({
-        success: true, // Always true if knowledge was saved to DB
+        success: true, // True if knowledge was saved to DB
         data: {
           parsed: parsedUpdate,
           routing: routeResult,
-          message: 'Knowledge saved successfully to database', // Simple success message
-          assistantUpdateStatus: routeResult.success ? 'success' : 'skipped'
+          message,
+          assistantUpdateStatus: routeResult.success ? 'success' : 'failed',
+          openAIUpdateError: !routeResult.success ? routeResult.error : undefined
         }
       });
     } catch (error) {

@@ -245,16 +245,27 @@ const RequestForm: React.FC = () => {
         );
         
         if (response.data.success) {
-          notify('success', 'Knowledge added successfully! The AI will now use this information.');
+          const parsed = response.data.data.parsed;
+          const openAIStatus = response.data.data.assistantUpdateStatus;
+          const openAIError = response.data.data.openAIUpdateError;
+          
+          // Show appropriate notification based on OpenAI update status
+          if (openAIStatus === 'success') {
+            notify('success', 'Knowledge added and OpenAI assistant updated successfully!');
+          } else if (openAIStatus === 'failed') {
+            notify('warning', `Knowledge saved locally but OpenAI update failed: ${openAIError || 'Check logs'}`);
+          } else {
+            notify('success', 'Knowledge added successfully!');
+          }
+          
           reset();
           
-          // Show what was added
-          const parsed = response.data.data.parsed;
+          // Show what was added with OpenAI status
           setLastResponse({
-            response: `✅ Knowledge Added Successfully!\n\nCategory: ${parsed.category}\nTarget Assistant: ${parsed.target_assistant}\nIntent: ${parsed.intent}\n\nValue: "${parsed.value}"\n\nThe AI will now use this knowledge when answering related questions.`,
-            confidence: 1.0,
+            response: `${openAIStatus === 'success' ? '✅' : '⚠️'} Knowledge ${openAIStatus === 'success' ? 'Added & Synced' : 'Saved Locally'}!\n\nCategory: ${parsed.category}\nTarget Assistant: ${parsed.target_assistant}\nIntent: ${parsed.intent}\n\nValue: "${parsed.value}"\n\nOpenAI Update: ${openAIStatus === 'success' ? '✅ Successful' : `❌ Failed (${openAIError || 'See logs'})`}\nDatabase: ✅ Saved\n\n${openAIStatus === 'success' ? 'The AI will now use this knowledge when answering related questions.' : 'Knowledge saved locally but may not be available to AI until sync is fixed.'}`,
+            confidence: openAIStatus === 'success' ? 1.0 : 0.5,
             route: 'Knowledge',
-            status: 'completed'
+            status: openAIStatus === 'success' ? 'completed' : 'partial'
           } as any);
           setShowResponse(true);
           setIsNewSubmission(true);
