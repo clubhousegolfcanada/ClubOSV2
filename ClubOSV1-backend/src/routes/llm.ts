@@ -13,6 +13,7 @@ import { body } from 'express-validator';
 import { strictLimiter } from '../middleware/security';
 import { authenticate } from '../middleware/auth';
 import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
+import { llmRateLimiter } from '../middleware/rateLimiter';
 import OpenAI from 'openai';
 
 // Only initialize OpenAI if API key is present
@@ -110,6 +111,7 @@ router.get('/health', (req: Request, res: Response) => {
 router.post('/request', 
   authenticate,  // Re-enabled authentication
   adminOrOperator,  // Re-enabled role check
+  llmRateLimiter,  // Rate limiting for AI requests
   debugMiddleware, // Log before validation
   // strictLimiter, // TEMPORARILY DISABLED due to Railway proxy issues
   // validate(requestValidation.llmRequest), // TEMPORARILY DISABLED for debugging

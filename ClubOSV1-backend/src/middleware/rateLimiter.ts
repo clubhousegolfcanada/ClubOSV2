@@ -19,7 +19,7 @@ const keyGenerator = (req: Request): string => {
 // Different rate limits for different endpoints
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 5000 : 500, // Increased to 5000 in production to prevent issues
+  max: process.env.NODE_ENV === 'production' ? 10000 : 1000, // Very liberal: 10000 requests per 15 minutes
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -63,10 +63,10 @@ export const rateLimiter = rateLimit({
   }
 });
 
-// Stricter rate limit for authentication endpoints
+// Stricter rate limit for authentication endpoints (but still liberal for testing)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Increased to 20 login attempts per 15 minutes (was 5)
+  max: 50, // Liberal for testing: 50 login attempts per 15 minutes
   skipSuccessfulRequests: true, // Don't count successful logins
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
@@ -96,10 +96,10 @@ export const authRateLimiter = rateLimit({
   }
 });
 
-// API-specific rate limiter for LLM endpoints (more expensive)
+// API-specific rate limiter for LLM endpoints (more expensive but liberal for testing)
 export const llmRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // Increased for testing (was 10)
+  max: 100, // Very liberal for testing: 100 AI requests per minute
   message: 'Too many AI requests, please slow down.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -115,7 +115,7 @@ export const llmRateLimiter = rateLimit({
 // Rate limiter for sending messages
 export const messageSendLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // 30 messages per minute per user
+  max: 100, // Liberal for testing: 100 messages per minute per user
   message: 'Too many messages sent, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

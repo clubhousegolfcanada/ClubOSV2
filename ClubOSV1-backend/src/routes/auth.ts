@@ -11,11 +11,13 @@ import { authenticate, generateToken, verifyToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { transformUser } from '../utils/transformers';
 import { passwordChangeLimiter } from '../middleware/passwordChangeLimiter';
+import { authRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
 // Customer Registration endpoint (public)
 router.post('/signup',
+  authRateLimiter,
   validate([
     body('email')
       .trim()
@@ -234,6 +236,7 @@ router.post('/forgot-password',
 
 // Login endpoint
 router.post('/login',
+  authRateLimiter,
   validate([
     body('email')
       .trim()
