@@ -20,23 +20,17 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-# Check for DATABASE_URL
-if [ -z "$DATABASE_URL" ]; then
-    echo -e "${YELLOW}⚠️  Loading DATABASE_URL from .env...${NC}"
-    source .env
-fi
+# Load environment variables
+echo -e "${YELLOW}⚠️  Loading environment variables from .env...${NC}"
+export $(cat .env | grep -v '^#' | xargs)
 
+# Check for DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
     echo -e "${RED}❌ Error: DATABASE_URL not set${NC}"
     exit 1
 fi
 
-# Check for OPENAI_API_KEY
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo -e "${YELLOW}⚠️  Loading OPENAI_API_KEY from .env...${NC}"
-    source .env
-fi
-
+# Check for OPENAI_API_KEY  
 if [ -z "$OPENAI_API_KEY" ]; then
     echo -e "${RED}❌ Error: OPENAI_API_KEY not set${NC}"
     echo "This is required to generate embeddings"

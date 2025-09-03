@@ -42,6 +42,12 @@ interface PatternResult {
   confidence?: number;
   reason?: string;
   learnFromResponse?: boolean;
+  reasoning?: {
+    thought_process: string;
+    next_steps: string[];
+    questions_to_ask?: string[];
+    confidence_explanation: string;
+  };
 }
 
 interface LearningConfig {
@@ -195,6 +201,9 @@ export class PatternLearningService {
         };
       }
 
+      // Get conversation history for context
+      const conversationHistory = await this.getConversationHistory(conversationId);
+      
       // Build context for variable replacement
       const templateContext = await this.buildTemplateContext(message, {
         customerName,
@@ -203,33 +212,44 @@ export class PatternLearningService {
         pattern: bestMatch
       });
       
-      // Apply confidence-based automation
+      // Use GPT-4o for reasoning and adaptive response generation
+      const reasonedResponse = await this.generateReasonedResponse(
+        message,
+        bestMatch,
+        templateContext,
+        conversationHistory
+      );
+      
+      // Apply confidence-based automation with reasoning
       if (bestMatch.confidence_score >= this.config.autoExecuteThreshold && bestMatch.auto_executable) {
         return {
           action: 'auto_execute',
           pattern: bestMatch,
           patternId: bestMatch.id,
-          response: this.fillResponseTemplate(bestMatch.response_template, templateContext),
-          actions: this.processActionTemplate(bestMatch.action_template, templateContext),
-          confidence: bestMatch.confidence_score
+          response: reasonedResponse.response,
+          actions: reasonedResponse.actions,
+          confidence: bestMatch.confidence_score,
+          reasoning: reasonedResponse.reasoning
         };
       } else if (bestMatch.confidence_score >= this.config.suggestThreshold) {
         return {
           action: 'suggest',
           pattern: bestMatch,
           patternId: bestMatch.id,
-          response: this.fillResponseTemplate(bestMatch.response_template, templateContext),
-          actions: this.processActionTemplate(bestMatch.action_template, templateContext),
-          confidence: bestMatch.confidence_score
+          response: reasonedResponse.response,
+          actions: reasonedResponse.actions,
+          confidence: bestMatch.confidence_score,
+          reasoning: reasonedResponse.reasoning
         };
       } else if (bestMatch.confidence_score >= this.config.queueThreshold) {
         return {
           action: 'queue',
           pattern: bestMatch,
           patternId: bestMatch.id,
-          response: this.fillResponseTemplate(bestMatch.response_template, templateContext),
-          actions: this.processActionTemplate(bestMatch.action_template, templateContext),
-          confidence: bestMatch.confidence_score
+          response: reasonedResponse.response,
+          actions: reasonedResponse.actions,
+          confidence: bestMatch.confidence_score,
+          reasoning: reasonedResponse.reasoning
         };
       } else {
         return {
@@ -1018,6 +1038,198 @@ export class PatternLearningService {
     if (value === 'false') return false;
     if (!isNaN(Number(value))) return Number(value);
     return value;
+  }
+
+  /**
+   * Generate reasoned response using GPT-4o for adaptive conversation handling
+   * This is where the real AI magic happens - not just template filling
+   */
+  private async generateReasonedResponse(
+    message: string,
+    pattern: Pattern,
+    context: any,
+    conversationHistory: any[]
+  ): Promise<{
+    response: string;
+    actions: any[];
+    reasoning: {
+      thought_process: string;
+      next_steps: string[];
+      questions_to_ask?: string[];
+      confidence_explanation: string;
+    };
+  }> {
+    try {
+      // If no OpenAI, fall back to template filling
+      if (!this.openai) {
+        return {
+          response: this.fillResponseTemplate(pattern.response_template, context),
+          actions: this.processActionTemplate(pattern.action_template, context),
+          reasoning: {
+            thought_process: 'Using template-based response (no AI available)',
+            next_steps: ['Send response', 'Execute actions'],
+            confidence_explanation: 'Pattern match based on historical data'
+          }
+        };
+      }
+
+      // Build comprehensive context for GPT-4o
+      const systemPrompt = `You are an AI customer service agent for a golf simulator facility.
+You have access to a pattern that previously worked for similar requests, but you should REASON through the current situation and adapt your response accordingly.
+
+Pattern Type: ${pattern.pattern_type}
+Pattern Confidence: ${pattern.confidence_score}
+Previous Success Rate: ${pattern.success_count}/${pattern.execution_count}
+
+Your job is to:
+1. Analyze the customer's message in context of the conversation
+2. Determine if the pattern's template response is appropriate
+3. Adapt and improve the response for this specific situation
+4. Identify any clarifying questions that should be asked
+5. Determine next steps and actions
+
+Be conversational, helpful, and proactive. Don't just fill templates - think about what the customer actually needs.`;
+
+      const userPrompt = `Customer Message: "${message}"
+Customer Name: ${context.customer_name || 'Unknown'}
+Phone: ${context.phone_number}
+
+Pattern Template Response: "${pattern.response_template}"
+Pattern Actions: ${JSON.stringify(pattern.action_template)}
+
+Conversation History:
+${conversationHistory.map(h => `${h.sender}: ${h.message}`).join('\n') || 'No previous messages'}
+
+Context Variables:
+${JSON.stringify(context, null, 2)}
+
+Please provide:
+1. An adapted, natural response for this specific customer and situation
+2. A list of actions to take (if any)
+3. Your reasoning process
+4. Any clarifying questions you would ask
+5. Next steps in the conversation`;
+
+      // Use GPT-4o for advanced reasoning
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o', // Using GPT-4o for better reasoning
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3, // Lower temperature for consistency
+        response_format: { type: "json_object" },
+        max_tokens: 1000
+      });
+
+      const result = JSON.parse(completion.choices[0].message.content || '{}');
+
+      // Validate and structure the response
+      return {
+        response: result.response || this.fillResponseTemplate(pattern.response_template, context),
+        actions: result.actions || this.processActionTemplate(pattern.action_template, context),
+        reasoning: {
+          thought_process: result.reasoning || 'Analyzed customer need and adapted response',
+          next_steps: result.next_steps || ['Send response', 'Monitor for follow-up'],
+          questions_to_ask: result.clarifying_questions,
+          confidence_explanation: result.confidence_explanation || `Based on ${pattern.execution_count} similar interactions`
+        }
+      };
+
+    } catch (error) {
+      logger.error('[PatternLearning] GPT-4o reasoning failed, falling back to templates', error);
+      
+      // Fallback to template-based response
+      return {
+        response: this.fillResponseTemplate(pattern.response_template, context),
+        actions: this.processActionTemplate(pattern.action_template, context),
+        reasoning: {
+          thought_process: 'Fallback to template due to AI error',
+          next_steps: ['Send template response'],
+          confidence_explanation: 'Using proven pattern template'
+        }
+      };
+    }
+  }
+
+  /**
+   * Get conversation history for context
+   */
+  private async getConversationHistory(conversationId: string, limit: number = 10): Promise<any[]> {
+    try {
+      const result = await db.query(`
+        SELECT 
+          sender_type as sender,
+          message_text as message,
+          created_at
+        FROM conversation_messages
+        WHERE conversation_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+      `, [conversationId, limit]);
+
+      return result.rows.reverse(); // Reverse to get chronological order
+    } catch (error) {
+      logger.warn('[PatternLearning] Could not fetch conversation history', error);
+      return [];
+    }
+  }
+
+  /**
+   * Analyze conversation for multi-step planning
+   */
+  async planConversationSteps(
+    message: string,
+    conversationId: string,
+    customerContext: any
+  ): Promise<{
+    steps: Array<{
+      step: number;
+      action: string;
+      description: string;
+      condition?: string;
+    }>;
+    current_step: number;
+    estimated_resolution_time: string;
+  }> {
+    try {
+      if (!this.openai) {
+        return {
+          steps: [{ step: 1, action: 'respond', description: 'Send response to customer' }],
+          current_step: 1,
+          estimated_resolution_time: 'immediate'
+        };
+      }
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{
+          role: 'system',
+          content: 'Analyze this customer service request and create a step-by-step resolution plan.'
+        }, {
+          role: 'user',
+          content: `Message: "${message}"\nContext: ${JSON.stringify(customerContext)}\n\nCreate a structured plan with steps, conditions, and estimated time.`
+        }],
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      });
+
+      const plan = JSON.parse(completion.choices[0].message.content || '{}');
+      
+      return {
+        steps: plan.steps || [],
+        current_step: 1,
+        estimated_resolution_time: plan.estimated_time || 'unknown'
+      };
+
+    } catch (error) {
+      logger.error('[PatternLearning] Conversation planning failed', error);
+      return {
+        steps: [{ step: 1, action: 'escalate', description: 'Escalate to human agent' }],
+        current_step: 1,
+        estimated_resolution_time: 'unknown'
+      };
+    }
   }
 }
 

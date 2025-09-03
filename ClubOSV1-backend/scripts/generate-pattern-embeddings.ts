@@ -8,9 +8,14 @@
  * Usage: npm run generate-embeddings
  */
 
+import dotenv from 'dotenv';
+import path from 'path';
 import { Pool } from 'pg';
 import OpenAI from 'openai';
 import { logger } from '../src/utils/logger';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Database connection
 const db = new Pool({

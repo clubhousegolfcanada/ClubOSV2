@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS pattern_lifecycle_events (
   new_confidence FLOAT,
   reason TEXT,
   metadata JSONB DEFAULT '{}',
-  created_by INTEGER REFERENCES users(id),
+  created_by UUID REFERENCES users(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS archived_patterns (
   failure_count INTEGER,
   archived_reason VARCHAR(100),
   archived_at TIMESTAMP DEFAULT NOW(),
-  archived_by INTEGER REFERENCES users(id),
+  archived_by UUID REFERENCES users(id),
   
   -- Keep the embedding for potential future use
   embedding FLOAT[],
