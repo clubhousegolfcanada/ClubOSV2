@@ -19,9 +19,11 @@ import {
   ChevronRight,
   Filter,
   Search,
-  BarChart3
+  BarChart3,
+  Radio
 } from 'lucide-react';
 import apiClient from '@/api/http';
+import { LivePatternDashboard } from './LivePatternDashboard';
 
 interface PatternReasoning {
   thought_process: string;
@@ -82,7 +84,7 @@ export const OperationsPatterns: React.FC = () => {
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'patterns' | 'config'>('overview');
+  const [activeView, setActiveView] = useState<'live' | 'overview' | 'patterns' | 'config'>('live');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [config, setConfig] = useState<any>(null);
@@ -263,6 +265,19 @@ export const OperationsPatterns: React.FC = () => {
       {/* Navigation Tabs */}
       <div className="flex space-x-1 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
         <button
+          onClick={() => setActiveView('live')}
+          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+            activeView === 'live' 
+              ? 'bg-primary text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-1">
+            <Radio className="h-4 w-4" />
+            <span>Live</span>
+          </div>
+        </button>
+        <button
           onClick={() => setActiveView('overview')}
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'overview' 
@@ -293,6 +308,11 @@ export const OperationsPatterns: React.FC = () => {
           Configuration
         </button>
       </div>
+
+      {/* Live View */}
+      {activeView === 'live' && (
+        <LivePatternDashboard />
+      )}
 
       {/* Overview View */}
       {activeView === 'overview' && (

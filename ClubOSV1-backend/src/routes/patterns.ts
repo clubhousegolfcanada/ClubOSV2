@@ -1035,12 +1035,17 @@ router.post('/queue/:id/respond',
 
         // If modified, learn from the modification
         if (action === 'modify' && sugg.pattern_id) {
+          const conversationData = await db.query(
+            'SELECT phone_number FROM openphone_conversations WHERE id::text = $1',
+            [sugg.conversation_id]
+          );
+          
           await patternLearningService.learnFromHumanResponse(
             sugg.suggested_response,
             finalResponse,
             [],
             sugg.conversation_id,
-            conversation.rows[0]?.phone_number,
+            conversationData.rows[0]?.phone_number,
             operatorId
           );
         }
