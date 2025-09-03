@@ -691,8 +691,8 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
                 <p className="text-gray-600 mb-2">Paste your OpenPhone CSV data here</p>
                 <textarea
                   id="csv-import"
-                  placeholder="id,conversationBody,sentAt,to,from,direction,createdAt
-AC1BD1e24,CN6cc5c67b4 Appreciate it!,1.9027E+10,19022E+10,incoming,2025-09-02T21:05:34.885Z..."
+                  placeholder="id,conversationId,body,sentAt,to,from,direction,createdAt
+AC1BD1e24,AC3BDd48d8,Thank you,1.9027E+10,+19022345678,+16037891234,incoming,2025-09-02T21:05:34.885Z..."
                   className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary"
                 />
                 <p className="text-xs text-gray-500 mt-2">
@@ -794,7 +794,7 @@ AC1BD1e24,CN6cc5c67b4 Appreciate it!,1.9027E+10,19022E+10,incoming,2025-09-02T21
                 <h3 className="font-medium text-blue-900 mb-2">📝 Expected CSV Format</h3>
                 <p className="text-sm text-blue-800 mb-3">Your OpenPhone export should have these columns:</p>
                 <code className="block bg-white p-3 rounded text-xs">
-                  id, conversationBody, sentAt, to, from, direction, createdAt
+                  id, conversationId, body, sentAt, to, from, direction, createdAt
                 </code>
                 <p className="text-xs text-blue-700 mt-2">
                   The system will automatically identify customer messages (incoming) and operator responses (outgoing),

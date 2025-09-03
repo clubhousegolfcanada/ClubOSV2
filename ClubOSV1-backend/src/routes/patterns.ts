@@ -499,18 +499,20 @@ router.post('/import-csv',
       const lines = csvData.split('\n');
       const headers = parseCSVLine(lines[0]);
       
-      // Find column indices
+      // Find column indices - handle both formats
       const idCol = headers.indexOf('id');
-      const bodyCol = headers.indexOf('conversationBody');
+      const bodyCol = headers.indexOf('body') !== -1 ? headers.indexOf('body') : headers.indexOf('conversationBody');
+      const conversationIdCol = headers.indexOf('conversationId');
       const directionCol = headers.indexOf('direction');
       const fromCol = headers.indexOf('from');
       const toCol = headers.indexOf('to');
       const sentAtCol = headers.indexOf('sentAt');
+      const createdAtCol = headers.indexOf('createdAt');
       
       if (bodyCol === -1 || directionCol === -1) {
         return res.status(400).json({ 
           success: false, 
-          error: 'Invalid CSV format. Required columns: conversationBody, direction' 
+          error: 'Invalid CSV format. Required columns: body (or conversationBody), direction' 
         });
       }
       
@@ -524,11 +526,12 @@ router.post('/import-csv',
         if (cols.length >= headers.length) {
           messages.push({
             id: cols[idCol] || '',
+            conversationId: conversationIdCol !== -1 ? cols[conversationIdCol] : '',
             body: cols[bodyCol] || '',
             direction: cols[directionCol] || '',
             from: cols[fromCol] || '',
             to: cols[toCol] || '',
-            sentAt: cols[sentAtCol] || ''
+            sentAt: cols[sentAtCol] || cols[createdAtCol] || ''
           });
         }
       }
@@ -646,8 +649,8 @@ router.post('/import-csv',
         // Skip automated messages
         if (msg.body.includes('CN6cc5c67b4') || msg.body.includes('CN2cc08d4c')) continue;
         
-        // Extract conversation ID from message ID (first part before any suffix)
-        const convId = msg.id ? msg.id.split('_')[0].substring(0, 10) : '';
+        // Use the actual conversationId from the CSV if available
+        const convId = msg.conversationId || (msg.id ? msg.id.split('_')[0].substring(0, 10) : '');
         const phoneKey = msg.direction === 'incoming' ? msg.from : msg.to;
         const timestamp = new Date(msg.sentAt || Date.now()).getTime();
         
