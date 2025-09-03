@@ -20,7 +20,10 @@ import {
   Filter,
   Search,
   BarChart3,
-  History
+  History,
+  Upload,
+  FileText,
+  Loader2
 } from 'lucide-react';
 import apiClient from '@/api/http';
 
@@ -83,7 +86,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'patterns' | 'config' | 'history'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'patterns' | 'config' | 'history' | 'import'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [config, setConfig] = useState<any>(null);
@@ -302,6 +305,19 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
           <div className="flex items-center justify-center space-x-1">
             <History className="h-4 w-4" />
             <span>History ({executionHistory.length})</span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveView('import')}
+          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+            activeView === 'import' 
+              ? 'bg-primary text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-1">
+            <Upload className="h-4 w-4" />
+            <span>Import</span>
           </div>
         </button>
       </div>
@@ -630,6 +646,131 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
                 <Zap className="h-4 w-4" />
                 <span>Test with GPT-4o Reasoning</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import View */}
+      {activeView === 'import' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-2 bg-purple-600 text-white rounded-lg">
+                <Upload className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Import OpenPhone Conversations</h2>
+                <p className="text-sm text-gray-600">Accelerate pattern learning by importing your conversation history</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">Paste your OpenPhone CSV data here</p>
+                <textarea
+                  id="csv-import"
+                  placeholder="id,conversationBody,sentAt,to,from,direction,createdAt
+AC1BD1e24,CN6cc5c67b4 Appreciate it!,1.9027E+10,19022E+10,incoming,2025-09-02T21:05:34.885Z..."
+                  className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Tip: Export your OpenPhone conversations as CSV and paste the entire contents here
+                </p>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <button
+                  id="import-csv-btn"
+                  onClick={async () => {
+                    const textarea = document.getElementById('csv-import') as HTMLTextAreaElement;
+                    const button = document.getElementById('import-csv-btn') as HTMLButtonElement;
+                    const resultsDiv = document.getElementById('import-results') as HTMLDivElement;
+                    
+                    if (!textarea?.value) {
+                      alert('Please paste CSV data first');
+                      return;
+                    }
+
+                    button.disabled = true;
+                    button.innerHTML = '<span class="flex items-center"><svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>Processing...</span>';
+                    
+                    try {
+                      const response = await apiClient.post('/patterns/import-csv', {
+                        csvData: textarea.value
+                      });
+                      
+                      const result = response.data;
+                      resultsDiv.innerHTML = `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <h3 class="font-semibold text-green-800 mb-2">✅ Import Successful!</h3>
+                          <ul class="space-y-1 text-sm text-green-700">
+                            <li>📊 Processed ${result.totalMessages || 0} messages</li>
+                            <li>🔍 Analyzed ${result.conversationsAnalyzed || 0} conversations</li>
+                            <li>✨ Created ${result.newPatterns || 0} new patterns</li>
+                            <li>📈 Enhanced ${result.enhancedPatterns || 0} existing patterns</li>
+                            <li>🧠 Average confidence: ${((result.avgConfidence || 0) * 100).toFixed(1)}%</li>
+                          </ul>
+                          <p class="text-xs text-green-600 mt-3">
+                            GPT-4o analyzed the conversations and extracted reusable patterns. 
+                            View them in the Patterns tab.
+                          </p>
+                        </div>
+                      `;
+                      
+                      // Refresh patterns list
+                      await fetchPatterns();
+                      await fetchStats();
+                      
+                      // Clear the textarea after successful import
+                      setTimeout(() => {
+                        textarea.value = '';
+                      }, 3000);
+                      
+                    } catch (error: any) {
+                      resultsDiv.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <h3 class="font-semibold text-red-800 mb-2">❌ Import Failed</h3>
+                          <p class="text-sm text-red-700">${error.response?.data?.error || error.message || 'Unknown error occurred'}</p>
+                        </div>
+                      `;
+                    } finally {
+                      button.disabled = false;
+                      button.innerHTML = '<span class="flex items-center"><svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>Import CSV</span>';
+                    }
+                  }}
+                  className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors flex items-center"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import CSV
+                </button>
+                
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900 mb-2">How it works:</h3>
+                  <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                    <li>GPT-4o analyzes each conversation</li>
+                    <li>Extracts patterns from operator responses</li>
+                    <li>Groups similar messages automatically</li>
+                    <li>Creates reusable response templates</li>
+                    <li>Sets initial confidence based on consistency</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div id="import-results"></div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">📝 Expected CSV Format</h3>
+                <p className="text-sm text-blue-800 mb-3">Your OpenPhone export should have these columns:</p>
+                <code className="block bg-white p-3 rounded text-xs">
+                  id, conversationBody, sentAt, to, from, direction, createdAt
+                </code>
+                <p className="text-xs text-blue-700 mt-2">
+                  The system will automatically identify customer messages (incoming) and operator responses (outgoing),
+                  then use GPT-4o to extract patterns and create templates with dynamic variables.
+                </p>
+              </div>
             </div>
           </div>
         </div>

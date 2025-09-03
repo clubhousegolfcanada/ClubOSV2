@@ -20,6 +20,7 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { patternLearningService } from '../services/patternLearningService';
 import { body, param, query, validationResult } from 'express-validator';
+import OpenAI from 'openai';
 
 const router = Router();
 
@@ -415,6 +416,241 @@ router.post('/test',
     } catch (error) {
       logger.error('[Patterns API] Failed to test pattern', error);
       res.status(500).json({ success: false, error: 'Failed to test pattern' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/import-csv
+ * Import OpenPhone CSV data and extract patterns using GPT-4o
+ */
+router.post('/import-csv',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [body('csvData').isString().notEmpty()],
+  async (req: Request, res: Response) => {
+    try {
+      const { csvData } = req.body;
+      
+      // Parse CSV data
+      const lines = csvData.split('\n');
+      const headers = lines[0].split(',').map((h: string) => h.trim());
+      
+      // Find column indices
+      const idCol = headers.indexOf('id');
+      const bodyCol = headers.indexOf('conversationBody');
+      const directionCol = headers.indexOf('direction');
+      const fromCol = headers.indexOf('from');
+      const toCol = headers.indexOf('to');
+      const sentAtCol = headers.indexOf('sentAt');
+      
+      if (bodyCol === -1 || directionCol === -1) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid CSV format. Required columns: conversationBody, direction' 
+        });
+      }
+      
+      // Parse messages
+      const messages = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Simple CSV parsing (handles basic cases)
+        const cols = line.split(',');
+        if (cols.length >= headers.length) {
+          messages.push({
+            id: cols[idCol] || '',
+            body: cols[bodyCol] || '',
+            direction: cols[directionCol] || '',
+            from: cols[fromCol] || '',
+            to: cols[toCol] || '',
+            sentAt: cols[sentAtCol] || ''
+          });
+        }
+      }
+      
+      logger.info(`[Patterns Import] Processing ${messages.length} messages`);
+      
+      // Group messages into conversations (30-minute windows)
+      const conversations = new Map();
+      
+      for (const msg of messages) {
+        // Skip automated messages
+        if (msg.body.includes('CN6cc5c67b4') || msg.body.includes('CN2cc08d4c')) continue;
+        
+        // Create conversation key based on phone number and time window
+        const timestamp = new Date(msg.sentAt || Date.now()).getTime();
+        const timeWindow = Math.floor(timestamp / (30 * 60 * 1000)); // 30-minute windows
+        const phoneKey = msg.direction === 'incoming' ? msg.from : msg.to;
+        const convKey = `${phoneKey}_${timeWindow}`;
+        
+        if (!conversations.has(convKey)) {
+          conversations.set(convKey, { customer: [], operator: [] });
+        }
+        
+        const conv = conversations.get(convKey);
+        if (msg.direction === 'incoming') {
+          conv.customer.push(msg.body);
+        } else {
+          conv.operator.push(msg.body);
+        }
+      }
+      
+      logger.info(`[Patterns Import] Found ${conversations.size} conversations`);
+      
+      // Analyze conversations with GPT-4o
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const patterns = [];
+      let conversationsAnalyzed = 0;
+      
+      for (const [key, conv] of conversations) {
+        if (conv.customer.length > 0 && conv.operator.length > 0) {
+          conversationsAnalyzed++;
+          
+          // Take first customer message and first operator response
+          const customerMsg = conv.customer[0];
+          const operatorMsg = conv.operator[0];
+          
+          try {
+            const completion = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: [
+                {
+                  role: "system",
+                  content: `Analyze this customer service interaction and extract a reusable pattern.
+                          Return JSON with:
+                          - type: booking|tech_issue|access|faq|gift_cards|hours|membership|general
+                          - trigger: generalized customer message (remove specific names/times)
+                          - response: template with variables like {{customer_name}}, {{bay_number}}
+                          - confidence: 0.5-0.9 based on pattern clarity
+                          - variables: array of template variables found`
+                },
+                {
+                  role: "user",
+                  content: `Customer: ${customerMsg}\nOperator: ${operatorMsg}`
+                }
+              ],
+              response_format: { type: "json_object" }
+            });
+            
+            const result = JSON.parse(completion.choices[0].message.content || '{}');
+            
+            if (result.trigger && result.response) {
+              patterns.push({
+                type: result.type || 'general',
+                trigger: result.trigger,
+                response: result.response,
+                confidence: result.confidence || 0.6,
+                variables: result.variables || []
+              });
+            }
+          } catch (error) {
+            logger.error('[Patterns Import] GPT-4o analysis failed', error);
+          }
+        }
+      }
+      
+      // Deduplicate and insert patterns
+      const uniquePatterns = new Map();
+      for (const pattern of patterns) {
+        const key = `${pattern.type}_${pattern.trigger.substring(0, 50)}`;
+        if (!uniquePatterns.has(key) || uniquePatterns.get(key).confidence < pattern.confidence) {
+          uniquePatterns.set(key, pattern);
+        }
+      }
+      
+      let newPatterns = 0;
+      let enhancedPatterns = 0;
+      let totalConfidence = 0;
+      
+      for (const pattern of uniquePatterns.values()) {
+        try {
+          // Check if similar pattern exists
+          const existing = await db.query(
+            `SELECT id, confidence_score FROM decision_patterns 
+             WHERE pattern_type = $1 
+             AND (
+               similarity(trigger_text, $2) > 0.7
+               OR LOWER(trigger_text) LIKE LOWER($3)
+             )`,
+            [pattern.type, pattern.trigger, `%${pattern.trigger.substring(0, 30)}%`]
+          );
+          
+          if (existing.rows.length === 0) {
+            // Insert new pattern
+            await db.query(
+              `INSERT INTO decision_patterns (
+                pattern_type,
+                pattern_signature,
+                trigger_text,
+                response_template,
+                confidence_score,
+                auto_executable,
+                execution_count,
+                success_count,
+                is_active,
+                learned_from,
+                template_variables,
+                created_at
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+              [
+                pattern.type,
+                `csv_import_${Date.now()}_${newPatterns}`,
+                pattern.trigger,
+                pattern.response,
+                pattern.confidence,
+                false, // Require manual approval
+                0,
+                0,
+                true,
+                'openphone_csv_import',
+                JSON.stringify(pattern.variables)
+              ]
+            );
+            newPatterns++;
+            totalConfidence += pattern.confidence;
+          } else {
+            // Boost existing pattern confidence
+            const newConfidence = Math.min(existing.rows[0].confidence_score + 0.05, 0.95);
+            await db.query(
+              `UPDATE decision_patterns 
+               SET confidence_score = $1,
+                   execution_count = execution_count + 1,
+                   last_modified = NOW()
+               WHERE id = $2`,
+              [newConfidence, existing.rows[0].id]
+            );
+            enhancedPatterns++;
+            totalConfidence += newConfidence;
+          }
+        } catch (error) {
+          logger.error('[Patterns Import] Failed to save pattern', error);
+        }
+      }
+      
+      const avgConfidence = (newPatterns + enhancedPatterns) > 0 
+        ? totalConfidence / (newPatterns + enhancedPatterns) 
+        : 0;
+      
+      logger.info(`[Patterns Import] Complete - New: ${newPatterns}, Enhanced: ${enhancedPatterns}`);
+      
+      res.json({
+        success: true,
+        totalMessages: messages.length,
+        conversationsAnalyzed,
+        newPatterns,
+        enhancedPatterns,
+        avgConfidence
+      });
+      
+    } catch (error) {
+      logger.error('[Patterns Import] Failed to import CSV', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to import CSV data. Please check the format and try again.' 
+      });
     }
   }
 );
