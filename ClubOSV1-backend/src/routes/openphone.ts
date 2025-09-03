@@ -469,38 +469,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
               } catch (err) {
                 logger.error('[Pattern Learning] Error:', err);
               }
-              
-              // Legacy AI automations fallback (will be removed)
-              if (false) { // Disabled - using pattern learning instead
-                const automationResponse = await aiAutomationService.processMessage(
-                  phoneNumber, 
-                  messageText,
-                  existingConv.rows[0].id,
-                  false
-                );
-                
-                if (automationResponse.handled && automationResponse.response) {
-                  logger.info('Legacy automation response', {
-                    phoneNumber,
-                    response: automationResponse.response.substring(0, 100)
-                  });
-                
-                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                if (defaultNumber) {
-                  await openPhoneService.sendMessage(
-                    phoneNumber,
-                    defaultNumber,
-                    automationResponse.response
-                  );
-                }
-              } else {
-                // Message wasn't automated - store for learning
-                await aiAutomationService.trackMissedAutomation(
-                  phoneNumber,
-                  messageText,
-                  existingConv.rows[0].id
-                );
-              }
             } catch (notifError) {
               // Don't fail webhook if notification fails
               logger.error('Failed to send push notification:', notifError);
