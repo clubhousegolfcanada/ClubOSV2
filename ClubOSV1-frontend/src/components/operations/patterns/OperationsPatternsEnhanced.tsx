@@ -451,58 +451,147 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Types</option>
-                <option value="booking">Booking</option>
-                <option value="tech_issue">Tech Issue</option>
-                <option value="access">Access</option>
-                <option value="faq">FAQ</option>
-                <option value="gift_cards">Gift Cards</option>
-                <option value="hours">Hours</option>
+                <option value="booking">📅 Booking</option>
+                <option value="tech_issue">🔧 Tech Issue</option>
+                <option value="access">🚪 Access</option>
+                <option value="faq">❓ FAQ</option>
+                <option value="gift_cards">🎁 Gift Cards</option>
+                <option value="hours">🕐 Hours</option>
+                <option value="general">💬 General</option>
               </select>
             </div>
           </div>
 
-          {/* Patterns List */}
-          <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-            {filteredPatterns.map((pattern) => (
-              <div key={pattern.id} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded">
-                        {pattern.pattern_type}
-                      </span>
-                      <span className={`text-xs font-medium px-2 py-1 rounded ${getConfidenceBg(pattern.confidence_score)} ${getConfidenceColor(pattern.confidence_score)}`}>
-                        {(pattern.confidence_score * 100).toFixed(0)}%
-                      </span>
-                      {pattern.auto_executable && (
-                        <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-600 rounded">
-                          Auto
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-900 font-medium mb-1">
-                      {pattern.trigger_text.substring(0, 100)}...
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Used {pattern.execution_count} times • 
-                      Success rate: {pattern.execution_count > 0 
-                        ? ((pattern.success_count / pattern.execution_count) * 100).toFixed(0)
-                        : 0}%
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => togglePattern(pattern.id, pattern.is_active)}
-                    className={`ml-4 p-2 rounded-lg transition-colors ${
-                      pattern.is_active 
-                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                    }`}
-                  >
-                    {pattern.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  </button>
-                </div>
+          {/* Pattern Categories Summary */}
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div>
+                <span className="font-medium text-gray-600">📅 Booking:</span>
+                <span className="ml-1 text-gray-900">{patterns.filter(p => p.pattern_type === 'booking').length}</span>
               </div>
-            ))}
+              <div>
+                <span className="font-medium text-gray-600">🔧 Tech Issues:</span>
+                <span className="ml-1 text-gray-900">{patterns.filter(p => p.pattern_type === 'tech_issue').length}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">❓ FAQs:</span>
+                <span className="ml-1 text-gray-900">{patterns.filter(p => p.pattern_type === 'faq').length}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">✅ Active:</span>
+                <span className="ml-1 text-gray-900">{patterns.filter(p => p.is_active).length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Patterns List */}
+          <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+            {filteredPatterns.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                No patterns found matching your search
+              </div>
+            ) : (
+              filteredPatterns.map((pattern) => {
+                const [expanded, setExpanded] = React.useState(false);
+                const typeEmoji = {
+                  booking: '📅',
+                  tech_issue: '🔧',
+                  access: '🚪',
+                  faq: '❓',
+                  gift_cards: '🎁',
+                  hours: '🕐',
+                  general: '💬',
+                  membership: '💳'
+                }[pattern.pattern_type] || '📝';
+                
+                return (
+                  <div key={pattern.id} className="hover:bg-gray-50 transition-colors">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          {/* Pattern Header */}
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-lg">{typeEmoji}</span>
+                            <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded capitalize">
+                              {pattern.pattern_type.replace('_', ' ')}
+                            </span>
+                            <span className={`text-xs font-medium px-2 py-1 rounded ${getConfidenceBg(pattern.confidence_score)} ${getConfidenceColor(pattern.confidence_score)}`}>
+                              {(pattern.confidence_score * 100).toFixed(0)}% confident
+                            </span>
+                            {pattern.auto_executable && (
+                              <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-600 rounded flex items-center">
+                                <Zap className="h-3 w-3 mr-1" />
+                                Auto
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Customer Trigger */}
+                          <div className="mb-2">
+                            <p className="text-xs font-medium text-gray-500 mb-1">When customer says:</p>
+                            <p className="text-sm text-gray-900 bg-blue-50 p-2 rounded italic">
+                              "{pattern.trigger_text.length > 150 
+                                ? pattern.trigger_text.substring(0, 150) + '...' 
+                                : pattern.trigger_text}"
+                            </p>
+                          </div>
+                          
+                          {/* Response Template (Show on expand or if short) */}
+                          {(expanded || pattern.response_template.length < 100) && (
+                            <div className="mb-2">
+                              <p className="text-xs font-medium text-gray-500 mb-1">AI will suggest:</p>
+                              <p className="text-sm text-gray-900 bg-green-50 p-2 rounded">
+                                {pattern.response_template}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Stats */}
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span>📊 Used {pattern.execution_count} times</span>
+                            <span>✅ {pattern.execution_count > 0 
+                              ? ((pattern.success_count / pattern.execution_count) * 100).toFixed(0)
+                              : 0}% success</span>
+                            {pattern.last_used && (
+                              <span>🕐 Last used: {new Date(pattern.last_used).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                          
+                          {/* Expand/Collapse Button */}
+                          {pattern.response_template.length > 100 && (
+                            <button
+                              onClick={() => setExpanded(!expanded)}
+                              className="mt-2 text-xs text-primary hover:text-primary-hover flex items-center"
+                            >
+                              {expanded ? 'Show less' : 'Show full response'}
+                              <ChevronRight className={`h-3 w-3 ml-1 transform transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Enable/Disable Toggle */}
+                        <div className="ml-4 flex flex-col items-center">
+                          <button
+                            onClick={() => togglePattern(pattern.id, pattern.is_active)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              pattern.is_active 
+                                ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                            }`}
+                            title={pattern.is_active ? 'Pattern is active - click to disable' : 'Pattern is disabled - click to enable'}
+                          >
+                            {pattern.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                          </button>
+                          <span className="text-xs text-gray-500 mt-1">
+                            {pattern.is_active ? 'Active' : 'Disabled'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
