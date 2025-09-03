@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
 import logger from '@/services/logger';
+import { 
   MessageCircle, Send, User, Clock, Phone, 
   ChevronDown, ChevronUp, Sparkles, X, Edit2,
   BellOff, Bell, MapPin

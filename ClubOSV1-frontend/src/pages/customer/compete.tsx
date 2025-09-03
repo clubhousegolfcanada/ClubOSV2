@@ -252,9 +252,9 @@ export default function Compete() {
         friendsArray = response.data.friends;
       }
       
-      logger.debug('Friends from API:', friendsArray.length, 'friends');
+      logger.debug(`Friends from API: ${friendsArray.length} friends`);
       friendsArray.forEach((f: any) => {
-        logger.debug('Friend:', f.email, 'ID:', f.id, 'Name:', f.name);
+        logger.debug(`Friend: ${f.email} ID: ${f.id} Name: ${f.name}`);
       });
       
       // Transform friends data to competitor format

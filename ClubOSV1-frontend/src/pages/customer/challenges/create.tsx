@@ -4,8 +4,8 @@ import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import Head from 'next/head';
 import { http } from '@/api/http';
-import { 
 import logger from '@/services/logger';
+import { 
   ArrowLeft,
   Search,
   ChevronRight,

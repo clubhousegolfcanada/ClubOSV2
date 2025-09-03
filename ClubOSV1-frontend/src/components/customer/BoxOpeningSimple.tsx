@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-import logger from '@/services/logger';
   Coins, 
   X,
   Calendar,
@@ -9,6 +8,7 @@ import logger from '@/services/logger';
   Shirt,
   Package
 } from 'lucide-react';
+import logger from '@/services/logger';
 
 interface BoxReward {
   id: string;

@@ -114,13 +114,13 @@ export const ChecklistSystem: React.FC = () => {
         return;
       }
       
-      logger.debug('Loading template for:', activeCategory, activeType);
+      logger.debug(`Loading template for: ${activeCategory} ${activeType}`);
       const response = await http.get(
         `checklists/template/${activeCategory}/${activeType}`,
 
       );
       
-      logger.debug('Template response:', response.data);
+      logger.debug(`Template response: ${JSON.stringify(response.data)}`);
       
       if (response.data.success) {
         setCurrentTemplate(response.data.data);
