@@ -432,9 +432,30 @@ router.post('/import-csv',
     try {
       const { csvData } = req.body;
       
+      // Better CSV parsing that handles commas in message text
+      const parseCSVLine = (line: string): string[] => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+      
       // Parse CSV data
       const lines = csvData.split('\n');
-      const headers = lines[0].split(',').map((h: string) => h.trim());
+      const headers = parseCSVLine(lines[0]);
       
       // Find column indices
       const idCol = headers.indexOf('id');
@@ -457,8 +478,7 @@ router.post('/import-csv',
         const line = lines[i].trim();
         if (!line) continue;
         
-        // Simple CSV parsing (handles basic cases)
-        const cols = line.split(',');
+        const cols = parseCSVLine(line);
         if (cols.length >= headers.length) {
           messages.push({
             id: cols[idCol] || '',
@@ -473,24 +493,58 @@ router.post('/import-csv',
       
       logger.info(`[Patterns Import] Processing ${messages.length} messages`);
       
-      // Group messages into conversations (30-minute windows)
+      // Sort messages by timestamp first
+      messages.sort((a, b) => {
+        const timeA = new Date(a.sentAt || 0).getTime();
+        const timeB = new Date(b.sentAt || 0).getTime();
+        return timeA - timeB;
+      });
+      
+      // Group messages into conversations using conversation IDs and dynamic time windows
       const conversations = new Map();
+      const activeConversations = new Map(); // Track active conversations per phone number
       
       for (const msg of messages) {
         // Skip automated messages
         if (msg.body.includes('CN6cc5c67b4') || msg.body.includes('CN2cc08d4c')) continue;
         
-        // Create conversation key based on phone number and time window
-        const timestamp = new Date(msg.sentAt || Date.now()).getTime();
-        const timeWindow = Math.floor(timestamp / (30 * 60 * 1000)); // 30-minute windows
+        // Extract conversation ID from message ID (first part before any suffix)
+        const convId = msg.id ? msg.id.split('_')[0].substring(0, 10) : '';
         const phoneKey = msg.direction === 'incoming' ? msg.from : msg.to;
-        const convKey = `${phoneKey}_${timeWindow}`;
+        const timestamp = new Date(msg.sentAt || Date.now()).getTime();
+        
+        // Use conversation ID if available, otherwise use phone + adaptive time window
+        let convKey = convId || phoneKey;
+        
+        // Check if this is part of an active conversation (within 2 hours of last message)
+        if (!convId && phoneKey) {
+          const lastActivity = activeConversations.get(phoneKey);
+          if (lastActivity && (timestamp - lastActivity.timestamp) < 2 * 60 * 60 * 1000) {
+            // Part of existing conversation
+            convKey = lastActivity.convKey;
+          } else {
+            // New conversation
+            convKey = `${phoneKey}_${timestamp}`;
+          }
+        }
+        
+        // Update last activity
+        activeConversations.set(phoneKey, { timestamp, convKey });
         
         if (!conversations.has(convKey)) {
-          conversations.set(convKey, { customer: [], operator: [] });
+          conversations.set(convKey, { 
+            customer: [], 
+            operator: [], 
+            startTime: timestamp,
+            endTime: timestamp,
+            messages: []
+          });
         }
         
         const conv = conversations.get(convKey);
+        conv.endTime = Math.max(conv.endTime, timestamp);
+        conv.messages.push({ ...msg, timestamp });
+        
         if (msg.direction === 'incoming') {
           conv.customer.push(msg.body);
         } else {
@@ -504,14 +558,20 @@ router.post('/import-csv',
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const patterns = [];
       let conversationsAnalyzed = 0;
+      const maxConversationsToAnalyze = 100; // Limit to prevent timeout
       
       for (const [key, conv] of conversations) {
+        if (conversationsAnalyzed >= maxConversationsToAnalyze) break;
+        
         if (conv.customer.length > 0 && conv.operator.length > 0) {
           conversationsAnalyzed++;
           
-          // Take first customer message and first operator response
-          const customerMsg = conv.customer[0];
-          const operatorMsg = conv.operator[0];
+          // Build full conversation context (up to 5 messages each)
+          const customerContext = conv.customer.slice(0, 5).join('\n');
+          const operatorContext = conv.operator.slice(0, 5).join('\n');
+          
+          // Calculate conversation duration
+          const duration = (conv.endTime - conv.startTime) / 1000 / 60; // minutes
           
           try {
             const completion = await openai.chat.completions.create({
@@ -519,17 +579,20 @@ router.post('/import-csv',
               messages: [
                 {
                   role: "system",
-                  content: `Analyze this customer service interaction and extract a reusable pattern.
+                  content: `Analyze this customer service conversation and extract reusable patterns.
+                          The conversation lasted ${duration.toFixed(0)} minutes with ${conv.messages.length} messages.
+                          Focus on the main issue and resolution, not greetings or closings.
                           Return JSON with:
                           - type: booking|tech_issue|access|faq|gift_cards|hours|membership|general
-                          - trigger: generalized customer message (remove specific names/times)
-                          - response: template with variables like {{customer_name}}, {{bay_number}}
-                          - confidence: 0.5-0.9 based on pattern clarity
-                          - variables: array of template variables found`
+                          - trigger: generalized version of the customer's main question/issue
+                          - response: template of the operator's solution with variables like {{customer_name}}, {{bay_number}}
+                          - confidence: 0.5-0.9 based on how clear and reusable the pattern is
+                          - variables: array of template variables found
+                          - multiMessage: true if this requires multiple messages to resolve`
                 },
                 {
                   role: "user",
-                  content: `Customer: ${customerMsg}\nOperator: ${operatorMsg}`
+                  content: `Customer messages:\n${customerContext}\n\nOperator responses:\n${operatorContext}`
                 }
               ],
               response_format: { type: "json_object" }
@@ -543,7 +606,8 @@ router.post('/import-csv',
                 trigger: result.trigger,
                 response: result.response,
                 confidence: result.confidence || 0.6,
-                variables: result.variables || []
+                variables: result.variables || [],
+                multiMessage: result.multiMessage || false
               });
             }
           } catch (error) {
@@ -551,6 +615,8 @@ router.post('/import-csv',
           }
         }
       }
+      
+      logger.info(`[Patterns Import] Analyzed ${conversationsAnalyzed} conversations (limit: ${maxConversationsToAnalyze})`)
       
       // Deduplicate and insert patterns
       const uniquePatterns = new Map();
