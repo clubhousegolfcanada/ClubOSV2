@@ -1,5 +1,0 @@
-packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'ClubOSV1-backend'
-  - 'ClubOSV1-frontend'

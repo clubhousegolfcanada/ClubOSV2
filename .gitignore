@@ -86,3 +86,6 @@ admin-credentials.txt
 Icon
 .DS_Store
 Icon?
+Icon
+*.log
+logs/
