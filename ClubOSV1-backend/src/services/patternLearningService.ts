@@ -158,11 +158,14 @@ export class PatternLearningService {
         };
       }
 
-      // Generate pattern signature
+      // Get conversation history FIRST for better context
+      const conversationHistory = await this.getConversationHistory(conversationId);
+      
+      // Generate pattern signature with context
       const signature = this.generateSignature(message);
       
-      // Find matching patterns
-      const patterns = await this.findMatchingPatterns(message, signature);
+      // Find matching patterns WITH conversation context
+      const patterns = await this.findMatchingPatterns(message, signature, conversationHistory);
       
       // Log for debugging (TODO: Remove in production)
       logger.debug('[PatternLearning] Found patterns', {
@@ -185,7 +188,7 @@ export class PatternLearningService {
       
       // Validate the match with GPT-4o to prevent nonsensical responses
       if (this.openai && bestMatch) {
-        const isValidMatch = await this.validatePatternMatch(message, bestMatch, customerName);
+        const isValidMatch = await this.validatePatternMatch(message, bestMatch, customerName, conversationHistory);
         if (!isValidMatch) {
           logger.info('[PatternLearning] GPT-4o rejected pattern match as inappropriate', {
             message: message.substring(0, 50),
@@ -206,8 +209,7 @@ export class PatternLearningService {
         }
       }
       
-      // Log pattern match for analysis
-      await this.logPatternMatch(bestMatch, message, phoneNumber, conversationId);
+      // We'll log after generating response to include the actual response text
 
       // If in shadow mode, just log what would happen
       if (this.config.shadowMode) {
@@ -224,8 +226,7 @@ export class PatternLearningService {
         };
       }
 
-      // Get conversation history for context
-      const conversationHistory = await this.getConversationHistory(conversationId);
+      // Conversation history already fetched earlier
       
       // Build context for variable replacement
       const templateContext = await this.buildTemplateContext(message, {
@@ -241,6 +242,17 @@ export class PatternLearningService {
         bestMatch,
         templateContext,
         conversationHistory
+      );
+      
+      // Log pattern match with the actual response
+      const willAutoExecute = bestMatch.confidence_score >= this.config.autoExecuteThreshold && bestMatch.auto_executable;
+      await this.logPatternMatch(
+        bestMatch, 
+        message, 
+        phoneNumber, 
+        conversationId, 
+        reasonedResponse.response,
+        willAutoExecute
       );
       
       // Apply confidence-based automation with reasoning
@@ -454,13 +466,20 @@ export class PatternLearningService {
   /**
    * Find patterns matching the given message using hybrid search (semantic + keyword)
    */
-  private async findMatchingPatterns(message: string, signature: string): Promise<Pattern[]> {
+  private async findMatchingPatterns(
+    message: string, 
+    signature: string,
+    conversationHistory: any[] = []
+  ): Promise<Pattern[]> {
     try {
       const patterns: Pattern[] = [];
       
+      // Build context-aware message for better matching
+      const contextMessage = this.buildContextMessage(message, conversationHistory);
+      
       // 1. Try semantic search if we have OpenAI
       if (this.openai) {
-        const semanticPatterns = await this.findSemanticMatches(message);
+        const semanticPatterns = await this.findSemanticMatches(contextMessage);
         patterns.push(...semanticPatterns);
       }
       
@@ -606,21 +625,26 @@ export class PatternLearningService {
     pattern: Pattern,
     message: string,
     phoneNumber: string,
-    conversationId: string
+    conversationId: string,
+    response?: string,
+    wasAutoExecuted: boolean = false
   ): Promise<void> {
     try {
       await db.query(`
         INSERT INTO pattern_execution_history 
         (pattern_id, conversation_id, phone_number, message_text, 
-         confidence_at_execution, execution_mode, message_timestamp, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+         confidence_at_execution, execution_mode, message_timestamp, created_at,
+         response_sent, was_auto_executed)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8)
       `, [
         pattern.id,
         conversationId,
         phoneNumber,
         message,
         pattern.confidence_score,
-        this.config.shadowMode ? 'shadow' : this.getExecutionMode(pattern.confidence_score)
+        this.config.shadowMode ? 'shadow' : this.getExecutionMode(pattern.confidence_score),
+        response || null,
+        wasAutoExecuted
       ]);
 
       // Update pattern statistics
@@ -711,6 +735,50 @@ export class PatternLearningService {
       // Extract entities from message
       ...this.extractEntitiesFromMessage(message)
     };
+    
+    // Add customer profile data if available
+    if (baseContext.phoneNumber) {
+      try {
+        const customerProfile = await db.query(`
+          SELECT 
+            cp.*,
+            u.email,
+            u.name,
+            u.role,
+            u.phone_number,
+            cp.total_rounds,
+            cp.handicap,
+            cp.home_location,
+            cp.preferred_tee_time,
+            cp.preferred_bay_type
+          FROM users u
+          LEFT JOIN customer_profiles cp ON cp.user_id = u.id
+          WHERE u.phone_number = $1
+          LIMIT 1
+        `, [baseContext.phoneNumber]);
+        
+        if (customerProfile.rows.length > 0) {
+          const profile = customerProfile.rows[0];
+          context.is_member = profile.role === 'customer';
+          context.customer_profile = {
+            display_name: profile.display_name,
+            handicap: profile.handicap,
+            home_location: profile.home_location,
+            total_rounds: profile.total_rounds || 0,
+            preferred_tee_time: profile.preferred_tee_time,
+            preferred_bay_type: profile.preferred_bay_type,
+            is_regular: (profile.total_rounds || 0) > 5
+          };
+          
+          // Use profile name if we don't have a customer name
+          if (!context.customer_name && profile.name) {
+            context.customer_name = profile.name;
+          }
+        }
+      } catch (error) {
+        logger.debug('[PatternLearning] Could not fetch customer profile', error);
+      }
+    }
     
     // Add pattern-specific context if action template has entities
     if (baseContext.pattern?.action_template) {
@@ -1074,20 +1142,45 @@ export class PatternLearningService {
   }
 
   /**
+   * Build context-aware message for better pattern matching
+   * Includes recent conversation history to understand context
+   */
+  private buildContextMessage(message: string, conversationHistory: any[]): string {
+    if (conversationHistory.length === 0) {
+      return message;
+    }
+    
+    // Get last 3 messages for context (excluding current)
+    const recentMessages = conversationHistory
+      .slice(-3)
+      .map(h => `${h.sender}: ${h.message}`)
+      .join(' | ');
+    
+    // Combine context with current message for better matching
+    return `[Context: ${recentMessages}] Current: ${message}`;
+  }
+
+  /**
    * Validate if a pattern match makes sense for the given message
    * This prevents nonsensical responses like "swinging club like sword" for "Thanks"
    */
   private async validatePatternMatch(
     message: string,
     pattern: Pattern,
-    customerName?: string
+    customerName?: string,
+    conversationHistory: any[] = []
   ): Promise<boolean> {
     try {
       if (!this.openai) return true; // Can't validate without AI
       
+      // Build conversation context for validation
+      const contextString = conversationHistory.length > 0 
+        ? `\nRecent Conversation:\n${conversationHistory.slice(-3).map(h => `${h.sender}: ${h.message}`).join('\n')}\n`
+        : '';
+      
       const prompt = `You are evaluating if a customer service response template is appropriate for a customer message.
-
-Customer Message: "${message}"
+${contextString}
+Current Customer Message: "${message}"
 Customer Name: ${customerName || 'Unknown'}
 
 Proposed Response Template: "${pattern.response_template}"
