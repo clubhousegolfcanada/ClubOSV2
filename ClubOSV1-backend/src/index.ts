@@ -303,7 +303,9 @@ app.use('/api/process-knowledge', processKnowledgeRoutes);
 
 // Architecture v2 routes (testing)
 import authRefactoredRoutes from './routes/auth-refactored';
+import usersRefactoredRoutes from './routes/users-refactored';
 app.use('/api/v2/auth', authRefactoredRoutes);
+app.use('/api/v2/users', usersRefactoredRoutes);
 
 // HubSpot webhook routes
 import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';

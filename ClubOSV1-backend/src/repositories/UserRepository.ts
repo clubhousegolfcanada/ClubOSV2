@@ -376,4 +376,175 @@ export class UserRepository extends BaseRepository {
     `;
     return this.raw(query);
   }
+
+  /**
+   * Get all users with pagination and filters
+   */
+  async getAllUsers(page: number, limit: number, filters: any = {}): Promise<{ users: User[], total: number }> {
+    let query = `
+      SELECT id, email, name, role, phone, created_at, updated_at, 
+             last_login, is_active, status, signup_date
+      FROM users 
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 0;
+
+    if (filters.role) {
+      query += ` AND role = $${++paramCount}`;
+      params.push(filters.role);
+    }
+
+    if (filters.status) {
+      query += ` AND status = $${++paramCount}`;
+      params.push(filters.status);
+    }
+
+    if (filters.search) {
+      query += ` AND (LOWER(name) LIKE LOWER($${++paramCount}) OR LOWER(email) LIKE LOWER($${paramCount}))`;
+      params.push(`%${filters.search}%`);
+    }
+
+    // Get total count
+    const countQuery = `SELECT COUNT(*) FROM users WHERE 1=1${query.substring(query.indexOf(' AND'))}`;
+    const countResult = await this.raw(countQuery.split(' AND ')[0] + (params.length > 0 ? query.substring(query.indexOf(' AND')) : ''), params);
+    const total = parseInt(countResult[0]?.count || '0');
+
+    // Add pagination
+    query += ` ORDER BY created_at DESC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+    params.push(limit, (page - 1) * limit);
+
+    const users = await this.raw(query, params);
+    return { users, total };
+  }
+
+  /**
+   * Get pending users (not activated/verified)
+   */
+  async getPendingUsers(): Promise<User[]> {
+    const query = `
+      SELECT id, email, name, role, created_at, signup_metadata
+      FROM users 
+      WHERE status = 'pending' 
+         OR signup_metadata->>'email_verified' = 'false'
+         OR is_active = false
+      ORDER BY created_at DESC
+    `;
+    return this.raw(query);
+  }
+
+  /**
+   * Approve user
+   */
+  async approveUser(userId: string): Promise<User | null> {
+    const user = await this.findById(userId);
+    if (!user) return null;
+
+    const metadata = {
+      ...(user.signup_metadata || {}),
+      email_verified: true,
+      approved_at: new Date(),
+      account_locked_until: null
+    };
+
+    await this.update(userId, {
+      is_active: true,
+      status: 'active',
+      signup_metadata: metadata
+    });
+
+    return this.findById(userId);
+  }
+
+  /**
+   * Reject/deactivate user
+   */
+  async rejectUser(userId: string): Promise<boolean> {
+    const result = await this.update(userId, {
+      is_active: false,
+      status: 'rejected'
+    });
+    return !!result;
+  }
+
+  /**
+   * Delete user (soft delete by default)
+   */
+  async deleteUser(userId: string, hardDelete = false): Promise<boolean> {
+    if (hardDelete) {
+      const query = 'DELETE FROM users WHERE id = $1 RETURNING id';
+      const result = await this.raw(query, [userId]);
+      return result.length > 0;
+    } else {
+      // Soft delete
+      const result = await this.update(userId, {
+        is_active: false,
+        status: 'deleted',
+        deleted_at: new Date()
+      });
+      return !!result;
+    }
+  }
+
+  /**
+   * Bulk update users
+   */
+  async bulkUpdateUsers(userIds: string[], updates: Partial<User>): Promise<number> {
+    const query = `
+      UPDATE users 
+      SET ${Object.keys(updates).map((key, i) => `${key} = $${i + 2}`).join(', ')},
+          updated_at = NOW()
+      WHERE id = ANY($1)
+      RETURNING id
+    `;
+    const result = await this.raw(query, [userIds, ...Object.values(updates)]);
+    return result.length;
+  }
+
+  /**
+   * Get user activity logs
+   */
+  async getUserActivity(userId: string, days: number): Promise<any> {
+    const query = `
+      SELECT 
+        u.id, u.name, u.email,
+        (SELECT COUNT(*) FROM auth_logs WHERE user_id = $1 AND "createdAt" > NOW() - INTERVAL '${days} days') as login_count,
+        (SELECT COUNT(*) FROM bookings WHERE user_id = $1 AND created_at > NOW() - INTERVAL '${days} days') as booking_count,
+        (SELECT COUNT(*) FROM feedback WHERE user_id = $1 AND created_at > NOW() - INTERVAL '${days} days') as feedback_count,
+        (SELECT COUNT(*) FROM tickets WHERE user_id = $1 AND created_at > NOW() - INTERVAL '${days} days') as ticket_count,
+        u.last_login,
+        u.created_at
+      FROM users u
+      WHERE u.id = $1
+    `;
+    const result = await this.raw(query, [userId]);
+    return result[0];
+  }
+
+  /**
+   * Export users in different formats
+   */
+  async exportUsers(filters: any = {}): Promise<User[]> {
+    let query = `
+      SELECT id, email, name, role, phone, created_at, 
+             last_login, is_active, status, signup_date
+      FROM users 
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 0;
+
+    if (filters.role) {
+      query += ` AND role = $${++paramCount}`;
+      params.push(filters.role);
+    }
+
+    if (filters.status) {
+      query += ` AND status = $${++paramCount}`;
+      params.push(filters.status);
+    }
+
+    query += ' ORDER BY created_at DESC';
+    return this.raw(query, params);
+  }
 }

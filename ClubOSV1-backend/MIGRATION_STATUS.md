@@ -8,8 +8,8 @@ Tracking the migration from monolithic route-based architecture to layered Contr
 | Module | Routes | Lines (Before) | Lines (After) | Controller | Repository | Service | Validators | Tests | Status |
 |--------|--------|---------------|---------------|------------|------------|---------|------------|-------|--------|
 | **Health** | 2 | 173 | 19 | ✅ | ✅ (Base) | N/A | N/A | ✅ | ✅ Complete |
-| **Auth** | 15 | 1098 | 110 | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ Complete |
-| Users | 12 | ~450 | - | ❌ | ❌ | ❌ | ❌ | ❌ | 🔜 Next |
+| **Auth** | 15 | 1098 | 110 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
+| **Users** | 12 | ~520 | 50 | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ Complete |
 | Profile | 6 | ~250 | - | ❌ | ❌ | ❌ | ❌ | ❌ | ⏳ Pending |
 | Feedback | 5 | ~200 | - | ❌ | ❌ | ❌ | ❌ | ❌ | ⏳ Pending |
 | Messages | 8 | ~600 | - | ❌ | ❌ | ❌ | ❌ | ❌ | ⏳ Pending |
@@ -26,13 +26,14 @@ Tracking the migration from monolithic route-based architecture to layered Contr
 ## Statistics
 
 - **Total Modules**: 15
-- **Completed**: 2 (13%)
+- **Completed**: 3 (20%)
 - **In Progress**: 0
-- **Pending**: 13
+- **Pending**: 12
 
 ### Code Reduction
 - **Auth Module**: 1098 → 110 lines (90% reduction in route file)
 - **Health Module**: 173 → 19 lines (89% reduction in route file)
+- **Users Module**: ~520 → 50 lines (90% reduction in route file)
 
 ## Files Created
 
@@ -48,6 +49,13 @@ Tracking the migration from monolithic route-based architecture to layered Contr
 - ✅ `/repositories/UserRepository.ts` - User data access
 - ✅ `/validators/authValidators.ts` - Input validation
 - ✅ `/routes/auth-refactored.ts` - Clean routing
+
+### Users Module (Phase 3 - Week 3)
+- ✅ `/controllers/UserController.ts` - User management HTTP handling
+- ✅ `/services/UserService.ts` - User business logic  
+- ✅ Enhanced `/repositories/UserRepository.ts` - Extended user data access
+- ✅ `/validators/userValidators.ts` - User input validation
+- ✅ `/routes/users-refactored.ts` - Clean user management routing
 
 ## Benefits Achieved
 

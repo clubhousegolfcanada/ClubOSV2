@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.3] - 2025-09-05
+
+### Added
+- **Phase 3: Users Module Refactoring Complete**
+  - Created UserController with 14 management endpoints
+  - Created UserService with comprehensive user operations
+  - Enhanced UserRepository with pagination, filtering, bulk operations
+  - Created userValidators for all user endpoints
+  - Simplified user routes from ~520 to 50 lines (90% reduction)
+  - Available at `/api/v2/users` for testing
+
+### Technical Improvements
+- Users module now follows Controller → Service → Repository pattern
+- Added support for bulk user operations
+- Implemented user activity tracking
+- Added user export functionality (JSON/CSV)
+- Proper pagination with total counts
+- Search and filter capabilities
+- Role-based permission checks
+
+### Progress
+- 3 of 15 modules complete (20%)
+- Consistent 90% reduction in route file complexity
+- UserRepository now shared between Auth and Users modules
+
 ## [1.16.2] - 2025-09-05
 
 ### Fixed
