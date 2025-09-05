@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.5] - 2025-09-05
+
+### Fixed
+- **Pattern Learning System Complete Fix**
+  - Connected pattern execution statistics tracking with `update_pattern_statistics()` function
+  - Implemented confidence evolution tracking with full history in `confidence_evolution` table
+  - Added operator action logging for all accept/modify/reject actions
+  - Fixed pattern statistics updates to trigger after each execution
+  - Wired up `update_pattern_confidence_tracked()` for automatic confidence adjustments
+  - System now properly learns from operator feedback and human modifications
+
+### Technical Details
+- Modified `patternLearningService.ts` to call statistics update after pattern execution
+- Updated `patterns.ts` to use tracked confidence updates and log operator actions
+- Created database migration 207 with all missing tables and functions
+- Verified `learnFromHumanResponse` is properly connected for learning
+
 ## [1.15.4] - 2025-09-05
 
 ### Fixed

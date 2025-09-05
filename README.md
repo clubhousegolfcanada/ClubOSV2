@@ -156,6 +156,12 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.15.3**: Complete Pattern Learning System fixes
+  - Connected pattern execution statistics tracking
+  - Implemented confidence evolution tracking with history
+  - Added operator action logging for all accept/modify/reject actions
+  - Fixed pattern statistics updates after each execution
+  - System now learns from operator feedback automatically
 - **v1.15.2**: Fixed authentication errors and OpenAI assistant handling
   - Added missing blacklisted_tokens table for JWT management
   - Fixed invalid assistant ID errors with graceful fallback

@@ -599,6 +599,11 @@ export class PatternLearningService {
         pattern.confidence_score,
         this.config.shadowMode ? 'shadow' : this.getExecutionMode(pattern.confidence_score)
       ]);
+
+      // Update pattern statistics
+      await db.query(`
+        SELECT update_pattern_statistics($1, true, false)
+      `, [pattern.id]);
     } catch (error) {
       logger.error('[PatternLearning] Failed to log pattern match', error);
     }

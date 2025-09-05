@@ -1040,18 +1040,33 @@ router.post('/queue/:id/respond',
 
           // Update pattern confidence based on action
           if (sugg.approved_pattern_id) {
-            const confidenceChange = action === 'accept' ? 0.02 : -0.01; // Small adjustments
+            // Use the tracked confidence update function
+            const isSuccess = action === 'accept';
+            const isHumanOverride = action === 'modify' || action === 'reject';
+            const feedbackReason = action === 'accept' ? 'accepted' : 
+                                  action === 'modify' ? 'modified' : 'rejected';
+            
             await db.query(
-              `UPDATE decision_patterns 
-               SET confidence_score = LEAST(0.95, GREATEST(0.1, confidence_score + $1)),
-                   execution_count = execution_count + 1,
-                   success_count = success_count + CASE WHEN $2 = 'accept' THEN 1 ELSE 0 END,
-                   human_override_count = human_override_count + CASE WHEN $2 = 'modify' THEN 1 ELSE 0 END
-               WHERE id = $3`,
-              [confidenceChange, action, sugg.approved_pattern_id]
+              `SELECT update_pattern_confidence_tracked($1, $2, $3, $4, $5)`,
+              [sugg.approved_pattern_id, isSuccess, isHumanOverride, feedbackReason, req.user?.id || 'system']
             );
           }
         }
+
+        // Track operator action in the database
+        await db.query(`
+          INSERT INTO operator_actions 
+          (pattern_id, action_type, original_response, modified_response, 
+           operator_id, suggestion_id, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        `, [
+          sugg.approved_pattern_id,
+          action,
+          sugg.suggested_response,
+          action === 'modify' ? finalResponse : null,
+          operatorId,
+          suggestionId,
+        ]);
 
         // If modified, learn from the modification
         if (action === 'modify' && sugg.approved_pattern_id) {
