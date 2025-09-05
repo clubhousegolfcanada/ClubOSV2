@@ -1065,7 +1065,7 @@ router.post('/queue/:id/respond',
           sugg.suggested_response,
           action === 'modify' ? finalResponse : null,
           operatorId,
-          suggestionId,
+          id,
         ]);
 
         // If modified, learn from the modification
