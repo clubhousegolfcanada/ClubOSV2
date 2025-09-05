@@ -440,14 +440,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   // Store suggestion for operator review
                   await db.query(`
                     INSERT INTO pattern_suggestions_queue 
-                    (conversation_id, pattern_id, suggested_response, confidence_score, reasoning)
-                    VALUES ($1, $2, $3, $4, $5)
+                    (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
+                     confidence_score, reasoning, phone_number, status, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
                   `, [
                     existingConv.rows[0].id,
                     patternResult.patternId,
+                    patternResult.pattern?.pattern_type || 'general',
+                    messageText,
                     patternResult.response,
                     patternResult.confidence,
-                    JSON.stringify(patternResult.reasoning)
+                    JSON.stringify(patternResult.reasoning),
+                    phoneNumber
                   ]);
                 } else {
                   logger.info('[Pattern Learning] Result:', {
