@@ -667,12 +667,14 @@ Based on complexity and dependencies:
    - [ ] Profile module (3 routes)
    - [ ] Health/Status module (2 routes)
    - [ ] Feedback module (4 routes)
+   - [ ] **Frontend Transition: Update auth calls to /api/v2/auth**
 
 2. **Week 4 - Medium Complexity**
    - [ ] Messages module (8 routes)
    - [ ] Tickets module (6 routes)
    - [ ] Checklists module (7 routes)
    - [ ] Analytics module (5 routes)
+   - [ ] **Frontend Transition: Update module calls as completed**
 
 3. **Week 5 - Complex Modules**
    - [ ] Operations module (12 routes)
@@ -685,7 +687,53 @@ Based on complexity and dependencies:
    - [ ] LLM module (8 routes)
    - [ ] Admin module (15 routes)
 
-### 3.2 Migration Template for Each Module
+### 3.2 Frontend Migration Strategy
+
+**⚠️ CRITICAL: Frontend updates are often the hardest part**
+
+#### Step-by-Step Frontend Transition Plan
+
+1. **Discovery Phase** (Do this FIRST for each module)
+   ```bash
+   # Find all API calls for the module
+   grep -r "api/auth" --include="*.tsx" --include="*.ts" frontend/
+   grep -r "fetch.*auth" --include="*.tsx" --include="*.ts" frontend/
+   grep -r "axios.*auth" --include="*.tsx" --include="*.ts" frontend/
+   ```
+
+2. **Create API Service Layer** (if not exists)
+   ```typescript
+   // frontend/services/api/auth.service.ts
+   const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
+   const AUTH_BASE = `/api/${API_VERSION}/auth`;
+   
+   export const authAPI = {
+     login: (data) => fetch(`${AUTH_BASE}/login`, {...}),
+     signup: (data) => fetch(`${AUTH_BASE}/signup`, {...}),
+     // etc.
+   };
+   ```
+
+3. **Parallel Running Strategy**
+   - Keep BOTH endpoints active during transition
+   - Add feature flag for gradual rollout
+   - Monitor both endpoints for issues
+   - Use environment variable to switch versions
+
+4. **Testing Checklist**
+   - [ ] Login flow works
+   - [ ] Signup flow works
+   - [ ] Token refresh works
+   - [ ] Protected routes work
+   - [ ] Error handling works
+   - [ ] Loading states work
+
+5. **Rollback Plan**
+   - Keep old endpoints for 2 weeks minimum
+   - Quick switch via environment variable
+   - Monitor error rates closely
+
+### 3.3 Migration Template for Each Module
 
 ```bash
 # For each module:
@@ -695,12 +743,14 @@ Based on complexity and dependencies:
 4. Move validation to validators/
 5. Simplify route file to just routing
 6. Write tests
-7. Update documentation
+7. **Update frontend to use new endpoints**
+8. **Test frontend thoroughly**
+9. Update documentation
 ```
 
-### 3.3 Tracking Progress
+### 3.4 Tracking Progress
 
-#### Create Migration Tracker
+#### Backend Migration Tracker
 ```typescript
 // File: /ClubOSV1-backend/MIGRATION_STATUS.md
 | Module | Routes | Controller | Repository | Service | Tests | Status |
@@ -708,6 +758,16 @@ Based on complexity and dependencies:
 | Auth   | 4      | ✅         | ✅         | ✅      | ✅    | Complete |
 | Users  | 5      | ⏳         | ⏳         | ⏳      | ⏳    | In Progress |
 | Profile| 3      | ❌         | ❌         | ❌      | ❌    | Pending |
+```
+
+#### Frontend Migration Tracker
+```typescript
+// Track frontend updates separately - THIS IS CRITICAL
+| Module | API Calls Found | Service Layer | Updated | Tested | Deployed |
+|--------|----------------|---------------|---------|--------|----------|
+| Auth   | 15             | ❌            | ❌      | ❌     | ❌       |
+| Users  | 8              | ❌            | ❌      | ❌     | ❌       |
+| Profile| 5              | ❌            | ❌      | ❌     | ❌       |
 ```
 
 ---
