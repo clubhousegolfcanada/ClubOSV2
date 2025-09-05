@@ -601,9 +601,14 @@ export class PatternLearningService {
       ]);
 
       // Update pattern statistics
-      await db.query(`
+      const statsResult = await db.query(`
         SELECT update_pattern_statistics($1, true, false)
       `, [pattern.id]);
+      
+      logger.info('[PatternLearning] Updated pattern statistics', {
+        patternId: pattern.id,
+        result: statsResult.rows[0]
+      });
     } catch (error) {
       logger.error('[PatternLearning] Failed to log pattern match', error);
     }
