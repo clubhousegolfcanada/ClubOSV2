@@ -56,9 +56,10 @@ export class AuthService {
         };
       }
 
-      // Check if account is locked
-      if (user.account_locked_until && new Date(user.account_locked_until) > new Date()) {
-        const remainingTime = Math.ceil((new Date(user.account_locked_until).getTime() - Date.now()) / 60000);
+      // Check if account is locked (from metadata)
+      const lockedUntil = user.signup_metadata?.account_locked_until || user.account_locked_until;
+      if (lockedUntil && new Date(lockedUntil) > new Date()) {
+        const remainingTime = Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 60000);
         return {
           success: false,
           message: `Account locked. Try again in ${remainingTime} minutes`
@@ -101,7 +102,6 @@ export class AuthService {
       // Remove sensitive data
       delete user.password;
       delete user.reset_token;
-      delete user.mfa_secret;
 
       return {
         success: true,
@@ -417,17 +417,17 @@ export class AuthService {
    * Generate JWT token
    */
   generateToken(user: User): string {
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name
+    };
+    
     return jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name
-      },
+      payload,
       this.jwtSecret,
-      {
-        expiresIn: this.jwtExpiresIn
-      }
+      { expiresIn: this.jwtExpiresIn } as jwt.SignOptions
     );
   }
 
@@ -435,15 +435,15 @@ export class AuthService {
    * Generate refresh token
    */
   private generateRefreshToken(user: User): string {
+    const payload = {
+      id: user.id,
+      type: 'refresh'
+    };
+    
     return jwt.sign(
-      {
-        id: user.id,
-        type: 'refresh'
-      },
+      payload,
       this.jwtSecret,
-      {
-        expiresIn: '30d'
-      }
+      { expiresIn: '30d' } as jwt.SignOptions
     );
   }
 

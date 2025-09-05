@@ -439,21 +439,34 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   });
                   
                   // Store suggestion for operator review (both 'suggest' and 'queue' actions)
-                  await db.query(`
-                    INSERT INTO pattern_suggestions_queue 
-                    (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
-                     confidence_score, reasoning, phone_number, status, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
-                  `, [
-                    existingConv.rows[0].id,
-                    patternResult.patternId,
-                    patternResult.pattern?.pattern_type || 'general',
-                    messageText,
-                    patternResult.response,
-                    patternResult.confidence,
-                    JSON.stringify(patternResult.reasoning),
-                    phoneNumber
-                  ]);
+                  try {
+                    await db.query(`
+                      INSERT INTO pattern_suggestions_queue 
+                      (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
+                       confidence_score, reasoning, phone_number, status, created_at)
+                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
+                    `, [
+                      existingConv.rows[0].id,
+                      patternResult.patternId || null,  // Add null safety
+                      patternResult.pattern?.pattern_type || 'general',
+                      messageText,
+                      patternResult.response || '',  // Ensure response is not null
+                      patternResult.confidence || 0,
+                      JSON.stringify(patternResult.reasoning || {}),
+                      phoneNumber
+                    ]);
+                    logger.info('[Pattern Learning] Suggestion queued successfully', {
+                      conversationId: existingConv.rows[0].id,
+                      patternId: patternResult.patternId
+                    });
+                  } catch (queueError) {
+                    logger.error('[Pattern Learning] Failed to queue suggestion', {
+                      error: queueError,
+                      conversationId: existingConv.rows[0].id,
+                      patternId: patternResult.patternId
+                    });
+                    // Don't fail the webhook - just log the error
+                  }
                 } else {
                   logger.info('[Pattern Learning] Result:', {
                     action: patternResult.action,
@@ -656,21 +669,34 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 });
                 
                 // Store suggestion for operator review
-                await db.query(`
-                  INSERT INTO pattern_suggestions_queue 
-                  (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
-                   confidence_score, reasoning, phone_number, status, created_at)
-                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
-                `, [
-                  newConversationId,
-                  patternResult.patternId,
-                  patternResult.pattern?.pattern_type || 'general',
-                  messageText,
-                  patternResult.response,
-                  patternResult.confidence,
-                  JSON.stringify(patternResult.reasoning),
-                  phoneNumber
-                ]);
+                try {
+                  await db.query(`
+                    INSERT INTO pattern_suggestions_queue 
+                    (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
+                     confidence_score, reasoning, phone_number, status, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
+                  `, [
+                    newConversationId,
+                    patternResult.patternId || null,  // Add null safety
+                    patternResult.pattern?.pattern_type || 'general',
+                    messageText,
+                    patternResult.response || '',  // Ensure response is not null
+                    patternResult.confidence || 0,
+                    JSON.stringify(patternResult.reasoning || {}),
+                    phoneNumber
+                  ]);
+                  logger.info('[Pattern Learning] Suggestion queued successfully (new conv)', {
+                    conversationId: newConversationId,
+                    patternId: patternResult.patternId
+                  });
+                } catch (queueError) {
+                  logger.error('[Pattern Learning] Failed to queue suggestion (new conv)', {
+                    error: queueError,
+                    conversationId: newConversationId,
+                    patternId: patternResult.patternId
+                  });
+                  // Don't fail the webhook - just log the error
+                }
               } else if (patternResult.action === 'shadow') {
                 logger.info('[Pattern Learning] SHADOW MODE (new conv)', {
                   confidence: patternResult.confidence,

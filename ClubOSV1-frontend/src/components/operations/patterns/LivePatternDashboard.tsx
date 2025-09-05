@@ -349,7 +349,19 @@ export const LivePatternDashboard: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {activity.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={item.id} 
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      // Show details in alert for now (could be a modal later)
+                      if (item.status === 'queued' || item.status === 'pending') {
+                        alert(`Pattern: ${item.pattern}\nConfidence: ${item.confidence}%\nMessage: ${item.message}\n\nStatus: ${item.status}\n\nThis message is queued for review. Check the Pending Suggestions section above.`);
+                      } else {
+                        alert(`Pattern: ${item.pattern}\nConfidence: ${item.confidence}%\nMessage: ${item.message}\n\nStatus: ${item.status}`);
+                      }
+                    }}
+                    title="Click for details"
+                  >
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatTimeAgo(item.time)}
                     </td>

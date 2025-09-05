@@ -16,28 +16,13 @@ export interface User {
   status?: string;
   signup_metadata?: any;
   signup_date?: Date;
+  // Extended fields stored in signup_metadata JSON
   reset_token?: string;
   reset_token_expires?: Date;
   email_verified?: boolean;
   email_verification_token?: string;
-  profile_image_url?: string;
-  preferences?: any;
-  customer_id?: string;
-  location_id?: string;
-  manager_notes?: string;
-  auth_provider?: string;
-  external_auth_id?: string;
   failed_login_attempts?: number;
   account_locked_until?: Date;
-  mfa_enabled?: boolean;
-  mfa_secret?: string;
-  subscription_status?: string;
-  subscription_tier?: string;
-  last_activity?: Date;
-  timezone?: string;
-  language?: string;
-  notification_preferences?: any;
-  session_token?: string;
 }
 
 export class UserRepository extends BaseRepository {
@@ -71,13 +56,25 @@ export class UserRepository extends BaseRepository {
   async findById(id: string): Promise<User | null> {
     const query = `
       SELECT id, email, name, role, phone, created_at, updated_at, 
-             last_login, is_active, status, email_verified,
-             profile_image_url, customer_id, location_id,
-             subscription_status, subscription_tier, timezone, language
+             last_login, is_active, status, signup_metadata, signup_date
       FROM users 
       WHERE id = $1
     `;
     const result = await this.raw(query, [id]);
+    if (result[0]) {
+      // Extract extended fields from signup_metadata
+      const user = result[0];
+      if (user.signup_metadata) {
+        Object.assign(user, {
+          email_verified: user.signup_metadata.email_verified,
+          email_verification_token: user.signup_metadata.email_verification_token,
+          reset_token: user.signup_metadata.reset_token,
+          reset_token_expires: user.signup_metadata.reset_token_expires,
+          failed_login_attempts: user.signup_metadata.failed_login_attempts,
+          account_locked_until: user.signup_metadata.account_locked_until
+        });
+      }
+    }
     return result[0] || null;
   }
 
@@ -87,8 +84,8 @@ export class UserRepository extends BaseRepository {
   async findByResetToken(token: string): Promise<User | null> {
     const query = `
       SELECT * FROM users 
-      WHERE reset_token = $1 
-      AND reset_token_expires > NOW()
+      WHERE signup_metadata->>'reset_token' = $1 
+      AND (signup_metadata->>'reset_token_expires')::timestamp > NOW()
     `;
     const result = await this.raw(query, [token]);
     return result[0] || null;
@@ -100,7 +97,7 @@ export class UserRepository extends BaseRepository {
   async findByVerificationToken(token: string): Promise<User | null> {
     const query = `
       SELECT * FROM users 
-      WHERE email_verification_token = $1
+      WHERE signup_metadata->>'email_verification_token' = $1
     `;
     const result = await this.raw(query, [token]);
     return result[0] || null;
@@ -114,15 +111,33 @@ export class UserRepository extends BaseRepository {
       ? await bcryptjs.hash(userData.password, 12)
       : null;
 
-    const user = await this.create({
-      ...userData,
+    // Extract extended fields to store in signup_metadata
+    const metadata = {
+      ...(userData.signup_metadata || {}),
+      email_verified: userData.email_verified || false,
+      email_verification_token: userData.email_verification_token,
+      reset_token: userData.reset_token,
+      reset_token_expires: userData.reset_token_expires,
+      failed_login_attempts: userData.failed_login_attempts || 0,
+      account_locked_until: userData.account_locked_until
+    };
+
+    // Only include columns that exist in the database
+    const dbData = {
       email: userData.email?.toLowerCase(),
       password: hashedPassword,
+      name: userData.name,
+      role: userData.role || 'customer',
+      phone: userData.phone,
       is_active: userData.is_active !== undefined ? userData.is_active : true,
+      status: userData.status || 'active',
+      signup_metadata: metadata,
+      signup_date: new Date(),
       created_at: new Date(),
-      updated_at: new Date(),
-      signup_date: new Date()
-    });
+      updated_at: new Date()
+    };
+
+    const user = await this.create(dbData);
 
     // Remove password from response
     delete user.password;
@@ -134,8 +149,7 @@ export class UserRepository extends BaseRepository {
    */
   async updateLastLogin(userId: string): Promise<void> {
     await this.update(userId, {
-      last_login: new Date(),
-      last_activity: new Date()
+      last_login: new Date()
     });
   }
 
@@ -144,10 +158,16 @@ export class UserRepository extends BaseRepository {
    */
   async updatePassword(userId: string, newPassword: string): Promise<void> {
     const hashedPassword = await bcryptjs.hash(newPassword, 12);
+    
+    // Get current metadata and update it
+    const user = await this.findById(userId);
+    const metadata = user?.signup_metadata || {};
+    delete metadata.reset_token;
+    delete metadata.reset_token_expires;
+    
     await this.update(userId, {
       password: hashedPassword,
-      reset_token: null,
-      reset_token_expires: null
+      signup_metadata: metadata
     });
   }
 
@@ -155,9 +175,16 @@ export class UserRepository extends BaseRepository {
    * Set password reset token
    */
   async setResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
-    await this.update(userId, {
+    // Get current metadata and update it
+    const user = await this.findById(userId);
+    const metadata = {
+      ...(user?.signup_metadata || {}),
       reset_token: token,
       reset_token_expires: expiresAt
+    };
+    
+    await this.update(userId, {
+      signup_metadata: metadata
     });
   }
 
@@ -165,9 +192,16 @@ export class UserRepository extends BaseRepository {
    * Verify user email
    */
   async verifyEmail(userId: string): Promise<void> {
-    await this.update(userId, {
+    // Get current metadata and update it
+    const user = await this.findById(userId);
+    const metadata = {
+      ...(user?.signup_metadata || {}),
       email_verified: true,
       email_verification_token: null
+    };
+    
+    await this.update(userId, {
+      signup_metadata: metadata
     });
   }
 
@@ -222,22 +256,36 @@ export class UserRepository extends BaseRepository {
    * Increment failed login attempts
    */
   async incrementFailedLogins(userId: string): Promise<void> {
+    const user = await this.findById(userId);
+    const metadata = user?.signup_metadata || {};
+    const attempts = (metadata.failed_login_attempts || 0) + 1;
+    
     const query = `
       UPDATE users 
-      SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
-          updated_at = NOW()
+      SET signup_metadata = jsonb_set(
+        COALESCE(signup_metadata, '{}'), 
+        '{failed_login_attempts}', 
+        $2::jsonb
+      ),
+      updated_at = NOW()
       WHERE id = $1
     `;
-    await this.raw(query, [userId]);
+    await this.raw(query, [userId, JSON.stringify(attempts)]);
   }
 
   /**
    * Reset failed login attempts
    */
   async resetFailedLogins(userId: string): Promise<void> {
-    await this.update(userId, {
+    const user = await this.findById(userId);
+    const metadata = {
+      ...(user?.signup_metadata || {}),
       failed_login_attempts: 0,
       account_locked_until: null
+    };
+    
+    await this.update(userId, {
+      signup_metadata: metadata
     });
   }
 
@@ -245,8 +293,14 @@ export class UserRepository extends BaseRepository {
    * Lock user account
    */
   async lockAccount(userId: string, until: Date): Promise<void> {
+    const user = await this.findById(userId);
+    const metadata = {
+      ...(user?.signup_metadata || {}),
+      account_locked_until: until
+    };
+    
     await this.update(userId, {
-      account_locked_until: until,
+      signup_metadata: metadata,
       is_active: false
     });
   }
@@ -266,7 +320,7 @@ export class UserRepository extends BaseRepository {
         COUNT(CASE WHEN is_active = true THEN 1 END) as active,
         COUNT(CASE WHEN last_login > NOW() - INTERVAL '24 hours' THEN 1 END) as active_24h,
         COUNT(CASE WHEN last_login > NOW() - INTERVAL '7 days' THEN 1 END) as active_7d,
-        COUNT(CASE WHEN email_verified = true THEN 1 END) as verified
+        COUNT(CASE WHEN signup_metadata->>'email_verified' = 'true' THEN 1 END) as verified
       FROM users
     `;
     const result = await this.raw(query);
@@ -278,7 +332,7 @@ export class UserRepository extends BaseRepository {
    */
   async getRecentSignups(days = 7): Promise<User[]> {
     const query = `
-      SELECT id, email, name, role, created_at, email_verified
+      SELECT id, email, name, role, created_at, signup_metadata
       FROM users 
       WHERE created_at > NOW() - INTERVAL '${days} days'
       ORDER BY created_at DESC
@@ -290,11 +344,11 @@ export class UserRepository extends BaseRepository {
    * Cleanup expired reset tokens
    */
   async cleanupExpiredTokens(): Promise<number> {
+    // Find users with expired tokens in metadata
     const query = `
       UPDATE users 
-      SET reset_token = NULL, 
-          reset_token_expires = NULL
-      WHERE reset_token_expires < NOW()
+      SET signup_metadata = signup_metadata - 'reset_token' - 'reset_token_expires'
+      WHERE (signup_metadata->>'reset_token_expires')::timestamp < NOW()
       RETURNING id
     `;
     const result = await this.raw(query);
@@ -306,17 +360,17 @@ export class UserRepository extends BaseRepository {
    */
   async getUsersRequiringAction(): Promise<User[]> {
     const query = `
-      SELECT id, email, name, role, 
+      SELECT id, email, name, role, signup_metadata,
              CASE 
-               WHEN email_verified = false THEN 'Email not verified'
-               WHEN account_locked_until > NOW() THEN 'Account locked'
-               WHEN failed_login_attempts > 5 THEN 'Multiple failed logins'
+               WHEN signup_metadata->>'email_verified' = 'false' THEN 'Email not verified'
+               WHEN (signup_metadata->>'account_locked_until')::timestamp > NOW() THEN 'Account locked'
+               WHEN (signup_metadata->>'failed_login_attempts')::int > 5 THEN 'Multiple failed logins'
                WHEN is_active = false THEN 'Account inactive'
              END as action_required
       FROM users 
-      WHERE email_verified = false 
-         OR account_locked_until > NOW()
-         OR failed_login_attempts > 5
+      WHERE signup_metadata->>'email_verified' = 'false' 
+         OR (signup_metadata->>'account_locked_until')::timestamp > NOW()
+         OR (signup_metadata->>'failed_login_attempts')::int > 5
          OR is_active = false
       ORDER BY created_at DESC
     `;
