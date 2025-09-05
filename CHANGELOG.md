@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.2] - 2025-09-05
+
+### Fixed
+- **Auth Module Database Compatibility Issues**
+  - Fixed TypeScript compilation errors with JWT signing
+  - Resolved database schema mismatches with users table
+  - Adapted to use existing signup_metadata JSON column for extended fields
+  - Created missing refresh_tokens and blacklisted_tokens tables
+  - Fixed auth_logs table column name mismatch (action vs event)
+  - Added JWT audience and issuer fields for proper token validation
+  - All auth endpoints now fully operational at /api/v2/auth
+
+### Tested
+- ✅ Signup with automatic customer role assignment
+- ✅ Login with JWT and refresh token generation
+- ✅ Logout with token blacklisting
+- ✅ Password reset request and reset flow
+- ✅ Email verification system
+- ✅ Token refresh mechanism
+- ✅ Protected route authentication
+
 ## [1.16.1] - 2025-09-05
 
 ### Added

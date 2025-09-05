@@ -427,7 +427,11 @@ export class AuthService {
     return jwt.sign(
       payload,
       this.jwtSecret,
-      { expiresIn: this.jwtExpiresIn } as jwt.SignOptions
+      { 
+        expiresIn: this.jwtExpiresIn,
+        audience: 'clubosv1-users',
+        issuer: 'clubosv1'
+      } as jwt.SignOptions
     );
   }
 
@@ -443,7 +447,11 @@ export class AuthService {
     return jwt.sign(
       payload,
       this.jwtSecret,
-      { expiresIn: '30d' } as jwt.SignOptions
+      { 
+        expiresIn: '30d',
+        audience: 'clubosv1-users',
+        issuer: 'clubosv1'
+      } as jwt.SignOptions
     );
   }
 
@@ -520,11 +528,14 @@ export class AuthService {
    */
   private async storeRefreshToken(userId: string, token: string): Promise<void> {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    // Delete old refresh tokens for this user
+    await db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
+    
+    // Insert new refresh token
     const query = `
       INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at)
       VALUES ($1, $2, NOW() + INTERVAL '30 days', NOW())
-      ON CONFLICT (user_id) DO UPDATE 
-      SET token_hash = $2, expires_at = NOW() + INTERVAL '30 days', created_at = NOW()
     `;
     await db.query(query, [userId, tokenHash]);
   }
@@ -535,10 +546,10 @@ export class AuthService {
   private async logAuthEvent(userId: string, event: string, success: boolean): Promise<void> {
     try {
       const query = `
-        INSERT INTO auth_logs (user_id, event, success, timestamp, metadata)
-        VALUES ($1, $2, $3, NOW(), $4)
+        INSERT INTO auth_logs (user_id, action, success, "createdAt")
+        VALUES ($1, $2, $3, NOW())
       `;
-      await db.query(query, [userId, event, success, JSON.stringify({ timestamp: new Date() })]);
+      await db.query(query, [userId, event, success]);
     } catch (error) {
       logger.error('Failed to log auth event', error);
     }
