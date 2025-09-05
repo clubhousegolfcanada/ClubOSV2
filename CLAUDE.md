@@ -18,3 +18,4 @@
 - Create .md plans BEFORE implementing
 - Use TodoWrite for task tracking
 - Keep responses concise
+- Never guess - always verify with actual code/data
