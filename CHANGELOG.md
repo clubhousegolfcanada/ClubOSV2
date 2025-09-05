@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.15.4] - 2025-09-05
+
+### Fixed
+- **Pattern Learning System**: Enabled live mode for pattern suggestions
+  - Disabled shadow_mode to allow patterns to create actionable suggestions
+  - System now generates suggestions for operator review (60-85% confidence)
+  - Auto-executes high confidence patterns (>85% confidence)
+  - 60 patterns active, 24 executions tracked in last 30 days
+  - Pattern queue and live dashboard now functional
+
 ## [1.15.3] - 2025-09-03
 
 ### Fixed
