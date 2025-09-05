@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.0] - 2025-09-05
+
+### Added
+- **Architectural Refactoring - Phase 1 Complete**
+  - Created foundation layer utilities for new architecture
+  - `BaseController` class providing standardized response methods
+  - `BaseRepository` class with common database operations
+  - `ApiResponse` utility for consistent API response formats
+  - `asyncHandler` wrapper for automatic error catching
+  - `HealthController` as proof-of-concept implementation
+  - New standardized response format with success/error states
+
+### Technical Improvements
+- Prepared codebase for complete architectural transformation
+- Established patterns for Controller → Service → Repository layers
+- Added pagination, filtering, and sorting helpers to BaseController
+- Implemented transaction support in BaseRepository
+- Created foundation for 70% reduction in code duplication
+
+### Documentation
+- Added comprehensive architectural refactoring plan (6 phases)
+- Documented new patterns and usage examples
+- Updated README with v1.16.0 release notes
+
 ## [1.15.5] - 2025-09-05
 
 ### Fixed
