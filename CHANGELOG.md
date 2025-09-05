@@ -15,6 +15,19 @@ All notable changes to ClubOS will be documented in this file.
   - 60 patterns active, 24 executions tracked, 11 suggestions pending
   - Pattern queue and live dashboard now fully functional
 
+### Discovered Working Features
+- **GPT-4o Integration**: Fully implemented with reasoning and context analysis
+- **Semantic Search**: All 60 patterns have embeddings, cosine similarity working
+- **Pattern Testing**: Frontend UI exists with test functionality
+- **Auto-Promotion Logic**: Code exists but blocked by confidence update bug
+
+### Known Issues (Documented for Future)
+- **Broken**: Execution counts not updating (always 0)
+- **Broken**: Confidence adjustments not firing on operator actions
+- **Missing**: confidence_evolution and operator_actions tables
+- **Missing**: learnFromHumanResponse() never called
+- **Not Built**: Analytics dashboard, confidence decay, versioning, clustering
+
 ## [1.15.3] - 2025-09-03
 
 ### Fixed
