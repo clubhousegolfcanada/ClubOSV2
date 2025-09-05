@@ -81,18 +81,13 @@ ClubOSV1/
 │   ├── src/routes/             # API endpoints
 │   ├── src/middleware/         # Auth, rate limiting
 │   └── src/database/migrations/# Schema changes
-├── scripts/                    # All operational scripts (ORGANIZED)
-│   ├── dev/                    # Development scripts
-│   ├── deploy/                 # Deployment scripts
-│   ├── test/                   # Test scripts
-│   ├── utils/                  # Utility scripts
-│   └── security/               # Security scripts
+├── scripts/                    # Operational scripts
 ├── docs/                       # All documentation (ORGANIZED)
-│   ├── architecture/           # System design docs
-│   ├── deployment/             # Deployment guides
-│   ├── development/            # Dev guides & standards
-│   ├── features/               # Feature documentation
-│   └── archive/                # Old/deprecated docs
+│   ├── audits/                 # System audits and evaluations
+│   ├── plans/                  # Implementation and enhancement plans
+│   ├── status-reports/         # Progress and status updates
+│   └── archive/                # Historical documentation
+│       └── pattern-learning/   # Pattern learning history
 ├── CLAUDE.md                   # Your context doc (MUST READ)
 └── README.md                   # This file
 ```
