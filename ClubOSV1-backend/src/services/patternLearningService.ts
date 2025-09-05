@@ -181,7 +181,30 @@ export class PatternLearningService {
       }
 
       // Get the best matching pattern
-      const bestMatch = patterns[0];
+      let bestMatch = patterns[0];
+      
+      // Validate the match with GPT-4o to prevent nonsensical responses
+      if (this.openai && bestMatch) {
+        const isValidMatch = await this.validatePatternMatch(message, bestMatch, customerName);
+        if (!isValidMatch) {
+          logger.info('[PatternLearning] GPT-4o rejected pattern match as inappropriate', {
+            message: message.substring(0, 50),
+            patternId: bestMatch.id,
+            patternResponse: bestMatch.response_template.substring(0, 50)
+          });
+          
+          // Try the next best pattern or escalate
+          if (patterns.length > 1) {
+            bestMatch = patterns[1];
+          } else {
+            return {
+              action: 'escalate',
+              reason: 'no_appropriate_pattern',
+              learnFromResponse: true
+            };
+          }
+        }
+      }
       
       // Log pattern match for analysis
       await this.logPatternMatch(bestMatch, message, phoneNumber, conversationId);
@@ -1048,6 +1071,60 @@ export class PatternLearningService {
     if (value === 'false') return false;
     if (!isNaN(Number(value))) return Number(value);
     return value;
+  }
+
+  /**
+   * Validate if a pattern match makes sense for the given message
+   * This prevents nonsensical responses like "swinging club like sword" for "Thanks"
+   */
+  private async validatePatternMatch(
+    message: string,
+    pattern: Pattern,
+    customerName?: string
+  ): Promise<boolean> {
+    try {
+      if (!this.openai) return true; // Can't validate without AI
+      
+      const prompt = `You are evaluating if a customer service response template is appropriate for a customer message.
+
+Customer Message: "${message}"
+Customer Name: ${customerName || 'Unknown'}
+
+Proposed Response Template: "${pattern.response_template}"
+Pattern Type: ${pattern.pattern_type}
+Pattern Trigger: ${pattern.trigger_text || 'N/A'}
+
+Is this response appropriate and contextually relevant for this message?
+Consider:
+1. Does the response make logical sense as a reply to the message?
+2. Is the tone and content appropriate?
+3. Would this response seem random or out of context?
+
+Respond with a JSON object: { "appropriate": true/false, "reason": "brief explanation" }`;
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1, // Very low temperature for consistent validation
+        response_format: { type: "json_object" },
+        max_tokens: 200
+      });
+
+      const result = JSON.parse(completion.choices[0].message.content || '{"appropriate": true}');
+      
+      if (!result.appropriate) {
+        logger.info('[PatternLearning] Pattern validation failed', {
+          reason: result.reason,
+          message: message.substring(0, 50),
+          patternId: pattern.id
+        });
+      }
+      
+      return result.appropriate;
+    } catch (error) {
+      logger.error('[PatternLearning] Pattern validation error', error);
+      return true; // Default to allowing the match if validation fails
+    }
   }
 
   /**
