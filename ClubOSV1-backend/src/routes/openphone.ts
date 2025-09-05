@@ -431,13 +431,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       VALUES ($1, 'ai', $2, $3)
                     `, [existingConv.rows[0].id, patternResult.response, patternResult.patternId]);
                   }
-                } else if (patternResult.action === 'suggest') {
+                } else if (patternResult.action === 'suggest' || patternResult.action === 'queue') {
                   logger.info('[Pattern Learning] SUGGESTION READY', {
+                    action: patternResult.action,
                     confidence: patternResult.confidence,
                     pattern: patternResult.pattern?.pattern_type
                   });
                   
-                  // Store suggestion for operator review
+                  // Store suggestion for operator review (both 'suggest' and 'queue' actions)
                   await db.query(`
                     INSERT INTO pattern_suggestions_queue 
                     (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
@@ -631,10 +632,55 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 customerName
               );
               
-              if (patternResult.action === 'shadow') {
+              // Handle pattern result based on action
+              if (patternResult.action === 'auto_execute' && patternResult.response) {
+                logger.info('[Pattern Learning] AUTO-EXECUTING (new conv)', {
+                  confidence: patternResult.confidence,
+                  pattern: patternResult.pattern?.pattern_type
+                });
+                
+                // Send automated response
+                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                if (defaultNumber) {
+                  await openPhoneService.sendMessage(
+                    phoneNumber,
+                    defaultNumber,
+                    patternResult.response
+                  );
+                }
+              } else if (patternResult.action === 'suggest' || patternResult.action === 'queue') {
+                logger.info('[Pattern Learning] SUGGESTION READY (new conv)', {
+                  action: patternResult.action,
+                  confidence: patternResult.confidence,
+                  pattern: patternResult.pattern?.pattern_type
+                });
+                
+                // Store suggestion for operator review
+                await db.query(`
+                  INSERT INTO pattern_suggestions_queue 
+                  (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
+                   confidence_score, reasoning, phone_number, status, created_at)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
+                `, [
+                  newConversationId,
+                  patternResult.patternId,
+                  patternResult.pattern?.pattern_type || 'general',
+                  messageText,
+                  patternResult.response,
+                  patternResult.confidence,
+                  JSON.stringify(patternResult.reasoning),
+                  phoneNumber
+                ]);
+              } else if (patternResult.action === 'shadow') {
                 logger.info('[Pattern Learning] SHADOW MODE (new conv)', {
                   confidence: patternResult.confidence,
                   pattern: patternResult.pattern?.pattern_type
+                });
+              } else {
+                logger.info('[Pattern Learning] Result (new conv):', {
+                  action: patternResult.action,
+                  confidence: patternResult.confidence,
+                  reason: patternResult.reason
                 });
               }
             } catch (err) {

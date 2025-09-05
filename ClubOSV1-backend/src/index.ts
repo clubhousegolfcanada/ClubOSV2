@@ -301,6 +301,10 @@ app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api', testKnowledgeRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 
+// Architecture v2 routes (remove after full migration)
+// import healthRefactoredRoutes from './routes/health-refactored';
+// app.use('/api/v2', healthRefactoredRoutes);
+
 // HubSpot webhook routes
 import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
 app.use('/api/webhooks/hubspot', hubspotBookingWebhook);

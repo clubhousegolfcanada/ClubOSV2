@@ -2,6 +2,33 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.1] - 2025-09-05
+
+### Added
+- **Architectural Refactoring - Phase 2 Complete (Auth Module)**
+  - Migrated Auth module from 1098 lines to layered architecture
+  - Created AuthController with standardized HTTP handling
+  - Created AuthService with all authentication business logic
+  - Created UserRepository with comprehensive user data access
+  - Added auth validators for all endpoints
+  - Simplified auth routes from 1098 to 110 lines (90% reduction)
+  - Added MIGRATION_STATUS.md to track refactoring progress
+  
+### Technical Improvements
+- Auth module now follows Controller → Service → Repository pattern
+- All auth responses standardized with ApiResponse utility
+- Password handling centralized in AuthService
+- User queries centralized in UserRepository
+- Validation rules extracted to separate validators
+- Support for refresh tokens and session management
+
+### Code Quality
+- Achieved 90% reduction in route file complexity
+- Improved separation of concerns
+- Enhanced testability with isolated layers
+- Better error handling and logging
+- Consistent validation across all auth endpoints
+
 ## [1.16.0] - 2025-09-05
 
 ### Added

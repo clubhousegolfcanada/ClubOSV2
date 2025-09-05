@@ -41,13 +41,13 @@ async function main() {
       // Update existing configuration
       await db.query(`
         UPDATE pattern_learning_config 
-        SET config_value = 'true', updated_at = NOW()
+        SET config_value = 'true'
         WHERE config_key = 'enabled'
       `);
       
       await db.query(`
         UPDATE pattern_learning_config 
-        SET config_value = 'false', updated_at = NOW()
+        SET config_value = 'false'
         WHERE config_key = 'shadow_mode'
       `);
       console.log('✅ Updated configuration - Pattern Learning is now ENABLED');
