@@ -919,22 +919,18 @@ router.get('/queue',
         SELECT 
           psq.id,
           psq.conversation_id,
-          psq.pattern_id,
+          psq.approved_pattern_id as pattern_id,
           psq.suggested_response,
           psq.confidence_score,
           psq.reasoning,
           psq.status,
           psq.created_at,
-          oc.phone_number,
-          oc.customer_name,
-          cm.message_text as original_message,
-          dp.pattern_type,
+          psq.phone_number,
+          psq.trigger_text as original_message,
+          psq.pattern_type,
           dp.response_template
         FROM pattern_suggestions_queue psq
-        LEFT JOIN openphone_conversations oc ON oc.id::text = psq.conversation_id
-        LEFT JOIN conversation_messages cm ON cm.conversation_id = psq.conversation_id 
-          AND cm.sender_type = 'customer'
-        LEFT JOIN decision_patterns dp ON dp.id = psq.pattern_id
+        LEFT JOIN decision_patterns dp ON dp.id = psq.approved_pattern_id
         WHERE psq.status = 'pending'
         ORDER BY psq.created_at DESC
         LIMIT 20
@@ -1011,7 +1007,7 @@ router.post('/queue/:id/respond',
           `INSERT INTO operator_actions 
            (suggestion_id, operator_id, action_type, original_suggestion, final_response, pattern_id, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-          [id, operatorId, action, sugg.suggested_response, finalResponse, sugg.pattern_id]
+          [id, operatorId, action, sugg.suggested_response, finalResponse, sugg.approved_pattern_id]
         );
 
         if (action !== 'reject') {
@@ -1037,13 +1033,13 @@ router.post('/queue/:id/respond',
                 `INSERT INTO conversation_messages 
                  (conversation_id, sender_type, message_text, pattern_id, created_at)
                  VALUES ($1, 'operator', $2, $3, NOW())`,
-                [sugg.conversation_id, finalResponse, sugg.pattern_id]
+                [sugg.conversation_id, finalResponse, sugg.approved_pattern_id]
               );
             }
           }
 
           // Update pattern confidence based on action
-          if (sugg.pattern_id) {
+          if (sugg.approved_pattern_id) {
             const confidenceChange = action === 'accept' ? 0.02 : -0.01; // Small adjustments
             await db.query(
               `UPDATE decision_patterns 
@@ -1052,13 +1048,13 @@ router.post('/queue/:id/respond',
                    success_count = success_count + CASE WHEN $2 = 'accept' THEN 1 ELSE 0 END,
                    human_override_count = human_override_count + CASE WHEN $2 = 'modify' THEN 1 ELSE 0 END
                WHERE id = $3`,
-              [confidenceChange, action, sugg.pattern_id]
+              [confidenceChange, action, sugg.approved_pattern_id]
             );
           }
         }
 
         // If modified, learn from the modification
-        if (action === 'modify' && sugg.pattern_id) {
+        if (action === 'modify' && sugg.approved_pattern_id) {
           const conversationData = await db.query(
             'SELECT phone_number FROM openphone_conversations WHERE id::text = $1',
             [sugg.conversation_id]
@@ -1129,7 +1125,7 @@ router.get('/recent-activity',
         LEFT JOIN decision_patterns dp ON dp.id = peh.pattern_id
         LEFT JOIN openphone_conversations oc ON oc.id::text = peh.conversation_id
         LEFT JOIN pattern_suggestions_queue psq ON psq.conversation_id = peh.conversation_id
-          AND psq.pattern_id = peh.pattern_id
+          AND psq.approved_pattern_id = peh.pattern_id
         ORDER BY peh.created_at DESC
         LIMIT 50
       `);
