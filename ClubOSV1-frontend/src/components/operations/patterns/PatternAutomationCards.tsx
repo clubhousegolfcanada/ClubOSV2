@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
+import { PatternCreationModal } from './PatternCreationModal';
 
 interface PatternAutomation {
   id: number;
@@ -31,6 +32,7 @@ export const PatternAutomationCards: React.FC = () => {
   const [editedResponse, setEditedResponse] = useState('');
   const [editedTrigger, setEditedTrigger] = useState('');
   const [stats, setStats] = useState<any>(null);
+  const [showCreationModal, setShowCreationModal] = useState(false);
 
   useEffect(() => {
     fetchAutomations();
@@ -241,6 +243,23 @@ export const PatternAutomationCards: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Add Button */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Pattern Automations</h3>
+          <p className="text-sm text-gray-600">
+            {automations.length} active patterns
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreationModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Add Pattern
+        </button>
+      </div>
+
       {/* Info box if no patterns */}
       {automations.length === 0 && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
@@ -251,6 +270,7 @@ export const PatternAutomationCards: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">
                 The system is learning from operator responses. When you respond to customer messages, 
                 patterns will automatically be created and appear here as automation cards.
+                You can also manually create patterns using the "Add Pattern" button above.
               </p>
             </div>
           </div>
@@ -407,6 +427,16 @@ export const PatternAutomationCards: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Pattern Creation Modal */}
+      <PatternCreationModal
+        isOpen={showCreationModal}
+        onClose={() => setShowCreationModal(false)}
+        onSuccess={() => {
+          fetchAutomations();
+          fetchStats();
+        }}
+      />
     </div>
   );
 };

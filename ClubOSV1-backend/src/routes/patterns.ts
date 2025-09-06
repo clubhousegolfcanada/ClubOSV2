@@ -145,7 +145,7 @@ router.get('/',
         FROM decision_patterns p
         LEFT JOIN pattern_execution_history peh ON p.id = peh.pattern_id
           AND peh.created_at > NOW() - INTERVAL '7 days'
-        WHERE p.is_active = TRUE
+        WHERE 1=1
       `;
 
       const params: any[] = [];
@@ -178,7 +178,7 @@ router.get('/',
 
       // Get total count for pagination
       const countResult = await db.query(
-        'SELECT COUNT(*) FROM decision_patterns WHERE is_active = TRUE'
+        'SELECT COUNT(*) FROM decision_patterns'
       );
 
       res.json({
@@ -508,6 +508,178 @@ router.post('/test',
     } catch (error) {
       logger.error('[Patterns API] Failed to test pattern', error);
       res.status(500).json({ success: false, error: 'Failed to test pattern' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns
+ * Create a new pattern manually
+ */
+router.post('/',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [
+    body('pattern_type').isString().notEmpty(),
+    body('trigger_examples').isArray().notEmpty(),
+    body('trigger_keywords').optional().isArray(),
+    body('response_template').isString().notEmpty(),
+    body('confidence_score').optional().isFloat({ min: 0, max: 1 }),
+    body('auto_executable').optional().isBoolean(),
+    body('semantic_search_enabled').optional().isBoolean()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const {
+        pattern_type,
+        trigger_examples,
+        trigger_keywords,
+        response_template,
+        confidence_score = 0.7,
+        auto_executable = false,
+        semantic_search_enabled = true
+      } = req.body;
+
+      // Generate pattern signature from first trigger example
+      const pattern_signature = crypto.createHash('md5')
+        .update(trigger_examples[0].toLowerCase())
+        .digest('hex');
+
+      // Check for duplicate patterns
+      const existingPattern = await db.query(
+        'SELECT id FROM decision_patterns WHERE pattern_signature = $1',
+        [pattern_signature]
+      );
+
+      if (existingPattern.rows.length > 0) {
+        return res.status(409).json({ 
+          success: false, 
+          error: 'A pattern with similar trigger already exists',
+          existingPatternId: existingPattern.rows[0].id
+        });
+      }
+
+      // Extract keywords if not provided
+      const keywords = trigger_keywords || trigger_examples.flatMap((example: string) => {
+        const words = example.toLowerCase().split(/\s+/);
+        const stopWords = ['the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'but', 'in', 'with', 'to', 'for', 'how', 'what', 'when', 'where', 'why'];
+        return words.filter(word => word.length > 2 && !stopWords.includes(word));
+      });
+
+      // Generate embeddings if OpenAI is available and semantic search is enabled
+      let embedding = null;
+      if (semantic_search_enabled && process.env.OPENAI_API_KEY) {
+        try {
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          const embeddingResponse = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: trigger_examples.join(' ')
+          });
+          embedding = embeddingResponse.data[0].embedding;
+        } catch (embError) {
+          logger.error('[Patterns API] Failed to generate embedding', embError);
+          // Continue without embedding
+        }
+      }
+
+      // Validate response template with GPT-4o if available
+      let gpt4o_validated = false;
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          const validationResponse = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are validating response templates for a golf simulator business. The tone should be friendly, professional, and match the Clubhouse brand voice.'
+              },
+              {
+                role: 'user',
+                content: `Validate this response template. Return JSON with {valid: boolean, suggestions: string}:\n\nTemplate: ${response_template}`
+              }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.3,
+            max_tokens: 500
+          });
+
+          const validation = JSON.parse(validationResponse.choices[0].message.content || '{}');
+          gpt4o_validated = validation.valid === true;
+          
+          if (!gpt4o_validated && validation.suggestions) {
+            logger.info('[Patterns API] GPT-4o validation suggestions', { suggestions: validation.suggestions });
+          }
+        } catch (valError) {
+          logger.error('[Patterns API] Failed to validate with GPT-4o', valError);
+          // Continue without validation
+        }
+      }
+
+      // Insert the new pattern
+      const result = await db.query(`
+        INSERT INTO decision_patterns (
+          pattern_type,
+          pattern_signature,
+          pattern,
+          trigger_text,
+          trigger_examples,
+          trigger_keywords,
+          response_template,
+          confidence_score,
+          auto_executable,
+          semantic_search_enabled,
+          embedding,
+          gpt4o_validated,
+          created_from,
+          created_by,
+          is_active,
+          notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        RETURNING *
+      `, [
+        pattern_type,
+        pattern_signature,
+        trigger_examples[0], // Use first example as main pattern
+        trigger_examples[0],
+        trigger_examples,
+        keywords,
+        response_template,
+        confidence_score,
+        auto_executable,
+        semantic_search_enabled,
+        embedding ? `{${embedding.join(',')}}` : null,
+        gpt4o_validated,
+        'manual',
+        (req as any).user?.id,
+        true, // Active by default
+        `Manually created by ${(req as any).user?.name || 'operator'}`
+      ]);
+
+      // Log the creation for audit
+      logger.info('[Patterns API] Pattern manually created', {
+        patternId: result.rows[0].id,
+        patternType: pattern_type,
+        createdBy: (req as any).user?.id,
+        triggerExamples: trigger_examples.length,
+        hasEmbedding: !!embedding,
+        gpt4oValidated: gpt4o_validated
+      });
+
+      res.json({
+        success: true,
+        pattern: result.rows[0],
+        message: 'Pattern created successfully',
+        gpt4oValidated: gpt4o_validated
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to create pattern', error);
+      res.status(500).json({ success: false, error: 'Failed to create pattern' });
     }
   }
 );

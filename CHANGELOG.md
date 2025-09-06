@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.7] - 2025-09-06
+
+### Fixed
+- **V3-PLS Pattern Display Issue**
+  - Fixed patterns not showing in UI - they were created but hidden
+  - Removed `is_active = TRUE` filter from patterns API endpoint
+  - All patterns (active and inactive) now display in V3-PLS page
+  - Operators can toggle patterns on/off as intended
+  - Patterns created by automatic learning were stuck as inactive
+  - Created diagnostic scripts to check pattern status
+
+### Technical Details
+- Patterns were being created with `is_active = false` by default
+- API was filtering to only show `is_active = TRUE` patterns
+- This meant automatically learned patterns never appeared
+- Now shows all patterns regardless of active status
+- Operators control activation via toggle switches
+
 ## [1.17.6] - 2025-09-06
 
 ### Fixed

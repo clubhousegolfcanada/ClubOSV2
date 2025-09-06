@@ -151,6 +151,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.7**: Fixed V3-PLS Pattern Display Issue
+  - Patterns were being created but not showing in UI (filtered by is_active)
+  - Now displays ALL patterns so operators can toggle them on/off
+  - Run `psql $DATABASE_URL < scripts/show-all-patterns.sql` to see hidden patterns
 - **v1.17.6**: Fixed V3-PLS Safety Settings Persistence
   - Blacklist topics and escalation keywords now properly persist after saving
   - Added success notification when settings are saved
