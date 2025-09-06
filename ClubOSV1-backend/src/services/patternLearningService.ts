@@ -1002,8 +1002,8 @@ export class PatternLearningService {
         INSERT INTO decision_patterns 
         (pattern_type, pattern_signature, trigger_text, trigger_keywords,
          response_template, action_template, confidence_score, 
-         created_from, created_by, notes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         created_from, created_by, notes, is_active, auto_executable)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, false)
         ON CONFLICT (pattern_signature) DO UPDATE
         SET response_template = EXCLUDED.response_template,
             action_template = EXCLUDED.action_template,
@@ -1062,8 +1062,8 @@ export class PatternLearningService {
         INSERT INTO decision_patterns 
         (pattern_type, pattern_signature, trigger_text, trigger_keywords,
          response_template, action_template, confidence_score, 
-         created_from, created_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         created_from, created_by, is_active, auto_executable)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, false)
         ON CONFLICT (pattern_signature) DO UPDATE
         SET response_template = EXCLUDED.response_template,
             last_modified = NOW()
