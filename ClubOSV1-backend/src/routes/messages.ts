@@ -414,42 +414,91 @@ router.post('/send',
         setInboxStatus: 'done' // Mark conversation as done after sending
       });
       
-      // PATTERN LEARNING: Use the sophisticated pattern learning service
+      // PATTERN LEARNING: Analyze full conversation when marked as done
       try {
-        // Import the pattern learning service
+        // Import services
         const { patternLearningService } = await import('../services/patternLearningService');
+        const { ConversationAnalyzer } = await import('../services/conversationAnalyzer');
+        const analyzer = new ConversationAnalyzer();
         
-        // Get the last customer message for this conversation
-        const lastCustomerMsg = await db.query(`
-          SELECT body, created_at, conversation_id
+        // Get the full conversation history
+        const conversationMessages = await db.query(`
+          SELECT 
+            body, 
+            direction,
+            created_at,
+            conversation_id
           FROM messages 
-          WHERE to_number = $1 
-            AND direction = 'inbound'
+          WHERE (from_number = $1 AND to_number = $2) 
+             OR (from_number = $2 AND to_number = $1)
           ORDER BY created_at DESC 
-          LIMIT 1
-        `, [formattedFrom]);
+          LIMIT 20
+        `, [formattedTo, formattedFrom]);
         
-        if (lastCustomerMsg.rows.length > 0) {
-          const customerMessage = lastCustomerMsg.rows[0].body;
-          const conversationId = lastCustomerMsg.rows[0].conversation_id || result.conversationId;
+        if (conversationMessages.rows.length > 0) {
+          // Reverse to get chronological order
+          const messages = conversationMessages.rows.reverse();
           
-          // Use the sophisticated pattern learning service with GPT-4o
-          await patternLearningService.learnFromHumanResponse(
-            customerMessage,  // originalMessage
-            text,            // humanResponse (operator's message)
-            [],              // actionsTaken (empty for now)
-            conversationId,  // conversationId
-            formattedTo,     // phoneNumber (customer's number)
-            req.user?.id?.toString() // operatorId
+          // Extract conversation context with AI
+          const context = await analyzer.extractConversationContext(messages);
+          
+          // Check if this looks like a complete Q&A exchange
+          const hasQuestion = messages.some(m => 
+            m.direction === 'inbound' && 
+            (m.body.includes('?') || m.body.toLowerCase().match(/do you|can i|how|what|where|when/))
           );
           
-          logger.info('[Pattern Learning] Processed operator response with AI', {
-            customerMsgPreview: customerMessage.substring(0, 50),
-            operatorMsgPreview: text.substring(0, 50)
-          });
+          const hasAnswer = messages.some(m => m.direction === 'outbound');
+          const hasResolution = context.isComplete || 
+                               text.toLowerCase().includes('you\'re welcome') ||
+                               text.toLowerCase().includes('no problem') ||
+                               text.toLowerCase().includes('happy to help');
+          
+          // Only create pattern if it's a complete Q&A that should be automated
+          if (hasQuestion && hasAnswer && (hasResolution || context.category)) {
+            // Find the initial customer question
+            const firstQuestion = messages.find(m => 
+              m.direction === 'inbound' && 
+              (m.body.includes('?') || m.body.toLowerCase().match(/do you|can i|how|what|where|when/))
+            );
+            
+            // Get the main operator response (not just acknowledgments)
+            const mainResponse = messages.find(m => 
+              m.direction === 'outbound' && 
+              m.body.length > 20 && // Skip short acknowledgments
+              !m.body.toLowerCase().match(/^(sure|ok|okay|yes|no problem|you're welcome)\.?$/)
+            ) || { body: text }; // Fallback to current message
+            
+            if (firstQuestion && mainResponse) {
+              // Use pattern learning with full context
+              await patternLearningService.learnFromHumanResponse(
+                firstQuestion.body,     // The actual question
+                mainResponse.body,      // The substantive answer
+                [],                     // actionsTaken
+                result.conversationId || messages[0].conversation_id,
+                formattedTo,           // customer's number
+                req.user?.id?.toString()
+              );
+              
+              logger.info('[Pattern Learning] Created pattern from complete conversation', {
+                category: context.category,
+                intent: context.intent,
+                isComplete: context.isComplete,
+                questionPreview: firstQuestion.body.substring(0, 50),
+                answerPreview: mainResponse.body.substring(0, 50)
+              });
+            }
+          } else {
+            logger.info('[Pattern Learning] Skipped - not a complete automatable Q&A', {
+              hasQuestion,
+              hasAnswer,
+              hasResolution,
+              category: context.category
+            });
+          }
         }
       } catch (error) {
-        logger.error('[Pattern Learning] Failed to process operator response', error);
+        logger.error('[Pattern Learning] Failed to analyze conversation', error);
         // Don't fail the send if pattern learning fails
       }
       
