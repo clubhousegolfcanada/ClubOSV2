@@ -263,58 +263,39 @@ router.get('/conversations/:phoneNumber/full-history',
     try {
       const { phoneNumber } = req.params;
       
-      // Get ALL conversations for this phone number, ordered by creation time
-      const allConversations = await db.query(
+      // Get the most recent conversation for this phone number
+      // Multiple conversations can exist due to webhook duplicates or restarts
+      const mostRecentConv = await db.query(
         `SELECT * FROM openphone_conversations 
          WHERE phone_number = $1 
-         ORDER BY created_at ASC`,
+         ORDER BY created_at DESC
+         LIMIT 1`,
         [phoneNumber]
       );
+      
+      // For backward compatibility, still use allConversations variable
+      const allConversations = mostRecentConv;
       
       if (allConversations.rows.length === 0) {
         return res.status(404).json(errorResponse('No conversations found for this phone number', 404));
       }
       
-      // Merge all messages with conversation markers
-      const allMessages: any[] = [];
-      let totalMessageCount = 0;
+      // Just use messages from the most recent conversation
+      // (Multiple conversation records can exist due to webhook issues)
+      const conv = allConversations.rows[0];
+      const messages = conv.messages || [];
       
-      for (let i = 0; i < allConversations.rows.length; i++) {
-        const conv = allConversations.rows[i];
-        const messages = conv.messages || [];
-        
-        // Add conversation separator for subsequent conversations
-        if (i > 0) {
-          const previousConv = allConversations.rows[i - 1];
-          const lastMessageTime = previousConv.messages?.[previousConv.messages.length - 1]?.createdAt;
-          const timeSinceLastMessage = lastMessageTime 
-            ? new Date(conv.created_at).getTime() - new Date(lastMessageTime).getTime()
-            : 0;
-          
-          allMessages.push({
-            id: `separator_${conv.id}`,
-            type: 'conversation_separator',
-            timestamp: conv.created_at,
-            reason: 'New conversation started',
-            timeSinceLastMessage: Math.round(timeSinceLastMessage / 1000 / 60), // minutes
-            conversationId: conv.id
-          });
-        }
-        
-        // Add all messages from this conversation
-        messages.forEach((msg: any) => {
-          allMessages.push({
-            ...msg,
-            conversationId: conv.id,
-            conversationIndex: i
-          });
-        });
-        
-        totalMessageCount += messages.length;
-      }
+      // Format messages for response
+      const allMessages = messages.map((msg: any) => ({
+        ...msg,
+        conversationId: conv.id,
+        conversationIndex: 0
+      }));
       
-      // Get the most recent conversation data for display
-      const mostRecentConv = allConversations.rows[allConversations.rows.length - 1];
+      const totalMessageCount = messages.length;
+      
+      // Already have mostRecentConv from above
+      const mostRecentConv = conv;
       
       // Mark all conversations as read
       try {
@@ -525,9 +506,12 @@ router.post('/send',
           status: 'sent'
         };
         
-        // Check if conversation exists
+        // Check if conversation exists - get the most recent one
         const existingConv = await db.query(
-          `SELECT id, messages FROM openphone_conversations WHERE phone_number = $1 ORDER BY updated_at DESC LIMIT 1`,
+          `SELECT id, messages FROM openphone_conversations 
+           WHERE phone_number = $1 
+           ORDER BY created_at DESC 
+           LIMIT 1`,
           [formattedTo]
         );
         
