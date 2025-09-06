@@ -550,7 +550,7 @@ router.post('/',
         .update(trigger_examples[0].toLowerCase())
         .digest('hex');
 
-      // Check for duplicate patterns
+      // Check for duplicate patterns using signature
       const existingPattern = await db.query(
         'SELECT id FROM decision_patterns WHERE pattern_signature = $1',
         [pattern_signature]
@@ -563,22 +563,124 @@ router.post('/',
           existingPatternId: existingPattern.rows[0].id
         });
       }
+      
+      // Check for semantically similar patterns if embeddings are enabled
+      if (semantic_search_enabled && process.env.OPENAI_API_KEY) {
+        try {
+          // First generate embedding for the new pattern
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          const newEmbeddingResponse = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: trigger_examples.join(' ')
+          });
+          const newEmbedding = newEmbeddingResponse.data[0].embedding;
+          
+          // Check similarity with existing patterns that have embeddings
+          const similarPatterns = await db.query(`
+            SELECT 
+              id, 
+              pattern_type,
+              trigger_text,
+              response_template,
+              cosine_similarity(embedding, $1::float[]) as similarity
+            FROM decision_patterns
+            WHERE embedding IS NOT NULL
+              AND is_active = true
+            HAVING cosine_similarity(embedding, $1::float[]) > 0.85
+            ORDER BY similarity DESC
+            LIMIT 3
+          `, [`{${newEmbedding.join(',')}}`]);
+          
+          if (similarPatterns.rows.length > 0) {
+            const topMatch = similarPatterns.rows[0];
+            logger.info('[Patterns API] Found semantically similar pattern', {
+              similarity: topMatch.similarity,
+              existingPattern: topMatch.trigger_text
+            });
+            
+            // Warn about high similarity but don't block
+            if (topMatch.similarity > 0.95) {
+              return res.status(409).json({
+                success: false,
+                error: `Very similar pattern already exists: "${topMatch.trigger_text}"`,
+                existingPatternId: topMatch.id,
+                similarity: Math.round(topMatch.similarity * 100) + '%',
+                suggestion: 'Consider editing the existing pattern instead'
+              });
+            }
+          }
+        } catch (simError) {
+          logger.error('[Patterns API] Failed to check semantic similarity', simError);
+          // Continue without similarity check
+        }
+      }
 
-      // Extract keywords if not provided
-      const keywords = trigger_keywords || trigger_examples.flatMap((example: string) => {
+      // Use GPT-4o to expand trigger examples and extract better keywords
+      let expandedTriggers = trigger_examples;
+      let intelligentKeywords = trigger_keywords;
+      
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          
+          // Expand trigger examples using GPT-4o
+          const expansionResponse = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: `You are helping create pattern triggers for a golf simulator business customer service AI.
+                Given a few trigger examples, generate 5-10 more variations that customers might actually use.
+                Include formal, casual, misspelled, and action-oriented versions.
+                Return JSON: {triggers: string[], keywords: string[]}`
+              },
+              {
+                role: 'user',
+                content: `Pattern type: ${pattern_type}\nExisting triggers: ${JSON.stringify(trigger_examples)}\n\nGenerate more trigger variations and extract key unique words.`
+              }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.7,
+            max_tokens: 500
+          });
+
+          const expansion = JSON.parse(expansionResponse.choices[0].message.content || '{}');
+          
+          // Combine original and expanded triggers (limit to 10 total)
+          expandedTriggers = [...new Set([...trigger_examples, ...(expansion.triggers || [])])].slice(0, 10);
+          
+          // Use GPT-4o suggested keywords if better than simple extraction
+          if (expansion.keywords && expansion.keywords.length > 0) {
+            intelligentKeywords = expansion.keywords;
+          }
+          
+          logger.info('[Patterns API] GPT-4o expanded triggers', { 
+            original: trigger_examples.length, 
+            expanded: expandedTriggers.length,
+            keywords: intelligentKeywords?.length 
+          });
+        } catch (expandError) {
+          logger.error('[Patterns API] Failed to expand triggers with GPT-4o', expandError);
+          // Continue with original triggers
+        }
+      }
+      
+      // Fallback keyword extraction if GPT-4o didn't provide any
+      const keywords = intelligentKeywords || trigger_examples.flatMap((example: string) => {
         const words = example.toLowerCase().split(/\s+/);
         const stopWords = ['the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'but', 'in', 'with', 'to', 'for', 'how', 'what', 'when', 'where', 'why'];
         return words.filter(word => word.length > 2 && !stopWords.includes(word));
       });
 
-      // Generate embeddings if OpenAI is available and semantic search is enabled
+      // Generate embeddings from ALL expanded triggers for better matching
       let embedding = null;
       if (semantic_search_enabled && process.env.OPENAI_API_KEY) {
         try {
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          // Use expanded triggers for embedding to capture more variations
           const embeddingResponse = await openai.embeddings.create({
             model: 'text-embedding-3-small',
-            input: trigger_examples.join(' ')
+            input: expandedTriggers.join(' ')
           });
           embedding = embeddingResponse.data[0].embedding;
         } catch (embError) {
@@ -587,21 +689,31 @@ router.post('/',
         }
       }
 
-      // Validate response template with GPT-4o if available
+      // Optimize and validate response template with GPT-4o
+      let optimizedResponse = response_template;
       let gpt4o_validated = false;
+      
       if (process.env.OPENAI_API_KEY) {
         try {
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-          const validationResponse = await openai.chat.completions.create({
+          const optimizationResponse = await openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [
               {
                 role: 'system',
-                content: 'You are validating response templates for a golf simulator business. The tone should be friendly, professional, and match the Clubhouse brand voice.'
+                content: `You are optimizing response templates for a golf simulator business.
+                Rules:
+                1. Answer must be in the FIRST sentence (no greetings first)
+                2. Include specific actionable next steps
+                3. Keep friendly but professional Clubhouse tone
+                4. Format with line breaks for readability
+                5. Preserve all URLs, prices, and specific information exactly
+                6. Keep under 100 words
+                Return JSON: {optimized: string, valid: boolean, improvements: string[]}`
               },
               {
                 role: 'user',
-                content: `Validate this response template. Return JSON with {valid: boolean, suggestions: string}:\n\nTemplate: ${response_template}`
+                content: `Pattern type: ${pattern_type}\nOriginal response: ${response_template}\n\nOptimize this response to be more effective.`
               }
             ],
             response_format: { type: 'json_object' },
@@ -609,19 +721,26 @@ router.post('/',
             max_tokens: 500
           });
 
-          const validation = JSON.parse(validationResponse.choices[0].message.content || '{}');
-          gpt4o_validated = validation.valid === true;
+          const optimization = JSON.parse(optimizationResponse.choices[0].message.content || '{}');
           
-          if (!gpt4o_validated && validation.suggestions) {
-            logger.info('[Patterns API] GPT-4o validation suggestions', { suggestions: validation.suggestions });
+          // Use optimized version if it's better
+          if (optimization.optimized && optimization.valid) {
+            optimizedResponse = optimization.optimized;
+            gpt4o_validated = true;
+            
+            logger.info('[Patterns API] GPT-4o optimized response', {
+              original_length: response_template.length,
+              optimized_length: optimizedResponse.length,
+              improvements: optimization.improvements
+            });
           }
-        } catch (valError) {
-          logger.error('[Patterns API] Failed to validate with GPT-4o', valError);
-          // Continue without validation
+        } catch (optError) {
+          logger.error('[Patterns API] Failed to optimize with GPT-4o', optError);
+          // Continue with original response
         }
       }
 
-      // Insert the new pattern
+      // Insert the new pattern with expanded triggers and optimized response
       const result = await db.query(`
         INSERT INTO decision_patterns (
           pattern_type,
@@ -647,9 +766,9 @@ router.post('/',
         pattern_signature,
         trigger_examples[0], // Use first example as main pattern
         trigger_examples[0],
-        trigger_examples,
+        expandedTriggers, // Use expanded triggers for better matching
         keywords,
-        response_template,
+        optimizedResponse, // Use optimized response
         confidence_score,
         auto_executable,
         semantic_search_enabled,
@@ -658,7 +777,7 @@ router.post('/',
         'manual',
         (req as any).user?.id,
         true, // Active by default
-        `Manually created by ${(req as any).user?.name || 'operator'}`
+        `Manually created by ${(req as any).user?.name || 'operator'}. Triggers expanded from ${trigger_examples.length} to ${expandedTriggers.length}`
       ]);
 
       // Log the creation for audit
@@ -675,7 +794,13 @@ router.post('/',
         success: true,
         pattern: result.rows[0],
         message: 'Pattern created successfully',
-        gpt4oValidated: gpt4o_validated
+        enhancements: {
+          triggersExpanded: `${trigger_examples.length} → ${expandedTriggers.length}`,
+          responseOptimized: optimizedResponse !== response_template,
+          gpt4oValidated: gpt4o_validated,
+          semanticSearchEnabled: semantic_search_enabled,
+          embeddingGenerated: !!embedding
+        }
       });
     } catch (error) {
       logger.error('[Patterns API] Failed to create pattern', error);

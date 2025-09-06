@@ -208,7 +208,7 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
       if (response.data.success) {
         setValidationResult({
           success: true,
-          gpt4oValidated: response.data.gpt4oValidated
+          enhancements: response.data.enhancements
         });
 
         // Show success for 2 seconds then close
@@ -542,9 +542,22 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
               <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-green-700">
-                <div>Pattern created successfully!</div>
-                {validationResult.gpt4oValidated && (
-                  <div className="text-xs mt-1">✓ Validated by GPT-4o</div>
+                <div className="font-medium">Pattern created successfully!</div>
+                {validationResult.enhancements && (
+                  <div className="text-xs mt-1 space-y-0.5">
+                    {validationResult.enhancements.triggersExpanded && (
+                      <div>• Triggers expanded: {validationResult.enhancements.triggersExpanded}</div>
+                    )}
+                    {validationResult.enhancements.responseOptimized && (
+                      <div>• Response optimized for clarity</div>
+                    )}
+                    {validationResult.enhancements.gpt4oValidated && (
+                      <div>• Validated by GPT-4o</div>
+                    )}
+                    {validationResult.enhancements.embeddingGenerated && (
+                      <div>• Semantic search enabled</div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
