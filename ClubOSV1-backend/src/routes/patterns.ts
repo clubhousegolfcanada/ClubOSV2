@@ -145,7 +145,7 @@ router.get('/',
         FROM decision_patterns p
         LEFT JOIN pattern_execution_history peh ON p.id = peh.pattern_id
           AND peh.created_at > NOW() - INTERVAL '7 days'
-        WHERE 1=1
+        WHERE COALESCE(p.is_deleted, FALSE) = FALSE
       `;
 
       const params: any[] = [];
@@ -198,6 +198,38 @@ router.get('/',
 // ============================================
 // SPECIFIC ROUTES (must be defined before /:id)
 // ============================================
+
+/**
+ * GET /api/patterns/deleted
+ * Get deleted patterns (for archive view)
+ */
+router.get('/deleted',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(`
+        SELECT 
+          p.*,
+          u.name as deleted_by_name
+        FROM decision_patterns p
+        LEFT JOIN users u ON p.deleted_by = u.id
+        WHERE COALESCE(p.is_deleted, FALSE) = TRUE
+        ORDER BY p.deleted_at DESC
+        LIMIT 50
+      `);
+
+      res.json({
+        success: true,
+        patterns: result.rows,
+        total: result.rows.length
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get deleted patterns', error);
+      res.status(500).json({ success: false, error: 'Failed to get deleted patterns' });
+    }
+  }
+);
 
 /**
  * GET /api/patterns/stats
@@ -1632,6 +1664,7 @@ router.put('/:id',
     body('confidence_score').optional().isFloat({ min: 0, max: 1 }),
     body('auto_executable').optional().isBoolean(),
     body('is_active').optional().isBoolean(),
+    body('is_deleted').optional().isBoolean(),
     body('notes').optional().isString()
   ],
   async (req: Request, res: Response) => {
@@ -1650,6 +1683,12 @@ router.put('/:id',
           values.push(updates[key]);
         }
       });
+
+      // If restoring from deleted, clear deletion metadata
+      if (updates.is_deleted === false) {
+        updateFields.push(`deleted_at = NULL`);
+        updateFields.push(`deleted_by = NULL`);
+      }
 
       if (updateFields.length === 0) {
         return res.status(400).json({ success: false, error: 'No updates provided' });
@@ -1703,16 +1742,21 @@ router.delete('/:id',
       const { id } = req.params;
 
       await db.query(
-        'UPDATE decision_patterns SET is_active = FALSE, last_modified = NOW() WHERE id = $1',
-        [id]
+        `UPDATE decision_patterns 
+         SET is_deleted = TRUE, 
+             deleted_at = NOW(), 
+             deleted_by = $2,
+             is_active = FALSE
+         WHERE id = $1`,
+        [id, (req as any).user?.id]
       );
 
-      logger.info('[Patterns API] Pattern deactivated', {
+      logger.info('[Patterns API] Pattern soft deleted', {
         patternId: id,
-        deactivatedBy: (req as any).user?.id
+        deletedBy: (req as any).user?.id
       });
 
-      res.json({ success: true, message: 'Pattern deactivated' });
+      res.json({ success: true, message: 'Pattern deleted' });
     } catch (error) {
       logger.error('[Patterns API] Failed to delete pattern', error);
       res.status(500).json({ success: false, error: 'Failed to delete pattern' });

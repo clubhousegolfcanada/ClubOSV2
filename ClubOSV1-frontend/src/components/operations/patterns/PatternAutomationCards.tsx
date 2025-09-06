@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, Zap, Brain, TrendingUp, Clock, Edit2, Trash2, Plus, CheckCircle, AlertCircle,
-  Gift, Calendar, Wrench, CreditCard, DollarSign, HelpCircle, DoorOpen, MessageCircle
+  Gift, Calendar, Wrench, CreditCard, DollarSign, HelpCircle, DoorOpen, MessageCircle,
+  Archive, ChevronDown, ChevronRight, RotateCcw
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
@@ -27,16 +28,19 @@ interface PatternAutomation {
 
 export const PatternAutomationCards: React.FC = () => {
   const [automations, setAutomations] = useState<PatternAutomation[]>([]);
+  const [deletedAutomations, setDeletedAutomations] = useState<PatternAutomation[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCard, setEditingCard] = useState<number | null>(null);
   const [editedResponse, setEditedResponse] = useState('');
   const [editedTrigger, setEditedTrigger] = useState('');
   const [stats, setStats] = useState<any>(null);
   const [showCreationModal, setShowCreationModal] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   useEffect(() => {
     fetchAutomations();
     fetchStats();
+    fetchDeletedAutomations();
   }, []);
 
   const fetchAutomations = async () => {
@@ -64,6 +68,37 @@ export const PatternAutomationCards: React.FC = () => {
       setStats(response.data);
     } catch (error) {
       logger.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const fetchDeletedAutomations = async () => {
+    try {
+      const response = await apiClient.get('/patterns/deleted');
+      const patterns = response.data.patterns || [];
+      const formattedAutomations = patterns.map(formatPatternAsAutomation);
+      setDeletedAutomations(formattedAutomations);
+    } catch (error) {
+      logger.error('Failed to fetch deleted automations:', error);
+    }
+  };
+
+  const restorePattern = async (id: number) => {
+    try {
+      await apiClient.put(`/patterns/${id}`, { 
+        is_deleted: false,
+        is_active: false // Restore as inactive
+      });
+      
+      // Move from deleted to active list
+      const pattern = deletedAutomations.find(a => a.id === id);
+      if (pattern) {
+        setDeletedAutomations(prev => prev.filter(a => a.id !== id));
+        setAutomations(prev => [...prev, { ...pattern, is_active: false }]);
+      }
+      
+      fetchStats();
+    } catch (error) {
+      logger.error('Failed to restore pattern:', error);
     }
   };
 
@@ -199,13 +234,20 @@ export const PatternAutomationCards: React.FC = () => {
   };
 
   const deletePattern = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this automation? This cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this automation? It will be moved to the deleted section.')) {
       return;
     }
     
     try {
       await apiClient.delete(`/patterns/${id}`);
-      setAutomations(prev => prev.filter(a => a.id !== id));
+      
+      // Move from active to deleted list
+      const pattern = automations.find(a => a.id === id);
+      if (pattern) {
+        setAutomations(prev => prev.filter(a => a.id !== id));
+        setDeletedAutomations(prev => [...prev, pattern]);
+      }
+      
       fetchStats();
     } catch (error) {
       logger.error('Failed to delete pattern:', error);
@@ -427,6 +469,65 @@ export const PatternAutomationCards: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Deleted Patterns Section */}
+      {deletedAutomations.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowDeleted(!showDeleted)}
+            className="w-full bg-gray-50 rounded-lg border border-gray-200 px-4 py-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Archive className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">
+                Deleted Patterns ({deletedAutomations.length})
+              </span>
+            </div>
+            {showDeleted ? (
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-gray-500" />
+            )}
+          </button>
+
+          {showDeleted && (
+            <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {deletedAutomations.map(automation => (
+                <div
+                  key={automation.id}
+                  className="bg-gray-50 rounded-lg border border-gray-200 p-4 opacity-75"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start space-x-2">
+                      {automation.automation_icon && (
+                        <automation.automation_icon className="h-5 w-5 text-gray-400 mt-0.5" />
+                      )}
+                      <div>
+                        <h4 className="font-medium text-gray-700 text-sm">
+                          {automation.automation_name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {automation.trigger_text}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => restorePattern(automation.id)}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      title="Restore pattern"
+                    >
+                      <RotateCcw className="h-4 w-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Deleted • {automation.execution_count} previous uses
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pattern Creation Modal */}
       <PatternCreationModal
