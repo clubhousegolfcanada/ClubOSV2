@@ -421,20 +421,28 @@ router.post('/send',
         const { ConversationAnalyzer } = await import('../services/conversationAnalyzer');
         const analyzer = new ConversationAnalyzer();
         
-        // Get recent conversation history (last 6 messages within 24 hours)
-        const conversationMessages = await db.query(`
-          SELECT 
-            body, 
-            direction,
-            created_at,
-            conversation_id
-          FROM messages 
-          WHERE ((from_number = $1 AND to_number = $2) 
-             OR (from_number = $2 AND to_number = $1))
+        // Get recent conversation history from OpenPhone conversations
+        const conversationResult = await db.query(`
+          SELECT messages
+          FROM openphone_conversations 
+          WHERE phone_number = $1
             AND created_at > NOW() - INTERVAL '24 hours'
           ORDER BY created_at DESC 
-          LIMIT 6
-        `, [formattedTo, formattedFrom]);
+          LIMIT 1
+        `, [formattedTo]);
+        
+        let conversationMessages = { rows: [] };
+        if (conversationResult.rows.length > 0 && conversationResult.rows[0].messages) {
+          // Extract last 6 messages from JSON array
+          const allMessages = conversationResult.rows[0].messages || [];
+          const recentMessages = allMessages.slice(-6).map((msg: any) => ({
+            body: msg.body || msg.text,
+            direction: msg.direction,
+            created_at: msg.createdAt || msg.created_at,
+            conversation_id: msg.conversationId
+          }));
+          conversationMessages.rows = recentMessages;
+        }
         
         if (conversationMessages.rows.length > 0) {
           // Reverse to get chronological order
