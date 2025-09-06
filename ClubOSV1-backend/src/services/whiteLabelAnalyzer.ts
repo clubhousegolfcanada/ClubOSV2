@@ -1,4 +1,4 @@
-import { db } from '../database/db';
+import { query as db } from '../utils/db';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -83,10 +83,10 @@ export class WhiteLabelAnalyzer {
   }
 
   private async clearInventory() {
-    await db.query('DELETE FROM feature_inventory');
-    await db.query('DELETE FROM branding_inventory');
-    await db.query('DELETE FROM sop_inventory');
-    await db.query('DELETE FROM integration_inventory');
+    await db('DELETE FROM feature_inventory');
+    await db('DELETE FROM branding_inventory');
+    await db('DELETE FROM sop_inventory');
+    await db('DELETE FROM integration_inventory');
   }
 
   private async analyzeFeatures(): Promise<FeatureInventory[]> {
@@ -203,7 +203,7 @@ export class WhiteLabelAnalyzer {
 
     // Save to database
     for (const feature of features) {
-      await db.query(
+      await db(
         `INSERT INTO feature_inventory 
          (category, feature_name, description, is_clubos_specific, is_transferable, 
           dependencies, file_locations, database_tables, api_endpoints)
@@ -273,7 +273,7 @@ export class WhiteLabelAnalyzer {
 
     // Save to database
     for (const item of brandingItems) {
-      await db.query(
+      await db(
         `INSERT INTO branding_inventory 
          (type, location, current_value, is_hardcoded, file_path, line_number)
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -288,7 +288,7 @@ export class WhiteLabelAnalyzer {
     const sops: SOPItem[] = [];
 
     // Check database for SOPs
-    const checklistsResult = await db.query('SELECT * FROM checklists');
+    const checklistsResult = await db('SELECT * FROM checklists');
     for (const checklist of checklistsResult.rows) {
       sops.push({
         name: checklist.name,
@@ -301,7 +301,7 @@ export class WhiteLabelAnalyzer {
     }
 
     // Check knowledge base
-    const knowledgeResult = await db.query('SELECT * FROM knowledge_base WHERE is_active = true');
+    const knowledgeResult = await db('SELECT * FROM knowledge_base WHERE is_active = true');
     for (const knowledge of knowledgeResult.rows) {
       if (knowledge.category === 'operations' || knowledge.category === 'policies') {
         sops.push({
@@ -316,7 +316,7 @@ export class WhiteLabelAnalyzer {
     }
 
     // Check patterns
-    const patternsResult = await db.query('SELECT * FROM patterns');
+    const patternsResult = await db('SELECT * FROM patterns');
     for (const pattern of patternsResult.rows) {
       sops.push({
         name: pattern.pattern_name,
@@ -330,7 +330,7 @@ export class WhiteLabelAnalyzer {
 
     // Save to database
     for (const sop of sops) {
-      await db.query(
+      await db(
         `INSERT INTO sop_inventory 
          (name, type, description, location, is_replaceable, dependencies)
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -434,7 +434,7 @@ export class WhiteLabelAnalyzer {
 
     // Save to database
     for (const integration of integrations) {
-      await db.query(
+      await db(
         `INSERT INTO integration_inventory 
          (service_name, type, is_required, is_client_specific, configuration, api_keys_required)
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -453,7 +453,7 @@ export class WhiteLabelAnalyzer {
   }
 
   async generateBlueprint(configId: string) {
-    const config = await db.query(
+    const config = await db(
       'SELECT * FROM white_label_configurations WHERE id = $1',
       [configId]
     );
@@ -507,10 +507,10 @@ export class WhiteLabelAnalyzer {
   }
 
   async getInventorySummary() {
-    const features = await db.query('SELECT * FROM feature_inventory');
-    const branding = await db.query('SELECT * FROM branding_inventory');
-    const sops = await db.query('SELECT * FROM sop_inventory');
-    const integrations = await db.query('SELECT * FROM integration_inventory');
+    const features = await db('SELECT * FROM feature_inventory');
+    const branding = await db('SELECT * FROM branding_inventory');
+    const sops = await db('SELECT * FROM sop_inventory');
+    const integrations = await db('SELECT * FROM integration_inventory');
 
     return {
       features: features.rows,
@@ -521,7 +521,7 @@ export class WhiteLabelAnalyzer {
   }
 
   async saveConfiguration(config: any) {
-    const result = await db.query(
+    const result = await db(
       `INSERT INTO white_label_configurations 
        (name, description, features, branding_items, sop_replacements, 
         integrations, excluded_features, implementation_notes, created_by)

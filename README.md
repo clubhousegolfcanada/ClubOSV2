@@ -151,6 +151,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.18.0**: White Label Planner Module
+  - **System Analysis Tool**: Comprehensive scanner for white label planning
+  - **Feature Inventory**: Categorizes all features as transferable or ClubOS-specific
+  - **Branding Detection**: Finds hardcoded branding for replacement
+  - **SOP Management**: Identifies replaceable procedures and workflows
+  - **Blueprint Generation**: Creates implementation plans for new clients
+  - Planning-only tool - analyzes what needs changing before building
+  - Access via Operations → White Label (admin only)
 - **v1.17.9**: AI-Enhanced Pattern Creation with GPT-4o
   - **Automatic Trigger Expansion**: Enter 3 examples, GPT-4o generates 10+ variations
   - **Response Optimization**: GPT-4o ensures responses are direct and actionable

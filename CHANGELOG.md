@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.0] - 2025-09-06
+
+### Added
+- **White Label Planner Module**
+  - New Operations tool for analyzing ClubOS for white label implementations
+  - Feature inventory scanner that categorizes all system features
+  - Branding detector that finds all ClubOS-specific branding elements
+  - SOP inventory that identifies replaceable procedures and workflows
+  - Integration mapper showing client-specific vs generic integrations
+  - Configuration builder for creating white label blueprints
+  - Export functionality to generate implementation plans
+  - Database tables for tracking white label configurations
+  - Admin-only access with comprehensive analysis capabilities
+
+### Technical Implementation
+- Created WhiteLabelAnalyzer service for system scanning
+- Database migration 213 adds white label planning tables
+- New route `/operations/white-label-planner` for admin users
+- Analyzes features, branding, SOPs, and integrations
+- Generates actionable blueprints for white label implementations
+
 ## [1.17.9] - 2025-09-06
 
 ### Added

@@ -1,13 +1,13 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { WhiteLabelAnalyzer } from '../services/whiteLabelAnalyzer';
-import { db } from '../database/db';
+import { query as db } from '../utils/db';
 
 const router = express.Router();
 const analyzer = new WhiteLabelAnalyzer();
 
 // Analyze the system and populate inventory
-router.post('/analyze', authenticateToken, async (req, res) => {
+router.post('/analyze', authenticate, async (req, res) => {
   try {
     // Only admins can run analysis
     if (req.user?.role !== 'admin') {
@@ -23,7 +23,7 @@ router.post('/analyze', authenticateToken, async (req, res) => {
 });
 
 // Get current inventory
-router.get('/inventory', authenticateToken, async (req, res) => {
+router.get('/inventory', authenticate, async (req, res) => {
   try {
     const inventory = await analyzer.getInventorySummary();
     res.json(inventory);
@@ -34,9 +34,9 @@ router.get('/inventory', authenticateToken, async (req, res) => {
 });
 
 // Get saved configurations
-router.get('/configurations', authenticateToken, async (req, res) => {
+router.get('/configurations', authenticate, async (req, res) => {
   try {
-    const result = await db.query(
+    const result = await db(
       'SELECT * FROM white_label_configurations ORDER BY created_at DESC'
     );
     res.json(result.rows);
@@ -47,7 +47,7 @@ router.get('/configurations', authenticateToken, async (req, res) => {
 });
 
 // Save a new configuration
-router.post('/configurations', authenticateToken, async (req, res) => {
+router.post('/configurations', authenticate, async (req, res) => {
   try {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
@@ -67,7 +67,7 @@ router.post('/configurations', authenticateToken, async (req, res) => {
 });
 
 // Generate implementation blueprint
-router.post('/blueprint/:configId', authenticateToken, async (req, res) => {
+router.post('/blueprint/:configId', authenticate, async (req, res) => {
   try {
     const blueprint = await analyzer.generateBlueprint(req.params.configId);
     res.json(blueprint);
@@ -78,7 +78,7 @@ router.post('/blueprint/:configId', authenticateToken, async (req, res) => {
 });
 
 // Update feature transferability
-router.patch('/features/:id', authenticateToken, async (req, res) => {
+router.patch('/features/:id', authenticate, async (req, res) => {
   try {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
@@ -86,7 +86,7 @@ router.patch('/features/:id', authenticateToken, async (req, res) => {
 
     const { is_clubos_specific, is_transferable } = req.body;
     
-    const result = await db.query(
+    const result = await db(
       `UPDATE feature_inventory 
        SET is_clubos_specific = $1, is_transferable = $2
        WHERE id = $3
@@ -102,7 +102,7 @@ router.patch('/features/:id', authenticateToken, async (req, res) => {
 });
 
 // Update branding item
-router.patch('/branding/:id', authenticateToken, async (req, res) => {
+router.patch('/branding/:id', authenticate, async (req, res) => {
   try {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
@@ -110,7 +110,7 @@ router.patch('/branding/:id', authenticateToken, async (req, res) => {
 
     const { replacement_strategy } = req.body;
     
-    const result = await db.query(
+    const result = await db(
       `UPDATE branding_inventory 
        SET replacement_strategy = $1
        WHERE id = $2
@@ -126,7 +126,7 @@ router.patch('/branding/:id', authenticateToken, async (req, res) => {
 });
 
 // Update SOP
-router.patch('/sops/:id', authenticateToken, async (req, res) => {
+router.patch('/sops/:id', authenticate, async (req, res) => {
   try {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
@@ -134,7 +134,7 @@ router.patch('/sops/:id', authenticateToken, async (req, res) => {
 
     const { is_replaceable, replacement_template } = req.body;
     
-    const result = await db.query(
+    const result = await db(
       `UPDATE sop_inventory 
        SET is_replaceable = $1, replacement_template = $2
        WHERE id = $3
@@ -150,7 +150,7 @@ router.patch('/sops/:id', authenticateToken, async (req, res) => {
 });
 
 // Update integration
-router.patch('/integrations/:id', authenticateToken, async (req, res) => {
+router.patch('/integrations/:id', authenticate, async (req, res) => {
   try {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
@@ -158,7 +158,7 @@ router.patch('/integrations/:id', authenticateToken, async (req, res) => {
 
     const { is_required, is_client_specific } = req.body;
     
-    const result = await db.query(
+    const result = await db(
       `UPDATE integration_inventory 
        SET is_required = $1, is_client_specific = $2
        WHERE id = $3
