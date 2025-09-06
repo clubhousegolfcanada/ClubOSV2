@@ -5,27 +5,31 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.17.5] - 2025-09-06
 
 ### Added
-- **Functional V3-PLS Safety Controls**
-  - Created patternSafetyService.ts for backend safety logic
-  - Database migration 209 adds safety tables and config
-  - API endpoints for getting/updating safety settings
-  - Pattern learning examples tracking table
-  - Escalation alerts table for operator notifications
+- **Fully Operational V3-PLS Safety Controls**
+  - Created patternSafetyService.ts for real-time safety enforcement
+  - Database migration 209 adds pattern_learning_examples and pattern_escalation_alerts tables
+  - Live API endpoints for managing safety settings from UI
+  - Pattern approval tracking with graduation after 10 successful uses
+  - Operator alert system for escalation keywords
   
 ### Changed
-- **Combined Stats & Settings Tab**
+- **Combined Stats & Settings Tab for Better UX**
   - Merged statistics and settings into single "Stats & Settings" tab
-  - Added toggle between Statistics and Safety Settings views
-  - Safety settings now load/save from database
-  - Keywords can be added/removed dynamically
+  - Toggle view between operational statistics and safety configuration
+  - Safety settings persist in database and actively affect message handling
+  - Dynamic keyword management with instant effect on pattern execution
   
 ### Technical Implementation
-- Safety checks prevent auto-response for blacklisted topics
-- Escalation keywords create alerts for operator attention
-- New patterns require approval for first 10 uses
-- Minimum 5 examples needed before pattern creation
-- Operator corrections weighted 2x in confidence calculation
-- Pattern approval tracking in decision_patterns table
+- **Blacklist Protection**: Keywords like "medical", "legal", "refund" completely block auto-responses
+- **Escalation System**: "Angry", "lawyer", "emergency" keywords create database alerts for operators
+- **Pattern Approval**: New patterns inactive until 10 successful operator-approved uses
+- **Learning Threshold**: Requires minimum 5 similar examples before pattern creation
+- **Operator Priority**: Manual corrections weighted 2x more than auto-learned patterns
+- **Real-time Checks**: Safety service validates every message before any auto-response
+
+### Recommended Safety Keywords
+- **Blacklist** (Never Auto-Respond): legal, lawyer, lawsuit, refund, medical, injury, accident, emergency, police, insurance, compensation, harassment, discrimination
+- **Escalation** (Alert Operator): angry, upset, furious, manager, complaint, unacceptable, terrible, worst, sue, attorney, emergency, urgent, immediately
 
 ## [1.17.4] - 2025-09-06
 
