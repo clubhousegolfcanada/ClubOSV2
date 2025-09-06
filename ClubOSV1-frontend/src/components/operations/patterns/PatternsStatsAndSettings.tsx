@@ -132,6 +132,56 @@ export const PatternsStatsAndSettings: React.FC = () => {
     setHasChanges(true);
   };
 
+  const addBulkKeywords = (type: 'blacklist' | 'escalation', keywords: string) => {
+    if (!keywords.trim()) return;
+    
+    // Parse keywords - support comma, space, or newline separated
+    const newKeywords = keywords
+      .toLowerCase()
+      .split(/[,\s\n]+/)
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+    
+    const key = type === 'blacklist' ? 'blacklistTopics' : 'escalationKeywords';
+    setSettings(prev => {
+      const existing = prev[key];
+      // Avoid duplicates
+      const unique = [...new Set([...existing, ...newKeywords])];
+      return {
+        ...prev,
+        [key]: unique
+      };
+    });
+    setHasChanges(true);
+  };
+
+  const addRecommendedKeywords = () => {
+    const recommendedBlacklist = [
+      'legal', 'lawyer', 'lawsuit', 'refund', 'medical', 
+      'injury', 'accident', 'emergency', 'police', 'insurance', 
+      'compensation', 'harassment', 'discrimination', 'lawsuit',
+      'attorney', 'court', 'sued', 'suing'
+    ];
+    
+    const recommendedEscalation = [
+      'angry', 'upset', 'furious', 'manager', 'complaint', 
+      'unacceptable', 'terrible', 'worst', 'sue', 'attorney', 
+      'emergency', 'urgent', 'immediately', 'disgusting', 'horrible',
+      'supervisor', 'corporate', 'lawsuit'
+    ];
+
+    setSettings(prev => {
+      const uniqueBlacklist = [...new Set([...prev.blacklistTopics, ...recommendedBlacklist])];
+      const uniqueEscalation = [...new Set([...prev.escalationKeywords, ...recommendedEscalation])];
+      return {
+        ...prev,
+        blacklistTopics: uniqueBlacklist,
+        escalationKeywords: uniqueEscalation
+      };
+    });
+    setHasChanges(true);
+  };
+
   const removeKeyword = (type: 'blacklist' | 'escalation', keyword: string) => {
     const key = type === 'blacklist' ? 'blacklistTopics' : 'escalationKeywords';
     setSettings(prev => ({
@@ -309,18 +359,29 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   </span>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add blacklist keyword..."
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      addKeyword('blacklist', (e.target as HTMLInputElement).value);
-                      (e.target as HTMLInputElement).value = '';
-                    }
+              <div className="space-y-2">
+                <textarea
+                  placeholder="Paste multiple keywords here (comma, space, or newline separated)..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  rows={3}
+                  onBlur={(e) => {
+                    addBulkKeywords('blacklist', e.target.value);
+                    e.target.value = '';
                   }}
                 />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Or add single keyword and press Enter..."
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        addKeyword('blacklist', (e.target as HTMLInputElement).value);
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -342,19 +403,41 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   </span>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add escalation keyword..."
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      addKeyword('escalation', (e.target as HTMLInputElement).value);
-                      (e.target as HTMLInputElement).value = '';
-                    }
+              <div className="space-y-2">
+                <textarea
+                  placeholder="Paste multiple keywords here (comma, space, or newline separated)..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  rows={3}
+                  onBlur={(e) => {
+                    addBulkKeywords('escalation', e.target.value);
+                    e.target.value = '';
                   }}
                 />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Or add single keyword and press Enter..."
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        addKeyword('escalation', (e.target as HTMLInputElement).value);
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }}
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Quick Action Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={addRecommendedKeywords}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Add All Recommended Safety Keywords
+              </button>
             </div>
 
             {/* Approval Requirements */}

@@ -5,6 +5,7 @@ import ninjaoneService from './ninjaone';
 import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automations';
 import { assistantService } from './assistantService';
 import { calculateConfidence, findBestAutomation } from './aiAutomationPatterns';
+import { patternSafetyService } from './patternSafetyService';
 import OpenAI from 'openai';
 
 interface AutomationResponse {
@@ -187,6 +188,34 @@ export class AIAutomationService {
    */
   async processMessage(phoneNumber: string, message: string, conversationId?: string, isInitialMessage: boolean = false): Promise<AutomationResponse> {
     const lowerMessage = message.toLowerCase().trim();
+    
+    // SAFETY CHECK: Check for blacklisted topics and escalation keywords
+    const safetyCheck = await patternSafetyService.checkMessageSafety(message);
+    if (!safetyCheck.safe) {
+      logger.warn('Message blocked by safety controls', {
+        reason: safetyCheck.reason,
+        alertType: safetyCheck.alertType,
+        triggeredKeywords: safetyCheck.triggeredKeywords,
+        phoneNumber: phoneNumber.slice(-4)
+      });
+      
+      // For blacklisted topics, don't auto-respond at all
+      if (safetyCheck.alertType === 'blacklist') {
+        return { 
+          handled: false, 
+          assistantType: 'blocked_blacklist' 
+        };
+      }
+      
+      // For escalation keywords, alert operator but don't block
+      if (safetyCheck.alertType === 'escalation') {
+        // Alert has already been created in patternSafetyService
+        return { 
+          handled: false, 
+          assistantType: 'escalation_alert' 
+        };
+      }
+    }
     
     // Check if there's a pending confirmation for this phone number
     const hasPendingConfirmation = await this.checkForPendingConfirmation(phoneNumber);
