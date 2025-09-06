@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuthState } from '@/state/useStore';
-import { Users, Zap, BarChart3, Brain } from 'lucide-react';
+import { Users, Zap, Brain } from 'lucide-react';
 
 // Import operation components
 import { OperationsUsers } from '@/components/operations/users/OperationsUsers';
 import { OperationsIntegrations } from '@/components/operations/integrations/OperationsIntegrations';
-import { OperationsAnalytics } from '@/components/operations/analytics/OperationsAnalytics';
 import { OperationsPatternsEnhanced } from '@/components/operations/patterns/OperationsPatternsEnhanced';
 
-type TabType = 'users' | 'integrations' | 'analytics' | 'patterns';
+type TabType = 'users' | 'integrations' | 'patterns';
 
 export default function Operations() {
   const { user } = useAuthState();
-  // Default to analytics for operators, users for admins
-  const [activeTab, setActiveTab] = useState<TabType>('analytics');
+  // Default to patterns for operators, users for admins
+  const [activeTab, setActiveTab] = useState<TabType>('patterns');
 
   // SECURITY: Block customer role from accessing operations
   useEffect(() => {
@@ -32,7 +31,7 @@ export default function Operations() {
       if (user.role === 'admin') {
         setActiveTab('users');
       } else if (user.role === 'operator') {
-        setActiveTab('analytics');
+        setActiveTab('patterns');
       }
     }
   }, [user]);
@@ -41,7 +40,7 @@ export default function Operations() {
   useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail as TabType;
-      if (tab && ['users', 'integrations', 'analytics', 'patterns'].includes(tab)) {
+      if (tab && ['users', 'integrations', 'patterns'].includes(tab)) {
         setActiveTab(tab);
       }
     };
@@ -66,7 +65,6 @@ export default function Operations() {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
     { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, adminOnly: true },
     { id: 'integrations', label: 'Integrations & AI', icon: <Zap className="h-4 w-4" />, adminOnly: true },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" />, adminOnly: false },
     { id: 'patterns', label: 'V3-PLS', icon: <Brain className="h-4 w-4" />, adminOnly: false }
   ];
 
@@ -78,8 +76,6 @@ export default function Operations() {
         return 'Manage operators, customers, roles, and access permissions';
       case 'integrations':
         return 'Manage integrations, AI automations, and knowledge base';
-      case 'analytics':
-        return 'View system analytics, usage reports, and performance metrics';
       case 'patterns':
         return 'V3 Pattern Learning System - AI-powered message automation';
       default:
@@ -93,8 +89,6 @@ export default function Operations() {
         return user.role === 'admin' ? <OperationsUsers /> : null;
       case 'integrations':
         return user.role === 'admin' ? <OperationsIntegrations /> : null;
-      case 'analytics':
-        return <OperationsAnalytics />;
       case 'patterns':
         return <OperationsPatternsEnhanced />;
       default:

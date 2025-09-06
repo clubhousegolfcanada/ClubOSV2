@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.1] - 2025-09-06
+
+### Removed
+- **Removed placeholder Analytics tab** from Operations page
+  - Deleted unused OperationsAnalytics component
+  - Was showing only mock data with no real backend
+  - Operators now default to V3-PLS tab instead
+  
+### Changed
+- Operations page now has 3 tabs: Users (admin), Integrations (admin), V3-PLS (all)
+- Cleaner, more focused Operations Center without placeholder content
+
 ## [1.17.0] - 2025-09-06
 
 ### Added

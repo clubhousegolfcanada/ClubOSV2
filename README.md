@@ -151,6 +151,9 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.1**: Removed placeholder Analytics tab from Operations
+  - Cleaned up unused mock data components
+  - Operations now defaults to V3-PLS for operators
 - **v1.17.0**: NinjaOne Dynamic Script & Device Management
   - Database-driven script/device registry - no more hardcoding!
   - Admin UI for managing NinjaOne scripts and devices
