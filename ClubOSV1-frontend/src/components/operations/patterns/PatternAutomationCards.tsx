@@ -29,6 +29,7 @@ export const PatternAutomationCards: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingCard, setEditingCard] = useState<number | null>(null);
   const [editedResponse, setEditedResponse] = useState('');
+  const [editedTrigger, setEditedTrigger] = useState('');
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export const PatternAutomationCards: React.FC = () => {
 
   const fetchAutomations = async () => {
     try {
-      const response = await apiClient.get('/patterns');
+      const response = await apiClient.get('/patterns-enhanced');
       const patterns = response.data.patterns || response.data;
       
       // Format patterns as automations
@@ -161,20 +162,37 @@ export const PatternAutomationCards: React.FC = () => {
     }
   };
 
-  const saveEditedResponse = async (id: number) => {
+  const saveEditedPattern = async (id: number) => {
     try {
-      await apiClient.put(`/patterns/${id}`, {
+      // Prepare update object
+      const updates: any = {
         response_template: editedResponse
-      });
+      };
+      
+      // If trigger was edited, update trigger_examples
+      const currentAutomation = automations.find(a => a.id === id);
+      if (editedTrigger && editedTrigger !== currentAutomation?.trigger_text) {
+        // Send trigger as an array of examples
+        updates.trigger_examples = [editedTrigger];
+        updates.trigger_text = editedTrigger;
+      }
+      
+      // Use patterns-enhanced endpoint for better trigger handling
+      await apiClient.put(`/patterns-enhanced/${id}`, updates);
       
       setAutomations(prev => prev.map(a => 
-        a.id === id ? { ...a, response_template: editedResponse } : a
+        a.id === id ? { 
+          ...a, 
+          response_template: editedResponse,
+          trigger_text: editedTrigger || a.trigger_text 
+        } : a
       ));
       
       setEditingCard(null);
       setEditedResponse('');
+      setEditedTrigger('');
     } catch (error) {
-      logger.error('Failed to save response:', error);
+      logger.error('Failed to save pattern:', error);
     }
   };
 
@@ -310,9 +328,19 @@ export const PatternAutomationCards: React.FC = () => {
               <div className="space-y-3 border-t pt-3">
                 <div>
                   <p className="text-xs font-medium text-gray-500 mb-1">Triggers when customer says:</p>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded italic">
-                    "{automation.trigger_text}"
-                  </p>
+                  {editingCard === automation.id ? (
+                    <textarea
+                      className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary italic"
+                      rows={2}
+                      value={editedTrigger}
+                      onChange={(e) => setEditedTrigger(e.target.value)}
+                      placeholder="Enter trigger phrase..."
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded italic">
+                      "{automation.trigger_text}"
+                    </p>
+                  )}
                 </div>
                 
                 <div>
@@ -328,15 +356,16 @@ export const PatternAutomationCards: React.FC = () => {
                       />
                       <div className="flex gap-2">
                         <button
-                          onClick={() => saveEditedResponse(automation.id)}
+                          onClick={() => saveEditedPattern(automation.id)}
                           className="px-3 py-1.5 bg-primary text-white rounded text-xs hover:opacity-90 transition-opacity"
                         >
-                          Save
+                          Save Changes
                         </button>
                         <button
                           onClick={() => {
                             setEditingCard(null);
                             setEditedResponse('');
+                            setEditedTrigger('');
                           }}
                           className="px-3 py-1.5 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition-colors"
                         >
@@ -357,12 +386,13 @@ export const PatternAutomationCards: React.FC = () => {
                     onClick={() => {
                       setEditingCard(automation.id);
                       setEditedResponse(automation.response_template);
+                      setEditedTrigger(automation.trigger_text);
                     }}
                     className="text-sm text-primary hover:opacity-80 flex items-center gap-1 font-medium"
                     disabled={editingCard === automation.id}
                   >
                     <Edit2 className="h-4 w-4" />
-                    Edit Response
+                    Edit Pattern
                   </button>
                   <button
                     onClick={() => deletePattern(automation.id)}
