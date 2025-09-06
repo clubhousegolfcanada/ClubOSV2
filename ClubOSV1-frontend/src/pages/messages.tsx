@@ -536,8 +536,34 @@ export default function Messages() {
         setTimeout(scrollToBottom, 100);
         
         // Delay refresh to allow backend to process
-        setTimeout(() => {
-          loadConversations();
+        setTimeout(async () => {
+          await loadConversations();
+          
+          // Also refresh the current conversation's messages
+          if (selectedConversation) {
+            try {
+              const token = tokenManager.getToken();
+              if (token) {
+                const historyResponse = await http.get(
+                  `messages/conversations/${selectedConversation.phone_number}/full-history`,
+                  { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                
+                if (historyResponse.data.success) {
+                  const { messages } = historyResponse.data.data;
+                  // Show last 30 messages
+                  const INITIAL_MESSAGE_COUNT = 30;
+                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT 
+                    ? messages.slice(-INITIAL_MESSAGE_COUNT) 
+                    : messages;
+                  setMessages(recentMessages);
+                  setFullMessageHistory(messages);
+                }
+              }
+            } catch (error) {
+              logger.error('Failed to refresh conversation messages:', error);
+            }
+          }
         }, 1000);
       }
     } catch (error: any) {
@@ -639,8 +665,34 @@ export default function Messages() {
         setTimeout(scrollToBottom, 100);
         
         // Delay refresh to allow backend to process
-        setTimeout(() => {
-          loadConversations();
+        setTimeout(async () => {
+          await loadConversations();
+          
+          // Also refresh the current conversation's messages
+          if (selectedConversation) {
+            try {
+              const token = tokenManager.getToken();
+              if (token) {
+                const historyResponse = await http.get(
+                  `messages/conversations/${selectedConversation.phone_number}/full-history`,
+                  { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                
+                if (historyResponse.data.success) {
+                  const { messages } = historyResponse.data.data;
+                  // Show last 30 messages
+                  const INITIAL_MESSAGE_COUNT = 30;
+                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT 
+                    ? messages.slice(-INITIAL_MESSAGE_COUNT) 
+                    : messages;
+                  setMessages(recentMessages);
+                  setFullMessageHistory(messages);
+                }
+              }
+            } catch (error) {
+              logger.error('Failed to refresh conversation messages:', error);
+            }
+          }
         }, 1000);
       }
     } catch (error: any) {
