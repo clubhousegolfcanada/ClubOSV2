@@ -1,4 +1,4 @@
-# ClubOS v1.16.4 - AI-Powered Golf Simulator Management
+# ClubOS v1.16.6 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -151,6 +151,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.16.6**: UI Spacing Improvements
+  - Fixed navigation bar padding (added top padding, reduced height)
+  - Reduced excessive spacing between nav and content
+  - Tighter, more compact interface layout
 - **v1.16.5**: V3-PLS Pattern Learning System Activated
   - AI Automation cards UI for managing learned patterns
   - Automatic learning from REAL operator responses only

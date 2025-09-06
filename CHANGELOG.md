@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.6] - 2025-09-06
+
+### Fixed
+- **UI Spacing Improvements**
+  - Added proper padding to top of navigation bar (py-1)
+  - Reduced navigation bar height from h-14 to h-12
+  - Reduced padding between nav bar and content (pt-14 to pt-12)
+  - Reduced Operations Center header padding (py-6 to py-3)
+  - Reduced Operations Center content padding (py-6 to py-4)
+  - Overall tighter, more compact interface layout
+
 ## [1.16.5] - 2025-09-06
 
 ### Added
