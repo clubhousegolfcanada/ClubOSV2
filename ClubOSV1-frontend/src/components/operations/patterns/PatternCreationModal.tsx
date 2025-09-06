@@ -24,6 +24,58 @@ const PATTERN_TYPES = [
   { value: 'general', label: 'General Inquiry' }
 ];
 
+// Pattern templates for quick start
+const PATTERN_TEMPLATES: Record<string, { triggers: string[], response: string }> = {
+  pricing: {
+    triggers: [
+      "How much does it cost?",
+      "What are your prices?",
+      "How much for an hour?"
+    ],
+    response: "Walk-in: $60/hour\nMembers: $45/hour\nLate night (after 9pm): $40/hour\n\nBook at {{booking_link}} or call (603) 555-0100"
+  },
+  hours: {
+    triggers: [
+      "What are your hours?",
+      "When are you open?",
+      "Are you open now?"
+    ],
+    response: "Mon-Thu: 10am-10pm\nFri-Sat: 10am-11pm\nSunday: 12pm-8pm\n\nLate night rates available after 9pm!"
+  },
+  booking: {
+    triggers: [
+      "How do I book a bay?",
+      "Can I make a reservation?",
+      "Do you take walk-ins?"
+    ],
+    response: "Book online at {{booking_link}} or call (603) 555-0100.\nWe recommend booking in advance for weekends.\nWalk-ins welcome based on availability!"
+  },
+  tech_issue: {
+    triggers: [
+      "The simulator isn't working",
+      "Screen is frozen",
+      "Can't start my session"
+    ],
+    response: "I'll help fix that right away. Try pressing the power button on the control panel to restart. If that doesn't work, I can remotely reset your bay. What bay number are you in?"
+  },
+  membership: {
+    triggers: [
+      "How do I become a member?",
+      "What are the membership benefits?",
+      "How much is a membership?"
+    ],
+    response: "Membership is $99/month with:\n- Discounted hourly rates ($45 vs $60)\n- Priority booking\n- Free guest passes\n\nSign up at {{booking_link}} or visit us in person!"
+  },
+  gift_cards: {
+    triggers: [
+      "Do you sell gift cards?",
+      "Can I buy a gift certificate?",
+      "I want to buy a gift card"
+    ],
+    response: "Yes! Gift cards available in any amount.\nPurchase online at clubhouse247golf.com/gift-cards or at our front desk.\nThey never expire and work at both locations!"
+  }
+};
+
 const TEMPLATE_VARIABLES = [
   '{{customer_name}}',
   '{{location}}',
@@ -46,6 +98,8 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
     semantic_search_enabled: true
   });
   
+  const [showTemplate, setShowTemplate] = useState(false);
+  
   const [testing, setTesting] = useState(false);
   const [testMessage, setTestMessage] = useState('');
   const [testResult, setTestResult] = useState<any>(null);
@@ -54,6 +108,26 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
   const [validationResult, setValidationResult] = useState<any>(null);
 
   if (!isOpen) return null;
+
+  const loadTemplate = (type: string) => {
+    const template = PATTERN_TEMPLATES[type];
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        trigger_examples: template.triggers,
+        response_template: template.response
+      }));
+      setShowTemplate(false);
+    }
+  };
+
+  const handlePatternTypeChange = (type: string) => {
+    setFormData(prev => ({ ...prev, pattern_type: type }));
+    // Show template suggestion if available
+    if (PATTERN_TEMPLATES[type]) {
+      setShowTemplate(true);
+    }
+  };
 
   const addTriggerExample = () => {
     setFormData(prev => ({
@@ -170,20 +244,75 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
     setTestResult(null);
     setError('');
     setValidationResult(null);
+    setShowTemplate(false);
   };
+
+  // Calculate pattern effectiveness score
+  const getEffectivenessScore = () => {
+    let score = 0;
+    const validTriggers = formData.trigger_examples.filter(ex => ex.trim().length > 3);
+    
+    // Trigger variety (up to 40 points)
+    if (validTriggers.length >= 3) score += 20;
+    if (validTriggers.length >= 5) score += 20;
+    
+    // Response quality (up to 30 points)
+    const response = formData.response_template;
+    if (response.length > 20 && response.length < 500) score += 10;
+    if (response.includes('{{') || response.includes('http')) score += 10; // Has variables or links
+    if (response.split('\n').length > 1) score += 10; // Multi-line structured
+    
+    // Settings (up to 30 points)
+    if (formData.semantic_search_enabled) score += 15;
+    if (formData.confidence_score >= 0.5 && formData.confidence_score <= 0.8) score += 15;
+    
+    return score;
+  };
+  
+  const effectivenessScore = getEffectivenessScore();
+  const effectivenessColor = effectivenessScore >= 70 ? 'green' : effectivenessScore >= 50 ? 'yellow' : 'gray';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Create New Pattern</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-400" />
-          </button>
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-gray-900">Create New Pattern</h2>
+              {/* Effectiveness Score */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Effectiveness:</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((dot) => (
+                    <div
+                      key={dot}
+                      className={`h-2 w-2 rounded-full ${
+                        dot <= Math.ceil(effectivenessScore / 20)
+                          ? effectivenessColor === 'green' ? 'bg-green-500' 
+                          : effectivenessColor === 'yellow' ? 'bg-yellow-500'
+                          : 'bg-gray-300'
+                          : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className={`text-xs font-medium ${
+                  effectivenessColor === 'green' ? 'text-green-600' :
+                  effectivenessColor === 'yellow' ? 'text-yellow-600' :
+                  'text-gray-500'
+                }`}>
+                  {effectivenessScore >= 70 ? 'High' : effectivenessScore >= 50 ? 'Medium' : 'Low'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-400" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -195,7 +324,7 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
             </label>
             <select
               value={formData.pattern_type}
-              onChange={(e) => setFormData(prev => ({ ...prev, pattern_type: e.target.value }))}
+              onChange={(e) => handlePatternTypeChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {PATTERN_TYPES.map(type => (
@@ -204,6 +333,26 @@ export const PatternCreationModal: React.FC<PatternCreationModalProps> = ({
                 </option>
               ))}
             </select>
+            
+            {/* Template suggestion */}
+            {showTemplate && PATTERN_TEMPLATES[formData.pattern_type] && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-blue-700 font-medium">Template available!</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Load a pre-configured template for {formData.pattern_type} patterns
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => loadTemplate(formData.pattern_type)}
+                    className="ml-3 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  >
+                    Use Template
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Trigger Examples */}

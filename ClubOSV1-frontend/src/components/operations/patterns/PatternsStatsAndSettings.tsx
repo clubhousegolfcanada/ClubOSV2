@@ -39,6 +39,14 @@ interface SafetySettings {
   };
 }
 
+interface PatternLearningConfig {
+  enabled: boolean;
+  shadowMode: boolean;
+  minConfidenceToSuggest: number;
+  minConfidenceToAct: number;
+  minOccurrencesToLearn: number;
+}
+
 export const PatternsStatsAndSettings: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'stats' | 'settings'>('stats');
   const [stats, setStats] = useState<OperatorStats | null>(null);
@@ -62,6 +70,13 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [patternConfig, setPatternConfig] = useState<PatternLearningConfig>({
+    enabled: false,
+    shadowMode: false,
+    minConfidenceToSuggest: 0.60,
+    minConfidenceToAct: 0.85,
+    minOccurrencesToLearn: 1
+  });
 
   useEffect(() => {
     fetchData();
@@ -108,6 +123,22 @@ export const PatternsStatsAndSettings: React.FC = () => {
       } catch (error) {
         logger.error('Failed to fetch safety settings:', error);
       }
+      
+      // Fetch pattern learning config
+      try {
+        const configResponse = await apiClient.get('/patterns/config');
+        if (configResponse.data) {
+          setPatternConfig({
+            enabled: configResponse.data.enabled || false,
+            shadowMode: configResponse.data.shadow_mode || false,
+            minConfidenceToSuggest: configResponse.data.min_confidence_to_suggest || 0.60,
+            minConfidenceToAct: configResponse.data.min_confidence_to_act || 0.85,
+            minOccurrencesToLearn: configResponse.data.min_occurrences_to_learn || 1
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to fetch pattern config:', error);
+      }
     } catch (error) {
       logger.error('Failed to fetch data:', error);
     } finally {
@@ -118,8 +149,19 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      // Save to backend
+      
+      // Save safety settings
       await apiClient.put('/patterns/safety-settings', settings);
+      
+      // Save pattern learning config
+      await apiClient.put('/patterns/config', {
+        enabled: patternConfig.enabled,
+        shadow_mode: patternConfig.shadowMode,
+        min_confidence_to_suggest: patternConfig.minConfidenceToSuggest,
+        min_confidence_to_act: patternConfig.minConfidenceToAct,
+        min_occurrences_to_learn: patternConfig.minOccurrencesToLearn
+      });
+      
       setHasChanges(false);
       
       // Reload settings to confirm they were saved
@@ -139,6 +181,18 @@ export const PatternsStatsAndSettings: React.FC = () => {
         setSettings(loadedSettings);
       }
       
+      // Reload pattern config
+      const configResponse = await apiClient.get('/patterns/config');
+      if (configResponse.data) {
+        setPatternConfig({
+          enabled: configResponse.data.enabled || false,
+          shadowMode: configResponse.data.shadow_mode || false,
+          minConfidenceToSuggest: configResponse.data.min_confidence_to_suggest || 0.60,
+          minConfidenceToAct: configResponse.data.min_confidence_to_act || 0.85,
+          minOccurrencesToLearn: configResponse.data.min_occurrences_to_learn || 1
+        });
+      }
+      
       // Show success feedback
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -153,6 +207,11 @@ export const PatternsStatsAndSettings: React.FC = () => {
 
   const updateSetting = (key: keyof SafetySettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
+  
+  const updatePatternConfig = (key: keyof PatternLearningConfig, value: any) => {
+    setPatternConfig(prev => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
 
@@ -618,6 +677,133 @@ export const PatternsStatsAndSettings: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Pattern Learning Configuration */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="h-5 w-5 text-purple-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Pattern Learning System</h3>
+              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">Automatic Learning</span>
+            </div>
+
+            <div className="space-y-4">
+              {/* Enable Pattern Learning */}
+              <div>
+                <label className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Enable Pattern Learning</span>
+                    <p className="text-xs text-gray-500">Automatically learn new patterns from operator responses</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={patternConfig.enabled}
+                    onChange={(e) => updatePatternConfig('enabled', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                  />
+                </label>
+              </div>
+
+              {/* Shadow Mode */}
+              <div>
+                <label className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Shadow Mode</span>
+                    <p className="text-xs text-gray-500">Log learning opportunities without creating patterns</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={patternConfig.shadowMode}
+                    onChange={(e) => updatePatternConfig('shadowMode', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                    disabled={!patternConfig.enabled}
+                  />
+                </label>
+              </div>
+
+              {/* Confidence Thresholds */}
+              <div className="pt-3 border-t space-y-3">
+                <h4 className="text-sm font-medium text-gray-700">Confidence Thresholds</h4>
+                
+                {/* Min Confidence to Suggest */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Minimum Confidence to Suggest ({Math.round(patternConfig.minConfidenceToSuggest * 100)}%)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={patternConfig.minConfidenceToSuggest * 100}
+                    onChange={(e) => updatePatternConfig('minConfidenceToSuggest', parseInt(e.target.value) / 100)}
+                    className="w-full"
+                    disabled={!patternConfig.enabled}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Patterns above this threshold will be suggested to operators
+                  </p>
+                </div>
+
+                {/* Min Confidence to Act */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Minimum Confidence to Auto-Execute ({Math.round(patternConfig.minConfidenceToAct * 100)}%)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={patternConfig.minConfidenceToAct * 100}
+                    onChange={(e) => updatePatternConfig('minConfidenceToAct', parseInt(e.target.value) / 100)}
+                    className="w-full"
+                    disabled={!patternConfig.enabled}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Patterns above this threshold can execute automatically
+                  </p>
+                </div>
+
+                {/* Min Occurrences to Learn */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Minimum Occurrences to Learn
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={patternConfig.minOccurrencesToLearn}
+                    onChange={(e) => updatePatternConfig('minOccurrencesToLearn', parseInt(e.target.value))}
+                    className="w-24 px-3 py-1 border border-gray-300 rounded-md text-sm"
+                    disabled={!patternConfig.enabled}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Number of similar responses needed before creating a pattern
+                  </p>
+                </div>
+              </div>
+
+              {/* Learning Status */}
+              <div className="bg-gray-50 rounded-lg p-3 mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`h-2 w-2 rounded-full ${patternConfig.enabled ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                  <span className="text-sm font-medium text-gray-700">
+                    {patternConfig.enabled ? 'Pattern Learning Active' : 'Pattern Learning Disabled'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600">
+                  {patternConfig.enabled && patternConfig.shadowMode && (
+                    <p>⚠️ Shadow mode enabled - patterns are logged but not created</p>
+                  )}
+                  {patternConfig.enabled && !patternConfig.shadowMode && (
+                    <p>✅ System is actively learning from operator responses</p>
+                  )}
+                  {!patternConfig.enabled && (
+                    <p>Enable pattern learning to automatically create patterns from operator responses</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Current Status */}
