@@ -85,6 +85,7 @@ import debugCacheRoutes from './routes/debug-cache';
 import testKnowledgeRoutes from './routes/test-knowledge';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
+import logsRoutes from './routes/logs';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -298,6 +299,7 @@ app.use('/api/debug', debugCacheRoutes);
 app.use('/api/debug', require('./routes/debug-flow').default);
 app.use('/api/system-status', require('./routes/system-status').default);
 app.use('/api/system-settings', require('./routes/systemSettings').default);
+app.use('/api/logs', logsRoutes);
 app.use('/api', testKnowledgeRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 
