@@ -119,7 +119,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
 
   return (
     /* Navigation with improved spacing - v1.16.6 */
-    <nav className={`bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] py-1 ${isEmbedded ? 'embedded-nav' : ''}`}>
+    <nav className={`bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] ${user?.role !== 'customer' ? 'py-2' : ''} ${isEmbedded ? 'embedded-nav' : ''}`}>
       <div className={`${isEmbedded ? 'px-4' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}`}>
         <div className="flex items-center justify-between h-12" style={{ maxHeight: '48px' }}>
           {/* Logo with tagline - Compressed */}
