@@ -263,13 +263,12 @@ router.get('/conversations/:phoneNumber/full-history',
     try {
       const { phoneNumber } = req.params;
       
-      // Get the most recent conversation for this phone number
-      // Multiple conversations can exist due to webhook duplicates or restarts
+      // Get ALL conversations for this phone number to merge messages
+      // Multiple conversations can exist due to webhook timing issues
       const allConversations = await db.query(
         `SELECT * FROM openphone_conversations 
          WHERE phone_number = $1 
-         ORDER BY created_at DESC
-         LIMIT 1`,
+         ORDER BY created_at ASC`,  // ASC to maintain chronological order
         [phoneNumber]
       );
       
@@ -277,22 +276,43 @@ router.get('/conversations/:phoneNumber/full-history',
         return res.status(404).json(errorResponse('No conversations found for this phone number', 404));
       }
       
-      // Just use messages from the most recent conversation
-      // (Multiple conversation records can exist due to webhook issues)
-      const conv = allConversations.rows[0];
-      const messages = conv.messages || [];
+      // Merge all messages from all conversation records
+      const messageIds = new Set(); // Track unique message IDs
+      const allMessages: any[] = [];
       
-      // Format messages for response
-      const allMessages = messages.map((msg: any) => ({
-        ...msg,
-        conversationId: conv.id,
-        conversationIndex: 0
-      }));
+      for (const conv of allConversations.rows) {
+        const messages = conv.messages || [];
+        for (const msg of messages) {
+          // Avoid duplicates by tracking message IDs
+          if (msg.id && !messageIds.has(msg.id)) {
+            messageIds.add(msg.id);
+            allMessages.push({
+              ...msg,
+              conversationId: conv.id,
+              conversationIndex: allConversations.rows.indexOf(conv)
+            });
+          } else if (!msg.id) {
+            // Include messages without IDs (shouldn't happen but be safe)
+            allMessages.push({
+              ...msg,
+              conversationId: conv.id,
+              conversationIndex: allConversations.rows.indexOf(conv)
+            });
+          }
+        }
+      }
       
-      const totalMessageCount = messages.length;
+      // Sort merged messages by timestamp
+      allMessages.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.timestamp || 0);
+        const dateB = new Date(b.createdAt || b.timestamp || 0);
+        return dateA.getTime() - dateB.getTime();
+      });
       
-      // Use conv as the most recent conversation
-      const mostRecentConv = conv;
+      const totalMessageCount = allMessages.length;
+      
+      // Use the most recent conversation for metadata
+      const mostRecentConv = allConversations.rows[allConversations.rows.length - 1];
       
       // Mark all conversations as read
       try {
