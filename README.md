@@ -151,6 +151,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.6**: Fixed V3-PLS Safety Settings Persistence
+  - Blacklist topics and escalation keywords now properly persist after saving
+  - Added success notification when settings are saved
+  - Database migration ensures all required config rows exist
+  - Frontend properly reloads settings to confirm they were saved
 - **v1.17.0**: Enhanced Pattern Learning with GPT-4o Context Adaptation
   - Fixed pricing pattern trigger (was "Providing specific pricing information" instead of actual questions)
   - GPT-4o now adapts responses to match customer tone while preserving exact information

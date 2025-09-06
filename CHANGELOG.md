@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.6] - 2025-09-06
+
+### Fixed
+- **V3-PLS Safety Settings Persistence**
+  - Fixed blacklist topics and escalation keywords not showing after save
+  - Added database migration 212 to ensure safety config rows exist
+  - Frontend now properly reloads settings after save with success notification
+  - Backend initializes missing config rows with default values
+  - Added visual feedback when settings are saved successfully
+
 ## [1.17.0] - 2025-09-06
 
 ### Added

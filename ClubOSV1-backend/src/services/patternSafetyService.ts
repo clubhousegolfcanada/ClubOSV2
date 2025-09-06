@@ -389,7 +389,15 @@ class PatternSafetyService {
       requireApprovalForNew: this.requireApprovalForNew,
       approvalThreshold: this.approvalThreshold,
       minExamplesRequired: this.minExamplesRequired,
-      operatorOverrideWeight: this.operatorOverrideWeight
+      operatorOverrideWeight: this.operatorOverrideWeight,
+      enableFallbackResponses: false,
+      fallbackMessages: {
+        booking: '',
+        emergency: '',
+        techSupport: '',
+        brandTone: '',
+        general: ''
+      }
     };
   }
 

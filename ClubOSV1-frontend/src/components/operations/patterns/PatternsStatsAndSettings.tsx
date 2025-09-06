@@ -43,8 +43,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'stats' | 'settings'>('stats');
   const [stats, setStats] = useState<OperatorStats | null>(null);
   const [settings, setSettings] = useState<SafetySettings>({
-    blacklistTopics: ['medical', 'legal', 'refund', 'complaint', 'injury'],
-    escalationKeywords: ['angry', 'lawyer', 'sue', 'emergency', 'urgent'],
+    blacklistTopics: [],
+    escalationKeywords: [],
     requireApprovalForNew: true,
     approvalThreshold: 10,
     minExamplesRequired: 5,
@@ -61,6 +61,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -91,7 +92,18 @@ export const PatternsStatsAndSettings: React.FC = () => {
       try {
         const response = await apiClient.get('/patterns/safety-settings');
         if (response.data) {
-          setSettings(response.data);
+          // Ensure fallbackMessages exists with proper structure
+          const loadedSettings = {
+            ...response.data,
+            fallbackMessages: response.data.fallbackMessages || {
+              booking: '',
+              emergency: '',
+              techSupport: '',
+              brandTone: '',
+              general: ''
+            }
+          };
+          setSettings(loadedSettings);
         }
       } catch (error) {
         logger.error('Failed to fetch safety settings:', error);
@@ -109,6 +121,28 @@ export const PatternsStatsAndSettings: React.FC = () => {
       // Save to backend
       await apiClient.put('/patterns/safety-settings', settings);
       setHasChanges(false);
+      
+      // Reload settings to confirm they were saved
+      const response = await apiClient.get('/patterns/safety-settings');
+      if (response.data) {
+        // Ensure fallbackMessages exists with proper structure
+        const loadedSettings = {
+          ...response.data,
+          fallbackMessages: response.data.fallbackMessages || {
+            booking: '',
+            emergency: '',
+            techSupport: '',
+            brandTone: '',
+            general: ''
+          }
+        };
+        setSettings(loadedSettings);
+      }
+      
+      // Show success feedback
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      
       logger.info('Settings saved successfully');
     } catch (error) {
       logger.error('Failed to save settings:', error);
@@ -201,6 +235,14 @@ export const PatternsStatsAndSettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Success Message */}
+      {saveSuccess && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <p className="text-sm font-medium text-green-800">Safety settings saved successfully!</p>
+        </div>
+      )}
+      
       {/* Section Toggle */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="flex items-center justify-between">
@@ -229,18 +271,26 @@ export const PatternsStatsAndSettings: React.FC = () => {
             </button>
           </div>
           {activeSection === 'settings' && (
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges || saving}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                hasChanges
-                  ? 'bg-primary text-white hover:opacity-90'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            <div className="flex items-center gap-3">
+              {saveSuccess && (
+                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                  <CheckCircle className="h-4 w-4" />
+                  Saved!
+                </span>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={!hasChanges || saving}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                  hasChanges
+                    ? 'bg-primary text-white hover:opacity-90'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Save className="h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           )}
         </div>
       </div>
