@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Zap, Brain, TrendingUp, Clock, Edit2, Trash2, Plus } from 'lucide-react';
+import { Settings, Zap, Brain, TrendingUp, Clock, Edit2, Trash2, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
 
@@ -24,7 +24,6 @@ interface PatternAutomation {
 export const PatternAutomationCards: React.FC = () => {
   const [automations, setAutomations] = useState<PatternAutomation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [editingCard, setEditingCard] = useState<number | null>(null);
   const [editedResponse, setEditedResponse] = useState('');
   const [stats, setStats] = useState<any>(null);
@@ -63,70 +62,84 @@ export const PatternAutomationCards: React.FC = () => {
   };
 
   const formatPatternAsAutomation = (pattern: any): PatternAutomation => {
-    // Auto-generate name if not set
-    const name = pattern.automation_name || generateAutomationName(pattern);
-    const description = pattern.automation_description || generateDescription(pattern);
+    const typeConfig = getTypeConfig(pattern.pattern_type);
     
     return {
       ...pattern,
-      automation_name: name,
-      automation_description: description,
-      automation_icon: pattern.automation_icon || getIconForType(pattern.pattern_type),
-      automation_category: pattern.automation_category || getCategoryForType(pattern.pattern_type)
+      automation_name: typeConfig.name,
+      automation_description: typeConfig.description,
+      automation_icon: typeConfig.icon,
+      automation_category: typeConfig.category,
+      trigger_keywords: pattern.trigger_keywords || extractKeywords(pattern.trigger_text || pattern.pattern_signature)
     };
   };
 
-  const generateAutomationName = (pattern: any): string => {
-    const typeNames: Record<string, string> = {
-      'gift_cards': 'Gift Card Inquiries',
-      'hours': 'Hours & Location Info',
-      'booking': 'Booking Assistance',
-      'tech_issue': 'Technical Support',
-      'membership': 'Membership Questions',
-      'pricing': 'Pricing Information',
-      'faq': 'Frequently Asked Questions',
-      'access': 'Access & Door Issues',
-      'general': 'General Inquiries'
+  const extractKeywords = (text: string): string[] => {
+    if (!text) return [];
+    const words = text.toLowerCase().split(/\s+/);
+    const stopWords = ['the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'but', 'in', 'with', 'to', 'for'];
+    return words.filter(word => word.length > 3 && !stopWords.includes(word));
+  };
+
+  const getTypeConfig = (type: string) => {
+    const configs: Record<string, { name: string; description: string; icon: string; category: string }> = {
+      'gift_cards': {
+        name: 'Gift Card Inquiries',
+        description: 'Automatically responds to questions about gift cards and purchases',
+        icon: '🎁',
+        category: 'customer_service'
+      },
+      'hours': {
+        name: 'Hours of Operation',
+        description: 'Provides current operating hours when customers ask',
+        icon: '🕐',
+        category: 'customer_service'
+      },
+      'booking': {
+        name: 'Booking Assistance',
+        description: 'Helps customers with booking questions and directs them to Skedda',
+        icon: '📅',
+        category: 'customer_service'
+      },
+      'tech_issue': {
+        name: 'Technical Support',
+        description: 'Responds to simulator and equipment issues',
+        icon: '🔧',
+        category: 'technical'
+      },
+      'membership': {
+        name: 'Membership Information',
+        description: 'Provides details about membership options and benefits',
+        icon: '💳',
+        category: 'customer_service'
+      },
+      'pricing': {
+        name: 'Pricing Questions',
+        description: 'Responds with current pricing and package information',
+        icon: '💰',
+        category: 'customer_service'
+      },
+      'faq': {
+        name: 'Frequently Asked Questions',
+        description: 'Handles common questions automatically',
+        icon: '❓',
+        category: 'customer_service'
+      },
+      'access': {
+        name: 'Access Issues',
+        description: 'Helps with door access and entry problems',
+        icon: '🚪',
+        category: 'technical'
+      },
+      'general': {
+        name: 'General Inquiry',
+        description: 'Handles miscellaneous customer questions',
+        icon: '💬',
+        category: 'customer_service'
+      }
     };
     
-    return typeNames[pattern.pattern_type] || 
-           pattern.trigger_text?.substring(0, 30) + '...' || 
-           'Unnamed Automation';
-  };
-
-  const generateDescription = (pattern: any): string => {
-    if (!pattern.trigger_text) return 'Automated response pattern';
-    return `Automatically respond when customers ask: "${pattern.trigger_text.substring(0, 60)}${pattern.trigger_text.length > 60 ? '...' : ''}"`;
-  };
-
-  const getIconForType = (type: string): string => {
-    const icons: Record<string, string> = {
-      'gift_cards': '🎁',
-      'hours': '🕐',
-      'booking': '📅',
-      'tech_issue': '🔧',
-      'membership': '💳',
-      'pricing': '💰',
-      'faq': '❓',
-      'access': '🚪',
-      'general': '💬'
-    };
-    return icons[type] || '💬';
-  };
-
-  const getCategoryForType = (type: string): string => {
-    const categories: Record<string, string> = {
-      'gift_cards': 'customer_service',
-      'hours': 'customer_service',
-      'booking': 'customer_service',
-      'tech_issue': 'technical',
-      'membership': 'customer_service',
-      'pricing': 'customer_service',
-      'faq': 'customer_service',
-      'access': 'technical',
-      'general': 'customer_service'
-    };
-    return categories[type] || 'customer_service';
+    return configs[type] || configs['general'];
   };
 
   const toggleAutomation = async (id: number, currentState: boolean) => {
@@ -135,16 +148,13 @@ export const PatternAutomationCards: React.FC = () => {
         is_active: !currentState
       });
       
-      // Update local state
       setAutomations(prev => prev.map(a => 
         a.id === id ? { ...a, is_active: !currentState } : a
       ));
       
-      // Refresh stats
       fetchStats();
     } catch (error) {
       logger.error('Failed to toggle automation:', error);
-      alert('Failed to toggle automation. Please try again.');
     }
   };
 
@@ -154,7 +164,6 @@ export const PatternAutomationCards: React.FC = () => {
         response_template: editedResponse
       });
       
-      // Update local state
       setAutomations(prev => prev.map(a => 
         a.id === id ? { ...a, response_template: editedResponse } : a
       ));
@@ -163,7 +172,6 @@ export const PatternAutomationCards: React.FC = () => {
       setEditedResponse('');
     } catch (error) {
       logger.error('Failed to save response:', error);
-      alert('Failed to save response. Please try again.');
     }
   };
 
@@ -174,23 +182,17 @@ export const PatternAutomationCards: React.FC = () => {
     
     try {
       await apiClient.delete(`/patterns/${id}`);
-      
-      // Remove from local state
       setAutomations(prev => prev.filter(a => a.id !== id));
-      setExpandedCard(null);
-      
-      // Refresh stats
       fetchStats();
     } catch (error) {
       logger.error('Failed to delete pattern:', error);
-      alert('Failed to delete automation. Please try again.');
     }
   };
 
   const getConfidenceColor = (confidence: number): string => {
     if (confidence >= 0.85) return 'text-green-600 bg-green-50';
     if (confidence >= 0.70) return 'text-yellow-600 bg-yellow-50';
-    return 'text-gray-600 bg-gray-50';
+    return 'text-red-600 bg-red-50';
   };
 
   const getSuccessRate = (automation: PatternAutomation): number => {
@@ -198,286 +200,178 @@ export const PatternAutomationCards: React.FC = () => {
     return Math.round((automation.success_count / automation.execution_count) * 100);
   };
 
-  const formatTimeAgo = (date: string): string => {
-    if (!date) return 'Never';
+  const formatTimeAgo = (date: string | undefined): string => {
+    if (!date) return 'Never used';
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-  };
-
-  // Group automations by category
-  const groupedAutomations = automations.reduce((acc, automation) => {
-    const category = automation.automation_category || 'other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(automation);
-    return acc;
-  }, {} as Record<string, PatternAutomation[]>);
-
-  const categoryTitles: Record<string, string> = {
-    'customer_service': 'Customer Service',
-    'technical': 'Technical Support',
-    'booking': 'Booking & Reservations',
-    'other': 'Other Automations'
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    return new Date(date).toLocaleDateString();
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header with stats */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            AI Automations
-            <span className="text-sm text-gray-500 font-normal">
-              ({automations.filter(a => a.is_active).length}/{automations.length} active)
-            </span>
-          </h2>
-        </div>
-        
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {automations.length}
-              </div>
-              <div className="text-sm text-gray-500">Learned Patterns</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {automations.filter(a => a.is_active).length}
-              </div>
-              <div className="text-sm text-gray-500">Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {automations.reduce((sum, a) => sum + a.execution_count, 0)}
-              </div>
-              <div className="text-sm text-gray-500">Total Uses</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.patterns?.avgConfidence ? 
-                  `${Math.round(stats.patterns.avgConfidence * 100)}%` : '0%'}
-              </div>
-              <div className="text-sm text-gray-500">Avg Confidence</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Info box */}
+      {/* Info box if no patterns */}
       {automations.length === 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <div className="flex items-start">
-            <Brain className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+            <Brain className="h-6 w-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
             <div>
-              <h3 className="text-sm font-medium text-blue-900">Pattern Learning Active</h3>
+              <h3 className="text-base font-medium text-blue-900">Pattern Learning System Active</h3>
               <p className="text-sm text-blue-700 mt-1">
-                The system is now learning from operator responses. When you respond to customer messages, 
-                patterns will automatically be created and appear here as toggleable automations.
+                The system is learning from operator responses. When you respond to customer messages, 
+                patterns will automatically be created and appear here as automation cards.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Automation cards by category */}
-      {Object.entries(groupedAutomations).map(([category, items]) => (
-        <div key={category}>
-          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
-            {categoryTitles[category] || category}
-          </h3>
-          
-          <div className="space-y-3">
-            {items.map(automation => (
-              <div
-                key={automation.id}
-                className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-              >
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {/* Title and status */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl">{automation.automation_icon}</span>
-                        <h4 className="font-medium text-gray-900">
-                          {automation.automation_name}
-                        </h4>
-                        {automation.confidence_score >= 0.85 && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                            RECOMMENDED
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Description */}
-                      <p className="text-sm text-gray-600 mb-3">
-                        {automation.automation_description}
-                      </p>
-                      
-                      {/* Stats */}
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span className={`px-2 py-1 rounded ${getConfidenceColor(automation.confidence_score)}`}>
-                          {Math.round(automation.confidence_score * 100)}% confident
-                        </span>
-                        {automation.execution_count > 0 && (
-                          <>
-                            <span>✨ Used {automation.execution_count} times</span>
-                            <span>📊 {getSuccessRate(automation)}% success</span>
-                          </>
-                        )}
-                        {automation.last_used && (
-                          <span>🕐 {formatTimeAgo(automation.last_used)}</span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Controls */}
-                    <div className="flex items-center gap-2 ml-4">
-                      <button
-                        onClick={() => setExpandedCard(
-                          expandedCard === automation.id ? null : automation.id
-                        )}
-                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                        title="Settings"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </button>
-                      
-                      <button
-                        onClick={() => toggleAutomation(automation.id, automation.is_active)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          automation.is_active ? 'bg-green-600' : 'bg-gray-300'
-                        }`}
-                        title={automation.is_active ? 'Click to disable' : 'Click to enable'}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            automation.is_active ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
+      {/* Automation cards in 2-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {automations.map(automation => (
+          <div
+            key={automation.id}
+            className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-200"
+          >
+            <div className="p-5">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start space-x-3">
+                  <span className="text-2xl">{automation.automation_icon}</span>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 text-base">
+                      {automation.automation_name}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      {automation.automation_description}
+                    </p>
                   </div>
-                  
-                  {/* Expanded details */}
-                  {expandedCard === automation.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 mb-1">
-                            When customer says:
-                          </p>
-                          <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded italic">
-                            "{automation.trigger_text}"
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 mb-1">
-                            AI responds with:
-                          </p>
-                          {editingCard === automation.id ? (
-                            <div className="space-y-2">
-                              <textarea
-                                className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent"
-                                rows={4}
-                                value={editedResponse}
-                                onChange={(e) => setEditedResponse(e.target.value)}
-                                placeholder="Enter response template..."
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => saveEditedResponse(automation.id)}
-                                  className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingCard(null);
-                                    setEditedResponse('');
-                                  }}
-                                  className="px-3 py-1.5 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <p className="text-sm text-gray-700 bg-green-50 p-2 rounded whitespace-pre-wrap">
-                                {automation.response_template}
-                              </p>
-                              <div className="flex justify-between mt-2">
-                                <button
-                                  onClick={() => {
-                                    setEditingCard(automation.id);
-                                    setEditedResponse(automation.response_template);
-                                  }}
-                                  className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                  Edit Response
-                                </button>
-                                <button
-                                  onClick={() => deletePattern(automation.id)}
-                                  className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {automation.trigger_keywords && automation.trigger_keywords.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">
-                              Trigger keywords:
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {automation.trigger_keywords.map((keyword, idx) => (
-                                <span
-                                  key={idx}
-                                  className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded"
-                                >
-                                  {keyword}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                </div>
+                
+                {/* Toggle switch */}
+                <button
+                  onClick={() => toggleAutomation(automation.id, automation.is_active)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                    automation.is_active ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                  title={automation.is_active ? 'Click to disable' : 'Click to enable'}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      automation.is_active ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Stats row */}
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <span className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(automation.confidence_score)}`}>
+                  {Math.round(automation.confidence_score * 100)}% confident
+                </span>
+                {automation.execution_count > 0 && (
+                  <>
+                    <span className="text-xs text-gray-600 flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      {automation.execution_count} uses
+                    </span>
+                    <span className="text-xs text-gray-600 flex items-center gap-1">
+                      {getSuccessRate(automation) >= 80 ? (
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-yellow-600" />
+                      )}
+                      {getSuccessRate(automation)}% success
+                    </span>
+                  </>
+                )}
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatTimeAgo(automation.last_used)}
+                </span>
+              </div>
+
+              {/* Trigger and Response always visible */}
+              <div className="space-y-3 border-t pt-3">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Triggers when customer says:</p>
+                  <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded italic">
+                    "{automation.trigger_text}"
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">AI responds with:</p>
+                  {editingCard === automation.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        rows={3}
+                        value={editedResponse}
+                        onChange={(e) => setEditedResponse(e.target.value)}
+                        placeholder="Enter response template..."
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEditedResponse(automation.id)}
+                          className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCard(null);
+                            setEditedResponse('');
+                          }}
+                          className="px-3 py-1.5 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition-colors"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-green-50 p-2 rounded whitespace-pre-wrap">
+                      {automation.response_template}
+                    </p>
                   )}
                 </div>
+
+                {/* Action buttons always visible */}
+                <div className="flex justify-between pt-2 border-t">
+                  <button
+                    onClick={() => {
+                      setEditingCard(automation.id);
+                      setEditedResponse(automation.response_template);
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"
+                    disabled={editingCard === automation.id}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    Edit Response
+                  </button>
+                  <button
+                    onClick={() => deletePattern(automation.id)}
+                    className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1 font-medium"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </button>
+                </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      ))}
-      
-      {automations.length === 0 && (
-        <div className="text-center py-12">
-          <Brain className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500">No patterns learned yet.</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Patterns will appear here as the system learns from operator responses.
-          </p>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
