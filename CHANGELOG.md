@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.4] - 2025-09-06
+
+### Changed
+- **Cleaned Up Integrations Page**
+  - Removed duplicate AI Automations section (now only in V3-PLS page)
+  - Removed Knowledge Management section (unused functionality)
+  - Removed System Features placeholder section (non-functional toggles)
+  - Removed API Key Management display-only section
+  - Added "Coming Soon" badge to HubSpot integration
+  - Renamed CRM buttons from "Configure" to "View Setup Info" for clarity
+  - Integrations page now focused solely on third-party service configurations
+
+### Improved
+- Reduced code duplication between Integrations and V3-PLS pages
+- Cleaner, more focused Operations Center interface
+- Better separation of concerns - V3-PLS handles all AI/pattern features
+
 ## [1.16.3] - 2025-09-05
 
 ### Added

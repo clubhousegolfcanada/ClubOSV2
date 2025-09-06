@@ -2,20 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
-import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, CheckSquare, Calendar, Users, ShoppingBag, Settings, RefreshCw, Check, X, AlertCircle, ExternalLink, Key, TestTube, Zap, Brain, Sparkles } from 'lucide-react';
-import { KnowledgeRouterPanel } from '@/components/admin/KnowledgeRouterPanel';
-import { AIFeatureCard } from '@/components/AIFeatureCard';
+import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 
 
-interface SystemFeature {
-  key: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  icon: React.ReactNode;
-}
 
 interface IntegrationConfig {
   service: string;
@@ -24,53 +15,8 @@ interface IntegrationConfig {
   config?: any;
 }
 
-interface AIFeature {
-  id: string;
-  feature_key: string;
-  feature_name: string;
-  description: string;
-  category: string;
-  enabled: boolean;
-  config: any;
-  allow_follow_up?: boolean;
-  stats?: {
-    total_uses: number;
-    successful_uses: number;
-    last_used?: string;
-  };
-}
 
 export const OperationsIntegrations: React.FC = () => {
-  const [systemFeatures, setSystemFeatures] = useState<SystemFeature[]>([
-    {
-      key: 'smart_assist',
-      name: 'Smart Assist',
-      description: 'AI-powered request routing and responses',
-      enabled: true,
-      icon: <Zap className="h-5 w-5" />
-    },
-    {
-      key: 'bookings',
-      name: 'Bookings',
-      description: 'Skedda booking system integration',
-      enabled: true,
-      icon: <Calendar className="h-5 w-5" />
-    },
-    {
-      key: 'tickets',
-      name: 'Tickets',
-      description: 'Support ticket management system',
-      enabled: true,
-      icon: <CheckSquare className="h-5 w-5" />
-    },
-    {
-      key: 'customer_kiosk',
-      name: 'Customer Kiosk',
-      description: 'ClubOS Boy public interface',
-      enabled: true,
-      icon: <Users className="h-5 w-5" />
-    }
-  ]);
 
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>([
     {
@@ -131,59 +77,14 @@ export const OperationsIntegrations: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [testingService, setTestingService] = useState<string | null>(null);
-  const [aiFeatures, setAIFeatures] = useState<AIFeature[]>([]);
-  const [expandedSections, setExpandedSections] = useState({
-    services: true,
-    ai: false,
-    knowledge: false
-  });
   
   const { user } = useAuthState();
   const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     fetchConfigurations();
-    fetchAIFeatures();
   }, []);
 
-  const fetchAIFeatures = async () => {
-    if (!token) return;
-    
-    try {
-      const response = await http.get(`ai-automations`, {
-
-      });
-      // Ensure we're getting an array
-      const features = Array.isArray(response.data) ? response.data : 
-                      (response.data?.features || response.data?.data || []);
-      setAIFeatures(features);
-    } catch (error: any) {
-      logger.error('Error fetching AI features:', error);
-      setAIFeatures([]);
-    }
-  };
-
-  const handleToggleAIFeature = async (featureKey: string, enabled: boolean) => {
-    try {
-      await http.post(
-        `ai-automations/${featureKey}/toggle`,
-        { enabled },
-
-      );
-      toast.success(`Feature ${enabled ? 'enabled' : 'disabled'}`);
-      fetchAIFeatures();
-    } catch (error) {
-      logger.error('Error toggling AI feature:', error);
-      toast.error('Failed to toggle feature');
-    }
-  };
-
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
 
   const fetchConfigurations = async () => {
     if (!token) return;
@@ -207,18 +108,6 @@ export const OperationsIntegrations: React.FC = () => {
         setOpenPhoneConfig(prev => ({ ...prev, ...openphoneResponse.data.data }));
       }
       
-      // Fetch system features
-      const featuresResponse = await http.get(
-        `integrations/features`,
-
-      );
-      if (featuresResponse.data.success) {
-        // Ensure we're getting an array
-        const features = Array.isArray(featuresResponse.data.data) ? 
-          featuresResponse.data.data : systemFeatures;
-        setSystemFeatures(features);
-      }
-      
       // Check HubSpot connection status
       try {
         const hubspotResponse = await http.get(
@@ -240,29 +129,6 @@ export const OperationsIntegrations: React.FC = () => {
     }
   };
 
-  const handleToggleFeature = async (featureKey: string) => {
-    const feature = systemFeatures.find(f => f.key === featureKey);
-    if (!feature) return;
-
-    try {
-      await http.put(
-        `integrations/features/${featureKey}`,
-        { enabled: !feature.enabled },
-        {
-
-        }
-      );
-      
-      setSystemFeatures(prev => prev.map(f => 
-        f.key === featureKey ? { ...f, enabled: !f.enabled } : f
-      ));
-      
-      toast.success(`${feature.name} ${!feature.enabled ? 'enabled' : 'disabled'}`);
-    } catch (error) {
-      logger.error('Error toggling feature:', error);
-      toast.error('Failed to toggle feature');
-    }
-  };
 
   const handleTestConnection = async (service: string) => {
     setTestingService(service);
@@ -746,12 +612,17 @@ export const OperationsIntegrations: React.FC = () => {
             </div>
             
             <p className="text-sm text-gray-600 mb-3">Customer data synchronization</p>
-            <button
-              onClick={() => handleConfigureService('HubSpot')}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Configure
-            </button>
+            <div className="space-y-2">
+              <span className="inline-block w-full text-center px-3 py-1.5 text-xs bg-amber-100 text-amber-700 rounded-lg font-medium">
+                Coming Soon
+              </span>
+              <button
+                onClick={() => handleConfigureService('HubSpot')}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                View Setup Info
+              </button>
+            </div>
           </div>
 
           {/* NinjaOne Card */}
@@ -783,12 +654,14 @@ export const OperationsIntegrations: React.FC = () => {
             </div>
             
             <p className="text-sm text-gray-600 mb-3">Remote device management</p>
-            <button
-              onClick={() => handleConfigureService('NinjaOne')}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Configure
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleConfigureService('NinjaOne')}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                View Setup Info
+              </button>
+            </div>
           </div>
 
           {/* UniFi Access Card */}
@@ -820,178 +693,18 @@ export const OperationsIntegrations: React.FC = () => {
             </div>
             
             <p className="text-sm text-gray-600 mb-3">Door access control</p>
-            <button
-              onClick={() => handleConfigureService('UniFi')}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Configure
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* System Features Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <Settings className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-gray-900">System Features</h2>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {systemFeatures.map((feature) => (
-              <div key={feature.key} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
-                    {feature.icon}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{feature.name}</h4>
-                    <p className="text-sm text-gray-600">{feature.description}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleToggleFeature(feature.key)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    feature.enabled ? 'bg-primary' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    feature.enabled ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* API Keys Management */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <Key className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-gray-900">API Key Management</h2>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-yellow-900">Security Notice</h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    API keys are encrypted and stored securely. Never share your API keys or commit them to version control.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">OpenAI API Key</span>
-                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Configured</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">GPT-4 and assistant services</p>
-              </button>
-              
-              <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">Slack Webhook</span>
-                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Configured</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">Team notifications</p>
-              </button>
-              
-              <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">OpenPhone</span>
-                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Configured</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">SMS messaging service</p>
-              </button>
-              
-              <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">HubSpot</span>
-                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">Not configured</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">CRM integration</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleConfigureService('UniFi')}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                View Setup Info
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* AI Automations Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div 
-          className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
-          onClick={() => toggleSection('ai')}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
-              <span className="text-sm text-gray-500">
-                ({aiFeatures.filter(f => f.enabled).length}/{aiFeatures.length} active)
-              </span>
-            </div>
-            {expandedSections.ai ? 
-              <Settings className="h-5 w-5 text-gray-500 animate-spin-slow" /> : 
-              <Settings className="h-5 w-5 text-gray-500" />
-            }
-          </div>
-        </div>
-        
-        {expandedSections.ai && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {aiFeatures.map((feature) => (
-                <AIFeatureCard
-                  key={feature.id}
-                  feature={feature}
-                  onToggle={() => handleToggleAIFeature(feature.feature_key, !feature.enabled)}
-                  onUpdate={fetchAIFeatures}
-                />
-              ))}
-            </div>
-            {aiFeatures.length === 0 && (
-              <p className="text-gray-500 text-center py-8">No AI features configured</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Knowledge Management Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div 
-          className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
-          onClick={() => toggleSection('knowledge')}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Brain className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-900">Knowledge Management</h2>
-            </div>
-            {expandedSections.knowledge ? 
-              <Settings className="h-5 w-5 text-gray-500 animate-spin-slow" /> : 
-              <Settings className="h-5 w-5 text-gray-500" />
-            }
-          </div>
-        </div>
-        
-        {expandedSections.knowledge && (
-          <div className="p-6">
-            <KnowledgeRouterPanel />
-          </div>
-        )}
-      </div>
     </div>
   );
 };
