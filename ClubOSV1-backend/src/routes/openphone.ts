@@ -382,9 +382,41 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 userCount: userIds.length
               });
               
-              // PATTERN LEARNING: Process incoming message (replaces AI automations)
+              // Process both AI automations AND Pattern Learning for existing conversations
               const messageText = messageData.body || messageData.text || '';
               
+              // First check AI automations (for confirmations and other automated responses)
+              try {
+                const automationResponse = await aiAutomationService.processMessage(
+                  phoneNumber,
+                  messageText,
+                  existingConv.rows[0].id,
+                  false // Not initial message
+                );
+                
+                if (automationResponse.handled && automationResponse.response) {
+                  logger.info('Sending AI automation response for existing conversation', {
+                    phoneNumber,
+                    response: automationResponse.response.substring(0, 100)
+                  });
+                  
+                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                  if (defaultNumber) {
+                    await openPhoneService.sendMessage(
+                      phoneNumber,
+                      defaultNumber,
+                      automationResponse.response
+                    );
+                  }
+                  
+                  // If automation handled it, we're done
+                  return res.json({ success: true, message: 'AI automation handled' });
+                }
+              } catch (automationError) {
+                logger.error('AI automation error in existing conversation:', automationError);
+              }
+              
+              // Then process with Pattern Learning System
               try {
                 const patternResult = await patternLearningService.processMessage(
                   messageText,

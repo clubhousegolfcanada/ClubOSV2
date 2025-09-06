@@ -26,7 +26,6 @@ import {
   FileText,
   Loader2,
   Radio,
-  Sparkles
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import { LivePatternDashboard } from './LivePatternDashboard';
@@ -460,10 +459,7 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
-          <div className="flex items-center justify-center space-x-1">
-            <Sparkles className="h-4 w-4" />
-            <span>AI Auto</span>
-          </div>
+          AI Auto
         </button>
         <button
           onClick={() => setActiveView('config')}
@@ -845,7 +841,7 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
+                  <Zap className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
                   <span className="text-sm text-gray-500">
                     ({aiFeatures.filter(f => f.enabled).length} active)

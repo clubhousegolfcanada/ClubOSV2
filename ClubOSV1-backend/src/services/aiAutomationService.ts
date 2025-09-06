@@ -5,6 +5,7 @@ import ninjaoneService from './ninjaone';
 import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automations';
 import { assistantService } from './assistantService';
 import { calculateConfidence, findBestAutomation } from './aiAutomationPatterns';
+import OpenAI from 'openai';
 
 interface AutomationResponse {
   handled: boolean;
@@ -25,6 +26,20 @@ interface PendingConfirmation {
 const pendingConfirmations = new Map<string, PendingConfirmation>();
 
 export class AIAutomationService {
+  private openai: OpenAI | null = null;
+  
+  constructor() {
+    // Initialize OpenAI if API key exists
+    if (process.env.OPENAI_API_KEY) {
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+      logger.info('OpenAI initialized for AI Automation Service');
+    } else {
+      logger.warn('OpenAI API key not configured - confirmation analysis will use basic patterns');
+    }
+  }
+  
   /**
    * Send an automatic response to the customer via OpenPhone
    */
@@ -173,11 +188,13 @@ export class AIAutomationService {
   async processMessage(phoneNumber: string, message: string, conversationId?: string, isInitialMessage: boolean = false): Promise<AutomationResponse> {
     const lowerMessage = message.toLowerCase().trim();
     
-    // Check for confirmation responses first
-    if (lowerMessage === 'yes' || lowerMessage === 'y') {
-      const confirmation = await this.handleConfirmation(phoneNumber);
-      if (confirmation.handled) {
-        return confirmation;
+    // Check if there's a pending confirmation for this phone number
+    const hasPendingConfirmation = await this.checkForPendingConfirmation(phoneNumber);
+    if (hasPendingConfirmation) {
+      // Use GPT-4o to understand if this is a confirmation or denial
+      const confirmationResult = await this.analyzeConfirmationIntent(message, phoneNumber);
+      if (confirmationResult.handled) {
+        return confirmationResult;
       }
     }
     
@@ -1224,9 +1241,177 @@ export class AIAutomationService {
   }
   
   /**
-   * Handle confirmation responses
+   * Check if phone number has pending confirmation
+   */
+  private async checkForPendingConfirmation(phoneNumber: string): Promise<boolean> {
+    for (const [_, confirmation] of pendingConfirmations.entries()) {
+      if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Use GPT-4o to understand if the message is a confirmation or denial
+   */
+  private async analyzeConfirmationIntent(message: string, phoneNumber: string): Promise<AutomationResponse> {
+    try {
+      // Find the pending confirmation
+      let confirmationToExecute: PendingConfirmation | null = null;
+      let keyToDelete: string | null = null;
+      
+      for (const [key, confirmation] of pendingConfirmations.entries()) {
+        if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
+          confirmationToExecute = confirmation;
+          keyToDelete = key;
+          break;
+        }
+      }
+      
+      if (!confirmationToExecute || !keyToDelete) {
+        return { handled: false };
+      }
+
+      // Use OpenAI to analyze the intent
+      if (!this.openai) {
+        logger.error('OpenAI not configured for confirmation analysis');
+        // Fallback to basic pattern matching
+        const lowerMessage = message.toLowerCase().trim();
+        if (lowerMessage === 'yes' || lowerMessage === 'y') {
+          return this.executeConfirmation(confirmationToExecute, keyToDelete);
+        }
+        return { handled: false };
+      }
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are analyzing customer responses to determine if they are confirming or denying an action.
+            The customer was asked if they want to reset their Trackman system.
+            
+            Analyze their response and determine:
+            1. YES - If they are confirming/agreeing (e.g., "yes", "yeah", "sounds good", "do it", "please", "ok", "sure", "go ahead")
+            2. NO - If they are denying/declining (e.g., "no", "nope", "don't", "wait", "stop", "nevermind", "cancel")
+            3. UNCLEAR - If the intent is unclear or they're asking a question
+            
+            Respond with ONLY one word: YES, NO, or UNCLEAR`
+          },
+          {
+            role: 'user',
+            content: message
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 10
+      });
+
+      const intent = completion.choices[0]?.message?.content?.trim().toUpperCase();
+      
+      logger.info('GPT-4o confirmation analysis:', {
+        phoneNumber: phoneNumber.slice(-4),
+        message,
+        intent,
+        featureKey: confirmationToExecute.featureKey
+      });
+
+      if (intent === 'YES') {
+        return this.executeConfirmation(confirmationToExecute, keyToDelete);
+      } else if (intent === 'NO') {
+        // Remove from pending and send cancellation message
+        pendingConfirmations.delete(keyToDelete);
+        return {
+          handled: true,
+          response: 'No problem! The reset has been cancelled. Let me know if you need anything else.'
+        };
+      } else {
+        // Unclear - ask for clarification
+        return {
+          handled: true,
+          response: 'I need to confirm - would you like me to reset the Trackman system? Please reply "yes" to proceed or "no" to cancel.'
+        };
+      }
+    } catch (error) {
+      logger.error('Error analyzing confirmation intent:', error);
+      // Fallback to basic pattern matching
+      const lowerMessage = message.toLowerCase().trim();
+      if (lowerMessage === 'yes' || lowerMessage === 'y') {
+        const confirmation = await this.handleConfirmation(phoneNumber);
+        if (confirmation.handled) {
+          return confirmation;
+        }
+      }
+      return { handled: false };
+    }
+  }
+
+  /**
+   * Execute a confirmed action
+   */
+  private async executeConfirmation(confirmation: PendingConfirmation, key: string): Promise<AutomationResponse> {
+    // Remove from pending
+    pendingConfirmations.delete(key);
+    
+    try {
+      // Execute the action
+      await confirmation.action();
+      
+      await logAutomationUsage(confirmation.featureKey, {
+        triggerType: 'automatic',
+        success: true,
+        userConfirmed: true
+      });
+      
+      // Customize confirmation response based on the action type
+      let response = 'Action completed successfully!';
+      if (confirmation.featureKey === 'trackman_reset') {
+        response = "Perfect! I'm resetting the Trackman system now. It should be back up in about 30 seconds. You can continue your session through the 'My Activities' button once it restarts.";
+      } else if (confirmation.featureKey === 'simulator_reboot') {
+        response = "Great! I'm rebooting the simulator PC now. It will take about 60-90 seconds to restart. The screen will go black briefly, then come back up.";
+      }
+      
+      return {
+        handled: true,
+        response
+      };
+    } catch (error) {
+      logger.error('Error executing confirmation:', error);
+      return {
+        handled: true,
+        response: 'I encountered an error while processing your request. Please contact staff for assistance.'
+      };
+    }
+  }
+
+  /**
+   * Handle confirmation responses (legacy fallback)
    */
   private async handleConfirmation(phoneNumber: string): Promise<AutomationResponse> {
+    // Find pending confirmation for this phone number
+    let confirmationToExecute: PendingConfirmation | null = null;
+    let keyToDelete: string | null = null;
+    
+    for (const [key, confirmation] of pendingConfirmations.entries()) {
+      if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
+        confirmationToExecute = confirmation;
+        keyToDelete = key;
+        break;
+      }
+    }
+    
+    if (!confirmationToExecute || !keyToDelete) {
+      return { handled: false };
+    }
+    
+    return this.executeConfirmation(confirmationToExecute, keyToDelete);
+  }
+
+  /**
+   * Original handleConfirmation content moved here
+   */
+  private async handleConfirmationLegacy(phoneNumber: string): Promise<AutomationResponse> {
     // Find pending confirmation for this phone number
     let confirmationToExecute: PendingConfirmation | null = null;
     let keyToDelete: string | null = null;
