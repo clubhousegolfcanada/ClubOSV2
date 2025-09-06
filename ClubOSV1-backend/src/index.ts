@@ -255,6 +255,7 @@ app.use('/api/checklists', checklistsRoutes);
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
 app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);
+app.use('/api/ninjaone', ninjaoneSyncRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/openphone-v3', openphoneV3Routes);

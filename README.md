@@ -151,6 +151,12 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.0**: NinjaOne Dynamic Script & Device Management
+  - Database-driven script/device registry - no more hardcoding!
+  - Admin UI for managing NinjaOne scripts and devices
+  - Sync from NinjaOne with one click
+  - Dynamic location/bay detection from database
+  - See [NinjaOne Status](./NINJAONE-IMPLEMENTATION-STATUS.md) for details
 - **v1.16.8**: Fixed V3-PLS Page Loading Issues
   - Fixed HTTP method mismatch (PATCH vs PUT) in PatternAutomationCards
   - Corrected ai-automations API endpoint paths

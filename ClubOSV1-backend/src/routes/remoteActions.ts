@@ -55,6 +55,19 @@ const SCRIPT_MAP: Record<string, string> = {
   'projector-autosize': 'DEMO-SCRIPT-PROJECTOR-AUTOSIZE'
 };
 
+// Get available scripts from database
+router.get('/scripts', authenticate, authorize(['operator', 'admin']), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM ninjaone_scripts WHERE is_active = true ORDER BY category, name`
+    );
+    res.json({ success: true, scripts: result.rows });
+  } catch (error: any) {
+    logger.error('Error fetching scripts:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch scripts' });
+  }
+});
+
 // Execute remote action
 router.post('/execute', authenticate, authorize(['operator', 'admin']), async (req, res) => {
   const startTime = Date.now();

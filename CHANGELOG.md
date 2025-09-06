@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.0] - 2025-09-06
+
+### Added
+- **NinjaOne Dynamic Script & Device Management**
+  - Database-driven script and device registry (no more hardcoding!)
+  - Admin UI in Operations > Integrations for managing NinjaOne scripts
+  - Sync scripts and devices from NinjaOne with one click
+  - Edit script display names, categories, and icons
+  - Dynamic device detection for all locations and bays
+  - Scripts and devices stored in `ninjaone_scripts` and `ninjaone_devices` tables
+  - Backward compatible with existing hardcoded configuration
+  
+### Technical Details
+- Migration 208 creates NinjaOne registry tables
+- New API endpoints at `/api/ninjaone/*` for sync and management
+- RemoteActionsBar now loads scripts and devices dynamically
+- Commands page ready for dynamic script buttons
+- Operations Integrations page includes NinjaOne management section
+
+### Documentation
+- Created `NINJAONE-IMPLEMENTATION-STATUS.md` for current state
+- Created `NINJAONE-DYNAMIC-SCRIPTS-PLAN.md` for dynamic integration
+- Created `LOCATION-MANAGEMENT-UI-PLAN.md` for future location management
+
+### What's Next
+- Complete location management UI for adding new locations
+- Automatic device discovery when NinjaOne agents installed
+- Dynamic button generation on Commands page
+
 ## [1.16.8] - 2025-09-06
 
 ### Fixed

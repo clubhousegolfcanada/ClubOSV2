@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
-import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube } from 'lucide-react';
+import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube, Zap, Monitor, Edit2, Power, Save } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 
@@ -78,12 +78,22 @@ export const OperationsIntegrations: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [testingService, setTestingService] = useState<string | null>(null);
   
+  // NinjaOne Management State
+  const [ninjaoneScripts, setNinjaoneScripts] = useState<any[]>([]);
+  const [ninjaoneDevices, setNinjaoneDevices] = useState<any[]>([]);
+  const [editingScript, setEditingScript] = useState<any>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [showNinjaOneManagement, setShowNinjaOneManagement] = useState(false);
+  
   const { user } = useAuthState();
   const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     fetchConfigurations();
-  }, []);
+    if (showNinjaOneManagement) {
+      fetchNinjaOneData();
+    }
+  }, [showNinjaOneManagement]);
 
 
   const fetchConfigurations = async () => {
@@ -126,6 +136,65 @@ export const OperationsIntegrations: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error fetching configurations:', error);
+    }
+  };
+
+  const fetchNinjaOneData = async () => {
+    if (!token) return;
+    
+    try {
+      // Fetch scripts
+      const scriptsResponse = await http.get('ninjaone/scripts');
+      if (scriptsResponse.data.success) {
+        setNinjaoneScripts(scriptsResponse.data.scripts);
+      }
+      
+      // Fetch devices
+      const devicesResponse = await http.get('ninjaone/devices');
+      if (devicesResponse.data.success) {
+        setNinjaoneDevices(devicesResponse.data.devices);
+      }
+    } catch (error) {
+      logger.error('Failed to fetch NinjaOne data:', error);
+    }
+  };
+
+  const handleSyncNinjaOne = async (type: 'scripts' | 'devices') => {
+    setSyncing(true);
+    try {
+      const response = await http.post(`ninjaone/sync-${type}`);
+      if (response.data.success) {
+        toast.success(`${type === 'scripts' ? 'Scripts' : 'Devices'} synced successfully`);
+        await fetchNinjaOneData();
+      }
+    } catch (error) {
+      toast.error(`Failed to sync ${type}`);
+      logger.error(`Failed to sync ${type}:`, error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleUpdateScript = async () => {
+    if (!editingScript) return;
+    
+    try {
+      const response = await http.put(`ninjaone/scripts/${editingScript.id}`, {
+        display_name: editingScript.display_name,
+        category: editingScript.category,
+        icon: editingScript.icon,
+        warning_message: editingScript.warning_message,
+        is_active: editingScript.is_active
+      });
+      
+      if (response.data.success) {
+        toast.success('Script updated successfully');
+        setEditingScript(null);
+        await fetchNinjaOneData();
+      }
+    } catch (error) {
+      toast.error('Failed to update script');
+      logger.error('Failed to update script:', error);
     }
   };
 
@@ -228,10 +297,7 @@ export const OperationsIntegrations: React.FC = () => {
         });
         break;
       case 'NinjaOne':
-        toast('NinjaOne configuration: Add NINJAONE_CLIENT_ID and NINJAONE_CLIENT_SECRET to Railway', {
-          icon: 'ℹ️',
-          duration: 4000
-        });
+        setShowNinjaOneManagement(!showNinjaOneManagement);
         break;
       case 'UniFi':
         toast('UniFi configuration: Add DARTMOUTH_ACCESS_TOKEN and BEDFORD_ACCESS_TOKEN to Railway', {
@@ -659,7 +725,7 @@ export const OperationsIntegrations: React.FC = () => {
                 onClick={() => handleConfigureService('NinjaOne')}
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                View Setup Info
+                {showNinjaOneManagement ? 'Hide Management' : 'Manage Scripts & Devices'}
               </button>
             </div>
           </div>
@@ -704,6 +770,195 @@ export const OperationsIntegrations: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* NinjaOne Management Section */}
+      {showNinjaOneManagement && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-indigo-600" />
+              <span>NinjaOne Script & Device Management</span>
+            </h2>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleSyncNinjaOne('scripts')}
+                disabled={syncing}
+                className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+              >
+                {syncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span>Sync Scripts</span>
+              </button>
+              <button
+                onClick={() => handleSyncNinjaOne('devices')}
+                disabled={syncing}
+                className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+              >
+                {syncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span>Sync Devices</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Scripts Table */}
+          <div className="mb-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Available Scripts</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {ninjaoneScripts.map((script) => (
+                    <tr key={script.id}>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {editingScript?.id === script.id ? (
+                          <input
+                            type="text"
+                            value={editingScript.display_name || editingScript.name}
+                            onChange={(e) => setEditingScript({...editingScript, display_name: e.target.value})}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          />
+                        ) : (
+                          script.display_name || script.name
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">
+                        {editingScript?.id === script.id ? (
+                          <select
+                            value={editingScript.category}
+                            onChange={(e) => setEditingScript({...editingScript, category: e.target.value})}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="trackman">TrackMan</option>
+                            <option value="system">System</option>
+                            <option value="music">Music</option>
+                            <option value="tv">TV</option>
+                            <option value="other">Other</option>
+                          </select>
+                        ) : (
+                          script.category
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">
+                        {editingScript?.id === script.id ? (
+                          <input
+                            type="text"
+                            value={editingScript.icon}
+                            onChange={(e) => setEditingScript({...editingScript, icon: e.target.value})}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm w-20"
+                            placeholder="Icon name"
+                          />
+                        ) : (
+                          <Zap className="h-4 w-4 text-gray-500" />
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {editingScript?.id === script.id ? (
+                          <button
+                            onClick={() => setEditingScript({...editingScript, is_active: !editingScript.is_active})}
+                            className={`px-2 py-1 text-xs rounded ${editingScript.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
+                          >
+                            {editingScript.is_active ? 'Active' : 'Inactive'}
+                          </button>
+                        ) : (
+                          <span className={`px-2 py-1 text-xs rounded ${script.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {script.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm">
+                        {editingScript?.id === script.id ? (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={handleUpdateScript}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Save className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingScript(null)}
+                              className="text-gray-600 hover:text-gray-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditingScript(script)}
+                            className="text-indigo-600 hover:text-indigo-700"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {ninjaoneScripts.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                        No scripts found. Click "Sync Scripts" to fetch from NinjaOne.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Devices Table */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Registered Devices</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bay</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {ninjaoneDevices.map((device) => (
+                    <tr key={device.id}>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{device.location}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">{device.bay_number || '-'}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{device.device_name}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600">
+                        <span className="flex items-center space-x-1">
+                          {device.device_type === 'trackman' && <Monitor className="h-4 w-4" />}
+                          {device.device_type === 'music' && <span>🎵</span>}
+                          {device.device_type === 'tv' && <span>📺</span>}
+                          <span>{device.device_type}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded ${device.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                          {device.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {ninjaoneDevices.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                        No devices found. Click "Sync Devices" to fetch from NinjaOne.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

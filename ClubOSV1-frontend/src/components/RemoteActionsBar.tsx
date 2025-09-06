@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone, Users, Circle, AlertCircle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Lock, Unlock, AlertTriangle, DoorOpen, Shield, MonitorSmartphone, Users, Circle, AlertCircle, Power } from 'lucide-react';
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { unifiDoorsAPI } from '@/api/unifiDoors';
@@ -8,6 +8,7 @@ import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
+import { http } from '@/api/http';
 import logger from '@/services/logger';
 
 interface LocationConfig {
@@ -23,6 +24,8 @@ const RemoteActionsBar: React.FC = () => {
   const [doorStatuses, setDoorStatuses] = useState<Record<string, DoorStatus[]>>({});
   const [loadingDoors, setLoadingDoors] = useState<Set<string>>(new Set());
   const [locationStatuses, setLocationStatuses] = useState<LocationStatus[]>([]);
+  const [availableScripts, setAvailableScripts] = useState<any[]>([]);
+  const [availableDevices, setAvailableDevices] = useState<any[]>([]);
   const { notify } = useNotifications();
   const { user } = useAuthState();
   
@@ -34,11 +37,12 @@ const RemoteActionsBar: React.FC = () => {
     }
   }, []);
 
-  // Load door statuses and system status when expanded
+  // Load door statuses, system status, and NinjaOne data when expanded
   useEffect(() => {
     if (isExpanded) {
       // Load initial data
       loadSystemStatuses();
+      loadNinjaOneData();
       locations.forEach(location => {
         loadDoorStatus(location.name);
       });
@@ -53,6 +57,30 @@ const RemoteActionsBar: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isExpanded]);
+  
+  // Load NinjaOne scripts and devices from database
+  const loadNinjaOneData = async () => {
+    try {
+      // Fetch scripts
+      const scriptsResponse = await http.get('ninjaone/scripts');
+      if (scriptsResponse.data.success) {
+        setAvailableScripts(scriptsResponse.data.scripts);
+      }
+      
+      // Fetch devices
+      const devicesResponse = await http.get('ninjaone/devices');
+      if (devicesResponse.data.success) {
+        setAvailableDevices(devicesResponse.data.devices);
+      }
+    } catch (error) {
+      logger.error('Failed to load NinjaOne data:', error);
+      // Fallback to default scripts if database is empty
+      setAvailableScripts([
+        { script_id: 'restart-trackman', display_name: 'Restart TrackMan', category: 'trackman', icon: 'refresh-cw', requires_bay: true },
+        { script_id: 'reboot-pc', display_name: 'Reboot PC', category: 'system', icon: 'power', requires_bay: true }
+      ]);
+    }
+  };
   
   // Load system statuses
   const loadSystemStatuses = async () => {
@@ -71,13 +99,51 @@ const RemoteActionsBar: React.FC = () => {
     localStorage.setItem('remoteActionsExpanded', String(newState));
   };
 
-  // Location configurations
-  const locations: LocationConfig[] = [
-    { name: 'Bedford', bays: [1, 2], hasMusic: true, hasTv: true },
-    { name: 'Dartmouth', bays: [1, 2, 3, 4], hasMusic: true, hasTv: true },
-    { name: 'Stratford', bays: [1, 2, 3], hasMusic: true, hasTv: false },
-    { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false }
-  ];
+  // Dynamic location configurations based on devices
+  const locations: LocationConfig[] = React.useMemo(() => {
+    if (availableDevices.length === 0) {
+      // Fallback to default if no devices loaded
+      return [
+        { name: 'Bedford', bays: [1, 2], hasMusic: true, hasTv: true },
+        { name: 'Dartmouth', bays: [1, 2, 3, 4], hasMusic: true, hasTv: true },
+        { name: 'Stratford', bays: [1, 2, 3], hasMusic: true, hasTv: false },
+        { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false }
+      ];
+    }
+    
+    // Build locations from devices
+    const locationMap = new Map<string, LocationConfig>();
+    
+    availableDevices.forEach(device => {
+      if (!locationMap.has(device.location)) {
+        locationMap.set(device.location, {
+          name: device.location,
+          bays: [],
+          hasMusic: false,
+          hasTv: false
+        });
+      }
+      
+      const config = locationMap.get(device.location)!;
+      
+      if (device.device_type === 'trackman' && device.bay_number) {
+        const bayNum = parseInt(device.bay_number);
+        if (!isNaN(bayNum) && !config.bays.includes(bayNum)) {
+          config.bays.push(bayNum);
+        }
+      } else if (device.device_type === 'music') {
+        config.hasMusic = true;
+      } else if (device.device_type === 'tv') {
+        config.hasTv = true;
+      }
+    });
+    
+    // Sort bays and return locations
+    return Array.from(locationMap.values()).map(loc => ({
+      ...loc,
+      bays: loc.bays.sort((a, b) => a - b)
+    }));
+  }, [availableDevices]);
 
   // Load door status for a location
   const loadDoorStatus = async (location: string) => {
