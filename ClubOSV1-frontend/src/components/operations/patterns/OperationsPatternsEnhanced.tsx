@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Zap,
   ChevronRight,
+  ChevronDown,
   Filter,
   Search,
   BarChart3,
@@ -24,11 +25,16 @@ import {
   Upload,
   FileText,
   Loader2,
-  Radio
+  Radio,
+  Sparkles
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import { LivePatternDashboard } from './LivePatternDashboard';
 import logger from '@/services/logger';
+import { AIFeatureCard } from '@/components/AIFeatureCard';
+import { http } from '@/api/http';
+import { tokenManager } from '@/utils/tokenManager';
+import { useAuthState } from '@/state/useStore';
 
 interface PatternReasoning {
   thought_process: string;
@@ -196,18 +202,25 @@ export const OperationsPatternsEnhanced: React.FC = () => {
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'live' | 'overview' | 'patterns' | 'config' | 'history' | 'import'>('live');
+  const [activeView, setActiveView] = useState<'live' | 'overview' | 'patterns' | 'automations' | 'config' | 'history' | 'import'>('live');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [config, setConfig] = useState<any>(null);
   const [executionHistory, setExecutionHistory] = useState<ExecutionHistory[]>([]);
+  const [aiFeatures, setAIFeatures] = useState<any[]>([]);
+  const [expandedAISection, setExpandedAISection] = useState(true);
+  const { user } = useAuthState();
+  const token = user?.token || tokenManager.getToken();
 
   useEffect(() => {
     fetchStats();
     fetchPatterns();
     fetchConfig();
     fetchExecutionHistory();
-  }, []);
+    if (token) {
+      fetchAIFeatures();
+    }
+  }, [token]);
 
   const fetchStats = async () => {
     try {
@@ -257,11 +270,43 @@ export const OperationsPatternsEnhanced: React.FC = () => {
 
   const updateConfig = async (key: string, value: any) => {
     try {
+      // Log the update attempt for debugging
+      logger.info('Updating V3-PLS config:', { key, value });
+      
       await apiClient.put('/patterns/config', { [key]: value });
+      
+      // Fetch updated config to reflect changes
       await fetchConfig();
       await fetchStats();
+      
+      logger.info('V3-PLS config updated successfully:', { key, value });
     } catch (error) {
       logger.error('Failed to update config:', error);
+    }
+  };
+
+  const fetchAIFeatures = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await http.get('ai-automations', {});
+      setAIFeatures(response.data || []);
+    } catch (error: any) {
+      logger.error('Error fetching AI features:', error);
+      setAIFeatures([]);
+    }
+  };
+
+  const handleToggleAIFeature = async (featureKey: string, newValue: boolean) => {
+    try {
+      await http.put(
+        `ai-automations/${featureKey}/toggle`,
+        { is_active: newValue },
+        {}
+      );
+      await fetchAIFeatures();
+    } catch (error) {
+      logger.error('Failed to toggle AI feature:', error);
     }
   };
 
@@ -406,6 +451,19 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
           }`}
         >
           Patterns ({patterns.length})
+        </button>
+        <button
+          onClick={() => setActiveView('automations')}
+          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+            activeView === 'automations' 
+              ? 'bg-primary text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-1">
+            <Sparkles className="h-4 w-4" />
+            <span>AI Auto</span>
+          </div>
         </button>
         <button
           onClick={() => setActiveView('config')}
@@ -773,6 +831,53 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
                 <span>Test with GPT-4o Reasoning</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Automations View */}
+      {activeView === 'automations' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div 
+              className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+              onClick={() => setExpandedAISection(!expandedAISection)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
+                  <span className="text-sm text-gray-500">
+                    ({aiFeatures.filter(f => f.enabled).length} active)
+                  </span>
+                </div>
+                {expandedAISection ? 
+                  <ChevronDown className="h-5 w-5 text-gray-500" /> : 
+                  <ChevronRight className="h-5 w-5 text-gray-500" />
+                }
+              </div>
+            </div>
+            
+            {expandedAISection && (
+              <div className="p-6">
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>AI Automations</strong> use keyword matching to trigger automatic responses. 
+                    They work alongside the Pattern Learning System for comprehensive coverage.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {aiFeatures.map((feature) => (
+                    <AIFeatureCard
+                      key={feature.id}
+                      feature={feature}
+                      onToggle={() => handleToggleAIFeature(feature.feature_key, !feature.enabled)}
+                      onUpdate={fetchAIFeatures}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
