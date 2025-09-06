@@ -825,8 +825,9 @@ router.get('/conversation/:id', authenticate, async (req: Request, res: Response
   }
 });
 
-// POST /api/messages/send - Send a message
-router.post('/send', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+// REMOVED DUPLICATE /send endpoint - using the proper one above that updates openphone_conversations table
+// The duplicate was using the old 'messages' table instead of 'openphone_conversations'
+/* router.post('/send', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { to, content, conversationId, isAiGenerated } = req.body;
     
@@ -966,7 +967,7 @@ router.post('/send', authenticate, async (req: Request, res: Response, next: Nex
       message: 'Failed to send message'
     });
   }
-});
+}); */
 
 // GET /api/messages/stats/today - Get today's message statistics
 router.get('/stats/today', authenticate, async (req, res) => {

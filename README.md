@@ -1,4 +1,4 @@
-# ClubOS v1.16.8 - AI-Powered Golf Simulator Management
+# ClubOS v1.16.9 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -151,6 +151,11 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.16.9**: Fixed Messages Not Showing After Send
+  - Fixed duplicate /send endpoints causing confusion
+  - Added immediate database update after sending messages
+  - Messages now appear instantly in conversation without waiting for webhook
+  - Removed old duplicate endpoint that used wrong database table
 - **v1.17.5**: V3-PLS Safety Controls Now Fully Operational
   - **Real Safety Implementation**: Backend patternSafetyService with database integration
   - **Blacklist Protection**: Keywords like "medical", "legal", "refund" block auto-responses completely

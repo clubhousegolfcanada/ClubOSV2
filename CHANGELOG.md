@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.9] - 2025-09-06
+
+### Fixed
+- **Messages Not Showing After Send**
+  - Removed duplicate `/send` endpoint that was causing confusion
+  - Added immediate database update after sending messages via OpenPhone
+  - Outbound messages now appear instantly in conversation without delay
+  - Fixed issue where sent messages would only appear after webhook callback
+  - Cleaned up old endpoint that was using wrong database table (`messages` instead of `openphone_conversations`)
+
 ## [1.17.5] - 2025-09-06
 
 ### Added
