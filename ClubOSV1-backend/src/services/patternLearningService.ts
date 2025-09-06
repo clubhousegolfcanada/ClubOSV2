@@ -17,6 +17,7 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
 import OpenAI from 'openai';
+import { CLUBHOUSE_SYSTEM_PROMPTS, GPT_TEMPERATURES, GPT_MODELS } from '../config/gpt-prompts';
 
 // BREADCRUMB: These interfaces define the shape of our pattern data
 interface Pattern {

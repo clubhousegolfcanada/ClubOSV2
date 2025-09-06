@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Activity, TrendingUp, Clock, RefreshCw, BarChart3, Settings } from 'lucide-react';
+import { Brain, Activity, TrendingUp, Clock, RefreshCw, BarChart3, Settings, List } from 'lucide-react';
 import apiClient from '@/api/http';
 import { PatternAutomationCards } from './PatternAutomationCards';
 import { PatternsStatsAndSettings } from './PatternsStatsAndSettings';
+import { PatternInventory } from './PatternInventory';
 import logger from '@/services/logger';
 import { tokenManager } from '@/utils/tokenManager';
 import { useAuthState } from '@/state/useStore';
@@ -24,7 +25,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
   const { user } = useAuthState();
   const token = user?.token || tokenManager.getToken();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeView, setActiveView] = useState<'patterns' | 'stats-settings'>('patterns');
+  const [activeView, setActiveView] = useState<'patterns' | 'inventory' | 'stats-settings'>('patterns');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,7 +100,20 @@ export const OperationsPatternsEnhanced: React.FC = () => {
         >
           <div className="flex items-center justify-center space-x-1">
             <Brain className="h-4 w-4" />
-            <span>Pattern Automations</span>
+            <span>Automations</span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveView('inventory')}
+          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+            activeView === 'inventory' 
+              ? 'bg-primary text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-1">
+            <List className="h-4 w-4" />
+            <span>Inventory</span>
           </div>
         </button>
         <button
@@ -120,6 +134,11 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       {/* Pattern Automations View */}
       {activeView === 'patterns' && (
         <PatternAutomationCards />
+      )}
+
+      {/* Inventory View */}
+      {activeView === 'inventory' && (
+        <PatternInventory />
       )}
 
       {/* Stats & Settings View */}
