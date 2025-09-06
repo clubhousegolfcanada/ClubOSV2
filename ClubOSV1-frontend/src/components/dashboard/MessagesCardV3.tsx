@@ -226,7 +226,7 @@ export default function MessagesCardV3() {
         return newSuggestions;
       });
       
-      toast.info('Suggestion rejected');
+      toast('Suggestion rejected');
     } catch (error) {
       logger.error('Failed to reject suggestion:', error);
     }
