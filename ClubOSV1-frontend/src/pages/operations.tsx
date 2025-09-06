@@ -92,7 +92,7 @@ export default function Operations() {
       case 'patterns':
         return <OperationsPatternsEnhanced />;
       default:
-        return user.role === 'admin' ? <OperationsUsers /> : <OperationsAnalytics />;
+        return user.role === 'admin' ? <OperationsUsers /> : <OperationsPatternsEnhanced />;
     }
   };
 
