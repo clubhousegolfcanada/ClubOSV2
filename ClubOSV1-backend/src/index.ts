@@ -45,6 +45,7 @@ import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
 import checklistsRoutes from './routes/checklists';
 import remoteActionsRoutes from './routes/remoteActions';
+import ninjaoneSyncRoutes from './routes/ninjaone-sync';
 import doorAccessRoutes from './routes/doorAccess';
 import debugRoutes from './routes/debug';
 import openphoneRoutes from './routes/openphone';

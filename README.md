@@ -1,4 +1,4 @@
-# ClubOS v1.16.7 - AI-Powered Golf Simulator Management
+# ClubOS v1.16.8 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -151,6 +151,10 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.16.8**: Fixed V3-PLS Page Loading Issues
+  - Fixed HTTP method mismatch (PATCH vs PUT) in PatternAutomationCards
+  - Corrected ai-automations API endpoint paths
+  - Fixed response format handling for ai-automations features
 - **v1.16.7**: Fixed Messages Page Auto-Refresh Bug
   - Conversation no longer resets to first one during refresh cycles
   - Users can stay on selected conversation without interruption

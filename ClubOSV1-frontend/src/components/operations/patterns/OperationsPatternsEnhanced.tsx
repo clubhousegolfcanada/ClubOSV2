@@ -288,7 +288,9 @@ export const OperationsPatternsEnhanced: React.FC = () => {
     
     try {
       const response = await http.get('/ai-automations', {});
-      setAIFeatures(response.data || []);
+      // Handle the response format from backend which is { success: true, features: [...] }
+      const features = response.data?.features || response.data || [];
+      setAIFeatures(features);
     } catch (error: any) {
       logger.error('Error fetching AI features:', error);
       setAIFeatures([]);

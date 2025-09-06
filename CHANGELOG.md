@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.8] - 2025-09-06
+
+### Fixed
+- **V3-PLS Page Loading Issues**
+  - Fixed HTTP method mismatch in PatternAutomationCards component (PATCH → PUT)
+  - Corrected ai-automations API endpoint paths (/patterns/ai-automations → /ai-automations)
+  - Fixed response format handling to properly extract features array from backend response
+  - V3-PLS page now loads correctly in production
+
 ## [1.16.7] - 2025-09-06
 
 ### Fixed
