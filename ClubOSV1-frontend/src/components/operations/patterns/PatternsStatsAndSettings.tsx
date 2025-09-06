@@ -682,9 +682,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
           {/* Pattern Learning Configuration */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Brain className="h-5 w-5 text-purple-600" />
               <h3 className="text-lg font-semibold text-gray-900">Pattern Learning System</h3>
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">Automatic Learning</span>
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">Automatic Learning</span>
             </div>
 
             <div className="space-y-4">
