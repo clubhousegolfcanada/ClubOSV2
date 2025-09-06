@@ -151,6 +151,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.4**: V3-PLS System Controls for Better Auto-Responses
+  - Added practical system controls to improve automated responses
+  - Safety controls: blacklisted topics, escalation keywords, approval requirements
+  - Confidence thresholds: control when to auto-execute vs suggest
+  - Human-like delays: 3-8 second delay with typing indicator
+  - Business context: different responses for after-hours, location context
+  - Learning settings: minimum examples, operator override weight
+  - Enhancement options: auto-include links, add contact options
 - **v1.17.3**: V3-PLS Operator Statistics Dashboard
   - Redesigned statistics tab with real operator-focused metrics
   - Shows automation rate, time saved, common questions

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Activity, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
+import { Brain, Activity, TrendingUp, Clock, RefreshCw, BarChart3, Settings } from 'lucide-react';
 import apiClient from '@/api/http';
 import { PatternAutomationCards } from './PatternAutomationCards';
 import { OperationsPatternsStatistics } from './OperationsPatternsStatistics';
+import { PatternsSystemControls } from './PatternsSystemControls';
 import logger from '@/services/logger';
 import { tokenManager } from '@/utils/tokenManager';
 import { useAuthState } from '@/state/useStore';
@@ -24,7 +25,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
   const { user } = useAuthState();
   const token = user?.token || tokenManager.getToken();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeView, setActiveView] = useState<'patterns' | 'statistics'>('patterns');
+  const [activeView, setActiveView] = useState<'patterns' | 'statistics' | 'controls'>('patterns');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -115,6 +116,19 @@ export const OperationsPatternsEnhanced: React.FC = () => {
             <span>Statistics</span>
           </div>
         </button>
+        <button
+          onClick={() => setActiveView('controls')}
+          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+            activeView === 'controls' 
+              ? 'bg-primary text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-1">
+            <Settings className="h-4 w-4" />
+            <span>System Controls</span>
+          </div>
+        </button>
       </div>
 
       {/* Pattern Automations View */}
@@ -125,6 +139,11 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       {/* Statistics View */}
       {activeView === 'statistics' && (
         <OperationsPatternsStatistics />
+      )}
+
+      {/* System Controls View */}
+      {activeView === 'controls' && (
+        <PatternsSystemControls />
       )}
     </div>
   );

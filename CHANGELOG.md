@@ -2,6 +2,36 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.4] - 2025-09-06
+
+### Added
+- **V3-PLS System Controls Tab**
+  - Created PatternsSystemControls component with practical operator settings
+  - Safety controls section (critical priority):
+    - Require approval for first N uses of new patterns
+    - Blacklisted topics that never auto-respond (medical, legal, refunds)
+    - Escalation keywords that alert operators (angry, lawyer, emergency)
+  - Confidence thresholds:
+    - Auto-execute threshold (85% default)
+    - Suggest-only threshold (60% default)
+  - Response timing for natural feel:
+    - Human-like delay (3-8 seconds)
+    - Typing indicator option
+  - Business context settings:
+    - Business hours mode (different after-hours responses)
+    - Location context inclusion
+    - Auto-include helpful links
+    - Add contact options for urgent issues
+  - Learning controls:
+    - Minimum examples required before pattern creation
+    - Operator override weight multiplier
+  - Visual design with priority indicators and impact information
+
+### Documentation
+- Created V3-PLS-CONTROLS-PLAN.md with rationale for each control
+- Focused on practical features that actually improve customer experience
+- Avoided overly complex or unnecessary settings
+
 ## [1.17.3] - 2025-09-06
 
 ### Added
