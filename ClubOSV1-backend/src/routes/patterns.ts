@@ -1326,10 +1326,12 @@ router.get('/:id',
  */
 router.put('/:id',
   authenticate,
-  roleGuard(['admin']),
+  roleGuard(['admin', 'operator']),  // Allow operators to edit patterns
   [
     param('id').isInt(),
     body('response_template').optional().isString(),
+    body('trigger_text').optional().isString(),
+    body('trigger_examples').optional().isArray(),
     body('confidence_score').optional().isFloat({ min: 0, max: 1 }),
     body('auto_executable').optional().isBoolean(),
     body('is_active').optional().isBoolean(),

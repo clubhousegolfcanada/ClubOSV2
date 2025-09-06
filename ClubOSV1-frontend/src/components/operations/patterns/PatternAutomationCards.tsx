@@ -39,7 +39,7 @@ export const PatternAutomationCards: React.FC = () => {
 
   const fetchAutomations = async () => {
     try {
-      const response = await apiClient.get('/patterns-enhanced');
+      const response = await apiClient.get('/patterns');
       const patterns = response.data.patterns || response.data;
       
       // Format patterns as automations
@@ -177,8 +177,8 @@ export const PatternAutomationCards: React.FC = () => {
         updates.trigger_text = editedTrigger;
       }
       
-      // Use patterns-enhanced endpoint for better trigger handling
-      await apiClient.put(`/patterns-enhanced/${id}`, updates);
+      // Use regular patterns endpoint 
+      await apiClient.put(`/patterns/${id}`, updates);
       
       setAutomations(prev => prev.map(a => 
         a.id === id ? { 
