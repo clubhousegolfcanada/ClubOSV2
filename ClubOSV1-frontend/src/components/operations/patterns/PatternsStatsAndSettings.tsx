@@ -145,8 +145,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
     const key = type === 'blacklist' ? 'blacklistTopics' : 'escalationKeywords';
     setSettings(prev => {
       const existing = prev[key];
-      // Avoid duplicates
-      const unique = [...new Set([...existing, ...newKeywords])];
+      // Avoid duplicates - use Array.from for better compatibility
+      const unique = Array.from(new Set([...existing, ...newKeywords]));
       return {
         ...prev,
         [key]: unique
@@ -171,8 +171,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
     ];
 
     setSettings(prev => {
-      const uniqueBlacklist = [...new Set([...prev.blacklistTopics, ...recommendedBlacklist])];
-      const uniqueEscalation = [...new Set([...prev.escalationKeywords, ...recommendedEscalation])];
+      const uniqueBlacklist = Array.from(new Set([...prev.blacklistTopics, ...recommendedBlacklist]));
+      const uniqueEscalation = Array.from(new Set([...prev.escalationKeywords, ...recommendedEscalation]));
       return {
         ...prev,
         blacklistTopics: uniqueBlacklist,
