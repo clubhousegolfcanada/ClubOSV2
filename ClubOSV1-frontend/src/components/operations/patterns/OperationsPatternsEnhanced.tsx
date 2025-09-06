@@ -28,7 +28,7 @@ import {
   Radio,
 } from 'lucide-react';
 import apiClient from '@/api/http';
-import { LivePatternDashboard } from './LivePatternDashboard';
+import { PatternAutomationCards } from './PatternAutomationCards';
 import logger from '@/services/logger';
 import { AIFeatureCard } from '@/components/AIFeatureCard';
 import { http } from '@/api/http';
@@ -201,7 +201,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'live' | 'overview' | 'patterns' | 'automations' | 'config' | 'history' | 'import'>('live');
+  const [activeView, setActiveView] = useState<'automations' | 'overview'>('automations');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [config, setConfig] = useState<any>(null);
@@ -416,19 +416,19 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Simple Navigation Tabs */}
       <div className="flex space-x-1 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
         <button
-          onClick={() => setActiveView('live')}
+          onClick={() => setActiveView('automations')}
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-            activeView === 'live' 
+            activeView === 'automations' 
               ? 'bg-primary text-white' 
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <div className="flex items-center justify-center space-x-1">
-            <Radio className="h-4 w-4" />
-            <span>Live</span>
+            <Zap className="h-4 w-4" />
+            <span>AI Automations</span>
           </div>
         </button>
         <button
@@ -439,69 +439,16 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveView('patterns')}
-          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-            activeView === 'patterns' 
-              ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          Patterns ({patterns.length})
-        </button>
-        <button
-          onClick={() => setActiveView('automations')}
-          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-            activeView === 'automations' 
-              ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          AI Auto
-        </button>
-        <button
-          onClick={() => setActiveView('config')}
-          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-            activeView === 'config' 
-              ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          Configuration
-        </button>
-        <button
-          onClick={() => setActiveView('history')}
-          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-            activeView === 'history' 
-              ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
           <div className="flex items-center justify-center space-x-1">
-            <History className="h-4 w-4" />
-            <span>History ({executionHistory.length})</span>
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveView('import')}
-          className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-            activeView === 'import' 
-              ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          <div className="flex items-center justify-center space-x-1">
-            <Upload className="h-4 w-4" />
-            <span>Import</span>
+            <BarChart3 className="h-4 w-4" />
+            <span>Statistics</span>
           </div>
         </button>
       </div>
 
-      {/* Live View */}
-      {activeView === 'live' && (
-        <LivePatternDashboard />
+      {/* Automations View */}
+      {activeView === 'automations' && (
+        <PatternAutomationCards />
       )}
 
       {/* Overview View */}
@@ -591,148 +538,10 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
         </>
       )}
 
-      {/* Patterns View */}
-      {activeView === 'patterns' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          {/* Search and Filter */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search patterns..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
-              </div>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-              >
-                <option value="all">All Types</option>
-                <option value="booking">📅 Booking</option>
-                <option value="tech_issue">🔧 Tech Issue</option>
-                <option value="access">🚪 Access</option>
-                <option value="faq">❓ FAQ</option>
-                <option value="gift_cards">🎁 Gift Cards</option>
-                <option value="hours">🕐 Hours</option>
-                <option value="general">💬 General</option>
-              </select>
-            </div>
-          </div>
 
-          {/* Pattern Categories Summary */}
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div>
-                <span className="font-medium text-gray-600">📅 Booking:</span>
-                <span className="ml-1 text-gray-900">{patterns.filter(p => p.pattern_type === 'booking').length}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">🔧 Tech Issues:</span>
-                <span className="ml-1 text-gray-900">{patterns.filter(p => p.pattern_type === 'tech_issue').length}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">❓ FAQs:</span>
-                <span className="ml-1 text-gray-900">{patterns.filter(p => p.pattern_type === 'faq').length}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">✅ Active:</span>
-                <span className="ml-1 text-gray-900">{patterns.filter(p => p.is_active).length}</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Patterns List */}
-          <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
-            {filteredPatterns.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                No patterns found matching your search
-              </div>
-            ) : (
-              filteredPatterns.map((pattern) => (
-                <PatternItem
-                  key={pattern.id}
-                  pattern={pattern}
-                  togglePattern={togglePattern}
-                  getConfidenceBg={getConfidenceBg}
-                  getConfidenceColor={getConfidenceColor}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Execution History View */}
-      {activeView === 'history' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold">Recent Pattern Executions</h2>
-            <p className="text-sm text-gray-500">Shows GPT-4o reasoning and outcomes</p>
-          </div>
-          <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-            {executionHistory.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                No execution history yet. Pattern matching will appear here once messages are processed.
-              </div>
-            ) : (
-              executionHistory.map((exec) => (
-                <div key={exec.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-xs font-medium px-2 py-1 rounded ${
-                        exec.execution_mode === 'auto' ? 'bg-green-100 text-green-700' :
-                        exec.execution_mode === 'suggested' ? 'bg-yellow-100 text-yellow-700' :
-                        exec.execution_mode === 'shadow' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {exec.execution_mode}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(exec.created_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <span className={`text-xs font-medium ${getConfidenceColor(exec.confidence_at_execution)}`}>
-                      {(exec.confidence_at_execution * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-900 mb-2">
-                    <strong>Message:</strong> {exec.message_text.substring(0, 100)}...
-                  </p>
-                  {exec.response_sent && (
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Response:</strong> {exec.response_sent.substring(0, 100)}...
-                    </p>
-                  )}
-                  {exec.gpt4o_reasoning && (
-                    <div className="mt-2 p-2 bg-purple-50 rounded-lg">
-                      <p className="text-xs font-medium text-purple-700 mb-1">GPT-4o Reasoning:</p>
-                      <p className="text-xs text-purple-600">{exec.gpt4o_reasoning.thought_process}</p>
-                      {exec.gpt4o_reasoning.next_steps && exec.gpt4o_reasoning.next_steps.length > 0 && (
-                        <div className="mt-1">
-                          <p className="text-xs font-medium text-purple-700">Next Steps:</p>
-                          <ul className="text-xs text-purple-600 list-disc list-inside">
-                            {exec.gpt4o_reasoning.next_steps.map((step, i) => (
-                              <li key={i}>{step}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Configuration View */}
-      {activeView === 'config' && config && (
+      {/* Removed config, history, patterns, etc. - keeping only automations and overview */}
+      {false && config && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold mb-4">System Configuration</h2>
@@ -895,8 +704,8 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
         </div>
       )}
 
-      {/* Import View */}
-      {activeView === 'import' && (
+      {/* Removed import view */}
+      {false && (
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center space-x-3 mb-6">

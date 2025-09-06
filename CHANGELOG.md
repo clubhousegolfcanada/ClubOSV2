@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.5] - 2025-09-06
+
+### Added
+- **V3-PLS Pattern Learning System Activation**
+  - Implemented AI Automation cards UI for learned patterns
+  - Each pattern appears as a toggleable automation card
+  - Patterns grouped by category (customer service, technical, etc.)
+  - Edit response templates directly from the UI
+  - View usage statistics and confidence levels
+  - Created SQL activation script with seed patterns
+  - Gift card pattern with www.clubhouse247golf.com/giftcard/purchase URL
+  - Hours, booking, and pricing patterns ready to use
+
+### Changed
+- Simplified V3-PLS page to show only Automations and Statistics tabs
+- Removed unnecessary Live dashboard, queue system, and import features
+- Pattern learning now focuses on automatic learning from operator responses
+- Messages page already has AI suggestion integration ready
+
+### Technical
+- Created PatternAutomationCards.tsx component
+- Updated OperationsPatternsEnhanced.tsx to use new UI
+- Added automation fields to decision_patterns table
+- System learns from operator responses automatically
+
 ## [1.16.4] - 2025-09-06
 
 ### Changed
