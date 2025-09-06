@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Zap, Brain, TrendingUp, Clock, Edit2, Trash2, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import { 
+  Settings, Zap, Brain, TrendingUp, Clock, Edit2, Trash2, Plus, CheckCircle, AlertCircle,
+  Gift, Calendar, Wrench, CreditCard, DollarSign, HelpCircle, DoorOpen, MessageCircle
+} from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
 
@@ -17,7 +20,7 @@ interface PatternAutomation {
   last_used?: string;
   automation_name?: string;
   automation_description?: string;
-  automation_icon?: string;
+  automation_icon?: React.ComponentType<{ className?: string }>;
   automation_category?: string;
 }
 
@@ -82,59 +85,59 @@ export const PatternAutomationCards: React.FC = () => {
   };
 
   const getTypeConfig = (type: string) => {
-    const configs: Record<string, { name: string; description: string; icon: string; category: string }> = {
+    const configs: Record<string, { name: string; description: string; icon: React.ComponentType<{ className?: string }>; category: string }> = {
       'gift_cards': {
         name: 'Gift Card Inquiries',
         description: 'Automatically responds to questions about gift cards and purchases',
-        icon: '🎁',
+        icon: Gift,
         category: 'customer_service'
       },
       'hours': {
         name: 'Hours of Operation',
         description: 'Provides current operating hours when customers ask',
-        icon: '🕐',
+        icon: Clock,
         category: 'customer_service'
       },
       'booking': {
         name: 'Booking Assistance',
         description: 'Helps customers with booking questions and directs them to Skedda',
-        icon: '📅',
+        icon: Calendar,
         category: 'customer_service'
       },
       'tech_issue': {
         name: 'Technical Support',
         description: 'Responds to simulator and equipment issues',
-        icon: '🔧',
+        icon: Wrench,
         category: 'technical'
       },
       'membership': {
         name: 'Membership Information',
         description: 'Provides details about membership options and benefits',
-        icon: '💳',
+        icon: CreditCard,
         category: 'customer_service'
       },
       'pricing': {
         name: 'Pricing Questions',
         description: 'Responds with current pricing and package information',
-        icon: '💰',
+        icon: DollarSign,
         category: 'customer_service'
       },
       'faq': {
         name: 'Frequently Asked Questions',
         description: 'Handles common questions automatically',
-        icon: '❓',
+        icon: HelpCircle,
         category: 'customer_service'
       },
       'access': {
         name: 'Access Issues',
         description: 'Helps with door access and entry problems',
-        icon: '🚪',
+        icon: DoorOpen,
         category: 'technical'
       },
       'general': {
         name: 'General Inquiry',
         description: 'Handles miscellaneous customer questions',
-        icon: '💬',
+        icon: MessageCircle,
         category: 'customer_service'
       }
     };
@@ -190,9 +193,9 @@ export const PatternAutomationCards: React.FC = () => {
   };
 
   const getConfidenceColor = (confidence: number): string => {
-    if (confidence >= 0.85) return 'text-green-600 bg-green-50';
-    if (confidence >= 0.70) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
+    if (confidence >= 0.85) return 'text-green-700 bg-green-50';
+    if (confidence >= 0.70) return 'text-yellow-700 bg-yellow-50';
+    return 'text-red-700 bg-red-50';
   };
 
   const getSuccessRate = (automation: PatternAutomation): number => {
@@ -213,7 +216,7 @@ export const PatternAutomationCards: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -222,12 +225,12 @@ export const PatternAutomationCards: React.FC = () => {
     <div className="space-y-6">
       {/* Info box if no patterns */}
       {automations.length === 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
           <div className="flex items-start">
-            <Brain className="h-6 w-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+            <Brain className="h-6 w-6 text-primary mt-0.5 mr-3 flex-shrink-0" />
             <div>
-              <h3 className="text-base font-medium text-blue-900">Pattern Learning System Active</h3>
-              <p className="text-sm text-blue-700 mt-1">
+              <h3 className="text-base font-medium text-gray-900">Pattern Learning System Active</h3>
+              <p className="text-sm text-gray-600 mt-1">
                 The system is learning from operator responses. When you respond to customer messages, 
                 patterns will automatically be created and appear here as automation cards.
               </p>
@@ -241,13 +244,15 @@ export const PatternAutomationCards: React.FC = () => {
         {automations.map(automation => (
           <div
             key={automation.id}
-            className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-200"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
           >
             <div className="p-5">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start space-x-3">
-                  <span className="text-2xl">{automation.automation_icon}</span>
+                  {automation.automation_icon && (
+                    <automation.automation_icon className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  )}
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-900 text-base">
                       {automation.automation_name}
@@ -262,7 +267,7 @@ export const PatternAutomationCards: React.FC = () => {
                 <button
                   onClick={() => toggleAutomation(automation.id, automation.is_active)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                    automation.is_active ? 'bg-green-600' : 'bg-gray-300'
+                    automation.is_active ? 'bg-primary' : 'bg-gray-300'
                   }`}
                   title={automation.is_active ? 'Click to disable' : 'Click to enable'}
                 >
@@ -305,7 +310,7 @@ export const PatternAutomationCards: React.FC = () => {
               <div className="space-y-3 border-t pt-3">
                 <div>
                   <p className="text-xs font-medium text-gray-500 mb-1">Triggers when customer says:</p>
-                  <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded italic">
+                  <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded italic">
                     "{automation.trigger_text}"
                   </p>
                 </div>
@@ -315,7 +320,7 @@ export const PatternAutomationCards: React.FC = () => {
                   {editingCard === automation.id ? (
                     <div className="space-y-2">
                       <textarea
-                        className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-primary"
                         rows={3}
                         value={editedResponse}
                         onChange={(e) => setEditedResponse(e.target.value)}
@@ -324,7 +329,7 @@ export const PatternAutomationCards: React.FC = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => saveEditedResponse(automation.id)}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                          className="px-3 py-1.5 bg-primary text-white rounded text-xs hover:opacity-90 transition-opacity"
                         >
                           Save
                         </button>
@@ -353,7 +358,7 @@ export const PatternAutomationCards: React.FC = () => {
                       setEditingCard(automation.id);
                       setEditedResponse(automation.response_template);
                     }}
-                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"
+                    className="text-sm text-primary hover:opacity-80 flex items-center gap-1 font-medium"
                     disabled={editingCard === automation.id}
                   >
                     <Edit2 className="h-4 w-4" />

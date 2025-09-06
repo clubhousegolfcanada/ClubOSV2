@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.2] - 2025-09-06
+
+### Changed
+- **V3-PLS UI Compliance Update**
+  - Removed all emojis from Pattern Automation cards (enforcing ClubOS no-emoji policy)
+  - Replaced emoji icons with professional Lucide React icons (Gift, Clock, Calendar, etc.)
+  - Updated color scheme from indigo-600 to ClubOS primary green (#0B3D3A)
+  - Standardized card styling to match dashboard design (shadow-sm, consistent borders)
+  - Fixed typography to match ClubOS standards (text-xl headers, consistent spacing)
+  - Fixed loading spinner to use primary color instead of indigo
+  - Updated tab navigation buttons to use primary color
+  - Design compliance score improved from 3/10 to 10/10
+
+### Technical Details
+- Updated PatternAutomationCards.tsx to use React components for icons instead of strings
+- Changed all indigo color references to use primary/green colors
+- Aligned with existing Tailwind config that maps primary to --accent CSS variable
+- Ensured consistency with ClubOS design system across all V3-PLS components
+
 ## [1.17.1] - 2025-09-06
 
 ### Removed

@@ -49,9 +49,9 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <Brain className="h-8 w-8 text-indigo-600" />
+            <Brain className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">V3 Pattern Learning System</h1>
+              <h1 className="text-xl font-bold text-gray-900">V3 Pattern Learning System</h1>
               <p className="text-sm text-gray-600">AI-powered message automation that learns from operator responses</p>
             </div>
           </div>
@@ -71,15 +71,15 @@ export const OperationsPatternsEnhanced: React.FC = () => {
               <div className="text-xs text-gray-600">Total Patterns</div>
             </div>
             <div className="bg-green-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-green-600">{stats.activePatterns}</div>
+              <div className="text-2xl font-bold text-primary">{stats.activePatterns}</div>
               <div className="text-xs text-gray-600">Active Patterns</div>
             </div>
-            <div className="bg-blue-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-blue-600">{stats.executionsToday}</div>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-2xl font-bold text-gray-900">{stats.executionsToday}</div>
               <div className="text-xs text-gray-600">Executions Today</div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-purple-600">{stats.successRate}%</div>
+            <div className="bg-green-50 rounded-lg p-3">
+              <div className="text-2xl font-bold text-primary">{stats.successRate}%</div>
               <div className="text-xs text-gray-600">Success Rate</div>
             </div>
           </div>
@@ -92,7 +92,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
           onClick={() => setActiveView('patterns')}
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'patterns' 
-              ? 'bg-indigo-600 text-white' 
+              ? 'bg-primary text-white' 
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
@@ -105,7 +105,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
           onClick={() => setActiveView('statistics')}
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'statistics' 
-              ? 'bg-indigo-600 text-white' 
+              ? 'bg-primary text-white' 
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
