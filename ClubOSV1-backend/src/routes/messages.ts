@@ -414,6 +414,101 @@ router.post('/send',
         setInboxStatus: 'done' // Mark conversation as done after sending
       });
       
+      // PATTERN LEARNING: Capture operator response for pattern learning
+      try {
+        // Get the last customer message for this conversation
+        const lastCustomerMsg = await db.query(`
+          SELECT body, created_at 
+          FROM messages 
+          WHERE to_number = $1 
+            AND direction = 'inbound'
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `, [formattedFrom]);
+        
+        if (lastCustomerMsg.rows.length > 0) {
+          const customerMessage = lastCustomerMsg.rows[0].body;
+          
+          // Create a pattern signature from the customer message
+          const signature = customerMessage.toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .split(/\s+/)
+            .slice(0, 5)
+            .join('_');
+          
+          // Record this as a learning example
+          await db.query(`
+            INSERT INTO pattern_learning_examples (
+              pattern_signature,
+              customer_message,
+              operator_response,
+              confidence_score,
+              was_modified,
+              created_at
+            ) VALUES ($1, $2, $3, $4, $5, NOW())
+          `, [
+            signature,
+            customerMessage,
+            text,
+            0.7, // Base confidence for operator responses
+            false // Not modified since operator wrote it
+          ]);
+          
+          logger.info('[Pattern Learning] Recorded operator response', {
+            signature,
+            customerMsgPreview: customerMessage.substring(0, 50),
+            operatorMsgPreview: text.substring(0, 50)
+          });
+          
+          // Check if we have enough examples to create a pattern
+          const exampleCount = await db.query(`
+            SELECT COUNT(*) as count 
+            FROM pattern_learning_examples 
+            WHERE pattern_signature = $1
+          `, [signature]);
+          
+          const minExamples = 3; // Start with low threshold for testing
+          if (parseInt(exampleCount.rows[0].count) >= minExamples) {
+            // Create or update the pattern
+            const existingPattern = await db.query(`
+              SELECT id FROM decision_patterns 
+              WHERE pattern_signature = $1
+            `, [signature]);
+            
+            if (existingPattern.rows.length === 0) {
+              // Create new pattern
+              await db.query(`
+                INSERT INTO decision_patterns (
+                  pattern_signature,
+                  pattern_type,
+                  trigger_text,
+                  response_template,
+                  confidence_score,
+                  is_active,
+                  auto_executable,
+                  requires_approval,
+                  created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+              `, [
+                signature,
+                'learned',
+                customerMessage, // Use latest customer message as trigger
+                text, // Use latest operator response as template
+                0.6, // Start with lower confidence
+                true, // Start ACTIVE so it shows in UI
+                false, // Don't auto-execute initially
+                true // Require approval
+              ]);
+              
+              logger.info('[Pattern Learning] Created new pattern!', { signature });
+            }
+          }
+        }
+      } catch (error) {
+        logger.error('[Pattern Learning] Failed to record operator response', error);
+        // Don't fail the send if pattern learning fails
+      }
+      
       // Immediately update the database with the sent message
       // Don't wait for webhook - update conversation right away
       try {
