@@ -265,16 +265,13 @@ router.get('/conversations/:phoneNumber/full-history',
       
       // Get the most recent conversation for this phone number
       // Multiple conversations can exist due to webhook duplicates or restarts
-      const mostRecentConv = await db.query(
+      const allConversations = await db.query(
         `SELECT * FROM openphone_conversations 
          WHERE phone_number = $1 
          ORDER BY created_at DESC
          LIMIT 1`,
         [phoneNumber]
       );
-      
-      // For backward compatibility, still use allConversations variable
-      const allConversations = mostRecentConv;
       
       if (allConversations.rows.length === 0) {
         return res.status(404).json(errorResponse('No conversations found for this phone number', 404));
@@ -294,7 +291,7 @@ router.get('/conversations/:phoneNumber/full-history',
       
       const totalMessageCount = messages.length;
       
-      // Already have mostRecentConv from above
+      // Use conv as the most recent conversation
       const mostRecentConv = conv;
       
       // Mark all conversations as read
