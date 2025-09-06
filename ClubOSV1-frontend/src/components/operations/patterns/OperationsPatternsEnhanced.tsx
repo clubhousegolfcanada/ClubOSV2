@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Brain, Activity, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
 import apiClient from '@/api/http';
 import { PatternAutomationCards } from './PatternAutomationCards';
+import { OperationsPatternsStatistics } from './OperationsPatternsStatistics';
 import logger from '@/services/logger';
 import { tokenManager } from '@/utils/tokenManager';
 import { useAuthState } from '@/state/useStore';
@@ -122,51 +123,8 @@ export const OperationsPatternsEnhanced: React.FC = () => {
       )}
 
       {/* Statistics View */}
-      {activeView === 'statistics' && stats && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Statistics</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Weekly Activity */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Weekly Activity</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Executions This Week</span>
-                  <span className="text-lg font-bold text-gray-900">{stats.executionsThisWeek}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Average Confidence</span>
-                  <span className="text-lg font-bold text-gray-900">{stats.avgConfidence}%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Top Pattern Types */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Top Pattern Types</h3>
-              <div className="space-y-2">
-                {stats.topPatterns?.slice(0, 5).map((pattern, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                    <span className="text-sm text-gray-700 capitalize">{pattern.pattern_type.replace('_', ' ')}</span>
-                    <span className="text-sm font-medium text-gray-900">{pattern.execution_count} uses</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Refresh Button */}
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={fetchStats}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span>Refresh Stats</span>
-            </button>
-          </div>
-        </div>
+      {activeView === 'statistics' && (
+        <OperationsPatternsStatistics />
       )}
     </div>
   );

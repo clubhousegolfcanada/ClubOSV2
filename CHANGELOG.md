@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.3] - 2025-09-06
+
+### Added
+- **V3-PLS Operator Statistics Dashboard**
+  - Created OperationsPatternsStatistics component with operator-focused metrics
+  - Real-time automation rate tracking (automated vs manual responses)
+  - Time saved calculator showing minutes saved by automation
+  - Most common questions breakdown with automation status
+  - Peak message times visualization with automated percentage
+  - Pattern performance tracking with success rates
+  - Operator impact metrics (messages automated, avg response time, interventions)
+  - Optimization tips based on pattern performance data
+  - Time range selector (today/week/month) for statistics
+  
+### Changed
+- Updated patterns/stats API endpoint to provide comprehensive metrics
+- Added executions today/week, success rate, and top patterns to stats response
+- Replaced placeholder statistics with actionable operator metrics
+
+### Technical Details
+- New component: OperationsPatternsStatistics.tsx with mock data structure
+- Enhanced backend stats endpoint with additional queries for operational metrics
+- Statistics designed to help operators understand workload reduction and system effectiveness
+
 ## [1.17.2] - 2025-09-06
 
 ### Changed

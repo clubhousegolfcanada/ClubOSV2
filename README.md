@@ -151,6 +151,13 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.3**: V3-PLS Operator Statistics Dashboard
+  - Redesigned statistics tab with real operator-focused metrics
+  - Shows automation rate, time saved, common questions
+  - Peak message times with automated vs manual breakdown
+  - Pattern performance tracking with success rates
+  - Operator impact metrics showing workload reduction
+  - Optimization tips based on actual usage data
 - **v1.17.2**: V3-PLS UI Compliance Update
   - Removed all emojis from Pattern Automation cards (ClubOS no-emoji policy)
   - Replaced emojis with professional Lucide React icons

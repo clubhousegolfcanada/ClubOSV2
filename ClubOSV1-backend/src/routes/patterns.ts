@@ -249,7 +249,41 @@ router.get('/stats',
 
       // Format response for UI
       const stats = statsResult.rows[0];
+      
+      // Get executions today and this week
+      const todayResult = await db.query(`
+        SELECT COUNT(*) as count 
+        FROM pattern_execution_history 
+        WHERE created_at >= CURRENT_DATE
+      `);
+      
+      const weekResult = await db.query(`
+        SELECT COUNT(*) as count 
+        FROM pattern_execution_history 
+        WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      `);
+      
+      // Get top pattern types
+      const topPatternsResult = await db.query(`
+        SELECT pattern_type, COUNT(*) as execution_count
+        FROM decision_patterns
+        WHERE is_active = TRUE
+        GROUP BY pattern_type
+        ORDER BY execution_count DESC
+        LIMIT 5
+      `);
+      
       res.json({
+        // New fields for the header component
+        totalPatterns: parseInt(stats.total_patterns) || 0,
+        activePatterns: parseInt(stats.auto_executable_patterns) || 0,
+        executionsToday: parseInt(todayResult.rows[0]?.count) || 0,
+        executionsThisWeek: parseInt(weekResult.rows[0]?.count) || 0,
+        successRate: Math.round((parseFloat(stats.avg_success_rate) || 0) * 100),
+        avgConfidence: Math.round((parseFloat(stats.avg_confidence) || 0) * 100),
+        topPatterns: topPatternsResult.rows || [],
+        
+        // Original fields (for backward compatibility)
         patterns: {
           total: parseInt(stats.total_patterns) || 0,
           avgConfidence: parseFloat(stats.avg_confidence) || 0
