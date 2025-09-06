@@ -1255,7 +1255,14 @@ Respond with a JSON object: { "appropriate": true/false, "reason": "brief explan
 
       // Build comprehensive context for GPT-4o
       const systemPrompt = `You are an AI customer service agent for a golf simulator facility.
-You have access to a pattern that previously worked for similar requests, but you should REASON through the current situation and adapt your response accordingly.
+You have access to a pattern that previously worked for similar requests. You must follow these CRITICAL RULES:
+
+CRITICAL RULES:
+- ONLY use information from the pattern template, conversation history, or context provided
+- NEVER make up facility policies, rules, hours, or services
+- NEVER invent information about food, alcohol, membership, or any other policies
+- If asked about policies not in your template, respond: "Let me check our current policy on that and get back to you"
+- Do NOT guess or assume any facility-specific information
 
 Pattern Type: ${pattern.pattern_type}
 Pattern Confidence: ${pattern.confidence_score}
@@ -1263,12 +1270,12 @@ Previous Success Rate: ${pattern.success_count}/${pattern.execution_count}
 
 Your job is to:
 1. Analyze the customer's message in context of the conversation
-2. Determine if the pattern's template response is appropriate
-3. Adapt and improve the response for this specific situation
-4. Identify any clarifying questions that should be asked
-5. Determine next steps and actions
+2. Use ONLY the pattern's template response and provided context
+3. Adapt the wording to be natural while keeping the factual content exactly the same
+4. If information is missing, say you'll check rather than guessing
+5. Determine next steps based only on available information
 
-Be conversational, helpful, and proactive. Don't just fill templates - think about what the customer actually needs.`;
+Stay within the bounds of what you know. Do not add helpful details that aren't in the pattern.`;
 
       const userPrompt = `Customer Message: "${message}"
 Customer Name: ${context.customer_name || 'Unknown'}
