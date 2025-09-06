@@ -419,15 +419,15 @@ export default function MessagesCardV3() {
                           <button
                             onClick={() => handleApproveSuggestion(conv, suggestion)}
                             disabled={isSending}
-                            className="px-2 py-0.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                            className="px-2 py-0.5 bg-[var(--status-success)] text-white text-xs rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
                             style={{ fontWeight: 500 }}
-                            title="Approve and send (increases pattern confidence)"
+                            title="Use & Learn (increases confidence)"
                           >
-                            ✓ Approve
+                            Use
                           </button>
                           <button
                             onClick={() => {
-                              // Just use the suggestion without updating pattern
+                              // Send without learning
                               handleSend(conv, suggestion.text);
                               setAiSuggestions(prev => {
                                 const newSuggestions = { ...prev };
@@ -438,16 +438,16 @@ export default function MessagesCardV3() {
                             disabled={isSending}
                             className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
                             style={{ fontWeight: 500 }}
-                            title="Send without pattern learning"
+                            title="Send without learning"
                           >
                             Send
                           </button>
                           <button
                             onClick={() => handleRejectSuggestion(conv, suggestion)}
-                            className="px-2 py-0.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                            title="Reject suggestion (decreases pattern confidence)"
+                            className="p-0.5 text-muted hover:text-[var(--status-error)] transition-colors"
+                            title="Reject (decreases confidence)"
                           >
-                            ✗ Reject
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
                       </div>

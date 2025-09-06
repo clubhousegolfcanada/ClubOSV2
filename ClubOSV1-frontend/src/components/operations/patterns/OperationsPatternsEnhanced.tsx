@@ -771,6 +771,23 @@ ${result.reasoning.questions_to_ask?.join('\n') || 'None'}` : '';
                 </button>
               </div>
 
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Auto-Send Patterns</p>
+                  <p className="text-sm text-gray-500">Automatically send responses at high confidence</p>
+                </div>
+                <button
+                  onClick={() => updateConfig('auto_send_enabled', !config.auto_send_enabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    config.auto_send_enabled ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    config.auto_send_enabled ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Minimum Confidence to Act: {(config.min_confidence_to_act * 100).toFixed(0)}%
