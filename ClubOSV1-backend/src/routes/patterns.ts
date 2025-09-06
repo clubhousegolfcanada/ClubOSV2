@@ -1331,6 +1331,90 @@ router.delete('/:id',
 );
 
 /**
+ * POST /api/patterns/suggest-for-conversation
+ * Get pattern suggestion for a specific conversation
+ * This is called by the Messages UI to show suggestions to operators
+ */
+router.post('/suggest-for-conversation',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  [
+    body('conversationId').isString(),
+    body('customerMessage').isString(),
+    body('phoneNumber').isString()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const { conversationId, customerMessage, phoneNumber, customerName } = req.body;
+      
+      // First check if there's already a queued suggestion for this conversation
+      const queuedSuggestion = await db.query(`
+        SELECT 
+          psq.*,
+          dp.pattern_type,
+          dp.confidence_score as pattern_confidence,
+          dp.execution_count,
+          dp.success_count
+        FROM pattern_suggestions_queue psq
+        LEFT JOIN decision_patterns dp ON dp.id = psq.approved_pattern_id
+        WHERE psq.conversation_id = $1 
+          AND psq.status = 'pending'
+          AND psq.created_at > NOW() - INTERVAL '30 minutes'
+        ORDER BY psq.created_at DESC
+        LIMIT 1
+      `, [conversationId]);
+      
+      if (queuedSuggestion.rows.length > 0) {
+        const suggestion = queuedSuggestion.rows[0];
+        return res.json({
+          success: true,
+          data: {
+            suggestion: suggestion.suggested_response,
+            confidence: suggestion.confidence_score,
+            patternId: suggestion.approved_pattern_id,
+            queueId: suggestion.id,
+            source: 'pattern_queue',
+            canAutoApprove: suggestion.confidence_score >= 0.75
+          }
+        });
+      }
+      
+      // If no queued suggestion, process the message through pattern learning
+      const patternResult = await patternLearningService.processMessage(
+        customerMessage,
+        phoneNumber,
+        conversationId,
+        customerName
+      );
+      
+      // If we have a suggestion or queue result, return it
+      if (patternResult.action === 'suggest' || patternResult.action === 'queue') {
+        return res.json({
+          success: true,
+          data: {
+            suggestion: patternResult.response,
+            confidence: patternResult.confidence || 0,
+            patternId: patternResult.patternId,
+            source: 'pattern_learning',
+            canAutoApprove: patternResult.action === 'suggest'
+          }
+        });
+      }
+      
+      // No pattern suggestion available
+      return res.json({
+        success: false,
+        message: 'No pattern suggestion available'
+      });
+      
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get suggestion for conversation', error);
+      res.status(500).json({ success: false, error: 'Failed to get suggestion' });
+    }
+  }
+);
+
+/**
  * GET /api/patterns/queue/pending
  * Get patterns waiting for approval
  */
@@ -1406,6 +1490,77 @@ router.post('/queue/:id/approve',
     } catch (error) {
       logger.error('[Patterns API] Failed to approve pattern', error);
       res.status(500).json({ success: false, error: 'Failed to approve pattern' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/:id/executed
+ * Track pattern execution (approval/rejection) for confidence updates
+ */
+router.post('/:id/executed',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  [
+    param('id').isInt(),
+    body('success').isBoolean(),
+    body('conversationId').optional().isString()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const patternId = parseInt(req.params.id);
+      const { success, conversationId } = req.body;
+      const operatorId = (req as any).user?.id;
+      
+      // Update pattern confidence
+      await patternLearningService.updatePatternConfidence(
+        patternId,
+        success,
+        false, // not modified
+        undefined // execution id
+      );
+      
+      // Log the execution
+      await db.query(`
+        INSERT INTO pattern_execution_history 
+        (pattern_id, conversation_id, execution_mode, confidence_at_execution, execution_status, operator_id, created_at)
+        VALUES ($1, $2, $3, 
+          (SELECT confidence_score FROM decision_patterns WHERE id = $1),
+          $4, $5, NOW())
+      `, [
+        patternId,
+        conversationId || null,
+        success ? 'approved' : 'rejected',
+        success ? 'success' : 'failure',
+        operatorId
+      ]);
+      
+      // Check if pattern should be promoted to auto-executable
+      const pattern = await db.query(
+        'SELECT * FROM decision_patterns WHERE id = $1',
+        [patternId]
+      );
+      
+      if (pattern.rows[0]) {
+        const p = pattern.rows[0];
+        // Auto-promote if confidence >= 0.85 and has 3+ successful executions
+        if (p.confidence_score >= 0.85 && p.success_count >= 3 && !p.auto_executable) {
+          await db.query(
+            'UPDATE decision_patterns SET auto_executable = true WHERE id = $1',
+            [patternId]
+          );
+          logger.info('[Patterns API] Pattern promoted to auto-executable', {
+            patternId,
+            confidence: p.confidence_score,
+            successCount: p.success_count
+          });
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to track pattern execution', error);
+      res.status(500).json({ success: false, error: 'Failed to track execution' });
     }
   }
 );

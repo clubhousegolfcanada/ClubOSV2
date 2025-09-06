@@ -76,15 +76,15 @@ export class PatternLearningService {
     this.config = {
       enabled: false, // Disabled by default
       shadowMode: true, // Shadow mode by default
-      autoExecuteThreshold: 0.95,
-      suggestThreshold: 0.75,
-      queueThreshold: 0.50,
-      confidenceIncreaseSuccess: 0.05,
-      confidenceIncreaseModified: 0.02,
-      confidenceDecreaseFailure: 0.10,
+      autoExecuteThreshold: 0.85, // Lowered from 0.95 for faster auto-execution
+      suggestThreshold: 0.60, // Lowered from 0.75 to show suggestions earlier
+      queueThreshold: 0.40, // Lowered from 0.50 to capture more patterns
+      confidenceIncreaseSuccess: 0.15, // Increased from 0.05 - reach auto threshold after ~3 approvals
+      confidenceIncreaseModified: 0.10, // Increased from 0.02
+      confidenceDecreaseFailure: 0.20, // Increased from 0.10 for stronger negative feedback
       confidenceDecayDaily: 0.01,
       suggestionTimeoutSeconds: 30,
-      minExecutionsForAuto: 20
+      minExecutionsForAuto: 3 // Reduced from 20 - auto-send after just 3 successful uses
     };
 
     // Initialize OpenAI if API key exists

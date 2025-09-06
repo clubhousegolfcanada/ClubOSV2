@@ -25,6 +25,9 @@ interface Conversation {
 interface AiSuggestion {
   text: string;
   confidence: number;
+  patternId?: number;
+  queueId?: number;
+  canAutoApprove?: boolean;
 }
 
 export default function MessagesCardV3() {
@@ -129,8 +132,9 @@ export default function MessagesCardV3() {
 
     try {
       const token = tokenManager.getToken();
+      // Use V3-PLS pattern suggestions endpoint
       const response = await http.post(
-        `ai-automations/suggest-reply`,
+        `patterns/suggest-for-conversation`,
         {
           conversationId,
           customerMessage: conv.lastMessage,
@@ -149,7 +153,10 @@ export default function MessagesCardV3() {
           ...aiSuggestions,
           [conversationId]: {
             text: response.data.data.suggestion,
-            confidence: response.data.data.confidence || 0.8
+            confidence: response.data.data.confidence || 0.8,
+            patternId: response.data.data.patternId,
+            queueId: response.data.data.queueId,
+            canAutoApprove: response.data.data.canAutoApprove
           }
         });
       }
@@ -158,6 +165,70 @@ export default function MessagesCardV3() {
       toast.error('Failed to get AI suggestion');
     } finally {
       setLoadingAi({ ...loadingAi, [conversationId]: false });
+    }
+  };
+
+  const handleApproveSuggestion = async (conv: Conversation, suggestion: AiSuggestion) => {
+    try {
+      // If there's a queueId, mark it as approved
+      if (suggestion.queueId) {
+        await http.post(`patterns/queue/${suggestion.queueId}/respond`, {
+          action: 'accept'
+        });
+      }
+      
+      // If there's a patternId, update its confidence
+      if (suggestion.patternId) {
+        await http.post(`patterns/${suggestion.patternId}/executed`, {
+          success: true,
+          conversationId: conv.id
+        });
+      }
+      
+      // Send the message
+      await handleSend(conv, suggestion.text);
+      
+      // Clear the suggestion
+      setAiSuggestions(prev => {
+        const newSuggestions = { ...prev };
+        delete newSuggestions[conv.id];
+        return newSuggestions;
+      });
+      
+      toast.success('Pattern approved and sent');
+    } catch (error) {
+      logger.error('Failed to approve suggestion:', error);
+      toast.error('Failed to approve suggestion');
+    }
+  };
+
+  const handleRejectSuggestion = async (conv: Conversation, suggestion: AiSuggestion) => {
+    try {
+      // If there's a queueId, mark it as rejected
+      if (suggestion.queueId) {
+        await http.post(`patterns/queue/${suggestion.queueId}/respond`, {
+          action: 'reject'
+        });
+      }
+      
+      // If there's a patternId, decrease its confidence
+      if (suggestion.patternId) {
+        await http.post(`patterns/${suggestion.patternId}/executed`, {
+          success: false,
+          conversationId: conv.id
+        });
+      }
+      
+      // Clear the suggestion
+      setAiSuggestions(prev => {
+        const newSuggestions = { ...prev };
+        delete newSuggestions[conv.id];
+        return newSuggestions;
+      });
+      
+      toast.info('Suggestion rejected');
+    } catch (error) {
+      logger.error('Failed to reject suggestion:', error);
     }
   };
 
@@ -329,37 +400,54 @@ export default function MessagesCardV3() {
                       </div>
                     ) : suggestion ? (
                       // Show AI Suggestion above input
-                      <div className="flex items-center justify-between p-2 bg-[var(--accent-light)] border border-[var(--accent)] rounded-lg">
-                        <div className="flex-1 flex items-center gap-2 min-w-0">
-                          <Bot className="w-3 h-3 text-[var(--accent)] flex-shrink-0" />
-                          <p className="text-xs text-primary break-words" style={{ fontWeight: 400, wordBreak: 'break-word' }}>
-                            {suggestion.text}
-                          </p>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between p-2 bg-[var(--accent-light)] border border-[var(--accent)] rounded-lg">
+                          <div className="flex-1 flex items-center gap-2 min-w-0">
+                            <Bot className="w-3 h-3 text-[var(--accent)] flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-xs text-primary break-words" style={{ fontWeight: 400, wordBreak: 'break-word' }}>
+                                {suggestion.text}
+                              </p>
+                              <p className="text-xs text-secondary mt-1">
+                                Confidence: {Math.round(suggestion.confidence * 100)}%
+                                {suggestion.canAutoApprove && ' • Ready to auto-send'}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                           <button
-                            onClick={() => {
-                              // Send the AI suggestion directly
-                              handleSend(conv, suggestion.text);
-                            }}
+                            onClick={() => handleApproveSuggestion(conv, suggestion)}
                             disabled={isSending}
-                            className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
+                            className="px-2 py-0.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
                             style={{ fontWeight: 500 }}
+                            title="Approve and send (increases pattern confidence)"
                           >
-                            Send
+                            ✓ Approve
                           </button>
                           <button
                             onClick={() => {
-                              // Clear suggestion
+                              // Just use the suggestion without updating pattern
+                              handleSend(conv, suggestion.text);
                               setAiSuggestions(prev => {
                                 const newSuggestions = { ...prev };
                                 delete newSuggestions[conv.id];
                                 return newSuggestions;
                               });
                             }}
-                            className="p-0.5 text-muted hover:text-secondary transition-colors"
+                            disabled={isSending}
+                            className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
+                            style={{ fontWeight: 500 }}
+                            title="Send without pattern learning"
                           >
-                            <X className="w-3 h-3" />
+                            Send
+                          </button>
+                          <button
+                            onClick={() => handleRejectSuggestion(conv, suggestion)}
+                            className="px-2 py-0.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            title="Reject suggestion (decreases pattern confidence)"
+                          >
+                            ✗ Reject
                           </button>
                         </div>
                       </div>
