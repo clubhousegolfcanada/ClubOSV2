@@ -27,11 +27,10 @@ import {
   Loader2,
   Radio,
 } from 'lucide-react';
-import apiClient from '@/api/http';
+import apiClient, { http } from '@/api/http';
 import { PatternAutomationCards } from './PatternAutomationCards';
 import logger from '@/services/logger';
 import { AIFeatureCard } from '@/components/AIFeatureCard';
-import { http } from '@/api/http';
 import { tokenManager } from '@/utils/tokenManager';
 import { useAuthState } from '@/state/useStore';
 
@@ -288,7 +287,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await http.get('ai-automations', {});
+      const response = await http.get('/ai-automations', {});
       setAIFeatures(response.data || []);
     } catch (error: any) {
       logger.error('Error fetching AI features:', error);
@@ -299,7 +298,7 @@ export const OperationsPatternsEnhanced: React.FC = () => {
   const handleToggleAIFeature = async (featureKey: string, newValue: boolean) => {
     try {
       await http.put(
-        `ai-automations/${featureKey}/toggle`,
+        `/ai-automations/${featureKey}/toggle`,
         { is_active: newValue },
         {}
       );
