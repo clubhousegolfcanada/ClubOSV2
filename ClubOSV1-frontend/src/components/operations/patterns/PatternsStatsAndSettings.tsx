@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Clock, Users, MessageSquare, CheckCircle, 
   AlertCircle, Zap, Target, Activity, BarChart3,
-  Settings, Shield, Brain, Save, RotateCcw, Info
+  Settings, Shield, Brain, Save, RotateCcw, Info,
+  MessageCircle
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
@@ -28,6 +29,14 @@ interface SafetySettings {
   approvalThreshold: number;
   minExamplesRequired: number;
   operatorOverrideWeight: number;
+  enableFallbackResponses: boolean;
+  fallbackMessages: {
+    booking: string;
+    emergency: string;
+    techSupport: string;
+    brandTone: string;
+    general: string;
+  };
 }
 
 export const PatternsStatsAndSettings: React.FC = () => {
@@ -39,7 +48,15 @@ export const PatternsStatsAndSettings: React.FC = () => {
     requireApprovalForNew: true,
     approvalThreshold: 10,
     minExamplesRequired: 5,
-    operatorOverrideWeight: 2.0
+    operatorOverrideWeight: 2.0,
+    enableFallbackResponses: false,
+    fallbackMessages: {
+      booking: '',
+      emergency: '',
+      techSupport: '',
+      brandTone: '',
+      general: ''
+    }
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -401,6 +418,75 @@ export const PatternsStatsAndSettings: React.FC = () => {
             </div>
           </div>
 
+          {/* Fallback Response Settings */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageCircle className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Fallback Responses</h3>
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">Optional</span>
+            </div>
+
+            <div className="mb-4">
+              <label className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Enable Fallback Responses</span>
+                  <p className="text-xs text-gray-500">Send fallback messages when AI cannot process a request</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.enableFallbackResponses}
+                  onChange={(e) => updateSetting('enableFallbackResponses', e.target.checked)}
+                  className="h-5 w-5 text-primary rounded"
+                />
+              </label>
+            </div>
+
+            {settings.enableFallbackResponses && (
+              <div className="space-y-3 pt-3 border-t">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Booking & Access Fallback</label>
+                  <textarea
+                    value={settings.fallbackMessages.booking}
+                    onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, booking: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    rows={2}
+                    placeholder="Leave empty to send no fallback..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Emergency Fallback</label>
+                  <textarea
+                    value={settings.fallbackMessages.emergency}
+                    onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, emergency: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    rows={2}
+                    placeholder="Leave empty to send no fallback..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Tech Support Fallback</label>
+                  <textarea
+                    value={settings.fallbackMessages.techSupport}
+                    onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, techSupport: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    rows={2}
+                    placeholder="Leave empty to send no fallback..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">General Fallback</label>
+                  <textarea
+                    value={settings.fallbackMessages.general}
+                    onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, general: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    rows={2}
+                    placeholder="Leave empty to send no fallback..."
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Current Status */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Current Safety Status</h4>
@@ -418,8 +504,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
                 <span className="ml-2 font-medium">{settings.requireApprovalForNew ? 'Required' : 'Disabled'}</span>
               </div>
               <div>
-                <span className="text-gray-600">Learning threshold:</span>
-                <span className="ml-2 font-medium">{settings.minExamplesRequired} examples</span>
+                <span className="text-gray-600">Fallback responses:</span>
+                <span className="ml-2 font-medium">{settings.enableFallbackResponses ? 'Enabled' : 'Disabled'}</span>
               </div>
             </div>
           </div>

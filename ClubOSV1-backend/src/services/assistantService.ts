@@ -335,9 +335,19 @@ export class AssistantService {
     }
     
     if (!this.isEnabled || !this.openai) {
-      logger.warn('Assistant service is disabled - returning fallback response');
+      logger.warn('Assistant service is disabled - checking for fallback response');
+      const fallbackResponse = await this.getFallbackResponse(route, userMessage);
+      if (!fallbackResponse) {
+        // No fallback configured, don't send anything
+        return {
+          response: '',
+          assistantId: 'disabled',
+          threadId: 'disabled',
+          confidence: 0
+        };
+      }
       return {
-        response: this.getFallbackResponse(route, userMessage),
+        response: fallbackResponse,
         assistantId: 'fallback',
         threadId: 'fallback',
         confidence: 0.3
@@ -621,25 +631,48 @@ Please provide a helpful response to the customer's current message based on the
         stack: error.stack
       });
       
-      // Return a fallback response
+      // Don't send fallback on errors - just return empty response
       return {
-        response: this.getFallbackResponse(route, userMessage),
-        assistantId: 'fallback',
-        threadId: 'fallback',
-        confidence: 0.3
+        response: '',
+        assistantId: 'error',
+        threadId: 'error',
+        confidence: 0
       };
     }
   }
 
-  private getFallbackResponse(route: string, userMessage: string): string {
-    const fallbacks: Record<string, string> = {
-      'Booking & Access': 'I can help you manage customer bookings and access issues. To process this request, please check the booking system or use the access control panel. For immediate assistance with booking disputes or refunds, consult the operations manual.',
-      'Emergency': 'For facility emergencies: 1) Ensure customer safety first, 2) Call 911 if needed, 3) Follow emergency protocols in the red binder, 4) Contact facility management at 555-0111, 5) Document the incident.',
-      'TechSupport': 'I can help troubleshoot equipment issues. Please describe the specific problem with the simulator or TrackMan system. Common fixes: restart the system, check cable connections, or run diagnostics from the admin panel.',
-      'BrandTone': 'I can help you create customer communications and marketing content. Please specify what type of message or content you need to develop for your members or promotional campaigns.'
-    };
-
-    return fallbacks[route] || 'System is having trouble processing this request. Please try rephrasing your operational question or contact technical support.';
+  private async getFallbackResponse(route: string, userMessage: string): Promise<string> {
+    try {
+      // Try to get configurable fallback from database
+      const result = await db.query(`
+        SELECT config_value 
+        FROM pattern_learning_config 
+        WHERE config_key = $1
+      `, [`fallback_${route.toLowerCase().replace(/\s+/g, '_')}`]);
+      
+      if (result.rows.length > 0 && result.rows[0].config_value) {
+        return result.rows[0].config_value;
+      }
+      
+      // Check if fallbacks are disabled
+      const fallbackEnabled = await db.query(`
+        SELECT config_value 
+        FROM pattern_learning_config 
+        WHERE config_key = 'enable_fallback_responses'
+      `);
+      
+      if (fallbackEnabled.rows.length > 0 && fallbackEnabled.rows[0].config_value === 'false') {
+        // Return empty string to indicate no fallback should be sent
+        return '';
+      }
+      
+      // Default to no response if not configured
+      return '';
+    } catch (error) {
+      logger.error('Failed to get fallback response from database:', error);
+      // Return empty string on error to avoid sending incorrect messages
+      return '';
+    }
   }
 
   private formatDatabaseResponse(data: any, route: string): string {
