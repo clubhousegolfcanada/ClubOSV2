@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.5] - 2025-09-06
+
+### Added
+- **Functional V3-PLS Safety Controls**
+  - Created patternSafetyService.ts for backend safety logic
+  - Database migration 209 adds safety tables and config
+  - API endpoints for getting/updating safety settings
+  - Pattern learning examples tracking table
+  - Escalation alerts table for operator notifications
+  
+### Changed
+- **Combined Stats & Settings Tab**
+  - Merged statistics and settings into single "Stats & Settings" tab
+  - Added toggle between Statistics and Safety Settings views
+  - Safety settings now load/save from database
+  - Keywords can be added/removed dynamically
+  
+### Technical Implementation
+- Safety checks prevent auto-response for blacklisted topics
+- Escalation keywords create alerts for operator attention
+- New patterns require approval for first 10 uses
+- Minimum 5 examples needed before pattern creation
+- Operator corrections weighted 2x in confidence calculation
+- Pattern approval tracking in decision_patterns table
+
 ## [1.17.4] - 2025-09-06
 
 ### Added

@@ -19,6 +19,7 @@ import { roleGuard } from '../middleware/roleGuard';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { patternLearningService } from '../services/patternLearningService';
+import { patternSafetyService } from '../services/patternSafetyService';
 import { body, param, query, validationResult } from 'express-validator';
 import OpenAI from 'openai';
 import crypto from 'crypto';
@@ -304,6 +305,62 @@ router.get('/stats',
     } catch (error) {
       logger.error('[Patterns API] Failed to get stats', error);
       res.status(500).json({ success: false, error: 'Failed to get statistics' });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/safety-settings
+ * Get pattern safety settings
+ */
+router.get('/safety-settings',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const settings = await patternSafetyService.getSettings();
+      res.json(settings);
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get safety settings', error);
+      res.status(500).json({ success: false, error: 'Failed to get safety settings' });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/safety-settings
+ * Update pattern safety settings
+ */
+router.put('/safety-settings',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      await patternSafetyService.updateSettings(req.body);
+      res.json({ success: true, message: 'Safety settings updated' });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to update safety settings', error);
+      res.status(500).json({ success: false, error: 'Failed to update safety settings' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/check-safety
+ * Check if a message passes safety checks
+ */
+router.post('/check-safety',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [body('message').isString().notEmpty()],
+  async (req: Request, res: Response) => {
+    try {
+      const { message } = req.body;
+      const result = await patternSafetyService.checkMessageSafety(message);
+      res.json(result);
+    } catch (error) {
+      logger.error('[Patterns API] Failed to check message safety', error);
+      res.status(500).json({ success: false, error: 'Failed to check message safety' });
     }
   }
 );

@@ -151,6 +151,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.5**: V3-PLS Safety Controls Now Functional
+  - Implemented backend safety service with real database integration
+  - Blacklisted topics and escalation keywords actually prevent auto-responses
+  - Approval requirement for first 10 uses of new patterns
+  - Minimum 5 examples required before pattern creation
+  - Operator corrections weighted 2x more than auto-learned patterns
+  - Combined Stats & Settings into single tab for better UX
+  - Safety settings now persist in database and affect pattern learning
 - **v1.17.4**: V3-PLS System Controls for Better Auto-Responses
   - Added practical system controls to improve automated responses
   - Safety controls: blacklisted topics, escalation keywords, approval requirements
