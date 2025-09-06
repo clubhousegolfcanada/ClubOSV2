@@ -207,22 +207,22 @@ router.get('/stats',
   roleGuard(['admin', 'operator']),
   async (req: Request, res: Response) => {
     try {
-      // Get overall stats
+      // Get overall stats - count ALL patterns and active ones separately
       const statsResult = await db.query(`
         SELECT 
-          COUNT(*) as total_patterns,
-          COUNT(*) FILTER (WHERE auto_executable = TRUE) as auto_executable_patterns,
-          COUNT(*) FILTER (WHERE confidence_score >= 0.95) as high_confidence_patterns,
-          COUNT(*) FILTER (WHERE confidence_score >= 0.75) as medium_confidence_patterns,
-          COUNT(*) FILTER (WHERE confidence_score < 0.75) as low_confidence_patterns,
-          AVG(confidence_score) as avg_confidence,
-          SUM(execution_count) as total_executions,
-          SUM(success_count) as total_successes,
-          AVG(CASE WHEN execution_count > 0 
+          COUNT(*) as total_all_patterns,
+          COUNT(*) FILTER (WHERE is_active = TRUE) as total_patterns,
+          COUNT(*) FILTER (WHERE is_active = TRUE AND auto_executable = TRUE) as auto_executable_patterns,
+          COUNT(*) FILTER (WHERE is_active = TRUE AND confidence_score >= 0.95) as high_confidence_patterns,
+          COUNT(*) FILTER (WHERE is_active = TRUE AND confidence_score >= 0.75) as medium_confidence_patterns,
+          COUNT(*) FILTER (WHERE is_active = TRUE AND confidence_score < 0.75) as low_confidence_patterns,
+          AVG(CASE WHEN is_active = TRUE THEN confidence_score ELSE NULL END) as avg_confidence,
+          SUM(CASE WHEN is_active = TRUE THEN execution_count ELSE 0 END) as total_executions,
+          SUM(CASE WHEN is_active = TRUE THEN success_count ELSE 0 END) as total_successes,
+          AVG(CASE WHEN is_active = TRUE AND execution_count > 0 
             THEN success_count::float / execution_count 
             ELSE 0 END) as avg_success_rate
         FROM decision_patterns
-        WHERE is_active = TRUE
       `);
 
       // Get config for UI
@@ -274,9 +274,9 @@ router.get('/stats',
       `);
       
       res.json({
-        // New fields for the header component
-        totalPatterns: parseInt(stats.total_patterns) || 0,
-        activePatterns: parseInt(stats.auto_executable_patterns) || 0,
+        // New fields for the header component - show ACTUAL active patterns
+        totalPatterns: parseInt(stats.total_all_patterns) || 0,
+        activePatterns: parseInt(stats.total_patterns) || 0,  // This is the count of is_active = TRUE
         executionsToday: parseInt(todayResult.rows[0]?.count) || 0,
         executionsThisWeek: parseInt(weekResult.rows[0]?.count) || 0,
         successRate: Math.round((parseFloat(stats.avg_success_rate) || 0) * 100),
@@ -285,7 +285,7 @@ router.get('/stats',
         
         // Original fields (for backward compatibility)
         patterns: {
-          total: parseInt(stats.total_patterns) || 0,
+          total: parseInt(stats.total_patterns) || 0,  // Active patterns for compatibility
           avgConfidence: parseFloat(stats.avg_confidence) || 0
         },
         executions: {
