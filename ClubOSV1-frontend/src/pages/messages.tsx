@@ -279,12 +279,13 @@ export default function Messages() {
         });
         setConversations(sortedConversations);
         
-        // Auto-select first conversation if none selected
-        if (!selectedConversation && sortedConversations.length > 0) {
+        // Auto-select first conversation ONLY on initial load (when conversations list was empty)
+        // This prevents the bug where refresh would reset to first conversation
+        if (!selectedConversation && sortedConversations.length > 0 && conversations.length === 0) {
           const firstConversation = sortedConversations[0];
           // Use selectConversation to fetch full history
           selectConversation(firstConversation);
-          logger.debug('Auto-selected first conversation:', firstConversation.customer_name);
+          logger.debug('Auto-selected first conversation on initial load:', firstConversation.customer_name);
         }
         
         // Update selected conversation if it exists

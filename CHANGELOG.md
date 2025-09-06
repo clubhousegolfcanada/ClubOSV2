@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.16.7] - 2025-09-06
+
+### Fixed
+- **Messages Page Auto-Refresh Bug**
+  - Fixed critical bug where conversation would reset to first one every 15 seconds
+  - Auto-select now only triggers on initial page load, not on refresh cycles
+  - Users can now stay on their selected conversation without interruption
+  - Added condition check: `conversations.length === 0` to prevent re-selection
+
 ## [1.16.6] - 2025-09-06
 
 ### Fixed
