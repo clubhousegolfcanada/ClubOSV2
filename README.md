@@ -1,4 +1,4 @@
-# ClubOS v1.16.9 - AI-Powered Golf Simulator Management
+# ClubOS v1.17.0 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -151,6 +151,14 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.0**: Enhanced Pattern Learning with GPT-4o Context Adaptation
+  - Fixed pricing pattern trigger (was "Providing specific pricing information" instead of actual questions)
+  - GPT-4o now adapts responses to match customer tone while preserving exact information
+  - Added semantic search with embeddings for better pattern matching
+  - Multiple trigger examples per pattern for improved matching
+  - Response validation ensures edited templates work with GPT-4o
+  - Maintains Clubhouse brand voice automatically
+  - See [Pattern GPT-4o Adaptation](./docs/PATTERN-GPT4O-ADAPTATION.md) for details
 - **v1.16.9**: Fixed Messages Not Showing After Send
   - Fixed duplicate /send endpoints causing confusion
   - Added immediate database update after sending messages

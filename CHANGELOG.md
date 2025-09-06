@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.0] - 2025-09-06
+
+### Added
+- **Enhanced Pattern Learning with GPT-4o Context Adaptation**
+  - Created enhanced pattern API routes for better trigger and response editing
+  - Added database migration 210 for pattern enhancements
+  - Multiple trigger examples per pattern for improved matching
+  - Semantic search using embeddings for finding similar questions
+  - GPT-4o validation for edited response templates
+  - Documentation explaining how GPT-4o adapts responses
+
+### Fixed
+- **Pricing Pattern Not Working**
+  - Pattern was looking for "Providing specific pricing information" instead of actual questions
+  - Now triggers on "How much does it cost?", "What are your prices?", etc.
+  - Added proper trigger keywords: price, pricing, cost, rate, fees, etc.
+  - Enabled semantic search for better matching
+
+### Technical Details
+- GPT-4o adapts responses to match customer tone (formal/casual/frustrated)
+- Preserves exact information (URLs, prices, policies) while making responses natural
+- Temperature set to 0.3 for consistent but adaptive responses
+- Maintains Clubhouse brand voice automatically
+- Created SQL scripts to enable pattern learning and fix patterns
+
 ## [1.16.9] - 2025-09-06
 
 ### Fixed
