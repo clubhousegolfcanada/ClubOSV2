@@ -421,7 +421,7 @@ router.post('/send',
         const { ConversationAnalyzer } = await import('../services/conversationAnalyzer');
         const analyzer = new ConversationAnalyzer();
         
-        // Get the full conversation history
+        // Get recent conversation history (last 6 messages within 24 hours)
         const conversationMessages = await db.query(`
           SELECT 
             body, 
@@ -429,10 +429,11 @@ router.post('/send',
             created_at,
             conversation_id
           FROM messages 
-          WHERE (from_number = $1 AND to_number = $2) 
-             OR (from_number = $2 AND to_number = $1)
+          WHERE ((from_number = $1 AND to_number = $2) 
+             OR (from_number = $2 AND to_number = $1))
+            AND created_at > NOW() - INTERVAL '24 hours'
           ORDER BY created_at DESC 
-          LIMIT 20
+          LIMIT 6
         `, [formattedTo, formattedFrom]);
         
         if (conversationMessages.rows.length > 0) {
