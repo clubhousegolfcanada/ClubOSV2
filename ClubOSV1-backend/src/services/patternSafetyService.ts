@@ -408,11 +408,13 @@ class PatternSafetyService {
 
     for (const update of updates) {
       if (update.value !== undefined) {
+        // Use UPSERT to handle missing config rows
         await db.query(`
-          UPDATE pattern_learning_config 
-          SET config_value = $1, updated_at = NOW() 
-          WHERE config_key = $2
-        `, [update.value, update.key]);
+          INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+          VALUES ($1, $2, NOW())
+          ON CONFLICT (config_key) 
+          DO UPDATE SET config_value = $2, updated_at = NOW()
+        `, [update.key, update.value]);
       }
     }
 

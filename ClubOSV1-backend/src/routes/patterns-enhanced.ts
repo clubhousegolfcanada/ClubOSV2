@@ -101,7 +101,7 @@ router.put('/patterns/:id/enhanced',
 
       // If trigger examples changed, re-generate signatures
       if (trigger_examples && trigger_examples.length > 0) {
-        await regeneratePatternSignatures(id, trigger_examples);
+        await regeneratePatternSignatures(parseInt(id), trigger_examples);
       }
 
       res.json({
