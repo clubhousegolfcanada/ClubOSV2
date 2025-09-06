@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.17.8] - 2025-09-06
+
+### Added
+- **Manual Pattern Creation for V3-PLS**
+  - New "Add Pattern" button in Pattern Automations interface
+  - Comprehensive pattern creation modal with all necessary fields
+  - POST /api/patterns endpoint for creating patterns programmatically
+  - Multiple trigger examples support for better pattern matching
+  - Response template editor with variable support ({{customer_name}}, {{location}}, etc.)
+  - Confidence score slider for setting initial pattern confidence
+  - Auto-execute toggle with clear safety warnings
+  - Pattern testing tool to validate matching before saving
+  - Automatic embedding generation using OpenAI's text-embedding-3-small
+  - GPT-4o validation ensures responses maintain Clubhouse brand voice
+  - Duplicate pattern detection to prevent conflicts
+  - Full audit logging tracks who creates patterns and when
+
+### Technical Implementation
+- PatternCreationModal component with minimalist ClubOS design
+- Backend validation with express-validator
+- Embeddings stored as PostgreSQL arrays for semantic search
+- GPT-4o integration for response template validation
+- Pattern signature generation using MD5 hashing
+- Automatic keyword extraction from trigger examples
+- Support for both manual and auto-learned patterns in same system
+
 ## [1.17.7] - 2025-09-06
 
 ### Fixed

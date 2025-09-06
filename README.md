@@ -151,6 +151,20 @@ Run the security verification script to check your security posture:
 ## 📊 Current State (September 2025)
 
 ### Latest
+- **v1.17.8**: Manual Pattern Creation for V3-PLS
+  - Added "Add Pattern" button to V3-PLS interface for manual pattern creation
+  - Full-featured creation modal with:
+    - Multiple trigger examples for better matching
+    - Response template editor with variable support ({{customer_name}}, etc.)
+    - Confidence score slider for initial settings
+    - Auto-execute toggle with safety warnings
+    - Pattern testing tool to validate before saving
+  - Backend API endpoint (POST /api/patterns) with:
+    - Automatic embedding generation for semantic search
+    - GPT-4o validation of responses for Clubhouse tone
+    - Duplicate pattern detection
+    - Full audit logging for tracking manually created patterns
+  - Patterns can now be created manually OR learned automatically from operator responses
 - **v1.17.7**: Fixed V3-PLS Pattern Display Issue
   - Patterns were being created but not showing in UI (filtered by is_active)
   - Now displays ALL patterns so operators can toggle them on/off
