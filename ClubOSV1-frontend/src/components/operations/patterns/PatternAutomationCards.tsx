@@ -131,7 +131,7 @@ export const PatternAutomationCards: React.FC = () => {
 
   const toggleAutomation = async (id: number, currentState: boolean) => {
     try {
-      await apiClient.patch(`/patterns/${id}`, {
+      await apiClient.put(`/patterns/${id}`, {
         is_active: !currentState
       });
       
@@ -150,7 +150,7 @@ export const PatternAutomationCards: React.FC = () => {
 
   const saveEditedResponse = async (id: number) => {
     try {
-      await apiClient.patch(`/patterns/${id}`, {
+      await apiClient.put(`/patterns/${id}`, {
         response_template: editedResponse
       });
       
