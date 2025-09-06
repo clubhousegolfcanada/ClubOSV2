@@ -153,8 +153,8 @@ Run the security verification script to check your security posture:
 ### Latest
 - **v1.16.5**: V3-PLS Pattern Learning System Activated
   - AI Automation cards UI for managing learned patterns
-  - Automatic learning from operator responses
-  - Gift card, hours, booking patterns ready to use
+  - Automatic learning from REAL operator responses only
+  - No fake seed patterns - learns from actual conversations
   - Toggleable automations with edit capabilities
   - Run `scripts/enable-v3-pls.sql` to activate
 - **v1.16.4**: Cleaned Up Operations Center Integrations Page

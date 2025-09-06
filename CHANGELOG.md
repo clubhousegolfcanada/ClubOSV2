@@ -11,9 +11,9 @@ All notable changes to ClubOS will be documented in this file.
   - Patterns grouped by category (customer service, technical, etc.)
   - Edit response templates directly from the UI
   - View usage statistics and confidence levels
-  - Created SQL activation script with seed patterns
-  - Gift card pattern with www.clubhouse247golf.com/giftcard/purchase URL
-  - Hours, booking, and pricing patterns ready to use
+  - Created SQL activation script (no fake seed patterns)
+  - System learns only from REAL operator responses
+  - Patterns created automatically from actual conversations
 
 ### Changed
 - Simplified V3-PLS page to show only Automations and Statistics tabs

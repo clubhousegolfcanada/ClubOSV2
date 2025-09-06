@@ -28,142 +28,25 @@ ADD COLUMN IF NOT EXISTS automation_icon VARCHAR(50) DEFAULT '💬',
 ADD COLUMN IF NOT EXISTS automation_category VARCHAR(50) DEFAULT 'customer_service';
 
 -- ============================================
--- STEP 3: Create Initial Seed Patterns (Examples)
+-- STEP 3: No Seed Patterns - System Learns from Real Operator Responses
 -- ============================================
-
--- Gift Card Pattern
-INSERT INTO decision_patterns (
-  pattern_type,
-  trigger_text,
-  response_template,
-  trigger_keywords,
-  confidence_score,
-  auto_executable,
-  is_active,
-  automation_name,
-  automation_description,
-  automation_icon,
-  automation_category
-) VALUES (
-  'gift_cards',
-  'Do you sell gift cards?',
-  'Yes! We offer gift cards that make perfect gifts for the golf lovers in your life. You can purchase them online at www.clubhouse247golf.com/giftcard/purchase or stop by either of our locations. They never expire and can be used for simulator time, events, or lessons.',
-  ARRAY['gift', 'card', 'certificate', 'present', 'giftcard'],
-  0.85,
-  true,
-  true,
-  'Gift Card Inquiries',
-  'Automatically respond to gift card purchase questions with link to purchase page',
-  '🎁',
-  'customer_service'
-) ON CONFLICT (pattern_signature) DO UPDATE
-SET 
-  automation_name = EXCLUDED.automation_name,
-  automation_description = EXCLUDED.automation_description,
-  automation_icon = EXCLUDED.automation_icon,
-  automation_category = EXCLUDED.automation_category;
-
--- Hours Pattern
-INSERT INTO decision_patterns (
-  pattern_type,
-  trigger_text,
-  response_template,
-  trigger_keywords,
-  confidence_score,
-  auto_executable,
-  is_active,
-  automation_name,
-  automation_description,
-  automation_icon,
-  automation_category
-) VALUES (
-  'hours',
-  'What are your hours?',
-  'Our Bedford location is open 9am-11pm daily, and our Dartmouth location is open 8am-10pm daily. You can book a bay anytime at www.skedda.com/clubhouse247. We recommend booking in advance, especially for weekends!',
-  ARRAY['hours', 'open', 'close', 'time', 'when'],
-  0.85,
-  true,
-  true,
-  'Hours & Location Info',
-  'Automatically provide hours and location information',
-  '🕐',
-  'customer_service'
-) ON CONFLICT (pattern_signature) DO UPDATE
-SET 
-  automation_name = EXCLUDED.automation_name,
-  automation_description = EXCLUDED.automation_description,
-  automation_icon = EXCLUDED.automation_icon,
-  automation_category = EXCLUDED.automation_category;
-
--- Booking Pattern
-INSERT INTO decision_patterns (
-  pattern_type,
-  trigger_text,
-  response_template,
-  trigger_keywords,
-  confidence_score,
-  auto_executable,
-  is_active,
-  automation_name,
-  automation_description,
-  automation_icon,
-  automation_category
-) VALUES (
-  'booking',
-  'How do I book a bay?',
-  'You can book a simulator bay online at www.skedda.com/clubhouse247. Select your preferred location (Bedford or Dartmouth), choose your date and time, and complete the booking. We recommend booking in advance, especially for weekends and evenings!',
-  ARRAY['book', 'reserve', 'reservation', 'simulator', 'bay'],
-  0.85,
-  true,
-  true,
-  'Booking Assistance',
-  'Help customers with booking simulator bays',
-  '📅',
-  'customer_service'
-) ON CONFLICT (pattern_signature) DO UPDATE
-SET 
-  automation_name = EXCLUDED.automation_name,
-  automation_description = EXCLUDED.automation_description,
-  automation_icon = EXCLUDED.automation_icon,
-  automation_category = EXCLUDED.automation_category;
-
--- Pricing Pattern
-INSERT INTO decision_patterns (
-  pattern_type,
-  trigger_text,
-  response_template,
-  trigger_keywords,
-  confidence_score,
-  auto_executable,
-  is_active,
-  automation_name,
-  automation_description,
-  automation_icon,
-  automation_category
-) VALUES (
-  'pricing',
-  'How much does it cost?',
-  'Our simulator bay rates are $65/hour. We also offer memberships starting at $199/month which include discounted rates and other perks. You can view all pricing and membership options at www.clubhouse247golf.com or ask our staff for details!',
-  ARRAY['price', 'cost', 'rate', 'much', 'expensive', 'charge'],
-  0.80,
-  true,
-  false, -- Start disabled for review
-  'Pricing Information',
-  'Provide pricing and membership information',
-  '💰',
-  'customer_service'
-) ON CONFLICT (pattern_signature) DO UPDATE
-SET 
-  automation_name = EXCLUDED.automation_name,
-  automation_description = EXCLUDED.automation_description,
-  automation_icon = EXCLUDED.automation_icon,
-  automation_category = EXCLUDED.automation_category;
+-- The system will learn patterns automatically when operators respond to customers.
+-- No fake/example patterns are created.
+-- 
+-- When an operator responds to a customer message:
+-- 1. System analyzes the Q&A pair
+-- 2. Creates a pattern from the real response
+-- 3. Pattern appears in V3-PLS page for review
+-- 4. Operator can enable/disable as needed
+--
+-- Example: When operator responds about gift cards with the URL,
+-- that exact response becomes the pattern.
 
 -- ============================================
--- STEP 4: Update Existing Patterns with Card Info
+-- STEP 3: Update Existing Patterns with Card Info (if any exist)
 -- ============================================
 
--- Update any existing patterns without automation info
+-- Update any existing patterns (learned from real responses) without automation info
 UPDATE decision_patterns
 SET 
   automation_name = CASE 
@@ -192,7 +75,7 @@ SET
 WHERE automation_name IS NULL;
 
 -- ============================================
--- STEP 5: Verify Configuration
+-- STEP 4: Verify Configuration
 -- ============================================
 SELECT 
   config_key,
@@ -209,19 +92,24 @@ SELECT
   AVG(confidence_score) as avg_confidence
 FROM decision_patterns;
 
--- Show sample patterns
+-- Show existing patterns (if any were already learned)
 SELECT 
   automation_name,
   automation_icon,
   confidence_score,
   is_active,
-  execution_count
+  execution_count,
+  trigger_text
 FROM decision_patterns
-ORDER BY confidence_score DESC
+ORDER BY execution_count DESC, confidence_score DESC
 LIMIT 10;
 
 -- ============================================
 -- Success! V3-PLS is now enabled
--- Patterns will be learned from operator responses
--- View and manage them in the V3-PLS page
+-- 
+-- The system will now:
+-- 1. Learn from every operator response to customers
+-- 2. Create patterns based on REAL conversations
+-- 3. Show learned patterns in V3-PLS page as automation cards
+-- 4. No fake data - only real operator responses
 -- ============================================
