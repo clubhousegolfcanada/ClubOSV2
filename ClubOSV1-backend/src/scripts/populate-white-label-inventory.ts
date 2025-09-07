@@ -1,20 +1,35 @@
 import { query as db } from '../utils/db';
 
-interface InventoryItem {
+interface FeatureItem {
   name: string;
-  category?: string;
-  type?: string;
-  element_type?: string;
-  current_value?: string;
-  is_transferable?: boolean;
-  is_customizable?: boolean;
-  is_industry_specific?: boolean;
-  is_required?: boolean;
+  category: string;
+  is_transferable: boolean;
+  notes: string;
+}
+
+interface BrandingItem {
+  element_type: string;
+  current_value: string;
+  is_customizable: boolean;
+  notes: string;
+}
+
+interface SOPItem {
+  name: string;
+  category: string;
+  is_industry_specific: boolean;
+  notes: string;
+}
+
+interface IntegrationItem {
+  name: string;
+  type: string;
+  is_required: boolean;
   notes: string;
 }
 
 async function populateFeatures() {
-  const features: InventoryItem[] = [
+  const features: FeatureItem[] = [
     // Core Platform Features (Transferable)
     { name: 'User Authentication System', category: 'Core', is_transferable: true, notes: 'JWT-based auth with role management' },
     { name: 'Role-Based Access Control', category: 'Core', is_transferable: true, notes: 'Admin, Operator, Customer roles' },
@@ -79,7 +94,7 @@ async function populateFeatures() {
 }
 
 async function populateBranding() {
-  const branding: InventoryItem[] = [
+  const branding: BrandingItem[] = [
     { element_type: 'Logo', current_value: 'ClubOS Logo', is_customizable: true, notes: 'Main application logo' },
     { element_type: 'Primary Color', current_value: '#0B3D3A (Teal)', is_customizable: true, notes: 'Primary brand color' },
     { element_type: 'Secondary Color', current_value: '#10b981 (Green)', is_customizable: true, notes: 'Secondary accent color' },
@@ -114,7 +129,7 @@ async function populateBranding() {
 }
 
 async function populateSOPs() {
-  const sops: InventoryItem[] = [
+  const sops: SOPItem[] = [
     // Golf-Specific SOPs
     { name: 'Bay Setup Procedure', category: 'Operations', is_industry_specific: true, notes: 'Golf simulator bay preparation' },
     { name: 'TrackMan Calibration', category: 'Technical', is_industry_specific: true, notes: 'Golf simulator calibration process' },
@@ -157,7 +172,7 @@ async function populateSOPs() {
 }
 
 async function populateIntegrations() {
-  const integrations: InventoryItem[] = [
+  const integrations: IntegrationItem[] = [
     // Required Core Integrations
     { name: 'OpenPhone', type: 'Communication', is_required: true, notes: 'Primary SMS/calling platform' },
     { name: 'Stripe', type: 'Payment', is_required: true, notes: 'Payment processing system' },

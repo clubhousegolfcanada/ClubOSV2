@@ -358,6 +358,20 @@ async function startServer() {
     const { performStartupChecks } = await import('./utils/startup-check');
     await performStartupChecks();
     
+    // Run white label migration and populate data
+    try {
+      const { runMigration } = await import('./scripts/run-white-label-migration');
+      await runMigration();
+      logger.info('✅ White label tables initialized');
+      
+      // Populate with initial data if empty
+      const { initializeWhiteLabelData } = await import('./scripts/initialize-white-label-data');
+      await initializeWhiteLabelData();
+    } catch (error) {
+      logger.error('Failed to initialize white label system:', error);
+      // Don't fail startup, just log the error
+    }
+    
     // Initialize database
     logger.info('🔄 Initializing database connection...');
     await db.initialize();
