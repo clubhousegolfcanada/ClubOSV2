@@ -1797,7 +1797,7 @@ router.put('/:id',
       // If restoring from deleted, clear deletion metadata
       if (updates.is_deleted === false) {
         updateFields.push(`deleted_at = NULL`);
-        updateFields.push(`deleted_by = NULL`);
+        // Don't update deleted_by if it doesn't exist or is integer type
       }
 
       if (updateFields.length === 0) {
@@ -1851,12 +1851,14 @@ router.delete('/:id',
     try {
       const { id } = req.params;
 
+      // First try with updated_by field (text type), don't use deleted_by if it's integer
       await db.query(
         `UPDATE decision_patterns 
          SET is_deleted = TRUE, 
              deleted_at = NOW(), 
-             deleted_by = $2,
-             is_active = FALSE
+             updated_by = $2,
+             is_active = FALSE,
+             updated_at = NOW()
          WHERE id = $1`,
         [id, (req as any).user?.id]
       );
