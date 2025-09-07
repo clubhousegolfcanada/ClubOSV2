@@ -1,35 +1,149 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth';
-import { WhiteLabelAnalyzer } from '../services/whiteLabelAnalyzer';
 import { query as db } from '../utils/db';
+import logger from '../utils/logger';
 
 const router = express.Router();
-const analyzer = new WhiteLabelAnalyzer();
-
-// Analyze the system and populate inventory
-router.post('/analyze', authenticate, async (req, res) => {
-  try {
-    // Only admins can run analysis
-    if (req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const analysis = await analyzer.analyzeSystem();
-    res.json(analysis);
-  } catch (error) {
-    console.error('Error analyzing system:', error);
-    res.status(500).json({ error: 'Failed to analyze system' });
-  }
-});
 
 // Get current inventory
 router.get('/inventory', authenticate, async (req, res) => {
   try {
-    const inventory = await analyzer.getInventorySummary();
-    res.json(inventory);
+    const [features, branding, sops, integrations] = await Promise.all([
+      db('SELECT * FROM feature_inventory ORDER BY category, name'),
+      db('SELECT * FROM branding_inventory ORDER BY element_type'),
+      db('SELECT * FROM sop_inventory ORDER BY category, name'),
+      db('SELECT * FROM integration_inventory ORDER BY type, name')
+    ]);
+
+    res.json({
+      features: features.rows,
+      branding: branding.rows,
+      sops: sops.rows,
+      integrations: integrations.rows
+    });
   } catch (error) {
-    console.error('Error fetching inventory:', error);
+    logger.error('Error fetching inventory:', error);
     res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+
+// Add feature
+router.post('/inventory/feature', authenticate, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { name, category, is_transferable, notes } = req.body;
+    
+    const result = await db(
+      `INSERT INTO feature_inventory (name, category, is_transferable, notes) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [name, category, is_transferable || false, notes || '']
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Error adding feature:', error);
+    res.status(500).json({ error: 'Failed to add feature' });
+  }
+});
+
+// Add branding item
+router.post('/inventory/branding', authenticate, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { element_type, current_value, is_customizable, notes } = req.body;
+    
+    const result = await db(
+      `INSERT INTO branding_inventory (element_type, current_value, is_customizable, notes) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [element_type, current_value, is_customizable || false, notes || '']
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Error adding branding:', error);
+    res.status(500).json({ error: 'Failed to add branding' });
+  }
+});
+
+// Add SOP
+router.post('/inventory/sop', authenticate, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { name, category, is_industry_specific, notes } = req.body;
+    
+    const result = await db(
+      `INSERT INTO sop_inventory (name, category, is_industry_specific, notes) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [name, category, is_industry_specific || false, notes || '']
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Error adding SOP:', error);
+    res.status(500).json({ error: 'Failed to add SOP' });
+  }
+});
+
+// Add integration
+router.post('/inventory/integration', authenticate, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { name, type, is_required, notes } = req.body;
+    
+    const result = await db(
+      `INSERT INTO integration_inventory (name, type, is_required, notes) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [name, type, is_required || false, notes || '']
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Error adding integration:', error);
+    res.status(500).json({ error: 'Failed to add integration' });
+  }
+});
+
+// Delete inventory item
+router.delete('/inventory/:type/:id', authenticate, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { type, id } = req.params;
+    const tables: Record<string, string> = {
+      feature: 'feature_inventory',
+      branding: 'branding_inventory',
+      sop: 'sop_inventory',
+      integration: 'integration_inventory'
+    };
+
+    const table = tables[type];
+    if (!table) {
+      return res.status(400).json({ error: 'Invalid type' });
+    }
+
+    await db(`DELETE FROM ${table} WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error deleting item:', error);
+    res.status(500).json({ error: 'Failed to delete item' });
   }
 });
 
@@ -41,7 +155,7 @@ router.get('/configurations', authenticate, async (req, res) => {
     );
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching configurations:', error);
+    logger.error('Error fetching configurations:', error);
     res.status(500).json({ error: 'Failed to fetch configurations' });
   }
 });
@@ -53,123 +167,126 @@ router.post('/configurations', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const config = {
-      ...req.body,
-      created_by: req.user.id
-    };
+    const { name, features, branding, sops, integrations } = req.body;
+    
+    const result = await db(
+      `INSERT INTO white_label_configurations (name, features, branding, sops, integrations, created_by) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING *`,
+      [
+        name,
+        JSON.stringify({ selected: features }),
+        JSON.stringify({ selected: branding }),
+        JSON.stringify({ selected: sops }),
+        JSON.stringify({ selected: integrations }),
+        req.user.id
+      ]
+    );
 
-    const saved = await analyzer.saveConfiguration(config);
-    res.json(saved);
+    res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error saving configuration:', error);
+    logger.error('Error saving configuration:', error);
     res.status(500).json({ error: 'Failed to save configuration' });
   }
 });
 
 // Generate implementation blueprint
-router.post('/blueprint/:configId', authenticate, async (req, res) => {
+router.get('/blueprint/:configId', authenticate, async (req, res) => {
   try {
-    const blueprint = await analyzer.generateBlueprint(req.params.configId);
+    const configResult = await db(
+      'SELECT * FROM white_label_configurations WHERE id = $1',
+      [req.params.configId]
+    );
+
+    if (configResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Configuration not found' });
+    }
+
+    const config = configResult.rows[0];
+    
+    // Fetch selected items from inventory
+    const [features, branding, sops, integrations] = await Promise.all([
+      db(
+        'SELECT * FROM feature_inventory WHERE id = ANY($1::uuid[])',
+        [config.features.selected || []]
+      ),
+      db(
+        'SELECT * FROM branding_inventory WHERE id = ANY($1::uuid[])',
+        [config.branding.selected || []]
+      ),
+      db(
+        'SELECT * FROM sop_inventory WHERE id = ANY($1::uuid[])',
+        [config.sops.selected || []]
+      ),
+      db(
+        'SELECT * FROM integration_inventory WHERE id = ANY($1::uuid[])',
+        [config.integrations.selected || []]
+      )
+    ]);
+
+    const blueprint = {
+      configuration: {
+        id: config.id,
+        name: config.name,
+        created_at: config.created_at
+      },
+      implementation: {
+        features: features.rows,
+        branding: branding.rows,
+        sops: sops.rows,
+        integrations: integrations.rows
+      },
+      migration_steps: [
+        {
+          phase: 'Database Setup',
+          tasks: [
+            'Create tenant schema',
+            'Set up multi-tenancy support',
+            'Migrate existing data to tenant structure'
+          ]
+        },
+        {
+          phase: 'Authentication',
+          tasks: [
+            'Implement tenant-aware authentication',
+            'Add tenant switching capability',
+            'Update JWT tokens with tenant context'
+          ]
+        },
+        {
+          phase: 'Branding',
+          tasks: branding.rows.filter((b: any) => b.is_customizable).map((b: any) => 
+            `Make ${b.element_type} customizable`
+          )
+        },
+        {
+          phase: 'Feature Configuration',
+          tasks: features.rows.filter((f: any) => !f.is_transferable).map((f: any) =>
+            `Make ${f.name} configurable or optional`
+          )
+        },
+        {
+          phase: 'Integration Updates',
+          tasks: integrations.rows.map((i: any) =>
+            i.is_required 
+              ? `Ensure ${i.name} supports multi-tenancy`
+              : `Make ${i.name} optional per tenant`
+          )
+        }
+      ],
+      estimated_effort: {
+        database: '2-3 weeks',
+        backend: '3-4 weeks',
+        frontend: '2-3 weeks',
+        testing: '1-2 weeks',
+        total: '8-12 weeks'
+      }
+    };
+
     res.json(blueprint);
   } catch (error) {
-    console.error('Error generating blueprint:', error);
+    logger.error('Error generating blueprint:', error);
     res.status(500).json({ error: 'Failed to generate blueprint' });
-  }
-});
-
-// Update feature transferability
-router.patch('/features/:id', authenticate, async (req, res) => {
-  try {
-    if (req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { is_clubos_specific, is_transferable } = req.body;
-    
-    const result = await db(
-      `UPDATE feature_inventory 
-       SET is_clubos_specific = $1, is_transferable = $2
-       WHERE id = $3
-       RETURNING *`,
-      [is_clubos_specific, is_transferable, req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating feature:', error);
-    res.status(500).json({ error: 'Failed to update feature' });
-  }
-});
-
-// Update branding item
-router.patch('/branding/:id', authenticate, async (req, res) => {
-  try {
-    if (req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { replacement_strategy } = req.body;
-    
-    const result = await db(
-      `UPDATE branding_inventory 
-       SET replacement_strategy = $1
-       WHERE id = $2
-       RETURNING *`,
-      [replacement_strategy, req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating branding:', error);
-    res.status(500).json({ error: 'Failed to update branding' });
-  }
-});
-
-// Update SOP
-router.patch('/sops/:id', authenticate, async (req, res) => {
-  try {
-    if (req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { is_replaceable, replacement_template } = req.body;
-    
-    const result = await db(
-      `UPDATE sop_inventory 
-       SET is_replaceable = $1, replacement_template = $2
-       WHERE id = $3
-       RETURNING *`,
-      [is_replaceable, replacement_template, req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating SOP:', error);
-    res.status(500).json({ error: 'Failed to update SOP' });
-  }
-});
-
-// Update integration
-router.patch('/integrations/:id', authenticate, async (req, res) => {
-  try {
-    if (req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    const { is_required, is_client_specific } = req.body;
-    
-    const result = await db(
-      `UPDATE integration_inventory 
-       SET is_required = $1, is_client_specific = $2
-       WHERE id = $3
-       RETURNING *`,
-      [is_required, is_client_specific, req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating integration:', error);
-    res.status(500).json({ error: 'Failed to update integration' });
   }
 });
 
