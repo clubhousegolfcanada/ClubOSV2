@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth';
 import { query as db } from '../utils/db';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
