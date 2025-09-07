@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.7] - 2025-09-07
+
+### Fixed  
+- **V3-PLS Pattern Restoration**
+  - Restored 67 patterns that were mass-deleted on Sep 6 at 18:07:33
+  - All patterns with confidence >= 0.70 are now active
+  - Gift card patterns and trackman reset patterns specifically restored
+  - 27 patterns now auto-executable (confidence >= 0.85)
+  - 40 patterns suggestable (confidence 0.70-0.84)
+  - Pattern cards now showing correctly in Operations Center
+
+### Root Cause
+- All 68 patterns were updated simultaneously on Sep 6, likely by an overly aggressive cleanup script
+- Patterns were marked as deleted/inactive regardless of their quality metrics
+- Solution: Restored based on confidence scores and execution history
+
 ## [1.18.6] - 2025-09-07
 
 ### Fixed
