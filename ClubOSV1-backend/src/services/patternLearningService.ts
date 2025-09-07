@@ -30,6 +30,7 @@ interface Pattern {
   action_template: any;
   confidence_score: number;
   auto_executable: boolean;
+  is_active: boolean;
   execution_count: number;
   success_count: number;
 }
