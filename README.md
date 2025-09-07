@@ -1,4 +1,4 @@
-# ClubOS v1.18.1 - AI-Powered Golf Simulator Management
+# ClubOS v1.18.2 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -243,7 +243,7 @@ Run the security verification script to check your security posture:
   - Admin UI for managing NinjaOne scripts and devices
   - Sync from NinjaOne with one click
   - Dynamic location/bay detection from database
-  - See [NinjaOne Status](./NINJAONE-IMPLEMENTATION-STATUS.md) for details
+  - See [NinjaOne Status](./docs/implementation/NINJAONE-IMPLEMENTATION-STATUS.md) for details
 - **v1.16.8**: Fixed V3-PLS Page Loading Issues
   - Fixed HTTP method mismatch (PATCH vs PUT) in PatternAutomationCards
   - Corrected ai-automations API endpoint paths
@@ -624,21 +624,30 @@ DROP TABLE example;
 
 ## 📚 Documentation
 
-### Core Documentation
+### Core Documentation (Root)
+- **README.md** - This file
+- **CHANGELOG.md** - Version history  
 - **CLAUDE.md** - User preferences, working style (MUST READ)
-- **CHANGELOG.md** - Version history
-- **PUBLIC_CLUBOSBOY_SETUP.md** - Public embed instructions
-- **UNIFI-ACCESS-SETUP.md** - UniFi door control setup guide
-- **API Docs** - `/ClubOSV1-backend/docs/`
-- **TESTING-GUIDE.md** - Comprehensive testing instructions
-- **SECURITY-AUDIT-REPORT.md** - Latest security audit findings
 
-### Security Documentation
-- **ENVIRONMENT-SETUP.md** - Critical environment variable setup
-- **SECURITY-IMPLEMENTATION-GUIDE.md** - Complete security implementation steps
-- **SECURITY-QUICK-REFERENCE.md** - Security commands and procedures
-- **SECURITY-QUICK-WINS.md** - Quick security fixes
-- **TESTING-SECURITY-ROADMAP.md** - Future security enhancements
+### Documentation Structure (`/docs`)
+```
+docs/
+├── architecture/       # System design and refactoring plans
+├── audits/            # System audits and evaluations
+├── features/          # Feature-specific documentation
+│   └── v3-pls/       # V3 Pattern Learning System docs
+├── implementation/    # Implementation guides and status
+├── plans/            # Future plans and proposals
+├── status-reports/   # Progress and status updates
+└── archive/          # Historical/deprecated docs
+```
+
+### Key Documentation
+- **Architecture** - System refactoring plans in `/docs/architecture/`
+- **V3-PLS** - Pattern learning docs in `/docs/features/v3-pls/`
+- **Audits** - System audits in `/docs/audits/`
+- **Implementation** - Feature status in `/docs/implementation/`
+- **API Docs** - `/ClubOSV1-backend/docs/`
 
 ## 🆘 Troubleshooting
 

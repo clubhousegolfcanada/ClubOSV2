@@ -2,7 +2,47 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.2] - 2025-09-07
+
+### Changed
+- **Documentation Reorganization**
+  - Moved 23 .md files from root to organized `/docs` subdirectories
+  - Root now only contains essential files: README.md, CHANGELOG.md, CLAUDE.md
+  - Created clear documentation structure with categories
+  - Updated README with documentation structure guide
+  - Reduced root directory clutter by 88%
+
+### Documentation Structure
+- `/docs/architecture/` - System design and refactoring plans
+- `/docs/audits/` - System audits and evaluations  
+- `/docs/features/v3-pls/` - V3 Pattern Learning System documentation
+- `/docs/implementation/` - Implementation guides and status
+- `/docs/plans/` - Future plans and proposals
+- `/docs/status-reports/` - Progress updates
+- `/docs/archive/` - Historical documentation
+
 ## [1.18.1] - 2025-09-07
+
+### Added
+- **Customer UI Standardization for White-Label Support**
+  - Complete CSS variable migration for all customer pages
+  - Replaced 97 hardcoded brand colors with CSS variables
+  - Created migration script for automated color replacement
+  - Added comprehensive UI standardization tracking document
+  - Prepared foundation for white-label implementations
+
+### Technical Implementation
+- Updated globals.css to use ClubOS brand colors (#0B3D3A) via CSS variables
+- Fixed Button component to use CSS variables instead of hardcoded colors
+- Migrated all customer pages to use var(--accent) and var(--accent-hover)
+- Created reusable migration script at scripts/migrate-colors-to-css-vars.sh
+- Added UI-STANDARDIZATION-TRACKER.md for progress documentation
+
+### Improved
+- White-label readiness: Brand colors can now be changed in one place
+- Code maintainability: Eliminated all hardcoded color values
+- Developer experience: Clear documentation and tracking of changes
+- Future scalability: Foundation laid for brand configuration system
 
 ### Fixed
 - **Operator UI Cleanup - Phase 1**
