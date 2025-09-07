@@ -6,19 +6,21 @@ All notable changes to ClubOS will be documented in this file.
 
 ### Fixed
 - **Operator UI Cleanup - Phase 1**
-  - Removed 16 deprecated/test files from backend routes
+  - Removed 13 deprecated/test files from backend routes (debug-*.ts, test-*.ts, backup files)
   - Removed mock data from pattern statistics components (now uses real API)
   - Deleted unused messages-redesigned.tsx page (872 lines)
   - Removed empty operator/operations directories
-  - Cleaned up duplicate refactored route files
   - Removed backup files (.backup.ts) from production code
+  - Removed old JavaScript setup files (auth-database.js, setup.js)
   - Fixed pattern statistics to fetch real data from /api/patterns/stats
+  - Kept refactored route files (part of active refactoring plan)
 
 ### Technical Details
-- Removed files: debug-*.ts, test-*.ts, *-refactored.ts, *.backup.ts, auth-database.js
+- Removed files: debug-*.ts, test-*.ts, *.backup.ts, auth-database.js, setup.js, unifi-doors-fixed.ts
 - Updated OperationsPatternsStatistics.tsx to use real API data
 - Updated PatternsStatsAndSettings.tsx to use real API data
-- Reduced codebase by ~15% redundant code
+- Preserved auth-refactored.ts, health-refactored.ts, users-refactored.ts (active refactor)
+- Reduced codebase by ~10% redundant code
 - Created comprehensive audit report at /docs/audits/OPERATOR-UI-CLEANUP-AUDIT-2025-09.md
 
 ## [1.18.0] - 2025-09-06

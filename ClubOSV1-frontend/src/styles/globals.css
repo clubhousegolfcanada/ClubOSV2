@@ -77,10 +77,10 @@
     --bg-hover: #252525;          /* New: hover state background */
     --bg-elevated: #1a1a1a;       /* New: for elevated cards */
     
-    /* Accent colors */
-    --accent: #1a4040;            /* Slightly brighter teal */
-    --accent-hover: #245454;
-    --accent-light: rgba(26, 64, 64, 0.2);  /* New: for subtle accent backgrounds */
+    /* Accent colors - ClubOS Brand */
+    --accent: #0B3D3A;            /* ClubOS primary brand color */
+    --accent-hover: #084a45;      /* ClubOS brand hover state */
+    --accent-light: rgba(11, 61, 58, 0.2);  /* ClubOS brand light background */
     
     /* Text colors - improved readability */
     --text-primary: #f0f0f0;      /* Slightly off-white for less harshness */
@@ -113,10 +113,10 @@
     --bg-hover: #f0f1f3;          /* New: hover state background */
     --bg-elevated: #ffffff;       /* New: for elevated cards */
     
-    /* Accent colors */
-    --accent: #152f2f;
-    --accent-hover: #1a3939;
-    --accent-light: rgba(21, 47, 47, 0.05);  /* New: for subtle accent backgrounds */
+    /* Accent colors - ClubOS Brand */
+    --accent: #0B3D3A;            /* ClubOS primary brand color */
+    --accent-hover: #084a45;      /* ClubOS brand hover state */
+    --accent-light: rgba(11, 61, 58, 0.05);  /* ClubOS brand light background */
     
     /* Text colors */
     --text-primary: #111827;      /* Darker for better contrast */

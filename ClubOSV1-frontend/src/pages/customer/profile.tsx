@@ -421,25 +421,25 @@ export default function CustomerProfile() {
       label: 'ClubCoins',
       value: profileData?.ccBalance || 0,
       icon: Coins,
-      color: 'text-[#0B3D3A]'
+      color: 'text-[var(--accent)]'
     },
     {
       label: 'Win Rate',
       value: `${Math.round((profileData?.winRate || 0) * 100)}%`,
       icon: TrendingUp,
-      color: 'text-[#0B3D3A]'
+      color: 'text-[var(--accent)]'
     },
     {
       label: 'Total Wins',
       value: profileData?.totalWins || 0,
       icon: Trophy,
-      color: 'text-[#0B3D3A]'
+      color: 'text-[var(--accent)]'
     },
     {
       label: 'Current Streak',
       value: profileData?.currentStreak || 0,
       icon: Target,
-      color: 'text-[#0B3D3A]'
+      color: 'text-[var(--accent)]'
     }
   ];
 
@@ -472,9 +472,9 @@ export default function CustomerProfile() {
                       tier={calculateTierFromCC(profileData.totalCCEarned)} 
                       size="sm"
                     />
-                    <div className="flex items-center gap-2 px-3 py-1 bg-[#0B3D3A]/10 rounded-full">
-                      <Coins className="w-4 h-4 text-[#0B3D3A]" />
-                      <span className="text-sm font-bold text-[#0B3D3A]">{profileData.ccBalance.toLocaleString()}</span>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-[var(--accent)]/10 rounded-full">
+                      <Coins className="w-4 h-4 text-[var(--accent)]" />
+                      <span className="text-sm font-bold text-[var(--accent)]">{profileData.ccBalance.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
@@ -511,28 +511,28 @@ export default function CustomerProfile() {
                     <div className="grid grid-cols-4 gap-3 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
                       <div className="text-center">
                         <div className="flex items-center justify-center mb-1">
-                          <Coins className="w-3.5 h-3.5 text-[#0B3D3A]" />
+                          <Coins className="w-3.5 h-3.5 text-[var(--accent)]" />
                         </div>
                         <div className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{profileData.ccBalance.toLocaleString()}</div>
                         <div className="text-[10px] text-[var(--text-muted)]">ClubCoins</div>
                       </div>
                       <div className="text-center">
                         <div className="flex items-center justify-center mb-1">
-                          <TrendingUp className="w-3.5 h-3.5 text-[#0B3D3A]" />
+                          <TrendingUp className="w-3.5 h-3.5 text-[var(--accent)]" />
                         </div>
                         <div className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{Math.round((profileData.winRate || 0) * 100)}%</div>
                         <div className="text-[10px] text-[var(--text-muted)]">Win Rate</div>
                       </div>
                       <div className="text-center">
                         <div className="flex items-center justify-center mb-1">
-                          <Trophy className="w-3.5 h-3.5 text-[#0B3D3A]" />
+                          <Trophy className="w-3.5 h-3.5 text-[var(--accent)]" />
                         </div>
                         <div className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{profileData.totalWins}</div>
                         <div className="text-[10px] text-[var(--text-muted)]">Wins</div>
                       </div>
                       <div className="text-center">
                         <div className="flex items-center justify-center mb-1">
-                          <Target className="w-3.5 h-3.5 text-[#0B3D3A]" />
+                          <Target className="w-3.5 h-3.5 text-[var(--accent)]" />
                         </div>
                         <div className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{profileData.currentStreak}</div>
                         <div className="text-[10px] text-[var(--text-muted)]">Streak</div>
@@ -567,14 +567,14 @@ export default function CustomerProfile() {
 
                 {/* Box Progress & Rewards - Redesigned */}
                 {profileData && (
-                  <div className="bg-[var(--bg-secondary)] rounded-lg border p-4 border-l-4 border-l-[#0B3D3A]">
+                  <div className="bg-[var(--bg-secondary)] rounded-lg border p-4 border-l-4 border-l-[var(--accent)]">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-[#0B3D3A]" />
+                        <Package className="w-4 h-4 text-[var(--accent)]" />
                         <h2 className="text-sm font-semibold text-[var(--text-primary)]">Box Openings</h2>
                       </div>
                       {availableBoxes.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#0B3D3A]/10 text-[#0B3D3A]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)]">
                           {availableBoxes.length}
                         </span>
                       )}
@@ -584,7 +584,7 @@ export default function CustomerProfile() {
                     <div className="mb-4">
                       <div className="w-full bg-[var(--border-primary)] rounded-full h-2 overflow-hidden mb-2">
                         <div 
-                          className="h-full bg-gradient-to-r from-[#0B3D3A] to-[#0B3D3A]/80 rounded-full transition-all duration-300"
+                          className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent)]/80 rounded-full transition-all duration-300"
                           style={{ width: `${((profileData.boxProgress || 0) / 3) * 100}%` }}
                         />
                       </div>
@@ -620,12 +620,12 @@ export default function CustomerProfile() {
                             >
                               <div className="relative">
                                 <Package 
-                                  className="w-8 h-8 text-[#0B3D3A] group-hover:text-[#084a45] transition-colors" 
+                                  className="w-8 h-8 text-[var(--accent)] group-hover:text-[var(--accent-hover)] transition-colors" 
                                   strokeWidth={1.5} 
                                   fill="currentColor"
                                   fillOpacity={0.1}
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-br from-[#0B3D3A]/10 to-transparent rounded opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 to-transparent rounded opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
                             </button>
                           ))}
@@ -655,7 +655,7 @@ export default function CustomerProfile() {
                     className="w-full flex items-center justify-between text-left"
                   >
                     <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-[#0B3D3A]" />
+                      <Trophy className="w-4 h-4 text-[var(--accent)]" />
                       <h2 className="text-sm font-semibold text-[var(--text-primary)]">Tournament Achievements</h2>
                       {achievementCount > 0 && (
                         <span className="text-xs text-[var(--text-muted)]">({achievementCount})</span>
@@ -714,7 +714,7 @@ export default function CustomerProfile() {
                     {!editMode && (
                       <button
                         onClick={() => setEditMode(true)}
-                        className="px-3 py-1.5 text-sm bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
+                        className="px-3 py-1.5 text-sm bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors flex items-center gap-2"
                       >
                         <Settings className="w-4 h-4" />
                         Edit Profile
@@ -730,7 +730,7 @@ export default function CustomerProfile() {
                           type="text"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                         />
                       </div>
                       <div>
@@ -739,7 +739,7 @@ export default function CustomerProfile() {
                           type="email"
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                           disabled
                         />
                         <p className="text-xs text-[var(--text-muted)] mt-1">Email cannot be changed</p>
@@ -750,7 +750,7 @@ export default function CustomerProfile() {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                         />
                       </div>
                       <div>
@@ -758,7 +758,7 @@ export default function CustomerProfile() {
                         <select
                           value={formData.location}
                           onChange={(e) => setFormData({...formData, location: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                         >
                           <option value="">Select a location</option>
                           <option value="Bedford">Bedford</option>
@@ -774,7 +774,7 @@ export default function CustomerProfile() {
                           type="text"
                           value={formData.homeGolfCourse}
                           onChange={(e) => setFormData({...formData, homeGolfCourse: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="e.g., Glen Arbour Golf Course"
                         />
                       </div>
@@ -783,7 +783,7 @@ export default function CustomerProfile() {
                         <textarea
                           value={formData.bio}
                           onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="Tell us about yourself..."
                           rows={3}
                         />
@@ -797,7 +797,7 @@ export default function CustomerProfile() {
                           max="54"
                           value={formData.handicap}
                           onChange={(e) => setFormData({...formData, handicap: e.target.value})}
-                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="e.g., 18.5"
                         />
                       </div>
@@ -805,7 +805,7 @@ export default function CustomerProfile() {
                         <button
                           type="submit"
                           disabled={loading}
-                          className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50"
+                          className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
                         >
                           Save Changes
                         </button>
@@ -909,7 +909,7 @@ export default function CustomerProfile() {
                           checked={preferences.emailNotifications}
                           onChange={(e) => handlePreferenceChange('emailNotifications', e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-[var(--border-primary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--bg-secondary)] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0B3D3A]"></div>
+                        <div className="w-11 h-6 bg-[var(--border-primary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--bg-secondary)] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent)]"></div>
                       </label>
                     </div>
                     <div className="flex items-center justify-between">
@@ -924,7 +924,7 @@ export default function CustomerProfile() {
                           checked={preferences.smsNotifications}
                           onChange={(e) => handlePreferenceChange('smsNotifications', e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-[var(--border-primary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--bg-secondary)] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0B3D3A]"></div>
+                        <div className="w-11 h-6 bg-[var(--border-primary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--bg-secondary)] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent)]"></div>
                       </label>
                     </div>
                     <div className="flex items-center justify-between">
@@ -939,7 +939,7 @@ export default function CustomerProfile() {
                           checked={preferences.publicProfile}
                           onChange={(e) => handlePreferenceChange('publicProfile', e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-[var(--border-primary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--bg-secondary)] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0B3D3A]"></div>
+                        <div className="w-11 h-6 bg-[var(--border-primary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--bg-secondary)] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent)]"></div>
                       </label>
                     </div>
                   </div>
@@ -982,7 +982,7 @@ export default function CustomerProfile() {
                       type={showPasswords.current ? 'text' : 'password'}
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                      className="w-full px-3 py-2 pr-10 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      className="w-full px-3 py-2 pr-10 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       required
                     />
                     <button
@@ -1008,7 +1008,7 @@ export default function CustomerProfile() {
                       type={showPasswords.new ? 'text' : 'password'}
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                      className="w-full px-3 py-2 pr-10 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      className="w-full px-3 py-2 pr-10 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       required
                       minLength={6}
                     />
@@ -1038,7 +1038,7 @@ export default function CustomerProfile() {
                       type={showPasswords.confirm ? 'text' : 'password'}
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                      className="w-full px-3 py-2 pr-10 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      className="w-full px-3 py-2 pr-10 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       required
                     />
                     <button
@@ -1059,7 +1059,7 @@ export default function CustomerProfile() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Changing...' : 'Change Password'}
                   </button>

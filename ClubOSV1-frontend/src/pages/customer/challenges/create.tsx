@@ -309,7 +309,7 @@ export default function CreateChallenge() {
                   <p className="text-sm text-gray-500">Step {step} of 4</p>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Balance: <span className="font-bold text-[#0B3D3A]">{ccBalance} CC</span>
+                  Balance: <span className="font-bold text-[var(--accent)]">{ccBalance} CC</span>
                 </div>
               </div>
               
@@ -319,7 +319,7 @@ export default function CreateChallenge() {
                   <div
                     key={s}
                     className={`flex-1 h-1 rounded-full ${
-                      s <= step ? 'bg-[#0B3D3A]' : 'bg-gray-200'
+                      s <= step ? 'bg-[var(--accent)]' : 'bg-gray-200'
                     }`}
                   />
                 ))}
@@ -333,7 +333,7 @@ export default function CreateChallenge() {
               <div className="space-y-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-[#0B3D3A]" />
+                    <User className="w-5 h-5 text-[var(--accent)]" />
                     Select Opponent
                   </h2>
                   
@@ -345,7 +345,7 @@ export default function CreateChallenge() {
                       placeholder="Search friends..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                     />
                   </div>
 
@@ -396,7 +396,7 @@ export default function CreateChallenge() {
                           })}
                           className={`w-full p-3 rounded-lg border text-left transition-colors ${
                             selectedOpponent?.id === (friend.user_id || friend.id)
-                              ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
+                              ? 'border-[var(--accent)] bg-[var(--accent)]/5'
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
@@ -432,7 +432,7 @@ export default function CreateChallenge() {
                 <button
                   onClick={handleNext}
                   disabled={!selectedOpponent}
-                  className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[var(--accent)] text-white py-3 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                 </button>
@@ -444,7 +444,7 @@ export default function CreateChallenge() {
               <div className="space-y-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-[#0B3D3A]" />
+                    <MapPin className="w-5 h-5 text-[var(--accent)]" />
                     Select Course & Settings
                   </h2>
 
@@ -455,7 +455,7 @@ export default function CreateChallenge() {
                       onClick={() => setSelectedCourse({ courseName: 'DECIDE_LATER' } as any)}
                       className={`w-full p-4 rounded-lg border-2 transition-all ${
                         selectedCourse?.courseName === 'DECIDE_LATER'
-                          ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
+                          ? 'border-[var(--accent)] bg-[var(--accent)]/5'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -491,7 +491,7 @@ export default function CreateChallenge() {
                           setSelectedCourse(prev => ({ ...prev, courseName: e.target.value } as any));
                         }
                       }}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                     >
                       <option value="">Please Select a Course</option>
                       <option value="Casa De Campo">Casa De Campo</option>
@@ -523,7 +523,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.teePosition || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, teePosition: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="Pro">Pro (Black)</option>
@@ -542,7 +542,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.pins || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, pins: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="Easy">Easy</option>
@@ -559,7 +559,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.putting || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, putting: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="Auto">Auto</option>
@@ -579,7 +579,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.wind || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, wind: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="None">None</option>
@@ -598,7 +598,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.fairwayFirmness || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, fairwayFirmness: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="Soft">Soft</option>
@@ -615,7 +615,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.greenFirmness || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, greenFirmness: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="Soft">Soft</option>
@@ -632,7 +632,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.attempts || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, attempts: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="1">1 Attempt</option>
@@ -653,7 +653,7 @@ export default function CreateChallenge() {
                       <select
                         value={selectedCourse?.scoringType || ''}
                         onChange={(e) => setSelectedCourse(prev => ({ ...prev, scoringType: e.target.value } as any))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       >
                         <option value="">Please Select</option>
                         <option value="Stroke Play">Stroke Play</option>
@@ -689,7 +689,7 @@ export default function CreateChallenge() {
                             (!selectedCourse?.teePosition || !selectedCourse?.pins || 
                              !selectedCourse?.putting || !selectedCourse?.wind || !selectedCourse?.fairwayFirmness || 
                              !selectedCourse?.greenFirmness || !selectedCourse?.attempts || !selectedCourse?.scoringType))}
-                  className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[var(--accent)] text-white py-3 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                 </button>
@@ -701,7 +701,7 @@ export default function CreateChallenge() {
               <div className="space-y-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#0B3D3A]" />
+                    <DollarSign className="w-5 h-5 text-[var(--accent)]" />
                     Set Wager & Expiry
                   </h2>
 
@@ -717,7 +717,7 @@ export default function CreateChallenge() {
                         max="10000"
                         value={wagerAmount}
                         onChange={(e) => setWagerAmount(parseInt(e.target.value) || 0)}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Min: 10 CC • Max: 10,000 CC</p>
@@ -750,7 +750,7 @@ export default function CreateChallenge() {
                       </div>
                       <div className="pt-2 border-t border-gray-200 flex justify-between">
                         <span className="font-medium">Total Pot</span>
-                        <span className="font-bold text-[#0B3D3A]">{totalPot} CC</span>
+                        <span className="font-bold text-[var(--accent)]">{totalPot} CC</span>
                       </div>
                     </div>
                     
@@ -782,7 +782,7 @@ export default function CreateChallenge() {
                           onClick={() => setExpiryDays(days as 7 | 14 | 30)}
                           className={`py-2 px-3 border rounded-lg font-medium transition-colors ${
                             expiryDays === days
-                              ? 'border-[#0B3D3A] bg-[#0B3D3A] text-white'
+                              ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
@@ -801,7 +801,7 @@ export default function CreateChallenge() {
                       value={creatorNote}
                       onChange={(e) => setCreatorNote(e.target.value)}
                       placeholder="Add a message for your opponent..."
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       rows={3}
                     />
                   </div>
@@ -816,7 +816,7 @@ export default function CreateChallenge() {
 
                 <button
                   onClick={handleNext}
-                  className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors"
+                  className="w-full bg-[var(--accent)] text-white py-3 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors"
                 >
                   Review Challenge
                 </button>
@@ -828,7 +828,7 @@ export default function CreateChallenge() {
               <div className="space-y-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-[#0B3D3A]" />
+                    <Target className="w-5 h-5 text-[var(--accent)]" />
                     Review Challenge
                   </h2>
 
@@ -915,7 +915,7 @@ export default function CreateChallenge() {
                     {/* Total Pot */}
                     <div className="flex justify-between py-3 border-b border-gray-100">
                       <span className="text-gray-600">Total Pot</span>
-                      <span className="font-bold text-[#0B3D3A]">{totalPot} CC</span>
+                      <span className="font-bold text-[var(--accent)]">{totalPot} CC</span>
                     </div>
 
                     {/* Expiry */}
@@ -952,7 +952,7 @@ export default function CreateChallenge() {
                 <button
                   onClick={handleCreateChallenge}
                   disabled={loading}
-                  className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[var(--accent)] text-white py-3 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating...' : 'Send Challenge'}
                 </button>

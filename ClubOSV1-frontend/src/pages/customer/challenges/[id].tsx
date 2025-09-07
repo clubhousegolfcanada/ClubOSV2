@@ -205,7 +205,7 @@ export default function ChallengeDetail() {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto mb-4"></div>
           <p className="text-gray-500">Loading challenge...</p>
         </div>
       </div>
@@ -259,10 +259,10 @@ export default function ChallengeDetail() {
               <h2 className="text-lg font-semibold mb-4">Players</h2>
               <div className="grid grid-cols-2 gap-4">
                 {/* Creator */}
-                <div className={`p-4 rounded-lg border ${isCreator ? 'border-[#0B3D3A] bg-[#0B3D3A]/5' : 'border-gray-200'}`}>
+                <div className={`p-4 rounded-lg border ${isCreator ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-gray-200'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Challenger</span>
-                    {isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
+                    {isCreator && <span className="text-xs font-medium text-[var(--accent)]">YOU</span>}
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-gray-900">{challenge.creatorName}</p>
@@ -282,10 +282,10 @@ export default function ChallengeDetail() {
                 </div>
 
                 {/* Acceptor */}
-                <div className={`p-4 rounded-lg border ${!isCreator ? 'border-[#0B3D3A] bg-[#0B3D3A]/5' : 'border-gray-200'}`}>
+                <div className={`p-4 rounded-lg border ${!isCreator ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-gray-200'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Opponent</span>
-                    {!isCreator && <span className="text-xs font-medium text-[#0B3D3A]">YOU</span>}
+                    {!isCreator && <span className="text-xs font-medium text-[var(--accent)]">YOU</span>}
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-gray-900">{challenge.acceptorName}</p>
@@ -334,7 +334,7 @@ export default function ChallengeDetail() {
                     <DollarSign className="w-4 h-4" />
                     <span>Total Pot</span>
                   </div>
-                  <span className="font-bold text-[#0B3D3A] text-lg">{challenge.totalPot} CC</span>
+                  <span className="font-bold text-[var(--accent)] text-lg">{challenge.totalPot} CC</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2">
@@ -373,7 +373,7 @@ export default function ChallengeDetail() {
                   </div>
                   <div className="pt-2 border-t border-gray-300 flex justify-between">
                     <span className="font-semibold">Total Pot</span>
-                    <span className="font-bold text-[#0B3D3A]">{challenge.totalPot} CC</span>
+                    <span className="font-bold text-[var(--accent)]">{challenge.totalPot} CC</span>
                   </div>
                 </div>
               </div>
@@ -395,7 +395,7 @@ export default function ChallengeDetail() {
                     Final Score: {challenge.creatorPlayedScore} - {challenge.acceptorPlayedScore}
                   </p>
                   {challenge.winnerUserId === user?.id && challenge.finalPayout && (
-                    <p className="mt-4 text-xl font-bold text-[#0B3D3A]">
+                    <p className="mt-4 text-xl font-bold text-[var(--accent)]">
                       Won {challenge.finalPayout} CC
                     </p>
                   )}
@@ -410,7 +410,7 @@ export default function ChallengeDetail() {
                 <>
                   <button
                     onClick={() => setShowAcceptModal(true)}
-                    className="w-full bg-[#0B3D3A] text-white py-3 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-[var(--accent)] text-white py-3 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-2"
                   >
                     <Check className="w-5 h-5" />
                     Accept Challenge
@@ -490,7 +490,7 @@ export default function ChallengeDetail() {
                 </div>
                 <div className="flex justify-between text-sm mt-2">
                   <span className="text-gray-600">Potential winnings</span>
-                  <span className="font-bold text-[#0B3D3A]">{challenge.totalPot} CC</span>
+                  <span className="font-bold text-[var(--accent)]">{challenge.totalPot} CC</span>
                 </div>
               </div>
 
@@ -504,7 +504,7 @@ export default function ChallengeDetail() {
                 <button
                   onClick={handleAccept}
                   disabled={actionLoading}
-                  className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors disabled:opacity-50"
+                  className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
                 >
                   {actionLoading ? 'Accepting...' : 'Accept & Lock Stake'}
                 </button>
@@ -526,7 +526,7 @@ export default function ChallengeDetail() {
                 <select
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="">Select a reason</option>
                   <option value="wrong_settings">Wrong settings used</option>
@@ -545,7 +545,7 @@ export default function ChallengeDetail() {
                   value={disputeDescription}
                   onChange={(e) => setDisputeDescription(e.target.value)}
                   placeholder="Provide details about your dispute..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]/20"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                   rows={4}
                 />
               </div>

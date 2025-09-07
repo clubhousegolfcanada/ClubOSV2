@@ -37,7 +37,7 @@ export default function CustomerEvents() {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto mb-4"></div>
           <p className="text-[var(--text-muted)]">Loading tournaments...</p>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function CustomerEvents() {
               <div className="max-w-5xl mx-auto px-4 py-6">
                 <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)]">
                   {/* Header */}
-                  <div className="px-6 py-4 border-b border-[var(--border-primary)] bg-gradient-to-r from-[#0B3D3A] to-[#084a45]">
+                  <div className="px-6 py-4 border-b border-[var(--border-primary)] bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)]">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                       <Trophy className="w-6 h-6" />
                       All Time Rankings
@@ -99,7 +99,7 @@ export default function CustomerEvents() {
                   {/* Coming Soon Content */}
                   <div className="p-12 text-center">
                     <div className="max-w-2xl mx-auto">
-                      <Trophy className="w-16 h-16 text-[#0B3D3A] mx-auto mb-4" />
+                      <Trophy className="w-16 h-16 text-[var(--accent)] mx-auto mb-4" />
                       <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
                         Competitive Rankings Coming Soon
                       </h3>

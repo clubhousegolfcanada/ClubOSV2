@@ -512,13 +512,13 @@ export default function Compete() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-[#0B3D3A]/10 rounded-full">
-                    <Coins className="w-4 h-4 text-[#0B3D3A]" />
-                    <span className="text-sm font-bold text-[#0B3D3A]">{ccBalance.toLocaleString()}</span>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-[var(--accent)]/10 rounded-full">
+                    <Coins className="w-4 h-4 text-[var(--accent)]" />
+                    <span className="text-sm font-bold text-[var(--accent)]">{ccBalance.toLocaleString()}</span>
                   </div>
                   <button
                     onClick={() => router.push('/customer/challenges/create')}
-                    className="p-1.5 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors"
+                    className="p-1.5 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
                     title="Create Challenge"
                   >
                     <Plus className="w-4 h-4" />
@@ -563,7 +563,7 @@ export default function Compete() {
                       onClick={() => setChallengeFilter(filter)}
                       className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                         challengeFilter === filter
-                          ? 'bg-[#0B3D3A] text-white'
+                          ? 'bg-[var(--accent)] text-white'
                           : 'bg-white text-gray-800 border border-gray-300 hover:bg-gray-50'
                       }`}
                     >
@@ -578,7 +578,7 @@ export default function Compete() {
                 {/* Challenge List */}
                 {loading ? (
                   <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)]"></div>
                   </div>
                 ) : challenges.length === 0 ? (
                   <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -594,7 +594,7 @@ export default function Compete() {
                     </p>
                     <button
                       onClick={() => router.push('/customer/challenges/create')}
-                      className="bg-[#0B3D3A] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors"
+                      className="bg-[var(--accent)] text-white px-6 py-2 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors"
                     >
                       Create Challenge
                     </button>
@@ -636,7 +636,7 @@ export default function Compete() {
                               </div>
                               <div className="flex items-center gap-3">
                                 <div className="text-right">
-                                  <div className="font-bold text-[#0B3D3A]">
+                                  <div className="font-bold text-[var(--accent)]">
                                     {challenge.wager_amount || challenge.wagerAmount || challenge.totalPot} CC
                                   </div>
                                   <div className="text-xs text-gray-800">
@@ -693,7 +693,7 @@ export default function Compete() {
                                       e.stopPropagation();
                                       handleAcceptChallenge(challenge.id);
                                     }}
-                                    className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-2"
                                   >
                                     <Check className="w-4 h-4" />
                                     Accept Challenge
@@ -724,7 +724,7 @@ export default function Compete() {
                                         e.stopPropagation();
                                         handleSelectWinner(challenge.id);
                                       }}
-                                      className="flex-1 bg-[#0B3D3A] text-white py-2 rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center justify-center gap-2"
+                                      className="flex-1 bg-[var(--accent)] text-white py-2 rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors flex items-center justify-center gap-2"
                                     >
                                       <Trophy className="w-4 h-4" />
                                       Select Winner
@@ -749,7 +749,7 @@ export default function Compete() {
                                     {challenge.winner_user_id === user?.id ? '🏆 You Won!' : 'Challenge Complete'}
                                   </p>
                                   {challenge.final_payout && challenge.winner_user_id === user?.id && (
-                                    <p className="text-lg font-bold text-[#0B3D3A] mt-1">+{challenge.final_payout} CC</p>
+                                    <p className="text-lg font-bold text-[var(--accent)] mt-1">+{challenge.final_payout} CC</p>
                                   )}
                                 </div>
                               )}
@@ -784,14 +784,14 @@ export default function Compete() {
                     placeholder="Search friends..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   />
                 </div>
 
                 {/* Friends List */}
                 {loading ? (
                   <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)]"></div>
                   </div>
                 ) : filteredCompetitors.length === 0 && searchTerm ? (
                   <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -814,7 +814,7 @@ export default function Compete() {
                     </p>
                     <button
                       onClick={() => router.push('/customer/leaderboard')}
-                      className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors"
+                      className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors"
                     >
                       Find Players
                     </button>
@@ -829,7 +829,7 @@ export default function Compete() {
                         <div className="flex items-center justify-between gap-2 sm:gap-3">
                           {/* Avatar and Name */}
                           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] rounded-full flex items-center justify-center flex-shrink-0">
                               <span className="text-base sm:text-lg font-bold text-white">
                                 {competitor.name?.charAt(0).toUpperCase() || '?'}
                               </span>
@@ -878,7 +878,7 @@ export default function Compete() {
                           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                             <button
                               onClick={() => router.push(`/customer/challenges/create?friend=${competitor.user_id || competitor.id}`)}
-                              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors flex items-center gap-1 sm:gap-2 text-sm"
+                              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors flex items-center gap-1 sm:gap-2 text-sm"
                             >
                               <Swords className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                               <span className="hidden sm:inline">Challenge</span>
