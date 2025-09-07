@@ -31,7 +31,7 @@ router.get('/', authenticate, async (req, res) => {
       SELECT 
         id,
         pattern_type,
-        COALESCE(trigger_text, trigger_examples[1], '') as pattern,
+        COALESCE(pattern, trigger_text, trigger_examples[1], '') as pattern,
         response_template,
         trigger_examples,
         trigger_keywords,
@@ -39,18 +39,16 @@ router.get('/', authenticate, async (req, res) => {
         execution_count,
         success_count,
         is_active,
+        auto_executable,
         COALESCE(is_deleted, FALSE) as is_deleted,
-        COALESCE(first_seen, NOW()) as created_at,
+        COALESCE(created_at, first_seen, NOW()) as created_at,
         COALESCE(updated_at, last_modified, NOW()) as updated_at,
         CASE 
           WHEN success_count > 0 AND execution_count > 0 
           THEN ROUND((success_count::float / execution_count::float * 100)::numeric, 0)
           ELSE 0 
         END as success_rate,
-        CASE 
-          WHEN updated_at IS NOT NULL THEN updated_at
-          ELSE created_at
-        END as last_used
+        COALESCE(last_used, updated_at, NOW()) as last_used
       FROM decision_patterns
       ${whereClause}
       ORDER BY 
@@ -85,7 +83,7 @@ router.get('/deleted', authenticate, async (req, res) => {
       SELECT 
         id,
         pattern_type,
-        COALESCE(trigger_text, trigger_examples[1], '') as pattern,
+        COALESCE(pattern, trigger_text, trigger_examples[1], '') as pattern,
         response_template,
         trigger_examples,
         confidence_score,

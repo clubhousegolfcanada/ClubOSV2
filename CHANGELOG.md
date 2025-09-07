@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.8] - 2025-09-07
+
+### Fixed
+- **V3-PLS Complete System Overhaul**
+  - Consolidated duplicate pattern implementations into single source of truth
+  - Fixed database schema inconsistencies (UUID vs INTEGER, missing columns)
+  - Restored ALL 68 patterns that were incorrectly deleted
+  - Enabled auto-execution for high-confidence patterns (8 patterns)
+  - Fixed pattern learning configuration for production use
+  - Removed 20+ conflicting emergency fix scripts
+  - Gift card and Trackman patterns fully operational
+  
+### Technical Changes
+- Unified API endpoints: Only `/api/patterns` now (removed enhanced endpoint)
+- Single service: `patternLearningService.ts` (removed duplicates)
+- Fixed `pattern` column population from `trigger_text`
+- Enabled `auto_send_enabled` for automatic responses
+- Set `shadow_mode: false` for live operation
+- All patterns tested and working with correct confidence scores
+
+### Statistics
+- 68 active patterns (0 deleted)
+- 8 auto-executable patterns
+- 27 high-confidence patterns (≥85%)
+- Gift cards: 2 patterns active
+- Trackman: 1 pattern active
+- All pattern types covered
+
 ## [1.18.7] - 2025-09-07
 
 ### Fixed  
