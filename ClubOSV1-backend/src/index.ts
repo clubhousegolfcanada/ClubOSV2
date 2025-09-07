@@ -47,13 +47,12 @@ import checklistsRoutes from './routes/checklists';
 import remoteActionsRoutes from './routes/remoteActions';
 import ninjaoneSyncRoutes from './routes/ninjaone-sync';
 import doorAccessRoutes from './routes/doorAccess';
-import debugRoutes from './routes/debug';
+// import debugRoutes from './routes/debug'; // File doesn't exist
 import openphoneRoutes from './routes/openphone';
 import openphoneV3Routes from './routes/openphone-v3';
 import messagesRoutes from './routes/messages';
 import notificationsRoutes from './routes/notifications';
 import knowledgeRoutes from './routes/knowledge';
-import debugOpenphoneRoutes from './routes/debug-openphone';
 // import sopMonitoringRoutes from './routes/sop-monitoring'; // SOP disabled
 // import adminKnowledgeRoutes from './routes/admin-knowledge'; // Disabled - not used
 // import knowledgeDebugRoutes from './routes/knowledge-debug'; // Disabled - not used
@@ -84,8 +83,6 @@ import unifiDoorsRoutes from './routes/unifi-doors';
 import whiteLabelPlannerRoutes from './routes/white-label-planner';
 import boxesRoutes from './routes/boxes';
 import boxManagementRoutes from './routes/boxManagement';
-import debugCacheRoutes from './routes/debug-cache';
-import testKnowledgeRoutes from './routes/test-knowledge';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
@@ -258,13 +255,12 @@ app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
 app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);
 app.use('/api/ninjaone', ninjaoneSyncRoutes);
-app.use('/api/debug', debugRoutes);
+// app.use('/api/debug', debugRoutes); // File doesn't exist
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/openphone-v3', openphoneV3Routes);
 app.use('/api/openphone-processing', openphoneProcessingRoutes);
 app.use('/api/contacts', require('./routes/contacts').default);
 app.use('/api/messages', messagesRoutes);
-app.use('/api/debug-openphone', debugOpenphoneRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 // app.use('/api/sop-monitoring', sopMonitoringRoutes); // SOP disabled
@@ -301,12 +297,9 @@ app.use('/api/patterns', patternsRouter);
 app.use('/api/patterns-enhanced', patternsEnhancedRouter);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
 app.use('/api/white-label-planner', whiteLabelPlannerRoutes);
-app.use('/api/debug', debugCacheRoutes);
-app.use('/api/debug', require('./routes/debug-flow').default);
 app.use('/api/system-status', require('./routes/system-status').default);
 app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api/logs', logsRoutes);
-app.use('/api', testKnowledgeRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 
 // Architecture v2 routes (testing)

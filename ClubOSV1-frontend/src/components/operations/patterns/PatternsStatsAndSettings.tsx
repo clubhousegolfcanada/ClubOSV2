@@ -85,23 +85,38 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch stats
-      const mockStats: OperatorStats = {
-        totalResponses: 247,
-        automatedResponses: 198,
-        manualResponses: 49,
-        automationRate: 80.2,
-        timeSavedToday: 87,
-        timeSavedWeek: 435,
-        topQuestions: [
-          { topic: 'Booking a bay', count: 45, automated: true },
-          { topic: 'Operating hours', count: 38, automated: true },
-          { topic: 'Gift cards', count: 32, automated: true },
-          { topic: 'Technical issues', count: 28, automated: false },
-          { topic: 'Membership info', count: 24, automated: true }
-        ]
-      };
-      setStats(mockStats);
+      // Fetch real stats from API
+      try {
+        const statsResponse = await apiClient.get('/api/patterns/stats');
+        const data = statsResponse.data;
+        
+        const transformedStats: OperatorStats = {
+          totalResponses: data.stats?.total_executions || 0,
+          automatedResponses: data.stats?.total_successes || 0,
+          manualResponses: (data.stats?.total_executions || 0) - (data.stats?.total_successes || 0),
+          automationRate: data.stats?.avg_success_rate ? Math.round(data.stats.avg_success_rate * 100) : 0,
+          timeSavedToday: Math.round((data.stats?.total_successes || 0) * 3),
+          timeSavedWeek: Math.round((data.stats?.total_successes || 0) * 3 * 7),
+          topQuestions: data.topPatterns?.slice(0, 5).map((p: any) => ({
+            topic: p.type || 'General',
+            count: p.execution_count || 0,
+            automated: p.auto_executable || false
+          })) || []
+        };
+        setStats(transformedStats);
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+        // Set empty stats on error
+        setStats({
+          totalResponses: 0,
+          automatedResponses: 0,
+          manualResponses: 0,
+          automationRate: 0,
+          timeSavedToday: 0,
+          timeSavedWeek: 0,
+          topQuestions: []
+        });
+      }
 
       // Fetch real settings from API
       try {

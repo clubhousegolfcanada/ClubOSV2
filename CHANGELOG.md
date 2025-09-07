@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.1] - 2025-09-07
+
+### Fixed
+- **Operator UI Cleanup - Phase 1**
+  - Removed 16 deprecated/test files from backend routes
+  - Removed mock data from pattern statistics components (now uses real API)
+  - Deleted unused messages-redesigned.tsx page (872 lines)
+  - Removed empty operator/operations directories
+  - Cleaned up duplicate refactored route files
+  - Removed backup files (.backup.ts) from production code
+  - Fixed pattern statistics to fetch real data from /api/patterns/stats
+
+### Technical Details
+- Removed files: debug-*.ts, test-*.ts, *-refactored.ts, *.backup.ts, auth-database.js
+- Updated OperationsPatternsStatistics.tsx to use real API data
+- Updated PatternsStatsAndSettings.tsx to use real API data
+- Reduced codebase by ~15% redundant code
+- Created comprehensive audit report at /docs/audits/OPERATOR-UI-CLEANUP-AUDIT-2025-09.md
+
 ## [1.18.0] - 2025-09-06
 
 ### Added

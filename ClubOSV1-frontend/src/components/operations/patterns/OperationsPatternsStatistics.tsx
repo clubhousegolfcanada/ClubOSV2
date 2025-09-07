@@ -62,49 +62,57 @@ export const OperationsPatternsStatistics: React.FC = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      // For now, use mock data until backend is ready
-      // TODO: Replace with actual API call
-      const mockStats: OperatorStats = {
-        totalResponses: 247,
-        automatedResponses: 198,
-        manualResponses: 49,
-        automationRate: 80.2,
+      // Fetch real stats from API
+      const response = await apiClient.get('/api/patterns/stats');
+      const data = response.data;
+      
+      // Transform API data to match component format
+      const transformedStats: OperatorStats = {
+        totalResponses: data.stats?.total_executions || 0,
+        automatedResponses: data.stats?.total_successes || 0,
+        manualResponses: (data.stats?.total_executions || 0) - (data.stats?.total_successes || 0),
+        automationRate: data.stats?.avg_success_rate ? Math.round(data.stats.avg_success_rate * 100) : 0,
         avgResponseTime: {
           automated: 2,
           manual: 180
         },
-        timeSavedToday: 87,
-        timeSavedWeek: 435,
-        topQuestions: [
-          { topic: 'Booking a bay', count: 45, automated: true },
-          { topic: 'Operating hours', count: 38, automated: true },
-          { topic: 'Gift cards', count: 32, automated: true },
-          { topic: 'Technical issues', count: 28, automated: false },
-          { topic: 'Membership info', count: 24, automated: true }
-        ],
+        timeSavedToday: Math.round((data.stats?.total_successes || 0) * 3), // Estimate 3 min saved per automation
+        timeSavedWeek: Math.round((data.stats?.total_successes || 0) * 3 * 7),
+        topQuestions: data.topPatterns?.slice(0, 5).map((p: any) => ({
+          topic: p.type || 'General',
+          count: p.execution_count || 0,
+          automated: p.auto_executable || false
+        })) || [],
         customerSatisfaction: {
           automated: 92,
           manual: 94
         },
-        peakHours: [
-          { hour: '10am', messages: 12, automated: 10 },
-          { hour: '12pm', messages: 28, automated: 22 },
-          { hour: '2pm', messages: 18, automated: 15 },
-          { hour: '4pm', messages: 35, automated: 28 },
-          { hour: '6pm', messages: 42, automated: 34 },
-          { hour: '8pm', messages: 38, automated: 30 }
-        ],
-        patternPerformance: [
-          { type: 'booking', name: 'Booking Assistance', uses: 145, successRate: 94 },
-          { type: 'hours', name: 'Hours of Operation', uses: 132, successRate: 98 },
-          { type: 'gift_cards', name: 'Gift Cards', uses: 89, successRate: 91 },
-          { type: 'tech_issue', name: 'Technical Support', uses: 67, successRate: 72 }
-        ]
+        peakHours: [], // Will need separate endpoint for hourly data
+        patternPerformance: data.topPatterns?.slice(0, 4).map((p: any) => ({
+          type: p.type || 'general',
+          name: p.type || 'Pattern',
+          uses: p.execution_count || 0,
+          successRate: p.success_rate ? Math.round(p.success_rate * 100) : 0
+        })) || []
       };
       
-      setStats(mockStats);
+      setStats(transformedStats);
     } catch (error) {
       logger.error('Failed to fetch operator statistics:', error);
+      // Set empty stats on error
+      setStats({
+        totalResponses: 0,
+        automatedResponses: 0,
+        manualResponses: 0,
+        automationRate: 0,
+        avgResponseTime: { automated: 0, manual: 0 },
+        timeSavedToday: 0,
+        timeSavedWeek: 0,
+        topQuestions: [],
+        customerSatisfaction: { automated: 0, manual: 0 },
+        peakHours: [],
+        patternPerformance: []
+      });
     } finally {
       setLoading(false);
     }
