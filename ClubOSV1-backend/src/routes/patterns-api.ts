@@ -98,7 +98,7 @@ router.get('/deleted', authenticate, async (req, res) => {
           THEN ROUND((success_count::float / execution_count::float * 100)::numeric, 0)
           ELSE 0 
         END as success_rate
-      FROM patterns
+      FROM decision_patterns
       WHERE is_deleted = true
       ORDER BY updated_at DESC
       LIMIT 50
