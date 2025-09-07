@@ -1851,16 +1851,15 @@ router.delete('/:id',
     try {
       const { id } = req.params;
 
-      // First try with updated_by field (text type), don't use deleted_by if it's integer
+      // Just mark as deleted without trying to set user fields that might have wrong types
       await db.query(
         `UPDATE decision_patterns 
          SET is_deleted = TRUE, 
              deleted_at = NOW(), 
-             updated_by = $2,
              is_active = FALSE,
              updated_at = NOW()
          WHERE id = $1`,
-        [id, (req as any).user?.id]
+        [id]
       );
 
       logger.info('[Patterns API] Pattern soft deleted', {
