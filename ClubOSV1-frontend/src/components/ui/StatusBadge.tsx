@@ -68,9 +68,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
     }
   };
 
-  const colorScheme = getStatusColor(status);
+  const colorScheme = getStatusColor(status) as 'success' | 'error' | 'warning' | 'info' | 'gray' | 'default';
 
-  const colorClasses = {
+  const colorClasses: Record<string, Record<string, string>> = {
     solid: {
       success: 'bg-green-500 text-white',
       error: 'bg-red-500 text-white',
@@ -118,7 +118,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       className={clsx(
         'inline-flex items-center gap-1.5 font-medium rounded-full',
         sizeClasses[size],
-        colorClasses[variant][colorScheme],
+        colorClasses[variant]?.[colorScheme] || colorClasses.subtle.default,
         className
       )}
     >

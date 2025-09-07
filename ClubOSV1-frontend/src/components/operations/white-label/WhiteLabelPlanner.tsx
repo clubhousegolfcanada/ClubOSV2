@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Palette, FileText, Link, Settings, Plus, Save, Download, Trash2, Check, X } from 'lucide-react';
 import http from '@/api/http';
+import { SimpleThemeConfig } from './SimpleThemeConfig';
 
 interface Feature {
   id: string;
@@ -318,9 +319,14 @@ export const WhiteLabelPlanner: React.FC = () => {
 
       {/* Branding Tab */}
       {activeTab === 'branding' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4">Add Branding Element</h3>
+        <div className="space-y-6">
+          {/* Theme Color Configuration */}
+          <SimpleThemeConfig />
+          
+          {/* Branding Elements */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4">Add Branding Element</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <input
                 type="text"
@@ -379,6 +385,7 @@ export const WhiteLabelPlanner: React.FC = () => {
                 </button>
               </div>
             ))}
+            </div>
           </div>
         </div>
       )}
