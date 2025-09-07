@@ -58,7 +58,7 @@ router.get('/',
         SELECT 
           id,
           pattern_type,
-          pattern,
+          COALESCE(pattern, trigger_text, trigger_examples[1], '') as pattern,
           response_template,
           trigger_examples,
           trigger_keywords,
@@ -66,18 +66,16 @@ router.get('/',
           execution_count,
           success_count,
           is_active,
-          is_deleted,
-          created_at,
-          updated_at,
+          auto_executable,
+          COALESCE(is_deleted, FALSE) as is_deleted,
+          COALESCE(created_at, first_seen, NOW()) as created_at,
+          COALESCE(updated_at, last_modified, NOW()) as updated_at,
           CASE 
             WHEN success_count > 0 AND execution_count > 0 
             THEN ROUND((success_count::float / execution_count::float * 100)::numeric, 0)
             ELSE 0 
           END as success_rate,
-          CASE 
-            WHEN updated_at IS NOT NULL THEN updated_at
-            ELSE created_at
-          END as last_used
+          COALESCE(last_used, updated_at, NOW()) as last_used
         FROM decision_patterns
         ${whereClause}
         ORDER BY 
@@ -284,12 +282,26 @@ router.get('/deleted',
     try {
       const result = await db.query(`
         SELECT 
-          p.*,
+          p.id,
+          p.pattern_type,
+          COALESCE(p.pattern, p.trigger_text, p.trigger_examples[1], '') as pattern,
+          p.response_template,
+          p.trigger_examples,
+          p.trigger_keywords,
+          p.confidence_score,
+          p.execution_count,
+          p.success_count,
+          p.is_active,
+          p.auto_executable,
+          COALESCE(p.is_deleted, FALSE) as is_deleted,
+          COALESCE(p.created_at, p.first_seen, NOW()) as created_at,
+          COALESCE(p.updated_at, p.last_modified, NOW()) as updated_at,
+          p.notes,
           u.name as deleted_by_name
         FROM decision_patterns p
-        LEFT JOIN users u ON p.deleted_by = u.id
+        LEFT JOIN users u ON p.updated_by::text = u.id::text
         WHERE COALESCE(p.is_deleted, FALSE) = TRUE
-        ORDER BY p.deleted_at DESC
+        ORDER BY p.updated_at DESC
         LIMIT 50
       `);
 
@@ -1677,8 +1689,29 @@ router.get('/:id',
       const { id } = req.params;
 
       // Get pattern
-      const patternResult = await db.query(
-        'SELECT * FROM decision_patterns WHERE id = $1',
+      const patternResult = await db.query(`
+        SELECT 
+          id,
+          pattern_type,
+          COALESCE(pattern, trigger_text, trigger_examples[1], '') as pattern,
+          response_template,
+          trigger_examples,
+          trigger_keywords,
+          confidence_score,
+          execution_count,
+          success_count,
+          is_active,
+          auto_executable,
+          COALESCE(is_deleted, FALSE) as is_deleted,
+          COALESCE(created_at, first_seen, NOW()) as created_at,
+          COALESCE(updated_at, last_modified, NOW()) as updated_at,
+          notes,
+          tags,
+          action_template,
+          requires_confirmation,
+          COALESCE(last_used, updated_at, NOW()) as last_used
+        FROM decision_patterns 
+        WHERE id = $1`,
         [id]
       );
 

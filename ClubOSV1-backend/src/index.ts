@@ -402,11 +402,16 @@ async function startServer() {
       const { initializeWhiteLabelData } = await import('./scripts/initialize-white-label-data');
       await initializeWhiteLabelData();
       
-      // Clean up low-performing patterns
-      logger.info('🧹 Running pattern cleanup...');
-      const { cleanupPatterns } = await import('./scripts/cleanup-patterns');
-      await cleanupPatterns();
-      logger.info('✅ Pattern cleanup completed');
+      // DISABLED: Pattern cleanup was too aggressive, deleting active patterns
+      // To re-enable: Set CLEANUP_PATTERNS_ON_STARTUP=true in environment
+      if (process.env.CLEANUP_PATTERNS_ON_STARTUP === 'true') {
+        logger.info('🧹 Running pattern cleanup...');
+        const { cleanupPatterns } = await import('./scripts/cleanup-patterns');
+        await cleanupPatterns();
+        logger.info('✅ Pattern cleanup completed');
+      } else {
+        logger.info('⏸️ Pattern cleanup DISABLED to preserve active patterns');
+      }
     } catch (error) {
       logger.error('Failed to run startup migrations:', error);
       // Don't fail startup, just log the error
