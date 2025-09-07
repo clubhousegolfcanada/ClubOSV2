@@ -97,6 +97,87 @@ export async function ensureCriticalTables(): Promise<void> {
     // Add any missing columns
     await db.query('ALTER TABLE ai_automation_features ADD COLUMN IF NOT EXISTS allow_follow_up BOOLEAN DEFAULT true').catch(() => {});
     
+    // Create NinjaOne tables if they don't exist
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS ninjaone_scripts (
+        id SERIAL PRIMARY KEY,
+        script_id VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        display_name VARCHAR(255),
+        category VARCHAR(50),
+        icon VARCHAR(50) DEFAULT 'zap',
+        requires_bay BOOLEAN DEFAULT true,
+        warning_message TEXT,
+        estimated_duration VARCHAR(50) DEFAULT '30-60 seconds',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS ninjaone_devices (
+        id SERIAL PRIMARY KEY,
+        device_id VARCHAR(255) UNIQUE NOT NULL,
+        location VARCHAR(100) NOT NULL,
+        bay_number VARCHAR(10),
+        device_name VARCHAR(255) NOT NULL,
+        device_type VARCHAR(50),
+        is_active BOOLEAN DEFAULT true,
+        last_seen TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create unique constraint if it doesn't exist
+    await db.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'ninjaone_devices_location_bay_number_key'
+        ) THEN
+          ALTER TABLE ninjaone_devices 
+          ADD CONSTRAINT ninjaone_devices_location_bay_number_key 
+          UNIQUE(location, bay_number);
+        END IF;
+      END $$;
+    `);
+    
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS remote_actions_log (
+        id SERIAL PRIMARY KEY,
+        action_type VARCHAR(50),
+        location VARCHAR(100),
+        device_name VARCHAR(100),
+        device_id VARCHAR(100),
+        initiated_by VARCHAR(255),
+        ninja_job_id VARCHAR(100),
+        status VARCHAR(50),
+        metadata JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP
+      )
+    `);
+    
+    // Insert default scripts if they don't exist
+    await db.query(`
+      INSERT INTO ninjaone_scripts (script_id, name, display_name, category, icon, requires_bay, warning_message, estimated_duration)
+      VALUES 
+        ('restart-trackman', 'restart-trackman', 'Restart TrackMan', 'trackman', 'refresh-cw', true, NULL, '30-60 seconds'),
+        ('reboot-pc', 'reboot-pc', 'Reboot PC', 'system', 'power', true, 'This will reboot the entire PC. The bay will be unavailable for 3-5 minutes.', '3-5 minutes'),
+        ('restart-music', 'restart-music', 'Restart Music System', 'music', 'music', false, NULL, '30 seconds'),
+        ('restart-tv', 'restart-tv', 'Restart TV System', 'tv', 'tv', false, NULL, '30 seconds')
+      ON CONFLICT (script_id) DO NOTHING
+    `);
+    
+    // Create indexes
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_ninjaone_scripts_active ON ninjaone_scripts(is_active)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_ninjaone_devices_location ON ninjaone_devices(location)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_ninjaone_devices_active ON ninjaone_devices(is_active)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_remote_actions_log_created ON remote_actions_log(created_at DESC)`);
+    
     logger.info('✅ Critical tables verified/created');
   } catch (error) {
     logger.error('Failed to ensure critical tables:', error);
