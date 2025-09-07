@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Navigation from '../../components/Navigation';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import { CheckCircle, XCircle, Package, Palette, FileText, Link, Download, RefreshCw, Settings, AlertCircle } from 'lucide-react';
 import { http } from '@/api/http';
 
@@ -424,7 +423,16 @@ export default function WhiteLabelPlanner() {
     }, {});
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
