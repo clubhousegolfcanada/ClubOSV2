@@ -4,6 +4,21 @@ All notable changes to ClubOS will be documented in this file.
 
 ## [1.18.4] - 2025-09-07
 
+### Added
+- **Phase 2: Shared Component Library**
+  - Created 5 reusable UI components for consistency across the app
+  - LoadingSpinner component (replaces 71 duplicate implementations)
+  - EmptyState component for consistent empty states
+  - StatusBadge component for standardized status indicators
+  - PageHeader component for consistent page headers
+  - All components use CSS variables for theming
+  - Components work in both light/dark modes
+
+### Improved
+- Migrated CustomAchievementCreator to use CSS variables
+- Better component organization with centralized exports
+- Foundation for replacing duplicate code across the app
+
 ### Fixed
 - **Build Error Resolution**
   - Temporarily commented out v2 refactored routes to fix build errors
