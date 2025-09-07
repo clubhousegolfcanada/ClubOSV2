@@ -18,7 +18,7 @@ import crypto from 'crypto';
 // Import existing services to preserve their logic
 import { PatternLearningService } from './patternLearningService';
 import { PatternOptimizer } from './patternOptimizer';
-import { PatternSafetyService } from './patternSafetyService';
+import { patternSafetyService } from './patternSafetyService';
 import { ConversationAnalyzer } from './conversationAnalyzer';
 
 // ============================================
@@ -65,7 +65,7 @@ interface ConversationContext {
 export class PatternSystemService {
   private learning: PatternLearningService;
   private optimizer: PatternOptimizer;
-  private safety: PatternSafetyService;
+  private safety: typeof patternSafetyService;
   private analyzer: ConversationAnalyzer;
   private openai: OpenAI | null = null;
   
@@ -73,7 +73,7 @@ export class PatternSystemService {
     // Initialize all modules
     this.learning = new PatternLearningService();
     this.optimizer = new PatternOptimizer();
-    this.safety = new PatternSafetyService();
+    this.safety = patternSafetyService;
     this.analyzer = new ConversationAnalyzer();
     
     // Initialize OpenAI for GPT-4o features
@@ -101,7 +101,7 @@ export class PatternSystemService {
       });
       
       // Step 1: Safety validation
-      const safetyCheck = await this.safety.validateContent(message);
+      const safetyCheck = await this.safety.checkMessageSafety(message);
       if (!safetyCheck.safe) {
         logger.warn('[PatternSystem] Message failed safety check', safetyCheck);
         return {
@@ -111,10 +111,8 @@ export class PatternSystemService {
       }
       
       // Step 2: Conversation analysis for rich context
-      const conversationAnalysis = await this.analyzer.analyzeConversation(
-        context.conversationId,
-        message,
-        context.history
+      const conversationAnalysis = await this.analyzer.extractConversationContext(
+        context.history || []
       );
       
       // Step 3: Pattern matching with learning service
@@ -128,14 +126,12 @@ export class PatternSystemService {
       // Step 4: Quality scoring if pattern found
       let qualityScore = 0;
       if (learningResult.pattern) {
-        const quality = await this.optimizer.assessInteractionQuality(
+        const quality = await this.optimizer.scoreInteractionQuality(
           message,
           learningResult.response || '',
-          {
-            pattern_id: learningResult.pattern.id,
-            operator_id: null,
-            customer_sentiment: conversationAnalysis.sentiment
-          }
+          true, // resolution status
+          5000, // response time in ms
+          'system' // operator ID
         );
         qualityScore = quality.score;
         
@@ -146,12 +142,25 @@ export class PatternSystemService {
             score: quality.score
           });
           
-          // Learn from this high-quality interaction
-          await this.optimizer.learnFromGoldStandard(
+          // Store as gold standard example for future learning
+          await db.query(`
+            INSERT INTO pattern_learning_examples 
+            (pattern_id, customer_message, operator_response, confidence_score, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+          `, [
             learningResult.pattern.id,
             message,
-            learningResult.response
-          );
+            learningResult.response,
+            quality.score
+          ]);
+          
+          // Update pattern confidence directly in database
+          await db.query(`
+            UPDATE decision_patterns 
+            SET confidence_score = LEAST(confidence_score + 0.01, 1.0),
+                updated_at = NOW()
+            WHERE id = $1
+          `, [learningResult.pattern.id]);
         }
       }
       
@@ -174,7 +183,7 @@ export class PatternSystemService {
           intent: conversationAnalysis.intent,
           sentiment: conversationAnalysis.sentiment,
           urgency: conversationAnalysis.urgency,
-          entities: conversationAnalysis.entities
+          entities: []
         }
       };
       
@@ -237,9 +246,9 @@ export class PatternSystemService {
   ): Promise<any> {
     try {
       // Validate with safety service
-      const safetyCheck = await this.safety.validateContent(patternData.response_template);
+      const safetyCheck = await this.safety.checkMessageSafety(patternData.response_template);
       if (!safetyCheck.safe) {
-        throw new Error(`Pattern failed safety check: ${safetyCheck.issues?.join(', ')}`);
+        throw new Error(`Pattern failed safety check: ${safetyCheck.reason || 'Unknown safety issue'}`);
       }
       
       // Generate embeddings if GPT-4o available
@@ -323,9 +332,9 @@ export class PatternSystemService {
       
       // Validate updates with safety service
       if (updates.response_template) {
-        const safetyCheck = await this.safety.validateContent(updates.response_template);
+        const safetyCheck = await this.safety.checkMessageSafety(updates.response_template);
         if (!safetyCheck.safe) {
-          throw new Error(`Update failed safety check: ${safetyCheck.issues?.join(', ')}`);
+          throw new Error(`Update failed safety check: ${safetyCheck.reason || 'Unknown safety issue'}`);
         }
       }
       
@@ -399,16 +408,16 @@ export class PatternSystemService {
     context: ConversationContext
   ): Promise<any[]> {
     try {
-      // Get recommendations from learning service
-      const learningPatterns = await this.learning.findMatchingPatterns(
+      // Get recommendations using analyzer's public method
+      const learningPatterns = await this.analyzer.findSimilarPatterns(
         message,
-        crypto.createHash('md5').update(message).digest('hex')
+        0.7
       );
       
-      // Get semantic matches from analyzer
-      const semanticMatches = await this.analyzer.findSemanticMatches(
+      // Get additional semantic matches with higher threshold
+      const semanticMatches = await this.analyzer.findSimilarPatterns(
         message,
-        5
+        0.85
       );
       
       // Combine and deduplicate
@@ -423,10 +432,12 @@ export class PatternSystemService {
       // Score and rank using optimizer
       const recommendations = await Promise.all(
         Array.from(allMatches.values()).map(async (pattern) => {
-          const quality = await this.optimizer.assessInteractionQuality(
+          const quality = await this.optimizer.scoreInteractionQuality(
             message,
             pattern.response_template,
-            { pattern_id: pattern.id }
+            false, // not resolved yet
+            0, // no response time yet
+            'system' // system evaluation
           );
           
           return {
@@ -455,7 +466,7 @@ export class PatternSystemService {
     try {
       if (patternId) {
         // Analyze specific pattern
-        return await this.optimizer.analyzePatternPerformance(patternId);
+        return await this.optimizer.analyzePatternPerformance(patternId.toString());
       } else {
         // Analyze all patterns
         const patterns = await db.query(`
@@ -464,7 +475,7 @@ export class PatternSystemService {
         `);
         
         const analyses = await Promise.all(
-          patterns.rows.map(p => this.optimizer.analyzePatternPerformance(p.id))
+          patterns.rows.map(p => this.optimizer.analyzePatternPerformance(p.id.toString()))
         );
         
         return {
