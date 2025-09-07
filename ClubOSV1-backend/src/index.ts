@@ -372,6 +372,12 @@ async function startServer() {
       // Populate with initial data if empty
       const { initializeWhiteLabelData } = await import('./scripts/initialize-white-label-data');
       await initializeWhiteLabelData();
+      
+      // Clean up low-performing patterns
+      logger.info('🧹 Running pattern cleanup...');
+      const { cleanupPatterns } = await import('./scripts/cleanup-patterns');
+      await cleanupPatterns();
+      logger.info('✅ Pattern cleanup completed');
     } catch (error) {
       logger.error('Failed to run startup migrations:', error);
       // Don't fail startup, just log the error

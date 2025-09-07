@@ -30,6 +30,80 @@ const router = Router();
 // This ensures only authorized users can manage patterns
 
 /**
+ * GET /api/patterns
+ * Get all active (non-deleted) patterns
+ */
+router.get('/',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      // Get query parameters for filtering
+      const { includeDeleted = 'false', includeInactive = 'false' } = req.query;
+      
+      // Build WHERE clause
+      const conditions = [];
+      if (includeDeleted !== 'true') {
+        conditions.push('(is_deleted = false OR is_deleted IS NULL)');
+      }
+      if (includeInactive !== 'true') {
+        conditions.push('is_active = true');
+      }
+      
+      const whereClause = conditions.length > 0 
+        ? `WHERE ${conditions.join(' AND ')}` 
+        : '';
+      
+      const result = await db.query(`
+        SELECT 
+          id,
+          pattern_type,
+          pattern,
+          response_template,
+          trigger_examples,
+          trigger_keywords,
+          confidence_score,
+          execution_count,
+          success_count,
+          is_active,
+          is_deleted,
+          created_at,
+          updated_at,
+          CASE 
+            WHEN success_count > 0 AND execution_count > 0 
+            THEN ROUND((success_count::float / execution_count::float * 100)::numeric, 0)
+            ELSE 0 
+          END as success_rate,
+          CASE 
+            WHEN updated_at IS NOT NULL THEN updated_at
+            ELSE created_at
+          END as last_used
+        FROM patterns
+        ${whereClause}
+        ORDER BY 
+          is_active DESC,
+          confidence_score DESC,
+          execution_count DESC
+      `);
+      
+      logger.info(`[Patterns API] Fetched ${result.rows.length} patterns (includeDeleted: ${includeDeleted}, includeInactive: ${includeInactive})`);
+      
+      res.json({
+        success: true,
+        patterns: result.rows,
+        count: result.rows.length
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Error fetching patterns:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch patterns' 
+      });
+    }
+  }
+);
+
+/**
  * GET /api/patterns/config
  * Get pattern learning configuration
  */
