@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.6] - 2025-09-07
+
+### Fixed
+- **V3 Pattern Learning System Complete Fix**
+  - Added missing `pattern` and `created_at` columns to decision_patterns table
+  - Fixed patterns-api.ts using incorrect table name (patterns → decision_patterns)
+  - Created migration 216 to permanently fix schema issues
+  - Added database triggers to keep columns synchronized
+  - All pattern endpoints now working without 500 errors
+  - Pattern cards displaying correctly in Operations Center
+
+### Technical Details
+- Root cause: API code expected columns that were never created in migrations
+- Solution: Migration 216 adds missing columns and syncs with existing data
+- Verification: All queries tested and working in production
+
 ## [1.18.5] - 2025-09-07
 
 ### Fixed
