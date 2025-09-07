@@ -96,10 +96,10 @@ export default function WhiteLabelPlanner() {
       
       // Auto-select transferable items
       const autoSelected = {
-        features: new Set(data.features.filter((f: Feature) => f.is_transferable).map((f: Feature) => f.id)),
-        branding: new Set(),
-        sops: new Set(),
-        integrations: new Set(data.integrations.filter((i: Integration) => i.is_required).map((i: Integration) => i.id))
+        features: new Set<string>(data.features.filter((f: Feature) => f.is_transferable).map((f: Feature) => f.id)),
+        branding: new Set<string>(),
+        sops: new Set<string>(),
+        integrations: new Set<string>(data.integrations.filter((i: Integration) => i.is_required).map((i: Integration) => i.id))
       };
       setSelectedItems(autoSelected);
     } catch (error) {
