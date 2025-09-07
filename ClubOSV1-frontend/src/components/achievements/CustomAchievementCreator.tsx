@@ -31,7 +31,7 @@ const presetColors = [
   { name: 'Ruby', bg: '#FEE2E2', color: '#DC2626', glow: 'rgba(220,38,38,0.5)' },
   { name: 'Obsidian', bg: '#1F2937', color: '#F9FAFB', glow: 'rgba(31,41,55,0.8)' },
   { name: 'Champion', bg: '#8B5CF6', color: '#FFFFFF', glow: 'rgba(139,92,246,0.7)' },
-  { name: 'Master', bg: '#0B3D3A', color: '#FFFFFF', glow: 'rgba(11,61,58,0.7)' }
+  { name: 'Master', bg: 'var(--accent)', color: '#FFFFFF', glow: 'rgba(11,61,58,0.7)' }
 ];
 
 // Professional icon options - actual trophy/medal icons
@@ -185,7 +185,7 @@ export function CustomAchievementCreator({
                 onClick={() => setActiveTab('details')}
                 className={`px-4 py-2 font-medium transition-colors ${
                   activeTab === 'details'
-                    ? 'text-[#0B3D3A] border-b-2 border-[#0B3D3A]'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -195,7 +195,7 @@ export function CustomAchievementCreator({
                 onClick={() => setActiveTab('appearance')}
                 className={`px-4 py-2 font-medium transition-colors ${
                   activeTab === 'appearance'
-                    ? 'text-[#0B3D3A] border-b-2 border-[#0B3D3A]'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -217,7 +217,7 @@ export function CustomAchievementCreator({
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       >
                         {achievementCategories.map(cat => (
                           <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -235,7 +235,7 @@ export function CustomAchievementCreator({
                         value={achievementName}
                         onChange={(e) => setAchievementName(e.target.value)}
                         placeholder="e.g., Spring Championship, Monthly Tournament"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>
 
@@ -249,7 +249,7 @@ export function CustomAchievementCreator({
                         value={achievementTitle}
                         onChange={(e) => setAchievementTitle(e.target.value)}
                         placeholder="e.g., 2024 Spring Championship"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>
 
@@ -263,7 +263,7 @@ export function CustomAchievementCreator({
                         value={placement}
                         onChange={(e) => setPlacement(e.target.value)}
                         placeholder="e.g., 1st Place, Champion, Winner"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>
 
@@ -276,7 +276,7 @@ export function CustomAchievementCreator({
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>
 
@@ -290,7 +290,7 @@ export function CustomAchievementCreator({
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Details about this achievement..."
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>
 
@@ -304,7 +304,7 @@ export function CustomAchievementCreator({
                         onChange={(e) => setPersonalMessage(e.target.value)}
                         placeholder="Congratulations message to the winner..."
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>
 
@@ -316,7 +316,7 @@ export function CustomAchievementCreator({
                       <select
                         value={rarity}
                         onChange={(e) => setRarity(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       >
                         <option value="legendary">Legendary (Major Championship)</option>
                         <option value="epic">Epic (Tournament Win)</option>
@@ -340,12 +340,12 @@ export function CustomAchievementCreator({
                             onClick={() => setSelectedIcon(iconType.value)}
                             className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
                               selectedIcon === iconType.value
-                                ? 'border-[#0B3D3A] bg-[#0B3D3A]/5'
+                                ? 'border-[var(--accent)] bg-[var(--accent)]/5'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
                             <iconType.Icon className={`w-6 h-6 ${
-                              selectedIcon === iconType.value ? 'text-[#0B3D3A]' : 'text-gray-600'
+                              selectedIcon === iconType.value ? 'text-[var(--accent)]' : 'text-gray-600'
                             }`} />
                             <span className="text-xs">{iconType.label}</span>
                           </button>
@@ -365,7 +365,7 @@ export function CustomAchievementCreator({
                             onClick={() => setSelectedColor(preset)}
                             className={`p-3 rounded-lg border-2 transition-all ${
                               selectedColor.name === preset.name
-                                ? 'ring-2 ring-[#0B3D3A] ring-offset-2'
+                                ? 'ring-2 ring-[var(--accent)] ring-offset-2'
                                 : ''
                             }`}
                             style={{
@@ -448,7 +448,7 @@ export function CustomAchievementCreator({
               <button
                 onClick={handleCreate}
                 disabled={loading || !achievementName || !achievementTitle}
-                className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {loading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />

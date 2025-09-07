@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.4] - 2025-09-07
+
+### Fixed
+- **Build Error Resolution**
+  - Temporarily commented out v2 refactored routes to fix build errors
+  - Fixed missing debug route import issue
+  - Added version discovery endpoint at /api/version
+  - Prepared codebase for future v2 route integration
+
+### Technical
+- Commented out references to auth-refactored, users-refactored, health-refactored
+- Removed dependency on missing routeConfig module
+- Fixed import location issues in index.ts
+
 ## [1.18.3] - 2025-09-07
 
 ### Fixed

@@ -87,11 +87,12 @@ import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
 // Refactored routes for v2 architecture
-import authRefactoredRoutes from './routes/auth-refactored';
-import usersRefactoredRoutes from './routes/users-refactored';
-import healthRefactoredRoutes from './routes/health-refactored';
+// TODO: Uncomment when refactored route files are ready
+// import authRefactoredRoutes from './routes/auth-refactored';
+// import usersRefactoredRoutes from './routes/users-refactored';
+// import healthRefactoredRoutes from './routes/health-refactored';
 // Route configuration for gradual migration
-import ROUTE_CONFIG from './config/routeConfig';
+// import ROUTE_CONFIG from './config/routeConfig';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -228,32 +229,27 @@ app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 
 // V2 Routes - Parallel deployment for gradual migration
-if (ROUTE_CONFIG.parallelMode) {
-  app.use('/api/v2/auth', authRefactoredRoutes);
-  app.use('/api/v2/health', healthRefactoredRoutes);
-  app.use('/api/v2/users', authenticate, usersRefactoredRoutes);
+// TODO: Uncomment when refactored routes are ready
+// if (ROUTE_CONFIG.parallelMode) {
+//   app.use('/api/v2/auth', authRefactoredRoutes);
+//   app.use('/api/v2/health', healthRefactoredRoutes);
+//   app.use('/api/v2/users', authenticate, usersRefactoredRoutes);
   
-  logger.info('🚀 Refactored routes mounted on /api/v2/* in parallel mode');
-  logger.info(`Migration config:`, {
-    parallelMode: ROUTE_CONFIG.parallelMode,
-    useRefactoredAuth: ROUTE_CONFIG.useRefactoredAuth,
-    useRefactoredHealth: ROUTE_CONFIG.useRefactoredHealth,
-    useRefactoredUsers: ROUTE_CONFIG.useRefactoredUsers
-  });
-}
+//   logger.info('🚀 Refactored routes mounted on /api/v2/* in parallel mode');
+//   logger.info(`Migration config:`, {
+//     parallelMode: ROUTE_CONFIG.parallelMode,
+//     useRefactoredAuth: ROUTE_CONFIG.useRefactoredAuth,
+//     useRefactoredHealth: ROUTE_CONFIG.useRefactoredHealth,
+//     useRefactoredUsers: ROUTE_CONFIG.useRefactoredUsers
+//   });
+// }
 
 // Version discovery endpoint
 app.get('/api/version', (req, res) => {
   res.json({
-    current: ROUTE_CONFIG.apiVersion,
-    available: ['v1', 'v2'],
-    refactored: {
-      auth: ROUTE_CONFIG.useRefactoredAuth,
-      health: ROUTE_CONFIG.useRefactoredHealth,
-      users: ROUTE_CONFIG.useRefactoredUsers
-    },
-    parallelMode: ROUTE_CONFIG.parallelMode,
-    rolloutPercentage: ROUTE_CONFIG.rolloutPercentage
+    current: 'v1',
+    available: ['v1'],
+    message: 'V2 routes preparation in progress'
   });
 });
 
