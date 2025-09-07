@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.5] - 2025-09-07
+
+### Fixed
+- **V3 Pattern Learning System Production Deployment**
+  - Successfully deployed database fixes to production
+  - Pattern cards now displaying correctly in Operations Center
+  - All pattern API endpoints returning data properly
+  - Frontend deployed to Vercel, backend to Railway
+
+### Deployment Notes
+- Frontend: Auto-deployed via Vercel (22 minutes ago)
+- Backend: Manually triggered Railway deployment (4 minutes ago)
+- Both systems now running latest fixes
+
 ## [1.18.4] - 2025-09-07
 
 ### Added
