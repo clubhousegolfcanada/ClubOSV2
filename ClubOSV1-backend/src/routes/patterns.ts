@@ -78,7 +78,7 @@ router.get('/',
             WHEN updated_at IS NOT NULL THEN updated_at
             ELSE created_at
           END as last_used
-        FROM patterns
+        FROM decision_patterns
         ${whereClause}
         ORDER BY 
           is_active DESC,

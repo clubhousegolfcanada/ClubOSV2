@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.3] - 2025-09-07
+
+### Fixed
+- **V3 Pattern Learning System Database Issues**
+  - Fixed incorrect table name references (patterns → decision_patterns)
+  - Added column aliases for missing/renamed columns
+  - Fixed pattern API returning 500 errors
+  - Restored pattern cards functionality in UI
+  - Updated all pattern-related queries to use correct table/column names
+
+### Technical Details
+- Updated patterns.ts, patterns-api.ts, cleanup-patterns.ts
+- Added COALESCE for nullable columns to prevent errors
+- Mapped trigger_text/trigger_examples to pattern field
+- Mapped first_seen to created_at, last_modified to updated_at
+
 ## [1.18.2] - 2025-09-07
 
 ### Changed

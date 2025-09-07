@@ -86,6 +86,13 @@ import boxManagementRoutes from './routes/boxManagement';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
+// Refactored routes for v2 architecture
+import authRefactoredRoutes from './routes/auth-refactored';
+import usersRefactoredRoutes from './routes/users-refactored';
+import healthRefactoredRoutes from './routes/health-refactored';
+// Route configuration for gradual migration
+import ROUTE_CONFIG from './config/routeConfig';
+
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter, llmRateLimiter } from './middleware/rateLimiter';
@@ -217,8 +224,39 @@ app.use('/api/auth', authLimiter);
 // Public routes (no auth required)
 app.use('/api/public', publicRoutes);
 
-// API Routes
+// API Routes - V1 (existing routes remain active)
 app.use('/api/auth', authRoutes);
+
+// V2 Routes - Parallel deployment for gradual migration
+if (ROUTE_CONFIG.parallelMode) {
+  app.use('/api/v2/auth', authRefactoredRoutes);
+  app.use('/api/v2/health', healthRefactoredRoutes);
+  app.use('/api/v2/users', authenticate, usersRefactoredRoutes);
+  
+  logger.info('🚀 Refactored routes mounted on /api/v2/* in parallel mode');
+  logger.info(`Migration config:`, {
+    parallelMode: ROUTE_CONFIG.parallelMode,
+    useRefactoredAuth: ROUTE_CONFIG.useRefactoredAuth,
+    useRefactoredHealth: ROUTE_CONFIG.useRefactoredHealth,
+    useRefactoredUsers: ROUTE_CONFIG.useRefactoredUsers
+  });
+}
+
+// Version discovery endpoint
+app.get('/api/version', (req, res) => {
+  res.json({
+    current: ROUTE_CONFIG.apiVersion,
+    available: ['v1', 'v2'],
+    refactored: {
+      auth: ROUTE_CONFIG.useRefactoredAuth,
+      health: ROUTE_CONFIG.useRefactoredHealth,
+      users: ROUTE_CONFIG.useRefactoredUsers
+    },
+    parallelMode: ROUTE_CONFIG.parallelMode,
+    rolloutPercentage: ROUTE_CONFIG.rolloutPercentage
+  });
+});
+
 app.use('/api', csrfRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/tickets', ticketsRoutes);
@@ -303,14 +341,16 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 
 // Architecture v2 routes (testing)
-import authRefactoredRoutes from './routes/auth-refactored';
-import usersRefactoredRoutes from './routes/users-refactored';
-app.use('/api/v2/auth', authRefactoredRoutes);
-app.use('/api/v2/users', usersRefactoredRoutes);
+// TODO: Move these imports to top of file
+// import authRefactoredRoutes from './routes/auth-refactored';
+// import usersRefactoredRoutes from './routes/users-refactored';
+// app.use('/api/v2/auth', authRefactoredRoutes);
+// app.use('/api/v2/users', usersRefactoredRoutes);
 
 // HubSpot webhook routes
-import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
-app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
+// TODO: Move this import to top of file
+// import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
+// app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
 
 // Root endpoint
 app.get('/', (req, res) => {

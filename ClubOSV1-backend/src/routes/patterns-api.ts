@@ -31,7 +31,7 @@ router.get('/', authenticate, async (req, res) => {
       SELECT 
         id,
         pattern_type,
-        pattern,
+        COALESCE(trigger_text, trigger_examples[1], '') as pattern,
         response_template,
         trigger_examples,
         trigger_keywords,
@@ -39,9 +39,9 @@ router.get('/', authenticate, async (req, res) => {
         execution_count,
         success_count,
         is_active,
-        is_deleted,
-        created_at,
-        updated_at,
+        COALESCE(is_deleted, FALSE) as is_deleted,
+        COALESCE(first_seen, NOW()) as created_at,
+        COALESCE(updated_at, last_modified, NOW()) as updated_at,
         CASE 
           WHEN success_count > 0 AND execution_count > 0 
           THEN ROUND((success_count::float / execution_count::float * 100)::numeric, 0)
@@ -51,7 +51,7 @@ router.get('/', authenticate, async (req, res) => {
           WHEN updated_at IS NOT NULL THEN updated_at
           ELSE created_at
         END as last_used
-      FROM patterns
+      FROM decision_patterns
       ${whereClause}
       ORDER BY 
         is_active DESC,
@@ -85,14 +85,14 @@ router.get('/deleted', authenticate, async (req, res) => {
       SELECT 
         id,
         pattern_type,
-        pattern,
+        COALESCE(trigger_text, trigger_examples[1], '') as pattern,
         response_template,
         trigger_examples,
         confidence_score,
         execution_count,
         success_count,
-        is_deleted,
-        updated_at,
+        COALESCE(is_deleted, FALSE) as is_deleted,
+        COALESCE(updated_at, last_modified, NOW()) as updated_at,
         CASE 
           WHEN success_count > 0 AND execution_count > 0 
           THEN ROUND((success_count::float / execution_count::float * 100)::numeric, 0)
@@ -127,7 +127,7 @@ router.post('/:id/restore', authenticate, async (req, res) => {
     const { id } = req.params;
     
     const result = await db(
-      `UPDATE patterns 
+      `UPDATE decision_patterns 
        SET is_deleted = false, 
            is_active = true,
            confidence_score = 70,
@@ -172,12 +172,12 @@ router.delete('/:id', authenticate, async (req, res) => {
     
     if (permanent === 'true' && req.user?.role === 'admin') {
       // Permanent delete for admins only
-      await db('DELETE FROM patterns WHERE id = $1', [id]);
+      await db('DELETE FROM decision_patterns WHERE id = $1', [id]);
       logger.info(`Pattern ${id} permanently deleted by admin ${req.user.id}`);
     } else {
       // Soft delete
       await db(
-        `UPDATE patterns 
+        `UPDATE decision_patterns 
          SET is_deleted = true, 
              is_active = false,
              updated_at = NOW()

@@ -21,7 +21,7 @@ async function cleanupPatterns() {
           THEN (success_count::float / execution_count::float * 100)
           ELSE 0 
         END as success_rate
-      FROM patterns
+      FROM decision_patterns
       ORDER BY created_at DESC
     `);
     
@@ -69,7 +69,7 @@ async function cleanupPatterns() {
       
       for (const pattern of toDelete) {
         await db(
-          'UPDATE patterns SET is_deleted = true, is_active = false WHERE id = $1',
+          'UPDATE decision_patterns SET is_deleted = true, is_active = false WHERE id = $1',
           [pattern.id]
         );
         console.log(`- Deleted: ${pattern.pattern_type} (${pattern.success_rate.toFixed(0)}% success rate)`);
@@ -88,7 +88,7 @@ async function cleanupPatterns() {
           THEN (success_count::float / execution_count::float * 100)
           ELSE 0 
         END as success_rate
-      FROM patterns
+      FROM decision_patterns
       WHERE is_deleted = false AND is_active = true
       ORDER BY success_rate DESC
     `);
