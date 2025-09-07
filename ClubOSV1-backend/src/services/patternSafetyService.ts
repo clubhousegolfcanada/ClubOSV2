@@ -52,10 +52,14 @@ class PatternSafetyService {
       result.rows.forEach(row => {
         switch (row.config_key) {
           case 'blacklist_topics':
-            this.blacklistTopics = row.config_value.split(',').map((t: string) => t.trim().toLowerCase());
+            this.blacklistTopics = row.config_value ? 
+              row.config_value.split(',').map((t: string) => t.trim().toLowerCase()).filter(t => t.length > 0) : 
+              [];
             break;
           case 'escalation_keywords':
-            this.escalationKeywords = row.config_value.split(',').map((k: string) => k.trim().toLowerCase());
+            this.escalationKeywords = row.config_value ? 
+              row.config_value.split(',').map((k: string) => k.trim().toLowerCase()).filter(k => k.length > 0) : 
+              [];
             break;
           case 'require_approval_for_new':
             this.requireApprovalForNew = row.config_value === 'true';
@@ -381,15 +385,17 @@ class PatternSafetyService {
    * Get safety settings for API
    */
   async getSettings(): Promise<any> {
+    // Force reload to get latest from database
+    this.lastConfigLoad = new Date(0);
     await this.loadConfig();
     
     return {
-      blacklistTopics: this.blacklistTopics,
-      escalationKeywords: this.escalationKeywords,
-      requireApprovalForNew: this.requireApprovalForNew,
-      approvalThreshold: this.approvalThreshold,
-      minExamplesRequired: this.minExamplesRequired,
-      operatorOverrideWeight: this.operatorOverrideWeight,
+      blacklistTopics: this.blacklistTopics || [],
+      escalationKeywords: this.escalationKeywords || [],
+      requireApprovalForNew: this.requireApprovalForNew !== undefined ? this.requireApprovalForNew : true,
+      approvalThreshold: this.approvalThreshold || 10,
+      minExamplesRequired: this.minExamplesRequired || 5,
+      operatorOverrideWeight: this.operatorOverrideWeight || 2.0,
       enableFallbackResponses: false,
       fallbackMessages: {
         booking: '',
