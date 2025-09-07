@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Navigation from '../../components/Navigation';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { CheckCircle, XCircle, Package, Palette, FileText, Link, Download, RefreshCw, Settings, AlertCircle } from 'lucide-react';
+import { http } from '@/api/http';
 
 interface Feature {
   id: string;
@@ -85,16 +86,7 @@ export default function WhiteLabelPlanner() {
 
   const fetchInventory = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/white-label-planner/inventory`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch inventory');
-
-      const data = await response.json();
+      const { data } = await http.get('/api/white-label-planner/inventory');
       setInventory(data);
       
       // Auto-select transferable items
@@ -115,17 +107,7 @@ export default function WhiteLabelPlanner() {
   const runAnalysis = async () => {
     setAnalyzing(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/white-label-planner/analyze`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to analyze system');
-
-      const data = await response.json();
+      const { data } = await http.post('/api/white-label-planner/analyze');
       await fetchInventory(); // Refresh inventory after analysis
       alert(`Analysis complete! Found ${data.summary.total_features} features, ${data.summary.branding_items} branding items, ${data.summary.sops_count} SOPs, and ${data.summary.integrations_count} integrations.`);
     } catch (error) {
@@ -155,7 +137,6 @@ export default function WhiteLabelPlanner() {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const config = {
         name: configName,
         description: configDescription,
@@ -169,18 +150,7 @@ export default function WhiteLabelPlanner() {
         implementation_notes: `Auto-generated configuration for ${configName}`
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/white-label-planner/configurations`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(config)
-      });
-
-      if (!response.ok) throw new Error('Failed to save configuration');
-
-      const saved = await response.json();
+      const { data: saved } = await http.post('/api/white-label-planner/configurations', config);
       alert('Configuration saved successfully!');
       
       // Generate blueprint
@@ -193,17 +163,7 @@ export default function WhiteLabelPlanner() {
 
   const generateBlueprint = async (configId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/white-label-planner/blueprint/${configId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to generate blueprint');
-
-      const blueprint = await response.json();
+      const { data: blueprint } = await http.post(`/api/white-label-planner/blueprint/${configId}`);
       
       // Download blueprint as JSON
       const dataStr = JSON.stringify(blueprint, null, 2);
