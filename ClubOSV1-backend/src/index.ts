@@ -77,8 +77,8 @@ import csrfRoutes from './routes/csrf';
 import aiAutomationsRoutes from './routes/ai-automations';
 import openphoneProcessingRoutes from './routes/openphone-processing';
 import integrationsRoutes from './routes/integrations';
-import patternsRouter from './routes/patterns';
-import patternsEnhancedRouter from './routes/patterns-enhanced';
+// Using consolidated enhanced patterns route only
+import enhancedPatternsRouter from './routes/enhanced-patterns';
 import unifiDoorsRoutes from './routes/unifi-doors';
 import whiteLabelPlannerRoutes from './routes/white-label-planner';
 import boxesRoutes from './routes/boxes';
@@ -327,8 +327,8 @@ app.use('/api/prompt-templates', promptTemplatesRoutes);
 app.use('/api/prompts', promptsRoutes);
 app.use('/api/ai-automations', aiAutomationsRoutes);
 app.use('/api/integrations', integrationsRoutes);
-app.use('/api/patterns', patternsRouter);
-app.use('/api/patterns-enhanced', patternsEnhancedRouter);
+// Use consolidated enhanced patterns route for all pattern endpoints
+app.use('/api/patterns', enhancedPatternsRouter);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
 app.use('/api/white-label-planner', whiteLabelPlannerRoutes);
 app.use('/api/system-status', require('./routes/system-status').default);
