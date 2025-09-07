@@ -358,8 +358,13 @@ async function startServer() {
     const { performStartupChecks } = await import('./utils/startup-check');
     await performStartupChecks();
     
-    // Run white label migration and populate data
+    // Run critical migrations
     try {
+      // Fix missing rank_tier column
+      const { runRankTierMigration } = await import('./scripts/run-rank-tier-migration');
+      await runRankTierMigration();
+      
+      // Run white label migration and populate data
       const { runMigration } = await import('./scripts/run-white-label-migration');
       await runMigration();
       logger.info('✅ White label tables initialized');
@@ -368,7 +373,7 @@ async function startServer() {
       const { initializeWhiteLabelData } = await import('./scripts/initialize-white-label-data');
       await initializeWhiteLabelData();
     } catch (error) {
-      logger.error('Failed to initialize white label system:', error);
+      logger.error('Failed to run startup migrations:', error);
       // Don't fail startup, just log the error
     }
     
