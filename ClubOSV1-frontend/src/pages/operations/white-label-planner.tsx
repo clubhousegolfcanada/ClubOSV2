@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Navigation from '../../components/Navigation';
-import { CheckCircle, XCircle, Package, Palette, FileText, Link, Download, RefreshCw, Settings, AlertCircle } from 'lucide-react';
+import Head from 'next/head';
+import { CheckCircle, XCircle, Package, Palette, FileText, Link, Download, RefreshCw, Settings, AlertCircle, Activity } from 'lucide-react';
 import { http } from '@/api/http';
+import { useAuthState } from '@/state/useStore';
 
 interface Feature {
   id: string;
@@ -51,6 +52,7 @@ interface Integration {
 
 export default function WhiteLabelPlanner() {
   const router = useRouter();
+  const { user } = useAuthState();
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState('features');
@@ -80,8 +82,12 @@ export default function WhiteLabelPlanner() {
   const [configDescription, setConfigDescription] = useState('');
 
   useEffect(() => {
-    fetchInventory();
-  }, []);
+    if (user && user.role !== 'admin') {
+      router.push('/operations');
+    } else {
+      fetchInventory();
+    }
+  }, [user, router]);
 
   const fetchInventory = async () => {
     try {
@@ -181,38 +187,31 @@ export default function WhiteLabelPlanner() {
 
   const renderFeatures = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Feature Inventory</h3>
-        <div className="text-sm text-gray-600">
-          {selectedItems.features.size} of {inventory.features.length} selected
-        </div>
-      </div>
-      
       {Object.entries(groupBy(inventory.features, 'category')).map(([category, features]) => (
-        <div key={category} className="bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="font-semibold text-gray-800 mb-3">{category}</h4>
+        <div key={category} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h4 className="font-semibold text-gray-900 mb-4">{category}</h4>
           <div className="space-y-2">
             {(features as Feature[]).map(feature => (
-              <div key={feature.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
+              <div key={feature.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <input
                   type="checkbox"
                   checked={selectedItems.features.has(feature.id)}
                   onChange={() => toggleSelection('features', feature.id)}
-                  className="mt-1"
+                  className="mt-1 h-4 w-4 text-[var(--accent)] rounded border-gray-300 focus:ring-[var(--accent)]"
                 />
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">{feature.feature_name}</span>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="font-medium text-gray-900">{feature.feature_name}</span>
                     {feature.is_clubos_specific && (
-                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">ClubOS Specific</span>
+                      <span className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full">ClubOS Specific</span>
                     )}
                     {feature.is_transferable && (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">Transferable</span>
+                      <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">Transferable</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">{feature.description}</p>
                   {feature.dependencies.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-2">
                       Dependencies: {feature.dependencies.join(', ')}
                     </p>
                   )}
@@ -227,28 +226,21 @@ export default function WhiteLabelPlanner() {
 
   const renderBranding = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Branding Items</h3>
-        <div className="text-sm text-gray-600">
-          {inventory.branding.length} items found
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="space-y-3">
           {inventory.branding.map(item => (
-            <div key={item.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded">
+            <div key={item.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
               <input
                 type="checkbox"
                 checked={selectedItems.branding.has(item.id)}
                 onChange={() => toggleSelection('branding', item.id)}
-                className="mt-1"
+                className="mt-1 h-4 w-4 text-[var(--accent)] rounded border-gray-300 focus:ring-[var(--accent)]"
               />
               <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium capitalize">{item.type}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-900 capitalize">{item.type}</span>
                   {item.is_hardcoded && (
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">Hardcoded</span>
+                    <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs rounded-full">Hardcoded</span>
                   )}
                 </div>
                 <p className="text-sm text-gray-600 mt-1">Value: {item.current_value}</p>
@@ -266,30 +258,23 @@ export default function WhiteLabelPlanner() {
 
   const renderSOPs = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Standard Operating Procedures</h3>
-        <div className="text-sm text-gray-600">
-          {inventory.sops.length} SOPs found
-        </div>
-      </div>
-
       {Object.entries(groupBy(inventory.sops, 'type')).map(([type, sops]) => (
-        <div key={type} className="bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="font-semibold text-gray-800 mb-3 capitalize">{type}</h4>
+        <div key={type} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h4 className="font-semibold text-gray-900 mb-4 capitalize">{type}</h4>
           <div className="space-y-2">
             {(sops as SOPItem[]).map(sop => (
-              <div key={sop.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
+              <div key={sop.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <input
                   type="checkbox"
                   checked={selectedItems.sops.has(sop.id)}
                   onChange={() => toggleSelection('sops', sop.id)}
-                  className="mt-1"
+                  className="mt-1 h-4 w-4 text-[var(--accent)] rounded border-gray-300 focus:ring-[var(--accent)]"
                 />
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">{sop.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">{sop.name}</span>
                     {sop.is_replaceable && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">Replaceable</span>
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">Replaceable</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">{sop.description}</p>
@@ -304,34 +289,27 @@ export default function WhiteLabelPlanner() {
 
   const renderIntegrations = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Third-Party Integrations</h3>
-        <div className="text-sm text-gray-600">
-          {selectedItems.integrations.size} of {inventory.integrations.length} selected
-        </div>
-      </div>
-
       {Object.entries(groupBy(inventory.integrations, 'type')).map(([type, integrations]) => (
-        <div key={type} className="bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="font-semibold text-gray-800 mb-3 capitalize">{type}</h4>
+        <div key={type} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h4 className="font-semibold text-gray-900 mb-4 capitalize">{type}</h4>
           <div className="space-y-2">
             {(integrations as Integration[]).map(integration => (
-              <div key={integration.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
+              <div key={integration.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <input
                   type="checkbox"
                   checked={selectedItems.integrations.has(integration.id)}
                   onChange={() => toggleSelection('integrations', integration.id)}
                   disabled={integration.is_required}
-                  className="mt-1"
+                  className="mt-1 h-4 w-4 text-[var(--accent)] rounded border-gray-300 focus:ring-[var(--accent)] disabled:opacity-50"
                 />
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">{integration.service_name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">{integration.service_name}</span>
                     {integration.is_required && (
-                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">Required</span>
+                      <span className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full">Required</span>
                     )}
                     {integration.is_client_specific && (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">Client Specific</span>
+                      <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs rounded-full">Client Specific</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
@@ -348,64 +326,83 @@ export default function WhiteLabelPlanner() {
 
   const renderConfiguration = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold mb-4">Configuration Builder</h3>
-      
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Configuration Name
             </label>
             <input
               type="text"
               value={configName}
               onChange={(e) => setConfigName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
               placeholder="e.g., Golf Simulator Management System"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Description
             </label>
             <textarea
               value={configDescription}
               onChange={(e) => setConfigDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
               rows={3}
               placeholder="Describe the target client and their requirements..."
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            <div className="bg-gray-50 p-4 rounded">
-              <h4 className="font-semibold mb-2">Selected Components</h4>
-              <ul className="space-y-1 text-sm">
-                <li>Features: {selectedItems.features.size}</li>
-                <li>Branding Items: {selectedItems.branding.size}</li>
-                <li>SOPs to Replace: {selectedItems.sops.size}</li>
-                <li>Integrations: {selectedItems.integrations.size}</li>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-3">Selected Components</h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Features:</span>
+                  <span className="font-medium text-gray-900">{selectedItems.features.size}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Branding Items:</span>
+                  <span className="font-medium text-gray-900">{selectedItems.branding.size}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">SOPs to Replace:</span>
+                  <span className="font-medium text-gray-900">{selectedItems.sops.size}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Integrations:</span>
+                  <span className="font-medium text-gray-900">{selectedItems.integrations.size}</span>
+                </li>
               </ul>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded">
-              <h4 className="font-semibold mb-2">Excluded Components</h4>
-              <ul className="space-y-1 text-sm">
-                <li>Features: {inventory.features.length - selectedItems.features.size}</li>
-                <li>ClubOS-Specific: {inventory.features.filter(f => f.is_clubos_specific).length}</li>
-                <li>Client-Specific Integrations: {inventory.integrations.filter(i => i.is_client_specific).length}</li>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-3">Excluded Components</h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Features:</span>
+                  <span className="font-medium text-gray-900">{inventory.features.length - selectedItems.features.size}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">ClubOS-Specific:</span>
+                  <span className="font-medium text-gray-900">{inventory.features.filter(f => f.is_clubos_specific).length}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Client Integrations:</span>
+                  <span className="font-medium text-gray-900">{inventory.integrations.filter(i => i.is_client_specific).length}</span>
+                </li>
               </ul>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end pt-4">
             <button
               onClick={saveConfiguration}
               disabled={!configName}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
-              <Download className="w-4 h-4 inline mr-2" />
+              <Download className="w-4 h-4" />
               Save & Export Blueprint
             </button>
           </div>
@@ -423,11 +420,19 @@ export default function WhiteLabelPlanner() {
     }, {});
   };
 
+  const tabs = [
+    { id: 'features', label: 'Feature Inventory', icon: Package },
+    { id: 'branding', label: 'Branding', icon: Palette },
+    { id: 'sops', label: 'SOPs', icon: FileText },
+    { id: 'integrations', label: 'Integrations', icon: Link },
+    { id: 'configuration', label: 'Configuration', icon: Settings }
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -435,85 +440,136 @@ export default function WhiteLabelPlanner() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation userRole="admin" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">White Label Planner</h1>
-              <p className="mt-2 text-gray-600">
-                Analyze ClubOS and plan white label implementations
-              </p>
-            </div>
-            <button
-              onClick={runAnalysis}
-              disabled={analyzing}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {analyzing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 inline mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 inline mr-2" />
-                  Run System Analysis
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+    <>
+      <Head>
+        <title>White Label Planner - ClubOS</title>
+      </Head>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3" />
-            <div>
-              <h3 className="font-semibold text-yellow-800">Planning Mode Only</h3>
-              <p className="text-sm text-yellow-700 mt-1">
-                This tool analyzes the current system and helps plan white label implementations. 
-                It does not modify any code or create the actual white label system.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              {[
-                { id: 'features', label: 'Feature Inventory', icon: Package },
-                { id: 'branding', label: 'Branding', icon: Palette },
-                { id: 'sops', label: 'SOPs', icon: FileText },
-                { id: 'integrations', label: 'Integrations', icon: Link },
-                { id: 'configuration', label: 'Configuration', icon: Settings }
-              ].map(tab => (
+      <div className="min-h-screen bg-[var(--bg-primary)]">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <Package className="h-6 w-6 text-[var(--accent)]" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">White Label Planner</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Analyze ClubOS and plan white label implementations
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-1">
+                  <Activity className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-600">Ready</span>
+                </div>
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  onClick={runAnalysis}
+                  disabled={analyzing}
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:bg-gray-400 transition-colors flex items-center gap-2"
                 >
-                  <tab.icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
+                  {analyzing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Run System Analysis
+                    </>
+                  )}
                 </button>
-              ))}
-            </nav>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div className="p-6">
-            {activeTab === 'features' && renderFeatures()}
-            {activeTab === 'branding' && renderBranding()}
-            {activeTab === 'sops' && renderSOPs()}
-            {activeTab === 'integrations' && renderIntegrations()}
-            {activeTab === 'configuration' && renderConfiguration()}
+        {/* Alert Banner */}
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-yellow-800">Planning Mode Only</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  This tool analyzes the current system and helps plan white label implementations. 
+                  It does not modify any code or create the actual white label system.
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="px-4 sm:px-6 lg:px-8 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-gray-900">{inventory.features.length}</div>
+              <div className="text-xs text-gray-600">Total Features</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-gray-900">{inventory.branding.length}</div>
+              <div className="text-xs text-gray-600">Branding Items</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-gray-900">{inventory.sops.length}</div>
+              <div className="text-xs text-gray-600">SOPs</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-gray-900">{inventory.integrations.length}</div>
+              <div className="text-xs text-gray-600">Integrations</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-4 py-2 rounded-md transition-colors flex items-center justify-center gap-2 ${
+                  activeTab === tab.id
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          {activeTab === 'features' && renderFeatures()}
+          {activeTab === 'branding' && renderBranding()}
+          {activeTab === 'sops' && renderSOPs()}
+          {activeTab === 'integrations' && renderIntegrations()}
+          {activeTab === 'configuration' && renderConfiguration()}
         </div>
       </div>
-    </div>
+
+      <style jsx global>{`
+        :root {
+          --bg-primary: #fafafa;
+          --bg-secondary: #ffffff;
+          --text-primary: #1a1a1a;
+          --text-secondary: #666666;
+          --text-muted: #999999;
+          --border: #e5e5e5;
+          --accent: #0B3D3A;
+          --accent-hover: #084a45;
+          --success: #10b981;
+          --warning: #f59e0b;
+          --error: #ef4444;
+          --info: #3b82f6;
+        }
+      `}</style>
+    </>
   );
 }
