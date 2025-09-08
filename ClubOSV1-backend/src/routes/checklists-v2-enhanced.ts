@@ -441,7 +441,7 @@ router.get('/performance',
       
       if (location && location !== 'all') {
         whereClause = 'WHERE s.location = $1';
-        params.push(location as string);
+        params.push(String(location));
       }
       
       const metricsResult = await db.query(
@@ -617,7 +617,7 @@ router.get('/submissions',
       // Filter by location
       if (location && location !== 'all') {
         whereConditions.push(`s.location = $${paramCount}`);
-        params.push(location as string);
+        params.push(String(location));
         paramCount++;
       }
       
@@ -684,7 +684,7 @@ router.get('/stats',
         } else {
           whereCondition = `WHERE s.location = $1`;
         }
-        params.push(location as string);
+        params.push(String(location));
       }
       
       const statsResult = await db.query(
