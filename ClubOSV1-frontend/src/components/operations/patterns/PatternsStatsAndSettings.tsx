@@ -3,10 +3,11 @@ import {
   TrendingUp, Clock, Users, MessageSquare, CheckCircle, 
   AlertCircle, Zap, Target, Activity, BarChart3,
   Settings, Shield, Brain, Save, RotateCcw, Info,
-  MessageCircle
+  MessageCircle, Upload
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
+import { CSVImportSection } from './CSVImportSection';
 
 interface OperatorStats {
   totalResponses: number;
@@ -48,7 +49,7 @@ interface PatternLearningConfig {
 }
 
 export const PatternsStatsAndSettings: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'settings'>('stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'settings' | 'import'>('stats');
   const [stats, setStats] = useState<OperatorStats | null>(null);
   const [settings, setSettings] = useState<SafetySettings>({
     blacklistTopics: [],
@@ -342,6 +343,17 @@ export const PatternsStatsAndSettings: React.FC = () => {
             >
               <Settings className="h-4 w-4" />
               Safety Settings
+            </button>
+            <button
+              onClick={() => setActiveSection('import')}
+              className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+                activeSection === 'import'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Upload className="h-4 w-4" />
+              Import
             </button>
           </div>
           {activeSection === 'settings' && (
@@ -843,6 +855,16 @@ export const PatternsStatsAndSettings: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Import Section */}
+      {activeSection === 'import' && (
+        <CSVImportSection 
+          onImportComplete={() => {
+            // Refresh stats after successful import
+            fetchStats();
+          }}
+        />
       )}
     </div>
   );

@@ -28,9 +28,11 @@ import { logger } from '../utils/logger';
 import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { patternOptimizer } from '../services/patternOptimizer';
+import { csvImportService } from '../services/csvImportService';
 import { body, param, query as queryValidator, validationResult } from 'express-validator';
 import OpenAI from 'openai';
 import crypto from 'crypto';
+import multer from 'multer';
 
 const router = Router();
 
@@ -653,6 +655,198 @@ router.get('/:id',
       res.status(500).json({ 
         success: false, 
         error: 'Failed to get pattern' 
+      });
+    }
+  }
+);
+
+// ============================================
+// CSV IMPORT ENDPOINTS
+// ============================================
+
+// Configure multer for CSV uploads
+const csvUpload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req: any, file: any, cb: any) => {
+    // Accept CSV files
+    if (file.mimetype === 'text/csv' || 
+        file.mimetype === 'application/csv' ||
+        file.mimetype === 'application/vnd.ms-excel' ||
+        file.originalname.toLowerCase().endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'));
+    }
+  }
+});
+
+/**
+ * POST /api/patterns/import/csv
+ * Import patterns from OpenPhone CSV export
+ */
+router.post('/import/csv',
+  authenticate,
+  roleGuard(['admin']), // Admin only initially
+  csvUpload.single('file'),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'No file uploaded'
+        });
+      }
+
+      // Convert buffer to string
+      const csvData = req.file.buffer.toString('utf-8');
+      
+      // Validate CSV has required columns
+      const firstLine = csvData.split('\n')[0];
+      const requiredColumns = ['id', 'conversationBody', 'direction', 'from', 'to', 'sentAt'];
+      const hasRequiredColumns = requiredColumns.every(col => 
+        firstLine.toLowerCase().includes(col.toLowerCase())
+      );
+      
+      if (!hasRequiredColumns) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid CSV format. Please use OpenPhone export format with columns: id, conversationBody, direction, from, to, sentAt'
+        });
+      }
+
+      // Start import job
+      const job = await csvImportService.startImport(csvData, req.user!.id);
+      
+      logger.info('[CSV Import] Job started', { 
+        jobId: job.id, 
+        userId: req.user!.id,
+        fileName: req.file.originalname,
+        fileSize: req.file.size
+      });
+
+      res.json({
+        success: true,
+        jobId: job.id,
+        status: job.status,
+        totalMessages: job.totalMessages
+      });
+    } catch (error: any) {
+      logger.error('[CSV Import] Failed to start import', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to start CSV import'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/import/status/:jobId
+ * Get CSV import job status
+ */
+router.get('/import/status/:jobId',
+  authenticate,
+  [param('jobId').isUUID()],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+
+      const { jobId } = req.params;
+      
+      // Get job status from service
+      const job = csvImportService.getJobStatus(jobId);
+      
+      if (!job) {
+        // Try to get from database if not in memory
+        const dbResult = await db.query(
+          `SELECT * FROM pattern_import_jobs WHERE id = $1 AND user_id = $2`,
+          [jobId, req.user!.id]
+        );
+        
+        if (dbResult.rows.length === 0) {
+          return res.status(404).json({
+            success: false,
+            error: 'Import job not found'
+          });
+        }
+        
+        const dbJob = dbResult.rows[0];
+        return res.json({
+          success: true,
+          job: {
+            id: dbJob.id,
+            status: dbJob.status,
+            totalMessages: dbJob.total_messages,
+            processedMessages: dbJob.processed_messages,
+            conversationsFound: dbJob.conversations_found,
+            conversationsAnalyzed: dbJob.conversations_analyzed,
+            patternsCreated: dbJob.patterns_created,
+            patternsEnhanced: dbJob.patterns_enhanced,
+            errors: dbJob.errors || [],
+            startedAt: dbJob.started_at,
+            completedAt: dbJob.completed_at
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        job: job
+      });
+    } catch (error) {
+      logger.error('[CSV Import] Failed to get job status', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get import status'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/import/history
+ * Get recent import jobs for current user
+ */
+router.get('/import/history',
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(
+        `SELECT 
+          id,
+          status,
+          total_messages,
+          processed_messages,
+          conversations_found,
+          conversations_analyzed,
+          patterns_created,
+          patterns_enhanced,
+          errors,
+          started_at,
+          completed_at
+        FROM pattern_import_jobs
+        WHERE user_id = $1
+        ORDER BY started_at DESC
+        LIMIT 10`,
+        [req.user!.id]
+      );
+      
+      res.json({
+        success: true,
+        imports: result.rows
+      });
+    } catch (error) {
+      logger.error('[CSV Import] Failed to get import history', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get import history'
       });
     }
   }
