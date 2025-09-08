@@ -431,7 +431,9 @@ export default function ChecklistsAdmin() {
                             </button>
                           )}
                           {template.photo_required && (
-                            <Camera className="w-4 h-4 text-[var(--text-secondary)]" title="Photos Required" />
+                            <span title="Photos Required">
+                              <Camera className="w-4 h-4 text-[var(--text-secondary)]" />
+                            </span>
                           )}
                           {template.max_duration_minutes && (
                             <span className="flex items-center gap-1 text-sm text-[var(--text-secondary)]">
