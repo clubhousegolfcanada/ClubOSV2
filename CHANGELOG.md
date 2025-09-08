@@ -2,6 +2,49 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.0] - 2025-09-08
+
+### Added
+- **Enhanced Checklist Admin Dashboard** - Complete template management for admins
+  - Clone templates for different locations
+  - Edit tasks and add supplies tracking
+  - QR code generation for mobile access
+  - Performance metrics dashboard
+  - Import/export templates functionality
+  
+- **Supplies Tracking System**
+  - Track needed supplies per task with urgency levels
+  - Automatic ticket creation for supply requests
+  - Supplies dashboard for procurement team
+  
+- **Photo Attachment Capability**
+  - Attach photos for damage documentation
+  - Multiple photo support per submission
+  - Integrated with ticket creation
+  
+- **Performance Analytics**
+  - Completion rate tracking by location
+  - Average duration metrics
+  - On-time performance indicators
+  - Top performer leaderboards
+  
+- **QR Code Mobile Access**
+  - Generate QR codes for each checklist template
+  - Direct mobile access without login navigation
+  - Track QR code usage statistics
+
+### Changed
+- Enhanced ChecklistSystem component with new features
+- Updated API routes to `/api/checklists-v2` for enhanced functionality
+- Improved submission tracking with photo and supplies data
+
+### Technical
+- Created enhanced API routes: `checklists-v2-enhanced.ts`
+- Added 5 new database tables for enhanced features
+- Migration: `218_enhanced_checklists.sql`
+- Installed qrcode package for QR generation
+- Admin-only page: `/checklists-admin`
+
 ## [1.19.0] - 2025-09-08
 
 ### Added

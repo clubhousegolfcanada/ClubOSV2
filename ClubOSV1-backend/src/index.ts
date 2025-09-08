@@ -44,7 +44,8 @@ import historyRoutes from './routes/history';
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
 // import checklistsRoutes from './routes/checklists'; // Old hardcoded version
-import checklistsRoutes from './routes/checklists-v2'; // New database version
+// import checklistsRoutes from './routes/checklists-v2'; // Basic database version
+import checklistsRoutes from './routes/checklists-v2-enhanced'; // Enhanced version with supplies & photos
 import remoteActionsRoutes from './routes/remoteActions';
 import ninjaoneSyncRoutes from './routes/ninjaone-sync';
 import doorAccessRoutes from './routes/doorAccess';
@@ -285,7 +286,8 @@ app.use('/api/history', historyRoutes);
 // app.use('/api/test-cors', testCorsRoutes); // Removed during cleanup
 app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/checklists', checklistsRoutes);
+app.use('/api/checklists', checklistsRoutes); // Keep old path for backward compatibility
+app.use('/api/checklists-v2', checklistsRoutes); // New path for v2 frontend
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
 app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);

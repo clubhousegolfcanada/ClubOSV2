@@ -6,12 +6,14 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🚀 Latest Update: Dynamic Checklists with UniFi Integration (v1.19.0)
-- Checklists now database-driven (no more hardcoded templates!)
-- UniFi door unlock starts checklist with automatic time tracking
-- Location-specific templates - different checklists per location
-- Admin can clone and customize templates
-- Perfect accountability - know exactly when cleaning happened
+## 🚀 Latest Update: Enhanced Dynamic Checklists (v1.20.0)
+- **Admin Management UI**: Complete template management dashboard for admins
+- **Supplies Tracking**: Track needed supplies with urgency levels (low/medium/high)
+- **Photo Attachments**: Damage reporting with photo evidence capability
+- **QR Code Access**: Generate QR codes for quick mobile checklist access
+- **Performance Dashboard**: Track completion rates, timing, and top performers
+- **Location Templates**: Clone and customize templates per location
+- **Time Tracking**: Automatic duration calculation from door unlock to submission
 
 ## 🏗️ System Architecture
 

@@ -116,7 +116,7 @@ export const ChecklistSystem: React.FC = () => {
       
       logger.debug(`Loading template for: ${activeCategory} ${activeType}`);
       const response = await http.get(
-        `checklists/template/${activeCategory}/${activeType}`,
+        `checklists-v2/template/${activeCategory}/${activeType}?location=${selectedLocation}`,
 
       );
       
@@ -187,7 +187,7 @@ export const ChecklistSystem: React.FC = () => {
       }
       
       const response = await http.get(
-        `checklists/submissions?${queryParams}`,
+        `checklists-v2/submissions?${queryParams}`,
 
       );
       
@@ -230,7 +230,7 @@ export const ChecklistSystem: React.FC = () => {
       if (!token) return;
       
       const response = await http.get(
-        `checklists/stats`,
+        `checklists-v2/stats`,
 
       );
       
@@ -422,17 +422,15 @@ export const ChecklistSystem: React.FC = () => {
       });
       
       const response = await http.post(
-        `checklists/submit`,
+        `checklists-v2/submit`,
         {
-          category: activeCategory,
-          type: activeType,
+          templateId: currentTemplate.templateId,
           location: selectedLocation,
           completedTasks: completedTaskIds,
-          totalTasks: currentTemplate.tasks.length,
           comments: comments.trim(),
           createTicket: createTicket && comments.trim().length > 0,
-          supplies_needed: supplies.length > 0 ? JSON.stringify(supplies) : null,
-          photo_urls: photoAttachments.length > 0 ? JSON.stringify(photoAttachments) : null
+          supplies: supplies,
+          photoUrls: photoAttachments
         },
 
       );
@@ -494,7 +492,7 @@ export const ChecklistSystem: React.FC = () => {
       const token = tokenManager.getToken();
       
       await http.delete(
-        `checklists/submissions/${submissionId}`,
+        `checklists-v2/submissions/${submissionId}`,
 
       );
       
