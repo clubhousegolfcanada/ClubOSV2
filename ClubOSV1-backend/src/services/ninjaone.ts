@@ -40,12 +40,12 @@ class NinjaOneService {
 
     try {
       const response = await axios.post<NinjaOneToken>(
-        `${process.env.NINJAONE_BASE_URL}/oauth/token`,
+        `${process.env.NINJAONE_BASE_URL}/ws/oauth/token`,
         new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: process.env.NINJAONE_CLIENT_ID || '',
           client_secret: process.env.NINJAONE_CLIENT_SECRET || '',
-          scope: 'monitoring management'
+          scope: 'monitoring management control'
         }),
         {
           headers: {

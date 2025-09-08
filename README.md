@@ -6,6 +6,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
+## 🚀 Latest Update: NinjaOne Integration Active (v1.18.10)
+- OAuth authentication configured
+- Database tables created for scripts and devices  
+- Demo mode working, ready for device registration
+- Fixed OAuth endpoint for proper authentication
+
 ## 🏗️ System Architecture
 
 ### Stack & Infrastructure

@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.18.10] - 2025-09-07
+
+### Added
+- NinjaOne OAuth integration setup
+- Database tables for ninjaone_scripts, ninjaone_devices, remote_actions_log
+- Auto-creation of tables on backend startup
+- Demo mode with default scripts
+- Admin UI for managing scripts and devices
+
+### Fixed  
+- NinjaOne OAuth endpoint URL (changed from /oauth/token to /ws/oauth/token)
+- Added 'control' scope to OAuth permissions
+- Database table creation errors
+- Script and device sync functionality
+
 ## [1.18.9] - 2025-09-07
 
 ### Added
