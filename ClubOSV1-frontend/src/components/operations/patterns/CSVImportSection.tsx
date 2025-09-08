@@ -360,6 +360,22 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({ onImportComp
                     </span>
                   </div>
                 </div>
+                
+                {/* Important Notice */}
+                {jobStatus.patternsCreated > 0 && (
+                  <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="flex">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                      <div className="text-xs text-yellow-800">
+                        <p className="font-medium">Patterns require activation</p>
+                        <p className="mt-1">
+                          Imported patterns are created as inactive for safety. Review and activate them 
+                          in the Pattern Automations page to enable automatic responses.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

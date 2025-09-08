@@ -862,7 +862,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
         <CSVImportSection 
           onImportComplete={() => {
             // Refresh stats after successful import
-            fetchStats();
+            fetchData();
           }}
         />
       )}

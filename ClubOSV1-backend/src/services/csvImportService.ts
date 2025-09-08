@@ -49,6 +49,25 @@ class CSVImportService {
     // Parse CSV to count messages
     const messages = this.parseCSV(csvData);
     
+    // Validation checks
+    if (messages.length === 0) {
+      throw new Error('No valid messages found in CSV file');
+    }
+    
+    if (messages.length > 10000) {
+      throw new Error('CSV contains too many messages (maximum 10,000 allowed)');
+    }
+    
+    // Check for minimum valid content
+    const validMessages = messages.filter(msg => 
+      msg.body && msg.body.trim().length > 5 && 
+      msg.direction && msg.from && msg.to
+    );
+    
+    if (validMessages.length === 0) {
+      throw new Error('No valid messages with content found in CSV');
+    }
+    
     const job: ImportJob = {
       id: jobId,
       status: 'pending',
@@ -385,7 +404,7 @@ class CSVImportService {
             false,
             0,
             0,
-            true,
+            false, // Set to inactive by default - requires review
             'csv_batch_import',
             JSON.stringify(pattern.variables),
             embedding,

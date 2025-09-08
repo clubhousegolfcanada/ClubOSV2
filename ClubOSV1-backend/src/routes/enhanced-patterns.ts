@@ -33,6 +33,7 @@ import { body, param, query as queryValidator, validationResult } from 'express-
 import OpenAI from 'openai';
 import crypto from 'crypto';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
@@ -664,6 +665,16 @@ router.get('/:id',
 // CSV IMPORT ENDPOINTS
 // ============================================
 
+// Rate limiter for CSV imports - 1 import per hour per user
+const csvImportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 1, // 1 import per hour
+  message: 'Too many import attempts. Please wait 1 hour before importing another CSV.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip, // Rate limit by user ID
+});
+
 // Configure multer for CSV uploads
 const csvUpload = multer({ 
   storage: multer.memoryStorage(),
@@ -688,6 +699,7 @@ const csvUpload = multer({
 router.post('/import/csv',
   authenticate,
   roleGuard(['admin']), // Admin only initially
+  csvImportLimiter, // Apply rate limiting
   csvUpload.single('file'),
   async (req: Request, res: Response) => {
     try {
