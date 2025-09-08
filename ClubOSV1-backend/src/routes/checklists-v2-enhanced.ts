@@ -46,14 +46,31 @@ router.get('/template/:category/:type',
       
       const template = templateResult.rows[0];
       
-      // Get tasks for this template with supplies info
-      const tasksResult = await db.query(
-        `SELECT id, task_text as label, position, is_required, supplies_needed, supplies_urgency
-         FROM checklist_tasks 
-         WHERE template_id = $1 
-         ORDER BY position`,
-        [template.id]
-      );
+      // Get tasks for this template with supplies info (fallback for missing columns)
+      let tasksResult;
+      try {
+        tasksResult = await db.query(
+          `SELECT id, task_text as label, position, is_required, supplies_needed, supplies_urgency
+           FROM checklist_tasks 
+           WHERE template_id = $1 
+           ORDER BY position`,
+          [template.id]
+        );
+      } catch (error: any) {
+        // Fallback if supplies columns don't exist yet
+        if (error.code === '42703') { // column does not exist
+          logger.debug('Supplies columns not found, using fallback query');
+          tasksResult = await db.query(
+            `SELECT id, task_text as label, position, is_required
+             FROM checklist_tasks 
+             WHERE template_id = $1 
+             ORDER BY position`,
+            [template.id]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       // Check for any task customizations
       let customizations = { rows: [] };
