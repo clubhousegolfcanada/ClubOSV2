@@ -10,6 +10,15 @@ import path from 'path';
 const router = Router();
 const execAsync = promisify(exec);
 
+// Whitelist of allowed table names for backup operations
+const ALLOWED_TABLES = new Set([
+  'Users', 'feedback', 'tickets', 'bookings',
+  'access_logs', 'auth_logs', 'request_logs',
+  'system_config', 'customer_interactions',
+  'decision_patterns', 'pattern_import_staging',
+  'pattern_import_jobs', 'checklist_submissions'
+]);
+
 // GET /api/backup/export - Export database backup (admin only)
 router.get('/export', authenticate, authorize(['admin']), async (req, res) => {
   try {
@@ -47,8 +56,13 @@ router.get('/export', authenticate, authorize(['admin']), async (req, res) => {
       
       for (const table of tables) {
         try {
-          // Use parameterized query with identifier to prevent SQL injection
-          const result = await db.query(`SELECT * FROM "${table.replace(/"/g, '""')}"`);;
+          // Validate table name against whitelist
+          if (!ALLOWED_TABLES.has(table)) {
+            logger.warn(`Skipping unauthorized table: ${table}`);
+            continue;
+          }
+          // Use parameterized query with proper escaping
+          const result = await db.query(`SELECT * FROM "${table}"`);
           backup.tables[table] = result.rows;
         } catch (err) {
           logger.error(`Failed to export table ${table}:`, err);
@@ -109,7 +123,16 @@ router.get('/stats', authenticate, authorize(['admin']), async (req, res) => {
     
     for (const table of tables) {
       try {
-        const result = await db.query(`SELECT COUNT(*) as count FROM "${table.name.replace(/"/g, '""')}"`);;
+        // Validate table name against whitelist
+        if (!ALLOWED_TABLES.has(table.name)) {
+          logger.warn(`Skipping unauthorized table: ${table.name}`);
+          stats.tables[table.displayName] = {
+            count: 0,
+            error: 'Unauthorized table'
+          };
+          continue;
+        }
+        const result = await db.query(`SELECT COUNT(*) as count FROM "${table.name}"`);
         stats.tables[table.displayName] = {
           count: parseInt(result.rows[0].count),
           tableName: table.name

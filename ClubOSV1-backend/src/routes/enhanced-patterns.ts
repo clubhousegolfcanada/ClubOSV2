@@ -29,6 +29,7 @@ import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { patternOptimizer } from '../services/patternOptimizer';
 import { csvImportService } from '../services/csvImportService';
+import { sanitizePatternTemplate, sanitizeText } from '../utils/sanitizer';
 import { body, param, query as queryValidator, validationResult } from 'express-validator';
 import OpenAI from 'openai';
 import crypto from 'crypto';
@@ -72,10 +73,28 @@ async function validateResponseWithGPT4o(
       temperature: 0.3
     });
     
-    return JSON.parse(completion.choices[0].message.content || '{"valid": true}');
+    // Safely parse GPT-4o response with error handling
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      logger.warn('GPT-4o returned empty response');
+      return { valid: true };
+    }
+    
+    try {
+      const parsed = JSON.parse(content);
+      // Validate expected structure
+      if (typeof parsed.valid !== 'boolean') {
+        logger.warn('GPT-4o returned invalid structure', { content });
+        return { valid: true };
+      }
+      return parsed;
+    } catch (parseError) {
+      logger.error('Failed to parse GPT-4o response', { content, error: parseError });
+      return { valid: true }; // Default to valid to avoid blocking
+    }
   } catch (error) {
     logger.error('GPT-4o validation error:', error);
-    return { valid: true };
+    return { valid: true }; // Default to valid on error
   }
 }
 
@@ -873,12 +892,45 @@ router.get('/import/history',
 router.get('/import/staging/:jobId',
   authenticate,
   roleGuard(['admin']),
-  [param('jobId').isUUID()],
+  [
+    param('jobId').isUUID(),
+    queryValidator('page').optional().isInt({ min: 1 }).toInt(),
+    queryValidator('limit').optional().isInt({ min: 1, max: 100 }).toInt()
+  ],
   async (req: Request, res: Response) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+      
       const { jobId } = req.params;
       const { status = 'all' } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = (page - 1) * limit;
       
+      // Get total count first
+      let countQuery = `
+        SELECT COUNT(*) as total
+        FROM pattern_import_staging ps
+        WHERE ps.import_job_id = $1
+      `;
+      
+      const countParams: any[] = [jobId];
+      
+      if (status !== 'all') {
+        countQuery += ` AND ps.status = $2`;
+        countParams.push(status);
+      }
+      
+      const countResult = await db.query(countQuery, countParams);
+      const totalCount = parseInt(countResult.rows[0].total);
+      
+      // Get paginated results
       let query = `
         SELECT 
           ps.*,
@@ -896,12 +948,20 @@ router.get('/import/staging/:jobId',
       }
       
       query += ` ORDER BY ps.confidence_score DESC, ps.created_at DESC`;
+      query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
       
       const result = await db.query(query, params);
       
       res.json({
         success: true,
-        patterns: result.rows
+        patterns: result.rows,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit)
+        }
       });
     } catch (error) {
       logger.error('[Pattern Staging] Failed to get staged patterns', error);
@@ -921,8 +981,19 @@ router.post('/import/approve',
   authenticate,
   roleGuard(['admin']),
   [
-    body('patternIds').isArray().withMessage('Pattern IDs must be an array'),
-    body('patternIds.*').isInt().withMessage('Each pattern ID must be an integer')
+    body('patternIds')
+      .isArray()
+      .withMessage('Pattern IDs must be an array')
+      .custom((value) => {
+        if (!Array.isArray(value)) return false;
+        if (value.length === 0) throw new Error('At least one pattern ID is required');
+        if (value.length > 100) throw new Error('Maximum 100 patterns can be approved at once');
+        return true;
+      }),
+    body('patternIds.*')
+      .isInt({ min: 1, max: 2147483647 })
+      .withMessage('Each pattern ID must be a valid positive integer')
+      .toInt()
   ],
   async (req: Request, res: Response) => {
     try {
@@ -936,10 +1007,22 @@ router.post('/import/approve',
       
       const { patternIds } = req.body;
       
-      // Call the stored procedure
+      // Additional runtime validation
+      const validatedIds = patternIds.filter((id: any) => 
+        Number.isInteger(id) && id > 0 && id <= Number.MAX_SAFE_INTEGER
+      );
+      
+      if (validatedIds.length !== patternIds.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid pattern IDs detected'
+        });
+      }
+      
+      // Call the stored procedure with validated IDs
       const result = await db.query(
         'SELECT * FROM approve_staged_patterns($1, $2)',
-        [patternIds, req.user!.id]
+        [validatedIds, req.user!.id]
       );
       
       const { approved_count, failed_count } = result.rows[0];
@@ -968,9 +1051,26 @@ router.post('/import/reject',
   authenticate,
   roleGuard(['admin']),
   [
-    body('patternIds').isArray().withMessage('Pattern IDs must be an array'),
-    body('patternIds.*').isInt().withMessage('Each pattern ID must be an integer'),
-    body('reason').optional().isString()
+    body('patternIds')
+      .isArray()
+      .withMessage('Pattern IDs must be an array')
+      .custom((value) => {
+        if (!Array.isArray(value)) return false;
+        if (value.length === 0) throw new Error('At least one pattern ID is required');
+        if (value.length > 100) throw new Error('Maximum 100 patterns can be rejected at once');
+        return true;
+      }),
+    body('patternIds.*')
+      .isInt({ min: 1, max: 2147483647 })
+      .withMessage('Each pattern ID must be a valid positive integer')
+      .toInt(),
+    body('reason')
+      .optional()
+      .isString()
+      .isLength({ max: 500 })
+      .withMessage('Reason must be less than 500 characters')
+      .trim()
+      .escape()
   ],
   async (req: Request, res: Response) => {
     try {
@@ -984,10 +1084,22 @@ router.post('/import/reject',
       
       const { patternIds, reason } = req.body;
       
-      // Call the stored procedure
+      // Additional runtime validation
+      const validatedIds = patternIds.filter((id: any) => 
+        Number.isInteger(id) && id > 0 && id <= Number.MAX_SAFE_INTEGER
+      );
+      
+      if (validatedIds.length !== patternIds.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid pattern IDs detected'
+        });
+      }
+      
+      // Call the stored procedure with validated IDs
       const result = await db.query(
         'SELECT reject_staged_patterns($1, $2, $3) as rejected_count',
-        [patternIds, req.user!.id, reason || null]
+        [validatedIds, req.user!.id, reason || null]
       );
       
       const rejectedCount = result.rows[0].rejected_count;
@@ -1033,6 +1145,19 @@ router.put('/import/staging/:id',
       const { id } = req.params;
       const { trigger_text, response_template, confidence_score } = req.body;
       
+      // Sanitize inputs to prevent XSS
+      const sanitizedTrigger = trigger_text ? sanitizeText(trigger_text) : undefined;
+      const sanitizedResponse = response_template ? sanitizePatternTemplate(response_template) : undefined;
+      
+      // Validate ID is numeric
+      const validatedId = parseInt(id);
+      if (isNaN(validatedId) || validatedId <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid pattern ID'
+        });
+      }
+      
       // Store original values if this is the first edit
       await db.query(`
         UPDATE pattern_import_staging
@@ -1046,7 +1171,7 @@ router.put('/import/staging/:id',
           edited_by = $4,
           edited_at = NOW()
         WHERE id = $5
-      `, [trigger_text, response_template, confidence_score, req.user!.id, id]);
+      `, [sanitizedTrigger, sanitizedResponse, confidence_score, req.user!.id, validatedId]);
       
       res.json({
         success: true,

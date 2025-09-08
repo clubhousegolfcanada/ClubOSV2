@@ -60,20 +60,33 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
   }>({ trigger_text: '', response_template: '', confidence_score: 0.7 });
   const [showPreview, setShowPreview] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatterns, setTotalPatterns] = useState(0);
 
   useEffect(() => {
     if (isOpen && jobId) {
       fetchPatterns();
     }
-  }, [isOpen, jobId, filter]);
+  }, [isOpen, jobId, filter, currentPage]);
 
   const fetchPatterns = async () => {
     try {
       setLoading(true);
       const response = await apiClient.get(`/patterns/import/staging/${jobId}`, {
-        params: { status: filter === 'all' ? 'all' : filter }
+        params: { 
+          status: filter === 'all' ? 'all' : filter,
+          page: currentPage,
+          limit: 50
+        }
       });
       setPatterns(response.data.patterns || []);
+      
+      // Update pagination info
+      if (response.data.pagination) {
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalPatterns(response.data.pagination.total);
+      }
     } catch (error) {
       logger.error('Failed to fetch staged patterns:', error);
       setPatterns([]);

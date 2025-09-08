@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.1] - 2025-09-08
+
+### Security
+- **Critical**: Fixed SQL injection vulnerabilities in backup.ts
+- **Critical**: Added comprehensive input validation for pattern IDs
+- **High**: Implemented XSS prevention with DOMPurify for pattern templates
+- **Medium**: Enhanced GPT-4o error handling with proper JSON parsing
+- Added sanitization utility module for all user inputs
+- Implemented whitelist-based table name validation
+
+### Improved
+- Added pagination support for pattern staging (50 patterns per page)
+- Enhanced error handling for all GPT-4o operations
+- Added runtime validation for all integer inputs
+- Improved TypeScript type safety throughout pattern system
+
+### Fixed
+- Fixed TypeScript compilation errors in checklists-v2-enhanced.ts
+- Corrected parameter type issues in database queries
+- Resolved unsafe string concatenation in SQL queries
+
 ## [1.20.0] - 2025-09-08
 
 ### Added

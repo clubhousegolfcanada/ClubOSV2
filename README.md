@@ -6,7 +6,14 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🚀 Latest Update: Enhanced Dynamic Checklists (v1.20.0)
+## 🔒 Latest Security Update: Pattern System Hardening (v1.20.1)
+- **Fixed critical SQL injection vulnerabilities**
+- **Added comprehensive input validation**
+- **Implemented XSS prevention with DOMPurify**
+- **Enhanced error handling for AI operations**
+- **Added pagination for large pattern sets**
+
+## 🚀 Previous Update: Enhanced Dynamic Checklists (v1.20.0)
 - **Admin Management UI**: Complete template management dashboard for admins
 - **Supplies Tracking**: Track needed supplies with urgency levels (low/medium/high)
 - **Photo Attachments**: Damage reporting with photo evidence capability
