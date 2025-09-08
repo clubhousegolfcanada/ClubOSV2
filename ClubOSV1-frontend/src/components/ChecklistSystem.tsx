@@ -16,6 +16,7 @@ interface Task {
 }
 
 interface ChecklistTemplate {
+  templateId?: string;
   category: string;
   type: string;
   tasks: Task[];
@@ -424,7 +425,9 @@ export const ChecklistSystem: React.FC = () => {
       const response = await http.post(
         `checklists-v2/submit`,
         {
-          templateId: currentTemplate.templateId,
+          templateId: currentTemplate.templateId || '',
+          category: activeCategory,
+          type: activeType,
           location: selectedLocation,
           completedTasks: completedTaskIds,
           comments: comments.trim(),
