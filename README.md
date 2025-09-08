@@ -6,11 +6,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🚀 Latest Update: NinjaOne Integration Active (v1.18.10)
-- OAuth authentication configured
-- Database tables created for scripts and devices  
-- Demo mode working, ready for device registration
-- Fixed OAuth endpoint for proper authentication
+## 🚀 Latest Update: Dynamic Checklists with UniFi Integration (v1.19.0)
+- Checklists now database-driven (no more hardcoded templates!)
+- UniFi door unlock starts checklist with automatic time tracking
+- Location-specific templates - different checklists per location
+- Admin can clone and customize templates
+- Perfect accountability - know exactly when cleaning happened
 
 ## 🏗️ System Architecture
 
