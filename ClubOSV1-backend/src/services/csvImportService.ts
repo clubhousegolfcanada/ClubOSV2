@@ -17,6 +17,7 @@ interface ImportJob {
   conversationsAnalyzed: number;
   patternsCreated: number;
   patternsEnhanced: number;
+  patternsStaged: number; // New: patterns in staging
   errors: string[];
   startedAt: Date;
   completedAt?: Date;
@@ -77,6 +78,7 @@ class CSVImportService {
       conversationsAnalyzed: 0,
       patternsCreated: 0,
       patternsEnhanced: 0,
+      patternsStaged: 0,
       errors: [],
       startedAt: new Date(),
       userId
@@ -195,8 +197,10 @@ class CSVImportService {
         // Save patterns
         for (const pattern of patterns.flat()) {
           if (pattern) {
-            const result = await this.savePattern(pattern);
-            if (result.created) {
+            const result = await this.savePattern(pattern, jobId, batch[0]);
+            if (result.staged) {
+              job.patternsStaged++;
+            } else if (result.created) {
               job.patternsCreated++;
             } else if (result.enhanced) {
               job.patternsEnhanced++;
@@ -349,9 +353,9 @@ class CSVImportService {
   }
 
   /**
-   * Save pattern to database
+   * Save pattern to staging table for review
    */
-  private async savePattern(pattern: any): Promise<{ created: boolean; enhanced: boolean }> {
+  private async savePattern(pattern: any, jobId: string, conversation: any): Promise<{ staged?: boolean; created?: boolean; enhanced?: boolean }> {
     try {
       // Generate embedding for semantic search
       const embeddingText = `${pattern.trigger} ${pattern.response}`;
@@ -363,70 +367,51 @@ class CSVImportService {
         logger.warn('[CSV Import] Failed to generate embedding, pattern will use keyword matching only', error);
       }
 
-      // Check for existing similar pattern
-      const existing = await db.query(
-        `SELECT id, confidence_score FROM decision_patterns 
-         WHERE pattern_type = $1 
-         AND (
-           similarity(trigger_text, $2) > 0.7
-           OR LOWER(trigger_text) LIKE LOWER($3)
-         )`,
-        [pattern.type, pattern.trigger, `%${pattern.trigger.substring(0, 30)}%`]
+      // Create conversation preview for review context
+      const conversationPreview = conversation ? 
+        `Customer: ${conversation.customer.slice(0, 3).join('\n')}\n\nOperator: ${conversation.operator.slice(0, 3).join('\n')}` :
+        'No conversation context available';
+      
+      // Save to staging table for review
+      await db.query(
+        `INSERT INTO pattern_import_staging (
+          import_job_id,
+          pattern_type,
+          trigger_text,
+          response_template,
+          confidence_score,
+          trigger_examples,
+          trigger_keywords,
+          template_variables,
+          conversation_preview,
+          conversation_metadata,
+          status,
+          created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+        [
+          jobId,
+          pattern.type,
+          pattern.trigger,
+          pattern.response,
+          pattern.confidence,
+          [pattern.trigger], // Store original trigger as example
+          pattern.trigger.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3),
+          JSON.stringify(pattern.variables),
+          conversationPreview,
+          JSON.stringify({
+            messageCount: conversation?.messages?.length || 0,
+            duration: conversation ? (conversation.endTime - conversation.startTime) / 1000 / 60 : 0,
+            startTime: conversation?.startTime,
+            endTime: conversation?.endTime
+          }),
+          'pending'
+        ]
       );
       
-      if (existing.rows.length === 0) {
-        // Insert new pattern with embedding
-        await db.query(
-          `INSERT INTO decision_patterns (
-            pattern_type,
-            pattern_signature,
-            trigger_text,
-            response_template,
-            confidence_score,
-            auto_executable,
-            execution_count,
-            success_count,
-            is_active,
-            learned_from,
-            template_variables,
-            embedding,
-            embedding_model,
-            embedding_generated_at,
-            semantic_search_enabled,
-            created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())`,
-          [
-            pattern.type,
-            `csv_import_${Date.now()}`,
-            pattern.trigger,
-            pattern.response,
-            pattern.confidence,
-            false,
-            0,
-            0,
-            false, // Set to inactive by default - requires review
-            'csv_batch_import',
-            JSON.stringify(pattern.variables),
-            embedding,
-            embedding ? 'text-embedding-3-small' : null,
-            embedding ? new Date() : null,
-            embedding ? true : false
-          ]
-        );
-        return { created: true, enhanced: false };
-      } else {
-        // Boost existing pattern
-        const newConfidence = Math.min(existing.rows[0].confidence_score + 0.02, 0.95);
-        await db.query(
-          `UPDATE decision_patterns 
-           SET confidence_score = $1,
-               execution_count = execution_count + 1,
-               last_modified = NOW()
-           WHERE id = $2`,
-          [newConfidence, existing.rows[0].id]
-        );
-        return { created: false, enhanced: true };
-      }
+      return { staged: true };
+      
+      // Note: We're removing the direct pattern creation and enhancement logic
+      // All patterns now go through staging for approval
     } catch (error) {
       logger.error('[CSV Import] Failed to save pattern', error);
       return { created: false, enhanced: false };
@@ -442,15 +427,17 @@ class CSVImportService {
         `INSERT INTO pattern_import_jobs (
           id, user_id, status, total_messages, processed_messages,
           conversations_found, conversations_analyzed, patterns_created,
-          patterns_enhanced, errors, started_at, completed_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          patterns_enhanced, patterns_staged, errors, started_at, completed_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         ON CONFLICT (id) DO UPDATE SET
           status = $3, processed_messages = $5, conversations_analyzed = $7,
-          patterns_created = $8, patterns_enhanced = $9, errors = $10, completed_at = $12`,
+          patterns_created = $8, patterns_enhanced = $9, patterns_staged = $10, 
+          errors = $11, completed_at = $13`,
         [
           job.id, job.userId, job.status, job.totalMessages, job.processedMessages,
           job.conversationsFound, job.conversationsAnalyzed, job.patternsCreated,
-          job.patternsEnhanced, JSON.stringify(job.errors), job.startedAt, job.completedAt
+          job.patternsEnhanced, job.patternsStaged, JSON.stringify(job.errors), 
+          job.startedAt, job.completedAt
         ]
       );
     } catch (error) {

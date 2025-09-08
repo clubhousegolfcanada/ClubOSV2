@@ -8,10 +8,12 @@ import {
   Clock,
   TrendingUp,
   RefreshCw,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
+import { PatternApprovalModal } from './PatternApprovalModal';
 
 interface ImportJob {
   id: string;
@@ -22,6 +24,7 @@ interface ImportJob {
   conversationsAnalyzed: number;
   patternsCreated: number;
   patternsEnhanced: number;
+  patternsStaged: number;
   errors: string[];
   startedAt: string;
   completedAt?: string;
@@ -37,6 +40,8 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({ onImportComp
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [completedJobId, setCompletedJobId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -153,6 +158,12 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({ onImportComp
               pollingInterval.current = null;
             }
             setImporting(false);
+
+            // If patterns were staged, show approval modal
+            if (job.status === 'completed' && job.patternsStaged > 0) {
+              setCompletedJobId(jobId);
+              setShowApprovalModal(true);
+            }
 
             // Call callback if import was successful
             if (job.status === 'completed' && onImportComplete) {
@@ -348,31 +359,43 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({ onImportComp
                     <span className="ml-2 font-medium">{jobStatus.conversationsFound}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">New patterns created:</span>
-                    <span className="ml-2 font-medium text-green-600">
-                      {jobStatus.patternsCreated}
+                    <span className="text-gray-600">Patterns for review:</span>
+                    <span className="ml-2 font-medium text-yellow-600">
+                      {jobStatus.patternsStaged || 0}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Existing patterns enhanced:</span>
-                    <span className="ml-2 font-medium text-blue-600">
-                      {jobStatus.patternsEnhanced}
+                    <span className="text-gray-600">Patterns created:</span>
+                    <span className="ml-2 font-medium text-green-600">
+                      {jobStatus.patternsCreated || 0}
                     </span>
                   </div>
                 </div>
                 
                 {/* Important Notice */}
-                {jobStatus.patternsCreated > 0 && (
+                {jobStatus.patternsStaged > 0 && (
                   <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <div className="flex">
-                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                      <div className="text-xs text-yellow-800">
-                        <p className="font-medium">Patterns require activation</p>
-                        <p className="mt-1">
-                          Imported patterns are created as inactive for safety. Review and activate them 
-                          in the Pattern Automations page to enable automatic responses.
-                        </p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div className="text-xs text-yellow-800">
+                          <p className="font-medium">Patterns require approval</p>
+                          <p className="mt-1">
+                            {jobStatus.patternsStaged} patterns have been staged for review. 
+                            Approve them to add to your pattern library.
+                          </p>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => {
+                          setCompletedJobId(jobStatus.id);
+                          setShowApprovalModal(true);
+                        }}
+                        className="ml-4 px-3 py-1.5 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 flex items-center gap-1"
+                      >
+                        <Eye className="h-3 w-3" />
+                        Review Patterns
+                      </button>
                     </div>
                   </div>
                 )}
@@ -414,6 +437,21 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({ onImportComp
           </div>
         </div>
       </div>
+      
+      {/* Pattern Approval Modal */}
+      {showApprovalModal && completedJobId && (
+        <PatternApprovalModal
+          jobId={completedJobId}
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          onComplete={() => {
+            setShowApprovalModal(false);
+            if (onImportComplete) {
+              onImportComplete();
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

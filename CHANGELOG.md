@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.19.0] - 2025-09-08
+
+### Added
+- **Dynamic Checklist System** - Complete database-driven checklist templates
+  - Checklist templates now stored in database instead of hardcoded
+  - Location-specific template variations supported
+  - UniFi door integration - unlock door to start checklist
+  - Automatic time tracking (door unlock → submission)
+  - User location permissions for access control
+  - Admin can clone and modify templates per location
+  - Backend tracking of actual cleaning duration (hidden from cleaners)
+  
+### Changed
+- Migrated all hardcoded checklist templates to database
+- Updated checklist API to use database templates
+- Enhanced submissions table with timing and status tracking
+- Added door unlock audit logging
+
+### Technical
+- Created 4 new database tables: `checklist_templates`, `checklist_tasks`, `checklist_door_unlocks`, and enhanced `checklist_submissions`
+- New route: `/api/checklists-v2` replacing hardcoded version
+- Added `allowed_locations` field to users table
+- Migration script: `217_dynamic_checklists.sql`
+
 ## [1.18.10] - 2025-09-07
 
 ### Added

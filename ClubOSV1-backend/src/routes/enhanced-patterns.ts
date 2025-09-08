@@ -840,9 +840,11 @@ router.get('/import/history',
           conversations_analyzed,
           patterns_created,
           patterns_enhanced,
+          patterns_staged,
           errors,
           started_at,
-          completed_at
+          completed_at,
+          review_completed
         FROM pattern_import_jobs
         WHERE user_id = $1
         ORDER BY started_at DESC
@@ -859,6 +861,202 @@ router.get('/import/history',
       res.status(500).json({
         success: false,
         error: 'Failed to get import history'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/import/staging/:jobId
+ * Get staged patterns for review
+ */
+router.get('/import/staging/:jobId',
+  authenticate,
+  roleGuard(['admin']),
+  [param('jobId').isUUID()],
+  async (req: Request, res: Response) => {
+    try {
+      const { jobId } = req.params;
+      const { status = 'all' } = req.query;
+      
+      let query = `
+        SELECT 
+          ps.*,
+          u.name as reviewed_by_name
+        FROM pattern_import_staging ps
+        LEFT JOIN users u ON ps.reviewed_by = u.id
+        WHERE ps.import_job_id = $1
+      `;
+      
+      const params: any[] = [jobId];
+      
+      if (status !== 'all') {
+        query += ` AND ps.status = $2`;
+        params.push(status);
+      }
+      
+      query += ` ORDER BY ps.confidence_score DESC, ps.created_at DESC`;
+      
+      const result = await db.query(query, params);
+      
+      res.json({
+        success: true,
+        patterns: result.rows
+      });
+    } catch (error) {
+      logger.error('[Pattern Staging] Failed to get staged patterns', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get staged patterns'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/import/approve
+ * Approve staged patterns
+ */
+router.post('/import/approve',
+  authenticate,
+  roleGuard(['admin']),
+  [
+    body('patternIds').isArray().withMessage('Pattern IDs must be an array'),
+    body('patternIds.*').isInt().withMessage('Each pattern ID must be an integer')
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+      
+      const { patternIds } = req.body;
+      
+      // Call the stored procedure
+      const result = await db.query(
+        'SELECT * FROM approve_staged_patterns($1, $2)',
+        [patternIds, req.user!.id]
+      );
+      
+      const { approved_count, failed_count } = result.rows[0];
+      
+      res.json({
+        success: true,
+        approved: approved_count,
+        failed: failed_count,
+        message: `Successfully approved ${approved_count} patterns${failed_count > 0 ? `, ${failed_count} failed` : ''}`
+      });
+    } catch (error) {
+      logger.error('[Pattern Approval] Failed to approve patterns', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to approve patterns'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/import/reject
+ * Reject staged patterns
+ */
+router.post('/import/reject',
+  authenticate,
+  roleGuard(['admin']),
+  [
+    body('patternIds').isArray().withMessage('Pattern IDs must be an array'),
+    body('patternIds.*').isInt().withMessage('Each pattern ID must be an integer'),
+    body('reason').optional().isString()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+      
+      const { patternIds, reason } = req.body;
+      
+      // Call the stored procedure
+      const result = await db.query(
+        'SELECT reject_staged_patterns($1, $2, $3) as rejected_count',
+        [patternIds, req.user!.id, reason || null]
+      );
+      
+      const rejectedCount = result.rows[0].rejected_count;
+      
+      res.json({
+        success: true,
+        rejected: rejectedCount,
+        message: `Successfully rejected ${rejectedCount} patterns`
+      });
+    } catch (error) {
+      logger.error('[Pattern Rejection] Failed to reject patterns', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to reject patterns'
+      });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/import/staging/:id
+ * Edit a staged pattern before approval
+ */
+router.put('/import/staging/:id',
+  authenticate,
+  roleGuard(['admin']),
+  [
+    param('id').isInt(),
+    body('trigger_text').optional().isString(),
+    body('response_template').optional().isString(),
+    body('confidence_score').optional().isFloat({ min: 0, max: 1 })
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+      
+      const { id } = req.params;
+      const { trigger_text, response_template, confidence_score } = req.body;
+      
+      // Store original values if this is the first edit
+      await db.query(`
+        UPDATE pattern_import_staging
+        SET 
+          original_trigger = COALESCE(original_trigger, trigger_text),
+          original_response = COALESCE(original_response, response_template),
+          trigger_text = COALESCE($1, trigger_text),
+          response_template = COALESCE($2, response_template),
+          confidence_score = COALESCE($3, confidence_score),
+          status = 'edited',
+          edited_by = $4,
+          edited_at = NOW()
+        WHERE id = $5
+      `, [trigger_text, response_template, confidence_score, req.user!.id, id]);
+      
+      res.json({
+        success: true,
+        message: 'Pattern updated successfully'
+      });
+    } catch (error) {
+      logger.error('[Pattern Edit] Failed to edit staged pattern', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to edit pattern'
       });
     }
   }

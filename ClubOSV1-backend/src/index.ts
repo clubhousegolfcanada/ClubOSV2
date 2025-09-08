@@ -43,7 +43,8 @@ import historyRoutes from './routes/history';
 // import testCorsRoutes from './routes/test-cors'; // Removed during cleanup
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
-import checklistsRoutes from './routes/checklists';
+// import checklistsRoutes from './routes/checklists'; // Old hardcoded version
+import checklistsRoutes from './routes/checklists-v2'; // New database version
 import remoteActionsRoutes from './routes/remoteActions';
 import ninjaoneSyncRoutes from './routes/ninjaone-sync';
 import doorAccessRoutes from './routes/doorAccess';
