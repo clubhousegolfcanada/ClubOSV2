@@ -11,6 +11,96 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
+// Get checklist template from database (for regular checklist page)
+router.get('/template/:category/:type',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category, type } = req.params;
+      const { location } = req.query;
+      
+      // First try to get location-specific template
+      let templateResult;
+      if (location) {
+        templateResult = await db.query(
+          `SELECT * FROM checklist_templates 
+           WHERE category = $1 AND type = $2 AND location = $3 AND active = true
+           LIMIT 1`,
+          [category, type, location]
+        );
+      }
+      
+      // Fall back to global template if no location-specific one exists
+      if (!templateResult?.rows.length) {
+        templateResult = await db.query(
+          `SELECT * FROM checklist_templates 
+           WHERE category = $1 AND type = $2 AND location IS NULL AND active = true
+           LIMIT 1`,
+          [category, type]
+        );
+      }
+      
+      if (!templateResult.rows.length) {
+        throw new AppError('Template not found', 404, 'TEMPLATE_NOT_FOUND');
+      }
+      
+      const template = templateResult.rows[0];
+      
+      // Get tasks for this template with supplies info
+      const tasksResult = await db.query(
+        `SELECT id, task_text as label, position, is_required, supplies_needed, supplies_urgency
+         FROM checklist_tasks 
+         WHERE template_id = $1 
+         ORDER BY position`,
+        [template.id]
+      );
+      
+      // Check for any task customizations
+      let customizations = { rows: [] };
+      try {
+        customizations = await db.query(
+          `SELECT task_id, custom_label 
+           FROM checklist_task_customizations 
+           WHERE category = $1 AND type = $2`,
+          [category, type]
+        );
+      } catch (dbError: any) {
+        logger.debug('No customizations table or no customizations found');
+      }
+      
+      // Merge customizations with tasks
+      const tasksWithCustomizations = tasksResult.rows.map(task => {
+        const customization = customizations.rows.find((c: any) => c.task_id === task.id);
+        return {
+          id: task.id,
+          label: customization ? customization.custom_label : task.label,
+          originalLabel: task.label,
+          isCustomized: !!customization,
+          isRequired: task.is_required,
+          supplies_needed: task.supplies_needed,
+          supplies_urgency: task.supplies_urgency
+        };
+      });
+      
+      res.json({
+        success: true,
+        data: {
+          templateId: template.id,
+          category: template.category,
+          type: template.type,
+          location: template.location,
+          qr_enabled: template.qr_enabled,
+          photo_required: template.photo_required,
+          max_duration_minutes: template.max_duration_minutes,
+          tasks: tasksWithCustomizations
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Get all templates (admin only)
 router.get('/templates',
   authenticate,
