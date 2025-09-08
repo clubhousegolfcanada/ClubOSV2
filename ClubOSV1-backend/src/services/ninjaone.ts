@@ -40,7 +40,7 @@ class NinjaOneService {
 
     try {
       const response = await axios.post<NinjaOneToken>(
-        `${process.env.NINJAONE_BASE_URL}/ws/oauth/token`,
+        `${process.env.NINJAONE_BASE_URL}/oauth/token`,
         new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: process.env.NINJAONE_CLIENT_ID || '',
