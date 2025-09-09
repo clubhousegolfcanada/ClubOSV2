@@ -95,14 +95,14 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-900">Active Challenges</h2>
-          <Target className="w-4 h-4 text-[#0B3D3A]" />
+          <Target className="w-4 h-4 text-[var(--accent)]" />
         </div>
         <div className="text-center py-6">
           <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
           <p className="text-xs text-gray-700">No active challenges</p>
           <button
             onClick={() => router.push('/customer/compete')}
-            className="mt-3 px-3 py-1.5 bg-[#0B3D3A] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors"
+            className="mt-3 px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors"
           >
             Create Challenge
           </button>
@@ -115,7 +115,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-gray-900">Active Challenges</h2>
-        <Target className="w-4 h-4 text-[#0B3D3A]" />
+        <Target className="w-4 h-4 text-[var(--accent)]" />
       </div>
       
       <div className="space-y-2">

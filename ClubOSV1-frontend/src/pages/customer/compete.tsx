@@ -495,7 +495,7 @@ export default function Compete() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa] customer-app">
+      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8">

@@ -298,7 +298,7 @@ export default function ChecklistsAdmin() {
                 </button>
                 <button
                   onClick={() => setShowNewTemplateModal(true)}
-                  className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#0a3532] 
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532] 
                            transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -317,7 +317,7 @@ export default function ChecklistsAdmin() {
               onClick={() => setActiveTab('templates')}
               className={`px-4 py-2 font-medium transition-colors border-b-2 ${
                 activeTab === 'templates'
-                  ? 'text-[#0B3D3A] border-[#0B3D3A]'
+                  ? 'text-[var(--accent)] border-[var(--accent)]'
                   : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
               }`}
             >
@@ -330,7 +330,7 @@ export default function ChecklistsAdmin() {
               onClick={() => setActiveTab('performance')}
               className={`px-4 py-2 font-medium transition-colors border-b-2 ${
                 activeTab === 'performance'
-                  ? 'text-[#0B3D3A] border-[#0B3D3A]'
+                  ? 'text-[var(--accent)] border-[var(--accent)]'
                   : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
               }`}
             >
@@ -343,7 +343,7 @@ export default function ChecklistsAdmin() {
               onClick={() => setActiveTab('settings')}
               className={`px-4 py-2 font-medium transition-colors border-b-2 ${
                 activeTab === 'settings'
-                  ? 'text-[#0B3D3A] border-[#0B3D3A]'
+                  ? 'text-[var(--accent)] border-[var(--accent)]'
                   : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
               }`}
             >
@@ -544,7 +544,7 @@ export default function ChecklistsAdmin() {
                             <h4 className="font-medium text-[var(--text-primary)]">Tasks</h4>
                             <button
                               onClick={() => handleAddTask(template.id)}
-                              className="px-3 py-1 bg-[#0B3D3A] text-white text-sm rounded hover:bg-[#0a3532] 
+                              className="px-3 py-1 bg-[var(--accent)] text-white text-sm rounded hover:bg-[#0a3532] 
                                        flex items-center gap-1"
                             >
                               <Plus className="w-3 h-3" />
@@ -720,7 +720,7 @@ export default function ChecklistsAdmin() {
                 <p className="text-sm text-[var(--text-secondary)] mb-4">
                   Manage which users can access specific locations
                 </p>
-                <button className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#0a3532] 
+                <button className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532] 
                                transition-colors flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Manage User Permissions
@@ -910,7 +910,7 @@ export default function ChecklistsAdmin() {
                 </button>
                 <button
                   onClick={handleCreateTemplate}
-                  className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#0a3532]"
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532]"
                 >
                   Create Template
                 </button>

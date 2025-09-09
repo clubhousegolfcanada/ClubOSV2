@@ -25,10 +25,10 @@ const THEME_PRESETS: ThemePreset[] = [
     name: 'ClubOS Green (Current)',
     description: 'The current ClubOS brand colors',
     colors: {
-      primary: '#0B3D3A',
+      primary: 'var(--accent)',
       primaryHover: '#084a45',
       secondary: '#f9fafb',
-      accent: '#0B3D3A',
+      accent: 'var(--accent)',
       accentHover: '#084a45',
       success: '#10b981',
       error: '#ef4444',
@@ -136,10 +136,10 @@ export const ThemeConfigurator: React.FC = () => {
     const root = document.documentElement;
     const computedStyle = getComputedStyle(root);
     const original: ThemeColors = {
-      primary: computedStyle.getPropertyValue('--accent').trim() || '#0B3D3A',
+      primary: computedStyle.getPropertyValue('--accent').trim() || 'var(--accent)',
       primaryHover: computedStyle.getPropertyValue('--accent-hover').trim() || '#084a45',
       secondary: '#f9fafb',
-      accent: computedStyle.getPropertyValue('--accent').trim() || '#0B3D3A',
+      accent: computedStyle.getPropertyValue('--accent').trim() || 'var(--accent)',
       accentHover: computedStyle.getPropertyValue('--accent-hover').trim() || '#084a45',
       success: computedStyle.getPropertyValue('--status-success').trim() || '#10b981',
       error: computedStyle.getPropertyValue('--status-error').trim() || '#ef4444',

@@ -194,7 +194,7 @@ export const BoxOpeningSlotMachine: React.FC<BoxOpeningSlotMachineProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl max-w-md w-full relative overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#0B3D3A] to-[#156963] p-6 text-white">
+        <div className="bg-gradient-to-r from-[var(--accent)] to-[#156963] p-6 text-white">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Open Your Box</h2>
@@ -288,7 +288,7 @@ export const BoxOpeningSlotMachine: React.FC<BoxOpeningSlotMachineProps> = ({
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">You won:</p>
-                  <p className="text-2xl font-bold text-[#0B3D3A]">
+                  <p className="text-2xl font-bold text-[var(--accent)]">
                     {selectedReward.rewardName}
                   </p>
                 </div>
@@ -296,7 +296,7 @@ export const BoxOpeningSlotMachine: React.FC<BoxOpeningSlotMachineProps> = ({
                 {selectedReward.voucherCode && (
                   <div className="bg-white rounded-lg p-3 border border-amber-200">
                     <p className="text-xs text-gray-600 mb-1">Voucher Code:</p>
-                    <p className="font-mono font-bold text-lg text-[#0B3D3A]">
+                    <p className="font-mono font-bold text-lg text-[var(--accent)]">
                       {selectedReward.voucherCode}
                     </p>
                   </div>
@@ -317,7 +317,7 @@ export const BoxOpeningSlotMachine: React.FC<BoxOpeningSlotMachineProps> = ({
               
               <button
                 onClick={onClose}
-                className="w-full mt-4 py-2 px-4 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#0a312f] transition-colors"
+                className="w-full mt-4 py-2 px-4 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a312f] transition-colors"
               >
                 Close
               </button>

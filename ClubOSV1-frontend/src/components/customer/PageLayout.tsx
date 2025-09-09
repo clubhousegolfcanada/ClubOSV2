@@ -60,7 +60,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
         
         {/* Optional Header - Consistent styling when used */}
         {showHeader && (headerTitle || headerSubtitle) && (
-          <div className="bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white">
+          <div className="bg-gradient-to-r from-[var(--accent)] to-[#084a45] text-white">
             <div className={`${maxWidthClasses[maxWidth]} mx-auto px-3 sm:px-4 py-3 sm:py-4`}>
               {headerTitle && (
                 <h1 className="text-xl sm:text-2xl font-bold">{headerTitle}</h1>

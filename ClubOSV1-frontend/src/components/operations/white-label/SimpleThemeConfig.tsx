@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Palette, Copy, Check, RefreshCw } from 'lucide-react';
 
 const PRESET_COLORS = [
-  { name: 'ClubOS Green', primary: '#0B3D3A', hover: '#084a45' },
+  { name: 'ClubOS Green', primary: 'var(--accent)', hover: '#084a45' },
   { name: 'Corporate Blue', primary: '#1e40af', hover: '#1e3a8a' },
   { name: 'Modern Purple', primary: '#7c3aed', hover: '#6d28d9' },
   { name: 'Ocean Teal', primary: '#0891b2', hover: '#0e7490' },
@@ -11,7 +11,7 @@ const PRESET_COLORS = [
 ];
 
 export const SimpleThemeConfig: React.FC = () => {
-  const [primaryColor, setPrimaryColor] = useState('#0B3D3A');
+  const [primaryColor, setPrimaryColor] = useState('var(--accent)');
   const [hoverColor, setHoverColor] = useState('#084a45');
   const [copied, setCopied] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
@@ -21,7 +21,7 @@ export const SimpleThemeConfig: React.FC = () => {
       document.documentElement.style.setProperty('--accent', primaryColor);
       document.documentElement.style.setProperty('--accent-hover', hoverColor);
     } else {
-      document.documentElement.style.setProperty('--accent', '#0B3D3A');
+      document.documentElement.style.setProperty('--accent', 'var(--accent)');
       document.documentElement.style.setProperty('--accent-hover', '#084a45');
     }
   };
@@ -41,7 +41,7 @@ export const SimpleThemeConfig: React.FC = () => {
       document.documentElement.style.setProperty('--accent', primaryColor);
       document.documentElement.style.setProperty('--accent-hover', hoverColor);
     } else {
-      document.documentElement.style.setProperty('--accent', '#0B3D3A');
+      document.documentElement.style.setProperty('--accent', 'var(--accent)');
       document.documentElement.style.setProperty('--accent-hover', '#084a45');
     }
   };

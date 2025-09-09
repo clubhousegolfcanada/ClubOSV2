@@ -269,7 +269,7 @@ export const CustomerDashboard: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
@@ -309,7 +309,7 @@ export const CustomerDashboard: React.FC = () => {
         {quickActions.map((action, index) => (
           <div
             key={index}
-            className="group relative bg-white rounded-lg border border-gray-300 dark:border-gray-700 p-4 hover:shadow-md hover:border-[#0B3D3A]/30 transition-all duration-200"
+            className="group relative bg-white rounded-lg border border-gray-300 dark:border-gray-700 p-4 hover:shadow-md hover:border-[var(--accent)]/30 transition-all duration-200"
           >
             {/* Location selector for Book a Box card */}
             {action.hasLocationSelector && (
@@ -319,7 +319,7 @@ export const CustomerDashboard: React.FC = () => {
                     e.stopPropagation();
                     setShowLocationDropdown(!showLocationDropdown);
                   }}
-                  className="flex items-center gap-1 px-2 py-1 bg-[#0B3D3A]/10 hover:bg-[#0B3D3A]/20 rounded text-xs font-semibold text-[#0B3D3A] relative z-30 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 rounded text-xs font-semibold text-[var(--accent)] relative z-30 transition-colors"
                   title={selectedLocation?.name || 'Select location'}
                 >
                   <MapPin className="w-3 h-3" />
@@ -336,7 +336,7 @@ export const CustomerDashboard: React.FC = () => {
                           handleLocationChange(location);
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                          selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A]' : 'text-gray-700'
+                          selectedLocation?.id === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-gray-700'
                         }`}
                       >
                         <div className="font-medium text-xs">{location.name === 'All Locations' ? 'All' : location.name}</div>
@@ -349,7 +349,7 @@ export const CustomerDashboard: React.FC = () => {
             
             {/* Info badge (rank or CC) */}
             {action.info && !action.badge && (
-              <div className="absolute top-2 right-2 px-2 py-0.5 bg-[#0B3D3A]/10 rounded text-xs font-semibold text-[#0B3D3A]">
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--accent)]/10 rounded text-xs font-semibold text-[var(--accent)]">
                 {action.info}
               </div>
             )}
@@ -379,14 +379,14 @@ export const CustomerDashboard: React.FC = () => {
               <div className={`p-3 rounded-full transition-colors ${
                 action.isTierIcon 
                   ? `${tierConfigs[calculateTierFromCC(quickStats.ccBalance)].bgColor} group-hover:opacity-80`
-                  : 'bg-[#0B3D3A]/10 group-hover:bg-[#0B3D3A]/20'
+                  : 'bg-[var(--accent)]/10 group-hover:bg-[var(--accent)]/20'
               }`}>
                 {action.isTierIcon ? (
                   React.cloneElement(getTierIcon() as React.ReactElement, {
                     className: `w-5 h-5 ${tierConfigs[calculateTierFromCC(quickStats.ccBalance)].iconColor}`
                   })
                 ) : (
-                  <action.icon className="w-5 h-5 text-[#0B3D3A]" />
+                  <action.icon className="w-5 h-5 text-[var(--accent)]" />
                 )}
               </div>
               <div>

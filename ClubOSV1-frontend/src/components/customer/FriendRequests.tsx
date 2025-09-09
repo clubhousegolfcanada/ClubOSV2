@@ -92,7 +92,7 @@ export const FriendRequests: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0B3D3A]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
       </div>
     );
   }
@@ -114,7 +114,7 @@ export const FriendRequests: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#0B3D3A] to-[#084a45] rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[var(--accent)] to-[#084a45] rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold text-white">
                         {request.name?.charAt(0).toUpperCase() || '?'}
                       </span>
@@ -132,7 +132,7 @@ export const FriendRequests: React.FC = () => {
                     <button
                       onClick={() => handleAccept(request.id, request.name)}
                       disabled={processingId === request.id}
-                      className="px-3 py-1.5 bg-[#0B3D3A] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors disabled:opacity-50 flex items-center gap-1"
+                      className="px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors disabled:opacity-50 flex items-center gap-1"
                     >
                       <Check className="w-3 h-3" />
                       Accept

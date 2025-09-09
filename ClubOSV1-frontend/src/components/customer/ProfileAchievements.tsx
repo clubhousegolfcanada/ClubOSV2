@@ -92,7 +92,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-8">
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0B3D3A]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
         </div>
       </div>
     );
@@ -143,12 +143,12 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
                 }}
                 className={`p-3 rounded-lg border transition-all ${
                   selectedCategory === category
-                    ? 'bg-[#0B3D3A] text-white border-[#0B3D3A]'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-[#0B3D3A]/30'
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-[var(--accent)]/30'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={selectedCategory === category ? 'text-white' : 'text-[#0B3D3A]'}>
+                  <span className={selectedCategory === category ? 'text-white' : 'text-[var(--accent)]'}>
                     {categoryIcons[category]}
                   </span>
                   <span className="text-lg font-bold">{items.length}</span>
@@ -170,7 +170,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
             {filteredAchievements.length > 6 && (
               <button
                 onClick={() => setShowAllAchievements(!showAllAchievements)}
-                className="text-xs text-[#0B3D3A] hover:text-[#084a45] flex items-center gap-1"
+                className="text-xs text-[var(--accent)] hover:text-[#084a45] flex items-center gap-1"
               >
                 {showAllAchievements ? 'Show Less' : `View All (${filteredAchievements.length})`}
                 <ChevronRight className={`w-3 h-3 transition-transform ${showAllAchievements ? 'rotate-90' : ''}`} />
@@ -311,7 +311,7 @@ export function ProfileAchievements({ userId }: ProfileAchievementsProps) {
               </div>
               <button
                 onClick={() => setSelectedAchievement(null)}
-                className="w-full mt-6 px-4 py-2 bg-[#0B3D3A] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors"
+                className="w-full mt-6 px-4 py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[#084a45] transition-colors"
               >
                 Close
               </button>

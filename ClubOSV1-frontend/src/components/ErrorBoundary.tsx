@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={this.handleReset}
-                className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B3D3A]"
+                className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)]"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Try Again
@@ -115,7 +115,7 @@ export class ErrorBoundary extends Component<Props, State> {
               
               <button
                 onClick={this.handleGoHome}
-                className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0B3D3A] hover:bg-[#094A3F] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B3D3A]"
+                className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--accent)] hover:bg-[#094A3F] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)]"
               >
                 <Home className="w-4 h-4 mr-2" />
                 Go Home

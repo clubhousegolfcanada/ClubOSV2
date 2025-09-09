@@ -10,7 +10,7 @@ export default function ChallengesIndex() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto mb-4"></div>
         <p className="text-gray-500">Redirecting to challenges...</p>

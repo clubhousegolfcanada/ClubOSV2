@@ -216,7 +216,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
       case 'amateur':
         return 'border-l-4 border-l-blue-300/50 hover:border-l-blue-400/70';
       case 'house':
-        return 'border-l-4 border-l-[#0B3D3A]/30 hover:border-l-[#0B3D3A]/50';
+        return 'border-l-4 border-l-[var(--accent)]/30 hover:border-l-[var(--accent)]/50';
       default:
         return 'border-l-4 border-l-gray-200 hover:border-l-gray-300';
     }
@@ -265,7 +265,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
           style={{ height: `${pullDistance}px`, opacity: pullDistance / 100 }}
         >
           <div className={`${pullDistance > 50 ? 'animate-spin' : ''}`}>
-            <Trophy className="w-5 h-5 text-[#0B3D3A]" />
+            <Trophy className="w-5 h-5 text-[var(--accent)]" />
           </div>
         </div>
       )}
@@ -279,13 +279,13 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
               placeholder="Search players..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A]"
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
             <div className="relative overflow-hidden">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none pl-2 pr-7 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D3A] bg-white cursor-pointer"
+                className="appearance-none pl-2 pr-7 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] bg-white cursor-pointer"
               >
                 <option value="cc_earned">Total CC</option>
                 <option value="cc_balance">Balance</option>
@@ -303,7 +303,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
         <LeaderboardSkeleton />
       ) : refreshing ? (
         <div className="flex justify-center items-center py-12 bg-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B3D3A]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)]"></div>
         </div>
       ) : (
         <div className="bg-white divide-y divide-gray-200">
@@ -345,7 +345,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                 
                 {/* Stats - Fixed width for alignment */}
                 <div className="flex flex-col items-end flex-shrink-0" style={{ minWidth: '80px' }}>
-                  <span className="font-semibold text-[#0B3D3A] text-xs">
+                  <span className="font-semibold text-[var(--accent)] text-xs">
                     {sortBy === 'cc_balance' ? (player.cc_balance || 0).toLocaleString() :
                      sortBy === 'wins' ? player.total_challenges_won :
                      sortBy === 'win_rate' ? `${player.win_rate}%` :
@@ -362,7 +362,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                     player.is_friend ? (
                       <button
                         onClick={() => router.push(`/customer/challenges/create?friend=${player.user_id}`)}
-                        className="px-3 py-1 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors w-full"
+                        className="px-3 py-1 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white border border-[var(--accent)] rounded-full transition-colors w-full"
                       >
                         Challenge
                       </button>
@@ -374,7 +374,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                       <button
                         onClick={() => sendFriendRequest(player.user_id, player.name)}
                         disabled={sendingRequest === player.user_id}
-                        className="p-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors disabled:opacity-50 w-8 h-8 flex items-center justify-center"
+                        className="p-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white border border-[var(--accent)] rounded-full transition-colors disabled:opacity-50 w-8 h-8 flex items-center justify-center"
                       >
                         <UserPlus className="w-4 h-4" />
                       </button>
@@ -441,7 +441,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                       player.is_friend ? (
                         <button
                           onClick={() => router.push(`/customer/challenges/create?friend=${player.user_id}`)}
-                          className="px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white border border-[var(--accent)] rounded-full transition-colors"
                         >
                           Challenge
                         </button>
@@ -453,7 +453,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                         <button
                           onClick={() => sendFriendRequest(player.user_id, player.name)}
                           disabled={sendingRequest === player.user_id}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#0B3D3A] hover:bg-[#0B3D3A] hover:text-white border border-[#0B3D3A] rounded-full transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white border border-[var(--accent)] rounded-full transition-colors disabled:opacity-50"
                         >
                           {sendingRequest === player.user_id ? (
                             <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
@@ -472,7 +472,7 @@ export const LeaderboardList: React.FC<LeaderboardListProps> = ({
                 <div className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-300 pl-9">
                   <div className="flex items-center gap-4">
                     {/* Primary stat based on sort */}
-                    <span className="flex items-center gap-1 font-semibold text-[#0B3D3A]">
+                    <span className="flex items-center gap-1 font-semibold text-[var(--accent)]">
                       {sortBy === 'cc_balance' ? (
                         <>
                           <Coins className="w-4 h-4" />

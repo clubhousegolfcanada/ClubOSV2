@@ -34,15 +34,15 @@ const tierConfigs: Record<TierName, TierConfig> = {
   house: {
     name: 'House',
     icon: <Trophy className="w-4 h-4" />,
-    bgColor: 'bg-[#0B3D3A]/5',
-    borderColor: 'border-[#0B3D3A]/20',
-    textColor: 'text-[#0B3D3A]',
-    iconColor: 'text-[#0B3D3A]/70',
+    bgColor: 'bg-[var(--accent)]/5',
+    borderColor: 'border-[var(--accent)]/20',
+    textColor: 'text-[var(--accent)]',
+    iconColor: 'text-[var(--accent)]/70',
     minCC: 200,
     maxCC: 749,
-    outlineColor: 'border-[#0B3D3A]/30',
+    outlineColor: 'border-[var(--accent)]/30',
     shadowColor: 'shadow-sm',
-    accentColor: '#0B3D3A'
+    accentColor: 'var(--accent)'
   },
   amateur: {
     name: 'Amateur',

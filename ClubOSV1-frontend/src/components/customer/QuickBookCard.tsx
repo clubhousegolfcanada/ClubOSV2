@@ -114,7 +114,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
       <div className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={toggleMinimize}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-[#0B3D3A]" />
+            <Calendar className="w-4 h-4 text-[var(--accent)]" />
             <h2 className="text-sm font-semibold text-gray-900">Book a Box</h2>
             
             {/* Show location when minimized */}
@@ -132,7 +132,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                     e.stopPropagation();
                     setShowLocationDropdown(!showLocationDropdown);
                   }}
-                  className="flex items-center gap-1 px-2 py-1 bg-[#0B3D3A]/10 hover:bg-[#0B3D3A]/20 rounded text-xs font-medium text-[#0B3D3A] transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 rounded text-xs font-medium text-[var(--accent)] transition-colors"
               >
                 <MapPin className="w-3 h-3" />
                 <span>{selectedLocation.name === 'All Locations' ? 'All' : selectedLocation.name}</span>
@@ -146,7 +146,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                       key={location.id}
                       onClick={() => handleLocationChange(location)}
                       className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                        selectedLocation?.id === location.id ? 'bg-[#0B3D3A]/10 text-[#0B3D3A] font-medium' : 'text-gray-700'
+                        selectedLocation?.id === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-medium' : 'text-gray-700'
                       }`}
                     >
                       <div className="font-medium text-sm">{location.name}</div>
@@ -172,7 +172,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                 className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Open full booking page"
               >
-                <ExternalLink className="w-4 h-4 text-[#0B3D3A]" />
+                <ExternalLink className="w-4 h-4 text-[var(--accent)]" />
               </button>
             )}
             
@@ -183,7 +183,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                   e.stopPropagation();
                   handleExpand();
                 }}
-                className="px-3 py-1 bg-[#0B3D3A] text-white text-xs rounded-lg hover:bg-[#084a45] transition-colors"
+                className="px-3 py-1 bg-[var(--accent)] text-white text-xs rounded-lg hover:bg-[#084a45] transition-colors"
               >
                 Book Now
               </button>
@@ -207,7 +207,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[#0B3D3A] animate-spin mb-3" />
+            <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin mb-3" />
             <p className="text-sm text-gray-600">Loading booking system...</p>
           </div>
         )}
@@ -222,7 +222,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
             </p>
             <button
               onClick={handleExpand}
-              className="px-4 py-2 bg-[#0B3D3A] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#084a45] transition-colors flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
               Open Booking System

@@ -203,7 +203,7 @@ export default function ChallengeDetail() {
 
   if (loading || !challenge) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto mb-4"></div>
           <p className="text-gray-500">Loading challenge...</p>
@@ -226,7 +226,7 @@ export default function ChallengeDetail() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa] customer-app">
+      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
         
         <main className="pb-20 lg:pb-8 pt-14">

@@ -175,8 +175,8 @@ const CustomerNavigation: React.FC = () => {
                 onClick={() => router.push('/customer/profile?tab=boxes')}
                 className="relative p-1.5 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors group animate-shimmer"
               >
-                <Package className="w-4 h-4 text-[var(--text-primary)] group-hover:text-[#0B3D3A]" />
-                <span className="absolute -top-1 -right-1 bg-[#0B3D3A] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                <Package className="w-4 h-4 text-[var(--text-primary)] group-hover:text-[var(--accent)]" />
+                <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                   {availableBoxes}
                 </span>
               </button>
@@ -333,7 +333,7 @@ const CustomerNavigation: React.FC = () => {
                 onClick={() => router.push(item.path)}
                 className={`relative flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                   isActive
-                    ? 'text-[#0B3D3A]'
+                    ? 'text-[var(--accent)]'
                     : 'text-gray-800 hover:text-gray-900'
                 }`}
               >
@@ -341,7 +341,7 @@ const CustomerNavigation: React.FC = () => {
                 <span className="text-[10px] font-medium">{item.label}</span>
                 {/* Add box notification badge on Profile icon */}
                 {item.key === 'profile' && availableBoxes > 0 && (
-                  <span className="absolute top-2 right-2 bg-[#0B3D3A] text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 px-1 flex items-center justify-center">
+                  <span className="absolute top-2 right-2 bg-[var(--accent)] text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 px-1 flex items-center justify-center">
                     {availableBoxes}
                   </span>
                 )}

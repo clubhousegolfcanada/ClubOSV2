@@ -33,7 +33,7 @@ const rewardItems = [
     label: 'Free Hour',
     type: 'free_hour',
     value: 1,
-    color: 'from-[#0B3D3A] to-[#084a45]',
+    color: 'from-[var(--accent)] to-[#084a45]',
     probability: 30
   },
   { 
@@ -65,7 +65,7 @@ const rewardItems = [
     label: '100 CC',
     type: 'club_coins',
     value: 100,
-    color: 'from-[#0B3D3A] to-[#084a45]',
+    color: 'from-[var(--accent)] to-[#084a45]',
     probability: 10
   },
   { 
@@ -73,7 +73,7 @@ const rewardItems = [
     label: '150 CC',
     type: 'club_coins',
     value: 150,
-    color: 'from-[#0B3D3A] to-[#084a45]',
+    color: 'from-[var(--accent)] to-[#084a45]',
     probability: 8
   },
   { 
@@ -257,7 +257,7 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
       <div className="bg-white dark:bg-[var(--bg-primary)] rounded-2xl max-w-md w-full relative overflow-hidden border border-[var(--border-primary)] shadow-2xl">
         {/* Header */}
         <div className="relative p-6 border-b border-[var(--border-primary)]">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0B3D3A]/5 to-[#0B3D3A]/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent)]/5 to-[var(--accent)]/10" />
           <div className="relative flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Mystery Box</h2>
@@ -282,13 +282,13 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
             {!currentItem ? (
               // Mystery box state - before opening
               <div className="relative">
-                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-[#0B3D3A] to-[#084a45] 
-                              flex items-center justify-center border-2 border-[#0B3D3A]/20 shadow-xl
+                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[#084a45] 
+                              flex items-center justify-center border-2 border-[var(--accent)]/20 shadow-xl
                               transform hover:scale-105 transition-transform cursor-pointer"
                      onClick={handleOpenBox}>
                   <Package className="w-16 h-16 text-white/90" strokeWidth={1.5} />
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-[#0B3D3A]/20 to-[#084a45]/20 rounded-xl blur-2xl" />
+                <div className="absolute -inset-2 bg-gradient-to-r from-[var(--accent)]/20 to-[#084a45]/20 rounded-xl blur-2xl" />
               </div>
             ) : (
               // Spinning/Result state
@@ -297,15 +297,15 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
                   className={`
                     w-32 h-32 rounded-xl bg-gradient-to-br ${currentItem.color}
                     flex flex-col items-center justify-center transition-all duration-200
-                    border-2 ${showResult ? 'border-[#0B3D3A]/50 scale-110 shadow-2xl' : 
-                      isSpinning ? 'border-[#0B3D3A]/20 scale-105' : 'border-[#0B3D3A]/20'}
+                    border-2 ${showResult ? 'border-[var(--accent)]/50 scale-110 shadow-2xl' : 
+                      isSpinning ? 'border-[var(--accent)]/20 scale-105' : 'border-[var(--accent)]/20'}
                   `}
                 >
                   <Icon className="w-12 h-12 text-white mb-2" strokeWidth={1.5} />
                   <span className="text-white font-semibold text-sm">{currentItem.label}</span>
                 </div>
                 {showResult && (
-                  <div className="absolute -inset-3 bg-gradient-to-r from-[#0B3D3A]/40 to-[#084a45]/40 rounded-xl blur-3xl animate-pulse" />
+                  <div className="absolute -inset-3 bg-gradient-to-r from-[var(--accent)]/40 to-[#084a45]/40 rounded-xl blur-3xl animate-pulse" />
                 )}
               </div>
             )}
@@ -321,7 +321,7 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
               className={`w-full py-3 px-6 rounded-lg font-semibold text-sm transition-all ${
                 isSpinning
                   ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#0B3D3A] to-[#084a45] text-white hover:from-[#084a45] hover:to-[#063a35] shadow-lg transform hover:scale-[1.02] active:scale-[0.98]'
+                  : 'bg-gradient-to-r from-[var(--accent)] to-[#084a45] text-white hover:from-[#084a45] hover:to-[#063a35] shadow-lg transform hover:scale-[1.02] active:scale-[0.98]'
               }`}
             >
               {isSpinning ? 'Revealing...' : 'Open Box'}
@@ -330,10 +330,10 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
             <div className="space-y-4">
               {/* Reward Display */}
               {selectedReward && (
-                <div className="bg-gradient-to-br from-[#0B3D3A]/5 to-[#0B3D3A]/10 rounded-lg border border-[#0B3D3A]/20 p-4 mb-4">
+                <div className="bg-gradient-to-br from-[var(--accent)]/5 to-[var(--accent)]/10 rounded-lg border border-[var(--accent)]/20 p-4 mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-[var(--text-muted)]">Reward Claimed</h3>
-                    <div className="w-2 h-2 bg-[#0B3D3A] rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse" />
                   </div>
                   
                   <div className="space-y-3">
@@ -346,7 +346,7 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
                     {selectedReward.voucherCode && (
                       <div className="bg-white dark:bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-primary)]">
                         <p className="text-xs text-[var(--text-muted)] mb-1 font-medium">Voucher Code</p>
-                        <p className="font-mono font-bold text-[#0B3D3A] text-lg">
+                        <p className="font-mono font-bold text-[var(--accent)] text-lg">
                           {selectedReward.voucherCode}
                         </p>
                       </div>
@@ -359,7 +359,7 @@ export const BoxOpeningSimple: React.FC<BoxOpeningSimpleProps> = ({
                     )}
                     
                     {selectedReward.rewardType === 'club_coins' && (
-                      <p className="text-sm text-[#0B3D3A] font-semibold">
+                      <p className="text-sm text-[var(--accent)] font-semibold">
                         ✓ Added to your balance
                       </p>
                     )}

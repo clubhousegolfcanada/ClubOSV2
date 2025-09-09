@@ -157,13 +157,13 @@ export default function Operations() {
 
       <style jsx>{`
         :root {
-          --bg-primary: #fafafa;
+          --bg-primary: var(--bg-primary);
           --bg-secondary: #ffffff;
           --text-primary: #1a1a1a;
           --text-secondary: #666666;
           --text-muted: #999999;
           --border: #e5e5e5;
-          --accent: #0B3D3A;
+          --accent: var(--accent);
           --accent-hover: #084a45;
           --success: #10b981;
           --warning: #f59e0b;

@@ -43,7 +43,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
                 onClick={() => onTabChange(tab.key)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
                   activeTab === tab.key
-                    ? 'bg-[#0B3D3A] text-white'
+                    ? 'bg-[var(--accent)] text-white'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -74,7 +74,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
               onClick={() => onTabChange(tab.key)}
               className={`py-3 px-3 border-b-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2 ${
                 activeTab === tab.key
-                  ? 'border-[#0B3D3A] text-[#0B3D3A]'
+                  ? 'border-[var(--accent)] text-[var(--accent)]'
                   : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >

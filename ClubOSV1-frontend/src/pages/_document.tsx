@@ -6,7 +6,7 @@ export default function Document() {
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="description" content="ClubOS - AI-powered golf simulator management system" />
-        <meta name="theme-color" content="#0B3D3A" />
+        <meta name="theme-color" content="var(--accent)" />
         
         {/* PWA Meta Tags */}
         <meta name="mobile-web-app-capable" content="yes" />
@@ -15,7 +15,7 @@ export default function Document() {
         <meta name="apple-mobile-web-app-title" content="ClubOS" />
         <meta name="application-name" content="ClubOS" />
         <meta name="format-detection" content="telephone=no" />
-        <meta name="msapplication-TileColor" content="#0B3D3A" />
+        <meta name="msapplication-TileColor" content="var(--accent)" />
         <meta name="msapplication-tap-highlight" content="no" />
         
         {/* Icons */}
@@ -29,7 +29,7 @@ export default function Document() {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         
         {/* Android */}
-        <meta name="theme-color" content="#0B3D3A" />
+        <meta name="theme-color" content="var(--accent)" />
         
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>

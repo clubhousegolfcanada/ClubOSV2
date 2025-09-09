@@ -37,7 +37,7 @@ export default function CustomerApp() {
   // Show loading state only briefly
   if (localLoading && isLoading) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -55,7 +55,7 @@ export default function CustomerApp() {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
 
-      <div className="min-h-screen bg-[#fafafa] customer-app">
+      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         {/* Customer Navigation - Mobile optimized */}
         <CustomerNavigation />
         
