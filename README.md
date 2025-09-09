@@ -6,12 +6,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🎯 Latest Update: Pattern Learning System Ready (v1.20.3)
-- **Pattern Learning Scripts Added** - Ready to enable learning from OpenPhone
-- **Shadow Mode Configuration** - Learn without executing (safe)
-- **Monitoring Tools Created** - Track pattern creation and safety
-- **V3-PLS Integration Ready** - Patterns will appear inactive for review
-- **To Activate**: Run `railway run psql '$DATABASE_URL' < scripts/ENABLE-PATTERNS-SIMPLE.sql`
+## 🎯 Latest Update: Pattern Learning UI Controls (v1.20.3)
+- **Pattern Learning Controls in V3-PLS** - Enable/disable from UI
+- **No SQL Commands Needed** - Toggle in Stats & Settings tab
+- **Shadow Mode Option** - Learn without executing (safe)
+- **Already Working** - Your 6 active patterns continue responding
+- **To Enable Learning**: Operations → V3-PLS → Stats & Settings → Enable Pattern Learning
 
 ## 🔒 Security Update: Pattern System Hardening (v1.20.1)
 - **Fixed critical SQL injection vulnerabilities**

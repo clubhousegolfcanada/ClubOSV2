@@ -5,11 +5,17 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.20.3] - 2025-09-09
 
 ### Added
-- **Pattern Learning System Activation Scripts**
-  - Created activation scripts for safe pattern learning enablement
-  - Added monitoring queries for pattern creation tracking
-  - Documented conversation window behavior (1-hour grouping)
-  - Added safety verification scripts
+- **Pattern Learning Configuration API**
+  - Added GET/PUT `/api/patterns/config` endpoints
+  - V3-PLS Stats & Settings page can now control pattern learning
+  - Enable/disable pattern learning from the UI (no SQL needed)
+  - Configuration stored in `pattern_learning_config` table
+
+### Fixed
+- **Pattern Learning System UI Controls**
+  - Connected frontend controls to backend configuration
+  - Pattern learning can now be enabled from V3-PLS page
+  - Settings properly persist to database
 
 ### Configuration
 - **Pattern Learning Ready for Activation**
