@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.4] - 2025-09-09
+
+### Fixed
+- **Checklist Submissions Query**: Fixed malformed array literal error when querying photo_urls
+- Changed comparison from string literal `'[]'` to proper array function `array_length()`
+- Submissions endpoint now properly handles PostgreSQL array columns
+
 ## [1.20.3] - 2025-09-09
 
 ### Added

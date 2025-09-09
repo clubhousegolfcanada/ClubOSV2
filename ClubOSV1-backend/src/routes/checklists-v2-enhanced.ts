@@ -476,7 +476,7 @@ router.get('/performance',
              NULLIF(COUNT(CASE WHEN t.max_duration_minutes IS NOT NULL THEN 1 END), 0)) * 100, 2
           ) as on_time_rate,
           COUNT(DISTINCT sr.id) as supplies_reported,
-          COUNT(DISTINCT CASE WHEN s.photo_urls IS NOT NULL AND s.photo_urls != '[]' THEN s.id END) as photos_uploaded
+          COUNT(DISTINCT CASE WHEN s.photo_urls IS NOT NULL AND array_length(s.photo_urls, 1) > 0 THEN s.id END) as photos_uploaded
          FROM checklist_submissions s
          JOIN checklist_templates t ON s.template_id = t.id
          LEFT JOIN checklist_supplies_requests sr ON s.id = sr.submission_id
@@ -672,8 +672,8 @@ router.get('/submissions',
               0
             ) as supplies_count,
             CASE 
-              WHEN s.photo_urls IS NOT NULL AND s.photo_urls != '[]' 
-              THEN jsonb_array_length(s.photo_urls::jsonb)
+              WHEN s.photo_urls IS NOT NULL AND array_length(s.photo_urls, 1) > 0 
+              THEN array_length(s.photo_urls, 1)
               ELSE 0
             END as photo_count
            FROM checklist_submissions s
