@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.2] - 2025-09-09
+
+### Database
+- **Enhanced Checklists Migration Complete**: Successfully deployed all enhanced checklist features to production
+- Created `checklist_supplies_requests` table for supply tracking
+- Created `checklist_performance` table for performance metrics
+- Created `checklist_qr_codes` table for QR code management
+- Added `photo_urls`, `supplies_requested`, `qr_code_accessed` columns to submissions
+- Added `supplies_needed`, `supplies_urgency` columns to tasks
+- Added template management columns for cloning and configuration
+
+### Verified
+- All enhanced tables successfully created in production database
+- API endpoints properly using enhanced features with fallback support
+- Admin dashboard at `/checklists-admin` fully operational
+- Backward compatibility maintained for existing functionality
+
 ## [1.20.1] - 2025-09-08
 
 ### Security
