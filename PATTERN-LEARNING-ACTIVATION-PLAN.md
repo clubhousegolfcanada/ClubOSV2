@@ -3,6 +3,26 @@
 ## 📋 Objective
 Enable pattern learning from OpenPhone conversations to populate the V3-PLS page while keeping all patterns INACTIVE and safe.
 
+## ⏱️ Important: Conversation Window & Delay Mechanism
+
+### Current System Behavior:
+1. **1-Hour Conversation Window**: Messages are grouped into conversations with a 1-hour window
+2. **Pattern Learning Trigger**: Only occurs when operator sends an OUTBOUND message
+3. **No Built-in Delay**: System learns immediately when operator responds
+4. **Multi-Response Learning**: Can learn from multiple operator responses in same conversation
+
+### Key Insights:
+- **Customer Message** (inbound) → Starts/continues conversation
+- **Operator Response** (outbound) → Triggers pattern learning IMMEDIATELY
+- **Multiple Exchanges**: System captures full context if operator sends multiple messages
+- **1-Hour Gap**: New conversation starts after 1 hour of inactivity
+
+### Recommendation for Better Learning:
+Since there's no built-in delay, operators should:
+1. **Wait for complete context** before responding
+2. **Send comprehensive responses** (not quick acknowledgments)
+3. **Use multiple messages** if needed (all will be captured)
+
 ## 🎯 Goals
 1. **Learn from real conversations** - Capture operator responses as patterns
 2. **Keep patterns inactive** - All patterns remain OFF by default

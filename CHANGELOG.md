@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.3] - 2025-09-09
+
+### Added
+- **Pattern Learning System Activation Scripts**
+  - Created activation scripts for safe pattern learning enablement
+  - Added monitoring queries for pattern creation tracking
+  - Documented conversation window behavior (1-hour grouping)
+  - Added safety verification scripts
+
+### Configuration
+- **Pattern Learning Ready for Activation**
+  - System learns from operator OpenPhone responses
+  - All patterns created as inactive (require manual activation)
+  - Shadow mode ensures no auto-execution
+  - V3-PLS page will display learned patterns for review
+  - No delay mechanism - learns immediately when operator responds
+  - Conversation window groups messages within 1 hour
+
+### Documentation
+- Created `OPENPHONE-PATTERN-LEARNING-AUDIT.md` - comprehensive system audit
+- Created `PATTERN-LEARNING-ACTIVATION-PLAN.md` - activation guide
+- Added monitoring scripts in `/scripts` directory
+- Documented safety measures and rollback procedures
+
 ## [1.20.2] - 2025-09-09
 
 ### Database
