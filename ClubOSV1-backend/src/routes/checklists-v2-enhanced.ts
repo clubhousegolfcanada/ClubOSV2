@@ -513,55 +513,55 @@ router.post('/submit',
       const { templateId, location, completedTasks, comments, createTicket, supplies, photoUrls } = req.body;
       const userId = req.user!.id;
       
-      // Get or create submission
-      let submissionResult = await db.query(
-        `SELECT * FROM checklist_submissions 
-         WHERE template_id = $1 AND user_id = $2 AND status = 'in_progress'
-         ORDER BY started_at DESC LIMIT 1`,
-        [templateId, userId]
-      );
+      // Get category and type from templateId if provided
+      let category = req.body.category;
+      let type = req.body.type;
       
-      let submissionId;
-      if (submissionResult.rows.length > 0) {
-        submissionId = submissionResult.rows[0].id;
-        // Update existing submission
-        await db.query(
-          `UPDATE checklist_submissions 
-           SET completed_tasks = $1, comments = $2, completed_at = NOW(), 
-               status = 'completed', photo_urls = $3, supplies_requested = $4
-           WHERE id = $5`,
-          [JSON.stringify(completedTasks), comments, JSON.stringify(photoUrls || []), 
-           JSON.stringify(supplies || []), submissionId]
-        );
-      } else {
-        // Create new submission
-        const templateInfo = await db.query(
-          'SELECT category, type FROM checklist_templates WHERE id = $1',
-          [templateId]
-        );
-        
-        submissionResult = await db.query(
-          `INSERT INTO checklist_submissions 
-           (template_id, user_id, location, category, type, total_tasks, completed_tasks, 
-            comments, completed_at, status, photo_urls, supplies_requested)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'completed', $9, $10)
-           RETURNING *`,
-          [templateId, userId, location, templateInfo.rows[0].category, 
-           templateInfo.rows[0].type, completedTasks.length, JSON.stringify(completedTasks), 
-           comments, JSON.stringify(photoUrls || []), JSON.stringify(supplies || [])]
-        );
-        submissionId = submissionResult.rows[0].id;
+      if (templateId) {
+        try {
+          const templateInfo = await db.query(
+            'SELECT category, type FROM checklist_templates WHERE id = $1',
+            [templateId]
+          );
+          if (templateInfo.rows.length > 0) {
+            category = templateInfo.rows[0].category;
+            type = templateInfo.rows[0].type;
+          }
+        } catch (error) {
+          // Templates table doesn't exist yet, use provided values
+          logger.debug('Templates table not found, using provided category/type');
+        }
       }
       
-      // Handle supplies requests
+      // Create submission with basic fields that exist in current schema
+      const submissionResult = await db.query(
+        `INSERT INTO checklist_submissions 
+         (user_id, location, category, type, total_tasks, completed_tasks, 
+          comments, completion_time)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+         RETURNING id`,
+        [userId, location, category, type, completedTasks.length, 
+         JSON.stringify(completedTasks), comments]
+      );
+      
+      const submissionId = submissionResult.rows[0].id;
+      
+      // Handle supplies requests (only if table exists)
       if (supplies && supplies.length > 0) {
-        for (const supply of supplies) {
-          await db.query(
-            `INSERT INTO checklist_supplies_requests 
-             (submission_id, task_id, supplies_description, urgency, requested_by)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [submissionId, supply.taskId || null, supply.name, supply.urgency || 'medium', userId]
-          );
+        try {
+          for (const supply of supplies) {
+            await db.query(
+              `INSERT INTO checklist_supplies_requests 
+               (submission_id, task_id, supplies_description, urgency, requested_by)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [submissionId, supply.taskId || null, supply.name, supply.urgency || 'medium', userId]
+            );
+          }
+        } catch (error: any) {
+          if (error.code !== '42P01') { // table does not exist
+            throw error;
+          }
+          logger.debug('Supplies table not found, skipping supplies tracking');
         }
       }
       
@@ -584,20 +584,29 @@ router.post('/submit',
         );
       }
       
-      // Update performance tracking
-      await db.query(
-        `INSERT INTO checklist_performance 
-         (user_id, location, template_id, week_start, completions_count, 
-          supplies_reported_count, photos_uploaded_count)
-         VALUES ($1, $2, $3, date_trunc('week', NOW()), 1, $4, $5)
-         ON CONFLICT (user_id, location, template_id, week_start)
-         DO UPDATE SET 
-           completions_count = checklist_performance.completions_count + 1,
-           supplies_reported_count = checklist_performance.supplies_reported_count + $4,
-           photos_uploaded_count = checklist_performance.photos_uploaded_count + $5,
-           updated_at = NOW()`,
-        [userId, location, templateId, supplies?.length || 0, photoUrls?.length || 0]
-      );
+      // Update performance tracking (only if table exists)
+      if (templateId) {
+        try {
+          await db.query(
+            `INSERT INTO checklist_performance 
+             (user_id, location, template_id, week_start, completions_count, 
+              supplies_reported_count, photos_uploaded_count)
+             VALUES ($1, $2, $3, date_trunc('week', NOW()), 1, $4, $5)
+             ON CONFLICT (user_id, location, template_id, week_start)
+             DO UPDATE SET 
+               completions_count = checklist_performance.completions_count + 1,
+               supplies_reported_count = checklist_performance.supplies_reported_count + $4,
+               photos_uploaded_count = checklist_performance.photos_uploaded_count + $5,
+               updated_at = NOW()`,
+            [userId, location, templateId, supplies?.length || 0, photoUrls?.length || 0]
+          );
+        } catch (error: any) {
+          if (error.code !== '42P01') { // table does not exist
+            throw error;
+          }
+          logger.debug('Performance table not found, skipping performance tracking');
+        }
+      }
       
       res.json({
         success: true,
