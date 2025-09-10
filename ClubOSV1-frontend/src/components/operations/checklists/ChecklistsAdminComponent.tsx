@@ -757,11 +757,10 @@ export function ChecklistsAdminComponent() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* New Template Modal */}
-      {showNewTemplateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        {/* New Template Modal */}
+        {showNewTemplateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
               Create New Template
@@ -894,7 +893,7 @@ export function ChecklistsAdminComponent() {
             </div>
           </div>
         </div>
-      )}
-    </div>
+        )}
+      </div>
   );
 }
