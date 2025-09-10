@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.6] - 2025-09-10
+
+### Changed
+- **Navigation Reorganization**: Moved Checklists Admin to Operations Center
+  - Removed "Checklist Admin" from main navigation bar
+  - Added as new tab in Operations Center between V3-PLS and White Label
+  - Created ChecklistsAdminComponent for seamless integration
+  - Admin-only access preserved through Operations Center role guards
+
 ## [1.20.5] - 2025-09-10
 
 ### Fixed
