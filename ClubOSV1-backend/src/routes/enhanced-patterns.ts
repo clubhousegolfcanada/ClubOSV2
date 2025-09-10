@@ -1285,5 +1285,315 @@ router.put('/config',
   }
 );
 
+// ============================================
+// STANDARD CRUD ENDPOINTS (MISSING FROM CONSOLIDATION)
+// ============================================
+
+/**
+ * POST /api/patterns
+ * Create a new pattern manually
+ */
+router.post('/',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [
+    body('pattern_type').isString().notEmpty(),
+    body('trigger_examples').isArray().notEmpty(),
+    body('trigger_keywords').optional().isArray(),
+    body('response_template').isString().notEmpty(),
+    body('confidence_score').optional().isFloat({ min: 0, max: 1 }),
+    body('auto_executable').optional().isBoolean(),
+    body('semantic_search_enabled').optional().isBoolean()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+
+      const {
+        pattern_type,
+        trigger_examples,
+        trigger_keywords,
+        response_template,
+        confidence_score = 0.7,
+        auto_executable = false,
+        semantic_search_enabled = true
+      } = req.body;
+
+      // Generate pattern signature from first trigger example
+      const pattern_signature = crypto.createHash('md5')
+        .update(trigger_examples[0].toLowerCase())
+        .digest('hex');
+
+      // Check for duplicate patterns using signature
+      const existingPattern = await db.query(
+        'SELECT id FROM decision_patterns WHERE pattern_signature = $1',
+        [pattern_signature]
+      );
+
+      if (existingPattern.rows.length > 0) {
+        return res.status(409).json({ 
+          success: false, 
+          error: 'A pattern with similar trigger already exists',
+          existingPatternId: existingPattern.rows[0].id
+        });
+      }
+      
+      // Generate embedding if OpenAI is available
+      let embedding = null;
+      if (semantic_search_enabled && openai) {
+        try {
+          const embeddingResponse = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: trigger_examples.join(' ')
+          });
+          embedding = embeddingResponse.data[0].embedding;
+          
+          // Check for semantically similar patterns
+          const similarPatterns = await db.query(`
+            SELECT 
+              id, 
+              pattern_type,
+              trigger_text,
+              response_template,
+              cosine_similarity(embedding, $1::float[]) as similarity
+            FROM decision_patterns
+            WHERE embedding IS NOT NULL
+              AND is_active = true
+            HAVING cosine_similarity(embedding, $1::float[]) > 0.85
+            ORDER BY similarity DESC
+            LIMIT 3
+          `, [`{${embedding.join(',')}}`]);
+          
+          if (similarPatterns.rows.length > 0) {
+            const topMatch = similarPatterns.rows[0];
+            logger.warn('[Enhanced Patterns API] Similar pattern detected', {
+              newPattern: trigger_examples[0],
+              existingPattern: topMatch.trigger_text,
+              similarity: topMatch.similarity
+            });
+            
+            return res.status(409).json({
+              success: false,
+              error: 'A semantically similar pattern already exists',
+              existingPattern: {
+                id: topMatch.id,
+                trigger_text: topMatch.trigger_text,
+                similarity: topMatch.similarity
+              }
+            });
+          }
+        } catch (error) {
+          logger.error('[Enhanced Patterns API] Failed to generate embedding', error);
+          // Continue without embedding
+        }
+      }
+
+      // Insert the new pattern
+      const result = await db.query(`
+        INSERT INTO decision_patterns (
+          pattern_type,
+          trigger_text,
+          trigger_examples,
+          trigger_keywords,
+          response_template,
+          confidence_score,
+          auto_executable,
+          is_active,
+          pattern_signature,
+          embedding,
+          created_by,
+          source
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+        ) RETURNING *
+      `, [
+        pattern_type,
+        trigger_examples[0], // Use first example as trigger_text
+        trigger_examples,
+        trigger_keywords || [],
+        response_template,
+        confidence_score,
+        auto_executable,
+        true, // Start as active
+        pattern_signature,
+        embedding ? `{${embedding.join(',')}}` : null,
+        req.user?.id,
+        'manual'
+      ]);
+
+      logger.info('[Enhanced Patterns API] Pattern created', {
+        patternId: result.rows[0].id,
+        pattern_type,
+        createdBy: req.user?.email
+      });
+
+      res.status(201).json({
+        success: true,
+        pattern: result.rows[0]
+      });
+    } catch (error) {
+      logger.error('[Enhanced Patterns API] Failed to create pattern', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create pattern' 
+      });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/:id
+ * Update a pattern (response, confidence, active status)
+ * CRITICAL: This endpoint was missing, causing toggle issues
+ */
+router.put('/:id',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [
+    param('id').isInt(),
+    body('response_template').optional().isString(),
+    body('trigger_text').optional().isString(),
+    body('trigger_examples').optional().isArray(),
+    body('confidence_score').optional().isFloat({ min: 0, max: 1 }),
+    body('auto_executable').optional().isBoolean(),
+    body('is_active').optional().isBoolean(),
+    body('is_deleted').optional().isBoolean(),
+    body('notes').optional().isString()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+
+      const { id } = req.params;
+      const updates = req.body;
+
+      // Build update query
+      const updateFields = [];
+      const values = [];
+      let paramCount = 1;
+
+      Object.keys(updates).forEach(key => {
+        if (updates[key] !== undefined) {
+          updateFields.push(`${key} = $${paramCount++}`);
+          values.push(updates[key]);
+        }
+      });
+
+      // If restoring from deleted, clear deletion metadata
+      if (updates.is_deleted === false) {
+        updateFields.push(`deleted_at = NULL`);
+        updateFields.push(`deleted_by = NULL`);
+      }
+
+      if (updateFields.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'No updates provided' 
+        });
+      }
+
+      // Add last_modified
+      updateFields.push(`last_modified = NOW()`);
+      
+      // Add id as last parameter
+      values.push(id);
+
+      await db.query(
+        `UPDATE decision_patterns SET ${updateFields.join(', ')} WHERE id = $${paramCount}`,
+        values
+      );
+
+      // Log confidence changes
+      if (updates.confidence_score !== undefined) {
+        await db.query(`
+          INSERT INTO confidence_evolution 
+          (pattern_id, old_confidence, new_confidence, change_reason, changed_by)
+          SELECT id, confidence_score, $1, 'manual_adjustment', $2
+          FROM decision_patterns WHERE id = $3
+        `, [updates.confidence_score, req.user?.id, id]);
+      }
+
+      logger.info('[Enhanced Patterns API] Pattern updated', {
+        patternId: id,
+        updates,
+        updatedBy: req.user?.email
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Pattern updated' 
+      });
+    } catch (error) {
+      logger.error('[Enhanced Patterns API] Failed to update pattern', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to update pattern' 
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/patterns/:id
+ * Soft delete a pattern (sets is_deleted = true, is_active = false)
+ */
+router.delete('/:id',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  [param('id').isInt()],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+
+      const { id } = req.params;
+
+      await db.query(
+        `UPDATE decision_patterns 
+         SET is_deleted = TRUE, 
+             deleted_at = NOW(), 
+             deleted_by = $2,
+             is_active = FALSE,
+             last_modified = NOW()
+         WHERE id = $1`,
+        [id, req.user?.id]
+      );
+
+      logger.info('[Enhanced Patterns API] Pattern soft deleted', {
+        patternId: id,
+        deletedBy: req.user?.email
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Pattern deleted' 
+      });
+    } catch (error) {
+      logger.error('[Enhanced Patterns API] Failed to delete pattern', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to delete pattern' 
+      });
+    }
+  }
+);
+
 // Export the router
 export default router;

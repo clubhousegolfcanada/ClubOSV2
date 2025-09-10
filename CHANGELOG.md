@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.5] - 2025-09-10
+
+### Fixed
+- **V3-PLS Pattern Toggles**: Fixed pattern enable/disable toggles not working (especially on mobile)
+  - Added missing PUT `/api/patterns/:id` endpoint for updating pattern status
+  - Added missing DELETE `/api/patterns/:id` endpoint for soft-deleting patterns
+  - Added missing POST `/api/patterns` endpoint for creating new patterns
+  - These critical CRUD endpoints were accidentally omitted during V3-PLS consolidation Phase 1
+  - Pattern toggles now work correctly on both desktop and mobile devices
+
 ## [1.20.4] - 2025-09-09
 
 ### Fixed
