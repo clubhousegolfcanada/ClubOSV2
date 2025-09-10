@@ -323,7 +323,7 @@ const CustomerNavigation: React.FC = () => {
       )}
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg pb-safe">
         <div className="flex items-center justify-around h-16">
           {mainNavItems.map((item) => {
             const isActive = currentPath === item.path;
@@ -331,17 +331,17 @@ const CustomerNavigation: React.FC = () => {
               <button
                 key={item.key}
                 onClick={() => router.push(item.path)}
-                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                className={`relative flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors ${
                   isActive
                     ? 'text-[var(--accent)]'
-                    : 'text-gray-800 hover:text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <item.icon className={`w-5 h-5 mb-1 ${isActive ? 'transform scale-110' : ''}`} />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <item.icon className={`w-6 h-6 ${isActive ? 'transform scale-110' : ''}`} />
+                <span className="text-xs font-medium mt-0.5">{item.label}</span>
                 {/* Add box notification badge on Profile icon */}
                 {item.key === 'profile' && availableBoxes > 0 && (
-                  <span className="absolute top-2 right-2 bg-[var(--accent)] text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 px-1 flex items-center justify-center">
+                  <span className="absolute top-1 right-1/4 bg-[var(--accent)] text-white text-[10px] font-bold rounded-full min-w-[18px] h-4.5 px-1 flex items-center justify-center">
                     {availableBoxes}
                   </span>
                 )}

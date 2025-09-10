@@ -42,7 +42,7 @@ export default function CustomerBookings() {
       <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
         
-        <main className="pb-20 lg:pb-8 pt-12 lg:pt-14">
+        <main className="pb-24 lg:pb-8 pt-12 lg:pt-14">
           {/* Skedda Booking System Embed - Full Width */}
           <div className="h-full">
             <iframe

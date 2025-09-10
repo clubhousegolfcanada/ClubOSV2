@@ -293,7 +293,7 @@ export default function CreateChallenge() {
       <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
         
-        <main className="pb-20 lg:pb-8 pt-14">
+        <main className="pb-24 lg:pb-8 pt-14">
           {/* Header */}
           <div className="bg-white border-b border-gray-200">
             <div className="max-w-3xl mx-auto px-4 py-4">

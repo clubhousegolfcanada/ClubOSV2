@@ -60,7 +60,7 @@ export default function CustomerApp() {
         <CustomerNavigation />
         
         {/* Main Content - Mobile first design */}
-        <main className="pb-20 lg:pb-8 lg:pt-14">
+        <main className="pb-24 lg:pb-8 lg:pt-14">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <CustomerErrorBoundary>
               <CustomerDashboard />

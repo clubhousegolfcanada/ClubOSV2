@@ -53,7 +53,7 @@ export default function CustomerLeaderboard() {
       <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
         
-        <main className="pb-20 lg:pb-8">
+        <main className="pb-24 lg:pb-8">
           {/* Header - Consistent minimalist style */}
           <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)] px-4 py-3">
             <div className="max-w-7xl mx-auto">
