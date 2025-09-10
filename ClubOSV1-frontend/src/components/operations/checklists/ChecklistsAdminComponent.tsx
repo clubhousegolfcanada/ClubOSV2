@@ -254,7 +254,6 @@ export function ChecklistsAdminComponent() {
     }
   };
 
-
   return (
     <div className="pb-12">
       <div className="px-3 sm:px-4 py-4 sm:py-6">
