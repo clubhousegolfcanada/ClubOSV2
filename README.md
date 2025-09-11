@@ -1,4 +1,4 @@
-# ClubOS v1.20.6 - AI-Powered Golf Simulator Management
+# ClubOS v1.20.7 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -6,7 +6,13 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🎯 Latest Update: Pattern Learning UI Controls (v1.20.3)
+## 🎯 Latest Update: Checklists Admin Consolidation (v1.20.7)
+- **Performance & Tools Moved to Admin** - Centralized in Operations Center
+- **Cleaner Checklist Page** - Only shows essential features for cleaners
+- **Admin Controls in One Place** - Performance tracking, QR codes, exports all in Operations
+- **Better Role Separation** - Admins use Operations, cleaners use simple checklist page
+
+## 📋 Previous: Pattern Learning UI Controls (v1.20.3)
 - **Pattern Learning Controls in V3-PLS** - Enable/disable from UI
 - **No SQL Commands Needed** - Toggle in Stats & Settings tab
 - **Shadow Mode Option** - Learn without executing (safe)

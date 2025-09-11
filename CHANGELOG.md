@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.7] - 2025-09-10
+
+### Changed
+- **Checklist UI Reorganization**: Moved Performance and Tools tabs to Operations Center
+  - Removed "Performance" and "Tools" tabs from main Checklists page
+  - Added these features to ChecklistsAdminComponent in Operations Center
+  - Main checklist page now cleaner for contractors and cleaning staff
+  - Admin features (performance tracking, QR codes, exports) centralized in Operations
+  - Better role separation between admin and cleaner interfaces
+
 ## [1.20.6] - 2025-09-10
 
 ### Changed
