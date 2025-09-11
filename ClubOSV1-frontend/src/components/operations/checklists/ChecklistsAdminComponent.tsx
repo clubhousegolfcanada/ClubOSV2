@@ -70,6 +70,18 @@ export function ChecklistsAdminComponent() {
   const [selectedQrType, setSelectedQrType] = useState<'daily' | 'weekly' | 'quarterly'>('daily');
   const [selectedQrLocation, setSelectedQrLocation] = useState('Bedford');
   const [showNewTemplateModal, setShowNewTemplateModal] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showAddTaskModal, setShowAddTaskModal] = useState<string | null>(null);
+  const [showDeleteTaskConfirm, setShowDeleteTaskConfirm] = useState<string | null>(null);
+  const [cloneLocation, setCloneLocation] = useState('');
+  const [newTaskText, setNewTaskText] = useState('');
+  const [templateToClone, setTemplateToClone] = useState<string | null>(null);
+  const [systemConfig, setSystemConfig] = useState({
+    requirePhotos: true,
+    enableQrCode: true,
+    sendNotifications: false
+  });
   const [newTemplateForm, setNewTemplateForm] = useState({
     name: '',
     category: 'cleaning' as 'cleaning' | 'tech',
@@ -164,13 +176,17 @@ export function ChecklistsAdminComponent() {
     }
   };
 
-  const handleCloneTemplate = async (templateId: string) => {
+  const handleCloneTemplate = async () => {
+    if (!templateToClone) return;
     try {
-      const response = await http.post(`/checklists-v2/templates/${templateId}/clone`, {
-        location: prompt('Enter location for cloned template (or leave empty for all locations):')
+      const response = await http.post(`/checklists-v2/templates/${templateToClone}/clone`, {
+        location: cloneLocation
       });
       if (response.data.success) {
         toast.success('Template cloned successfully');
+        setShowCloneModal(false);
+        setCloneLocation('');
+        setTemplateToClone(null);
         loadTemplates();
       }
     } catch (error) {
@@ -191,13 +207,14 @@ export function ChecklistsAdminComponent() {
     }
   };
 
-  const handleDeleteTemplate = async (templateId: string) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+  const handleDeleteTemplate = async () => {
+    if (!showDeleteConfirm) return;
     
     try {
-      const response = await http.delete(`/checklists-v2/templates/${templateId}`);
+      const response = await http.delete(`/checklists-v2/templates/${showDeleteConfirm}`);
       if (response.data.success) {
         toast.success('Template deleted');
+        setShowDeleteConfirm(null);
         loadTemplates();
       }
     } catch (error) {
@@ -218,17 +235,18 @@ export function ChecklistsAdminComponent() {
     }
   };
 
-  const handleAddTask = async (templateId: string) => {
-    const taskText = prompt('Enter new task description:');
-    if (!taskText) return;
+  const handleAddTask = async () => {
+    if (!showAddTaskModal || !newTaskText) return;
 
     try {
-      const response = await http.post(`/checklists-v2/templates/${templateId}/tasks`, {
-        task_text: taskText,
+      const response = await http.post(`/checklists-v2/templates/${showAddTaskModal}/tasks`, {
+        task_text: newTaskText,
         is_required: true
       });
       if (response.data.success) {
         toast.success('Task added');
+        setShowAddTaskModal(null);
+        setNewTaskText('');
         loadTemplates();
       }
     } catch (error) {
@@ -236,13 +254,14 @@ export function ChecklistsAdminComponent() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const handleDeleteTask = async () => {
+    if (!showDeleteTaskConfirm) return;
     
     try {
-      const response = await http.delete(`/checklists-v2/tasks/${taskId}`);
+      const response = await http.delete(`/checklists-v2/tasks/${showDeleteTaskConfirm}`);
       if (response.data.success) {
         toast.success('Task deleted');
+        setShowDeleteTaskConfirm(null);
         loadTemplates();
       }
     } catch (error) {
@@ -308,6 +327,81 @@ export function ChecklistsAdminComponent() {
     }
   };
 
+  const exportCSV = async () => {
+    try {
+      const response = await http.get('/checklists-v2/submissions/export?format=csv');
+      if (response.data.success) {
+        const blob = new Blob([response.data.csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `checklist-submissions-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        toast.success('CSV exported successfully');
+      }
+    } catch (error) {
+      toast.error('Failed to export CSV');
+    }
+  };
+
+  const exportPDF = async () => {
+    try {
+      const response = await http.get('/checklists-v2/submissions/report?format=pdf');
+      if (response.data.success) {
+        toast.success('PDF report will be sent to your email');
+      }
+    } catch (error) {
+      toast.error('PDF export coming soon');
+    }
+  };
+
+  const exportSuppliesReport = async () => {
+    try {
+      const response = await http.get('/checklists-v2/supplies/report');
+      if (response.data.success) {
+        const blob = new Blob([JSON.stringify(response.data.supplies, null, 2)], 
+          { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `supplies-report-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        toast.success('Supplies report exported');
+      }
+    } catch (error) {
+      toast.error('Failed to export supplies report');
+    }
+  };
+
+  const importTemplates = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const templates = JSON.parse(text);
+      
+      const response = await http.post('/checklists-v2/templates/import', { templates });
+      if (response.data.success) {
+        toast.success(`Imported ${response.data.imported} templates`);
+        loadTemplates();
+      }
+    } catch (error) {
+      toast.error('Failed to import templates');
+    }
+  };
+
+  const saveSystemConfig = async () => {
+    try {
+      const response = await http.put('/checklists-v2/config', systemConfig);
+      if (response.data.success) {
+        toast.success('System configuration saved');
+      }
+    } catch (error) {
+      toast.error('Failed to save configuration');
+    }
+  };
+
   const getUrgencyColor = (urgency?: string) => {
     switch (urgency) {
       case 'high': return 'text-red-500';
@@ -329,7 +423,8 @@ export function ChecklistsAdminComponent() {
               <div className="flex gap-2">
                 <button
                   onClick={exportTemplates}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 
+                  className="px-4 py-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg 
+                           hover:bg-[var(--bg-primary)] border border-[var(--border-primary)]
                            transition-colors flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
@@ -512,7 +607,10 @@ export function ChecklistsAdminComponent() {
                           ) : (
                             <>
                               <button
-                                onClick={() => handleCloneTemplate(template.id)}
+                                onClick={() => {
+                                  setTemplateToClone(template.id);
+                                  setShowCloneModal(true);
+                                }}
                                 className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                                 title="Clone Template"
                               >
@@ -530,7 +628,7 @@ export function ChecklistsAdminComponent() {
                               </button>
                               {!template.is_master && (
                                 <button
-                                  onClick={() => handleDeleteTemplate(template.id)}
+                                  onClick={() => setShowDeleteConfirm(template.id)}
                                   className="p-2 text-red-600 hover:text-red-700"
                                   title="Delete Template"
                                 >
@@ -583,7 +681,7 @@ export function ChecklistsAdminComponent() {
                                 ...editForm, 
                                 max_duration_minutes: e.target.value ? parseInt(e.target.value) : null 
                               })}
-                              className="px-2 py-1 border rounded bg-white text-[var(--text-primary)] w-20"
+                              className="px-2 py-1 border rounded bg-[var(--bg-primary)] text-[var(--text-primary)] w-20"
                             />
                           </div>
                         </div>
@@ -595,7 +693,7 @@ export function ChecklistsAdminComponent() {
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-[var(--text-primary)]">Tasks</h4>
                             <button
-                              onClick={() => handleAddTask(template.id)}
+                              onClick={() => setShowAddTaskModal(template.id)}
                               className="px-3 py-1 bg-[var(--accent)] text-white text-sm rounded hover:bg-[#0a3532] 
                                        flex items-center gap-1"
                             >
@@ -612,7 +710,7 @@ export function ChecklistsAdminComponent() {
                                     type="text"
                                     value={taskForm.task_text || ''}
                                     onChange={(e) => setTaskForm({ ...taskForm, task_text: e.target.value })}
-                                    className="w-full px-2 py-1 border rounded bg-white text-[var(--text-primary)]"
+                                    className="w-full px-2 py-1 border rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
                                   />
                                   <div className="flex items-center gap-3">
                                     <input
@@ -620,7 +718,7 @@ export function ChecklistsAdminComponent() {
                                       value={taskForm.supplies_needed || ''}
                                       onChange={(e) => setTaskForm({ ...taskForm, supplies_needed: e.target.value })}
                                       placeholder="Supplies needed"
-                                      className="flex-1 px-2 py-1 border rounded bg-white text-[var(--text-primary)]"
+                                      className="flex-1 px-2 py-1 border rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
                                     />
                                     <select
                                       value={taskForm.supplies_urgency || 'low'}
@@ -628,7 +726,7 @@ export function ChecklistsAdminComponent() {
                                         ...taskForm, 
                                         supplies_urgency: e.target.value as 'low' | 'medium' | 'high' 
                                       })}
-                                      className="px-2 py-1 border rounded bg-white text-[var(--text-primary)]"
+                                      className="px-2 py-1 border rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
                                     >
                                       <option value="low">Low</option>
                                       <option value="medium">Medium</option>
@@ -681,7 +779,7 @@ export function ChecklistsAdminComponent() {
                                       <Edit2 className="w-3 h-3" />
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteTask(task.id)}
+                                      onClick={() => setShowDeleteTaskConfirm(task.id)}
                                       className="p-1 text-red-600 hover:text-red-700"
                                     >
                                       <Trash2 className="w-3 h-3" />
@@ -816,22 +914,26 @@ export function ChecklistsAdminComponent() {
               <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors">
+                  <button 
+                    onClick={exportCSV}
+                    className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors border border-[var(--border-primary)]">
                     <div className="flex items-center gap-3">
                       <FileText className="w-5 h-5 text-[var(--accent)]" />
                       <div>
                         <div className="text-sm font-medium text-[var(--text-primary)]">Export Reports</div>
-                        <div className="text-xs text-[var(--text-muted)]">Download monthly completion reports</div>
+                        <div className="text-xs text-[var(--text-muted)]">Download completion data as CSV</div>
                       </div>
                     </div>
                   </button>
                   
-                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors">
+                  <button 
+                    onClick={exportTemplates}
+                    className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors border border-[var(--border-primary)]">
                     <div className="flex items-center gap-3">
                       <Clipboard className="w-5 h-5 text-[var(--accent)]" />
                       <div>
                         <div className="text-sm font-medium text-[var(--text-primary)]">Template Library</div>
-                        <div className="text-xs text-[var(--text-muted)]">Access standard cleaning protocols</div>
+                        <div className="text-xs text-[var(--text-muted)]">Export all checklist templates</div>
                       </div>
                     </div>
                   </button>
@@ -962,7 +1064,9 @@ export function ChecklistsAdminComponent() {
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                  <button 
+                    onClick={exportCSV}
+                    className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors border border-[var(--border-primary)]">
                     <div className="flex items-center gap-3">
                       <FileText className="w-5 h-5 text-green-500" />
                       <div className="text-left">
@@ -972,7 +1076,9 @@ export function ChecklistsAdminComponent() {
                     </div>
                   </button>
                   
-                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                  <button 
+                    onClick={exportPDF}
+                    className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors border border-[var(--border-primary)]">
                     <div className="flex items-center gap-3">
                       <Clipboard className="w-5 h-5 text-blue-500" />
                       <div className="text-left">
@@ -982,7 +1088,9 @@ export function ChecklistsAdminComponent() {
                     </div>
                   </button>
                   
-                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                  <button 
+                    onClick={exportSuppliesReport}
+                    className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors border border-[var(--border-primary)]">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-purple-500" />
                       <div className="text-left">
@@ -1007,7 +1115,9 @@ export function ChecklistsAdminComponent() {
                 <p className="text-sm text-[var(--text-secondary)] mb-4">
                   Manage which users can access specific locations
                 </p>
-                <button className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532] 
+                <button 
+                  onClick={() => toast.info('User permissions management coming soon')}
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532] 
                                transition-colors flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Manage User Permissions
@@ -1025,17 +1135,20 @@ export function ChecklistsAdminComponent() {
                 <div className="flex gap-3">
                   <button 
                     onClick={exportTemplates}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 
+                    className="px-4 py-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg 
+                               hover:bg-[var(--bg-primary)] border border-[var(--border-primary)]
                                transition-colors flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" />
                     Export All Templates
                   </button>
-                  <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 
-                               transition-colors flex items-center gap-2">
+                  <label className="px-4 py-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg 
+                                  hover:bg-[var(--bg-primary)] border border-[var(--border-primary)]
+                                  transition-colors flex items-center gap-2 cursor-pointer">
                     <Upload className="w-4 h-4" />
                     Import Templates
-                  </button>
+                    <input type="file" accept=".json" onChange={importTemplates} className="hidden" />
+                  </label>
                 </div>
               </div>
 
@@ -1046,23 +1159,48 @@ export function ChecklistsAdminComponent() {
                 </h3>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3">
-                    <input type="checkbox" className="rounded" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      className="rounded" 
+                      checked={systemConfig.requirePhotos}
+                      onChange={(e) => setSystemConfig({...systemConfig, requirePhotos: e.target.checked})}
+                    />
                     <span className="text-sm text-[var(--text-primary)]">
                       Require photo attachments for damage reports
                     </span>
                   </label>
                   <label className="flex items-center gap-3">
-                    <input type="checkbox" className="rounded" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      className="rounded" 
+                      checked={systemConfig.enableQrCode}
+                      onChange={(e) => setSystemConfig({...systemConfig, enableQrCode: e.target.checked})}
+                    />
                     <span className="text-sm text-[var(--text-primary)]">
                       Enable QR code access for all templates
                     </span>
                   </label>
                   <label className="flex items-center gap-3">
-                    <input type="checkbox" className="rounded" />
+                    <input 
+                      type="checkbox" 
+                      className="rounded" 
+                      checked={systemConfig.sendNotifications}
+                      onChange={(e) => setSystemConfig({...systemConfig, sendNotifications: e.target.checked})}
+                    />
                     <span className="text-sm text-[var(--text-primary)]">
                       Send notifications for overdue checklists
                     </span>
                   </label>
+                </div>
+                <div className="mt-4">
+                  <button 
+                    onClick={saveSystemConfig}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532] 
+                               transition-colors flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save Configuration
+                  </button>
                 </div>
               </div>
             </div>
@@ -1204,6 +1342,152 @@ export function ChecklistsAdminComponent() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Clone Template Modal */}
+        {showCloneModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+                Clone Template
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                    Location (optional)
+                  </label>
+                  <select
+                    value={cloneLocation}
+                    onChange={(e) => setCloneLocation(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                  >
+                    <option value="">All Locations</option>
+                    {locations.map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowCloneModal(false);
+                      setCloneLocation('');
+                      setTemplateToClone(null);
+                    }}
+                    className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCloneTemplate}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532]"
+                  >
+                    Clone Template
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Template Confirmation */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+                Confirm Delete
+              </h2>
+              <p className="text-[var(--text-secondary)] mb-6">
+                Are you sure you want to delete this template? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteTemplate}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Delete Template
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Task Modal */}
+        {showAddTaskModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+                Add New Task
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                    Task Description
+                  </label>
+                  <input
+                    type="text"
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                    placeholder="e.g., Clean simulator screens"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowAddTaskModal(null);
+                      setNewTaskText('');
+                    }}
+                    className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddTask}
+                    disabled={!newTaskText.trim()}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[#0a3532] disabled:opacity-50"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Task Confirmation */}
+        {showDeleteTaskConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+                Confirm Delete Task
+              </h2>
+              <p className="text-[var(--text-secondary)] mb-6">
+                Are you sure you want to delete this task?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteTaskConfirm(null)}
+                  className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteTask}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Delete Task
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
   );
