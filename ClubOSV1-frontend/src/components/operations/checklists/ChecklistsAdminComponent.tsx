@@ -4,8 +4,10 @@ import toast from 'react-hot-toast';
 import { 
   Settings, Copy, Edit2, Trash2, Plus, Save, X, ChevronDown, ChevronRight,
   Package, Camera, QrCode, Clock, MapPin, AlertCircle, TrendingUp,
-  FileText, CheckCircle, Download, Upload, Shield, Users
+  FileText, CheckCircle, Download, Upload, Shield, Users, Award, Timer,
+  Clipboard, Share2
 } from 'lucide-react';
+import QRCodeLib from 'qrcode';
 
 interface ChecklistTemplate {
   id: string;
@@ -44,8 +46,15 @@ interface PerformanceMetrics {
   photos_uploaded: number;
 }
 
+interface CompletionStats {
+  daily: { completed: number; total: number };
+  weekly: { completed: number; total: number };
+  monthly: { completed: number; total: number };
+  topPerformer?: { name: string; count: number };
+}
+
 export function ChecklistsAdminComponent() {
-  const [activeTab, setActiveTab] = useState<'templates' | 'performance' | 'settings'>('templates');
+  const [activeTab, setActiveTab] = useState<'templates' | 'performance' | 'tools' | 'settings'>('templates');
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
@@ -55,6 +64,11 @@ export function ChecklistsAdminComponent() {
   const [loading, setLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics[]>([]);
+  const [completionStats, setCompletionStats] = useState<CompletionStats | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [selectedQrCategory, setSelectedQrCategory] = useState<'cleaning' | 'tech'>('cleaning');
+  const [selectedQrType, setSelectedQrType] = useState<'daily' | 'weekly' | 'quarterly'>('daily');
+  const [selectedQrLocation, setSelectedQrLocation] = useState('Bedford');
   const [showNewTemplateModal, setShowNewTemplateModal] = useState(false);
   const [newTemplateForm, setNewTemplateForm] = useState({
     name: '',
@@ -72,6 +86,7 @@ export function ChecklistsAdminComponent() {
     loadTemplates();
     if (activeTab === 'performance') {
       loadPerformanceMetrics();
+      loadCompletionStats();
     }
   }, [activeTab, selectedLocation]);
 
@@ -98,6 +113,54 @@ export function ChecklistsAdminComponent() {
       }
     } catch (error) {
       toast.error('Failed to load performance metrics');
+    }
+  };
+
+  const loadCompletionStats = async () => {
+    try {
+      const response = await http.get('/checklists-v2/stats');
+      if (response.data.success) {
+        const stats = response.data.data.stats;
+        const processedStats: CompletionStats = {
+          daily: { completed: 0, total: 5 },
+          weekly: { completed: 0, total: 4 },
+          monthly: { completed: 0, total: 1 },
+          topPerformer: undefined
+        };
+        
+        stats.forEach((stat: any) => {
+          if (stat.type === 'daily') {
+            processedStats.daily.completed = stat.submission_count;
+          } else if (stat.type === 'weekly') {
+            processedStats.weekly.completed = stat.submission_count;
+          } else if (stat.type === 'quarterly') {
+            processedStats.monthly.completed = stat.submission_count;
+          }
+        });
+        
+        setCompletionStats(processedStats);
+      }
+    } catch (error) {
+      console.error('Failed to load completion stats:', error);
+    }
+  };
+
+  const generateQrCodeForTools = async () => {
+    try {
+      const checklistUrl = `${window.location.origin}/checklists?category=${selectedQrCategory}&type=${selectedQrType}&location=${encodeURIComponent(selectedQrLocation)}`;
+      const qrDataUrl = await QRCodeLib.toDataURL(checklistUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeUrl(qrDataUrl);
+      toast.success('QR code generated!');
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+      toast.error('Failed to generate QR code');
     }
   };
 
@@ -313,6 +376,19 @@ export function ChecklistsAdminComponent() {
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
                 Performance
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === 'tools'
+                  ? 'text-[var(--accent)] border-[var(--accent)]'
+                  : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <QrCode className="w-4 h-4" />
+                Tools
               </div>
             </button>
             <button
@@ -626,62 +702,297 @@ export function ChecklistsAdminComponent() {
 
           {/* Performance Tab */}
           {activeTab === 'performance' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <label className="text-sm font-medium text-[var(--text-primary)]">Location:</label>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="px-3 py-2 border rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)]"
-                >
-                  <option value="all">All Locations</option>
-                  {locations.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
-              </div>
-
-              {performanceMetrics.length === 0 ? (
-                <div className="text-center py-8 text-[var(--text-secondary)]">
-                  No performance data available
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {performanceMetrics.map((metric, index) => (
-                    <div key={index} className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-[var(--border-primary)]">
-                      <h3 className="font-semibold text-[var(--text-primary)] mb-3">
-                        {metric.template_name}
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-[var(--text-secondary)]">Location:</span>
-                          <span className="text-[var(--text-primary)]">{metric.location}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[var(--text-secondary)]">Avg Duration:</span>
-                          <span className="text-[var(--text-primary)]">{metric.avg_duration}m</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[var(--text-secondary)]">Completion Rate:</span>
-                          <span className="text-[var(--text-primary)]">{metric.completion_rate}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[var(--text-secondary)]">On-Time Rate:</span>
-                          <span className="text-[var(--text-primary)]">{metric.on_time_rate}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[var(--text-secondary)]">Supplies Reported:</span>
-                          <span className="text-[var(--text-primary)]">{metric.supplies_reported}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[var(--text-secondary)]">Photos Uploaded:</span>
-                          <span className="text-[var(--text-primary)]">{metric.photos_uploaded}</span>
-                        </div>
+            <div className="space-y-6">
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Performance Overview</h3>
+                
+                {completionStats ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-[var(--text-muted)]">Daily Checklists</span>
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      </div>
+                      <div className="text-2xl font-bold text-[var(--text-primary)]">
+                        {completionStats.daily.completed}/{completionStats.daily.total}
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)] mt-1">
+                        {Math.round((completionStats.daily.completed / completionStats.daily.total) * 100)}% completion rate
                       </div>
                     </div>
-                  ))}
+                    
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-[var(--text-muted)]">Weekly Checklists</span>
+                        <TrendingUp className="w-4 h-4 text-blue-500" />
+                      </div>
+                      <div className="text-2xl font-bold text-[var(--text-primary)]">
+                        {completionStats.weekly.completed}/{completionStats.weekly.total}
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)] mt-1">
+                        {Math.round((completionStats.weekly.completed / completionStats.weekly.total) * 100)}% completion rate
+                      </div>
+                    </div>
+                    
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-[var(--text-muted)]">Quarterly Checklists</span>
+                        <Award className="w-4 h-4 text-purple-500" />
+                      </div>
+                      <div className="text-2xl font-bold text-[var(--text-primary)]">
+                        {completionStats.monthly.completed}/{completionStats.monthly.total}
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)] mt-1">
+                        {Math.round((completionStats.monthly.completed / completionStats.monthly.total) * 100)}% completion rate
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-[var(--text-secondary)]">
+                    Loading performance data...
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">Location Performance</h3>
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="px-3 py-2 border rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                  >
+                    <option value="all">All Locations</option>
+                    {locations.map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+
+                {performanceMetrics.length === 0 ? (
+                  <div className="text-center py-8 text-[var(--text-secondary)]">
+                    No performance data available
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {performanceMetrics.map((metric, index) => (
+                      <div key={index} className="bg-[var(--bg-tertiary)] rounded-lg p-4 border border-[var(--border-primary)]">
+                        <h3 className="font-semibold text-[var(--text-primary)] mb-3">
+                          {metric.template_name}
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-secondary)]">Location:</span>
+                            <span className="text-[var(--text-primary)]">{metric.location}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-secondary)]">Avg Duration:</span>
+                            <span className="text-[var(--text-primary)]">{metric.avg_duration}m</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-secondary)]">Completion Rate:</span>
+                            <span className="text-[var(--text-primary)]">{metric.completion_rate}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-secondary)]">On-Time Rate:</span>
+                            <span className="text-[var(--text-primary)]">{metric.on_time_rate}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-secondary)]">Supplies Reported:</span>
+                            <span className="text-[var(--text-primary)]">{metric.supplies_reported}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-secondary)]">Photos Uploaded:</span>
+                            <span className="text-[var(--text-primary)]">{metric.photos_uploaded}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Quick Actions for Contractors */}
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-[var(--accent)]" />
+                      <div>
+                        <div className="text-sm font-medium text-[var(--text-primary)]">Export Reports</div>
+                        <div className="text-xs text-[var(--text-muted)]">Download monthly completion reports</div>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-left hover:bg-[var(--bg-primary)] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Clipboard className="w-5 h-5 text-[var(--accent)]" />
+                      <div>
+                        <div className="text-sm font-medium text-[var(--text-primary)]">Template Library</div>
+                        <div className="text-xs text-[var(--text-muted)]">Access standard cleaning protocols</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tools Tab */}
+          {activeTab === 'tools' && (
+            <div className="space-y-6">
+              {/* QR Code Generator */}
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                  <QrCode className="inline w-5 h-5 mr-2 text-[var(--accent)]" />
+                  QR Code Generator
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Generate QR codes for quick mobile access to specific checklists. 
+                      Perfect for cleaning contractors and field teams.
+                    </p>
+                    
+                    {/* QR Code Settings */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                          Category
+                        </label>
+                        <select
+                          value={selectedQrCategory}
+                          onChange={(e) => setSelectedQrCategory(e.target.value as 'cleaning' | 'tech')}
+                          className="w-full px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                        >
+                          <option value="cleaning">Cleaning</option>
+                          <option value="tech">Tech</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                          Type
+                        </label>
+                        <select
+                          value={selectedQrType}
+                          onChange={(e) => setSelectedQrType(e.target.value as 'daily' | 'weekly' | 'quarterly')}
+                          className="w-full px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="quarterly">Quarterly</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                          Location
+                        </label>
+                        <select
+                          value={selectedQrLocation}
+                          onChange={(e) => setSelectedQrLocation(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)]"
+                        >
+                          {locations.map(location => (
+                            <option key={location} value={location}>{location}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <button
+                        onClick={generateQrCodeForTools}
+                        className="w-full px-4 py-2 bg-[var(--accent)] text-white rounded text-sm font-medium hover:opacity-90 transition-opacity"
+                      >
+                        Generate QR Code
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* QR Code Display */}
+                  <div className="flex flex-col items-center justify-center">
+                    {qrCodeUrl ? (
+                      <div className="space-y-3">
+                        <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64 border-2 border-[var(--border-secondary)] rounded-lg" />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.download = `checklist-${selectedQrCategory}-${selectedQrType}-${selectedQrLocation}.png`;
+                              link.href = qrCodeUrl;
+                              link.click();
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
+                          >
+                            <Download className="inline w-3 h-3 mr-1" />
+                            Download
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/checklists?category=${selectedQrCategory}&type=${selectedQrType}&location=${encodeURIComponent(selectedQrLocation)}`);
+                              toast.success('Link copied to clipboard!');
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-xs text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
+                          >
+                            <Share2 className="inline w-3 h-3 mr-1" />
+                            Copy Link
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 border-2 border-dashed border-[var(--border-secondary)] rounded-lg">
+                        <QrCode className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Configure settings and generate a QR code
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Export Options */}
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                  <Download className="inline w-5 h-5 mr-2 text-[var(--accent)]" />
+                  Export & Reports
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-green-500" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-[var(--text-primary)]">CSV Export</div>
+                        <div className="text-xs text-[var(--text-muted)]">Download submissions data</div>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Clipboard className="w-5 h-5 text-blue-500" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-[var(--text-primary)]">PDF Report</div>
+                        <div className="text-xs text-[var(--text-muted)]">Generate monthly report</div>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button className="p-3 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-purple-500" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-[var(--text-primary)]">Supplies Report</div>
+                        <div className="text-xs text-[var(--text-muted)]">View all supplies needed</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
