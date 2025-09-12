@@ -176,12 +176,13 @@ router.post('/start',
   validate([
     body('templateId').isUUID().withMessage('Valid template ID required'),
     body('location').notEmpty().withMessage('Location is required'),
-    body('doorUnlockedAt').optional().isISO8601()
+    body('unlockDoor').optional().isBoolean()
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { templateId, location, doorUnlockedAt } = req.body;
+      const { templateId, location, unlockDoor = true } = req.body;
       const userId = req.user!.id;
+      const userRole = req.user!.role;
       
       // Check if user has access to this location
       if (req.user!.role === 'contractor') {
@@ -202,6 +203,58 @@ router.post('/start',
         }
       }
       
+      // Attempt to unlock door if requested
+      let doorUnlockedAt = null;
+      if (unlockDoor) {
+        try {
+          // Map location to door config
+          const doorMap: Record<string, { location: string; doorKey: string }> = {
+            'Bedford': { location: 'bedford', doorKey: 'main' },
+            'Dartmouth': { location: 'dartmouth', doorKey: 'main' },
+            'Stratford': { location: 'stratford', doorKey: 'main' },
+            'Bayers Lake': { location: 'bayerslake', doorKey: 'main' },
+            'Truro': { location: 'truro', doorKey: 'main' }
+          };
+          
+          const doorConfig = doorMap[location];
+          if (doorConfig) {
+            // Make internal request to unlock door
+            const fetch = (await import('node-fetch')).default;
+            const doorResponse = await fetch(
+              `http://localhost:${process.env.PORT || 5005}/api/unifi-doors/doors/${doorConfig.location}/${doorConfig.doorKey}/unlock`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': req.headers.authorization || ''
+                },
+                body: JSON.stringify({ duration: 30 })
+              }
+            );
+            
+            const doorResult = await doorResponse.json();
+            
+            if (doorResult.success) {
+              doorUnlockedAt = new Date();
+              logger.info('Door unlocked for checklist start', {
+                userId,
+                location,
+                doorConfig
+              });
+            } else {
+              logger.warn('Failed to unlock door for checklist', {
+                userId,
+                location,
+                error: doorResult.error
+              });
+            }
+          }
+        } catch (doorError) {
+          logger.error('Error unlocking door for checklist', doorError);
+          // Don't fail the checklist start if door unlock fails
+        }
+      }
+      
       // Create submission record
       const submission = await db.query(
         `INSERT INTO checklist_submissions 
@@ -214,7 +267,7 @@ router.post('/start',
         [templateId, userId, location, doorUnlockedAt]
       );
       
-      // Log door unlock if provided
+      // Log door unlock if it happened
       if (doorUnlockedAt) {
         await db.query(
           `INSERT INTO checklist_door_unlocks 
@@ -234,7 +287,9 @@ router.post('/start',
       res.json({
         success: true,
         id: submission.rows[0].id,
-        startedAt: submission.rows[0].started_at
+        startedAt: submission.rows[0].started_at,
+        doorUnlocked: !!doorUnlockedAt,
+        doorUnlockedAt
       });
     } catch (error) {
       next(error);

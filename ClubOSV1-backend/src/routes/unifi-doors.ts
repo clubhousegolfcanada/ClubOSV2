@@ -141,15 +141,31 @@ router.get('/doors', authenticate, async (req: Request, res: Response) => {
 // Unlock a specific door
 router.post('/doors/:location/:doorKey/unlock', 
   authenticate, 
-  roleGuard(['admin', 'operator']),
+  roleGuard(['admin', 'operator', 'contractor']),
   async (req: Request, res: Response) => {
     try {
       const { location, doorKey } = req.params;
       const { duration = 30 } = req.body;
       const userId = (req as any).user?.id;
       const username = (req as any).user?.username || 'Unknown';
+      const userRole = (req as any).user?.role;
       
-      logger.info(`Door unlock request: ${location}/${doorKey} by ${username}`);
+      // Check contractor permissions if applicable
+      if (userRole === 'contractor') {
+        const contractorService = require('../services/contractorService');
+        const canUnlock = await contractorService.canUnlockDoor(userId, location);
+        if (!canUnlock) {
+          logger.warn(`Contractor ${username} denied door unlock at ${location}`);
+          return res.status(403).json({
+            success: false,
+            error: 'No permission to unlock doors at this location'
+          });
+        }
+        // Log the door unlock for contractors
+        await contractorService.logDoorUnlock(userId, location, doorKey);
+      }
+      
+      logger.info(`Door unlock request: ${location}/${doorKey} by ${username} (${userRole})`);
       
       // Get location config
       const locationConfig = DOOR_CONFIGS[location as keyof typeof DOOR_CONFIGS];

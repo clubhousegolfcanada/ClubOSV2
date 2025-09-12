@@ -71,6 +71,13 @@ export const ChecklistSystem: React.FC = () => {
   const [newSupplyQuantity, setNewSupplyQuantity] = useState('');
   const [newSupplyUrgency, setNewSupplyUrgency] = useState<'low' | 'medium' | 'high'>('medium');
   
+  // Session management states
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [isStarting, setIsStarting] = useState(false);
+  
   const { user } = useAuthState();
   const isAdmin = user?.role === 'admin';
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
@@ -87,6 +94,20 @@ export const ChecklistSystem: React.FC = () => {
       loadSubmissions();
     }
   }, [activeTab, trackerLocation, trackerPeriod]);
+  
+  // Timer effect for tracking elapsed time
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isSessionActive && sessionStartTime) {
+      interval = setInterval(() => {
+        const elapsed = Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000);
+        setElapsedTime(elapsed);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isSessionActive, sessionStartTime]);
 
 
   const loadTemplate = async () => {
@@ -330,6 +351,69 @@ export const ChecklistSystem: React.FC = () => {
       case 'low': return 'text-green-500 bg-green-500/10 border-green-500/30';
     }
   };
+  
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  const handleStartChecklist = async () => {
+    if (!currentTemplate) return;
+    
+    setIsStarting(true);
+    try {
+      const token = tokenManager.getToken();
+      if (!token) {
+        toast.error('Please log in to start a checklist');
+        return;
+      }
+      
+      logger.debug('Starting checklist session:', {
+        templateId: currentTemplate.templateId,
+        location: selectedLocation,
+        category: activeCategory,
+        type: activeType
+      });
+      
+      const response = await http.post(
+        'checklists-v2/start',
+        {
+          templateId: currentTemplate.templateId || '',
+          location: selectedLocation,
+          unlockDoor: true
+        }
+      );
+      
+      if (response.data.success) {
+        setSessionId(response.data.id);
+        setSessionStartTime(new Date(response.data.startedAt));
+        setIsSessionActive(true);
+        setElapsedTime(0);
+        
+        if (response.data.doorUnlocked) {
+          toast.success(`Door unlocked at ${selectedLocation}!`, {
+            icon: '🔓',
+            duration: 5000
+          });
+        }
+        
+        toast.success('Checklist started! Complete all tasks before submitting.', {
+          duration: 4000
+        });
+      }
+    } catch (error: any) {
+      logger.error('Failed to start checklist:', error);
+      toast.error(error.response?.data?.error || 'Failed to start checklist');
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!currentTemplate || !isAllTasksCompleted()) return;
@@ -340,6 +424,7 @@ export const ChecklistSystem: React.FC = () => {
       const completedTaskIds = Object.keys(completedTasks).filter(id => completedTasks[id]);
       
       logger.debug('Submitting checklist:', {
+        sessionId,
         category: activeCategory,
         type: activeType,
         location: selectedLocation,
@@ -348,35 +433,57 @@ export const ChecklistSystem: React.FC = () => {
         hasToken: !!token
       });
       
-      const response = await http.post(
-        `checklists-v2/submit`,
-        {
-          templateId: currentTemplate.templateId || '',
-          category: activeCategory,
-          type: activeType,
-          location: selectedLocation,
-          completedTasks: completedTaskIds,
-          comments: comments.trim(),
-          createTicket: createTicket && comments.trim().length > 0,
-          supplies: supplies,
-          photoUrls: photoAttachments
-        },
-
-      );
+      let response;
+      
+      if (sessionId && isSessionActive) {
+        // Use the complete endpoint for an active session
+        response = await http.patch(
+          `checklists-v2/complete/${sessionId}`,
+          {
+            completedTasks: completedTaskIds,
+            comments: comments.trim(),
+            supplies: supplies,
+            photos: photoAttachments
+          }
+        );
+      } else {
+        // Use the legacy submit endpoint
+        response = await http.post(
+          `checklists-v2/submit`,
+          {
+            templateId: currentTemplate.templateId || '',
+            category: activeCategory,
+            type: activeType,
+            location: selectedLocation,
+            completedTasks: completedTaskIds,
+            comments: comments.trim(),
+            createTicket: createTicket && comments.trim().length > 0,
+            supplies: supplies,
+            photoUrls: photoAttachments
+          }
+        );
+      }
       
       if (response.data.success) {
-        toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!`);
+        const durationMsg = response.data.duration 
+          ? ` (Completed in ${response.data.duration} minutes)`
+          : '';
+        toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!${durationMsg}`);
         
         if (response.data.ticket) {
           toast.success('Support ticket created!', { duration: 4000 });
         }
         
-        // Reset form
+        // Reset form and session
         setCompletedTasks({});
         setComments('');
         setCreateTicket(false);
         setPhotoAttachments([]);
         setSupplies([]);
+        setSessionId(null);
+        setSessionStartTime(null);
+        setIsSessionActive(false);
+        setElapsedTime(0);
         
         // Reload template to reset the form
         loadTemplate();
@@ -590,11 +697,64 @@ export const ChecklistSystem: React.FC = () => {
             </div>
           </div>
 
-          {/* Time Estimate Card */}
-          {currentTemplate && (
+          {/* Start Session / Timer Card */}
+          {currentTemplate && !isSessionActive && (
+            <div className="bg-gradient-to-r from-[var(--accent)] to-[#0a4a45] rounded-lg p-4 mb-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Ready to Begin?</h3>
+                  <p className="text-sm text-white/80">
+                    Starting the checklist will unlock the door at {selectedLocation}
+                  </p>
+                </div>
+                <button
+                  onClick={handleStartChecklist}
+                  disabled={isStarting || !currentTemplate}
+                  className="px-6 py-3 bg-white text-[var(--accent)] rounded-lg font-semibold hover:bg-gray-100 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isStarting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--accent)] border-t-transparent" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Start Checklist
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Active Session Timer */}
+          {isSessionActive && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Timer className="w-5 h-5 text-green-500" />
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Checklist In Progress</p>
+                    <p className="text-xs text-green-500">Door unlocked at {selectedLocation}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-mono font-bold text-green-600">{formatTime(elapsedTime)}</p>
+                  <p className="text-xs text-green-500">Elapsed Time</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Time Estimate Card (only show if not started) */}
+          {currentTemplate && !isSessionActive && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-3 mb-4">
               <div className="flex items-center gap-3">
-                <Timer className="w-4 h-4 text-[var(--accent)]" />
+                <Timer className="w-4 h-4 text-[var(--text-muted)]" />
                 <span className="text-sm text-[var(--text-secondary)]">
                   Estimated completion time: <strong className="text-[var(--text-primary)]">{estimatedTime} minutes</strong>
                 </span>
@@ -610,7 +770,9 @@ export const ChecklistSystem: React.FC = () => {
                   {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {getTypeLabel(activeType)}
                 </h3>
                 <p className="text-sm text-[var(--text-muted)]">
-                  Complete all tasks below and submit when finished.
+                  {!isSessionActive 
+                    ? 'Start the checklist to unlock the door and begin tracking time.'
+                    : 'Complete all tasks below and submit when finished.'}
                 </p>
               </div>
 
@@ -626,12 +788,14 @@ export const ChecklistSystem: React.FC = () => {
                   >
                     <div className="flex items-center gap-2">
                       <div 
-                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${
+                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                          isSessionActive ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                        } ${
                           completedTasks[task.id]
                             ? 'bg-green-500 border-green-500'
                             : 'border-[var(--border-primary)]'
                         }`}
-                        onClick={() => handleTaskToggle(task.id)}
+                        onClick={() => isSessionActive && handleTaskToggle(task.id)}
                       >
                         {completedTasks[task.id] && <Check className="w-4 h-4 text-white" />}
                       </div>
@@ -895,14 +1059,14 @@ export const ChecklistSystem: React.FC = () => {
                   </div>
                   <button
                     onClick={handleSubmit}
-                    disabled={!isAllTasksCompleted() || isSubmitting}
+                    disabled={!isSessionActive || !isAllTasksCompleted() || isSubmitting}
                     className={`px-4 py-2 rounded text-xs font-medium transition-all ${
-                      isAllTasksCompleted() && !isSubmitting
+                      isSessionActive && isAllTasksCompleted() && !isSubmitting
                         ? 'bg-green-500 text-white hover:bg-green-600'
                         : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed'
                     }`}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit Checklist'}
+                    {!isSessionActive ? 'Start Checklist First' : isSubmitting ? 'Submitting...' : 'Submit Checklist'}
                   </button>
                 </div>
               </div>
