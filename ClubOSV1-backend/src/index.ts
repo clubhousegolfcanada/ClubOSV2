@@ -88,6 +88,7 @@ import boxManagementRoutes from './routes/boxManagement';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
+import fixContractorRole from './routes/fix-contractor-role';
 // Refactored routes for v2 architecture
 // TODO: Uncomment when refactored route files are ready
 // import authRefactoredRoutes from './routes/auth-refactored';
@@ -291,6 +292,7 @@ app.use('/api/checklists', checklistsRoutes); // Keep old path for backward comp
 app.use('/api/checklists-v2', checklistsRoutes); // New path for v2 frontend
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
+app.use('/api/fix-contractor', fixContractorRole); // Temporary fix for contractor role
 app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);
 app.use('/api/ninjaone', ninjaoneSyncRoutes);
 // app.use('/api/debug', debugRoutes); // File doesn't exist
