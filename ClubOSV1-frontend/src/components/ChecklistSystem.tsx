@@ -36,6 +36,7 @@ interface Submission {
   ticket_id?: string;
   supplies_needed?: string; // JSON string of supply items
   photo_urls?: string; // JSON string of photo URLs
+  duration_minutes?: number; // Duration in minutes (only visible to admins)
 }
 
 interface SupplyItem {
