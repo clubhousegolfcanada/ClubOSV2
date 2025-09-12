@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.8] - 2025-09-11
+
+### Added
+- **Contractor User Role**: New limited-access role for cleaning contractors
+  - Access restricted to Checklists feature only
+  - Can unlock Ubiquiti doors for assigned locations
+  - Location-based permissions system
+  - 8-hour session duration for shift work
+  - Admin management through Operations Center
+  - Automatic activity logging for door unlocks
+  - Database tables for permissions and submissions tracking
+
+### Changed
+- **Operations Center**: Enhanced user management for contractor support
+  - Added contractor role to user creation dropdown
+  - Added location assignment UI for contractors
+  - Integrated contractor permissions management
+  
+### Fixed
+- **TypeScript Types**: Fixed UserRole type definitions to include contractor
+  - Updated Navigation component type definitions
+  - Fixed roleUtils to include contractor role styling
+  - Fixed AuthUser interface in state management
+
 ## [1.20.7] - 2025-09-10
 
 ### Changed

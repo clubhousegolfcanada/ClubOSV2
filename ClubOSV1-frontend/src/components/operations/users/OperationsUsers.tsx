@@ -12,13 +12,21 @@ type User = {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
+  role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer' | 'contractor';
   phone?: string;
   status?: 'active' | 'pending_approval' | 'suspended' | 'rejected';
   createdAt: string;
   updatedAt: string;
   signup_date?: string;
   cc_balance?: number;
+  // Contractor specific fields
+  locations?: string[];
+  permissions?: {
+    canUnlockDoors?: boolean;
+    canSubmitChecklists?: boolean;
+    canViewHistory?: boolean;
+    activeUntil?: string;
+  };
 };
 
 type PasswordValidation = {
@@ -37,8 +45,14 @@ export const OperationsUsers: React.FC = () => {
     email: '',
     name: '',
     password: '',
-    role: 'customer' as 'admin' | 'operator' | 'support' | 'kiosk' | 'customer',
-    phone: ''
+    role: 'customer' as 'admin' | 'operator' | 'support' | 'kiosk' | 'customer' | 'contractor',
+    phone: '',
+    locations: [] as string[],
+    permissions: {
+      canUnlockDoors: true,
+      canSubmitChecklists: true,
+      canViewHistory: false
+    }
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -271,7 +285,13 @@ export const OperationsUsers: React.FC = () => {
         name: '',
         password: '',
         role: 'customer',
-        phone: ''
+        phone: '',
+        locations: [],
+        permissions: {
+          canUnlockDoors: true,
+          canSubmitChecklists: true,
+          canViewHistory: false
+        }
       });
       fetchUsers();
     } catch (error) {
@@ -694,6 +714,7 @@ export const OperationsUsers: React.FC = () => {
                           <option value="support">Support</option>
                           <option value="kiosk">Kiosk</option>
                           <option value="customer">Customer</option>
+                          <option value="contractor">Contractor</option>
                         </select>
                       ) : (
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -701,6 +722,7 @@ export const OperationsUsers: React.FC = () => {
                           user.role === 'operator' ? 'bg-blue-100 text-blue-700' :
                           user.role === 'support' ? 'bg-green-100 text-green-700' :
                           user.role === 'customer' ? 'bg-orange-100 text-orange-700' :
+                          user.role === 'contractor' ? 'bg-yellow-100 text-yellow-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
                           {user.role}
@@ -1126,6 +1148,7 @@ export const OperationsUsers: React.FC = () => {
                   <option value="support">Support</option>
                   <option value="kiosk">Kiosk</option>
                   <option value="customer">Customer</option>
+                  <option value="contractor">Contractor</option>
                 </select>
               </div>
               
@@ -1138,6 +1161,59 @@ export const OperationsUsers: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
+              
+              {/* Location Assignment for Contractors */}
+              {newUser.role === 'contractor' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Locations</label>
+                  <div className="space-y-2">
+                    {['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake'].map(location => (
+                      <label key={location} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={newUser.locations?.includes(location) || false}
+                          onChange={(e) => {
+                            const currentLocations = newUser.locations || [];
+                            if (e.target.checked) {
+                              setNewUser({ ...newUser, locations: [...currentLocations, location] });
+                            } else {
+                              setNewUser({ ...newUser, locations: currentLocations.filter(l => l !== location) });
+                            }
+                          }}
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span className="text-sm">{location}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={newUser.permissions?.canUnlockDoors ?? true}
+                        onChange={(e) => setNewUser({ 
+                          ...newUser, 
+                          permissions: { ...newUser.permissions, canUnlockDoors: e.target.checked }
+                        })}
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm">Can unlock doors</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={newUser.permissions?.canSubmitChecklists ?? true}
+                        onChange={(e) => setNewUser({ 
+                          ...newUser, 
+                          permissions: { ...newUser.permissions, canSubmitChecklists: e.target.checked }
+                        })}
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm">Can submit checklists</span>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex justify-end space-x-3 mt-6">
@@ -1149,7 +1225,13 @@ export const OperationsUsers: React.FC = () => {
                     name: '',
                     password: '',
                     role: 'customer',
-                    phone: ''
+                    phone: '',
+                    locations: [],
+                    permissions: {
+                      canUnlockDoors: true,
+                      canSubmitChecklists: true,
+                      canViewHistory: false
+                    }
                   });
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"

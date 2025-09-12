@@ -57,7 +57,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
+  role: UserRole;
   phone?: string;
   token?: string;
   created_at?: string;

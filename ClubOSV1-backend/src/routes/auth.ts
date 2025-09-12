@@ -12,6 +12,7 @@ import { roleGuard } from '../middleware/roleGuard';
 import { transformUser } from '../utils/transformers';
 import { passwordChangeLimiter } from '../middleware/passwordChangeLimiter';
 import { authRateLimiter } from '../middleware/rateLimiter';
+import { contractorService } from '../services/contractorService';
 
 const router = Router();
 
@@ -569,12 +570,14 @@ router.post('/users',
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('name').notEmpty().withMessage('Name is required'),
-    body('role').isIn(['admin', 'operator', 'support', 'kiosk', 'customer']).withMessage('Invalid role'),
-    body('phone').optional()
+    body('role').isIn(['admin', 'operator', 'support', 'kiosk', 'customer', 'contractor']).withMessage('Invalid role'),
+    body('phone').optional(),
+    body('locations').optional().isArray(),
+    body('permissions').optional().isObject()
   ]),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password, name, role, phone } = req.body;
+      const { email, password, name, role, phone, locations, permissions } = req.body;
       
       // Check if email already exists
       const existingUserQuery = await db.query(
@@ -600,6 +603,22 @@ router.post('/users',
         phone,
         status: 'active'
       });
+      
+      // If it's a contractor, create location permissions
+      if (role === 'contractor' && locations && locations.length > 0) {
+        for (const location of locations) {
+          await contractorService.createPermission(
+            userId,
+            location,
+            {
+              canUnlockDoors: permissions?.canUnlockDoors ?? true,
+              canSubmitChecklists: permissions?.canSubmitChecklists ?? true,
+              canViewHistory: permissions?.canViewHistory ?? false
+            },
+            req.user!.id
+          );
+        }
+      }
       
       // If it's a customer, handle full customer setup
       if (role === 'customer') {

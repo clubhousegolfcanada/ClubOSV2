@@ -99,6 +99,7 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 | Support | Limited | Commands, ClubOS Boy, no sensitive ops |
 | Kiosk | Public only | ClubOS Boy terminal interface |
 | Customer | Customer portal only | Profile, bookings, events, friends (WHITELIST ENFORCED) |
+| Contractor | Checklists only | Location-based access, door unlocks, 8-hour sessions |
 
 ## 📁 Project Structure & Patterns
 
