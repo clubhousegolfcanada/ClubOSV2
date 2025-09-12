@@ -990,7 +990,7 @@ export const OperationsUsers: React.FC = () => {
           </div>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div className="p-4 bg-purple-50 rounded-lg">
               <h3 className="font-semibold text-purple-900 mb-2">Admin</h3>
               <ul className="text-sm text-purple-700 space-y-1">
@@ -1034,6 +1034,15 @@ export const OperationsUsers: React.FC = () => {
                 <li>• Book bays</li>
                 <li>• Social features</li>
                 <li>• View stats</li>
+              </ul>
+            </div>
+            <div className="p-4 bg-indigo-50 rounded-lg">
+              <h3 className="font-semibold text-indigo-900 mb-2">Contractor</h3>
+              <ul className="text-sm text-indigo-700 space-y-1">
+                <li>• Checklists only</li>
+                <li>• Door unlock</li>
+                <li>• Location-based</li>
+                <li>• Time tracking</li>
               </ul>
             </div>
           </div>
