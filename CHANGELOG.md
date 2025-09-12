@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.9] - 2025-09-11
+
+### Fixed
+- **Contractor Privacy**: Removed timer visibility for contractors during checklists
+  - Timer/duration now only visible to admin role in completion tracker
+  - Contractors see simple status indicators instead of elapsed time
+  - Duration still tracked on backend for reporting purposes
+  - Admin view enhanced with duration display in tracker list and expanded details
+
 ## [1.20.8] - 2025-09-11
 
 ### Added
