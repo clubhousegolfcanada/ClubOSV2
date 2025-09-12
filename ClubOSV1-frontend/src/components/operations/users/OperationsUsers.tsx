@@ -6,7 +6,6 @@ import { Save, Download, Upload, Trash2, Key, Eye, EyeOff, Plus, Edit2, X, Check
 import { CustomAchievementCreator } from '@/components/achievements/CustomAchievementCreator';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
-import { InitContractor } from '@/components/operations/InitContractor';
 
 
 type User = {
@@ -601,9 +600,6 @@ export const OperationsUsers: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Contractor Migration Alert */}
-      <InitContractor />
-      
       {/* Settings Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
