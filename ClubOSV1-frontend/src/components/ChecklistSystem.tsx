@@ -762,8 +762,24 @@ export const ChecklistSystem: React.FC = () => {
             </div>
           )}
 
-          {/* Checklist Tasks */}
-          {currentTemplate && (
+          {/* Message when checklist not started */}
+          {currentTemplate && !isSessionActive && (
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-8 mb-4 text-center">
+              <Clipboard className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                Ready to Begin {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist
+              </h3>
+              <p className="text-sm text-[var(--text-secondary)] mb-1">
+                {getTypeLabel(activeType)} checklist for {selectedLocation}
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                Click "Start Checklist" above to unlock the door and begin
+              </p>
+            </div>
+          )}
+
+          {/* Checklist Tasks - Only show after session starts */}
+          {currentTemplate && isSessionActive && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
               <div className="mb-3">
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">

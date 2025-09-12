@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import { AppError } from '../middleware/errorHandler';
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
+import { contractorService } from '../services/contractorService';
 
 const router = Router();
 
@@ -834,6 +835,217 @@ router.get('/templates/export',
         templates: templatesResult.rows,
         exportDate: new Date(),
         version: '2.0'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Start a checklist session with door unlock
+router.post('/start',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support', 'contractor']),
+  validate([
+    body('templateId').isUUID().withMessage('Valid template ID required'),
+    body('location').notEmpty().withMessage('Location is required'),
+    body('unlockDoor').optional().isBoolean()
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { templateId, location, unlockDoor = true } = req.body;
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
+      
+      // Check if user has access to this location
+      if (req.user!.role === 'contractor') {
+        // Check contractor permissions for this location
+        const canSubmit = await contractorService.canSubmitChecklist(userId, location);
+        if (!canSubmit) {
+          throw new AppError('No permission to submit checklists at this location', 403, 'CHECKLIST_SUBMIT_DENIED');
+        }
+      } else {
+        const userResult = await db.query(
+          'SELECT allowed_locations FROM users WHERE id = $1',
+          [userId]
+        );
+        
+        const user = userResult.rows[0];
+        if (user.allowed_locations && !user.allowed_locations.includes(location) && req.user!.role !== 'admin') {
+          throw new AppError('Access denied for this location', 403, 'LOCATION_ACCESS_DENIED');
+        }
+      }
+      
+      // Attempt to unlock door if requested
+      let doorUnlockedAt = null;
+      if (unlockDoor) {
+        try {
+          // Map location to door config
+          const doorMap: Record<string, { location: string; doorKey: string }> = {
+            'Bedford': { location: 'bedford', doorKey: 'main' },
+            'Dartmouth': { location: 'dartmouth', doorKey: 'main' },
+            'Stratford': { location: 'stratford', doorKey: 'main' },
+            'Bayers Lake': { location: 'bayerslake', doorKey: 'main' },
+            'Truro': { location: 'truro', doorKey: 'main' }
+          };
+          
+          const doorConfig = doorMap[location];
+          if (doorConfig) {
+            // Make internal request to unlock door
+            const fetch = (await import('node-fetch')).default;
+            const doorResponse = await fetch(
+              `http://localhost:${process.env.PORT || 5005}/api/unifi-doors/doors/${doorConfig.location}/${doorConfig.doorKey}/unlock`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': req.headers.authorization || ''
+                },
+                body: JSON.stringify({ duration: 30 })
+              }
+            );
+            
+            const doorResult = await doorResponse.json();
+            
+            if (doorResult.success) {
+              doorUnlockedAt = new Date();
+              logger.info('Door unlocked for checklist start', {
+                userId,
+                location,
+                doorConfig
+              });
+            } else {
+              logger.warn('Failed to unlock door for checklist', {
+                userId,
+                location,
+                error: doorResult.error
+              });
+            }
+          }
+        } catch (doorError) {
+          logger.error('Error unlocking door for checklist', doorError);
+          // Don't fail the checklist start if door unlock fails
+        }
+      }
+      
+      // Create submission record
+      const submission = await db.query(
+        `INSERT INTO checklist_submissions 
+         (template_id, user_id, location, door_unlocked_at, started_at, status, category, type, total_tasks)
+         VALUES ($1, $2, $3, $4, NOW(), 'in_progress', 
+                (SELECT category FROM checklist_templates WHERE id = $1),
+                (SELECT type FROM checklist_templates WHERE id = $1),
+                (SELECT COUNT(*) FROM checklist_tasks WHERE template_id = $1))
+         RETURNING *`,
+        [templateId, userId, location, doorUnlockedAt]
+      );
+      
+      // Log door unlock if it happened
+      if (doorUnlockedAt) {
+        await db.query(
+          `INSERT INTO checklist_door_unlocks 
+           (user_id, location, checklist_submission_id, unlocked_at)
+           VALUES ($1, $2, $3, $4)`,
+          [userId, location, submission.rows[0].id, doorUnlockedAt]
+        );
+      }
+      
+      logger.info('Checklist started', {
+        submissionId: submission.rows[0].id,
+        userId,
+        location,
+        templateId
+      });
+      
+      res.json({
+        success: true,
+        id: submission.rows[0].id,
+        startedAt: submission.rows[0].started_at,
+        doorUnlocked: !!doorUnlockedAt,
+        doorUnlockedAt
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Complete a checklist session
+router.patch('/complete/:id',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support', 'contractor']),
+  validate([
+    param('id').isUUID(),
+    body('completedTasks').isArray(),
+    body('comments').optional().isString(),
+    body('supplies').optional(),
+    body('photos').optional()
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { completedTasks, comments, supplies, photos } = req.body;
+      const userId = req.user!.id;
+      
+      // Update submission
+      const result = await db.query(
+        `UPDATE checklist_submissions 
+         SET completed_at = NOW(),
+             completed_tasks = $2,
+             comments = $3,
+             supplies_needed = $4,
+             photo_urls = $5,
+             status = 'completed',
+             completion_time = NOW()
+         WHERE id = $1 AND user_id = $6 AND status = 'in_progress'
+         RETURNING *, duration_minutes`,
+        [id, JSON.stringify(completedTasks), comments, supplies, photos, userId]
+      );
+      
+      if (!result.rows.length) {
+        throw new AppError('Submission not found or already completed', 404, 'SUBMISSION_NOT_FOUND');
+      }
+      
+      const submission = result.rows[0];
+      
+      // Create ticket if there are issues
+      if ((comments && comments.trim()) || (supplies && supplies.length > 0)) {
+        const ticketData = {
+          title: `Checklist Issues - ${submission.location}`,
+          description: comments || 'Supplies needed',
+          priority: supplies?.some((s: any) => s.urgency === 'high') ? 'high' : 'medium',
+          location: submission.location,
+          category: submission.category,
+          supplies_needed: supplies,
+          photo_urls: photos
+        };
+        
+        try {
+          await db.query(
+            `INSERT INTO tickets (title, description, priority, status, location, created_by, metadata)
+             VALUES ($1, $2, $3, 'open', $4, $5, $6)`,
+            [ticketData.title, ticketData.description, ticketData.priority, 
+             ticketData.location, userId, JSON.stringify({ supplies, photos })]
+          );
+          
+          logger.info('Ticket created from checklist', {
+            submissionId: id,
+            location: submission.location
+          });
+        } catch (ticketError) {
+          logger.error('Failed to create ticket from checklist', ticketError);
+        }
+      }
+      
+      logger.info('Checklist completed', {
+        submissionId: id,
+        duration: submission.duration_minutes,
+        location: submission.location
+      });
+      
+      res.json({
+        success: true,
+        duration: submission.duration_minutes
       });
     } catch (error) {
       next(error);
