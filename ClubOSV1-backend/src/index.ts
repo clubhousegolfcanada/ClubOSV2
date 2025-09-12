@@ -88,7 +88,6 @@ import boxManagementRoutes from './routes/boxManagement';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
-import fixContractorRole from './routes/fix-contractor-role';
 // Refactored routes for v2 architecture
 // TODO: Uncomment when refactored route files are ready
 // import authRefactoredRoutes from './routes/auth-refactored';
@@ -292,7 +291,6 @@ app.use('/api/checklists', checklistsRoutes); // Keep old path for backward comp
 app.use('/api/checklists-v2', checklistsRoutes); // New path for v2 frontend
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
-app.use('/api/fix-contractor', fixContractorRole); // Temporary fix for contractor role
 app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);
 app.use('/api/ninjaone', ninjaoneSyncRoutes);
 // app.use('/api/debug', debugRoutes); // File doesn't exist
@@ -398,6 +396,52 @@ async function startServer() {
       // Fix missing rank_tier column
       const { runRankTierMigration } = await import('./scripts/run-rank-tier-migration');
       await runRankTierMigration();
+      
+      // Fix contractor role constraint
+      try {
+        logger.info('Checking contractor role constraint...');
+        await db.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS valid_role`);
+        await db.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+        await db.query(`
+          ALTER TABLE users ADD CONSTRAINT valid_role 
+          CHECK (role IN ('admin', 'operator', 'support', 'kiosk', 'customer', 'contractor'))
+        `);
+        
+        // Create contractor tables
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS contractor_permissions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            location VARCHAR(100) NOT NULL,
+            can_unlock_doors BOOLEAN DEFAULT true,
+            can_submit_checklists BOOLEAN DEFAULT true,
+            can_view_history BOOLEAN DEFAULT false,
+            active_from TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            active_until TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by UUID REFERENCES users(id),
+            UNIQUE(user_id, location)
+          )
+        `);
+        
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS contractor_checklist_submissions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            contractor_id UUID NOT NULL REFERENCES users(id),
+            checklist_submission_id UUID REFERENCES checklist_submissions(id),
+            location VARCHAR(100) NOT NULL,
+            door_unlocks JSONB DEFAULT '[]',
+            start_time TIMESTAMP NOT NULL,
+            end_time TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        logger.info('✅ Contractor role constraint and tables updated');
+      } catch (contractorError) {
+        logger.debug('Contractor role migration:', contractorError);
+      }
       
       // Run white label migration and populate data
       const { runMigration } = await import('./scripts/run-white-label-migration');
