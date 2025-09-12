@@ -95,19 +95,7 @@ export const ChecklistSystem: React.FC = () => {
     }
   }, [activeTab, trackerLocation, trackerPeriod]);
   
-  // Timer effect for tracking elapsed time
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isSessionActive && sessionStartTime) {
-      interval = setInterval(() => {
-        const elapsed = Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000);
-        setElapsedTime(elapsed);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isSessionActive, sessionStartTime]);
+  // Timer tracking removed - duration is calculated on backend for admin view only
 
 
   const loadTemplate = async () => {
@@ -465,10 +453,7 @@ export const ChecklistSystem: React.FC = () => {
       }
       
       if (response.data.success) {
-        const durationMsg = response.data.duration 
-          ? ` (Completed in ${response.data.duration} minutes)`
-          : '';
-        toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!${durationMsg}`);
+        toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!`);
         
         if (response.data.ticket) {
           toast.success('Support ticket created!', { duration: 4000 });
@@ -728,39 +713,22 @@ export const ChecklistSystem: React.FC = () => {
             </div>
           )}
           
-          {/* Active Session Timer */}
+          {/* Active Session Status (no timer for contractors) */}
           {isSessionActive && (
             <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Timer className="w-5 h-5 text-green-500" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-green-600">Checklist In Progress</p>
-                    <p className="text-xs text-green-500">Door unlocked at {selectedLocation}</p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-mono font-bold text-green-600">{formatTime(elapsedTime)}</p>
-                  <p className="text-xs text-green-500">Elapsed Time</p>
+                <div>
+                  <p className="text-sm font-medium text-green-600">Checklist In Progress</p>
+                  <p className="text-xs text-green-500">Complete all tasks below and submit when finished</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Time Estimate Card (only show if not started) */}
-          {currentTemplate && !isSessionActive && (
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-3 mb-4">
-              <div className="flex items-center gap-3">
-                <Timer className="w-4 h-4 text-[var(--text-muted)]" />
-                <span className="text-sm text-[var(--text-secondary)]">
-                  Estimated completion time: <strong className="text-[var(--text-primary)]">{estimatedTime} minutes</strong>
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Message when checklist not started */}
           {currentTemplate && !isSessionActive && (
@@ -1247,6 +1215,12 @@ export const ChecklistSystem: React.FC = () => {
                                       <div className="text-[10px] text-[var(--text-muted)]">
                                         {new Date(submission.completion_time).toLocaleTimeString()}
                                       </div>
+                                      {/* Show duration only for admins */}
+                                      {user?.role === 'admin' && submission.duration_minutes && (
+                                        <div className="text-[10px] text-[var(--accent)] mt-1">
+                                          {submission.duration_minutes} min
+                                        </div>
+                                      )}
                                     </div>
                                     
                                     {(user?.role === 'admin' || user?.role === 'operator') && (
@@ -1269,6 +1243,18 @@ export const ChecklistSystem: React.FC = () => {
                               {expandedSubmissions.has(submission.id) && (
                                 <div className="border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)] p-4">
                                   <div className="space-y-3">
+                                    {/* Show duration for admins in expanded view */}
+                                    {user?.role === 'admin' && submission.duration_minutes && (
+                                      <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                                          <span className="text-xs font-medium text-[var(--text-secondary)]">Duration:</span>
+                                        </div>
+                                        <p className="text-xs text-[var(--accent)] ml-5">
+                                          {submission.duration_minutes} minutes
+                                        </p>
+                                      </div>
+                                    )}
                                     {submission.comments && (
                                       <div>
                                         <div className="flex items-center gap-2 mb-1">
