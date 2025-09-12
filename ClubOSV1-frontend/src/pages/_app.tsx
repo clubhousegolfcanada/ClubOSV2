@@ -1,4 +1,5 @@
 import '@/styles/globals.css';
+import '@/styles/mobile-optimizations.css';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
