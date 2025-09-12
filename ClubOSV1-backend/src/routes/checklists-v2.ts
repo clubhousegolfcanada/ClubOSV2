@@ -6,12 +6,14 @@ import { body, query, param } from 'express-validator';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/errorHandler';
+import { contractorService } from '../services/contractorService';
 
 const router = Router();
 
 // Get checklist template from database
 router.get('/template/:category/:type',
   authenticate,
+  roleGuard(['admin', 'operator', 'support', 'contractor']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { category, type } = req.params;
@@ -104,6 +106,19 @@ router.post('/unlock-door',
     try {
       const { location } = req.body;
       const userId = req.user!.id;
+      const userRole = req.user!.role;
+      
+      // Check permissions for contractors
+      if (userRole === 'contractor') {
+        const canUnlock = await contractorService.canUnlockDoor(userId, location);
+        if (!canUnlock) {
+          throw new AppError('No permission to unlock doors at this location', 403, 'DOOR_UNLOCK_DENIED');
+        }
+        // Log the door unlock for auditing
+        await contractorService.logDoorUnlock(userId, location, `${location}-door`);
+      } else if (!['admin', 'operator', 'support'].includes(userRole)) {
+        throw new AppError('Insufficient permissions to unlock door', 403, 'INSUFFICIENT_PERMISSIONS');
+      }
       
       // Map location to door configuration
       const doorMap: Record<string, { location: string; doorKey: string }> = {
@@ -157,6 +172,7 @@ router.post('/unlock-door',
 // Start a checklist session with door unlock
 router.post('/start',
   authenticate,
+  roleGuard(['admin', 'operator', 'support', 'contractor']),
   validate([
     body('templateId').isUUID().withMessage('Valid template ID required'),
     body('location').notEmpty().withMessage('Location is required'),
@@ -168,14 +184,22 @@ router.post('/start',
       const userId = req.user!.id;
       
       // Check if user has access to this location
-      const userResult = await db.query(
-        'SELECT allowed_locations FROM users WHERE id = $1',
-        [userId]
-      );
-      
-      const user = userResult.rows[0];
-      if (user.allowed_locations && !user.allowed_locations.includes(location) && req.user!.role !== 'admin') {
-        throw new AppError('Access denied for this location', 403, 'LOCATION_ACCESS_DENIED');
+      if (req.user!.role === 'contractor') {
+        // Check contractor permissions for this location
+        const canSubmit = await contractorService.canSubmitChecklist(userId, location);
+        if (!canSubmit) {
+          throw new AppError('No permission to submit checklists at this location', 403, 'CHECKLIST_SUBMIT_DENIED');
+        }
+      } else {
+        const userResult = await db.query(
+          'SELECT allowed_locations FROM users WHERE id = $1',
+          [userId]
+        );
+        
+        const user = userResult.rows[0];
+        if (user.allowed_locations && !user.allowed_locations.includes(location) && req.user!.role !== 'admin') {
+          throw new AppError('Access denied for this location', 403, 'LOCATION_ACCESS_DENIED');
+        }
       }
       
       // Create submission record
@@ -221,6 +245,7 @@ router.post('/start',
 // Complete a checklist session
 router.patch('/complete/:id',
   authenticate,
+  roleGuard(['admin', 'operator', 'support', 'contractor']),
   validate([
     param('id').isUUID(),
     body('completedTasks').isArray(),
@@ -307,6 +332,7 @@ router.patch('/complete/:id',
 // Submit checklist (backward compatibility - combines start and complete)
 router.post('/submit',
   authenticate,
+  roleGuard(['admin', 'operator', 'support', 'contractor']),
   validate([
     body('category').isIn(['cleaning', 'tech']),
     body('type').isIn(['daily', 'weekly', 'quarterly']),

@@ -6,7 +6,7 @@ import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 
 // Export UserRole type
-export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
+export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer' | 'contractor';
 export type ViewMode = 'operator' | 'customer';
 
 // User type for user management

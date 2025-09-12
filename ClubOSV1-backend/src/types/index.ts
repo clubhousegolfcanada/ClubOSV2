@@ -135,7 +135,7 @@ export interface AccessRequest {
 
 export type BotRoute = 'Auto' | 'Booking&Access' | 'Booking & Access' | 'Emergency' | 'TechSupport' | 'BrandTone' | 'Slack' | 'general';
 export type RequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'fallback' | 'sent_to_slack';
-export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
+export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer' | 'contractor';
 
 export interface User {
   id: string;
@@ -302,4 +302,20 @@ export interface Ticket {
   updatedAt: string;
   resolvedAt?: string;
   comments: any[];
+}
+
+
+// Contractor permission interface
+export interface ContractorPermission {
+  id: string;
+  userId: string;
+  location: string;
+  canUnlockDoors: boolean;
+  canSubmitChecklists: boolean;
+  canViewHistory: boolean;
+  activeFrom: Date;
+  activeUntil?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string;
 }

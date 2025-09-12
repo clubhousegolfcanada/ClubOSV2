@@ -279,6 +279,7 @@ app.use('/api/badges', require('./routes/badges').default);
 app.use('/api/achievements', require('./routes/achievements').default);
 app.use('/api/trackman', require('./routes/trackman').default);
 app.use('/api/admin/cc-adjustments', require('./routes/admin/ccAdjustments').default);
+app.use('/api/admin/contractors', require('./routes/admin/contractors').default);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/access', accessRoutes);

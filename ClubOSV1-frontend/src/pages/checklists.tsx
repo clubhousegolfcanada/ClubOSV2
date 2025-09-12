@@ -15,8 +15,8 @@ export default function Checklists() {
         router.push('/customer/');
         return;
       }
-      // Only allow operator roles
-      if (!['admin', 'operator', 'support'].includes(user.role)) {
+      // Allow operator roles and contractors
+      if (!['admin', 'operator', 'support', 'contractor'].includes(user.role)) {
         router.push('/login');
         return;
       }
@@ -24,7 +24,7 @@ export default function Checklists() {
   }, [user, router]);
 
   // Don't render until we know the user's role
-  if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
+  if (!user || !['admin', 'operator', 'support', 'contractor'].includes(user.role)) {
     return null;
   }
 

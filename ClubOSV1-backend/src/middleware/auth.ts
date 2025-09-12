@@ -51,6 +51,9 @@ export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>, remember
       case 'kiosk':
         expiresIn = '12h'; // 12 hours for kiosk mode
         break;
+      case 'contractor':
+        expiresIn = '8h';  // 8 hours for contractors
+        break;
       default:
         expiresIn = '4h';  // Default to 4 hours for safety
     }
@@ -153,8 +156,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       res.setHeader('X-New-Token', newToken);
     }
 
-    // Validate role exists - include customer role
-    if (!decoded.role || !['admin', 'operator', 'support', 'kiosk', 'customer'].includes(decoded.role)) {
+    // Validate role exists - include customer and contractor roles
+    if (!decoded.role || !['admin', 'operator', 'support', 'kiosk', 'customer', 'contractor'].includes(decoded.role)) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid token: missing or invalid role'

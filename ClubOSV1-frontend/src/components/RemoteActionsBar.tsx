@@ -244,9 +244,15 @@ const RemoteActionsBar: React.FC = () => {
   }
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ease-out ${
-      isExpanded ? 'h-auto max-h-[70vh] overflow-hidden' : 'h-12'
-    }`}>
+    <div 
+      className={`fixed left-0 right-0 z-40 transition-all duration-300 ease-out ${
+        isExpanded ? 'h-auto max-h-[70vh] overflow-hidden' : 'h-12'
+      }`}
+      style={{
+        bottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingBottom: isExpanded ? 'env(safe-area-inset-bottom, 0px)' : '0'
+      }}
+    >
       {/* Collapsed Bar */}
       <div 
         className={`border-t cursor-pointer h-12 transition-all duration-200 ${

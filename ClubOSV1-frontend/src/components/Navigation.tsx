@@ -11,7 +11,7 @@ import { ChevronDown, ChevronRight, User, Settings, LogOut, MessageCircle, Calen
 import packageJson from '../../package.json';
 import { tokenManager } from '@/utils/tokenManager';
 
-type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer';
+type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer' | 'contractor';
 
 interface NavigationProps {
   unreadMessages?: number;
@@ -97,6 +97,11 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         // Kiosk users only see ClubOS Boy
         { href: '/clubosboy', label: 'ClubOS Boy', roles: ['kiosk'] as UserRole[] },
       ]
+    : user?.role === 'contractor'
+    ? [
+        // Contractor users only see Checklists
+        { href: '/checklists', label: 'Checklists', roles: ['contractor'] as UserRole[] },
+      ]
     : user?.role === 'customer'
     ? [
         // Customer navigation
@@ -112,7 +117,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         { href: '/messages', label: 'Messages', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/tickets', label: 'Tickets', roles: ['admin', 'operator'] as UserRole[] },
-        { href: '/checklists', label: 'Checklists', roles: ['admin', 'operator'] as UserRole[] },
+        { href: '/checklists', label: 'Checklists', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/clubosboy', label: 'ClubOS Boy', roles: ['admin', 'operator', 'support'] as UserRole[] },
       ].filter(item => hasAnyRole(user?.role, item.roles));

@@ -88,6 +88,37 @@ export default function Messages() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const remoteActionsBar = useRemoteActionsBar();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+  // Track keyboard visibility on mobile
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleFocus = () => {
+      setKeyboardVisible(true);
+      // Ensure input is visible when keyboard appears
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    };
+    
+    const handleBlur = () => {
+      setKeyboardVisible(false);
+    };
+    
+    // Only for mobile
+    if (window.innerWidth < 768) {
+      document.addEventListener('focusin', handleFocus);
+      document.addEventListener('focusout', handleBlur);
+      
+      return () => {
+        document.removeEventListener('focusin', handleFocus);
+        document.removeEventListener('focusout', handleBlur);
+      };
+    }
+  }, []);
   const { markConversationAsRead, refreshUnreadCount } = useMessages();
 
   // Check auth
@@ -1169,7 +1200,13 @@ export default function Messages() {
         </div>
 
         {/* Mobile Layout - Standard messaging app layout */}
-        <div className={`md:hidden flex flex-col bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-48px)]' : 'h-screen'}`}>
+        <div 
+          className="md:hidden flex flex-col bg-[var(--bg-primary)]"
+          style={{
+            height: remoteActionsBar.isVisible ? 'calc(100vh - 48px)' : '100vh',
+            transition: 'height 150ms ease-out'
+          }}
+        >
           {/* Header - Fixed at top */}
           <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
             <div className="px-4 py-3">
@@ -1396,7 +1433,14 @@ export default function Messages() {
                   </div>
 
                   {/* Messages - Mobile optimized with better spacing */}
-                  <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 flex flex-col" style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                  <div 
+                    className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 flex flex-col" 
+                    style={{ 
+                      WebkitOverflowScrolling: 'touch',
+                      paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+                      overscrollBehavior: 'contain'
+                    }}
+                  >
                     {/* Load More Messages Button - Mobile */}
                     {hasMoreMessages && (
                       <div className="text-center mb-3">
@@ -1542,7 +1586,13 @@ export default function Messages() {
                   )}
                   
                   {/* Message Input - Mobile optimized */}
-                  <div className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 transition-all duration-300" style={{ paddingBottom: remoteActionsBar.isVisible ? 'calc(3rem + env(safe-area-inset-bottom))' : 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+                  <div 
+                    className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3" 
+                    style={{ 
+                      paddingBottom: `calc(${remoteActionsBar.isVisible ? '3.5rem' : '0.75rem'} + env(safe-area-inset-bottom, 0px))`,
+                      transition: 'padding-bottom 150ms ease-out'
+                    }}
+                  >
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
@@ -1568,7 +1618,16 @@ export default function Messages() {
                         placeholder="Type a message..."
                         className="flex-1 px-4 py-3 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-full text-base focus:outline-none focus:border-[var(--accent)]"
                         disabled={sending}
-                        style={{ fontSize: '16px' }} // Prevents zoom on iOS
+                        style={{ 
+                          fontSize: '16px', // Prevents zoom on iOS
+                          WebkitAppearance: 'none', // Ensures consistent appearance
+                          touchAction: 'manipulation' // Improves touch responsiveness
+                        }}
+                        enterKeyHint="send" // Shows 'Send' button on mobile keyboards
+                        autoComplete="off" // Prevents unwanted autocomplete
+                        autoCorrect="on" // Enables autocorrect for messaging
+                        autoCapitalize="sentences" // Auto-capitalizes sentences
+                        spellCheck="true" // Enables spell check
                       />
                       
                       <button

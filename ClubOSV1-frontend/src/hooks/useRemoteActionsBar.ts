@@ -4,16 +4,18 @@ import { hasMinimumRole } from '@/utils/roleUtils';
 
 export function useRemoteActionsBar() {
   const { user } = useAuthState();
-  const [isVisible, setIsVisible] = useState(false);
-  const [height, setHeight] = useState(0);
+  
+  // Initialize with the expected value to prevent layout shift
+  // Operators and admins will have the bar, support and below won't
+  const hasPermission = user && hasMinimumRole(user.role, 'operator');
+  const [isVisible, setIsVisible] = useState(hasPermission || false);
+  const [height, setHeight] = useState(hasPermission ? 48 : 0);
   
   useEffect(() => {
-    // Check if user has permission for remote actions
-    const hasPermission = user && hasMinimumRole(user.role, 'operator');
-    setIsVisible(hasPermission || false);
-    
-    // Set height based on visibility
-    setHeight(hasPermission ? 48 : 0); // 48px = 3rem
+    // Update if permission changes (e.g., after login)
+    const newHasPermission = user && hasMinimumRole(user.role, 'operator');
+    setIsVisible(newHasPermission || false);
+    setHeight(newHasPermission ? 48 : 0); // 48px = 3rem
   }, [user]);
   
   return {
