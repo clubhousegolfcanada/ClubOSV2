@@ -90,16 +90,54 @@ class PatternSafetyService {
   /**
    * Check if a message contains blacklisted or escalation keywords
    */
-  async checkMessageSafety(message: string): Promise<SafetyCheckResult> {
+  async checkMessageSafety(message: string, conversationId?: string, phoneNumber?: string): Promise<SafetyCheckResult & { suggestedResponse?: string }> {
     await this.loadConfig();
-    
+
     const lowerMessage = message.toLowerCase();
-    
+
+    // Check for negative sentiment patterns FIRST
+    const negativeSentimentPatterns = [
+      { pattern: /still\s+(broken|not\s+working|doesn't\s+work)/i, severity: 'high' },
+      { pattern: /doesn't\s+help/i, severity: 'high' },
+      { pattern: /(frustrated|annoyed|angry|terrible|ridiculous)/i, severity: 'high' },
+      { pattern: /(real\s+person|human|operator\s+please|speak\s+to\s+someone)/i, severity: 'medium' },
+      { pattern: /waste\s+of\s+time/i, severity: 'critical' },
+      { pattern: /not\s+helpful/i, severity: 'medium' },
+      { pattern: /this\s+is\s+(stupid|dumb|useless)/i, severity: 'high' },
+      { pattern: /still\s+(confused|don't\s+understand)/i, severity: 'medium' }
+    ];
+
+    // Check for negative sentiment
+    for (const sentimentCheck of negativeSentimentPatterns) {
+      if (sentimentCheck.pattern.test(message)) {
+        logger.warn('[PatternSafety] Negative sentiment detected', {
+          phoneNumber,
+          severity: sentimentCheck.severity,
+          pattern: sentimentCheck.pattern.source
+        });
+
+        // Log escalation for tracking
+        await this.logEscalationAlert(message, ['negative_sentiment'], conversationId, phoneNumber);
+
+        return {
+          safe: false,
+          reason: 'negative_sentiment_detected',
+          alertType: 'escalation',
+          triggeredKeywords: ['negative_sentiment'],
+          suggestedResponse: `I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.
+
+A member of our team will respond as soon as possible.
+
+- ClubAI`
+        };
+      }
+    }
+
     // Check blacklist topics
-    const blacklistMatches = this.blacklistTopics.filter(topic => 
+    const blacklistMatches = this.blacklistTopics.filter(topic =>
       lowerMessage.includes(topic)
     );
-    
+
     if (blacklistMatches.length > 0) {
       return {
         safe: false,
@@ -110,14 +148,14 @@ class PatternSafetyService {
     }
 
     // Check escalation keywords
-    const escalationMatches = this.escalationKeywords.filter(keyword => 
+    const escalationMatches = this.escalationKeywords.filter(keyword =>
       lowerMessage.includes(keyword)
     );
-    
+
     if (escalationMatches.length > 0) {
       // Log escalation alert
-      await this.logEscalationAlert(message, escalationMatches);
-      
+      await this.logEscalationAlert(message, escalationMatches, conversationId, phoneNumber);
+
       return {
         safe: false,
         reason: 'Message requires operator attention',

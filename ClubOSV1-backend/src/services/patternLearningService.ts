@@ -1325,9 +1325,9 @@ Please provide:
 
       const result = JSON.parse(completion.choices[0].message.content || '{}');
 
-      // Validate and structure the response
+      // Validate and structure the response (with ClubAI signature)
       return {
-        response: result.response || this.fillResponseTemplate(pattern.response_template, context),
+        response: this.addClubAISignature(result.response || this.fillResponseTemplate(pattern.response_template, context)),
         actions: result.actions || this.processActionTemplate(pattern.action_template, context),
         reasoning: {
           thought_process: result.reasoning || 'Analyzed customer need and adapted response',
@@ -1340,9 +1340,9 @@ Please provide:
     } catch (error) {
       logger.error('[PatternLearning] GPT-4o reasoning failed, falling back to templates', error);
       
-      // Fallback to template-based response
+      // Fallback to template-based response (with ClubAI signature)
       return {
-        response: this.fillResponseTemplate(pattern.response_template, context),
+        response: this.addClubAISignature(this.fillResponseTemplate(pattern.response_template, context)),
         actions: this.processActionTemplate(pattern.action_template, context),
         reasoning: {
           thought_process: 'Fallback to template due to AI error',
@@ -1351,6 +1351,17 @@ Please provide:
         }
       };
     }
+  }
+
+  /**
+   * Add ClubAI signature to responses
+   */
+  private addClubAISignature(response: string): string {
+    // Don't add if already has signature
+    if (!response || response.includes('- ClubAI') || response.includes('-ClubAI')) {
+      return response;
+    }
+    return `${response}\n\n- ClubAI`;
   }
 
   /**

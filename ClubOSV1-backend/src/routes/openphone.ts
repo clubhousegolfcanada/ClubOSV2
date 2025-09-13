@@ -280,22 +280,66 @@ router.post('/webhook', async (req: Request, res: Response) => {
           status: messageData.status,
           conversationId: messageData.conversationId
         };
+
+        // CHECK FOR OPERATOR ACTIVITY (outbound messages without ClubAI signature)
+        if (newMessage.direction === 'outbound' &&
+            !newMessage.text.includes('- ClubAI') &&
+            !newMessage.text.includes('-ClubAI')) {
+
+          logger.info('[Operator] Detected operator message, marking conversation as operator-handled', {
+            phoneNumber,
+            messagePreview: newMessage.text.substring(0, 50)
+          });
+
+          // Mark operator as active in conversation
+          await db.query(`
+            UPDATE openphone_conversations
+            SET operator_active = true,
+                operator_last_message = NOW(),
+                conversation_locked = true,
+                lockout_until = NOW() + INTERVAL '4 hours'
+            WHERE phone_number = $1`,
+            [phoneNumber]
+          );
+
+          // Track operator intervention
+          await db.query(`
+            INSERT INTO operator_interventions
+            (phone_number, conversation_id, operator_id, intervention_type, message_sent, created_at)
+            VALUES ($1, $2, NULL, 'manual_response', $3, NOW())`,
+            [phoneNumber, conversationId, newMessage.text]
+          );
+        }
         
         // Use phone number as the consistent conversation ID
         const conversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}`;
         
+        // Determine conversation window based on message content
+        const getConversationWindow = (text: string): number => {
+          if (/book|reservation|tee\s+time|schedule|appointment/i.test(text)) {
+            return 240; // 4 hours for bookings
+          }
+          if (/broken|stuck|frozen|not\s+working|issue|problem|help/i.test(text)) {
+            return 120; // 2 hours for tech support
+          }
+          return 60; // 1 hour default
+        };
+
+        const conversationWindowMinutes = getConversationWindow(newMessage.text);
+
         // Check if we have an existing conversation for this phone number
-        // We'll check the timestamp of the last message to determine if it's within 1 hour
         const existingConv = await db.query(`
           SELECT id, messages, conversation_id, created_at, updated_at,
-            CASE 
-              WHEN jsonb_array_length(messages) > 0 
+            operator_active, operator_last_message, conversation_locked, lockout_until,
+            rapid_message_count, ai_response_count,
+            CASE
+              WHEN jsonb_array_length(messages) > 0
               THEN EXTRACT(EPOCH FROM (NOW() - (messages->-1->>'createdAt')::timestamp)) / 60
               ELSE EXTRACT(EPOCH FROM (NOW() - created_at)) / 60
             END as minutes_since_last_message
-          FROM openphone_conversations 
+          FROM openphone_conversations
           WHERE phone_number = $1
-          ORDER BY updated_at DESC 
+          ORDER BY updated_at DESC
           LIMIT 1
         `, [phoneNumber]);
         
@@ -382,9 +426,58 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 userCount: userIds.length
               });
               
+              // SAFEGUARD: Check if operator is active or conversation is locked
+              if (existingConv.rows[0].operator_active ||
+                  existingConv.rows[0].conversation_locked ||
+                  (existingConv.rows[0].lockout_until && new Date(existingConv.rows[0].lockout_until) > new Date())) {
+
+                logger.info('[Safeguard] Skipping AI - operator is active or conversation locked', {
+                  phoneNumber,
+                  operatorActive: existingConv.rows[0].operator_active,
+                  conversationLocked: existingConv.rows[0].conversation_locked,
+                  lockoutUntil: existingConv.rows[0].lockout_until
+                });
+
+                return res.json({ success: true, message: 'Operator handling conversation' });
+              }
+
+              // SAFEGUARD: Detect rapid messages (multiple messages in short time)
+              const recentMessages = updatedMessages.filter((m: any) =>
+                new Date(m.createdAt) > new Date(Date.now() - 60000) // Last 60 seconds
+              );
+
+              if (recentMessages.length >= 3) {
+                logger.warn('[Safeguard] Multiple rapid messages detected - escalating', {
+                  phoneNumber,
+                  recentMessageCount: recentMessages.length
+                });
+
+                // Send escalation message
+                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                if (defaultNumber) {
+                  await openPhoneService.sendMessage(
+                    phoneNumber,
+                    defaultNumber,
+                    `I notice you've sent multiple messages. Let me connect you with a human operator who can better assist you.\n\nOur team will respond shortly.\n\n- ClubAI`
+                  );
+                }
+
+                // Lock conversation
+                await db.query(`
+                  UPDATE openphone_conversations
+                  SET conversation_locked = true,
+                      customer_sentiment = 'escalated',
+                      rapid_message_count = $2
+                  WHERE id = $1`,
+                  [existingConv.rows[0].id, recentMessages.length]
+                );
+
+                return res.json({ success: true, message: 'Escalated due to rapid messages' });
+              }
+
               // Process both AI automations AND Pattern Learning for existing conversations
               const messageText = messageData.body || messageData.text || '';
-              
+
               // First check AI automations (for confirmations and other automated responses)
               try {
                 const automationResponse = await aiAutomationService.processMessage(
