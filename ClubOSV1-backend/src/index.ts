@@ -471,6 +471,15 @@ async function startServer() {
     logger.info('🔄 Initializing database connection...');
     await db.initialize();
     logger.info('✅ Database initialized successfully');
+
+    // Enable V3-PLS if not already enabled
+    try {
+      const { enableV3PLSOnStartup } = await import('./scripts/enable-v3pls-startup');
+      await enableV3PLSOnStartup();
+    } catch (error) {
+      logger.error('V3-PLS enablement error:', error);
+      // Continue - don't fail startup
+    }
     
     // Ensure critical tables exist
     const { ensureCriticalTables } = await import('./utils/ensure-critical-tables');
