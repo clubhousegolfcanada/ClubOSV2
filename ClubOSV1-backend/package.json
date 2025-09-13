@@ -59,6 +59,7 @@
     "db:validate": "tsx src/utils/migrationRunner.ts validate",
     "db:reset": "tsx src/utils/migrationRunner.ts reset",
     "db:migrate:dry": "DRY_RUN=true tsx src/utils/migrationRunner.ts migrate",
+    "enable:v3pls": "tsx scripts/enable-v3-pls.ts",
     "generate:secrets": "cd .. && ./generate-secrets.sh",
     "setup:db": "node src/scripts/setupDatabase.js",
     "db:setup": "node dist/scripts/setupDatabase.js",
