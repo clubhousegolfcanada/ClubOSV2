@@ -319,7 +319,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
       )}
       
       {/* Section Toggle */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-4">
         <div className="flex items-center justify-between">
           <div className="flex space-x-2">
             <button
@@ -327,7 +327,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
               className={`px-4 py-2 rounded-md flex items-center gap-2 ${
                 activeSection === 'stats'
                   ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               <BarChart3 className="h-4 w-4" />
@@ -338,7 +338,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
               className={`px-4 py-2 rounded-md flex items-center gap-2 ${
                 activeSection === 'settings'
                   ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               <Settings className="h-4 w-4" />
@@ -349,7 +349,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
               className={`px-4 py-2 rounded-md flex items-center gap-2 ${
                 activeSection === 'import'
                   ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               <Upload className="h-4 w-4" />
@@ -370,7 +370,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                   hasChanges
                     ? 'bg-primary text-white hover:opacity-90'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed'
                 }`}
               >
                 <Save className="h-4 w-4" />
@@ -386,12 +386,12 @@ export const PatternsStatsAndSettings: React.FC = () => {
         <div className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Automation Rate</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Automation Rate</p>
                   <p className="text-2xl font-bold text-primary">{stats.automationRate}%</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     {stats.automatedResponses} of {stats.totalResponses} messages
                   </p>
                 </div>
@@ -399,12 +399,12 @@ export const PatternsStatsAndSettings: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Time Saved Today</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Time Saved Today</p>
                   <p className="text-2xl font-bold text-green-600">{stats.timeSavedToday} min</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     ~{Math.round(stats.timeSavedToday / 60)} hours of work
                   </p>
                 </div>
@@ -412,12 +412,12 @@ export const PatternsStatsAndSettings: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Manual Interventions</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Manual Interventions</p>
                   <p className="text-2xl font-bold text-yellow-600">{stats.manualResponses}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     Required operator response
                   </p>
                 </div>
@@ -427,8 +427,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
           </div>
 
           {/* Top Questions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
               Most Common Questions Today
             </h3>
@@ -436,14 +436,14 @@ export const PatternsStatsAndSettings: React.FC = () => {
               {stats.topQuestions.map((question, idx) => (
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-700">{question.topic}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{question.topic}</span>
                     {question.automated && (
                       <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
                         Automated
                       </span>
                     )}
                   </div>
-                  <span className="text-sm text-gray-500">{question.count} times</span>
+                  <span className="text-sm text-[var(--text-muted)]">{question.count} times</span>
                 </div>
               ))}
             </div>
@@ -473,13 +473,13 @@ export const PatternsStatsAndSettings: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-red-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Critical Safety Controls</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Critical Safety Controls</h3>
               <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Required</span>
             </div>
 
             {/* Blacklisted Topics */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Blacklisted Topics (Never Auto-Respond)
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -498,7 +498,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
               <div className="space-y-2">
                 <textarea
                   placeholder="Paste multiple keywords here (comma, space, or newline separated)..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
                   rows={3}
                   onBlur={(e) => {
                     addBulkKeywords('blacklist', e.target.value);
@@ -509,7 +509,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Or add single keyword and press Enter..."
-                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                    className="flex-1 px-3 py-1.5 border border-[var(--border-primary)] rounded-md text-sm"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         addKeyword('blacklist', (e.target as HTMLInputElement).value);
@@ -523,7 +523,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
 
             {/* Escalation Keywords */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Escalation Keywords (Alert Operator)
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -542,7 +542,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
               <div className="space-y-2">
                 <textarea
                   placeholder="Paste multiple keywords here (comma, space, or newline separated)..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
                   rows={3}
                   onBlur={(e) => {
                     addBulkKeywords('escalation', e.target.value);
@@ -553,7 +553,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Or add single keyword and press Enter..."
-                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                    className="flex-1 px-3 py-1.5 border border-[var(--border-primary)] rounded-md text-sm"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         addKeyword('escalation', (e.target as HTMLInputElement).value);
@@ -580,8 +580,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
             <div>
               <label className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Require Approval for New Patterns</span>
-                  <p className="text-xs text-gray-500">First {settings.approvalThreshold} uses need operator approval</p>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">Require Approval for New Patterns</span>
+                  <p className="text-xs text-[var(--text-muted)]">First {settings.approvalThreshold} uses need operator approval</p>
                 </div>
                 <input
                   type="checkbox"
@@ -594,15 +594,15 @@ export const PatternsStatsAndSettings: React.FC = () => {
           </div>
 
           {/* Learning Controls */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center gap-2 mb-4">
               <Brain className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold text-gray-900">Learning Controls</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Learning Controls</h3>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                   Minimum Examples Required: {settings.minExamplesRequired}
                 </label>
                 <input
@@ -613,13 +613,13 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   onChange={(e) => updateSetting('minExamplesRequired', parseInt(e.target.value))}
                   className="w-full"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[var(--text-muted)] mt-1">
                   Need {settings.minExamplesRequired} similar Q&As before creating a pattern
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                   Operator Override Weight: {settings.operatorOverrideWeight}x
                 </label>
                 <input
@@ -630,7 +630,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   onChange={(e) => updateSetting('operatorOverrideWeight', parseInt(e.target.value) / 10)}
                   className="w-full"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[var(--text-muted)] mt-1">
                   Operator corrections are weighted {settings.operatorOverrideWeight}x more than auto-learned patterns
                 </p>
               </div>
@@ -638,18 +638,18 @@ export const PatternsStatsAndSettings: React.FC = () => {
           </div>
 
           {/* Fallback Response Settings */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center gap-2 mb-4">
-              <MessageCircle className="h-5 w-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Fallback Responses</h3>
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">Optional</span>
+              <MessageCircle className="h-5 w-5 text-[var(--text-secondary)]" />
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Fallback Responses</h3>
+              <span className="px-2 py-0.5 bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded-full">Optional</span>
             </div>
 
             <div className="mb-4">
               <label className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Enable Fallback Responses</span>
-                  <p className="text-xs text-gray-500">Send fallback messages when AI cannot process a request</p>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">Enable Fallback Responses</span>
+                  <p className="text-xs text-[var(--text-muted)]">Send fallback messages when AI cannot process a request</p>
                 </div>
                 <input
                   type="checkbox"
@@ -663,41 +663,41 @@ export const PatternsStatsAndSettings: React.FC = () => {
             {settings.enableFallbackResponses && (
               <div className="space-y-3 pt-3 border-t">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Booking & Access Fallback</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Booking & Access Fallback</label>
                   <textarea
                     value={settings.fallbackMessages.booking}
                     onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, booking: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
                     rows={2}
                     placeholder="Leave empty to send no fallback..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Emergency Fallback</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Emergency Fallback</label>
                   <textarea
                     value={settings.fallbackMessages.emergency}
                     onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, emergency: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
                     rows={2}
                     placeholder="Leave empty to send no fallback..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Tech Support Fallback</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Tech Support Fallback</label>
                   <textarea
                     value={settings.fallbackMessages.techSupport}
                     onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, techSupport: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
                     rows={2}
                     placeholder="Leave empty to send no fallback..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">General Fallback</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">General Fallback</label>
                   <textarea
                     value={settings.fallbackMessages.general}
                     onChange={(e) => updateSetting('fallbackMessages', {...settings.fallbackMessages, general: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
                     rows={2}
                     placeholder="Leave empty to send no fallback..."
                   />
@@ -707,10 +707,10 @@ export const PatternsStatsAndSettings: React.FC = () => {
           </div>
 
           {/* Pattern Learning Configuration */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Pattern Learning System</h3>
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">Automatic Learning</span>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Pattern Learning System</h3>
+              <span className="px-2 py-0.5 bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded-full">Automatic Learning</span>
             </div>
 
             <div className="space-y-4">
@@ -718,8 +718,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
               <div>
                 <label className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">Enable Pattern Learning</span>
-                    <p className="text-xs text-gray-500">Automatically learn new patterns from operator responses</p>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Enable Pattern Learning</span>
+                    <p className="text-xs text-[var(--text-muted)]">Automatically learn new patterns from operator responses</p>
                   </div>
                   <input
                     type="checkbox"
@@ -734,8 +734,8 @@ export const PatternsStatsAndSettings: React.FC = () => {
               <div>
                 <label className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">Shadow Mode</span>
-                    <p className="text-xs text-gray-500">Log learning opportunities without creating patterns</p>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Shadow Mode</span>
+                    <p className="text-xs text-[var(--text-muted)]">Log learning opportunities without creating patterns</p>
                   </div>
                   <input
                     type="checkbox"
@@ -749,11 +749,11 @@ export const PatternsStatsAndSettings: React.FC = () => {
 
               {/* Confidence Thresholds */}
               <div className="pt-3 border-t space-y-3">
-                <h4 className="text-sm font-medium text-gray-700">Confidence Thresholds</h4>
+                <h4 className="text-sm font-medium text-[var(--text-primary)]">Confidence Thresholds</h4>
                 
                 {/* Min Confidence to Suggest */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Minimum Confidence to Suggest ({Math.round(patternConfig.minConfidenceToSuggest * 100)}%)
                   </label>
                   <input
@@ -765,14 +765,14 @@ export const PatternsStatsAndSettings: React.FC = () => {
                     className="w-full"
                     disabled={!patternConfig.enabled}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     Patterns above this threshold will be suggested to operators
                   </p>
                 </div>
 
                 {/* Min Confidence to Act */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Minimum Confidence to Auto-Execute ({Math.round(patternConfig.minConfidenceToAct * 100)}%)
                   </label>
                   <input
@@ -784,14 +784,14 @@ export const PatternsStatsAndSettings: React.FC = () => {
                     className="w-full"
                     disabled={!patternConfig.enabled}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     Patterns above this threshold can execute automatically
                   </p>
                 </div>
 
                 {/* Min Occurrences to Learn */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Minimum Occurrences to Learn
                   </label>
                   <input
@@ -800,24 +800,24 @@ export const PatternsStatsAndSettings: React.FC = () => {
                     max="10"
                     value={patternConfig.minOccurrencesToLearn}
                     onChange={(e) => updatePatternConfig('minOccurrencesToLearn', parseInt(e.target.value))}
-                    className="w-24 px-3 py-1 border border-gray-300 rounded-md text-sm"
+                    className="w-24 px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
                     disabled={!patternConfig.enabled}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     Number of similar responses needed before creating a pattern
                   </p>
                 </div>
               </div>
 
               {/* Learning Status */}
-              <div className="bg-gray-50 rounded-lg p-3 mt-4">
+              <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 mt-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`h-2 w-2 rounded-full ${patternConfig.enabled ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                  <span className="text-sm font-medium text-gray-700">
+                  <div className={`h-2 w-2 rounded-full ${patternConfig.enabled ? 'bg-green-500 animate-pulse' : 'bg-[var(--bg-secondary)]'}`} />
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
                     {patternConfig.enabled ? 'Pattern Learning Active' : 'Pattern Learning Disabled'}
                   </span>
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-[var(--text-secondary)]">
                   {patternConfig.enabled && patternConfig.shadowMode && (
                     <p>⚠️ Shadow mode enabled - patterns are logged but not created</p>
                   )}
@@ -833,23 +833,23 @@ export const PatternsStatsAndSettings: React.FC = () => {
           </div>
 
           {/* Current Status */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Current Safety Status</h4>
+          <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-4">
+            <h4 className="text-sm font-medium text-[var(--text-primary)] mb-2">Current Safety Status</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">Blacklisted topics:</span>
+                <span className="text-[var(--text-secondary)]">Blacklisted topics:</span>
                 <span className="ml-2 font-medium">{settings.blacklistTopics.length} configured</span>
               </div>
               <div>
-                <span className="text-gray-600">Escalation triggers:</span>
+                <span className="text-[var(--text-secondary)]">Escalation triggers:</span>
                 <span className="ml-2 font-medium">{settings.escalationKeywords.length} active</span>
               </div>
               <div>
-                <span className="text-gray-600">New pattern approval:</span>
+                <span className="text-[var(--text-secondary)]">New pattern approval:</span>
                 <span className="ml-2 font-medium">{settings.requireApprovalForNew ? 'Required' : 'Disabled'}</span>
               </div>
               <div>
-                <span className="text-gray-600">Fallback responses:</span>
+                <span className="text-[var(--text-secondary)]">Fallback responses:</span>
                 <span className="ml-2 font-medium">{settings.enableFallbackResponses ? 'Enabled' : 'Disabled'}</span>
               </div>
             </div>

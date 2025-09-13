@@ -201,7 +201,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
       'membership': 'bg-indigo-100 text-indigo-800',
       'access': 'bg-orange-100 text-orange-800',
       'gift_cards': 'bg-pink-100 text-pink-800',
-      'general': 'bg-gray-100 text-gray-800'
+      'general': 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
     };
     return colors[type] || colors['general'];
   };
@@ -221,19 +221,19 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-[var(--border-secondary)]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Review Imported Patterns</h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Review Imported Patterns</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
                 Review and approve patterns before they go live
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             >
               <X className="h-6 w-6" />
             </button>
@@ -245,8 +245,8 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
               onClick={() => setFilter('all')}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                 filter === 'all'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-[var(--bg-primary)] text-white'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               All ({patterns.length})
@@ -286,11 +286,11 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
 
         {/* Bulk Actions */}
         {filter === 'pending' && pendingCount > 0 && (
-          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-3 bg-[var(--bg-tertiary)] border-b border-[var(--border-secondary)] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleSelectAll}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
                 {selectedPatterns.size === pendingCount ? (
                   <CheckSquare className="h-4 w-4" />
@@ -300,7 +300,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                 Select All
               </button>
               {selectedPatterns.size > 0 && (
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-[var(--text-secondary)]">
                   {selectedPatterns.size} selected
                 </span>
               )}
@@ -335,8 +335,8 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
             </div>
           ) : filteredPatterns.length === 0 ? (
             <div className="text-center py-12">
-              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No patterns to review</p>
+              <MessageSquare className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
+              <p className="text-[var(--text-secondary)]">No patterns to review</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -348,7 +348,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                       ? 'border-green-200 bg-green-50'
                       : pattern.status === 'rejected'
                       ? 'border-red-200 bg-red-50'
-                      : 'border-gray-200 bg-white'
+                      : 'border-[var(--border-secondary)] bg-[var(--bg-tertiary)]'
                   }`}
                 >
                   {/* Pattern Header */}
@@ -362,7 +362,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                           {selectedPatterns.has(pattern.id) ? (
                             <CheckSquare className="h-5 w-5 text-primary" />
                           ) : (
-                            <Square className="h-5 w-5 text-gray-400" />
+                            <Square className="h-5 w-5 text-[var(--text-muted)]" />
                           )}
                         </button>
                       )}
@@ -389,7 +389,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                         </div>
                         
                         {pattern.reviewed_by_name && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">
                             Reviewed by {pattern.reviewed_by_name} on {new Date(pattern.reviewed_at!).toLocaleDateString()}
                           </p>
                         )}
@@ -401,7 +401,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => showPreview === pattern.id ? setShowPreview(null) : setShowPreview(pattern.id)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600"
+                          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                           title="Toggle conversation preview"
                         >
                           {showPreview === pattern.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -437,29 +437,29 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                   {editingPattern === pattern.id ? (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-[var(--text-primary)] mb-1">
                           Trigger Text
                         </label>
                         <input
                           type="text"
                           value={editedValues.trigger_text}
                           onChange={(e) => setEditedValues(prev => ({ ...prev, trigger_text: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-[var(--text-primary)] mb-1">
                           Response Template
                         </label>
                         <textarea
                           value={editedValues.response_template}
                           onChange={(e) => setEditedValues(prev => ({ ...prev, response_template: e.target.value }))}
                           rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-[var(--text-primary)] mb-1">
                           Confidence Score
                         </label>
                         <input
@@ -471,7 +471,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                           onChange={(e) => setEditedValues(prev => ({ ...prev, confidence_score: parseFloat(e.target.value) }))}
                           className="w-full"
                         />
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-[var(--text-secondary)]">
                           {(editedValues.confidence_score * 100).toFixed(0)}%
                         </span>
                       </div>
@@ -486,7 +486,7 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                         </button>
                         <button
                           onClick={() => setEditingPattern(null)}
-                          className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300"
+                          className="px-3 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm rounded-lg hover:bg-[var(--bg-hover)]"
                         >
                           Cancel
                         </button>
@@ -495,21 +495,21 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
                   ) : (
                     <div className="space-y-2">
                       <div>
-                        <span className="text-xs font-medium text-gray-500">Trigger:</span>
-                        <p className="text-sm text-gray-900">{pattern.trigger_text}</p>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Trigger:</span>
+                        <p className="text-sm text-[var(--text-primary)]">{pattern.trigger_text}</p>
                       </div>
                       <div>
-                        <span className="text-xs font-medium text-gray-500">Response:</span>
-                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{pattern.response_template}</p>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Response:</span>
+                        <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{pattern.response_template}</p>
                       </div>
                     </div>
                   )}
 
                   {/* Conversation Preview */}
                   {showPreview === pattern.id && pattern.conversation_preview && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs font-medium text-gray-700 mb-2">Original Conversation:</p>
-                      <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                    <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-lg">
+                      <p className="text-xs font-medium text-[var(--text-primary)] mb-2">Original Conversation:</p>
+                      <pre className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">
                         {pattern.conversation_preview}
                       </pre>
                     </div>
@@ -530,15 +530,15 @@ export const PatternApprovalModal: React.FC<PatternApprovalModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-between">
-          <div className="text-sm text-gray-600">
+        <div className="px-6 py-4 border-t border-[var(--border-secondary)] flex justify-between">
+          <div className="text-sm text-[var(--text-secondary)]">
             {pendingCount > 0 && (
               <span>{pendingCount} patterns awaiting review</span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-hover)]"
           >
             Close
           </button>

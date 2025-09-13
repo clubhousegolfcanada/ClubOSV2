@@ -215,20 +215,20 @@ export const OperationsPatterns: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with System Status */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <Brain className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">V3-PLS (Pattern Learning System)</h1>
-              <p className="text-sm text-gray-500">AI-powered message pattern recognition and automation</p>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">V3-PLS (Pattern Learning System)</h1>
+              <p className="text-sm text-[var(--text-secondary)]">AI-powered message pattern recognition and automation</p>
             </div>
           </div>
           <button
             onClick={() => { fetchStats(); fetchPatterns(); }}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
           >
-            <RefreshCw className="h-5 w-5 text-gray-600" />
+            <RefreshCw className="h-5 w-5 text-[var(--text-secondary)]" />
           </button>
         </div>
 
@@ -238,7 +238,7 @@ export const OperationsPatterns: React.FC = () => {
             {stats?.config.enabled ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
-              <AlertCircle className="h-5 w-5 text-gray-400" />
+              <AlertCircle className="h-5 w-5 text-[var(--text-muted)]" />
             )}
             <span className="text-sm font-medium">
               System: {stats?.config.enabled ? 'Enabled' : 'Disabled'}
@@ -264,13 +264,13 @@ export const OperationsPatterns: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex space-x-1 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+      <div className="flex space-x-1 bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-1">
         <button
           onClick={() => setActiveView('live')}
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'live' 
               ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           <div className="flex items-center justify-center space-x-1">
@@ -283,7 +283,7 @@ export const OperationsPatterns: React.FC = () => {
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'overview' 
               ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           Overview
@@ -293,7 +293,7 @@ export const OperationsPatterns: React.FC = () => {
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'patterns' 
               ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           Patterns ({patterns.length})
@@ -303,7 +303,7 @@ export const OperationsPatterns: React.FC = () => {
           className={`flex-1 px-4 py-2 rounded-md transition-colors ${
             activeView === 'config' 
               ? 'bg-primary text-white' 
-              : 'text-gray-600 hover:bg-gray-100'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           Configuration
@@ -319,67 +319,67 @@ export const OperationsPatterns: React.FC = () => {
       {activeView === 'overview' && (
         <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center justify-between mb-2">
               <Brain className="h-5 w-5 text-blue-500" />
               <span className="text-2xl font-bold">{stats?.patterns.total || 0}</span>
             </div>
-            <p className="text-sm text-gray-600">Active Patterns</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-[var(--text-secondary)]">Active Patterns</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
               Avg Confidence: {((stats?.patterns.avgConfidence || 0) * 100).toFixed(1)}%
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center justify-between mb-2">
               <Activity className="h-5 w-5 text-green-500" />
               <span className="text-2xl font-bold">{stats?.executions.total || 0}</span>
             </div>
-            <p className="text-sm text-gray-600">Executions (7d)</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-[var(--text-secondary)]">Executions (7d)</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
               Live: {stats?.executions.live || 0}
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center justify-between mb-2">
               <Clock className="h-5 w-5 text-yellow-500" />
               <span className="text-2xl font-bold">{stats?.suggestions.pending || 0}</span>
             </div>
-            <p className="text-sm text-gray-600">Pending Review</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-[var(--text-secondary)]">Pending Review</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
               Awaiting approval
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="h-5 w-5 text-purple-500" />
               <span className="text-2xl font-bold">
                 {patterns.filter(p => p.confidence_score >= 0.85).length}
               </span>
             </div>
-            <p className="text-sm text-gray-600">High Confidence</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-[var(--text-secondary)]">High Confidence</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
               Ready for automation
             </p>
           </div>
         </div>
 
         {/* AI Automations Card */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="mt-6 bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)]">
+          <div className="px-6 py-4 border-b border-[var(--border-secondary)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Zap className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
-                <span className="text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">AI Automations</h2>
+                <span className="text-sm text-[var(--text-secondary)]">
                   ({Object.values(aiAutomations).filter(v => v).length}/3 active)
                 </span>
               </div>
               <button
                 onClick={() => setActiveView('config')}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               >
                 <Settings className="h-5 w-5" />
               </button>
@@ -388,10 +388,10 @@ export const OperationsPatterns: React.FC = () => {
           <div className="p-6">
             <div className="space-y-4">
               {/* Gift Card Inquiries */}
-              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-start justify-between p-4 border border-[var(--border-secondary)] rounded-lg">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Gift Card Inquiries</h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h3 className="font-medium text-[var(--text-primary)]">Gift Card Inquiries</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
                     Automatically respond to gift card purchase questions with link to purchase page
                   </p>
                   <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
@@ -401,28 +401,28 @@ export const OperationsPatterns: React.FC = () => {
                 <button 
                   onClick={() => toggleAiAutomation('giftCardInquiries')}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    aiAutomations.giftCardInquiries ? 'bg-primary' : 'bg-gray-200'
+                    aiAutomations.giftCardInquiries ? 'bg-primary' : 'bg-[var(--bg-secondary)]'
                   }`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-[var(--bg-tertiary)] transition-transform ${
                     aiAutomations.giftCardInquiries ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
               </div>
 
               {/* LLM Initial Message Analysis */}
-              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-start justify-between p-4 border border-[var(--border-secondary)] rounded-lg">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
-                    <h3 className="font-medium text-gray-900">LLM Initial Message Analysis</h3>
+                    <h3 className="font-medium text-[var(--text-primary)]">LLM Initial Message Analysis</h3>
                     <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded">
                       RECOMMENDED
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
                     Use AI to understand and respond to all initial customer messages
                   </p>
-                  <p className="text-sm text-gray-600 mt-2">
+                  <p className="text-sm text-[var(--text-secondary)] mt-2">
                     This uses AI to understand ALL initial messages, not just keyword matching
                   </p>
                   <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded">
@@ -432,20 +432,20 @@ export const OperationsPatterns: React.FC = () => {
                 <button 
                   onClick={() => toggleAiAutomation('llmInitialAnalysis')}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    aiAutomations.llmInitialAnalysis ? 'bg-primary' : 'bg-gray-200'
+                    aiAutomations.llmInitialAnalysis ? 'bg-primary' : 'bg-[var(--bg-secondary)]'
                   }`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-[var(--bg-tertiary)] transition-transform ${
                     aiAutomations.llmInitialAnalysis ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
               </div>
 
               {/* Trackman Reset */}
-              <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-start justify-between p-4 border border-[var(--border-secondary)] rounded-lg">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Trackman Reset</h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h3 className="font-medium text-[var(--text-primary)]">Trackman Reset</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
                     Automatically reset frozen or unresponsive Trackman units via NinjaOne
                   </p>
                   <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-purple-100 text-purple-700 rounded">
@@ -455,10 +455,10 @@ export const OperationsPatterns: React.FC = () => {
                 <button 
                   onClick={() => toggleAiAutomation('trackmanReset')}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    aiAutomations.trackmanReset ? 'bg-primary' : 'bg-gray-200'
+                    aiAutomations.trackmanReset ? 'bg-primary' : 'bg-[var(--bg-secondary)]'
                   }`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-[var(--bg-tertiary)] transition-transform ${
                     aiAutomations.trackmanReset ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
@@ -471,24 +471,24 @@ export const OperationsPatterns: React.FC = () => {
 
       {/* Patterns View */}
       {activeView === 'patterns' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)]">
           {/* Search and Filter */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-[var(--border-secondary)]">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[var(--text-muted)]" />
                 <input
                   type="text"
                   placeholder="Search patterns..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                className="px-4 py-2 border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Types</option>
                 <option value="booking">Booking</option>
@@ -502,13 +502,13 @@ export const OperationsPatterns: React.FC = () => {
           </div>
 
           {/* Patterns List */}
-          <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-[var(--border-secondary)] max-h-96 overflow-y-auto">
             {filteredPatterns.map((pattern) => (
-              <div key={pattern.id} className="p-4 hover:bg-gray-50 transition-colors">
+              <div key={pattern.id} className="p-4 hover:bg-[var(--bg-hover)] transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded">
+                      <span className="text-xs font-medium px-2 py-1 bg-[var(--bg-tertiary)] rounded">
                         {pattern.pattern_type}
                       </span>
                       <span className={`text-xs font-medium px-2 py-1 rounded ${getConfidenceBg(pattern.confidence_score)} ${getConfidenceColor(pattern.confidence_score)}`}>
@@ -520,10 +520,10 @@ export const OperationsPatterns: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-900 font-medium mb-1">
+                    <p className="text-sm text-[var(--text-primary)] font-medium mb-1">
                       {pattern.trigger_text.substring(0, 100)}...
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Used {pattern.execution_count} times • 
                       Success rate: {pattern.execution_count > 0 
                         ? ((pattern.success_count / pattern.execution_count) * 100).toFixed(0)
@@ -535,7 +535,7 @@ export const OperationsPatterns: React.FC = () => {
                     className={`ml-4 p-2 rounded-lg transition-colors ${
                       pattern.is_active 
                         ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     {pattern.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -550,21 +550,21 @@ export const OperationsPatterns: React.FC = () => {
       {/* Configuration View */}
       {activeView === 'config' && config && (
         <div className="space-y-4">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <h2 className="text-lg font-semibold mb-4">System Configuration</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Pattern Learning</p>
-                  <p className="text-sm text-gray-500">Enable the pattern learning system</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Enable the pattern learning system</p>
                 </div>
                 <button
                   onClick={() => updateConfig('enabled', !config.enabled)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    config.enabled ? 'bg-green-500' : 'bg-gray-300'
+                    config.enabled ? 'bg-green-500' : 'bg-[var(--bg-secondary)]'
                   }`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-[var(--bg-tertiary)] transition-transform ${
                     config.enabled ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
@@ -573,15 +573,15 @@ export const OperationsPatterns: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Shadow Mode</p>
-                  <p className="text-sm text-gray-500">Log actions without executing (safe mode)</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Log actions without executing (safe mode)</p>
                 </div>
                 <button
                   onClick={() => updateConfig('shadow_mode', !config.shadow_mode)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    config.shadow_mode ? 'bg-blue-500' : 'bg-gray-300'
+                    config.shadow_mode ? 'bg-blue-500' : 'bg-[var(--bg-secondary)]'
                   }`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-[var(--bg-tertiary)] transition-transform ${
                     config.shadow_mode ? 'translate-x-6' : 'translate-x-1'
                   }`} />
                 </button>
@@ -618,12 +618,12 @@ export const OperationsPatterns: React.FC = () => {
           </div>
 
           {/* Test Message */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-[var(--bg-tertiary)] rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
             <h2 className="text-lg font-semibold mb-4">Test Pattern Matching</h2>
             <div className="space-y-4">
               <textarea
                 placeholder="Enter a test message to see how the system would respond..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                className="w-full p-3 border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-primary"
                 rows={3}
               />
               <button

@@ -130,7 +130,7 @@ export const LivePatternDashboard: React.FC = () => {
       case 'handled': return 'text-green-600 bg-green-50';
       case 'auto_handled': return 'text-blue-600 bg-blue-50';
       case 'rejected': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+      default: return 'text-[var(--text-secondary)] bg-[var(--bg-tertiary)]';
     }
   };
 
@@ -140,7 +140,7 @@ export const LivePatternDashboard: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Activity className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold text-gray-900">Live Pattern Dashboard</h2>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Live Pattern Dashboard</h2>
           {queue.length > 0 && (
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
               {queue.length} pending
@@ -152,7 +152,7 @@ export const LivePatternDashboard: React.FC = () => {
           className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
             autoRefresh 
               ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           <RefreshCw className={`h-4 w-4 ${autoRefresh ? 'animate-spin' : ''}`} />
@@ -162,33 +162,33 @@ export const LivePatternDashboard: React.FC = () => {
 
       {/* Suggestions Queue */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-primary" />
           Pending Suggestions
         </h3>
         
         {queue.length === 0 ? (
-          <div className="bg-gray-50 rounded-lg p-8 text-center">
-            <Bot className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">No pending suggestions</p>
-            <p className="text-sm text-gray-500 mt-1">New customer messages will appear here</p>
+          <div className="bg-[var(--bg-tertiary)] rounded-lg p-8 text-center">
+            <Bot className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-3" />
+            <p className="text-[var(--text-secondary)]">No pending suggestions</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">New customer messages will appear here</p>
           </div>
         ) : (
           <div className="space-y-4">
             {queue.map((suggestion) => (
-              <div key={suggestion.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+              <div key={suggestion.id} className="bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)] shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div className="px-6 py-4 bg-[var(--bg-tertiary)] border-b border-[var(--border-secondary)]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium text-gray-900">{suggestion.phoneNumber}</span>
+                        <Phone className="h-4 w-4 text-[var(--text-secondary)]" />
+                        <span className="font-medium text-[var(--text-primary)]">{suggestion.phoneNumber}</span>
                       </div>
                       {suggestion.customerName && (
                         <div className="flex items-center space-x-1">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-gray-700">{suggestion.customerName}</span>
+                          <User className="h-4 w-4 text-[var(--text-secondary)]" />
+                          <span className="text-[var(--text-primary)]">{suggestion.customerName}</span>
                         </div>
                       )}
                       <span className="px-2 py-1 bg-primary/10 text-primary rounded text-sm">
@@ -197,10 +197,10 @@ export const LivePatternDashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-1">
-                        <TrendingUp className="h-4 w-4 text-gray-500" />
+                        <TrendingUp className="h-4 w-4 text-[var(--text-secondary)]" />
                         <span className="font-medium">{Math.round(suggestion.confidence * 100)}%</span>
                       </div>
-                      <span className="text-sm text-gray-500">{formatTimeAgo(suggestion.createdAt)}</span>
+                      <span className="text-sm text-[var(--text-secondary)]">{formatTimeAgo(suggestion.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -209,15 +209,15 @@ export const LivePatternDashboard: React.FC = () => {
                 <div className="px-6 py-4 space-y-4">
                   {/* Customer Message */}
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">Customer message:</p>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-gray-900">{suggestion.originalMessage}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mb-1">Customer message:</p>
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-3">
+                      <p className="text-[var(--text-primary)]">{suggestion.originalMessage}</p>
                     </div>
                   </div>
 
                   {/* Suggested Response */}
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">AI suggestion:</p>
+                    <p className="text-sm text-[var(--text-secondary)] mb-1">AI suggestion:</p>
                     {editingId === suggestion.id ? (
                       <textarea
                         value={editedResponses[suggestion.id] || suggestion.suggestedResponse}
@@ -227,7 +227,7 @@ export const LivePatternDashboard: React.FC = () => {
                       />
                     ) : (
                       <div className="bg-blue-50 rounded-lg p-3">
-                        <p className="text-gray-900">{editedResponses[suggestion.id] || suggestion.suggestedResponse}</p>
+                        <p className="text-[var(--text-primary)]">{editedResponses[suggestion.id] || suggestion.suggestedResponse}</p>
                       </div>
                     )}
                   </div>
@@ -235,10 +235,10 @@ export const LivePatternDashboard: React.FC = () => {
                   {/* GPT Reasoning */}
                   {suggestion.reasoning && (
                     <details className="text-sm">
-                      <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
+                      <summary className="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                         View AI reasoning
                       </summary>
-                      <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs space-y-2">
+                      <div className="mt-2 p-3 bg-[var(--bg-tertiary)] rounded-lg text-xs space-y-2">
                         <p><strong>Thought process:</strong> {suggestion.reasoning.thought_process}</p>
                         {suggestion.reasoning.next_steps?.length > 0 && (
                           <div>
@@ -257,7 +257,7 @@ export const LivePatternDashboard: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="px-6 py-4 bg-[var(--bg-tertiary)] border-t border-[var(--border-secondary)]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       {editingId !== suggestion.id ? (
@@ -306,7 +306,7 @@ export const LivePatternDashboard: React.FC = () => {
                                 return newResponses;
                               });
                             }}
-                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                            className="px-4 py-2 bg-[var(--bg-primary)] text-white rounded-lg hover:bg-[var(--bg-hover)]"
                           >
                             Cancel
                           </button>
@@ -314,7 +314,7 @@ export const LivePatternDashboard: React.FC = () => {
                       )}
                     </div>
                     {processingId === suggestion.id && (
-                      <span className="text-sm text-gray-600 flex items-center">
+                      <span className="text-sm text-[var(--text-secondary)] flex items-center">
                         <RefreshCw className="h-4 w-4 animate-spin mr-1" />
                         Processing...
                       </span>
@@ -329,29 +329,29 @@ export const LivePatternDashboard: React.FC = () => {
 
       {/* Recent Activity */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center">
           <Clock className="h-5 w-5 mr-2 text-primary" />
           Recent Activity
         </h3>
         
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[var(--bg-tertiary)] border-b border-[var(--border-secondary)]">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pattern</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase">Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase">Message</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase">Pattern</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase">Confidence</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-[var(--border-secondary)]">
                 {activity.map((item) => (
                   <tr 
                     key={item.id} 
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="hover:bg-[var(--bg-hover)] cursor-pointer transition-colors"
                     onClick={() => {
                       // Show details in alert for now (could be a modal later)
                       if (item.status === 'queued' || item.status === 'pending') {
@@ -362,22 +362,22 @@ export const LivePatternDashboard: React.FC = () => {
                     }}
                     title="Click for details"
                   >
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                       {formatTimeAgo(item.time)}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div>
-                        <p className="font-medium text-gray-900">{item.phone}</p>
+                        <p className="font-medium text-[var(--text-primary)]">{item.phone}</p>
                         {item.customerName && (
-                          <p className="text-gray-500">{item.customerName}</p>
+                          <p className="text-[var(--text-secondary)]">{item.customerName}</p>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
+                    <td className="px-4 py-3 text-sm text-[var(--text-primary)] max-w-xs truncate">
                       {item.message}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                      <span className="px-2 py-1 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded text-xs">
                         {item.pattern}
                       </span>
                     </td>
