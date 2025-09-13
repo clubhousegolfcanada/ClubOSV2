@@ -29,6 +29,7 @@ import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { patternOptimizer } from '../services/patternOptimizer';
 import { csvImportService } from '../services/csvImportService';
+import { openPhoneService } from '../services/openphoneService';
 import { sanitizePatternTemplate, sanitizeText } from '../utils/sanitizer';
 import { body, param, query as queryValidator, validationResult } from 'express-validator';
 import OpenAI from 'openai';
@@ -1590,6 +1591,286 @@ router.delete('/:id',
       res.status(500).json({ 
         success: false, 
         error: 'Failed to delete pattern' 
+      });
+    }
+  }
+);
+
+// ============================================
+// QUEUE MANAGEMENT ENDPOINTS (for Live Dashboard)
+// ============================================
+
+/**
+ * GET /api/patterns/queue
+ * Get pending pattern suggestions waiting for operator review
+ */
+router.get('/queue',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  async (req: Request, res: Response) => {
+    try {
+      // Get pending suggestions from queue
+      const result = await db.query(`
+        SELECT
+          psq.id,
+          psq.pattern_id as "patternId",
+          psq.suggested_response as "suggestedResponse",
+          psq.confidence_score as confidence,
+          psq.created_at as "createdAt",
+          peh.conversation_id as "conversationId",
+          peh.phone_number as "phoneNumber",
+          peh.customer_name as "customerName",
+          peh.message_text as "originalMessage",
+          peh.gpt4o_reasoning as reasoning,
+          dp.pattern_type as "patternType"
+        FROM pattern_suggestions_queue psq
+        LEFT JOIN pattern_execution_history peh ON psq.execution_history_id = peh.id
+        LEFT JOIN decision_patterns dp ON psq.pattern_id = dp.id
+        WHERE psq.status = 'pending'
+        AND (psq.expires_at IS NULL OR psq.expires_at > NOW())
+        ORDER BY psq.priority DESC, psq.created_at ASC
+        LIMIT 20
+      `);
+
+      res.json({
+        success: true,
+        queue: result.rows.map(row => ({
+          ...row,
+          reasoning: row.reasoning ? JSON.parse(row.reasoning) : null
+        }))
+      });
+    } catch (error) {
+      logger.error('[Patterns Queue] Failed to fetch queue', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch pattern queue'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/recent-activity
+ * Get recent pattern execution activity
+ */
+router.get('/recent-activity',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await db.query(`
+        SELECT
+          peh.id,
+          peh.created_at as time,
+          peh.phone_number as phone,
+          peh.customer_name as "customerName",
+          peh.message_text as message,
+          dp.pattern_type as pattern,
+          ROUND((peh.confidence_at_execution * 100)::numeric, 0) as confidence,
+          peh.execution_status as status,
+          peh.execution_mode as mode
+        FROM pattern_execution_history peh
+        LEFT JOIN decision_patterns dp ON peh.pattern_id = dp.id
+        WHERE peh.created_at > NOW() - INTERVAL '24 hours'
+        ORDER BY peh.created_at DESC
+        LIMIT 50
+      `);
+
+      res.json({
+        success: true,
+        activity: result.rows
+      });
+    } catch (error) {
+      logger.error('[Patterns Activity] Failed to fetch recent activity', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch recent activity'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/queue/:id/respond
+ * Handle operator action on a queued suggestion
+ */
+router.post('/queue/:id/respond',
+  authenticate,
+  roleGuard(['admin', 'operator', 'support']),
+  [
+    param('id').isInt(),
+    body('action').isIn(['accept', 'modify', 'reject']),
+    body('modifiedResponse').optional().isString()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array()
+        });
+      }
+
+      const { id } = req.params;
+      const { action, modifiedResponse } = req.body;
+
+      // Get the queued suggestion
+      const queueResult = await db.query(`
+        SELECT
+          psq.*,
+          peh.phone_number,
+          peh.conversation_id,
+          peh.pattern_id
+        FROM pattern_suggestions_queue psq
+        JOIN pattern_execution_history peh ON psq.execution_history_id = peh.id
+        WHERE psq.id = $1 AND psq.status = 'pending'
+      `, [id]);
+
+      if (queueResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Suggestion not found or already processed'
+        });
+      }
+
+      const suggestion = queueResult.rows[0];
+      let responseToSend = suggestion.suggested_response;
+
+      // Handle the action
+      switch (action) {
+        case 'accept':
+          // Send the suggested response
+          responseToSend = suggestion.suggested_response;
+
+          // Update pattern confidence (increase)
+          await db.query(`
+            UPDATE decision_patterns
+            SET confidence_score = LEAST(confidence_score + 0.05, 1.0),
+                success_count = success_count + 1,
+                execution_count = execution_count + 1,
+                last_used = NOW()
+            WHERE id = $1
+          `, [suggestion.pattern_id]);
+
+          // Update execution history
+          await db.query(`
+            UPDATE pattern_execution_history
+            SET execution_status = 'success',
+                human_approved = true,
+                human_review_at = NOW(),
+                reviewed_by = $2,
+                response_sent = $3,
+                completed_at = NOW()
+            WHERE id = $1
+          `, [suggestion.execution_history_id, req.user?.id, responseToSend]);
+          break;
+
+        case 'modify':
+          // Use the modified response
+          responseToSend = modifiedResponse || suggestion.suggested_response;
+
+          // Update pattern confidence (small increase)
+          await db.query(`
+            UPDATE decision_patterns
+            SET confidence_score = LEAST(confidence_score + 0.02, 1.0),
+                execution_count = execution_count + 1,
+                human_override_count = human_override_count + 1,
+                last_used = NOW()
+            WHERE id = $1
+          `, [suggestion.pattern_id]);
+
+          // Update execution history
+          await db.query(`
+            UPDATE pattern_execution_history
+            SET execution_status = 'modified',
+                human_approved = true,
+                human_modified = true,
+                modifications = jsonb_build_object('response', $3),
+                human_review_at = NOW(),
+                reviewed_by = $2,
+                response_sent = $3,
+                completed_at = NOW()
+            WHERE id = $1
+          `, [suggestion.execution_history_id, req.user?.id, responseToSend]);
+          break;
+
+        case 'reject':
+          // Don't send anything
+          responseToSend = null;
+
+          // Update pattern confidence (decrease)
+          await db.query(`
+            UPDATE decision_patterns
+            SET confidence_score = GREATEST(confidence_score - 0.10, 0.0),
+                failure_count = failure_count + 1,
+                execution_count = execution_count + 1
+            WHERE id = $1
+          `, [suggestion.pattern_id]);
+
+          // Update execution history
+          await db.query(`
+            UPDATE pattern_execution_history
+            SET execution_status = 'cancelled',
+                human_rejected = true,
+                rejection_reason = 'Operator rejected suggestion',
+                human_review_at = NOW(),
+                reviewed_by = $2,
+                completed_at = NOW()
+            WHERE id = $1
+          `, [suggestion.execution_history_id, req.user?.id]);
+          break;
+      }
+
+      // Update queue status
+      await db.query(`
+        UPDATE pattern_suggestions_queue
+        SET status = $2,
+            reviewed_by = $3,
+            reviewed_at = NOW(),
+            review_notes = $4
+        WHERE id = $1
+      `, [id, action === 'reject' ? 'rejected' : 'approved', req.user?.id, action]);
+
+      // Send the message if not rejected
+      if (responseToSend && (action === 'accept' || action === 'modify')) {
+        try {
+          const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+          if (defaultNumber) {
+            await openPhoneService.sendMessage(
+              suggestion.phone_number,
+              defaultNumber,
+              responseToSend
+            );
+
+            logger.info('[Pattern Queue] Response sent after operator action', {
+              action,
+              queueId: id,
+              phoneNumber: suggestion.phone_number,
+              operatorId: req.user?.id
+            });
+          }
+        } catch (sendError) {
+          logger.error('[Pattern Queue] Failed to send message', sendError);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to send message'
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Suggestion ${action}ed successfully`,
+        action,
+        messageSent: !!responseToSend
+      });
+
+    } catch (error) {
+      logger.error('[Pattern Queue] Failed to process operator action', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process action'
       });
     }
   }
