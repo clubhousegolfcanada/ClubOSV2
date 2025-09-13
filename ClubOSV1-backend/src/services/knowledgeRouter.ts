@@ -33,12 +33,12 @@ export class KnowledgeRouterService {
       this.openai = null as any;
     }
 
-    // Map assistant types to their IDs from environment variables
+    // Map assistant types to their IDs from environment variables with correct fallbacks
     this.assistantIds = {
-      emergency: process.env.EMERGENCY_GPT_ID || '',
-      booking: process.env.BOOKING_ACCESS_GPT_ID || '',
-      tech: process.env.TECH_SUPPORT_GPT_ID || '',
-      brand: process.env.BRAND_MARKETING_GPT_ID || ''
+      emergency: process.env.EMERGENCY_GPT_ID || 'asst_MIBSjbcKE6mkJQnEKgLrfYE2',
+      booking: process.env.BOOKING_ACCESS_GPT_ID || 'asst_YeWa98dP4Dv0eXwviMsCHeE7',
+      tech: process.env.TECH_SUPPORT_GPT_ID || 'asst_Uwu1EQXHPYuW5Q06FKqya5Ak',
+      brand: process.env.BRAND_MARKETING_GPT_ID || 'asst_7YqDqjc4bmWk1kcvXVhecpTS'
     };
   }
 

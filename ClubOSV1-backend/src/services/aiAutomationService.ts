@@ -1813,12 +1813,12 @@ export class AIAutomationService {
     featureKey: string
   ): Promise<void> {
     try {
-      // Map route to assistant ID from environment variables
+      // Map route to assistant ID from environment variables with fallbacks
       const assistantMap: Record<string, string | undefined> = {
-        'Emergency': process.env.EMERGENCY_GPT_ID,
-        'Booking & Access': process.env.BOOKING_GPT_ID,
-        'TechSupport': process.env.TECH_SUPPORT_GPT_ID,
-        'BrandTone': process.env.BRAND_MARKETING_GPT_ID
+        'Emergency': process.env.EMERGENCY_GPT_ID || 'asst_MIBSjbcKE6mkJQnEKgLrfYE2',
+        'Booking & Access': process.env.BOOKING_GPT_ID || 'asst_YeWa98dP4Dv0eXwviMsCHeE7',
+        'TechSupport': process.env.TECH_SUPPORT_GPT_ID || 'asst_Uwu1EQXHPYuW5Q06FKqya5Ak',
+        'BrandTone': process.env.BRAND_MARKETING_GPT_ID || 'asst_7YqDqjc4bmWk1kcvXVhecpTS'
       };
       
       const assistantId = assistantMap[route];
