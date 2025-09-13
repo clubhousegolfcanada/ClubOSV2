@@ -1443,6 +1443,151 @@ Please provide:
       };
     }
   }
+
+  /**
+   * Record operator response for pattern learning
+   * Called when an operator manually responds to a customer message
+   */
+  async recordOperatorResponse(
+    customerMessage: string,
+    operatorResponse: string,
+    phoneNumber: string,
+    patternId?: number
+  ): Promise<void> {
+    try {
+      // Generate signature for the customer message
+      const signature = this.generateSignature(customerMessage);
+
+      // Store as a learning example
+      await db.query(`
+        INSERT INTO pattern_learning_examples
+        (pattern_id, pattern_signature, customer_message, operator_response,
+         confidence_score, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+      `, [
+        patternId || null,
+        signature,
+        customerMessage,
+        operatorResponse,
+        0.8 // High confidence for operator responses
+      ]);
+
+      // If this was responding to an existing pattern, update its template
+      if (patternId) {
+        // Update the pattern's response template to match operator's response
+        await db.query(`
+          UPDATE decision_patterns
+          SET response_template = $2,
+              confidence_score = LEAST(confidence_score + 0.05, 1.0),
+              human_override_count = human_override_count + 1,
+              last_modified = NOW()
+          WHERE id = $1
+        `, [patternId, operatorResponse]);
+
+        logger.info('[PatternLearning] Updated pattern from operator response', {
+          patternId,
+          newTemplate: operatorResponse.substring(0, 100)
+        });
+      } else {
+        // Check if we have enough examples to create a new pattern
+        const exampleCount = await db.query(`
+          SELECT COUNT(*) as count
+          FROM pattern_learning_examples
+          WHERE pattern_signature = $1
+        `, [signature]);
+
+        if (parseInt(exampleCount.rows[0].count) >= 3) {
+          // Create a new pattern from repeated examples
+          await this.createPatternFromExamples(signature, customerMessage, operatorResponse);
+        }
+      }
+
+      logger.info('[PatternLearning] Recorded operator response for learning', {
+        signature,
+        hasPatternId: !!patternId,
+        phoneNumber
+      });
+    } catch (error) {
+      logger.error('[PatternLearning] Failed to record operator response', error);
+    }
+  }
+
+  /**
+   * Create a new pattern from accumulated operator examples
+   */
+  private async createPatternFromExamples(
+    signature: string,
+    triggerText: string,
+    responseTemplate: string
+  ): Promise<void> {
+    try {
+      // Extract keywords from trigger text
+      const keywords = triggerText.toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length > 3);
+
+      // Determine pattern type based on keywords
+      const patternType = this.detectPatternType(triggerText);
+
+      // Create new pattern with moderate initial confidence
+      await db.query(`
+        INSERT INTO decision_patterns
+        (pattern_signature, pattern_type, trigger_text, trigger_keywords,
+         response_template, confidence_score, auto_executable, is_active,
+         created_from, notes, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, false, true, 'operator_learning',
+                'Pattern learned from operator responses', NOW())
+        ON CONFLICT (pattern_signature) DO UPDATE
+        SET response_template = EXCLUDED.response_template,
+            confidence_score = LEAST(decision_patterns.confidence_score + 0.1, 0.8),
+            execution_count = decision_patterns.execution_count + 1,
+            last_modified = NOW()
+      `, [
+        signature,
+        patternType,
+        triggerText,
+        keywords,
+        responseTemplate,
+        0.6 // Start with 60% confidence
+      ]);
+
+      logger.info('[PatternLearning] Created new pattern from operator examples', {
+        signature,
+        patternType,
+        triggerPreview: triggerText.substring(0, 50)
+      });
+    } catch (error) {
+      logger.error('[PatternLearning] Failed to create pattern from examples', error);
+    }
+  }
+
+  /**
+   * Detect pattern type based on message content
+   */
+  private detectPatternType(message: string): string {
+    const lower = message.toLowerCase();
+
+    if (/book|reservation|schedule|appointment/i.test(lower)) {
+      return 'booking';
+    }
+    if (/broken|stuck|frozen|not\s+working|issue|problem/i.test(lower)) {
+      return 'tech_issue';
+    }
+    if (/door|code|access|get\s+in|locked/i.test(lower)) {
+      return 'access';
+    }
+    if (/gift\s+card|purchase|buy/i.test(lower)) {
+      return 'gift_cards';
+    }
+    if (/hours|open|close|when/i.test(lower)) {
+      return 'hours';
+    }
+    if (/food|drink|alcohol|bring/i.test(lower)) {
+      return 'faq';
+    }
+
+    return 'general';
+  }
 }
 
 // BREADCRUMB: Export singleton instance

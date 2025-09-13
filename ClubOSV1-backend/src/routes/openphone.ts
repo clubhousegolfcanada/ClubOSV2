@@ -281,6 +281,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
           conversationId: messageData.conversationId
         };
 
+        // Use phone number as the consistent conversation ID (moved up to fix reference)
+        const conversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}`;
+
         // CHECK FOR OPERATOR ACTIVITY (outbound messages without ClubAI signature)
         if (newMessage.direction === 'outbound' &&
             !newMessage.text.includes('- ClubAI') &&
@@ -309,11 +312,39 @@ router.post('/webhook', async (req: Request, res: Response) => {
             VALUES ($1, $2, NULL, 'manual_response', $3, NOW())`,
             [phoneNumber, conversationId, newMessage.text]
           );
+
+          // LEARNING: Capture operator response as a learning example
+          // Look for the last customer message to learn from
+          const lastCustomerMessage = await db.query(`
+            SELECT message_text, pattern_id
+            FROM conversation_messages
+            WHERE conversation_id = $1
+            AND sender_type = 'customer'
+            ORDER BY created_at DESC
+            LIMIT 1`,
+            [conversationId]
+          );
+
+          if (lastCustomerMessage.rows.length > 0) {
+            const customerMsg = lastCustomerMessage.rows[0].message_text;
+            const patternId = lastCustomerMessage.rows[0].pattern_id;
+
+            // Store this as a learning example
+            await patternLearningService.recordOperatorResponse(
+              customerMsg,
+              newMessage.text,
+              phoneNumber,
+              patternId
+            );
+
+            logger.info('[Learning] Captured operator response for pattern learning', {
+              customerMessage: customerMsg.substring(0, 50),
+              operatorResponse: newMessage.text.substring(0, 50),
+              patternId
+            });
+          }
         }
-        
-        // Use phone number as the consistent conversation ID
-        const conversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}`;
-        
+
         // Determine conversation window based on message content
         const getConversationWindow = (text: string): number => {
           if (/book|reservation|tee\s+time|schedule|appointment/i.test(text)) {
