@@ -1813,16 +1813,19 @@ export class AIAutomationService {
     featureKey: string
   ): Promise<void> {
     try {
-      // Map route to assistant ID
-      const assistantMap: Record<string, string> = {
-        'Emergency': 'asst_jOWRzC9eOMRsupRqMWR5hc89',
-        'Booking & Access': 'asst_E2CrYEtb5CKJGPZYdE7z7VAq',
-        'TechSupport': 'asst_Xax6THdGRHYJwPbRi9OoQrRF',
-        'BrandTone': 'asst_1vMUEQ7oTIYrCFG1BhgpwMkw'
+      // Map route to assistant ID from environment variables
+      const assistantMap: Record<string, string | undefined> = {
+        'Emergency': process.env.EMERGENCY_GPT_ID,
+        'Booking & Access': process.env.BOOKING_GPT_ID,
+        'TechSupport': process.env.TECH_SUPPORT_GPT_ID,
+        'BrandTone': process.env.BRAND_MARKETING_GPT_ID
       };
       
       const assistantId = assistantMap[route];
-      if (!assistantId) return;
+      if (!assistantId) {
+        logger.debug(`No assistant configured for route: ${route}`);
+        return;
+      }
       
       // Check if assistant knowledge exists
       const existing = await db.query(
