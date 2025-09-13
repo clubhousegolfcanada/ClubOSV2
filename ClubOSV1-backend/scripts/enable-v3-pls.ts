@@ -4,8 +4,34 @@
  * This script activates the pattern learning system and updates existing patterns
  */
 
-import { db } from '../src/utils/database';
+import { Pool } from 'pg';
 import { logger } from '../src/utils/logger';
+
+// Use direct connection for Railway environment
+const DATABASE_URL = process.env.DATABASE_URL || '';
+
+// Convert internal URL to public URL if needed
+const getConnectionString = () => {
+  if (DATABASE_URL.includes('postgres.railway.internal')) {
+    // Replace internal host with public host for local execution
+    const publicUrl = DATABASE_URL.replace(
+      'postgres.railway.internal',
+      'postgres-production-228d.up.railway.app'
+    );
+    logger.info('Using public database URL for connection');
+    return publicUrl;
+  }
+  return DATABASE_URL;
+};
+
+const pool = new Pool({
+  connectionString: getConnectionString(),
+  ssl: { rejectUnauthorized: false }
+});
+
+const db = {
+  query: (text: string, params?: any[]) => pool.query(text, params)
+};
 
 async function enableV3PLS() {
   try {
@@ -141,9 +167,11 @@ async function enableV3PLS() {
     logger.info('  - Escalating on negative sentiment');
     logger.info('  - Respecting 4-hour operator lockout');
 
+    await pool.end();
     process.exit(0);
   } catch (error) {
     logger.error('❌ Failed to enable V3-PLS:', error);
+    await pool.end();
     process.exit(1);
   }
 }
