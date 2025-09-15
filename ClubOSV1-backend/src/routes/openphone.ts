@@ -402,12 +402,16 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const currentUnreadCount = existingConv.rows[0].unread_count || 0;
           const newUnreadCount = currentUnreadCount + unreadIncrement;
           
-          await updateOpenPhoneConversation(existingConv.rows[0].id, {
-            messages: updatedMessages,
-            unreadCount: newUnreadCount,
-            customerName,
-            employeeName
-          });
+          // Update using the actual database ID
+          await db.query(`
+            UPDATE openphone_conversations
+            SET messages = $1,
+                unread_count = $2,
+                customer_name = $3,
+                employee_name = $4,
+                updated_at = NOW()
+            WHERE id = $5
+          `, [JSON.stringify(updatedMessages), newUnreadCount, customerName, employeeName, existingConv.rows[0].id]);
           
           logger.info('OpenPhone message appended to existing conversation', { 
             conversationId,
@@ -918,11 +922,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const messages = existingCallConv.rows[0].messages || [];
           messages.push(callMessage);
           
-          await updateOpenPhoneConversation(existingCallConv.rows[0].id, {
-            messages,
-            customerName: data.contactName || callPhoneNumber,
-            employeeName: data.userName || 'Unknown'
-          });
+          // Update using the actual database ID
+          await db.query(`
+            UPDATE openphone_conversations
+            SET messages = $1,
+                customer_name = $2,
+                employee_name = $3,
+                updated_at = NOW()
+            WHERE id = $4
+          `, [JSON.stringify(messages), data.contactName || callPhoneNumber, data.userName || 'Unknown', existingCallConv.rows[0].id]);
         } else {
           // Create new
           await insertOpenPhoneConversation({

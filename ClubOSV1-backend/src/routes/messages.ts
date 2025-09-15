@@ -107,7 +107,7 @@ router.get('/conversations',
         params.push(`%${search}%`);
       }
       
-      // For DISTINCT ON, we need to order by phone_number first, then by the timestamp
+      // For DISTINCT ON, we need to order by phone_number first, then by the timestamp DESC to get the latest
       query += ` ORDER BY phone_number, ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
       
       // Wrap in a subquery to apply our desired ordering and pagination

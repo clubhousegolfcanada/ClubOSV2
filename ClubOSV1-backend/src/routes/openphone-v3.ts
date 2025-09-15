@@ -91,10 +91,12 @@ router.post('/webhook-v3', async (req: Request, res: Response) => {
         const existingMessages = existingConv.rows[0].messages || [];
         const updatedMessages = [...existingMessages, newMessage];
         
-        await updateOpenPhoneConversation(existingConv.rows[0].id, {
-          messages: updatedMessages,
-          customerName: phoneNumber
-        });
+        // Update using the actual database ID
+        await db.query(`
+          UPDATE openphone_conversations
+          SET messages = $1, updated_at = NOW()
+          WHERE id = $2
+        `, [JSON.stringify(updatedMessages), existingConv.rows[0].id]);
         
         logger.info('Message appended to existing conversation', {
           conversationId,
