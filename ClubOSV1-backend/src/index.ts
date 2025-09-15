@@ -186,6 +186,20 @@ app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, re
   next();
 });
 
+// Custom middleware to capture raw body for OpenPhone signature verification
+app.use('/api/openphone/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
+  req.rawBody = req.body;
+  req.body = JSON.parse(req.body.toString());
+  next();
+});
+
+// Also handle OpenPhone v3 webhook
+app.use('/api/openphone-v3/webhook-v3', express.raw({ type: 'application/json' }), (req, res, next) => {
+  req.rawBody = req.body;
+  req.body = JSON.parse(req.body.toString());
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(sanitizeMiddleware);
