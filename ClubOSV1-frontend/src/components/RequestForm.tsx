@@ -979,6 +979,34 @@ const RequestForm: React.FC = () => {
                   <span className="text-gray-400">Low: minor issues • Medium: standard requests • High: impacts operations • Urgent: critical issues</span>
                 </div>
               </div>
+
+              <div className="form-group">
+                <label className="form-label">Location</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford'].map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => {
+                        setValue('location', loc);
+                        setSelectedLocation(loc);
+                      }}
+                      className={`
+                        py-2 px-3 rounded-lg font-medium text-sm transition-all
+                        ${selectedLocation === loc
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }
+                      `}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+                <div className="form-helper mt-2">
+                  <span className="text-gray-400">Select the location where the issue is occurring</span>
+                </div>
+              </div>
             </>
           )}
 

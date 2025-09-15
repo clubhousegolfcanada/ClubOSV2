@@ -54,6 +54,7 @@ const TicketCenterOptimized = () => {
   
   const [activeTab, setActiveTab] = useState<'all' | 'facilities' | 'tech' | 'old'>('all');
   const [filter, setFilter] = useState<TicketStatus | 'all'>('all');
+  const [locationFilter, setLocationFilter] = useState<string>('all');
   // Search removed for cleaner UI
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,10 +62,10 @@ const TicketCenterOptimized = () => {
   const [newComment, setNewComment] = useState('');
   const [showTicketDetail, setShowTicketDetail] = useState(false);
 
-  // Load tickets on mount and when tab changes
+  // Load tickets on mount and when tab or location changes
   useEffect(() => {
     loadTickets();
-  }, [activeTab]);
+  }, [activeTab, locationFilter]);
 
   // Check URL params on mount
   useEffect(() => {
@@ -87,7 +88,12 @@ const TicketCenterOptimized = () => {
       if (activeTab !== 'all' && activeTab !== 'old') {
         params.append('category', activeTab);
       }
-      
+
+      // Add location filter if not 'all'
+      if (locationFilter !== 'all') {
+        params.append('location', locationFilter);
+      }
+
       const response = await http.get(`tickets?${params}`, {
 
       });
@@ -414,7 +420,32 @@ const TicketCenterOptimized = () => {
         </div>
       </div>
 
-      {/* Search removed for cleaner UI */}
+      {/* Location Filter */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <button
+          onClick={() => setLocationFilter('all')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+            locationFilter === 'all'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+          }`}
+        >
+          All Locations
+        </button>
+        {['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford'].map((location) => (
+          <button
+            key={location}
+            onClick={() => setLocationFilter(location)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              locationFilter === location
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            {location}
+          </button>
+        ))}
+      </div>
 
       {/* Filter Pills - Horizontal scroll on mobile */}
       <div className="flex gap-3 overflow-x-auto pb-3 mb-6 -mx-3 px-3 sm:mx-0 sm:px-0">

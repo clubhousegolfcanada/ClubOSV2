@@ -336,6 +336,7 @@ class DatabaseService {
     category?: string;
     assigned_to_id?: string;
     created_by_id?: string;
+    location?: string;
   }): Promise<DbTicket[]> {
     let queryText = 'SELECT * FROM tickets';
     const conditions: string[] = [];
@@ -364,6 +365,12 @@ class DatabaseService {
       paramCount++;
       conditions.push(`created_by_id = $${paramCount}`);
       values.push(filters.created_by_id);
+    }
+
+    if (filters?.location) {
+      paramCount++;
+      conditions.push(`location = $${paramCount}`);
+      values.push(filters.location);
     }
 
     if (conditions.length > 0) {

@@ -1,4 +1,4 @@
-# ClubOS v1.20.7 - AI-Powered Golf Simulator Management
+# ClubOS v1.20.10 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -6,7 +6,13 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🎯 Latest Update: Checklists Admin Consolidation (v1.20.7)
+## 🎯 Latest Update: Ticket Location Support (v1.20.10)
+- **Location-Based Ticket Management** - Track issues by facility location
+- **Location Selection in Ticket Creation** - Select from Bedford, Dartmouth, Bayers Lake, Stratford
+- **Location Filtering in Ticket List** - Filter tickets by location for focused management
+- **Better Issue Tracking** - Know exactly where problems are occurring
+
+## 📋 Previous: Checklists Admin Consolidation (v1.20.7)
 - **Performance & Tools Moved to Admin** - Centralized in Operations Center
 - **Cleaner Checklist Page** - Only shows essential features for cleaners
 - **Admin Controls in One Place** - Performance tracking, QR codes, exports all in Operations

@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.10] - 2025-09-15
+
+### Added
+- **Ticket Location Support**: Added location selection when creating tickets
+  - Location selector in ticket creation form (Bedford, Dartmouth, Bayers Lake, Stratford)
+  - Location filtering in ticket list view
+  - Backend API support for location-based ticket filtering
+  - Database already had location field, now fully utilized
+
+### Changed
+- **Ticket Creation UI**: Enhanced with location selection for better issue tracking
+- **Ticket List UI**: Added location filter buttons above status filters
+
 ## [1.20.9] - 2025-09-11
 
 ### Fixed

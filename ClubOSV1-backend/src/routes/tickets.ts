@@ -12,12 +12,13 @@ const router = Router();
 // GET /api/tickets - Get tickets with filters
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { category, status, assignedTo } = req.query;
-    
+    const { category, status, assignedTo, location } = req.query;
+
     const tickets = await db.getTickets({
       category: category as string,
       status: status as string,
-      assigned_to_id: assignedTo as string
+      assigned_to_id: assignedTo as string,
+      location: location as string
     });
     
     res.json({
