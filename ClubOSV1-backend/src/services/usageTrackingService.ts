@@ -135,9 +135,9 @@ class UsageTrackingService {
           usage.user_id,
           usage.endpoint,
           usage.model,
-          usage.tokens_used,
-          cost,
-          usage.response_time_ms,
+          usage.tokens_used || null,
+          cost || null,
+          (usage.response_time_ms && !isNaN(usage.response_time_ms)) ? Math.round(usage.response_time_ms) : null,
           usage.cache_hit || false,
           usage.error,
           JSON.stringify(usage.metadata || {})
@@ -204,7 +204,7 @@ class UsageTrackingService {
       usage.model,
       usage.tokens_used || 0,
       cost || 0,
-      usage.response_time_ms || 0,
+      (usage.response_time_ms && !isNaN(usage.response_time_ms)) ? Math.round(usage.response_time_ms) : 0,
       usage.cache_hit || false,
       usage.error
     ]);
