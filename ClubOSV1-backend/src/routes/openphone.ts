@@ -18,8 +18,13 @@ const router = Router();
 // Verify OpenPhone webhook signature
 function verifyOpenPhoneSignature(payload: string, signature: string, secret: string): boolean {
   try {
+    // CRITICAL FIX: The webhook secret from Railway is base64 encoded
+    // We need to decode it first before using it for HMAC
+    const decodedSecret = Buffer.from(secret, 'base64').toString('utf8');
+
+    // Generate expected signature with decoded secret
     const expectedSignature = crypto
-      .createHmac('sha256', secret)
+      .createHmac('sha256', decodedSecret)
       .update(payload)
       .digest('hex');
 
@@ -31,7 +36,7 @@ function verifyOpenPhoneSignature(payload: string, signature: string, secret: st
 
     // Try base64 comparison
     const expectedSignatureBase64 = crypto
-      .createHmac('sha256', secret)
+      .createHmac('sha256', decodedSecret)
       .update(payload)
       .digest('base64');
 
@@ -39,11 +44,23 @@ function verifyOpenPhoneSignature(payload: string, signature: string, secret: st
       return true;
     }
 
+    // Also try with the raw secret (fallback for backward compatibility)
+    const fallbackSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload)
+      .digest('hex');
+
+    if (signature.toLowerCase() === fallbackSignature.toLowerCase()) {
+      return true;
+    }
+
     // Log mismatch for debugging
     logger.warn('OpenPhone signature mismatch', {
       receivedSignature: signature.substring(0, 20) + '...',
       expectedHex: expectedSignature.substring(0, 20) + '...',
-      expectedBase64: expectedSignatureBase64.substring(0, 20) + '...'
+      expectedBase64: expectedSignatureBase64.substring(0, 20) + '...',
+      fallbackHex: fallbackSignature.substring(0, 20) + '...',
+      secretIsBase64: secret.match(/^[A-Za-z0-9+/]+=*$/) !== null
     });
 
     return false;
@@ -87,10 +104,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
           rawBodyLength: rawBody?.length,
           signatureLength: signature?.length,
           webhookSecretLength: webhookSecret?.length,
+          secretFormat: webhookSecret?.match(/^[A-Za-z0-9+/]+=*$/) ? 'base64' : 'plain',
           headers: req.headers
         });
-        // For now, log but don't reject to help debug
-        // return res.status(401).json({ error: 'Invalid signature' });
+        // RE-ENABLE signature verification now that we handle base64 secrets
+        return res.status(401).json({ error: 'Invalid signature' });
       }
     } else {
       logger.info('OpenPhone webhook signature verification skipped', {
