@@ -188,8 +188,16 @@ app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, re
 
 // Custom middleware to capture raw body for OpenPhone signature verification
 app.use('/api/openphone/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
-  req.rawBody = req.body;
-  req.body = JSON.parse(req.body.toString());
+  // Skip raw body processing for GET requests
+  if (req.method === 'GET') {
+    return next();
+  }
+
+  // For POST requests, capture raw body
+  if (req.body && Buffer.isBuffer(req.body)) {
+    req.rawBody = req.body;
+    req.body = JSON.parse(req.body.toString());
+  }
   next();
 });
 

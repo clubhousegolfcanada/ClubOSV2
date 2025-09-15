@@ -84,6 +84,25 @@ router.post('/webhook-debug', async (req: Request, res: Response) => {
   res.status(200).json({ received: true, debug: true });
 });
 
+// Handle GET requests for webhook verification
+router.get('/webhook', async (req: Request, res: Response) => {
+  logger.info('OpenPhone webhook verification request received', {
+    query: req.query,
+    headers: req.headers
+  });
+
+  // OpenPhone may send a verification challenge
+  if (req.query.challenge) {
+    return res.status(200).send(req.query.challenge);
+  }
+
+  // Default response for GET requests
+  res.status(200).json({
+    status: 'ok',
+    message: 'OpenPhone webhook endpoint ready'
+  });
+});
+
 // OpenPhone webhook handler
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
