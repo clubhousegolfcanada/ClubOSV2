@@ -44,6 +44,7 @@ export interface DbTicket {
   updatedAt: Date;
   resolved_at?: Date;
   metadata?: any;
+  photo_urls?: string[];
 }
 
 export interface DbFeedback {
