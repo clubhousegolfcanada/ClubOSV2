@@ -1,4 +1,4 @@
-# ClubOS v1.20.12 - AI-Powered Golf Simulator Management
+# ClubOS v1.20.13 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -6,7 +6,13 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🎯 Latest Update: Ticket Photo Support (v1.20.12)
+## 🎯 Latest Update: OpenPhone Integration Fixed (v1.20.13)
+- **Messages Now Working** - Fixed missing database columns preventing webhook processing
+- **Pattern Learning Active** - Operator tracking columns added for V3-PLS
+- **Webhook Processing** - Messages from OpenPhone now appear in ClubOS immediately
+- **Database Migration** - Added 6 missing columns for complete functionality
+
+## 📋 Previous: Ticket Photo Support (v1.20.12)
 - **Photo Attachments for Tickets** - Upload photos to document issues visually
 - **Full Integration** - Photos from checklists automatically transfer to tickets
 - **Enhanced UI** - Photo preview, count indicators, click-to-view full size

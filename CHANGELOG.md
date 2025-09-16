@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.13] - 2025-09-16
+
+### Fixed
+- **OpenPhone Webhook Processing**: Fixed missing database columns that prevented messages from being stored
+  - Added 6 missing operator tracking columns to `openphone_conversations` table
+  - Webhooks were returning 200 but failing silently with "Processing error"
+  - Messages now flow correctly from OpenPhone to ClubOS
+  - Pattern Learning System integration now fully operational
+
 ## [1.20.12] - 2025-09-16
 
 ### Added
