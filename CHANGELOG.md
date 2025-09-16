@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.11] - 2025-09-16
+
+### Fixed
+- **Checklist Photo Upload**: Fixed photos not being saved to database when uploading through checklist UI
+  - Added `photo_urls` field to INSERT statement in submission endpoint
+  - Added `template_id` field to properly track template association
+  - Added `supplies_requested` field to store supplies data in submission
+  - Photos, supplies, and template data now properly persist to database
+
 ## [1.20.10] - 2025-09-15
 
 ### Added

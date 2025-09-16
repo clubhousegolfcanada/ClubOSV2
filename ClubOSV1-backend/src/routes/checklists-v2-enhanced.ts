@@ -536,13 +536,14 @@ router.post('/submit',
       
       // Create submission with basic fields that exist in current schema
       const submissionResult = await db.query(
-        `INSERT INTO checklist_submissions 
-         (user_id, location, category, type, total_tasks, completed_tasks, 
-          comments, completion_time)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        `INSERT INTO checklist_submissions
+         (user_id, location, category, type, total_tasks, completed_tasks,
+          comments, completion_time, photo_urls, template_id, supplies_requested)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, $9, $10)
          RETURNING id`,
-        [userId, location, category, type, completedTasks.length, 
-         JSON.stringify(completedTasks), comments]
+        [userId, location, category, type, completedTasks.length,
+         JSON.stringify(completedTasks), comments, photoUrls || [], templateId || null,
+         supplies ? JSON.stringify(supplies) : null]
       );
       
       const submissionId = submissionResult.rows[0].id;
