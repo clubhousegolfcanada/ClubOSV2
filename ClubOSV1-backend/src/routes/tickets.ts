@@ -40,8 +40,8 @@ router.get('/', authenticate, async (req, res) => {
 // POST /api/tickets - Create a new ticket
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { title, description, category, priority, location } = req.body;
-    
+    const { title, description, category, priority, location, photo_urls } = req.body;
+
     // Validate required fields
     if (!title || !description || !category || !priority) {
       return res.status(400).json({
@@ -49,7 +49,33 @@ router.post('/', authenticate, async (req, res) => {
         message: 'Missing required fields: title, description, category, priority'
       });
     }
-    
+
+    // Validate photo_urls if provided
+    if (photo_urls) {
+      if (!Array.isArray(photo_urls)) {
+        return res.status(400).json({
+          success: false,
+          message: 'photo_urls must be an array'
+        });
+      }
+
+      // Check each photo size (5MB limit per photo when base64 encoded)
+      for (const photo of photo_urls) {
+        if (typeof photo !== 'string') {
+          return res.status(400).json({
+            success: false,
+            message: 'Each photo URL must be a string'
+          });
+        }
+        if (photo.length > 5_000_000) {
+          return res.status(400).json({
+            success: false,
+            message: 'Photo size exceeds 5MB limit'
+          });
+        }
+      }
+    }
+
     // Create ticket in database
     const newTicket = await db.createTicket({
       title,
@@ -58,6 +84,7 @@ router.post('/', authenticate, async (req, res) => {
       status: 'open',
       priority,
       location,
+      photo_urls: photo_urls || [],
       created_by_id: req.user!.id,
       created_by_name: req.user!.name || req.user!.email.split('@')[0],
       created_by_email: req.user!.email,

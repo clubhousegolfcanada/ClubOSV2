@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.12] - 2025-09-16
+
+### Added
+- **Ticket Photo Support**: Complete photo attachment feature for tickets
+  - Database migration adds `photo_urls` field to tickets table
+  - Photo upload UI in ticket creation form (max 5MB per photo)
+  - Photo display in ticket detail modal with click-to-view full size
+  - Photo count indicator in ticket list view
+  - Checklist photos now transfer to tickets when creating from checklist
+  - Base64 data URL storage (ready for future cloud migration)
+
+### Changed
+- **Ticket Creation**: Enhanced with photo upload capability
+- **Ticket API**: Updated to handle photo_urls in creation and retrieval
+- **Checklist Integration**: Photos from checklists now properly transfer to tickets
+
 ## [1.20.11] - 2025-09-16
 
 ### Fixed

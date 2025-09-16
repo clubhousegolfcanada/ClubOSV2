@@ -239,9 +239,9 @@ router.post('/submit',
           
           // Create ticket
           const ticketResult = await db.query(
-            `INSERT INTO tickets 
-             (title, description, category, status, priority, location, created_by_id, created_by_name, created_by_email, created_by_phone)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            `INSERT INTO tickets
+             (title, description, category, status, priority, location, created_by_id, created_by_name, created_by_email, created_by_phone, photo_urls)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              RETURNING *`,
             [
               `${category.charAt(0).toUpperCase() + category.slice(1)} Checklist - ${type.charAt(0).toUpperCase() + type.slice(1)} - ${location}`,
@@ -253,7 +253,8 @@ router.post('/submit',
               userId,
               user?.name || 'Unknown',
               user?.email || req.user!.email,
-              user?.phone || null
+              user?.phone || null,
+              photoUrls ? JSON.parse(photoUrls) : []
             ]
           );
           

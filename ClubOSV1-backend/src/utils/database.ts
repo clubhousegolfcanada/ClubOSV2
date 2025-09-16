@@ -307,8 +307,8 @@ class DatabaseService {
       `INSERT INTO tickets (
         id, title, description, category, status, priority, location,
         created_by_id, created_by_name, created_by_email, created_by_phone,
-        assigned_to_id, assigned_to_name, assigned_to_email, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        assigned_to_id, assigned_to_name, assigned_to_email, metadata, photo_urls
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *`,
       [
         id,
@@ -325,7 +325,8 @@ class DatabaseService {
         ticket.assigned_to_id,
         ticket.assigned_to_name,
         ticket.assigned_to_email,
-        JSON.stringify(ticket.metadata || {})
+        JSON.stringify(ticket.metadata || {}),
+        (ticket as any).photo_urls || []
       ]
     );
     return result.rows[0];

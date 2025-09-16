@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter } from 'lucide-react';
+import { Plus, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter, Camera } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -20,6 +20,7 @@ interface Ticket {
   status: TicketStatus;
   priority: TicketPriority;
   location?: string;
+  photo_urls?: string[];
   createdBy: {
     id: string;
     name: string;
@@ -524,6 +525,12 @@ const TicketCenterOptimized = () => {
                         {ticket.comments.length}
                       </span>
                     )}
+                    {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Camera className="w-3 h-3" />
+                        {ticket.photo_urls.length}
+                      </span>
+                    )}
                   </div>
                   
                   {/* Latest comment preview - Desktop only */}
@@ -685,6 +692,30 @@ const TicketCenterOptimized = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Photo Attachments */}
+              {selectedTicket.photo_urls && selectedTicket.photo_urls.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    Photos ({selectedTicket.photo_urls.length})
+                  </h4>
+                  <div className="flex gap-2 flex-wrap">
+                    {selectedTicket.photo_urls.map((photo, index) => (
+                      <div key={index} className="relative group cursor-pointer" onClick={() => window.open(photo, '_blank')}>
+                        <img
+                          src={photo}
+                          alt={`Photo ${index + 1}`}
+                          className="w-24 h-24 object-cover rounded-lg border border-[var(--border-secondary)] hover:border-[var(--accent)] transition-colors"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <span className="text-white text-xs">Click to view</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Comments */}
               <div>

@@ -4,7 +4,7 @@ import { useRequestSubmission, useNotifications, useDemoMode } from '@/state/hoo
 import { useSettingsState, useAuthState } from '@/state/useStore';
 import { canAccessRoute, getRestrictedTooltip } from '@/utils/roleUtils';
 import type { UserRequest, RequestRoute } from '@/types/request';
-import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle } from 'lucide-react';
+import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle, Camera, X } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
@@ -69,6 +69,7 @@ const RequestForm: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [conversationExpanded, setConversationExpanded] = useState(true);
+  const [photoAttachments, setPhotoAttachments] = useState<string[]>([]);
 
   const { preferences } = useSettingsState();
   const { user } = useAuthState();
@@ -94,6 +95,29 @@ const RequestForm: React.FC = () => {
 
   const requestDescription = watch('requestDescription');
   const toneConversion = watch('toneConversion');
+
+  // Photo management functions
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Convert to base64 data URL
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const url = event.target?.result as string;
+      // Check size limit (5MB)
+      if (url.length > 5_000_000) {
+        notify('error', 'Photo size exceeds 5MB limit');
+        return;
+      }
+      setPhotoAttachments([...photoAttachments, url]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoAttachments(photoAttachments.filter((_, i) => i !== index));
+  };
 
   const routes: RequestRoute[] = ['Auto', 'Emergency', 'Booking&Access', 'TechSupport', 'BrandTone'];
   
@@ -213,6 +237,7 @@ const RequestForm: React.FC = () => {
             category: ticketCategory,
             priority: ticketPriority,
             location: data.location || undefined,
+            photo_urls: photoAttachments.length > 0 ? photoAttachments : undefined,
           },
 
         );
@@ -465,6 +490,7 @@ const RequestForm: React.FC = () => {
     setShowAdvancedRouting(false); // Close Advanced selector if open
     setShowLocationSelector(false); // Close Location selector if open
     setSmartAssistEnabled(true); // Enable Smart Assist by default
+    setPhotoAttachments([]); // Clear photo attachments
     setShowResponse(false);
     resetRequestState();
     setConvertedTone('');
@@ -1005,6 +1031,58 @@ const RequestForm: React.FC = () => {
                 </div>
                 <div className="form-helper mt-2">
                   <span className="text-gray-400">Select the location where the issue is occurring</span>
+                </div>
+              </div>
+
+              {/* Photo Attachments for Tickets */}
+              <div className="form-group">
+                <label className="form-label flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  Photo Attachments
+                </label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      id="ticket-photo-upload"
+                      disabled={isSubmitting}
+                    />
+                    <label
+                      htmlFor="ticket-photo-upload"
+                      className="px-4 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer transition-all"
+                    >
+                      <Camera className="inline w-4 h-4 mr-2" />
+                      Add Photo
+                    </label>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      Document issues visually (max 5MB per photo)
+                    </span>
+                  </div>
+
+                  {/* Photo previews */}
+                  {photoAttachments.length > 0 && (
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {photoAttachments.map((photo, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={photo}
+                            alt={`Attachment ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg border border-[var(--border-secondary)]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(index)}
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </>
