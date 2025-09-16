@@ -1298,7 +1298,10 @@ export const ChecklistSystem: React.FC = () => {
                                     
                                     {submission.photo_urls && (() => {
                                       try {
-                                        const photos = JSON.parse(submission.photo_urls) as string[];
+                                        // Handle both array and JSON string formats
+                                        const photos = Array.isArray(submission.photo_urls)
+                                          ? submission.photo_urls
+                                          : JSON.parse(submission.photo_urls) as string[];
                                         if (photos.length > 0) {
                                           return (
                                             <div>
