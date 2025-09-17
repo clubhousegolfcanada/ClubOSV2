@@ -1,9 +1,9 @@
 # Operations Center UI Consistency Audit
 **Date**: September 16, 2025
-**Version**: 1.0.0
+**Version**: 1.1.0
 
 ## Executive Summary
-Comprehensive audit of the Operations Center pages reveals inconsistent UI patterns across different components. While the White Label and Checklists Admin pages use ClubOS CSS variables, the Users and Integrations pages still use hardcoded Tailwind classes.
+Comprehensive audit of the Operations Center pages reveals critical UI issues and inconsistent patterns across different components. Most notably, the White Label page has a **visibility issue where selected tabs have white text on white background**, making them unreadable. Additionally, layouts between components are completely different.
 
 ## UI Consistency Analysis
 
@@ -63,11 +63,12 @@ border-[var(--border-primary)]
 ```
 
 ### 6. White Label Page (`WhiteLabelPlanner.tsx`)
-**Status**: ✅ Fully Consistent
-- ✅ Complete CSS variable usage
-- ✅ Follows ClubOS design system
-- ✅ Proper color theming
-- ✅ Consistent spacing patterns
+**Status**: ❌ Critical Issues
+- ❌ **CRITICAL BUG**: Selected tab text is white on white background (invisible)
+- ✅ Uses CSS variables
+- ❌ Layout completely different from Checklists Admin
+- ❌ Tab navigation uses `bg-[var(--color-primary)] text-white` causing visibility issue
+- ⚠️ Mixed hardcoded colors for stat cards (bg-green-50, bg-yellow-50, bg-blue-50)
 
 ## Design System Inconsistencies
 
@@ -79,7 +80,7 @@ border-[var(--border-primary)]
 | Integrations | None | purple-*, green-*, gray-* | ❌ |
 | V3-PLS | Partial | Mixed | ⚠️ |
 | Checklists | Full | Minimal | ✅ |
-| White Label | Full | None | ✅ |
+| White Label | Partial | Hardcoded stat cards | ❌ |
 
 ### Common Patterns Found
 
@@ -150,12 +151,31 @@ className="px-4 py-2 bg-[var(--color-surface)] text-[var(--text-primary)] rounde
 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
 ```
 
+## Critical Issues Found
+
+### 🔴 URGENT - User Experience Breaking
+1. **White Label Tab Visibility** - Selected tabs have white text on white background
+   - Location: `WhiteLabelPlanner.tsx` line 241
+   - Issue: `bg-[var(--color-primary)] text-white` when `--color-primary` might be light/white
+   - Fix needed: Use contrasting text color based on background
+
+### Layout Inconsistencies
+1. **White Label vs Checklists Admin** - Completely different layouts
+   - White Label: Enclosed card design with internal tab navigation
+   - Checklists: Full-width design with header/tab separation
+   - Neither follows a consistent pattern
+
 ## Priority Refactoring Tasks
+
+### Critical Priority (User Experience Breaking)
+1. **White Label Tab Text** - Fix invisible selected tab text
+2. **Standardize Layouts** - Align White Label and Checklists Admin layouts
 
 ### High Priority (Breaking consistency)
 1. **Users Page** - Convert all hardcoded colors to CSS variables
 2. **Integrations Page** - Standardize color system
 3. **Operations Main** - Remove inline styles, use CSS variables
+4. **White Label Stat Cards** - Replace hardcoded colors (bg-green-50, etc.)
 
 ### Medium Priority (Partial issues)
 1. **V3-PLS Pages** - Complete CSS variable migration

@@ -11,8 +11,6 @@ import { ResponseDisplay } from './ResponseDisplay';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import PrioritySlider from './ui/PrioritySlider';
-import CategoryToggle from './ui/CategoryToggle';
-import LocationDropdown from './ui/LocationDropdown';
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -946,16 +944,96 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Ticket Options - Enhanced UI */}
+          {/* Ticket Options - Minimal Professional */}
           {isTicketMode && (
             <>
-              <div className="form-group">
-                <label className="form-label">Category</label>
-                <CategoryToggle
-                  value={ticketCategory}
-                  onChange={setTicketCategory}
-                  disabled={isSubmitting || demoMode}
-                />
+              {/* Category and Location in one row */}
+              <div className="flex gap-4 mb-4">
+                {/* Category Toggle - Mini 2-way */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-[var(--text-muted)] font-medium">Category:</label>
+                  <div className="relative inline-block w-20">
+                    <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
+                      <div
+                        className="absolute inset-y-0.5 transition-all duration-200 rounded-full bg-[var(--accent)]"
+                        style={{
+                          width: '50%',
+                          left: ticketCategory === 'facilities' ? '0%' : '50%'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTicketCategory('facilities')}
+                        className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                        disabled={isSubmitting || demoMode}
+                      >
+                        <span className={ticketCategory === 'facilities' ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                          F
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTicketCategory('tech')}
+                        className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                        disabled={isSubmitting || demoMode}
+                      >
+                        <span className={ticketCategory === 'tech' ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                          T
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <span className="text-xs text-[var(--text-secondary)]">
+                    {ticketCategory === 'facilities' ? 'Facilities' : 'Tech'}
+                  </span>
+                </div>
+
+                {/* Location Selector - Same as AI mode */}
+                <div className="flex items-center gap-2">
+                  {!showLocationSelector ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationSelector(true)}
+                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={isSubmitting || demoMode}
+                    >
+                      {selectedLocation || 'Location'}
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-[var(--text-muted)]">Location:</span>
+                      <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
+                        {['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford'].map(loc => (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => {
+                              setValue('location', loc);
+                              setSelectedLocation(loc);
+                              setShowLocationSelector(false);
+                            }}
+                            className={`px-2 py-0.5 text-xs transition-all rounded-full ${
+                              selectedLocation === loc
+                                ? 'bg-[var(--accent)] text-white'
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                            disabled={isSubmitting || demoMode}
+                          >
+                            {loc.replace(' Lake', '')}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowLocationSelector(false)}
+                        className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="form-group">
@@ -964,19 +1042,6 @@ const RequestForm: React.FC = () => {
                   value={ticketPriority}
                   onChange={setTicketPriority}
                   disabled={isSubmitting || demoMode}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Location</label>
-                <LocationDropdown
-                  value={selectedLocation}
-                  onChange={(loc) => {
-                    setValue('location', loc);
-                    setSelectedLocation(loc);
-                  }}
-                  disabled={isSubmitting || demoMode}
-                  placeholder="Select the location where the issue is occurring"
                 />
               </div>
 

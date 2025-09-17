@@ -5,15 +5,14 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.20.14] - 2025-09-16
 
 ### Enhanced
-- **World-Class Ticket Creation UI**: Complete redesign of ticket creation interface
-  - Added professional priority slider with visual gradient (green → red)
-  - Implemented elegant category toggle switch for Facilities ↔ Tech Support
-  - Created polished location dropdown with icons and animations
-  - Removed clunky button grids in favor of intuitive UI components
-  - Enhanced mobile experience with touch-friendly controls
-  - Added smooth animations and transitions throughout
-  - Improved accessibility with proper ARIA labels and keyboard navigation
-  - Maintains ClubOS design system consistency
+- **Minimal Professional Ticket Creation UI**: Refined ticket creation interface
+  - Simplified priority slider with clean gradient visualization
+  - Added minimal 2-way toggle for category (F/T) matching existing UI patterns
+  - Reused existing location selector from AI mode for consistency
+  - Removed button grids in favor of compact, professional controls
+  - All controls now match existing ClubOS patterns exactly
+  - Minimal, professional design without unnecessary decorations
+  - No emojis, consistent with ClubOS standards
 
 ## [1.20.13] - 2025-09-16
 
