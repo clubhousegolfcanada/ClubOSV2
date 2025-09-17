@@ -10,6 +10,9 @@ import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import PrioritySlider from './ui/PrioritySlider';
+import CategoryToggle from './ui/CategoryToggle';
+import LocationDropdown from './ui/LocationDropdown';
 
 // Add keyframes for button animation
 const shimmerKeyframes = `
@@ -943,95 +946,38 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Ticket Options */}
+          {/* Ticket Options - Enhanced UI */}
           {isTicketMode && (
             <>
               <div className="form-group">
-                <label className="form-label">Ticket Category</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTicketCategory('facilities')}
-                    className={`
-                      flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all
-                      ${ticketCategory === 'facilities'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                      }
-                    `}
-                  >
-                    Facilities
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTicketCategory('tech')}
-                    className={`
-                      flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all
-                      ${ticketCategory === 'tech'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                      }
-                    `}
-                  >
-                    Tech Support
-                  </button>
-                </div>
+                <label className="form-label">Category</label>
+                <CategoryToggle
+                  value={ticketCategory}
+                  onChange={setTicketCategory}
+                  disabled={isSubmitting || demoMode}
+                />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Priority Level</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(['low', 'medium', 'high', 'urgent'] as const).map((priority) => (
-                    <button
-                      key={priority}
-                      type="button"
-                      onClick={() => setTicketPriority(priority)}
-                      className={`
-                        py-2 px-3 rounded-lg font-medium text-sm transition-all capitalize
-                        ${ticketPriority === priority
-                          ? priority === 'urgent' ? 'bg-red-500 text-white' :
-                            priority === 'high' ? 'bg-orange-500 text-white' :
-                            priority === 'medium' ? 'bg-yellow-500 text-white' :
-                            'bg-gray-500 text-white'
-                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                        }
-                      `}
-                    >
-                      {priority}
-                    </button>
-                  ))}
-                </div>
-                <div className="form-helper mt-2">
-                  <span className="text-gray-400">Low: minor issues • Medium: standard requests • High: impacts operations • Urgent: critical issues</span>
-                </div>
+                <PrioritySlider
+                  value={ticketPriority}
+                  onChange={setTicketPriority}
+                  disabled={isSubmitting || demoMode}
+                />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Location</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford'].map((loc) => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => {
-                        setValue('location', loc);
-                        setSelectedLocation(loc);
-                      }}
-                      className={`
-                        py-2 px-3 rounded-lg font-medium text-sm transition-all
-                        ${selectedLocation === loc
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                        }
-                      `}
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
-                <div className="form-helper mt-2">
-                  <span className="text-gray-400">Select the location where the issue is occurring</span>
-                </div>
+                <LocationDropdown
+                  value={selectedLocation}
+                  onChange={(loc) => {
+                    setValue('location', loc);
+                    setSelectedLocation(loc);
+                  }}
+                  disabled={isSubmitting || demoMode}
+                  placeholder="Select the location where the issue is occurring"
+                />
               </div>
 
               {/* Photo Attachments for Tickets */}

@@ -6,6 +6,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  @keyframes slide-in-from-top-1 {
+    from {
+      transform: translateY(-0.25rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-in {
+    animation-duration: 200ms;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-top-1 {
+    animation-name: slide-in-from-top-1;
+  }
+}
+
 /* PWA Standalone Mode - Simple and clean */
 @media all and (display-mode: standalone) {
   /* iOS safe area handling */
