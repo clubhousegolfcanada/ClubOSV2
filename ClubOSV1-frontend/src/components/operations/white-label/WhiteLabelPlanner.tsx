@@ -76,7 +76,7 @@ export const WhiteLabelPlanner: React.FC = () => {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const { data } = await http.get('/api/white-label-planner/inventory');
+      const { data } = await http.get('/white-label-planner/inventory');
       setFeatures(data.features || []);
       setBranding(data.branding || []);
       setSOPs(data.sops || []);
@@ -93,7 +93,7 @@ export const WhiteLabelPlanner: React.FC = () => {
 
     setSaving(true);
     try {
-      const { data } = await http.post('/api/white-label-planner/inventory/feature', newFeature);
+      const { data } = await http.post('/white-label-planner/inventory/feature', newFeature);
       setFeatures([...features, data]);
       setNewFeature({});
     } catch (error) {
@@ -108,7 +108,7 @@ export const WhiteLabelPlanner: React.FC = () => {
 
     setSaving(true);
     try {
-      const { data } = await http.post('/api/white-label-planner/inventory/branding', newBranding);
+      const { data } = await http.post('/white-label-planner/inventory/branding', newBranding);
       setBranding([...branding, data]);
       setNewBranding({});
     } catch (error) {
@@ -123,7 +123,7 @@ export const WhiteLabelPlanner: React.FC = () => {
 
     setSaving(true);
     try {
-      const { data } = await http.post('/api/white-label-planner/inventory/sop', newSOP);
+      const { data } = await http.post('/white-label-planner/inventory/sop', newSOP);
       setSOPs([...sops, data]);
       setNewSOP({});
     } catch (error) {
@@ -138,7 +138,7 @@ export const WhiteLabelPlanner: React.FC = () => {
 
     setSaving(true);
     try {
-      const { data } = await http.post('/api/white-label-planner/inventory/integration', newIntegration);
+      const { data } = await http.post('/white-label-planner/inventory/integration', newIntegration);
       setIntegrations([...integrations, data]);
       setNewIntegration({});
     } catch (error) {
@@ -150,7 +150,7 @@ export const WhiteLabelPlanner: React.FC = () => {
 
   const deleteItem = async (type: string, id: string) => {
     try {
-      await http.delete(`/api/white-label-planner/inventory/${type}/${id}`);
+      await http.delete(`/white-label-planner/inventory/${type}/${id}`);
 
       switch(type) {
         case 'feature':
@@ -194,10 +194,10 @@ export const WhiteLabelPlanner: React.FC = () => {
         integrations: Array.from(selectedItems.integrations)
       };
 
-      const { data } = await http.post('/api/white-label-planner/configurations', config);
+      const { data } = await http.post('/white-label-planner/configurations', config);
 
       // Download the blueprint
-      const blueprint = await http.get(`/api/white-label-planner/blueprint/${data.id}`);
+      const blueprint = await http.get(`/white-label-planner/blueprint/${data.id}`);
       const blob = new Blob([JSON.stringify(blueprint.data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
