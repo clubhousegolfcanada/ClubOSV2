@@ -696,7 +696,7 @@ export const ChecklistSystem: React.FC = () => {
                 <button
                   onClick={handleStartChecklist}
                   disabled={isStarting || !currentTemplate}
-                  className="px-6 py-3 bg-white text-[var(--accent)] rounded-lg font-semibold hover:bg-gray-100 transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-3 bg-[var(--bg-secondary)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--bg-hover)] transition-all flex items-center gap-2 disabled:opacity-50"
                 >
                   {isStarting ? (
                     <>

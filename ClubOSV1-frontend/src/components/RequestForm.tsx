@@ -1284,15 +1284,15 @@ const RequestForm: React.FC = () => {
                 animationDelay: '0.3s'
               }}></div>
             </div>
-            <p className="text-lg font-medium text-gray-300 mb-2">
+            <p className="text-lg font-medium text-[var(--text-secondary)] mb-2">
               {isKnowledgeMode ? 'Adding knowledge to AI system...' :
                smartAssistEnabled ? 'Processing your request...' : 'Sending to Slack...'}
             </p>
-            <p className="text-sm text-gray-400 mb-1">
+            <p className="text-sm text-[var(--text-muted)] mb-1">
               {smartAssistEnabled ? 'This could take up to 30 seconds... we are thinking' : 'This could take up to 2-3 minutes for a response... we are asking a real human'}
             </p>
             {elapsedTime > 0 && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[var(--text-muted)]">
                 {elapsedTime}s elapsed
               </p>
             )}
@@ -1476,7 +1476,7 @@ const RequestForm: React.FC = () => {
                   <div className="response-metadata">
                     {lastResponse.botRoute && (
                       <div>
-                        Route Used: <span className="text-gray-400">{lastResponse.botRoute}</span>
+                        Route Used: <span className="text-[var(--text-muted)]">{lastResponse.botRoute}</span>
                         {lastResponse.llmResponse?.isLocalKnowledge && (
                           <span className="ml-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
                             ✓ Internal Database
@@ -1485,10 +1485,10 @@ const RequestForm: React.FC = () => {
                       </div>
                     )}
                     {lastResponse.llmResponse?.dataSource && (
-                      <div>Data Source: <span className="text-gray-400">{lastResponse.llmResponse.dataSource}</span></div>
+                      <div>Data Source: <span className="text-[var(--text-muted)]">{lastResponse.llmResponse.dataSource}</span></div>
                     )}
                     {lastResponse.processingTime && (
-                      <div>Processing Time: <span className="text-gray-400">{lastResponse.processingTime}ms</span></div>
+                      <div>Processing Time: <span className="text-[var(--text-muted)]">{lastResponse.processingTime}ms</span></div>
                     )}
                   </div>
                 )}

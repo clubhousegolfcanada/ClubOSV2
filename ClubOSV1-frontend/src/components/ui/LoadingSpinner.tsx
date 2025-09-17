@@ -37,7 +37,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const colorClasses = {
     primary: 'border-[var(--accent)]',
     white: 'border-white',
-    gray: 'border-gray-500',
+    gray: 'border-[var(--text-muted)]',
     current: 'border-current',
   };
 

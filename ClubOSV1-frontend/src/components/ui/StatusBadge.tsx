@@ -76,23 +76,23 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       error: 'bg-red-500 text-white',
       warning: 'bg-yellow-500 text-white',
       info: 'bg-blue-500 text-white',
-      gray: 'bg-gray-500 text-white',
+      gray: 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]',
       default: 'bg-[var(--accent)] text-white',
     },
     outline: {
-      success: 'border border-green-500 text-green-700 dark:text-green-400',
-      error: 'border border-red-500 text-red-700 dark:text-red-400',
-      warning: 'border border-yellow-500 text-yellow-700 dark:text-yellow-400',
-      info: 'border border-blue-500 text-blue-700 dark:text-blue-400',
-      gray: 'border border-gray-500 text-gray-700 dark:text-gray-400',
+      success: 'border border-green-500 text-green-600',
+      error: 'border border-red-500 text-red-600',
+      warning: 'border border-yellow-500 text-yellow-600',
+      info: 'border border-blue-500 text-blue-600',
+      gray: 'border border-[var(--border-primary)] text-[var(--text-secondary)]',
       default: 'border border-[var(--accent)] text-[var(--accent)]',
     },
     subtle: {
-      success: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-      error: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
-      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      gray: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400',
+      success: 'bg-green-500/10 text-green-600 border-green-500/20',
+      error: 'bg-red-500/10 text-red-600 border-red-500/20',
+      warning: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+      info: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+      gray: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-secondary)]',
       default: 'bg-[var(--accent)]/10 text-[var(--accent)]',
     },
   };
@@ -128,7 +128,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
             'rounded-full',
             dotSizes[size],
             variant === 'solid' 
-              ? 'bg-white/80' 
+              ? 'bg-[var(--bg-secondary)]/80' 
               : variant === 'outline'
               ? 'bg-current'
               : 'bg-current'

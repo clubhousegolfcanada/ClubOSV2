@@ -161,32 +161,32 @@ export function CustomAchievementCreator({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          className="bg-[var(--bg-secondary)] rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
         >
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Award Achievement</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">Award Achievement</h2>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
                   Recognize {userName}'s accomplishment
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <div className="flex gap-2 mb-6 border-b border-[var(--border-primary)]">
               <button
                 onClick={() => setActiveTab('details')}
                 className={`px-4 py-2 font-medium transition-colors ${
                   activeTab === 'details'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 Achievement Details
@@ -196,7 +196,7 @@ export function CustomAchievementCreator({
                 className={`px-4 py-2 font-medium transition-colors ${
                   activeTab === 'appearance'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 <Palette className="w-4 h-4 inline mr-2" />
@@ -211,13 +211,13 @@ export function CustomAchievementCreator({
                   <div className="space-y-4">
                     {/* Achievement Category */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Achievement Type *
                       </label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       >
                         {achievementCategories.map(cat => (
                           <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -227,7 +227,7 @@ export function CustomAchievementCreator({
 
                     {/* Achievement Name */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Achievement Name *
                       </label>
                       <input
@@ -235,13 +235,13 @@ export function CustomAchievementCreator({
                         value={achievementName}
                         onChange={(e) => setAchievementName(e.target.value)}
                         placeholder="e.g., Spring Championship, Monthly Tournament"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       />
                     </div>
 
                     {/* Title/Event */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Event/Competition Title *
                       </label>
                       <input
@@ -249,13 +249,13 @@ export function CustomAchievementCreator({
                         value={achievementTitle}
                         onChange={(e) => setAchievementTitle(e.target.value)}
                         placeholder="e.g., 2024 Spring Championship"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       />
                     </div>
 
                     {/* Placement */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Placement/Result
                       </label>
                       <input
@@ -263,26 +263,26 @@ export function CustomAchievementCreator({
                         value={placement}
                         onChange={(e) => setPlacement(e.target.value)}
                         placeholder="e.g., 1st Place, Champion, Winner"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       />
                     </div>
 
                     {/* Date */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Date Achieved
                       </label>
                       <input
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       />
                     </div>
 
                     {/* Description */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Achievement Description
                       </label>
                       <textarea
@@ -290,13 +290,13 @@ export function CustomAchievementCreator({
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Details about this achievement..."
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       />
                     </div>
 
                     {/* Personal Message */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Personal Congratulations
                       </label>
                       <textarea
@@ -304,19 +304,19 @@ export function CustomAchievementCreator({
                         onChange={(e) => setPersonalMessage(e.target.value)}
                         placeholder="Congratulations message to the winner..."
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       />
                     </div>
 
                     {/* Rarity/Significance */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                         Significance
                       </label>
                       <select
                         value={rarity}
                         onChange={(e) => setRarity(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       >
                         <option value="legendary">Legendary (Major Championship)</option>
                         <option value="epic">Epic (Tournament Win)</option>
@@ -341,11 +341,11 @@ export function CustomAchievementCreator({
                             className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
                               selectedIcon === iconType.value
                                 ? 'border-[var(--accent)] bg-[var(--accent)]/5'
-                                : 'border-gray-200 hover:border-gray-300'
+                                : 'border-[var(--border-secondary)] hover:border-[var(--border-primary)]'
                             }`}
                           >
                             <iconType.Icon className={`w-6 h-6 ${
-                              selectedIcon === iconType.value ? 'text-[var(--accent)]' : 'text-gray-600'
+                              selectedIcon === iconType.value ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
                             }`} />
                             <span className="text-xs">{iconType.label}</span>
                           </button>
@@ -384,8 +384,8 @@ export function CustomAchievementCreator({
               </div>
 
               {/* Preview */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Preview</h3>
+              <div className="bg-[var(--bg-tertiary)] rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4 text-[var(--text-primary)]">Preview</h3>
                 
                 <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
                   {/* Achievement Badge Preview */}
@@ -404,12 +404,12 @@ export function CustomAchievementCreator({
 
                   {/* Achievement Text */}
                   <div className="text-center space-y-2">
-                    <h4 className="text-xl font-bold text-gray-900">
+                    <h4 className="text-xl font-bold text-[var(--text-primary)]">
                       {placement && `${placement} - `}
                       {achievementTitle || 'Achievement Title'}
                     </h4>
                     {achievementName && (
-                      <p className="text-sm text-gray-600">{achievementName}</p>
+                      <p className="text-sm text-[var(--text-secondary)]">{achievementName}</p>
                     )}
                     <div className="flex items-center justify-center gap-2 mt-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
@@ -420,7 +420,7 @@ export function CustomAchievementCreator({
                         {rarity === 'legendary' ? 'Legendary' :
                          rarity === 'epic' ? 'Epic' : 'Rare'}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--text-muted)]">
                         {date}
                       </span>
                     </div>
@@ -428,9 +428,9 @@ export function CustomAchievementCreator({
 
                   {/* Personal Message Preview */}
                   {personalMessage && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-200 max-w-sm">
-                      <p className="text-sm text-gray-700 italic">"{personalMessage}"</p>
-                      <p className="text-xs text-gray-500 mt-2 text-right">- Clubhouse Golf</p>
+                    <div className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-[var(--border-primary)] max-w-sm">
+                      <p className="text-sm text-[var(--text-primary)] italic">"{personalMessage}"</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-2 text-right">- Clubhouse Golf</p>
                     </div>
                   )}
                 </div>
@@ -438,10 +438,10 @@ export function CustomAchievementCreator({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-[var(--border-primary)]">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-[var(--text-secondary)] bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
               >
                 Cancel
               </button>
