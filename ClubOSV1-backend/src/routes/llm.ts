@@ -476,12 +476,27 @@ router.post('/request',
         }
       }).catch(err => logger.error('Failed to import database', err));
 
-      // Check if response came from local knowledge
-      const isLocalKnowledge = processedRequest.llmResponse?.assistantId?.startsWith('LOCAL-KNOWLEDGE-');
-      const displayRoute = isLocalKnowledge 
+      // Check the actual provider that handled the request
+      const provider = processedRequest.llmResponse?.provider || 'unknown';
+      const isLocalKnowledge = provider === 'local' || provider === 'knowledgeStore' ||
+                               processedRequest.llmResponse?.assistantId?.startsWith('LOCAL-KNOWLEDGE-');
+      const displayRoute = isLocalKnowledge
         ? `Local Knowledge (${processedRequest.botRoute})`
         : processedRequest.botRoute;
-      
+
+      // Determine the actual data source more accurately
+      let dataSource = 'UNKNOWN';
+      if (provider === 'local' || provider === 'knowledgeStore') {
+        dataSource = 'CLUBOS_DATABASE';
+      } else if (provider === 'openai' || provider === 'OPENAI') {
+        dataSource = 'OPENAI_API';
+      } else if (isLocalKnowledge) {
+        dataSource = 'CLUBOS_DATABASE';
+      } else if (processedRequest.llmResponse?.response) {
+        // If we have a response but no clear provider, check for OpenAI assistant ID
+        dataSource = processedRequest.llmResponse?.assistantId?.startsWith('asst_') ? 'OPENAI_API' : 'CLUBOS_DATABASE';
+      }
+
       res.json({
         success: true,
         data: {
@@ -496,7 +511,7 @@ router.post('/request',
             // extractedInfo: processedRequest.llmResponse?.extractedInfo,
             isAssistantResponse: !!processedRequest.llmResponse?.response,
             isLocalKnowledge: isLocalKnowledge,
-            dataSource: isLocalKnowledge ? 'LOCAL_DATABASE' : 'OPENAI_API',
+            dataSource: dataSource,
             // Include structured response data if available (future features)
             structured: processedRequest.llmResponse?.structured,
             // category: processedRequest.llmResponse?.category,
