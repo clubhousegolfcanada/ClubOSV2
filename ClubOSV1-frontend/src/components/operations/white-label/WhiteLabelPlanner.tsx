@@ -447,7 +447,7 @@ export const WhiteLabelPlanner: React.FC = () => {
           <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-6">
             {/* Summary Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 border border-[var(--color-border)]">
+              <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 border border-[var(--border-primary)]">
                 <div className="text-2xl font-bold text-[var(--text-primary)]">{branding.length}</div>
                 <div className="text-xs text-[var(--text-secondary)]">Total Elements</div>
               </div>
@@ -540,7 +540,7 @@ export const WhiteLabelPlanner: React.FC = () => {
         <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-6">
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 border border-[var(--color-border)]">
+            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 border border-[var(--border-primary)]">
               <div className="text-2xl font-bold text-[var(--text-primary)]">{sops.length}</div>
               <div className="text-xs text-[var(--text-secondary)]">Total SOPs</div>
             </div>
@@ -677,7 +677,7 @@ export const WhiteLabelPlanner: React.FC = () => {
         <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-6">
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 border border-[var(--color-border)]">
+            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 border border-[var(--border-primary)]">
               <div className="text-2xl font-bold text-[var(--text-primary)]">{integrations.length}</div>
               <div className="text-xs text-[var(--text-secondary)]">Total Integrations</div>
             </div>
