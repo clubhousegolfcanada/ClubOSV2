@@ -230,7 +230,7 @@ export default function AIPrompts() {
                           <p className="font-medium mb-1">Important Notes:</p>
                           <ul className="list-disc list-inside space-y-1 text-xs">
                             <li>Changes affect how AI responds to ALL customer messages</li>
-                            <li>Use {'{'}customer_message{'}'} for the customer's message</li>
+                            <li>Use {'{'}customer_message{'}'} for the customer&apos;s message</li>
                             <li>Use {'{'}conversation_history{'}'} for chat history</li>
                             <li>Keep safety instructions to protect internal information</li>
                           </ul>

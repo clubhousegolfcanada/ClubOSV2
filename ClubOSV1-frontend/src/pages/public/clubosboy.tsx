@@ -179,7 +179,7 @@ export default function PublicClubOSBoy() {
                     disabled={isProcessing}
                   />
                   <div className="form-helper">
-                    Let us know which location you're asking about
+                    Let us know which location you&apos;re asking about
                   </div>
                 </div>
 
@@ -248,7 +248,7 @@ export default function PublicClubOSBoy() {
               Contact the Clubhouse
             </h2>
             <p className="text-[var(--text-secondary)] text-center mb-6">
-              Clubhouse provides 24/7 support for our members and guests. If we don't respond within 5 minutes, your next hour is on us!
+              Clubhouse provides 24/7 support for our members and guests. If we don&apos;t respond within 5 minutes, your next hour is on us!
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

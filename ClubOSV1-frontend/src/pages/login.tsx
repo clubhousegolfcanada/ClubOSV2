@@ -379,7 +379,7 @@ const LoginPage = () => {
               Reset Password
             </h3>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Enter your email address and we'll send you instructions to reset your password.
+              Enter your email address and we&apos;ll send you instructions to reset your password.
             </p>
             
             <form onSubmit={handlePasswordReset}>

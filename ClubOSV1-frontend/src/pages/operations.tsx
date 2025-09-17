@@ -58,7 +58,7 @@ export default function Operations() {
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Access Denied</h2>
-          <p className="text-[var(--text-secondary)]">You don't have permission to view this page.</p>
+          <p className="text-[var(--text-secondary)]">You don&apos;t have permission to view this page.</p>
         </div>
       </div>
     );
