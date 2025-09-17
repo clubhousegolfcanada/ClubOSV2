@@ -43,9 +43,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const updateMetaTheme = (theme: Theme) => {
+    // Update theme-color meta tag with proper colors
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#ffffff');
+      // Use ClubOS brand colors that match the actual theme
+      metaTheme.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#f9fafb');
+    }
+
+    // Update apple-mobile-web-app-status-bar-style for iOS
+    const appleStatusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (appleStatusBar) {
+      appleStatusBar.setAttribute('content', theme === 'dark' ? 'black-translucent' : 'default');
+    }
+
+    // Update msapplication-navbutton-color for Windows
+    const msNavButton = document.querySelector('meta[name="msapplication-navbutton-color"]');
+    if (msNavButton) {
+      msNavButton.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#f9fafb');
     }
   };
 
