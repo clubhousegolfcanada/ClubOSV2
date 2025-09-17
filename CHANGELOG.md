@@ -6,11 +6,11 @@ All notable changes to ClubOS will be documented in this file.
 
 ### Enhanced
 - **Minimal Professional Ticket Creation UI**: Refined ticket creation interface
+  - Category toggle inline with ticket mode selector (Facilities/Tech)
+  - All 6 locations displayed horizontally (Bedford, Dartmouth, Bayers Lake, Truro, Stratford, River Oaks)
+  - Mobile-responsive dropdown for locations on small screens
   - Simplified priority slider with clean gradient visualization
-  - Added minimal 2-way toggle for category (F/T) matching existing UI patterns
-  - Reused existing location selector from AI mode for consistency
-  - Removed button grids in favor of compact, professional controls
-  - All controls now match existing ClubOS patterns exactly
+  - All controls match existing ClubOS patterns exactly
   - Minimal, professional design without unnecessary decorations
   - No emojis, consistent with ClubOS standards
 

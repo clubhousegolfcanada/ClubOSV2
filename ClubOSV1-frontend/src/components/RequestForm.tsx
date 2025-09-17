@@ -743,15 +743,15 @@ const RequestForm: React.FC = () => {
               <span className="text-xs text-[var(--text-muted)] font-medium">Ticket</span>
               <div className="relative inline-block w-24">
                 <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
-                  <div 
+                  <div
                     className={`absolute inset-y-0.5 transition-all duration-200 rounded-full ${
-                      isTicketMode ? 'bg-[#4A154B]' : 
-                      !smartAssistEnabled ? 'bg-[#4A154B]' : 
+                      isTicketMode ? 'bg-[#4A154B]' :
+                      !smartAssistEnabled ? 'bg-[#4A154B]' :
                       'bg-[var(--accent)]'
                     }`}
                     style={{
                       width: '33.33%',
-                      left: isTicketMode ? '0%' : 
+                      left: isTicketMode ? '0%' :
                             smartAssistEnabled ? '33.33%' : '66.66%'
                     }}
                   />
@@ -800,6 +800,46 @@ const RequestForm: React.FC = () => {
                 </div>
               </div>
               <span className="text-xs text-[var(--text-muted)] font-medium">Human</span>
+
+              {/* Category Toggle - Only show when ticket mode is selected */}
+              {isTicketMode && (
+                <>
+                  <div className="ml-4 w-px h-4 bg-[var(--border-secondary)]" />
+                  <span className="text-xs text-[var(--text-muted)] font-medium">Facilities</span>
+                  <div className="relative inline-block w-16">
+                    <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
+                      <div
+                        className="absolute inset-y-0.5 transition-all duration-200 rounded-full bg-[var(--accent)]"
+                        style={{
+                          width: '50%',
+                          left: ticketCategory === 'facilities' ? '0%' : '50%'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTicketCategory('facilities')}
+                        className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                        disabled={isSubmitting || demoMode}
+                      >
+                        <span className={ticketCategory === 'facilities' ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                          •
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTicketCategory('tech')}
+                        className="relative z-10 flex-1 py-1 text-xs transition-colors"
+                        disabled={isSubmitting || demoMode}
+                      >
+                        <span className={ticketCategory === 'tech' ? 'text-white' : 'text-[var(--text-secondary)]'}>
+                          •
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <span className="text-xs text-[var(--text-muted)] font-medium">Tech</span>
+                </>
+              )}
               
               {/* Advanced and Location Buttons - Mobile */}
               {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
@@ -910,7 +950,7 @@ const RequestForm: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <span className="text-xs text-[var(--text-muted)]">Location:</span>
                       <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
-                        {['Bedford', 'Dartmouth', 'Bayers Lake'].map(loc => (
+                        {['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'].map(loc => (
                           <button
                             key={loc}
                             type="button"
@@ -947,92 +987,48 @@ const RequestForm: React.FC = () => {
           {/* Ticket Options - Minimal Professional */}
           {isTicketMode && (
             <>
-              {/* Category and Location in one row */}
-              <div className="flex gap-4 mb-4">
-                {/* Category Toggle - Mini 2-way */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-[var(--text-muted)] font-medium">Category:</label>
-                  <div className="relative inline-block w-20">
-                    <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
-                      <div
-                        className="absolute inset-y-0.5 transition-all duration-200 rounded-full bg-[var(--accent)]"
-                        style={{
-                          width: '50%',
-                          left: ticketCategory === 'facilities' ? '0%' : '50%'
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setTicketCategory('facilities')}
-                        className="relative z-10 flex-1 py-1 text-xs transition-colors"
-                        disabled={isSubmitting || demoMode}
-                      >
-                        <span className={ticketCategory === 'facilities' ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                          F
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTicketCategory('tech')}
-                        className="relative z-10 flex-1 py-1 text-xs transition-colors"
-                        disabled={isSubmitting || demoMode}
-                      >
-                        <span className={ticketCategory === 'tech' ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                          T
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                  <span className="text-xs text-[var(--text-secondary)]">
-                    {ticketCategory === 'facilities' ? 'Facilities' : 'Tech'}
-                  </span>
-                </div>
+              {/* Location Selector */}
+              <div className="form-group">
+                <label className="form-label">Location</label>
 
-                {/* Location Selector - Same as AI mode */}
-                <div className="flex items-center gap-2">
-                  {!showLocationSelector ? (
+                {/* Desktop - All locations in a row */}
+                <div className="hidden sm:flex gap-2">
+                  {['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'].map((loc) => (
                     <button
+                      key={loc}
                       type="button"
-                      onClick={() => setShowLocationSelector(true)}
-                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      onClick={() => {
+                        setValue('location', loc);
+                        setSelectedLocation(loc);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        selectedLocation === loc
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                      }`}
                       disabled={isSubmitting || demoMode}
                     >
-                      {selectedLocation || 'Location'}
+                      {loc}
                     </button>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-[var(--text-muted)]">Location:</span>
-                      <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5">
-                        {['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford'].map(loc => (
-                          <button
-                            key={loc}
-                            type="button"
-                            onClick={() => {
-                              setValue('location', loc);
-                              setSelectedLocation(loc);
-                              setShowLocationSelector(false);
-                            }}
-                            className={`px-2 py-0.5 text-xs transition-all rounded-full ${
-                              selectedLocation === loc
-                                ? 'bg-[var(--accent)] text-white'
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                            disabled={isSubmitting || demoMode}
-                          >
-                            {loc.replace(' Lake', '')}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowLocationSelector(false)}
-                        className="ml-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
+                  ))}
+                </div>
+
+                {/* Mobile - Dropdown */}
+                <div className="sm:hidden">
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => {
+                      setValue('location', e.target.value);
+                      setSelectedLocation(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                    disabled={isSubmitting || demoMode}
+                  >
+                    <option value="">Select location</option>
+                    {['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'].map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1136,8 +1132,8 @@ const RequestForm: React.FC = () => {
             <div className="sm:hidden mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[var(--text-muted)]">Location:</span>
-                <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5 flex-1">
-                  {['Bedford', 'Dartmouth', 'Bayers Lake'].map(loc => (
+                <div className="flex bg-[var(--bg-tertiary)] rounded-full p-0.5 flex-1 overflow-x-auto">
+                  {['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'].map(loc => (
                     <button
                       key={loc}
                       type="button"
@@ -1153,7 +1149,7 @@ const RequestForm: React.FC = () => {
                       }`}
                       disabled={isSubmitting || demoMode}
                     >
-                      {loc.replace(' Lake', '')}
+                      {loc === 'Bayers Lake' ? 'Bayers' : loc === 'River Oaks' ? 'River' : loc}
                     </button>
                   ))}
                 </div>

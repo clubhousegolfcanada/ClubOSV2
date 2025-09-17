@@ -7,10 +7,10 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
 ## 🎯 Latest Update: Minimal Professional Ticket UI (v1.20.14)
+- **Inline Category Toggle** - Facilities/Tech toggle appears inline with ticket mode
+- **All 6 Locations** - Bedford, Dartmouth, Bayers Lake, Truro, Stratford, River Oaks
+- **Mobile Responsive** - Horizontal buttons on desktop, dropdown on mobile
 - **Simplified Priority Slider** - Clean gradient visualization without excess decoration
-- **Minimal Category Toggle** - Compact F/T toggle matching existing 3-way toggle pattern
-- **Consistent Location Selector** - Reuses exact pattern from AI mode
-- **Professional Design** - No emojis, minimal labels, clean interface
 - **Pattern Consistency** - All controls match existing ClubOS UI exactly
 
 ## 📋 Previous: OpenPhone Integration Fixed (v1.20.13)
