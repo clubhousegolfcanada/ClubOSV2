@@ -34,6 +34,7 @@ export interface LLMResponse {
   threadId?: string;
   structured?: any;
   metadata?: any;
+  provider?: string;
 }
 
 export interface SlackMessage {
