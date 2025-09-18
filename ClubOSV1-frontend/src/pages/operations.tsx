@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Head from 'next/head';
 import { useAuthState } from '@/state/useStore';
 import { Users, Zap, Brain, ClipboardList, Layers } from 'lucide-react';
 
-// Import operation components
-import { OperationsUsers } from '@/components/operations/users/OperationsUsers';
-import { OperationsIntegrations } from '@/components/operations/integrations/OperationsIntegrations';
-import { OperationsPatternsEnhanced } from '@/components/operations/patterns/OperationsPatternsEnhanced';
-import { WhiteLabelPlanner } from '@/components/operations/white-label/WhiteLabelPlanner';
-import { ChecklistsAdminComponent } from '@/components/operations/checklists/ChecklistsAdminComponent';
+// Lazy load operation components for better performance
+const OperationsUsers = lazy(() => import('@/components/operations/users/OperationsUsers').then(m => ({ default: m.OperationsUsers })));
+const OperationsIntegrations = lazy(() => import('@/components/operations/integrations/OperationsIntegrations').then(m => ({ default: m.OperationsIntegrations })));
+const OperationsPatternsEnhanced = lazy(() => import('@/components/operations/patterns/OperationsPatternsEnhanced').then(m => ({ default: m.OperationsPatternsEnhanced })));
+const WhiteLabelPlanner = lazy(() => import('@/components/operations/white-label/WhiteLabelPlanner').then(m => ({ default: m.WhiteLabelPlanner })));
+const ChecklistsAdminComponent = lazy(() => import('@/components/operations/checklists/ChecklistsAdminComponent').then(m => ({ default: m.ChecklistsAdminComponent })));
+
+// Loading component
+const TabLoading = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="animate-pulse text-gray-500">Loading...</div>
+  </div>
+);
 
 type TabType = 'users' | 'integrations' | 'patterns' | 'checklists-admin' | 'white-label';
 
@@ -92,20 +99,29 @@ export default function Operations() {
   };
 
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'users':
-        return user.role === 'admin' ? <OperationsUsers /> : null;
-      case 'integrations':
-        return user.role === 'admin' ? <OperationsIntegrations /> : null;
-      case 'patterns':
-        return <OperationsPatternsEnhanced />;
-      case 'checklists-admin':
-        return user.role === 'admin' ? <ChecklistsAdminComponent /> : null;
-      case 'white-label':
-        return user.role === 'admin' ? <WhiteLabelPlanner /> : null;
-      default:
-        return user.role === 'admin' ? <OperationsUsers /> : <OperationsPatternsEnhanced />;
-    }
+    // Wrap lazy-loaded components in Suspense
+    const content = (() => {
+      switch (activeTab) {
+        case 'users':
+          return user.role === 'admin' ? <OperationsUsers /> : null;
+        case 'integrations':
+          return user.role === 'admin' ? <OperationsIntegrations /> : null;
+        case 'patterns':
+          return <OperationsPatternsEnhanced />;
+        case 'checklists-admin':
+          return user.role === 'admin' ? <ChecklistsAdminComponent /> : null;
+        case 'white-label':
+          return user.role === 'admin' ? <WhiteLabelPlanner /> : null;
+        default:
+          return user.role === 'admin' ? <OperationsUsers /> : <OperationsPatternsEnhanced />;
+      }
+    })();
+
+    return (
+      <Suspense fallback={<TabLoading />}>
+        {content}
+      </Suspense>
+    );
   };
 
   return (
