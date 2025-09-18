@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Palette, FileText, Link, Settings, Plus, Save, Download, Trash2, Check, X, Filter, AlertCircle, Search, RefreshCw, Code, GitBranch } from 'lucide-react';
+import { Package, Palette, FileText, Link, Settings, Plus, Save, Download, Trash2, Check, X, Filter, AlertCircle } from 'lucide-react';
 import { http } from '@/api/http';
 import { SimpleThemeConfig } from './SimpleThemeConfig';
 
@@ -36,7 +36,7 @@ interface Integration {
 }
 
 export const WhiteLabelPlanner: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'scanner' | 'features' | 'branding' | 'sops' | 'integrations' | 'configuration'>('scanner');
+  const [activeTab, setActiveTab] = useState<'features' | 'branding' | 'sops' | 'integrations' | 'configuration'>('features');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -212,7 +212,6 @@ export const WhiteLabelPlanner: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'scanner', label: 'Auto-Discovery', icon: Search },
     { id: 'features', label: 'Feature Inventory', icon: Package },
     { id: 'branding', label: 'Branding', icon: Palette },
     { id: 'sops', label: 'SOPs', icon: FileText },
@@ -250,11 +249,6 @@ export const WhiteLabelPlanner: React.FC = () => {
           </button>
         ))}
       </div>
-
-      {/* Scanner Tab */}
-      {activeTab === 'scanner' && (
-        <ScannerTab />
-      )}
 
       {/* Features Tab */}
       {activeTab === 'features' && (
@@ -935,206 +929,6 @@ export const WhiteLabelPlanner: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// Scanner Tab Component
-const ScannerTab: React.FC = () => {
-  const [scanning, setScanning] = useState(false);
-  const [scanHistory, setScanHistory] = useState<any[]>([]);
-  const [golfTerms, setGolfTerms] = useState<any[]>([]);
-  const [scanResults, setScanResults] = useState<any>(null);
-  const [selectedScanType, setSelectedScanType] = useState<'full' | 'golf_terms' | 'dependencies'>('full');
-
-  useEffect(() => {
-    fetchScanHistory();
-  }, []);
-
-  const fetchScanHistory = async () => {
-    try {
-      const { data } = await http.get('/white-label-scanner/scans');
-      setScanHistory(data.scans || []);
-    } catch (error) {
-      console.error('Failed to fetch scan history:', error);
-    }
-  };
-
-  const startScan = async () => {
-    setScanning(true);
-    try {
-      await http.post('/white-label-scanner/scan', {
-        scanType: selectedScanType
-      });
-
-      // Poll for results
-      setTimeout(() => {
-        fetchScanHistory();
-        fetchGolfTerms();
-        setScanning(false);
-      }, 5000);
-    } catch (error) {
-      console.error('Failed to start scan:', error);
-      setScanning(false);
-    }
-  };
-
-  const fetchGolfTerms = async () => {
-    try {
-      const { data } = await http.get('/white-label-scanner/golf-terms');
-      setGolfTerms(data.terms || []);
-    } catch (error) {
-      console.error('Failed to fetch golf terms:', error);
-    }
-  };
-
-  const scanTypeOptions = [
-    { value: 'full', label: 'Full System Scan', description: 'Complete analysis of all code and features' },
-    { value: 'golf_terms', label: 'Golf Terms Only', description: 'Find golf-specific terminology' },
-    { value: 'dependencies', label: 'Dependencies Only', description: 'Map feature dependencies and integrations' }
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Scan Controls */}
-      <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-6">
-        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Auto-Discovery Scanner</h3>
-        <p className="text-sm text-[var(--text-secondary)] mb-6">
-          Automatically scan your codebase to identify golf-specific features, branding elements, and dependencies.
-        </p>
-
-        <div className="space-y-4">
-          {/* Scan Type Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {scanTypeOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSelectedScanType(option.value as any)}
-                className={`p-4 rounded-lg border transition-all ${
-                  selectedScanType === option.value
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-primary)] hover:border-[var(--accent)]'
-                }`}
-              >
-                <div className="font-medium">{option.label}</div>
-                <div className="text-xs mt-1 opacity-80">{option.description}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* Start Scan Button */}
-          <button
-            onClick={startScan}
-            disabled={scanning}
-            className="w-full px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 flex items-center justify-center"
-          >
-            {scanning ? (
-              <>
-                <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                Scanning...
-              </>
-            ) : (
-              <>
-                <Search className="h-5 w-5 mr-2" />
-                Start {selectedScanType === 'full' ? 'Full' : selectedScanType === 'golf_terms' ? 'Golf Terms' : 'Dependencies'} Scan
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Scan History */}
-      {scanHistory.length > 0 && (
-        <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-6">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Recent Scans</h3>
-          <div className="space-y-2">
-            {scanHistory.map((scan) => (
-              <div key={scan.id} className="flex items-center justify-between p-3 bg-[var(--bg-tertiary)] rounded-lg">
-                <div>
-                  <div className="font-medium text-[var(--text-primary)]">
-                    {scan.scan_type === 'full' ? 'Full System Scan' :
-                     scan.scan_type === 'golf_terms' ? 'Golf Terms Scan' :
-                     'Dependencies Scan'}
-                  </div>
-                  <div className="text-xs text-[var(--text-secondary)]">
-                    {new Date(scan.created_at).toLocaleString()} •
-                    {scan.total_files_scanned} files •
-                    {scan.duration_ms}ms
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-[var(--accent)]">
-                    {scan.golf_specific_found} golf-specific
-                  </span>
-                  <span className="text-sm text-[var(--text-secondary)]">
-                    {scan.transferable_found} transferable
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Golf Terms Found */}
-      {golfTerms.length > 0 && (
-        <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-6">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-            Golf-Specific Terms Found ({golfTerms.length})
-          </h3>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {golfTerms.slice(0, 20).map((term, index) => (
-              <div key={index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="font-medium text-[var(--text-primary)]">
-                      "{term.term}" → "{term.replacement_suggestion || 'needs replacement'}"
-                    </div>
-                    <div className="text-xs text-[var(--text-secondary)] mt-1">
-                      {term.file_path}:{term.line_number}
-                    </div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1 font-mono">
-                      {term.context}
-                    </div>
-                  </div>
-                  {term.is_critical && (
-                    <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded">
-                      Critical
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-            {golfTerms.length > 20 && (
-              <div className="text-center text-sm text-[var(--text-secondary)] py-2">
-                And {golfTerms.length - 20} more terms...
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg p-4">
-          <div className="text-2xl font-bold">{golfTerms.filter(t => t.is_critical).length}</div>
-          <div className="text-sm opacity-90">Critical Terms</div>
-        </div>
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-4">
-          <div className="text-2xl font-bold">{golfTerms.filter(t => t.category === 'ui_label').length}</div>
-          <div className="text-sm opacity-90">UI Labels</div>
-        </div>
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-4">
-          <div className="text-2xl font-bold">{golfTerms.filter(t => t.category === 'variable_name').length}</div>
-          <div className="text-sm opacity-90">Variable Names</div>
-        </div>
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-4">
-          <div className="text-2xl font-bold">
-            {golfTerms.filter(t => t.replacement_suggestion).length}
-          </div>
-          <div className="text-sm opacity-90">Have Suggestions</div>
-        </div>
-      </div>
     </div>
   );
 };
