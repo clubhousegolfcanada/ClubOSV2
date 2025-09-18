@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getPoolStats } from '../utils/db';
 import { cacheService } from '../services/cacheService';
-import { adminAuth } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { query } from '../utils/db';
 
 const router = Router();
@@ -10,7 +10,7 @@ const router = Router();
  * Performance Monitoring Endpoint
  * Provides real-time stats on database, cache, and system performance
  */
-router.get('/', adminAuth, async (req: Request, res: Response) => {
+router.get('/', authenticate, authorize(['admin']), async (req: Request, res: Response) => {
   try {
     // Get database pool statistics
     const poolStats = getPoolStats();
