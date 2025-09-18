@@ -738,7 +738,7 @@ const RequestForm: React.FC = () => {
 
           {/* Mode Toggle Row */}
           <div className="mb-4">
-            {/* Main Toggle Row */}
+            {/* Mode Toggle - 3-way toggle with labels outside */}
             <div className="flex items-center gap-3">
               <span className="text-xs text-[var(--text-muted)] font-medium">Ticket</span>
               <div className="relative inline-block w-24">
@@ -801,9 +801,9 @@ const RequestForm: React.FC = () => {
               </div>
               <span className="text-xs text-[var(--text-muted)] font-medium">Human</span>
 
-              {/* Category Toggle - Desktop only (inline) */}
+              {/* Category Toggle - Only show when ticket mode is selected */}
               {isTicketMode && (
-                <div className="hidden sm:flex items-center gap-3">
+                <>
                   <div className="ml-4 w-px h-4 bg-[var(--border-secondary)]" />
                   <span className="text-xs text-[var(--text-muted)] font-medium">Facilities</span>
                   <div className="relative inline-block w-16">
@@ -838,54 +838,12 @@ const RequestForm: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs text-[var(--text-muted)] font-medium">Tech</span>
-                </div>
+                </>
               )}
               
-            </div>
-
-            {/* Category Toggle - Mobile only (separate row) */}
-            {isTicketMode && (
-              <div className="sm:hidden flex items-center gap-3 mt-3">
-                <span className="text-xs text-[var(--text-muted)] font-medium">Category:</span>
-                <span className="text-xs text-[var(--text-muted)] font-medium">Facilities</span>
-                <div className="relative inline-block w-16">
-                  <div className="flex bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-full p-0.5">
-                    <div
-                      className="absolute inset-y-0.5 transition-all duration-200 rounded-full bg-[var(--accent)]"
-                      style={{
-                        width: '50%',
-                        left: ticketCategory === 'facilities' ? '0%' : '50%'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setTicketCategory('facilities')}
-                      className="relative z-10 flex-1 py-1 text-xs transition-colors"
-                      disabled={isSubmitting || demoMode}
-                    >
-                      <span className={ticketCategory === 'facilities' ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                        •
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTicketCategory('tech')}
-                      className="relative z-10 flex-1 py-1 text-xs transition-colors"
-                      disabled={isSubmitting || demoMode}
-                    >
-                      <span className={ticketCategory === 'tech' ? 'text-white' : 'text-[var(--text-secondary)]'}>
-                        •
-                      </span>
-                    </button>
-                  </div>
-                </div>
-                <span className="text-xs text-[var(--text-muted)] font-medium">Tech</span>
-              </div>
-            )}
-
               {/* Advanced and Location Buttons - Mobile */}
               {smartAssistEnabled && !isTicketMode && !isKnowledgeMode && (
-                <div className="sm:hidden flex items-center gap-2 ml-2 mt-3">
+                <div className="sm:hidden flex items-center gap-2 ml-2">
                   {!showAdvancedRouting && !showLocationSelector ? (
                     <>
                       <button
