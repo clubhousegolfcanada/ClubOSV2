@@ -1,4 +1,4 @@
-# ClubOS v1.20.14 - AI-Powered Golf Simulator Management
+# ClubOS v1.20.15 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -6,7 +6,13 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 **See CLAUDE.md for critical rules**. Production URL: https://clubos-frontend.vercel.app
 
-## 🎯 Latest Update: Minimal Professional Ticket UI (v1.20.14)
+## 🎯 Latest Update: Fixed Ticket Photo Upload (v1.20.15)
+- **Photo Upload Working** - Fixed 500 error when creating tickets with photos
+- **Database Migration Applied** - Added photo_urls column to tickets table
+- **Full Photo Support** - Upload, view, and manage photos on tickets
+- **5MB Limit Per Photo** - Base64 encoded image storage
+
+## 📋 Previous: Minimal Professional Ticket UI (v1.20.14)
 - **Inline Category Toggle** - Facilities/Tech toggle appears inline with ticket mode
 - **All 6 Locations** - Bedford, Dartmouth, Bayers Lake, Truro, Stratford, River Oaks
 - **Mobile Responsive** - Horizontal buttons on desktop, dropdown on mobile

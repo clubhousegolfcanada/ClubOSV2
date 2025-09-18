@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.15] - 2025-09-18
+
+### Fixed
+- **Ticket Photo Upload 500 Error**: Fixed production error when creating tickets with photos
+  - Applied migration 222 to production database to add `photo_urls` column
+  - Tickets can now be created with photo attachments without errors
+  - Photo upload feature fully operational in production
+  - Supports base64 encoded images up to 5MB each
+
 ## [1.20.14] - 2025-09-16
 
 ### Enhanced

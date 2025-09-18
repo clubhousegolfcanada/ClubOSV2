@@ -3,7 +3,7 @@
 ### 1. Always Commit When Done
 - git add -A && git commit && git push
 - This auto-deploys to production
---always update readme and changelog 
+- Always update README and CHANGELOG 
 
 ### 2. Mobile-First & Simple
 - Mobile-first responsive design
