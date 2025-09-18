@@ -270,6 +270,47 @@ class CacheService {
   }
 
   /**
+   * Get or set pattern - fetch from cache or compute and cache
+   * Alias for withCache for compatibility
+   */
+  async getOrSet<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    options: CacheOptions = {}
+  ): Promise<T> {
+    return this.withCache(key, fetcher, options);
+  }
+
+  /**
+   * Invalidate cache entries matching a pattern
+   */
+  async invalidatePattern(pattern: string): Promise<number> {
+    let deleted = 0;
+    try {
+      if (this.redis && this.isConnected) {
+        const keys = await this.redis.keys(pattern);
+        if (keys.length > 0) {
+          deleted = await this.redis.del(...keys);
+        }
+      }
+
+      // Also clear from memory cache
+      for (const key of this.fallbackCache.keys()) {
+        if (key.includes(pattern.replace('*', ''))) {
+          this.fallbackCache.delete(key);
+          deleted++;
+        }
+      }
+
+      logger.info(`Invalidated ${deleted} cache entries matching pattern: ${pattern}`);
+      return deleted;
+    } catch (error) {
+      logger.error('Cache invalidate pattern error:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Cache decorator for class methods
    */
   cache(options: CacheOptions = {}) {
@@ -300,3 +341,46 @@ export const cache = (options?: CacheOptions) => cacheService.cache(options);
 
 // Export types
 export { CacheOptions, CacheStats };
+
+// Common cache keys and TTLs
+export const CACHE_KEYS = {
+  // User-related
+  USER_BY_ID: (id: string) => `user:${id}`,
+  USER_BY_EMAIL: (email: string) => `user:email:${email}`,
+  USER_PERMISSIONS: (id: string) => `user:${id}:permissions`,
+
+  // Tickets
+  TICKETS_LIST: (filters: string) => `tickets:list:${filters}`,
+  TICKET_BY_ID: (id: string) => `ticket:${id}`,
+  TICKET_STATS: 'tickets:stats',
+
+  // Patterns (V3-PLS)
+  PATTERNS_ACTIVE: 'patterns:active',
+  PATTERN_BY_ID: (id: string) => `pattern:${id}`,
+  PATTERN_MATCHES: (text: string) => `pattern:match:${Buffer.from(text).toString('base64')}`,
+
+  // Knowledge base
+  KNOWLEDGE_CATEGORIES: 'knowledge:categories',
+  KNOWLEDGE_BY_ID: (id: string) => `knowledge:${id}`,
+  KNOWLEDGE_SEARCH: (query: string) => `knowledge:search:${Buffer.from(query).toString('base64')}`,
+
+  // Checklists
+  CHECKLIST_TEMPLATES: 'checklist:templates',
+  CHECKLIST_BY_LOCATION: (location: string) => `checklist:location:${location}`,
+
+  // Messages/Conversations
+  CONVERSATION_BY_PHONE: (phone: string) => `conversation:${phone}`,
+  CONVERSATIONS_RECENT: 'conversations:recent',
+
+  // System
+  SYSTEM_CONFIG: (key: string) => `config:${key}`,
+  SYSTEM_STATS: 'system:stats',
+};
+
+export const CACHE_TTL = {
+  SHORT: 60,        // 1 minute - for frequently changing data
+  MEDIUM: 300,      // 5 minutes - default
+  LONG: 900,        // 15 minutes - for stable data
+  HOUR: 3600,       // 1 hour - for rarely changing data
+  DAY: 86400,       // 24 hours - for static data
+};
