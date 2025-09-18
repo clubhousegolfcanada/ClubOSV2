@@ -29,71 +29,74 @@ const ErrorComponent = ({ error }: { error?: Error }) => (
 export function lazyLoad<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   options?: {
-    loading?: ComponentType;
+    loading?: () => JSX.Element;
     ssr?: boolean;
   }
 ) {
   return dynamic(importFn, {
-    loading: options?.loading || LoadingComponent,
+    loading: () => <LoadingComponent />,
     ssr: options?.ssr ?? true,
   });
 }
 
 /**
  * Lazy load heavy components that are not immediately visible
+ * Note: Components are commented out until they are created
  */
 export const LazyComponents = {
   // Operations page components (admin only, heavy)
-  V3PLS: lazyLoad(() => import('../components/operations/V3PLS'), { ssr: false }),
-  WhiteLabelPlanner: lazyLoad(() => import('../components/operations/WhiteLabelPlanner'), { ssr: false }),
-  ChecklistsAdmin: lazyLoad(() => import('../components/operations/ChecklistsAdminComponent'), { ssr: false }),
-  Integrations: lazyLoad(() => import('../components/operations/Integrations'), { ssr: false }),
+  // V3PLS: lazyLoad(() => import('../components/operations/V3PLS'), { ssr: false }),
+  // WhiteLabelPlanner: lazyLoad(() => import('../components/operations/WhiteLabelPlanner'), { ssr: false }),
+  // ChecklistsAdmin: lazyLoad(() => import('../components/operations/ChecklistsAdminComponent'), { ssr: false }),
+  // Integrations: lazyLoad(() => import('../components/operations/Integrations'), { ssr: false }),
 
   // Heavy chart/analytics components
-  Charts: lazyLoad(() => import('../components/analytics/Charts'), { ssr: false }),
+  // Charts: lazyLoad(() => import('../components/analytics/Charts'), { ssr: false }),
 
   // Messages components (heavy, real-time)
-  MessageWindow: lazyLoad(() => import('../components/messages/MessageWindow')),
-  ConversationList: lazyLoad(() => import('../components/messages/ConversationList')),
+  // MessageWindow: lazyLoad(() => import('../components/messages/MessageWindow')),
+  // ConversationList: lazyLoad(() => import('../components/messages/ConversationList')),
 
   // Checklist components (heavy forms)
-  ChecklistForm: lazyLoad(() => import('../components/checklists/ChecklistForm'), { ssr: false }),
-  ChecklistPerformance: lazyLoad(() => import('../components/checklists/Performance'), { ssr: false }),
+  // ChecklistForm: lazyLoad(() => import('../components/checklists/ChecklistForm'), { ssr: false }),
+  // ChecklistPerformance: lazyLoad(() => import('../components/checklists/Performance'), { ssr: false }),
 
   // Customer app components (separate bundle)
-  CustomerDashboard: lazyLoad(() => import('../components/customer/Dashboard')),
-  CustomerProfile: lazyLoad(() => import('../components/customer/Profile')),
-  CompetePage: lazyLoad(() => import('../components/customer/Compete')),
+  // CustomerDashboard: lazyLoad(() => import('../components/customer/Dashboard')),
+  // CustomerProfile: lazyLoad(() => import('../components/customer/Profile')),
+  // CompetePage: lazyLoad(() => import('../components/customer/Compete')),
 
   // Modals (not needed on initial load)
-  TicketModal: lazyLoad(() => import('../components/tickets/TicketModal'), { ssr: false }),
-  PatternModal: lazyLoad(() => import('../components/patterns/PatternModal'), { ssr: false }),
+  // TicketModal: lazyLoad(() => import('../components/tickets/TicketModal'), { ssr: false }),
+  // PatternModal: lazyLoad(() => import('../components/patterns/PatternModal'), { ssr: false }),
 };
 
 /**
  * Preload a component in the background
  * Useful for components likely to be needed soon
  */
-export function preloadComponent(componentName: keyof typeof LazyComponents) {
-  const component = LazyComponents[componentName];
-  if (component && typeof component.preload === 'function') {
-    component.preload();
-  }
+export function preloadComponent(componentName: string) {
+  // Placeholder for future implementation when components are added
+  // const component = LazyComponents[componentName];
+  // if (component && typeof component.preload === 'function') {
+  //   component.preload();
+  // }
 }
 
 /**
  * Hook to preload components based on user role
  */
 export function usePreloadByRole(userRole?: string) {
+  // Placeholder for future implementation when components are added
   // Preload components based on user role
-  if (userRole === 'admin') {
-    // Admin likely to use operations
-    preloadComponent('V3PLS');
-  } else if (userRole === 'operator') {
-    // Operator likely to use messages
-    preloadComponent('MessageWindow');
-  } else if (userRole === 'customer') {
-    // Customer likely to view profile
-    preloadComponent('CustomerProfile');
-  }
+  // if (userRole === 'admin') {
+  //   // Admin likely to use operations
+  //   preloadComponent('V3PLS');
+  // } else if (userRole === 'operator') {
+  //   // Operator likely to use messages
+  //   preloadComponent('MessageWindow');
+  // } else if (userRole === 'customer') {
+  //   // Customer likely to view profile
+  //   preloadComponent('CustomerProfile');
+  // }
 }
