@@ -21,6 +21,62 @@ const nextConfig = {
   },
   poweredByHeader: false,
   compress: true,
+  // Performance optimizations
+  swcMinify: true, // Use SWC for minification (faster)
+  productionBrowserSourceMaps: false, // Disable source maps in production
+  optimizeFonts: true, // Optimize font loading
+  // Code splitting configuration
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Optimize client-side bundles
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Vendor code splitting
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /node_modules/,
+              priority: 20,
+            },
+            // Common components
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true,
+            },
+            // Separate large libraries
+            lucide: {
+              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+              name: 'lucide',
+              priority: 30,
+              chunks: 'all',
+            },
+            headlessui: {
+              test: /[\\/]node_modules[\\/]@headlessui[\\/]/,
+              name: 'headlessui',
+              priority: 30,
+              chunks: 'all',
+            },
+            sentry: {
+              test: /[\\/]node_modules[\\/]@sentry[\\/]/,
+              name: 'sentry',
+              priority: 30,
+              chunks: 'all',
+            },
+          },
+        },
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {

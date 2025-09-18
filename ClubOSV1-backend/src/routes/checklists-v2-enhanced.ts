@@ -542,7 +542,7 @@ router.post('/submit',
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, $9, $10)
          RETURNING id`,
         [userId, location, category, type, completedTasks.length,
-         JSON.stringify(completedTasks), comments, photoUrls || [], templateId || null,
+         JSON.stringify(completedTasks), comments, photoUrls && photoUrls.length > 0 ? photoUrls : null, templateId || null,
          supplies ? JSON.stringify(supplies) : null]
       );
       
@@ -1000,7 +1000,7 @@ router.patch('/complete/:id',
              completion_time = NOW()
          WHERE id = $1 AND user_id = $6 AND status = 'in_progress'
          RETURNING *, duration_minutes`,
-        [id, JSON.stringify(completedTasks), comments, supplies, photos, userId]
+        [id, JSON.stringify(completedTasks), comments, supplies, photos && photos.length > 0 ? photos : null, userId]
       );
       
       if (!result.rows.length) {

@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.16] - 2025-09-18
+
+### Fixed
+- **Checklist Photo Upload**: Fixed photo submission failures
+  - Database columns already existed (migration 219 was applied)
+  - Fixed backend handling of empty photo arrays (now sends null instead of [])
+  - Photos now properly save to checklist_submissions table
+  - Both submit and complete endpoints fixed
+
 ## [1.20.15] - 2025-09-18
 
 ### Fixed
