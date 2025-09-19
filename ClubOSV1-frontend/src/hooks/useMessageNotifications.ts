@@ -8,22 +8,41 @@ import logger from '@/services/logger';
 
 
 export function useMessageNotifications() {
-  const { user } = useAuthState();
+  const { user, isLoading: isAuthLoading } = useAuthState();
   const { notify } = useNotifications();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const previousUnreadCount = useRef(0);
   const isFirstLoad = useRef(true);
+  const retryCount = useRef(0);
 
   useEffect(() => {
+    // Don't start checking until auth is fully loaded
+    if (isAuthLoading) {
+      logger.debug('Skipping unread check - auth still loading');
+      return;
+    }
+
+    // Check if user exists and has the correct role
     if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
       return;
     }
 
-    const checkUnreadMessages = async () => {
+    const checkUnreadMessages = async (isRetry = false) => {
       try {
         const token = tokenManager.getToken();
-        if (!token) return;
+
+        // Validate token exists and is not expired
+        if (!token) {
+          logger.debug('Skipping unread check - no token available');
+          return;
+        }
+
+        // Check if token is expired
+        if (tokenManager.isTokenExpired(token)) {
+          logger.debug('Skipping unread check - token is expired');
+          return;
+        }
 
         const response = await http.get(`messages/unread-count`);
 
@@ -49,20 +68,45 @@ export function useMessageNotifications() {
 
           previousUnreadCount.current = newUnreadCount;
           isFirstLoad.current = false;
+
+          // Reset retry count on success
+          retryCount.current = 0;
         }
-      } catch (error) {
-        logger.error('Failed to check unread messages:', error);
+      } catch (error: any) {
+        // Handle 401 errors with retry logic
+        if (error.response?.status === 401 && !isRetry && retryCount.current < 2) {
+          logger.debug('Got 401 on unread check, will retry in 2 seconds');
+          retryCount.current++;
+
+          // Retry after a delay to allow auth to settle
+          setTimeout(() => {
+            checkUnreadMessages(true);
+          }, 2000);
+        } else {
+          // Log error but don't notify user for this background check
+          logger.error('Failed to check unread messages:', error);
+
+          // Reset retry count after max retries
+          if (retryCount.current >= 2) {
+            retryCount.current = 0;
+          }
+        }
       }
     };
 
-    // Check immediately
-    checkUnreadMessages();
+    // Add a small initial delay to ensure auth is fully settled
+    const initialTimer = setTimeout(() => {
+      checkUnreadMessages();
+    }, 500); // 500ms delay on first check
 
     // Check every 30 seconds
-    const interval = setInterval(checkUnreadMessages, 30000);
+    const interval = setInterval(() => checkUnreadMessages(), 30000);
 
-    return () => clearInterval(interval);
-  }, [user, notify, router.pathname]);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, [user, isAuthLoading, notify, router.pathname]);
 
   return { unreadCount };
 }

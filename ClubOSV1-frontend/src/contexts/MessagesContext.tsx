@@ -24,7 +24,7 @@ const MessagesContext = createContext<MessagesContextType>({
 export const useMessages = () => useContext(MessagesContext);
 
 export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuthState();
+  const { user, isLoading: isAuthLoading } = useAuthState();
   const { notify } = useNotifications();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -32,8 +32,15 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const previousUnreadCount = useRef(0);
   const isFirstLoad = useRef(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCount = useRef(0);
 
-  const refreshUnreadCount = useCallback(async () => {
+  const refreshUnreadCount = useCallback(async (isRetry = false) => {
+    // Skip if auth is still loading
+    if (isAuthLoading) {
+      logger.debug('Skipping unread check - auth still loading');
+      return;
+    }
+
     if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
       setUnreadCount(0);
       return;
@@ -42,7 +49,17 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setIsRefreshing(true);
     try {
       const token = tokenManager.getToken();
+
+      // Validate token exists
       if (!token) {
+        logger.debug('Skipping unread check - no token available');
+        setUnreadCount(0);
+        return;
+      }
+
+      // Check if token is expired
+      if (tokenManager.isTokenExpired(token)) {
+        logger.debug('Skipping unread check - token is expired');
         setUnreadCount(0);
         return;
       }
@@ -71,23 +88,37 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         previousUnreadCount.current = newUnreadCount;
         isFirstLoad.current = false;
+
+        // Reset retry count on success
+        retryCount.current = 0;
       }
     } catch (error: any) {
-      logger.error('Failed to check unread messages:', error);
-      
-      // Stop polling on 401 errors
-      if (error.response?.status === 401) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+      // Handle 401 errors with retry logic
+      if (error.response?.status === 401 && !isRetry && retryCount.current < 2) {
+        logger.debug('Got 401 on unread check in MessagesContext, will retry in 2 seconds');
+        retryCount.current++;
+
+        // Retry after a delay to allow auth to settle
+        setTimeout(() => {
+          refreshUnreadCount(true);
+        }, 2000);
+      } else {
+        logger.error('Failed to check unread messages:', error);
+
+        // Stop polling on persistent 401 errors
+        if (error.response?.status === 401 && retryCount.current >= 2) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setUnreadCount(0);
+          retryCount.current = 0;
         }
-        setUnreadCount(0);
-        // Don't handle logout here - let tokenManager handle it
       }
     } finally {
       setIsRefreshing(false);
     }
-  }, [user, notify, router.pathname]);
+  }, [user, isAuthLoading, notify, router.pathname]);
 
   const markConversationAsRead = useCallback(async (phoneNumber: string) => {
     if (!user || !phoneNumber) return;
@@ -110,23 +141,31 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Initial load and periodic refresh
   useEffect(() => {
+    // Skip if auth is still loading
+    if (isAuthLoading) {
+      return;
+    }
+
     if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
       return;
     }
 
-    // Check immediately
-    refreshUnreadCount();
+    // Add a small delay on initial check to ensure auth is fully settled
+    const initialTimer = setTimeout(() => {
+      refreshUnreadCount();
+    }, 500); // 500ms delay on first check
 
     // Check every 60 seconds (reduced frequency to prevent rate limiting)
-    intervalRef.current = setInterval(refreshUnreadCount, 60000);
+    intervalRef.current = setInterval(() => refreshUnreadCount(), 60000);
 
     return () => {
+      clearTimeout(initialTimer);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [user, refreshUnreadCount]);
+  }, [user, isAuthLoading, refreshUnreadCount]);
 
   // Refresh when returning to messages page
   useEffect(() => {
