@@ -186,6 +186,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // Handle different webhook types
     switch (type) {
       case 'message.created':
+      case 'message.sent':      // Handle outbound messages sent from OpenPhone
       case 'message.received':
       case 'message.delivered':
       case 'message.updated':
