@@ -497,6 +497,25 @@ async function startServer() {
     await db.initialize();
     logger.info('✅ Database initialized successfully');
 
+    // Run ticket photo migration - critical for ticket creation
+    try {
+      logger.info('🔄 Running ticket photo migration...');
+      await db.query(`
+        ALTER TABLE tickets
+        ADD COLUMN IF NOT EXISTS photo_urls TEXT[] DEFAULT '{}'
+      `);
+
+      await db.query(`
+        CREATE INDEX IF NOT EXISTS idx_tickets_has_photos
+        ON tickets ((array_length(photo_urls, 1) > 0))
+      `);
+
+      logger.info('✅ Ticket photo migration completed');
+    } catch (error) {
+      logger.error('Failed to run ticket photo migration:', error);
+      // Don't fail startup - log and continue
+    }
+
     // Enable V3-PLS if not already enabled
     try {
       const { enableV3PLSOnStartup } = await import('./scripts/enable-v3pls-startup');

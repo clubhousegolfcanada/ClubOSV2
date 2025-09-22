@@ -62,7 +62,8 @@ export const createTablesSQL = {
       "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       resolved_at TIMESTAMP,
-      metadata JSONB DEFAULT '{}'::jsonb
+      metadata JSONB DEFAULT '{}'::jsonb,
+      photo_urls TEXT[] DEFAULT '{}'
     );
   `,
   

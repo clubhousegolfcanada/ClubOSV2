@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.19] - 2025-09-22
+
+### Fixed
+- **Ticket Creation 500 Error**: Fixed missing photo_urls column preventing ticket creation
+  - Added automatic migration on startup to add photo_urls column
+  - Updated base table schema for new installations
+  - Created index for performance optimization
+  - Tickets with photos now work correctly in production
+
 ## [1.20.18] - 2025-09-21
 
 ### Fixed
