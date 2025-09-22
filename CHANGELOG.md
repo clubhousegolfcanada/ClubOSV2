@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.18] - 2025-09-21
+
+### Fixed
+- **Duplicate Messages**: Eliminated duplicate messages when sending through ClubOS
+  - Removed immediate database insert to rely on webhook for consistency
+  - Enhanced deduplication to check both message ID and content+timestamp
+  - Prevents same message appearing twice in conversations
+
+- **Dashboard Message Sending**: Fixed message sending from Operations Dashboard
+  - Corrected API parameter from 'content' to 'text'
+  - Added E.164 phone number formatting for US numbers
+  - Improved error messages with specific failure reasons
+
 ## [1.20.17] - 2025-09-18
 
 ### Performance

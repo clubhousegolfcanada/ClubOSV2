@@ -214,13 +214,22 @@ export function OperationsDashboardEnhanced() {
 
     setSendingReply(conversationId);
     try {
-      await http.post(`messages/send`, {
-        to: message.phoneNumber || message.from,
-        content: expanded.replyText,
-        conversationId,
-        isAiGenerated: expanded.replyText === expanded.aiSuggestion
-      }, {
+      // Format phone number to E.164 if needed
+      let recipientPhone = message.phoneNumber || message.from;
+      if (recipientPhone && !recipientPhone.startsWith('+')) {
+        recipientPhone = recipientPhone.replace(/\D/g, '');
+        if (recipientPhone.length === 10) {
+          recipientPhone = `+1${recipientPhone}`;
+        } else if (recipientPhone.length === 11 && recipientPhone.startsWith('1')) {
+          recipientPhone = `+${recipientPhone}`;
+        }
+      }
 
+      // Use correct parameter names that match backend expectations
+      await http.post(`messages/send`, {
+        to: recipientPhone,
+        text: expanded.replyText,  // Changed from 'content' to 'text'
+        from: undefined  // Let backend use default number
       });
 
       toast.success('Reply sent successfully');
@@ -234,9 +243,20 @@ export function OperationsDashboardEnhanced() {
 
       // Collapse the conversation
       toggleConversation(conversationId);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error sending reply:', error);
-      toast.error('Failed to send reply');
+
+      // Provide more specific error messages
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          error.message ||
+                          'Failed to send reply';
+      toast.error(errorMessage);
+
+      // Log detailed error for debugging
+      if (error.response?.data) {
+        logger.debug('Send reply error details:', error.response.data);
+      }
     } finally {
       setSendingReply(null);
     }

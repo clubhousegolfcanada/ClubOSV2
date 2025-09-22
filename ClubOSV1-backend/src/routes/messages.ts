@@ -508,58 +508,15 @@ router.post('/send',
         logger.error('[Pattern Learning] Failed to analyze conversation', error);
         // Don't fail the send if pattern learning fails
       }
-      
-      // Immediately update the database with the sent message
-      // Don't wait for webhook - update conversation right away
-      try {
-        const sentMessage = {
-          id: result.id || `msg_${Date.now()}`,
-          from: formattedFrom,
-          to: formattedTo,
-          text: text,
-          body: text,
-          direction: 'outbound' as const,
-          createdAt: new Date().toISOString(),
-          status: 'sent'
-        };
-        
-        // Check if conversation exists - get the most recent one
-        const existingConv = await db.query(
-          `SELECT id, messages FROM openphone_conversations 
-           WHERE phone_number = $1 
-           ORDER BY created_at DESC 
-           LIMIT 1`,
-          [formattedTo]
-        );
-        
-        if (existingConv.rows.length > 0) {
-          // Update existing conversation
-          const currentMessages = existingConv.rows[0].messages || [];
-          const updatedMessages = [...currentMessages, sentMessage];
-          
-          await db.query(
-            `UPDATE openphone_conversations 
-             SET messages = $1, updated_at = NOW() 
-             WHERE id = $2`,
-            [JSON.stringify(updatedMessages), existingConv.rows[0].id]
-          );
-        } else {
-          // Create new conversation
-          await db.query(
-            `INSERT INTO openphone_conversations (phone_number, messages, created_at, updated_at)
-             VALUES ($1, $2, NOW(), NOW())`,
-            [formattedTo, JSON.stringify([sentMessage])]
-          );
-        }
-        
-        logger.info('Updated local database with sent message', {
-          to: formattedTo,
-          conversationId: existingConv.rows[0]?.id
-        });
-      } catch (dbError) {
-        // Log but don't fail the request - message was sent successfully
-        logger.error('Failed to update local database after sending message:', dbError);
-      }
+
+      // Trust the webhook to update the database for consistency
+      // This prevents duplicate messages from appearing
+      // The webhook will handle storing the message with the correct OpenPhone ID
+      logger.info('Message sent via OpenPhone, awaiting webhook for database update', {
+        to: formattedTo,
+        messageId: result.id,
+        temporaryId: `pending_${Date.now()}`
+      });
       
       // Track staff response for learning
       await aiAutomationService.learnFromStaffResponse(

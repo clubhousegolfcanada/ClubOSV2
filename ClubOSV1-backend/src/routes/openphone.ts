@@ -459,14 +459,35 @@ router.post('/webhook', async (req: Request, res: Response) => {
           // Within 1 hour of last message - append to existing conversation
           const existingMessages = existingConv.rows[0].messages || [];
           
-          // Check if this message already exists (prevent duplicates)
-          const messageAlreadyExists = existingMessages.some(msg => msg.id === messageData.id);
-          
+          // Enhanced deduplication: Check by ID or by content+timestamp for recently sent messages
+          const messageAlreadyExists = existingMessages.some(msg => {
+            // Check by ID first (most reliable)
+            if (msg.id && messageData.id && msg.id === messageData.id) {
+              return true;
+            }
+
+            // For outbound messages sent in last 5 seconds, check by content
+            // This handles the case where we send via API and webhook arrives quickly
+            if (newMessage.direction === 'outbound' && msg.direction === 'outbound') {
+              const msgTime = new Date(msg.createdAt || msg.timestamp || 0).getTime();
+              const newMsgTime = new Date(newMessage.createdAt).getTime();
+              const timeDiff = Math.abs(newMsgTime - msgTime);
+
+              // If same content and within 5 seconds, it's likely a duplicate
+              if (timeDiff < 5000 && msg.body === newMessage.body) {
+                return true;
+              }
+            }
+
+            return false;
+          });
+
           if (messageAlreadyExists) {
             logger.info('Duplicate message detected, skipping', {
               messageId: messageData.id,
               phoneNumber,
-              direction: messageData.direction
+              direction: messageData.direction,
+              body: newMessage.body.substring(0, 50)
             });
             return res.json({ success: true, message: 'Duplicate message ignored' });
           }

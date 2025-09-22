@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.20.16**
-- Fixed checklist photo upload functionality
-- Fixed ticket photo upload functionality
-- Enhanced checklist system with supplies tracking
-- Pattern Learning System (V3-PLS) operational
+**Current Version: v1.20.18**
+- Fixed duplicate messages in conversations
+- Fixed dashboard message sending functionality
+- Added message.sent webhook handling for OpenPhone
+- Enhanced message deduplication logic
 - White Label Planner module for multi-tenant support
 
 ## 🏗️ System Architecture
