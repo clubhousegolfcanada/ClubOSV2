@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
 import { userSettingsApi } from '@/services/userSettings';
-import { useRouter } from 'next/router';
-import { http } from '@/api/http';
 import logger from '@/services/logger';
 
 interface QuickStat {
@@ -37,21 +35,14 @@ const DEFAULT_EXTERNAL_TOOLS = {
 const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStats = [] }) => {
   const { user } = useAuthState();
   const { notify } = useNotifications();
-  const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [editedUrls, setEditedUrls] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
-  const [isTasksCollapsed, setIsTasksCollapsed] = useState(false);
+  const [isStatusCollapsed, setIsStatusCollapsed] = useState(false);
   const [isLinksCollapsed, setIsLinksCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
-  // Task states
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [newTask, setNewTask] = useState('');
-  const [loadingTasks, setLoadingTasks] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
 
   // All users can now edit their own links - but not on mobile
   const canEdit = !!user && !isMobile;
@@ -62,7 +53,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
     const checkMobile = () => {
       const mobile = window.innerWidth < 640; // sm breakpoint
       setIsMobile(mobile);
-      
+
       // Set initial collapsed state for links
       const savedLinksState = localStorage.getItem('linksSectionCollapsed');
       if (savedLinksState !== null) {
@@ -72,75 +63,24 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
         setIsLinksCollapsed(mobile);
       }
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
 
-    // Load tasks collapsed state
-    const savedTasksState = localStorage.getItem('tasksSectionCollapsed');
-    if (savedTasksState !== null) {
-      setIsTasksCollapsed(savedTasksState === 'true');
+    // Load status collapsed state
+    const savedStatusState = localStorage.getItem('statusSectionCollapsed');
+    if (savedStatusState !== null) {
+      setIsStatusCollapsed(savedStatusState === 'true');
     }
 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Load tasks when user is authenticated
-  useEffect(() => {
-    if (user) {
-      loadTasks();
-    }
-  }, [user]);
-
   // Save collapsed state to localStorage
-  const toggleTasksCollapsed = () => {
-    const newState = !isTasksCollapsed;
-    setIsTasksCollapsed(newState);
-    localStorage.setItem('tasksSectionCollapsed', String(newState));
-  };
-
-  // Task management functions
-  const loadTasks = async () => {
-    setLoadingTasks(true);
-    try {
-      const response = await http.get('tasks');
-      if (response.data.success) {
-        setTasks(response.data.data);
-      }
-    } catch (error) {
-      logger.error('Failed to load tasks:', error);
-    } finally {
-      setLoadingTasks(false);
-    }
-  };
-
-  const addTask = async () => {
-    if (!newTask.trim()) return;
-    try {
-      await http.post('tasks', { text: newTask });
-      setNewTask('');
-      loadTasks();
-    } catch (error) {
-      notify('error', 'Failed to add task');
-    }
-  };
-
-  const toggleTask = async (id: string, completed: boolean) => {
-    try {
-      await http.patch(`tasks/${id}`, { is_completed: completed });
-      loadTasks();
-    } catch (error) {
-      notify('error', 'Failed to update task');
-    }
-  };
-
-  const deleteTask = async (id: string) => {
-    try {
-      await http.delete(`tasks/${id}`);
-      loadTasks();
-    } catch (error) {
-      notify('error', 'Failed to delete task');
-    }
+  const toggleStatusCollapsed = () => {
+    const newState = !isStatusCollapsed;
+    setIsStatusCollapsed(newState);
+    localStorage.setItem('statusSectionCollapsed', String(newState));
   };
   
   const toggleLinksCollapsed = () => {
@@ -423,125 +363,64 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   return (
     <div className="card">
       <div className="space-y-3">
-        {/* Tasks Section - Personal Todo List */}
-        <div>
-          <button
-            onClick={toggleTasksCollapsed}
-            className="w-full flex items-center justify-between text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3 hover:text-[var(--text-primary)] transition-colors"
-          >
-            <span>My Tasks</span>
-            <div className="flex items-center gap-2">
-              {isTasksCollapsed && (
-                <div className="flex items-center gap-2 text-[10px]">
-                  <span className="bg-[var(--bg-tertiary)] px-2 py-1 rounded">
-                    {tasks.filter(t => !t.is_completed).length} active
+        {/* Quick Stats Section */}
+        {quickStats && quickStats.length > 0 && (
+          <div>
+            <button
+              onClick={toggleStatusCollapsed}
+              className="w-full flex items-center justify-between text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3 hover:text-[var(--text-primary)] transition-colors"
+            >
+              <span>Status</span>
+              <div className="flex items-center gap-2">
+                {isStatusCollapsed && (
+                  <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-2 py-1 rounded">
+                    {quickStats.length} stats
                   </span>
-                </div>
-              )}
-              {isTasksCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-            </div>
-          </button>
-
-          {/* Collapsible Content */}
-          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            isTasksCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
-          }`}>
-            {/* Add Task Input */}
-            {user && (
-              <div className="flex gap-1.5 mb-3">
-                <input
-                  type="text"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addTask()}
-                  placeholder="Add a task..."
-                  className="flex-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:border-[var(--accent)]"
-                />
-                <button
-                  onClick={addTask}
-                  className="px-3 py-1.5 bg-[var(--accent)] text-white rounded text-xs hover:opacity-90"
-                >
-                  Add
-                </button>
+                )}
+                {isStatusCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
               </div>
-            )}
+            </button>
 
-            {/* Task List */}
-            <div className="space-y-1 max-h-60 overflow-y-auto">
-              {loadingTasks ? (
-                <div className="text-center py-4">
-                  <Loader className="w-4 h-4 animate-spin mx-auto text-[var(--accent)]" />
-                </div>
-              ) : !user ? (
-                <div className="text-center py-4 text-xs text-[var(--text-muted)]">
-                  <Link href="/login" className="text-[var(--accent)] hover:underline">Log in</Link> to manage tasks
-                </div>
-              ) : (
-                <>
-                  {/* Active Tasks */}
-                  {tasks.filter(t => !t.is_completed).map(task => (
-                    <div key={task.id} className="flex items-center gap-2 p-2 bg-[var(--bg-tertiary)] rounded hover:bg-[var(--bg-secondary)] transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={false}
-                        onChange={() => toggleTask(task.id, true)}
-                        className="w-3 h-3 rounded"
-                      />
-                      <span className="flex-1 text-xs text-[var(--text-primary)]">{task.text}</span>
-                      <button
-                        onClick={() => deleteTask(task.id)}
-                        className="text-[var(--text-muted)] hover:text-red-500"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Completed Section */}
-                  {tasks.filter(t => t.is_completed).length > 0 && (
-                    <div className="pt-2 mt-2 border-t border-[var(--border-secondary)]">
-                      <button
-                        onClick={() => setShowCompleted(!showCompleted)}
-                        className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                      >
-                        + {tasks.filter(t => t.is_completed).length} completed {showCompleted ? '▼' : '▶'}
-                      </button>
-
-                      {showCompleted && (
-                        <div className="mt-1 space-y-1">
-                          {tasks.filter(t => t.is_completed).map(task => (
-                            <div key={task.id} className="flex items-center gap-2 p-2 bg-[var(--bg-tertiary)] rounded opacity-50">
-                              <input
-                                type="checkbox"
-                                checked={true}
-                                onChange={() => toggleTask(task.id, false)}
-                                className="w-3 h-3 rounded"
-                              />
-                              <span className="flex-1 text-xs line-through text-[var(--text-muted)]">{task.text}</span>
-                              <button
-                                onClick={() => deleteTask(task.id)}
-                                className="text-[var(--text-muted)] hover:text-red-500"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+            {/* Collapsible Status Content */}
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              isStatusCollapsed ? 'max-h-0 opacity-0' : 'max-h-[600px] opacity-100'
+            }`}>
+              <div className="grid grid-cols-2 gap-2">
+                {quickStats.map((stat, index) => (
+                  stat.isButton ? (
+                    <button
+                      key={index}
+                      onClick={stat.onClick}
+                      className="text-left p-3 bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors border border-[var(--border-secondary)]"
+                    >
+                      <div className="text-[10px] text-[var(--text-muted)]">{stat.label}</div>
+                      <div className="text-sm font-medium text-[var(--text-primary)]">{stat.value}</div>
+                      {stat.buttonText && (
+                        <div className="text-[10px] text-[var(--accent)] mt-1">{stat.buttonText}</div>
                       )}
+                    </button>
+                  ) : (
+                    <div key={index} className="p-3 bg-[var(--bg-secondary)] rounded-lg">
+                      <div className="text-[10px] text-[var(--text-muted)]">{stat.label}</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{stat.value}</span>
+                        {stat.change && (
+                          <span className={`text-[10px] ${
+                            stat.trend === 'up' ? 'text-green-500' :
+                            stat.trend === 'down' ? 'text-red-500' :
+                            'text-[var(--text-muted)]'
+                          }`}>
+                            {stat.change}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-
-                  {/* Empty state */}
-                  {tasks.length === 0 && (
-                    <div className="text-center py-4 text-xs text-[var(--text-muted)]">
-                      No tasks yet. Add one above!
-                    </div>
-                  )}
-                </>
-              )}
+                  )
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
         
         {/* Divider */}
         <div className="border-t border-[var(--border-secondary)]"></div>

@@ -15,6 +15,7 @@ import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
 import OccupancyMap from '@/components/dashboard/OccupancyMap';
+import { TaskList } from '@/components/dashboard/TaskList';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import { DashboardErrorBoundary, SectionErrorBoundary } from '@/components/SectionErrorBoundary';
@@ -330,7 +331,14 @@ export default function Home() {
               <SectionErrorBoundary section="Messages">
                 <MessagesCardV3 />
               </SectionErrorBoundary>
-              
+
+              {/* Task List - Desktop only, under messages */}
+              <div className="hidden lg:block">
+                <SectionErrorBoundary section="Tasks">
+                  <TaskList />
+                </SectionErrorBoundary>
+              </div>
+
               {/* Mobile-only recent customers */}
               <SectionErrorBoundary section="Recent Customers">
                 <RecentCustomers />
