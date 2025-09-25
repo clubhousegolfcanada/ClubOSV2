@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.21] - 2025-09-24
+
+### Changed
+- **Mobile Dashboard Improvements**: Enhanced mobile user experience on operations dashboard
+  - Removed bay status card from mobile view (hidden on screens < 1024px)
+  - Added collapsible messages card with expand/collapse toggle
+  - Collapse state persists across page refreshes using localStorage
+  - Shows unread message count badge when collapsed
+  - Smooth animation transitions for expand/collapse
+  - Desktop view remains unchanged with all features intact
+
 ## [1.20.20] - 2025-09-24
 
 ### Fixed

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
-import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X } from 'lucide-react';
+import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
@@ -41,13 +41,22 @@ export default function MessagesCardV3() {
   const [sending, setSending] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [stopPolling, setStopPolling] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Load saved collapsed state on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('messages-collapsed');
+    if (savedState === 'true') {
+      setIsCollapsed(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
       setStopPolling(true);
       return;
     }
-    
+
     fetchConversations();
     // Poll every 10 seconds for new messages, but stop if authentication fails
     const interval = setInterval(() => {
@@ -282,13 +291,22 @@ export default function MessagesCardV3() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const mins = Math.floor(diff / 60000);
-    
+
     if (mins < 1) return 'now';
     if (mins < 60) return `${mins}m ago`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours}h ago`;
     return `${Math.floor(hours / 24)}d ago`;
   };
+
+  const toggleCollapse = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem('messages-collapsed', newState.toString());
+  };
+
+  // Calculate total unread count
+  const totalUnread = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
 
   if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
     return null;
@@ -298,20 +316,41 @@ export default function MessagesCardV3() {
     <div className="messages-card-no-hover" style={{ fontFamily: 'Poppins, -apple-system, sans-serif' }}>
       {/* Header */}
       <div className="px-3 py-2 border-b border-primary flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-primary" style={{ fontWeight: 600 }}>
-          Messages
-        </h3>
-        <button
-          onClick={() => router.push('/messages')}
-          className="text-xs text-secondary hover:text-primary transition-colors"
-          style={{ fontWeight: 400 }}
-        >
-          View all
-        </button>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-primary" style={{ fontWeight: 600 }}>
+            Messages
+          </h3>
+          {totalUnread > 0 && isCollapsed && (
+            <span className="bg-[var(--status-info)] text-white text-xs px-1.5 py-0.5 rounded-full" style={{ fontSize: '10px' }}>
+              {totalUnread}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/messages')}
+            className="text-xs text-secondary hover:text-primary transition-colors"
+            style={{ fontWeight: 400 }}
+          >
+            View all
+          </button>
+          <button
+            onClick={toggleCollapse}
+            className="p-1 hover:bg-[var(--bg-hover)] rounded transition-colors"
+            aria-label={isCollapsed ? 'Expand messages' : 'Collapse messages'}
+          >
+            {isCollapsed ? (
+              <ChevronDown className="w-4 h-4 text-secondary" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-secondary" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Content */}
-      {isLoading ? (
+      {/* Content - Collapsible */}
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0' : 'max-h-[600px]'}`}>
+        {isLoading ? (
         <div className="p-8 text-center">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--text-muted)] mx-auto"></div>
         </div>
@@ -491,6 +530,7 @@ export default function MessagesCardV3() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

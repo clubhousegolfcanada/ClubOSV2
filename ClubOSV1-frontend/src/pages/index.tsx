@@ -345,9 +345,12 @@ export default function Home() {
               <SectionErrorBoundary section="Quick Stats">
                 <DatabaseExternalTools quickStats={quickStats} />
               </SectionErrorBoundary>
-              <SectionErrorBoundary section="Occupancy Map" compact>
-                <OccupancyMap compact />
-              </SectionErrorBoundary>
+              {/* Bay Status - Desktop only */}
+              <div className="hidden lg:block">
+                <SectionErrorBoundary section="Occupancy Map" compact>
+                  <OccupancyMap compact />
+                </SectionErrorBoundary>
+              </div>
               <SectionErrorBoundary section="Suggested Actions">
                 <SuggestedActions />
               </SectionErrorBoundary>
