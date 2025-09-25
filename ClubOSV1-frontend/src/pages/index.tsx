@@ -332,12 +332,10 @@ export default function Home() {
                 <MessagesCardV3 />
               </SectionErrorBoundary>
 
-              {/* Task List - Desktop only, under messages */}
-              <div className="hidden lg:block">
-                <SectionErrorBoundary section="Tasks">
-                  <TaskList />
-                </SectionErrorBoundary>
-              </div>
+              {/* Task List - under messages */}
+              <SectionErrorBoundary section="Tasks">
+                <TaskList />
+              </SectionErrorBoundary>
 
               {/* Mobile-only recent customers */}
               <SectionErrorBoundary section="Recent Customers">

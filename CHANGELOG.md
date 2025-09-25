@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.3] - 2025-09-25
+
+### Fixed
+- **Task List on Mobile**: Restored task list visibility on mobile PWA
+  - Removed desktop-only restriction that was accidentally added
+  - Tasks now show on all screen sizes as originally intended
+  - Maintains all Google Keep-style functionality on mobile
+
 ## [1.21.2] - 2025-09-24
 
 ### Documentation
