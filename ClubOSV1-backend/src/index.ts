@@ -90,13 +90,7 @@ import boxManagementRoutes from './routes/boxManagement';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
-// Refactored routes for v2 architecture
-// TODO: Uncomment when refactored route files are ready
-// import authRefactoredRoutes from './routes/auth-refactored';
-// import usersRefactoredRoutes from './routes/users-refactored';
-// import healthRefactoredRoutes from './routes/health-refactored';
-// Route configuration for gradual migration
-// import ROUTE_CONFIG from './config/routeConfig';
+// V2 architecture routes removed - no longer needed
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';

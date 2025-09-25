@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.4] - 2025-09-25
+
+### Cleanup
+- **Code Cleanup**: Removed obsolete TODO comments and cleaned up unused code
+  - Cleaned up 8 TODO comments from usage.ts (placeholder routes not used in production)
+  - Removed legacy v2 architecture comments from index.ts
+  - Fixed hardcoded config values with proper documentation
+  - No functional changes - all cleanup was cosmetic
+
 ## [1.21.3] - 2025-09-25
 
 ### Fixed

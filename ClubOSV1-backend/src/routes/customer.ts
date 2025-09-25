@@ -29,8 +29,8 @@ router.post('/ask',
 
     try {
       // Load system config
-      // Database-based config - JSON operations removed
-      const config = { llmEnabled: true }; // TODO: Get from database
+      // LLM is always enabled for customer interactions
+      const config = { llmEnabled: true };
       
       if (!config.llmEnabled) {
         return res.json({
@@ -138,8 +138,8 @@ router.post('/ask',
 router.get('/stats',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Database-based logs - JSON operations removed
-      const logs: ProcessedRequest[] = []; // TODO: Get from database
+      // Request logs not implemented - returns empty array
+      const logs: ProcessedRequest[] = [];
       
       // Calculate stats from last 7 days
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

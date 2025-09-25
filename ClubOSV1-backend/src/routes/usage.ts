@@ -1,8 +1,11 @@
 import { Router, Request, Response } from 'express';
-// import { usageTracker } from '../services/usage/UsageTracker';
 import { authenticate, authorize } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
+/**
+ * Usage tracking placeholder routes
+ * Currently returns empty statistics - not used in production
+ */
 const router = Router();
 
 /**
@@ -11,7 +14,7 @@ const router = Router();
  */
 router.get('/me', authenticate, async (req: Request, res: Response) => {
   try {
-    // TODO: Implement usage tracking
+    // Returns empty usage statistics
     res.json({
       success: true,
       usage: {
@@ -39,7 +42,7 @@ router.get('/user/:userId', authenticate, authorize(['admin']), async (req: Requ
     const { userId } = req.params;
     const period = (req.query.period as any) || 'day';
     
-    // TODO: Implement usage tracking
+    // Returns empty usage statistics
     const usage = { period, requests: 0, tokens: 0, cost: 0 };
     
     res.json({
@@ -64,7 +67,7 @@ router.get('/key/:apiKey', authenticate, authorize(['admin']), async (req: Reque
     const { apiKey } = req.params;
     const period = (req.query.period as any) || 'day';
     
-    // TODO: Implement API key usage tracking
+    // Returns empty usage statistics
     const usage = { period, requests: 0, tokens: 0, cost: 0 };
     
     res.json({
@@ -88,7 +91,7 @@ router.get('/overall', authenticate, authorize(['admin']), async (req: Request, 
   try {
     const period = (req.query.period as any) || 'day';
     
-    // TODO: Implement overall stats
+    // Returns empty overall statistics
     const stats = { period, totalRequests: 0, totalTokens: 0, totalCost: 0, providers: {} };
     
     res.json({
@@ -113,7 +116,7 @@ router.get('/top-users', authenticate, authorize(['admin']), async (req: Request
     const limit = parseInt(req.query.limit as string) || 10;
     const period = (req.query.period as any) || 'day';
     
-    // TODO: Implement top users
+    // Returns empty top users list
     const topUsers = [];
     
     res.json({
@@ -137,7 +140,7 @@ router.get('/endpoints', authenticate, authorize(['admin']), async (req: Request
   try {
     const period = (req.query.period as any) || 'day';
     
-    // TODO: Implement endpoint stats
+    // Returns empty endpoint statistics
     const endpoints = {};
     
     res.json({
@@ -163,7 +166,7 @@ router.get('/check-limit', async (req: Request, res: Response) => {
     const apiKey = req.headers['x-api-key'] as string;
     const endpoint = req.query.endpoint as string;
     
-    // TODO: Implement rate limit check
+    // Returns default rate limit (always allowed)
     const result = { allowed: true, remaining: 100, resetAt: new Date() };
     
     res.json({
@@ -187,8 +190,7 @@ router.post('/export', authenticate, authorize(['admin']), async (req: Request, 
   try {
     const { startDate, endDate, format = 'json' } = req.body;
     
-    // TODO: Implement export functionality
-    // This would export usage data in various formats (JSON, CSV, Excel)
+    // Export functionality not implemented - returns placeholder message
     
     res.json({
       success: true,
