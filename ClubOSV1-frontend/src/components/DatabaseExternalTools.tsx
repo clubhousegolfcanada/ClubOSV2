@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, CheckSquare, Wifi, Zap, ClipboardList, MessageSquare, Wrench, Building, ChevronDown, ChevronUp } from 'lucide-react';
+import { ExternalLink, Monitor, Calendar, Users, Shield, CreditCard, Activity, HardDrive, Edit2, Save, X, Loader, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import { useNotifications } from '@/state/hooks';
 import { userSettingsApi } from '@/services/userSettings';
 import { useRouter } from 'next/router';
+import { http } from '@/api/http';
 import logger from '@/services/logger';
 
 interface QuickStat {
@@ -42,10 +43,16 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
   const [isSaving, setIsSaving] = useState(false);
   const [editedUrls, setEditedUrls] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
-  const [isStatusCollapsed, setIsStatusCollapsed] = useState(true);
+  const [isTasksCollapsed, setIsTasksCollapsed] = useState(false);
   const [isLinksCollapsed, setIsLinksCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
+
+  // Task states
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [newTask, setNewTask] = useState('');
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
+
   // All users can now edit their own links - but not on mobile
   const canEdit = !!user && !isMobile;
 
@@ -68,21 +75,72 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
-    // Load status collapsed state
-    const savedStatusState = localStorage.getItem('statusSectionCollapsed');
-    if (savedStatusState !== null) {
-      setIsStatusCollapsed(savedStatusState === 'true');
+
+    // Load tasks collapsed state
+    const savedTasksState = localStorage.getItem('tasksSectionCollapsed');
+    if (savedTasksState !== null) {
+      setIsTasksCollapsed(savedTasksState === 'true');
     }
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Load tasks when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadTasks();
+    }
+  }, [user]);
+
   // Save collapsed state to localStorage
-  const toggleStatusCollapsed = () => {
-    const newState = !isStatusCollapsed;
-    setIsStatusCollapsed(newState);
-    localStorage.setItem('statusSectionCollapsed', String(newState));
+  const toggleTasksCollapsed = () => {
+    const newState = !isTasksCollapsed;
+    setIsTasksCollapsed(newState);
+    localStorage.setItem('tasksSectionCollapsed', String(newState));
+  };
+
+  // Task management functions
+  const loadTasks = async () => {
+    setLoadingTasks(true);
+    try {
+      const response = await http.get('tasks');
+      if (response.data.success) {
+        setTasks(response.data.data);
+      }
+    } catch (error) {
+      logger.error('Failed to load tasks:', error);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+  const addTask = async () => {
+    if (!newTask.trim()) return;
+    try {
+      await http.post('tasks', { text: newTask });
+      setNewTask('');
+      loadTasks();
+    } catch (error) {
+      notify('error', 'Failed to add task');
+    }
+  };
+
+  const toggleTask = async (id: string, completed: boolean) => {
+    try {
+      await http.patch(`tasks/${id}`, { is_completed: completed });
+      loadTasks();
+    } catch (error) {
+      notify('error', 'Failed to update task');
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    try {
+      await http.delete(`tasks/${id}`);
+      loadTasks();
+    } catch (error) {
+      notify('error', 'Failed to delete task');
+    }
   };
   
   const toggleLinksCollapsed = () => {
@@ -361,81 +419,126 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
     );
   }
 
-  // Define toggle buttons with icons
-  const toggleButtons = [
-    {
-      label: 'Checklists',
-      icon: ClipboardList,
-      count: quickStats.find(s => s.label === 'Weekly Checklists')?.value || '0',
-      onClick: quickStats.find(s => s.label === 'Weekly Checklists')?.onClick,
-      active: false
-    },
-    {
-      label: 'Requests',
-      icon: MessageSquare,
-      count: quickStats.find(s => s.label === 'Requests Today')?.value || '0',
-      onClick: () => router.push('/'),
-      active: router.pathname === '/'
-    },
-    {
-      label: 'Tech Tickets',
-      icon: Wrench,
-      count: quickStats.find(s => s.label === 'Tech Tickets')?.value || '0',
-      onClick: quickStats.find(s => s.label === 'Tech Tickets')?.onClick,
-      active: false
-    },
-    {
-      label: 'Facilities',
-      icon: Building,
-      count: quickStats.find(s => s.label === 'Facilities')?.value || '0',
-      onClick: quickStats.find(s => s.label === 'Facilities')?.onClick,
-      active: false
-    }
-  ];
 
   return (
     <div className="card">
       <div className="space-y-3">
-        {/* Status Section - Collapsible */}
+        {/* Tasks Section - Personal Todo List */}
         <div>
           <button
-            onClick={toggleStatusCollapsed}
+            onClick={toggleTasksCollapsed}
             className="w-full flex items-center justify-between text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3 hover:text-[var(--text-primary)] transition-colors"
           >
-            <span>Status</span>
+            <span>My Tasks</span>
             <div className="flex items-center gap-2">
-              {isStatusCollapsed && (
+              {isTasksCollapsed && (
                 <div className="flex items-center gap-2 text-[10px]">
                   <span className="bg-[var(--bg-tertiary)] px-2 py-1 rounded">
-                    {toggleButtons.reduce((sum, btn) => sum + parseInt(btn.count), 0)} total
+                    {tasks.filter(t => !t.is_completed).length} active
                   </span>
                 </div>
               )}
-              {isStatusCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+              {isTasksCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
             </div>
           </button>
-          
+
           {/* Collapsible Content */}
           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            isStatusCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+            isTasksCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
           }`}>
-            <div className="grid grid-cols-2 gap-2">
-              {toggleButtons.map((button, index) => (
+            {/* Add Task Input */}
+            {user && (
+              <div className="flex gap-1.5 mb-3">
+                <input
+                  type="text"
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addTask()}
+                  placeholder="Add a task..."
+                  className="flex-1 px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded focus:outline-none focus:border-[var(--accent)]"
+                />
                 <button
-                  key={index}
-                  onClick={button.onClick}
-                  className={`px-4 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
-                    button.active
-                      ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                      : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-secondary)] hover:border-[var(--accent)]'
-                  } border`}
+                  onClick={addTask}
+                  className="px-3 py-1.5 bg-[var(--accent)] text-white rounded text-xs hover:opacity-90"
                 >
-                  <div className="flex items-center justify-between">
-                    <span>{button.label}</span>
-                    <span className="font-bold">{button.count}</span>
-                  </div>
+                  Add
                 </button>
-              ))}
+              </div>
+            )}
+
+            {/* Task List */}
+            <div className="space-y-1 max-h-60 overflow-y-auto">
+              {loadingTasks ? (
+                <div className="text-center py-4">
+                  <Loader className="w-4 h-4 animate-spin mx-auto text-[var(--accent)]" />
+                </div>
+              ) : !user ? (
+                <div className="text-center py-4 text-xs text-[var(--text-muted)]">
+                  <Link href="/login" className="text-[var(--accent)] hover:underline">Log in</Link> to manage tasks
+                </div>
+              ) : (
+                <>
+                  {/* Active Tasks */}
+                  {tasks.filter(t => !t.is_completed).map(task => (
+                    <div key={task.id} className="flex items-center gap-2 p-2 bg-[var(--bg-tertiary)] rounded hover:bg-[var(--bg-secondary)] transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={() => toggleTask(task.id, true)}
+                        className="w-3 h-3 rounded"
+                      />
+                      <span className="flex-1 text-xs text-[var(--text-primary)]">{task.text}</span>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="text-[var(--text-muted)] hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Completed Section */}
+                  {tasks.filter(t => t.is_completed).length > 0 && (
+                    <div className="pt-2 mt-2 border-t border-[var(--border-secondary)]">
+                      <button
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                      >
+                        + {tasks.filter(t => t.is_completed).length} completed {showCompleted ? '▼' : '▶'}
+                      </button>
+
+                      {showCompleted && (
+                        <div className="mt-1 space-y-1">
+                          {tasks.filter(t => t.is_completed).map(task => (
+                            <div key={task.id} className="flex items-center gap-2 p-2 bg-[var(--bg-tertiary)] rounded opacity-50">
+                              <input
+                                type="checkbox"
+                                checked={true}
+                                onChange={() => toggleTask(task.id, false)}
+                                className="w-3 h-3 rounded"
+                              />
+                              <span className="flex-1 text-xs line-through text-[var(--text-muted)]">{task.text}</span>
+                              <button
+                                onClick={() => deleteTask(task.id)}
+                                className="text-[var(--text-muted)] hover:text-red-500"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {tasks.length === 0 && (
+                    <div className="text-center py-4 text-xs text-[var(--text-muted)]">
+                      No tasks yet. Add one above!
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

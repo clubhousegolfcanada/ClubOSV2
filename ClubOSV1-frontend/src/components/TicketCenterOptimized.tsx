@@ -116,13 +116,14 @@ const TicketCenterOptimized = () => {
       open: 0,
       'in-progress': 0,
       resolved: 0,
-      closed: 0
+      closed: 0,
+      archived: 0
     };
-    
+
     tickets.forEach(ticket => {
       counts[ticket.status]++;
     });
-    
+
     return counts;
   }, [tickets]);
 
