@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
@@ -20,6 +20,7 @@ export const TaskList = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { notify } = useNotifications();
   const { user } = useAuthState();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load collapsed state from localStorage
   useEffect(() => {
@@ -40,6 +41,12 @@ export const TaskList = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
     localStorage.setItem('taskListCollapsed', String(newState));
+    // Auto-focus input when expanding
+    if (!newState && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300); // Wait for animation to complete
+    }
   };
 
   const loadTasks = async () => {
@@ -62,6 +69,10 @@ export const TaskList = () => {
       await http.post('tasks', { text: newTask });
       setNewTask('');
       loadTasks();
+      // Auto-focus input for continuous entry (Google Keep style)
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     } catch (error) {
       notify('error', 'Failed to add task');
     }
@@ -119,12 +130,21 @@ export const TaskList = () => {
           {/* Add Task Input */}
           <div className="flex gap-2 mb-4">
             <input
+              ref={inputRef}
               type="text"
               value={newTask}
               onChange={(e) => setNewTask(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addTask()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  addTask();
+                }
+              }}
               placeholder="Add a task..."
               className="flex-1 px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-lg focus:outline-none focus:border-[var(--accent)]"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
             />
             <button
               onClick={addTask}

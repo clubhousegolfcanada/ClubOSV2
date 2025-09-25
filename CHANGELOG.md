@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.1] - 2025-09-24
+
+### Enhanced
+- **Task List Continuous Entry**: Google Keep-style quick task entry
+  - Press Enter to add task and immediately start typing the next one
+  - Auto-focus on input field after adding each task
+  - Auto-focus when expanding the task list
+  - Improved keyboard attributes for better mobile experience
+  - Works perfectly with PWA on iOS and Android
+  - Seamless continuous task entry without clicking
+
 ## [1.21.0] - 2025-09-24
 
 ### Added
