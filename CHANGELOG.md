@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.2] - 2025-09-24
+
+### Documentation
+- **Enhanced Developer Documentation**: Improved CLAUDE.md, README.md, and new CLAUDE_QUICKSTART.md
+  - Added comprehensive project context and workflow to CLAUDE.md
+  - Added Quick Reference section to README with common commands and troubleshooting
+  - Created CLAUDE_QUICKSTART.md for rapid onboarding in new conversations
+  - Updated user context: 6-7 Clubhouse employees, flexible facility management
+  - Added testing checklists and common issue solutions
+  - Structured file locations and common tasks for quick reference
+
 ## [1.21.1] - 2025-09-24
 
 ### Enhanced

@@ -1,6 +1,6 @@
-# ClubOS v1.21.1 - AI-Powered Golf Simulator Management
+# ClubOS v1.21.2 - Flexible Facility Management System
 
-Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
+Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
 **Production URL**: https://clubos-frontend.vercel.app
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.1**
+**Current Version: v1.21.2**
+- Enhanced developer documentation (CLAUDE.md, README.md, CLAUDE_QUICKSTART.md)
+- Quick Reference section with commands and troubleshooting
 - Google Keep-style continuous task entry
-- Press Enter to add task and start typing next
-- Auto-focus for seamless task creation
-- Works perfectly with PWA on mobile
-- Enhanced keyboard experience
+- Mobile-optimized dashboard improvements
+- Comprehensive onboarding guides
 
 ## 🏗️ System Architecture
 
@@ -84,6 +84,47 @@ git add -A && git commit -m "feat: description" && git push
 ## ⚡ Environment Setup
 
 See [ENVIRONMENT.md](./ENVIRONMENT.md) for complete configuration guide.
+
+## 🔧 Quick Reference
+
+### Common Commands
+```bash
+# Start development
+cd ClubOSV1-frontend && npm run dev  # Frontend (port 3001)
+cd ClubOSV1-backend && npm run dev   # Backend (port 3000)
+
+# Database operations
+npm run db:migrate                   # Run pending migrations
+npm run db:rollback                  # Rollback last migration
+railway run npm run db:migrate       # Run migration in production
+
+# Deployment (auto-deploys to production)
+git add -A && git commit -m "fix: description" && git push
+
+# Check logs
+railway logs                         # Backend production logs
+npx tsc --noEmit                     # TypeScript error check
+```
+
+### Important File Locations
+| What | Where |
+|------|-------|
+| API Routes | `/ClubOSV1-backend/src/routes/` |
+| React Components | `/ClubOSV1-frontend/src/components/` |
+| Database Migrations | `/ClubOSV1-backend/src/database/migrations/` |
+| Pattern Learning (V3-PLS) | `/ClubOSV1-backend/src/services/patterns/` |
+| Message Handling | `/ClubOSV1-backend/src/services/openphone/` |
+| Auth & Tokens | `/ClubOSV1-frontend/src/utils/tokenManager.ts` |
+
+### Troubleshooting
+| Issue | Solution |
+|-------|----------|
+| 401 Unauthorized | Check token in localStorage, may need fresh login |
+| TypeScript errors | Run `npx tsc --noEmit` to see all errors |
+| Database connection | Verify DATABASE_URL in .env files |
+| Port already in use | `lsof -i:3000` then `kill -9 <PID>` |
+| Module not found | Run `npm install` in the affected directory |
+| Migration needed | Check if recent changes need `npm run db:migrate` |
 
 ## 🔐 Security
 
