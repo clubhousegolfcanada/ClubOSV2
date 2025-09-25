@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.0] - 2025-09-24
+
+### Added
+- **Personal Task List**: Simple todo list for operators on the main dashboard
+  - Replaced unused Status section with My Tasks
+  - Check off completed tasks
+  - Add/delete tasks quickly
+  - Shows active task count when collapsed
+  - Completed tasks hidden by default with toggle
+  - Persistent across sessions per operator
+  - Clean Google Keep-style interface
+
 ## [1.20.21] - 2025-09-24
 
 ### Changed

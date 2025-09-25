@@ -1,4 +1,4 @@
-# ClubOS v1.20.21 - AI-Powered Golf Simulator Management
+# ClubOS v1.21.0 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.20.21**
-- Enhanced mobile dashboard user experience
-- Bay status card hidden on mobile devices
-- Messages card now collapsible with state persistence
-- Shows unread count badge when collapsed
-- Smooth animations for better UX
+**Current Version: v1.21.0**
+- Personal task list for operators on dashboard
+- Simple todo management replacing unused stats
+- Check off tasks as completed
+- Persistent per-operator task storage
+- Clean Google Keep-style interface
 
 ## 🏗️ System Architecture
 
