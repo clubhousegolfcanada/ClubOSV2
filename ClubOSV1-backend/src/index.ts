@@ -30,6 +30,7 @@ if (process.env.NODE_ENV !== 'test') {
 import authRoutes from './routes/auth';
 import bookingsRoutes from './routes/bookings';
 import ticketsRoutes from './routes/tickets';
+import tasksRoutes from './routes/tasks';
 import feedbackRoutes from './routes/feedback';
 import llmRoutes from './routes/llm';
 import slackRoutes from './routes/slack';
@@ -281,6 +282,7 @@ app.get('/api/version', (req, res) => {
 app.use('/api', csrfRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/tickets', ticketsRoutes);
+app.use('/api/tasks', tasksRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
 app.use('/api/slack', slackRoutes);

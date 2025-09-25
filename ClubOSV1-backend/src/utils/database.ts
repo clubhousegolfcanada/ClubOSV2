@@ -83,6 +83,16 @@ export interface DbBooking {
   metadata?: any;
 }
 
+export interface DbTask {
+  id: string;
+  operator_id: string;
+  text: string;
+  is_completed: boolean;
+  created_at: Date;
+  completed_at?: Date;
+  position: number;
+}
+
 class DatabaseService {
   public initialized = false;
 
@@ -387,10 +397,11 @@ class DatabaseService {
 
   async updateTicketStatus(id: string, status: string): Promise<DbTicket | null> {
     const result = await query(
-      `UPDATE tickets 
-       SET status = $1, 
+      `UPDATE tickets
+       SET status = $1,
            updated_at = CURRENT_TIMESTAMP,
-           resolved_at = CASE WHEN $1 IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END
+           resolved_at = CASE WHEN $1 IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END,
+           archived_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END
        WHERE id = $2
        RETURNING *`,
       [status, id]
@@ -840,6 +851,57 @@ class DatabaseService {
     }
   }
 
+  // Task management methods
+  async getTasks(operator_id: string): Promise<DbTask[]> {
+    try {
+      const result = await query(
+        'SELECT * FROM operator_tasks WHERE operator_id = $1 ORDER BY is_completed, position, created_at DESC',
+        [operator_id]
+      );
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to get tasks:', error);
+      throw error;
+    }
+  }
+
+  async createTask(task: { operator_id: string; text: string }): Promise<DbTask> {
+    try {
+      const result = await query(
+        'INSERT INTO operator_tasks (operator_id, text) VALUES ($1, $2) RETURNING *',
+        [task.operator_id, task.text]
+      );
+      return result.rows[0];
+    } catch (error) {
+      logger.error('Failed to create task:', error);
+      throw error;
+    }
+  }
+
+  async updateTask(id: string, operator_id: string, updates: { is_completed?: boolean }): Promise<void> {
+    try {
+      await query(
+        'UPDATE operator_tasks SET is_completed = $1, completed_at = $2 WHERE id = $3 AND operator_id = $4',
+        [updates.is_completed, updates.is_completed ? new Date() : null, id, operator_id]
+      );
+    } catch (error) {
+      logger.error('Failed to update task:', error);
+      throw error;
+    }
+  }
+
+  async deleteTask(id: string, operator_id: string): Promise<void> {
+    try {
+      await query(
+        'DELETE FROM operator_tasks WHERE id = $1 AND operator_id = $2',
+        [id, operator_id]
+      );
+    } catch (error) {
+      logger.error('Failed to delete task:', error);
+      throw error;
+    }
+  }
+
   // Log auth event
   async logAuth(log: {
     user_id?: string;
@@ -851,10 +913,10 @@ class DatabaseService {
   }): Promise<void> {
     try {
       await query(
-        `INSERT INTO auth_logs 
+        `INSERT INTO auth_logs
          (user_id, action, ip_address, user_agent, success, error_message)
          VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true)`,
-        [log.user_id, log.action, log.ip_address, 
+        [log.user_id, log.action, log.ip_address,
          log.user_agent, log.success ?? true, log.error_message]
       );
     } catch (error) {

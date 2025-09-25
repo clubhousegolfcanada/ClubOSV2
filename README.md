@@ -1,4 +1,4 @@
-# ClubOS v1.20.16 - AI-Powered Golf Simulator Management
+# ClubOS v1.20.20 - AI-Powered Golf Simulator Management
 
 Production system for Clubhouse 24/7 Golf - managing multiple golf simulator locations with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 Golf - managing multiple golf simulator loc
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.20.18**
-- Fixed duplicate messages in conversations
-- Fixed dashboard message sending functionality
-- Added message.sent webhook handling for OpenPhone
-- Enhanced message deduplication logic
-- White Label Planner module for multi-tenant support
+**Current Version: v1.20.20**
+- Fixed ticket check button to work on in-progress tickets
+- Converted ticket deletion to archive functionality
+- Added archived status to preserve ticket history
+- Improved ticket lifecycle management
+- Prevents accidental data loss from deletions
 
 ## 🏗️ System Architecture
 

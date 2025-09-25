@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.20.20] - 2025-09-24
+
+### Fixed
+- **Ticket Management Improvements**: Comprehensive fix for ticket status and deletion issues
+  - Check button now works for both 'open' and 'in-progress' tickets (was only 'open')
+  - Converted hard delete to archive functionality to preserve ticket history
+  - Added 'archived' status to prevent data loss from accidental deletions
+  - Archived tickets now appear in dedicated "Archived" tab (formerly "Old Tickets")
+  - Added proper database migration for archived_at and archived_by columns
+  - Archive button replaces delete button with gray archive icon
+  - Tickets are soft-deleted (archived) instead of permanently removed
+
 ## [1.20.19] - 2025-09-22
 
 ### Fixed

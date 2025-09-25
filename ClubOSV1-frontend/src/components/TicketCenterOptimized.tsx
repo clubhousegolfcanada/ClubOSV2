@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter, Camera } from 'lucide-react';
+import { Plus, Check, Clock, AlertCircle, MessageSquare, Trash2, X, ChevronRight, Filter, Camera, Archive } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -8,7 +8,7 @@ import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 
 
-type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
+type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed' | 'archived';
 type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 type TicketCategory = 'facilities' | 'tech';
 
@@ -129,22 +129,29 @@ const TicketCenterOptimized = () => {
   // Filter tickets based on status and tab
   const filteredTickets = useMemo(() => {
     let filtered = tickets;
-    
-    // Filter for old tickets tab (resolved or closed older than 7 days)
+
+    // Filter for old tickets tab (archived tickets and resolved/closed older than 7 days)
     if (activeTab === 'old') {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       filtered = filtered.filter(ticket => {
+        // Always show archived tickets in the old tab
+        if (ticket.status === 'archived') return true;
+
+        // Also show resolved/closed tickets older than 7 days
         const isOldStatus = ticket.status === 'resolved' || ticket.status === 'closed';
         const isOldDate = new Date(ticket.updatedAt || ticket.createdAt) < sevenDaysAgo;
         return isOldStatus && isOldDate;
       });
+    } else {
+      // Hide archived tickets from other tabs
+      filtered = filtered.filter(ticket => ticket.status !== 'archived');
     }
-    
+
     if (filter !== 'all') {
       filtered = filtered.filter(ticket => ticket.status === filter);
     }
-    
+
     return filtered;
   }, [tickets, filter, activeTab]);
 
@@ -173,6 +180,8 @@ const TicketCenterOptimized = () => {
         return 'bg-green-500/20 text-green-600';
       case 'closed':
         return 'bg-gray-500/20 text-gray-600';
+      case 'archived':
+        return 'bg-gray-700/20 text-gray-500';
     }
   };
 
@@ -224,20 +233,21 @@ const TicketCenterOptimized = () => {
     }
   };
 
-  const deleteTicket = async (ticketId: string) => {
-    if (!confirm('Are you sure you want to delete this ticket?')) {
+  const archiveTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to archive this ticket? It will be moved to the archived section.')) {
       return;
     }
-    
+
     try {
       const token = tokenManager.getToken();
-      const response = await http.delete(
-        `tickets/${ticketId}`,
+      const response = await http.patch(
+        `tickets/${ticketId}/status`,
+        { status: 'archived' },
 
       );
-      
+
       if (response.data.success) {
-        notify('success', 'Ticket deleted');
+        notify('success', 'Ticket archived');
         loadTickets();
         if (selectedTicket?.id === ticketId) {
           setSelectedTicket(null);
@@ -246,9 +256,9 @@ const TicketCenterOptimized = () => {
       }
     } catch (error: any) {
       if (error.response?.status === 403) {
-        notify('error', 'You do not have permission to delete tickets');
+        notify('error', 'You do not have permission to archive tickets');
       } else {
-        notify('error', 'Failed to delete ticket');
+        notify('error', 'Failed to archive ticket');
       }
     }
   };
@@ -386,7 +396,7 @@ const TicketCenterOptimized = () => {
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`}
             >
-              Old Tickets
+              Archived
               {activeTab === 'old' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
               )}
@@ -568,7 +578,7 @@ const TicketCenterOptimized = () => {
                   >
                     <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
                   </button>
-                  {ticket.status === 'open' && (
+                  {(ticket.status === 'open' || ticket.status === 'in-progress') && (
                     <button
                       onClick={() => handleQuickResolve(ticket.id)}
                       className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
@@ -577,13 +587,13 @@ const TicketCenterOptimized = () => {
                       <Check className="w-4 h-4 text-green-500" />
                     </button>
                   )}
-                  {(user?.role === 'admin' || user?.role === 'operator') && (
+                  {(user?.role === 'admin' || user?.role === 'operator') && ticket.status !== 'archived' && (
                     <button
-                      onClick={() => deleteTicket(ticket.id)}
+                      onClick={() => archiveTicket(ticket.id)}
                       className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
-                      title="Delete ticket"
+                      title="Archive ticket"
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Archive className="w-4 h-4 text-gray-500" />
                     </button>
                   )}
                 </div>
@@ -598,8 +608,8 @@ const TicketCenterOptimized = () => {
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
             <p className="text-base text-[var(--text-secondary)] mb-2">
-              {activeTab === 'old' 
-                ? 'No old tickets (resolved/closed tickets older than 7 days)'
+              {activeTab === 'old'
+                ? 'No archived tickets or old resolved tickets'
                 : 'No tickets found'}
             </p>
           </div>
@@ -676,7 +686,7 @@ const TicketCenterOptimized = () => {
               <div>
                 <label className="text-sm text-[var(--text-muted)] uppercase tracking-wider block mb-2">Update Status:</label>
                 <div className="flex gap-2 flex-wrap">
-                  {(['open', 'in-progress', 'resolved', 'closed'] as TicketStatus[]).map(status => (
+                  {(['open', 'in-progress', 'resolved', 'closed', 'archived'] as TicketStatus[]).map(status => (
                     <button
                       key={status}
                       onClick={() => updateTicketStatus(selectedTicket.id, status)}
