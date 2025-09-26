@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, ChevronDown, ChevronUp, Loader } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronUp, Loader, Check, Edit2 } from 'lucide-react';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -18,9 +18,12 @@ export const TaskList = () => {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
   const { notify } = useNotifications();
   const { user } = useAuthState();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // Load collapsed state from localStorage
   useEffect(() => {
@@ -41,11 +44,20 @@ export const TaskList = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
     localStorage.setItem('taskListCollapsed', String(newState));
-    // Auto-focus input when expanding
-    if (!newState && inputRef.current) {
+    // Auto-focus textarea when expanding
+    if (!newState && textareaRef.current) {
       setTimeout(() => {
-        inputRef.current?.focus();
+        textareaRef.current?.focus();
       }, 300); // Wait for animation to complete
+    }
+  };
+
+  // Auto-resize textarea as user types
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   };
 
@@ -66,16 +78,51 @@ export const TaskList = () => {
   const addTask = async () => {
     if (!newTask.trim()) return;
     try {
-      await http.post('tasks', { text: newTask });
+      await http.post('tasks', { text: newTask.trim() });
       setNewTask('');
       loadTasks();
-      // Auto-focus input for continuous entry (Google Keep style)
+      // Auto-focus textarea for continuous entry (Google Keep style)
       setTimeout(() => {
-        inputRef.current?.focus();
+        textareaRef.current?.focus();
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+        }
       }, 100);
     } catch (error) {
       notify('error', 'Failed to add task');
     }
+  };
+
+  const startEditing = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingText(task.text);
+    setTimeout(() => {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }, 50);
+  };
+
+  const saveEdit = async (taskId: string) => {
+    if (!editingText.trim()) {
+      setEditingTaskId(null);
+      return;
+    }
+    if (editingText === tasks.find(t => t.id === taskId)?.text) {
+      setEditingTaskId(null);
+      return;
+    }
+    try {
+      await http.patch(`tasks/${taskId}`, { text: editingText.trim() });
+      loadTasks();
+      setEditingTaskId(null);
+    } catch (error) {
+      notify('error', 'Failed to update task');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingTaskId(null);
+    setEditingText('');
   };
 
   const toggleTask = async (id: string, completed: boolean) => {
@@ -127,13 +174,15 @@ export const TaskList = () => {
         isCollapsed ? 'max-h-0' : 'max-h-[600px]'
       }`}>
         <div className="p-4 pt-0">
-          {/* Add Task Input */}
+          {/* Add Task Textarea */}
           <div className="flex gap-2 mb-4">
-            <input
-              ref={inputRef}
-              type="text"
+            <textarea
+              ref={textareaRef}
               value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
+              onChange={(e) => {
+                setNewTask(e.target.value);
+                adjustTextareaHeight();
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
@@ -141,14 +190,17 @@ export const TaskList = () => {
                 }
               }}
               placeholder="Add a task..."
-              className="flex-1 px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-lg focus:outline-none focus:border-[var(--accent)]"
-              autoComplete="off"
-              autoCorrect="off"
+              className="flex-1 px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-lg focus:outline-none focus:border-[var(--accent)] resize-none overflow-hidden"
+              autoComplete="on"
+              autoCorrect="on"
               autoCapitalize="sentences"
+              spellCheck={true}
+              rows={1}
+              style={{ minHeight: '38px', lineHeight: '1.5' }}
             />
             <button
               onClick={addTask}
-              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90"
+              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 self-start"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -164,14 +216,56 @@ export const TaskList = () => {
               <>
                 {/* Active Tasks */}
                 {activeTasks.map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors">
+                  <div key={task.id} className="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors group">
                     <input
                       type="checkbox"
                       checked={false}
                       onChange={() => toggleTask(task.id, true)}
-                      className="w-4 h-4 rounded"
+                      className="w-4 h-4 rounded flex-shrink-0"
                     />
-                    <span className="flex-1 text-sm text-[var(--text-primary)]">{task.text}</span>
+                    {editingTaskId === task.id ? (
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveEdit(task.id);
+                          } else if (e.key === 'Escape') {
+                            cancelEdit();
+                          }
+                        }}
+                        onBlur={() => saveEdit(task.id)}
+                        className="flex-1 px-2 py-1 text-sm bg-[var(--bg-secondary)] border border-[var(--accent)] rounded focus:outline-none"
+                        autoComplete="on"
+                        autoCorrect="on"
+                        spellCheck={true}
+                      />
+                    ) : (
+                      <span
+                        className="flex-1 text-sm text-[var(--text-primary)] cursor-pointer"
+                        onClick={() => startEditing(task)}
+                      >
+                        {task.text}
+                      </span>
+                    )}
+                    {editingTaskId === task.id ? (
+                      <button
+                        onClick={() => saveEdit(task.id)}
+                        className="text-green-500 hover:text-green-600 transition-colors"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startEditing(task)}
+                        className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => deleteTask(task.id)}
                       className="text-[var(--text-muted)] hover:text-red-500 transition-colors"

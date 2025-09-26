@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.5] - 2025-09-26
+
+### Enhanced
+- **My Tasks Usability Improvements**: Made task management easier to use
+  - Enabled autocorrect and spellcheck for better text entry
+  - Replaced single-line input with auto-expanding textarea for longer tasks
+  - Added inline editing - click any task to edit it directly
+  - Added visual edit button that appears on hover
+  - Keyboard shortcuts: Enter to save, Escape to cancel edits
+  - Maintains Google Keep-style continuous entry
+
 ## [1.21.4] - 2025-09-25
 
 ### Cleanup
