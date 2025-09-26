@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.7] - 2025-09-26
+
+### Fixed
+- **Dashboard Card Consistency**: Made all dashboard cards world-class consistent
+  - Fixed TaskList and MessagesCardV3 to use unified `.card` class
+  - Removed all inline styles and hardcoded fonts (Poppins)
+  - Standardized all card headers to `text-sm font-semibold`
+  - Removed redundant padding (cards now consistently use p-3)
+  - Fixed CSS variable usage throughout all components
+  - Result: Clean, minimal, professional dashboard with perfect consistency
+
 ## [1.21.6] - 2025-09-26
 
 ### Enhanced

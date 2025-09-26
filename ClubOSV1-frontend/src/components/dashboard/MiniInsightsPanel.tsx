@@ -114,7 +114,7 @@ export const MiniInsightsPanel: React.FC = () => {
 
   return (
     <div className="hidden lg:block w-full mt-4">
-      <div className="card p-4">
+      <div className="card">
         <div className="grid grid-cols-4 gap-4">
           {metrics.map((metric, index) => (
             <div 

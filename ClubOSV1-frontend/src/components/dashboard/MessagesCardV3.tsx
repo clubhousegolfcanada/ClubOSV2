@@ -313,15 +313,15 @@ export default function MessagesCardV3() {
   }
 
   return (
-    <div className="messages-card-no-hover" style={{ fontFamily: 'Poppins, -apple-system, sans-serif' }}>
+    <div className="card messages-card-no-hover mt-4">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-primary flex items-center justify-between">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border-secondary)]">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-primary" style={{ fontWeight: 600 }}>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             Messages
           </h3>
           {totalUnread > 0 && isCollapsed && (
-            <span className="bg-[var(--status-info)] text-white text-xs px-1.5 py-0.5 rounded-full" style={{ fontSize: '10px' }}>
+            <span className="bg-[var(--status-info)] text-white text-xs px-1.5 py-0.5 rounded-full">
               {totalUnread}
             </span>
           )}
@@ -329,8 +329,8 @@ export default function MessagesCardV3() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push('/messages')}
-            className="text-xs text-secondary hover:text-primary transition-colors"
-            style={{ fontWeight: 400 }}
+            className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+           
           >
             View all
           </button>
@@ -340,9 +340,9 @@ export default function MessagesCardV3() {
             aria-label={isCollapsed ? 'Expand messages' : 'Collapse messages'}
           >
             {isCollapsed ? (
-              <ChevronDown className="w-4 h-4 text-secondary" />
+              <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
             ) : (
-              <ChevronUp className="w-4 h-4 text-secondary" />
+              <ChevronUp className="w-4 h-4 text-[var(--text-secondary)]" />
             )}
           </button>
         </div>
@@ -356,8 +356,8 @@ export default function MessagesCardV3() {
         </div>
       ) : conversations.length === 0 ? (
         <div className="p-8 text-center">
-          <MessageSquare className="w-8 h-8 text-muted mx-auto mb-2" />
-          <p className="text-sm text-secondary">No recent messages</p>
+          <MessageSquare className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2" />
+          <p className="text-sm text-[var(--text-secondary)]">No recent messages</p>
         </div>
       ) : (
         <div className="divide-y divide-[var(--border-secondary)]">
@@ -376,39 +376,39 @@ export default function MessagesCardV3() {
                   className="p-3 cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
                 >
                   <div className="flex items-start gap-2">
-                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 border border-primary rounded-lg bg-tertiary">
-                      <span className="text-xs font-medium text-secondary" style={{ fontSize: '10px' }}>
+                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 border border-[var(--border-primary)] rounded-lg bg-[var(--bg-tertiary)]">
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">
                         {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="text-xs font-medium text-primary flex items-center gap-2" style={{ fontWeight: 500 }}>
+                          <p className="text-xs font-medium text-[var(--text-primary)] flex items-center gap-2">
                             {conv.customerName}
                             {conv.lastMessageDirection === 'outbound' && (
-                              <span className="text-xs px-1 py-0.5 bg-[var(--accent-light)] text-[var(--accent)] rounded" style={{ fontWeight: 400, fontSize: '10px' }}>
+                              <span className="text-xs px-1 py-0.5 bg-[var(--accent-light)] text-[var(--accent)] rounded">
                                 You
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-secondary mt-0.5 break-words line-clamp-2" style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5 break-words line-clamp-2">
                             {conv.lastMessageDirection === 'outbound' && '↗ '}
                             {conv.lastMessage}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted flex items-center gap-0.5" style={{ fontSize: '10px' }}>
+                            <span className="text-xs text-[var(--text-muted)] flex items-center gap-0.5">
                               <Clock className="w-2.5 h-2.5" />
                               {formatTime(conv.timestamp)}
                             </span>
-                            <span className="text-xs text-muted flex items-center gap-0.5" style={{ fontSize: '10px' }}>
+                            <span className="text-xs text-[var(--text-muted)] flex items-center gap-0.5">
                               <Phone className="w-2.5 h-2.5" />
                               {conv.phoneNumber}
                             </span>
                           </div>
                         </div>
                         {conv.unreadCount > 0 && (
-                          <span className="bg-[var(--status-info)] text-white text-xs px-1.5 py-0.5 rounded-full" style={{ fontSize: '10px' }}>
+                          <span className="bg-[var(--status-info)] text-white text-xs px-1.5 py-0.5 rounded-full">
                             {conv.unreadCount}
                           </span>
                         )}
@@ -419,23 +419,23 @@ export default function MessagesCardV3() {
 
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
-                  <div className="border-t border-secondary bg-tertiary p-3 space-y-2">
+                  <div className="border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)] p-3 space-y-2">
                     {/* AI Suggestion Section - Above input field */}
                     {!suggestion && !isLoadingAi ? (
                       // Show Get AI Suggestion button
                       <button
                         onClick={() => fetchAiSuggestion(conv.id)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-elevated border border-primary rounded-lg hover:bg-[var(--bg-hover)] transition-colors"
-                        style={{ fontWeight: 500 }}
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg hover:bg-[var(--bg-hover)] transition-colors"
+                       
                       >
                         <Bot className="w-3 h-3 text-[var(--status-info)]" />
-                        <span className="text-primary">Get AI Suggestion</span>
+                        <span className="text-[var(--text-primary)]">Get AI Suggestion</span>
                       </button>
                     ) : isLoadingAi ? (
                       // Loading state
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[var(--text-muted)]"></div>
-                        <span className="text-xs text-secondary">Getting AI suggestion...</span>
+                        <span className="text-xs text-[var(--text-secondary)]">Getting AI suggestion...</span>
                       </div>
                     ) : suggestion ? (
                       // Show AI Suggestion above input
@@ -444,10 +444,10 @@ export default function MessagesCardV3() {
                           <div className="flex-1 flex items-center gap-2 min-w-0">
                             <Bot className="w-3 h-3 text-[var(--accent)] flex-shrink-0" />
                             <div className="flex-1">
-                              <p className="text-xs text-primary break-words" style={{ fontWeight: 400, wordBreak: 'break-word' }}>
+                              <p className="text-xs text-[var(--text-primary)] break-words">
                                 {suggestion.text}
                               </p>
-                              <p className="text-xs text-secondary mt-1">
+                              <p className="text-xs text-[var(--text-secondary)] mt-1">
                                 Confidence: {Math.round(suggestion.confidence * 100)}%
                                 {suggestion.canAutoApprove && ' • Ready to auto-send'}
                               </p>
@@ -459,7 +459,7 @@ export default function MessagesCardV3() {
                             onClick={() => handleApproveSuggestion(conv, suggestion)}
                             disabled={isSending}
                             className="px-2 py-0.5 bg-[var(--status-success)] text-white text-xs rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
-                            style={{ fontWeight: 500 }}
+                           
                             title="Use & Learn (increases confidence)"
                           >
                             Use
@@ -476,14 +476,14 @@ export default function MessagesCardV3() {
                             }}
                             disabled={isSending}
                             className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
-                            style={{ fontWeight: 500 }}
+                           
                             title="Send without learning"
                           >
                             Send
                           </button>
                           <button
                             onClick={() => handleRejectSuggestion(conv, suggestion)}
-                            className="p-0.5 text-muted hover:text-[var(--status-error)] transition-colors"
+                            className="p-0.5 text-[var(--text-muted)] hover:text-[var(--status-error)] transition-colors"
                             title="Reject (decreases confidence)"
                           >
                             <X className="w-3 h-3" />
@@ -505,15 +505,15 @@ export default function MessagesCardV3() {
                           }
                         }}
                         placeholder="Type your reply..."
-                        className="w-full pl-3 pr-20 py-1.5 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-primary placeholder-muted focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
-                        style={{ fontWeight: 400 }}
+                        className="w-full pl-3 pr-20 py-1.5 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
+                       
                       />
                       <div className="absolute right-1 top-1 flex items-center gap-1">
                         <button
                           onClick={() => handleSend(conv)}
                           disabled={!reply.trim() || isSending}
                           className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          style={{ fontWeight: 500 }}
+                         
                         >
                           {isSending ? (
                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>

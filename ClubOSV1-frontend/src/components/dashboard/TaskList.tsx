@@ -151,13 +151,13 @@ export const TaskList = () => {
   }
 
   return (
-    <div className="bg-[var(--bg-secondary)] rounded-lg">
+    <div className="card mt-4">
       <button
         onClick={toggleCollapsed}
-        className="w-full flex items-center justify-between p-4 hover:bg-[var(--bg-tertiary)] transition-colors"
+        className="w-full flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors rounded-lg -m-3 p-3"
       >
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             My Tasks
           </h3>
           {isCollapsed && activeTasks.length > 0 && (
@@ -173,7 +173,7 @@ export const TaskList = () => {
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
         isCollapsed ? 'max-h-0' : 'max-h-[600px]'
       }`}>
-        <div className="p-4 pt-0">
+        <div className="pt-3">
           {/* Add Task Textarea */}
           <div className="flex gap-2 mb-4">
             <textarea

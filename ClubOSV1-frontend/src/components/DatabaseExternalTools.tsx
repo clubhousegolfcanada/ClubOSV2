@@ -368,9 +368,9 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
           <div>
             <button
               onClick={toggleStatusCollapsed}
-              className="w-full flex items-center justify-between text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] mb-3 hover:text-[var(--text-primary)] transition-colors"
+              className="w-full flex items-center justify-between mb-3 hover:text-[var(--text-primary)] transition-colors"
             >
-              <span>Status</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">Status</span>
               <div className="flex items-center gap-2">
                 {isStatusCollapsed && (
                   <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-2 py-1 rounded">
@@ -431,7 +431,7 @@ const DatabaseExternalTools: React.FC<DatabaseExternalToolsProps> = ({ quickStat
             onClick={toggleLinksCollapsed}
             className="w-full flex items-center justify-between mb-3 text-left hover:opacity-80 transition-opacity"
           >
-            <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Quick Links</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">Quick Links</h3>
             <div className="flex items-center gap-2">
               {isLinksCollapsed && (
                 <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-2 py-1 rounded">

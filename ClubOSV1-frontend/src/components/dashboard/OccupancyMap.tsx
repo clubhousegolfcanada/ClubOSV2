@@ -123,12 +123,11 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
   // Full view
   return (
     <div className="card">
-      <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Activity className="w-5 h-5 text-[var(--accent)]" />
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[var(--accent)]" />
             Live Occupancy Map
-          </h2>
+          </h3>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-xs">
               <Circle className="w-3 h-3 text-green-500 fill-current" />
@@ -221,7 +220,6 @@ const OccupancyMap: React.FC<OccupancyMapProps> = ({ compact = false }) => {
           <Clock className="w-3 h-3 inline mr-1" />
           Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refreshes every 30 seconds
         </div>
-      </div>
     </div>
   );
 };

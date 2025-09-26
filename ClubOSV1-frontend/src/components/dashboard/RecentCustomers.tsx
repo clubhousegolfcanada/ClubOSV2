@@ -93,9 +93,9 @@ export const RecentCustomers: React.FC = () => {
 
   return (
     <div className="sm:hidden mt-4">
-      <div className="card p-4">
+      <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-[var(--text-primary)]">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             Recent Customers
           </h3>
           <button

@@ -153,9 +153,9 @@ export const SuggestedActions: React.FC = () => {
 
   return (
     <div className="hidden lg:block w-full mt-4">
-      <div className="card p-4">
+      <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-[var(--text-primary)]">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             Suggested Actions
           </h3>
           <span className="text-xs text-[var(--text-muted)]">
