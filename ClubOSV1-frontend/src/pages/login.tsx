@@ -22,7 +22,7 @@ const LoginPage = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // Remember me checkbox state
+  const [rememberMe, setRememberMe] = useState(true); // Default to true for PWA experience
   
   // Stop token monitoring when login page loads
   useEffect(() => {
@@ -325,7 +325,9 @@ const LoginPage = () => {
                 className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-[var(--text-secondary)]">
-                Remember me for 30 days
+                {loginMode === 'operator'
+                  ? 'Keep me signed in (30 days)'
+                  : 'Keep me signed in (90 days)'}
               </label>
             </div>
             

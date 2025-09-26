@@ -124,21 +124,32 @@ export class TokenManager {
 
   /**
    * Get appropriate check interval based on token expiry time
+   * Enhanced for operator-friendly PWA experience
    */
   private getCheckInterval(token: string): number {
     const timeUntilExpiry = this.getTimeUntilExpiration(token);
     const role = this.getUserRole(token);
-    
-    // For short sessions (4-8 hours), check more frequently
+
+    // Operators get more frequent checks for seamless experience
+    if (role === 'operator' || role === 'admin') {
+      if (timeUntilExpiry > 7 * 24 * 60 * 60 * 1000) { // > 7 days
+        return 2 * 60 * 60 * 1000; // Check every 2 hours
+      } else if (timeUntilExpiry > 24 * 60 * 60 * 1000) { // > 1 day
+        return 30 * 60 * 1000; // Check every 30 minutes
+      } else {
+        return 5 * 60 * 1000; // Check every 5 minutes when close to expiry
+      }
+    }
+
+    // Other roles with standard intervals
     if (timeUntilExpiry <= 8 * 60 * 60 * 1000) { // 8 hours or less
-      // Check every 15 minutes for short sessions
       return 15 * 60 * 1000; // 15 minutes
     } else if (timeUntilExpiry <= 24 * 60 * 60 * 1000) { // 24 hours or less
-      // Check every 30 minutes for medium sessions
       return 30 * 60 * 1000; // 30 minutes
-    } else {
-      // Check every 2 hours for long sessions (Remember Me)
+    } else if (timeUntilExpiry <= 7 * 24 * 60 * 60 * 1000) { // 7 days or less
       return 2 * 60 * 60 * 1000; // 2 hours
+    } else {
+      return 4 * 60 * 60 * 1000; // 4 hours for very long tokens
     }
   }
 

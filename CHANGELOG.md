@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.6] - 2025-09-26
+
+### Enhanced
+- **PWA Authentication Experience**: Operator-friendly token management
+  - Operators get 7-day tokens without Remember Me, 30-day with Remember Me
+  - Customers get 24-hour tokens without Remember Me, 90-day with Remember Me
+  - Aggressive token refresh at 70% lifetime for operators (every 2 days for 7-day tokens)
+  - Auto-refresh tokens sent via X-New-Token header on API responses
+  - Remember Me checkbox now defaults to checked for better UX
+  - Fixed monitoring intervals - more frequent for operators
+  - Added token metrics tracking for monitoring auth patterns
+  - Result: Operators login once per week maximum instead of every 4 hours
+
 ## [1.21.5] - 2025-09-26
 
 ### Enhanced

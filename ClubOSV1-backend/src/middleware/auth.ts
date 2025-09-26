@@ -30,35 +30,51 @@ interface JWTPayload extends IJWTPayload {
   phone?: string;
 }
 
-// Generate JWT token with role-based expiration
+// Generate JWT token with role-based expiration - ENHANCED FOR PWA EXPERIENCE
 export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>, rememberMe: boolean = false): string => {
-  // Role-based token expiration times
+  // Role-based token expiration times - Operator-friendly durations
   let expiresIn: string;
-  
+
   if (rememberMe) {
-    // With "Remember Me" - 30 days for all roles
-    expiresIn = '30d';
-  } else {
-    // Without "Remember Me" - role-based shorter sessions
+    // With "Remember Me" - Extended durations for PWA experience
     switch (payload.role) {
-      case 'customer':
-        expiresIn = '8h';  // 8 hours for customers
-        break;
       case 'operator':
       case 'admin':
-        expiresIn = '4h';  // 4 hours for operators and admins
+        expiresIn = '30d';  // Operators/admins get month-long tokens
         break;
-      case 'kiosk':
-        expiresIn = '12h'; // 12 hours for kiosk mode
+      case 'customer':
+        expiresIn = '90d';  // Customers get 3 months
         break;
       case 'contractor':
-        expiresIn = '8h';  // 8 hours for contractors
+        expiresIn = '7d';   // Contractors get weekly tokens
+        break;
+      case 'kiosk':
+        expiresIn = '30d';  // Kiosks stay logged in for a month
         break;
       default:
-        expiresIn = '4h';  // Default to 4 hours for safety
+        expiresIn = '7d';   // Default to a week
+    }
+  } else {
+    // Without "Remember Me" - Still generous for operators
+    switch (payload.role) {
+      case 'operator':
+      case 'admin':
+        expiresIn = '7d';   // Full week for operators even without Remember Me
+        break;
+      case 'customer':
+        expiresIn = '24h';  // 24 hours for customers
+        break;
+      case 'kiosk':
+        expiresIn = '7d';   // Kiosks get a week
+        break;
+      case 'contractor':
+        expiresIn = '8h';   // 8 hours for contractors (shift-based)
+        break;
+      default:
+        expiresIn = '24h';  // Default to 24 hours
     }
   }
-  
+
   return jwt.sign(payload, config.JWT_SECRET as string, {
     expiresIn: expiresIn,
     issuer: 'clubosv1',
@@ -135,16 +151,36 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       }
     }
     
-    // Check if token is about to expire (less than 1 hour)
+    // Enhanced token refresh logic for PWA experience
     const now = Date.now() / 1000;
     const timeUntilExpiry = (decoded.exp || 0) - now;
-    
-    if (timeUntilExpiry < 3600) {
-      // Token will expire soon, send a new one in response header
+    const totalTokenLife = (decoded.exp || 0) - (decoded.iat || 0);
+    const tokenAgePercent = ((totalTokenLife - timeUntilExpiry) / totalTokenLife) * 100;
+
+    // Aggressive refresh for operators - refresh early and often
+    let shouldRefresh = false;
+
+    if (decoded.role === 'operator' || decoded.role === 'admin') {
+      // Operators/admins: Refresh when 70% of lifetime is consumed
+      shouldRefresh = tokenAgePercent > 70;
+    } else if (decoded.role === 'customer') {
+      // Customers: Refresh when 50% of lifetime is consumed
+      shouldRefresh = tokenAgePercent > 50;
+    } else {
+      // Others: Refresh when 80% consumed or less than 1 hour remains
+      shouldRefresh = tokenAgePercent > 80 || timeUntilExpiry < 3600;
+    }
+
+    // Also force refresh if less than 2 days remain for any role
+    if (timeUntilExpiry < (2 * 24 * 3600)) {
+      shouldRefresh = true;
+    }
+
+    if (shouldRefresh) {
+      // Token needs refresh, send a new one in response header
       // Check if original token was long-lived (remember me)
-      const totalTokenLife = (decoded.exp || 0) - (decoded.iat || 0);
-      const wasRememberMe = totalTokenLife > 86400; // More than 24 hours means it was remember me
-      
+      const wasRememberMe = totalTokenLife > 604800; // More than 7 days means remember me was used
+
       const newToken = generateToken({
         userId: decoded.userId,
         email: decoded.email,
@@ -153,7 +189,17 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
         name: decoded.name,
         phone: decoded.phone
       }, wasRememberMe);
+
       res.setHeader('X-New-Token', newToken);
+
+      // Log token refresh for monitoring
+      logger.info('Token auto-refreshed for PWA persistence', {
+        userId: decoded.userId,
+        role: decoded.role,
+        tokenAgePercent: Math.round(tokenAgePercent),
+        daysRemaining: Math.round(timeUntilExpiry / 86400),
+        newTokenLife: wasRememberMe ? '30-90d' : '7-24h'
+      });
     }
 
     // Validate role exists - include customer and contractor roles

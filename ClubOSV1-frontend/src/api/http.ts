@@ -88,21 +88,33 @@ client.interceptors.request.use(
   }
 );
 
-// Response interceptor for 401 handling
+// Response interceptor for 401 handling and token refresh
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Handle new token from backend (auto-refresh)
+    const newToken = response.headers['x-new-token'];
+    if (newToken) {
+      tokenManager.setToken(newToken);
+
+      logger.debug('Token auto-refreshed from backend', {
+        endpoint: response.config.url
+      });
+    }
+
+    return response;
+  },
   (error: ApiError) => {
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      
+
       // Don't redirect if already on login or if it's an auth endpoint
       if (currentPath !== '/login' && !currentPath.startsWith('/auth/')) {
         // Clear auth and redirect to login
         tokenManager.clearToken();
         localStorage.removeItem('clubos_user');
         localStorage.removeItem('clubos_view_mode');
-        
+
         // Only redirect once, prevent loops
         if (!sessionStorage.getItem('redirecting_to_login')) {
           sessionStorage.setItem('redirecting_to_login', 'true');
@@ -110,12 +122,12 @@ client.interceptors.response.use(
         }
       }
     }
-    
+
     // Clear redirect flag on successful auth
     if (error.response?.status !== 401) {
       sessionStorage.removeItem('redirecting_to_login');
     }
-    
+
     return Promise.reject(error);
   }
 );
