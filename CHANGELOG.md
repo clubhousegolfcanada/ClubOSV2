@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.18] - 2025-10-01
+
+### Fixed
+- **Remote Actions Bar Mobile Logout Fix**: Prevent unexpected logouts on mobile
+  - Added /devices, /scripts, and /status/ to non-critical endpoints list
+  - These endpoints failing with 401 won't trigger automatic logout
+  - Fixes issue where opening Remote Actions Bar signs out operators on mobile
+  - Result: Stable mobile experience when using Remote Actions Bar
+
+## [1.21.17] - 2025-10-01
+
+### Enhanced
+- **Ticket Page Mobile Optimization**: Complete redesign for mobile usability and 6+ locations
+  - Replaced horizontal scrolling location filter with vertical collapsible list
+  - Simplified tabs from 4 to 3 (Active, Resolved, Archived)
+  - Redesigned ticket cards to match TaskList pattern with priority borders
+  - Implemented full-screen modal on mobile with swipe indicator
+  - Added collapsible filters to save screen space
+  - Standardized UI with `.card` class and consistent typography
+  - Improved touch targets to 48px minimum for better mobile interaction
+  - Reduced visual complexity while maintaining all features
+  - Added loading skeletons instead of spinners
+  - Result: Professional, mobile-first ticket management ready for 6+ locations
+
 ## [1.21.16] - 2025-10-01
 
 ### Fixed

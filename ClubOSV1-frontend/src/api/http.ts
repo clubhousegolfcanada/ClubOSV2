@@ -115,7 +115,10 @@ client.interceptors.response.use(
         '/system/check',
         '/door-access/',
         '/remote-actions/',
-        '/performance'
+        '/performance',
+        '/devices',
+        '/scripts',
+        '/status/'
       ];
 
       // Check if this is a non-critical endpoint
