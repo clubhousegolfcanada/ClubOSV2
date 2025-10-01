@@ -1,4 +1,4 @@
-# ClubOS v1.21.9 - Flexible Facility Management System
+# ClubOS v1.21.10 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.9**
-- **Fixed Remote Actions Bar Logout Issue** - Operators no longer logged out when using Remote Actions Bar
-- Non-critical API endpoints no longer trigger automatic logout
-- RemoteActionsBar state properly cleaned up on logout
-- Enhanced error resilience for control panel features
+**Current Version: v1.21.10**
+- **Fixed My Tasks Card Checkbox Behavior** - Google Keep-style task completion
+- Completed tasks stay visible with semi-transparent styling
+- Smooth animations when checking/unchecking tasks
+- Tasks automatically sort with completed items at bottom
 
 ## 🏗️ System Architecture
 

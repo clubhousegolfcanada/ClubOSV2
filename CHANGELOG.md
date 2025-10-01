@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.10] - 2025-10-01
+
+### Fixed
+- **My Tasks Card Checkbox Behavior**: Implemented Google Keep-style task completion
+  - Completed tasks now stay visible in the main list instead of being hidden
+  - Completed items automatically move to the bottom with smooth animations
+  - Applied semi-transparent styling (50% opacity) and strikethrough to completed tasks
+  - Tasks smoothly transition when checked/unchecked with fade and slide effects
+  - Removed separate "completed" section for better UX
+  - Completed tasks remain interactive - checkbox can be unchecked to restore
+  - Result: Natural, satisfying task completion experience matching Google Keep behavior
+
 ## [1.21.9] - 2025-09-30
 
 ### Fixed

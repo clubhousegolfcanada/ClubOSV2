@@ -16,7 +16,6 @@ export const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [loadingTasks, setLoadingTasks] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -143,8 +142,17 @@ export const TaskList = () => {
     }
   };
 
+  // Sort tasks: active first, then completed
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.is_completed === b.is_completed) {
+      // If both have same status, sort by creation date (newest first)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+    // Active tasks come first
+    return a.is_completed ? 1 : -1;
+  });
+
   const activeTasks = tasks.filter(t => !t.is_completed);
-  const completedTasks = tasks.filter(t => t.is_completed);
 
   if (!user) {
     return null;
@@ -207,23 +215,32 @@ export const TaskList = () => {
           </div>
 
           {/* Task List */}
-          <div className="space-y-2 max-h-80 overflow-y-auto">
+          <div className="space-y-1.5 max-h-80 overflow-y-auto">
             {loadingTasks ? (
               <div className="text-center py-8">
                 <Loader className="w-5 h-5 animate-spin mx-auto text-[var(--accent)]" />
               </div>
             ) : (
               <>
-                {/* Active Tasks */}
-                {activeTasks.map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors group">
+                {/* All Tasks - Google Keep Style */}
+                {sortedTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className={`
+                      flex items-center gap-3 rounded-lg transition-all duration-300 ease-in-out group
+                      ${task.is_completed
+                        ? 'opacity-50 p-2 bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] transform scale-[0.98]'
+                        : 'p-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] opacity-100'
+                      }
+                    `}
+                  >
                     <input
                       type="checkbox"
-                      checked={false}
-                      onChange={() => toggleTask(task.id, true)}
-                      className="w-4 h-4 rounded flex-shrink-0"
+                      checked={task.is_completed}
+                      onChange={() => toggleTask(task.id, !task.is_completed)}
+                      className="w-4 h-4 rounded flex-shrink-0 cursor-pointer"
                     />
-                    {editingTaskId === task.id ? (
+                    {editingTaskId === task.id && !task.is_completed ? (
                       <input
                         ref={editInputRef}
                         type="text"
@@ -245,69 +262,50 @@ export const TaskList = () => {
                       />
                     ) : (
                       <span
-                        className="flex-1 text-sm text-[var(--text-primary)] cursor-pointer"
-                        onClick={() => startEditing(task)}
+                        className={`
+                          flex-1 text-sm cursor-pointer transition-all duration-200
+                          ${task.is_completed
+                            ? 'line-through text-[var(--text-muted)] decoration-1'
+                            : 'text-[var(--text-primary)]'
+                          }
+                        `}
+                        onClick={() => !task.is_completed && startEditing(task)}
                       >
                         {task.text}
                       </span>
                     )}
-                    {editingTaskId === task.id ? (
-                      <button
-                        onClick={() => saveEdit(task.id)}
-                        className="text-green-500 hover:text-green-600 transition-colors"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => startEditing(task)}
-                        className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                    {/* Edit button - only for active tasks */}
+                    {!task.is_completed && (
+                      editingTaskId === task.id ? (
+                        <button
+                          onClick={() => saveEdit(task.id)}
+                          className="text-green-500 hover:text-green-600 transition-colors"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => startEditing(task)}
+                          className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      )
                     )}
                     <button
                       onClick={() => deleteTask(task.id)}
-                      className="text-[var(--text-muted)] hover:text-red-500 transition-colors"
+                      className={`
+                        transition-colors
+                        ${task.is_completed
+                          ? 'text-[var(--text-muted)] hover:text-red-400 opacity-0 group-hover:opacity-50'
+                          : 'text-[var(--text-muted)] hover:text-red-500'
+                        }
+                      `}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
-
-                {/* Completed Section */}
-                {completedTasks.length > 0 && (
-                  <div className="pt-3 mt-3 border-t border-[var(--border-secondary)]">
-                    <button
-                      onClick={() => setShowCompleted(!showCompleted)}
-                      className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
-                    >
-                      + {completedTasks.length} completed {showCompleted ? '▼' : '▶'}
-                    </button>
-
-                    {showCompleted && (
-                      <div className="mt-2 space-y-2">
-                        {completedTasks.map(task => (
-                          <div key={task.id} className="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-lg opacity-60">
-                            <input
-                              type="checkbox"
-                              checked={true}
-                              onChange={() => toggleTask(task.id, false)}
-                              className="w-4 h-4 rounded"
-                            />
-                            <span className="flex-1 text-sm line-through text-[var(--text-muted)]">{task.text}</span>
-                            <button
-                              onClick={() => deleteTask(task.id)}
-                              className="text-[var(--text-muted)] hover:text-red-500 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Empty state */}
                 {tasks.length === 0 && (
