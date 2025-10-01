@@ -2,6 +2,26 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.21] - 2025-10-01
+
+### Added
+- **V3-PLS Activation Scripts**: Created production enablement workflow
+  - Added enable-v3-pls-production.sql for safe production activation
+  - Comprehensive validation report documenting system integration
+  - Two-step activation: migration first, then configuration
+
+### Fixed
+- **V3-PLS Integration Validation**: Corrected misconceptions about system state
+  - Confirmed V3-PLS IS fully integrated in webhook flow
+  - Verified recordOperatorResponse() IS being called
+  - Confirmed UI IS connected to pattern database
+  - System intentionally defaults to disabled for safety
+
+### Documentation
+- Created V3-PLS-VALIDATION-REPORT.md with complete system analysis
+- Added production activation instructions
+- Clarified that V3-PLS learns but doesn't auto-respond without approval
+
 ## [1.21.20] - 2025-10-01
 
 ### Added

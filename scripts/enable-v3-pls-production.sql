@@ -1,175 +1,83 @@
--- Script to enable V3-PLS in production
--- Run this after migration 220 has been applied
--- Usage: railway run psql $DATABASE_URL < scripts/enable-v3-pls-production.sql
-
 -- ============================================
--- 1. ENABLE PATTERN LEARNING
+-- Enable V3-PLS Pattern Learning System
+-- Run this after migration 234 has been applied
 -- ============================================
 
--- Enable the pattern learning system
+-- Step 1: Verify migration has run
+DO $$
+DECLARE
+  pattern_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO pattern_count
+  FROM decision_patterns
+  WHERE created_from IN ('migrated', 'system');
+
+  IF pattern_count = 0 THEN
+    RAISE EXCEPTION 'Migration 234 has not been run yet. Please run migrations first.';
+  END IF;
+
+  RAISE NOTICE 'Found % migrated patterns', pattern_count;
+END $$;
+
+-- Step 2: Enable V3-PLS system
 UPDATE pattern_learning_config
 SET config_value = 'true', updated_at = NOW()
 WHERE config_key = 'enabled';
 
--- Disable shadow mode (allow actual execution)
 UPDATE pattern_learning_config
 SET config_value = 'false', updated_at = NOW()
 WHERE config_key = 'shadow_mode';
 
--- Enable ClubAI signature
-UPDATE pattern_learning_config
-SET config_value = 'true', updated_at = NOW()
-WHERE config_key = 'include_clubai_signature';
-
--- Set reasonable thresholds
-UPDATE pattern_learning_config
-SET config_value = '0.85', updated_at = NOW()
-WHERE config_key = 'auto_execute_threshold';
-
-UPDATE pattern_learning_config
-SET config_value = '0.60', updated_at = NOW()
-WHERE config_key = 'suggest_threshold';
-
-UPDATE pattern_learning_config
-SET config_value = '3', updated_at = NOW()
-WHERE config_key = 'min_executions_for_auto';
-
--- ============================================
--- 2. UPDATE EXISTING PATTERNS WITH CLUBAI SIGNATURE
--- ============================================
-
--- Add ClubAI signature to existing patterns that don't have it
+-- Step 3: Activate proven patterns (gift cards)
 UPDATE decision_patterns
-SET response_template =
-  CASE
-    WHEN response_template LIKE '%- ClubAI%' OR response_template LIKE '%-ClubAI%'
-    THEN response_template
-    ELSE response_template || E'\n\n- ClubAI'
-  END,
-  last_modified = NOW()
-WHERE is_active = true
-  AND (response_template NOT LIKE '%- ClubAI%'
-       AND response_template NOT LIKE '%-ClubAI%');
+SET
+  is_active = true,
+  auto_executable = false, -- Still require manual approval for auto-execution
+  notes = notes || ' | Activated for suggestions on ' || NOW()::date
+WHERE pattern_type = 'gift_cards'
+  AND created_from = 'migrated';
 
--- ============================================
--- 3. VERIFY CONFIGURATION
--- ============================================
-
--- Show current configuration
+-- Step 4: Show current status
 SELECT
+  'Configuration Status' as category,
   config_key,
   config_value,
   description
 FROM pattern_learning_config
-WHERE config_key IN (
-  'enabled',
-  'shadow_mode',
-  'include_clubai_signature',
-  'auto_execute_threshold',
-  'suggest_threshold',
-  'min_executions_for_auto',
-  'operator_lockout_hours',
-  'rapid_message_threshold',
-  'negative_sentiment_auto_escalate'
-)
+WHERE config_key IN ('enabled', 'shadow_mode', 'auto_execute_threshold', 'suggest_threshold')
 ORDER BY config_key;
 
--- ============================================
--- 4. CHECK ACTIVE PATTERNS
--- ============================================
-
--- Show active patterns with their confidence scores
 SELECT
-  id,
+  'Pattern Status' as category,
   pattern_type,
-  LEFT(trigger_text, 50) as trigger_preview,
-  confidence_score,
+  trigger_text,
+  is_active,
   auto_executable,
-  execution_count,
-  success_count,
+  confidence_score,
   CASE
-    WHEN response_template LIKE '%- ClubAI%' THEN 'Yes'
-    ELSE 'No'
-  END as has_signature
+    WHEN auto_executable AND is_active THEN 'AUTO-EXECUTING'
+    WHEN is_active AND NOT auto_executable THEN 'SUGGESTING'
+    ELSE 'DISABLED'
+  END as status
 FROM decision_patterns
-WHERE is_active = true
-  AND (is_deleted IS NULL OR is_deleted = false)
-ORDER BY confidence_score DESC;
+WHERE created_from IN ('migrated', 'system')
+ORDER BY pattern_type;
 
--- ============================================
--- 5. CHECK SAFEGUARD TABLES
--- ============================================
-
--- Verify new tables exist
-SELECT
-  'operator_interventions' as table_name,
-  EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'operator_interventions') as exists
-UNION ALL
-SELECT
-  'conversation_states',
-  EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'conversation_states')
-UNION ALL
-SELECT
-  'negative_sentiment_patterns',
-  EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'negative_sentiment_patterns');
-
--- Check if operator tracking columns were added
-SELECT
-  column_name,
-  data_type
-FROM information_schema.columns
-WHERE table_name = 'openphone_conversations'
-  AND column_name IN (
-    'operator_active',
-    'operator_last_message',
-    'ai_last_message',
-    'conversation_locked',
-    'lockout_until',
-    'rapid_message_count',
-    'customer_sentiment'
-  );
-
--- ============================================
--- 6. CHECK NEGATIVE SENTIMENT PATTERNS
--- ============================================
-
--- Show loaded negative sentiment patterns
-SELECT
-  pattern,
-  severity,
-  auto_escalate,
-  LEFT(escalation_message, 50) as message_preview
-FROM negative_sentiment_patterns
-WHERE is_active = true
-ORDER BY severity DESC;
-
--- ============================================
--- SUMMARY
--- ============================================
-
-SELECT
-  'V3-PLS Status Report' as report,
-  NOW() as timestamp;
-
-SELECT
-  'Pattern Learning Enabled' as setting,
-  (SELECT config_value FROM pattern_learning_config WHERE config_key = 'enabled') as value
-UNION ALL
-SELECT
-  'Shadow Mode',
-  (SELECT config_value FROM pattern_learning_config WHERE config_key = 'shadow_mode')
-UNION ALL
-SELECT
-  'Active Patterns',
-  COUNT(*)::text
-FROM decision_patterns WHERE is_active = true
-UNION ALL
-SELECT
-  'Patterns with ClubAI Signature',
-  COUNT(*)::text
-FROM decision_patterns
-WHERE is_active = true
-  AND response_template LIKE '%- ClubAI%';
-
--- Done!
-\echo 'V3-PLS activation complete!'
+-- Success message
+DO $$
+BEGIN
+  RAISE NOTICE '';
+  RAISE NOTICE '✅ V3-PLS Pattern Learning System ENABLED';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Status:';
+  RAISE NOTICE '  - System is now ACTIVE and will process messages';
+  RAISE NOTICE '  - Shadow mode is OFF (suggestions will be shown)';
+  RAISE NOTICE '  - Gift card pattern is enabled for SUGGESTIONS';
+  RAISE NOTICE '  - Other patterns remain disabled for safety';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Next steps:';
+  RAISE NOTICE '  1. Monitor pattern suggestions in the UI';
+  RAISE NOTICE '  2. Review operator responses to build confidence';
+  RAISE NOTICE '  3. Manually enable patterns in Operations > V3-PLS when ready';
+  RAISE NOTICE '  4. Promote to auto-executable only after proven success';
+END $$;

@@ -8,10 +8,10 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.20**
-- **Unified V3-PLS Pattern System** - All patterns now managed in one place
+**Current Version: v1.21.21**
+- **V3-PLS Fully Validated** - System is integrated and ready for activation
+- **Production Activation Scripts** - Safe two-step enablement process
 - **Suggestion-Only Mode** - Patterns suggest responses, operators approve
-- **Auto-Executable Control** - Fine-grained control over which patterns auto-respond
 - **Pattern Learning** - System learns from every operator interaction
 
 ## 🏗️ System Architecture
@@ -29,6 +29,19 @@ See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 - **GPT-4 Assistant Routing**: Emergency, Booking, Tech Support, Brand Tone
 - **Automated Responses**: Configurable rules with confidence thresholds
 - **Knowledge Management**: Natural language updates, searchable archive
+
+#### Activating V3-PLS (Pattern Learning System)
+```bash
+# Step 1: Deploy to run migration (auto-deploys)
+git push
+
+# Step 2: Enable V3-PLS in production
+railway run psql $DATABASE_URL < scripts/enable-v3-pls-production.sql
+
+# Step 3: Use UI to enable patterns
+# Go to Operations > V3-PLS Patterns
+# Toggle ON trusted patterns (gift cards, etc.)
+```
 
 ### Operations Management
 - **Tickets**: Location-based tracking, photo attachments, priority workflow
