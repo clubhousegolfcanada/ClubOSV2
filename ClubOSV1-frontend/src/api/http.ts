@@ -111,13 +111,21 @@ client.interceptors.response.use(
 
       // List of non-critical endpoints that shouldn't trigger logout
       const nonCriticalEndpoints = [
+        '/api/ninjaone/',
         '/ninjaone/',
+        '/api/system/check',
         '/system/check',
+        '/api/door-access/',
         '/door-access/',
+        '/api/remote-actions/',
         '/remote-actions/',
+        '/api/performance',
         '/performance',
+        '/api/devices',
         '/devices',
+        '/api/scripts',
         '/scripts',
+        '/api/status/',
         '/status/'
       ];
 

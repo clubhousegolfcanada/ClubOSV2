@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.19] - 2025-10-01
+
+### Fixed
+- **Remote Actions Bar Mobile Logout Fix (Complete)**: Properly fixed the logout issue
+  - Added /api/ prefix variants to all non-critical endpoints
+  - Now correctly matches /api/ninjaone/scripts and /api/ninjaone/devices URLs
+  - Previous fix only covered partial URL patterns
+  - Result: Remote Actions Bar no longer triggers logout on mobile when opened
+
 ## [1.21.18] - 2025-10-01
 
 ### Fixed
