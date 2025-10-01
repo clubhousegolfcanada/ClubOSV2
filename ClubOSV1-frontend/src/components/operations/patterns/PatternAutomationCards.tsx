@@ -177,10 +177,32 @@ export const PatternAutomationCards: React.FC = () => {
         description: 'Handles miscellaneous customer questions',
         icon: MessageCircle,
         category: 'customer_service'
+      },
+      'operator_learning': {
+        name: 'Learned Pattern',
+        description: 'Pattern learned from operator responses - needs review',
+        icon: Brain,
+        category: 'learning'
+      },
+      'unknown': {
+        name: 'New Pattern',
+        description: 'Newly discovered pattern - requires configuration',
+        icon: AlertCircle,
+        category: 'review'
       }
     };
-    
-    return configs[type] || configs['general'];
+
+    // Return specific config or use operator_learning for learned patterns
+    if (configs[type]) {
+      return configs[type];
+    }
+
+    // Check if it's a learned pattern by looking for common indicators
+    if (type?.includes('learned') || type?.includes('operator')) {
+      return configs['operator_learning'];
+    }
+
+    return configs['general'];
   };
 
   const toggleAutomation = async (id: number, currentState: boolean) => {

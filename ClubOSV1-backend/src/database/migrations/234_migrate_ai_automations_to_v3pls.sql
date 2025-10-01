@@ -59,7 +59,7 @@ INSERT INTO decision_patterns (
 
 - ClubAI',
   0.90, -- High confidence as this is proven
-  true, -- Active
+  false, -- NOT active - operator must enable
   false, -- NOT auto-executable until manually approved
   0, -- Reset execution count
   0, -- Reset success count
@@ -97,7 +97,7 @@ Would you like me to reset it for you? Just reply "yes" and I''ll take care of i
 
 - ClubAI',
   0.85, -- Good confidence
-  true, -- Active
+  false, -- NOT active - operator must enable
   false, -- NOT auto-executable - requires confirmation
   0,
   0,
@@ -135,7 +135,7 @@ If you need immediate assistance or have issues with Skedda, please call us at y
 
 - ClubAI',
   0.80,
-  true,
+  false, -- NOT active - operator must enable
   false, -- NOT auto-executable initially
   0,
   0,
@@ -173,8 +173,8 @@ Our team will respond shortly.
 
 - ClubAI',
   1.00, -- Always escalate rapid messages
-  true,
-  true, -- This one CAN auto-execute as it's a safety feature
+  true, -- ACTIVE - this is a safety feature
+  true, -- AUTO-EXECUTE - this is a safety feature
   0,
   0,
   'system',

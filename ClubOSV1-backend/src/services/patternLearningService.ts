@@ -1529,13 +1529,15 @@ Please provide:
       const patternType = this.detectPatternType(triggerText);
 
       // Create new pattern with moderate initial confidence
+      // IMPORTANT: Both is_active AND auto_executable start as FALSE
+      // Operator must manually enable patterns before they can even suggest responses
       await db.query(`
         INSERT INTO decision_patterns
         (pattern_signature, pattern_type, trigger_text, trigger_keywords,
          response_template, confidence_score, auto_executable, is_active,
          created_from, notes, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, false, true, 'operator_learning',
-                'Pattern learned from operator responses', NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, false, false, 'operator_learning',
+                'Pattern learned from operator responses - requires manual activation', NOW())
         ON CONFLICT (pattern_signature) DO UPDATE
         SET response_template = EXCLUDED.response_template,
             confidence_score = LEAST(decision_patterns.confidence_score + 0.1, 0.8),
