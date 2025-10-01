@@ -76,6 +76,13 @@ const TicketCenterOptimizedV2 = () => {
   const loadTickets = async () => {
     setLoading(true);
     try {
+      const token = tokenManager.getToken();
+      if (!token) {
+        notify('error', 'Please login to view tickets');
+        setLoading(false);
+        return;
+      }
+
       const params = new URLSearchParams();
 
       if (categoryFilter !== 'all') {
@@ -86,7 +93,11 @@ const TicketCenterOptimizedV2 = () => {
         params.append('location', selectedLocation);
       }
 
-      const response = await http.get(`tickets?${params}`);
+      const response = await http.get(`tickets?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       if (response.data.success) {
         setTickets(response.data.data);
@@ -175,7 +186,16 @@ const TicketCenterOptimizedV2 = () => {
 
   const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus) => {
     try {
-      const response = await http.patch(`tickets/${ticketId}/status`, { status: newStatus });
+      const token = tokenManager.getToken();
+      const response = await http.patch(
+        `tickets/${ticketId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       if (response.data.success) {
         notify('success', 'Ticket status updated');
@@ -201,7 +221,16 @@ const TicketCenterOptimizedV2 = () => {
     if (!confirm('Archive this ticket?')) return;
 
     try {
-      const response = await http.patch(`tickets/${ticketId}/status`, { status: 'archived' });
+      const token = tokenManager.getToken();
+      const response = await http.patch(
+        `tickets/${ticketId}/status`,
+        { status: 'archived' },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       if (response.data.success) {
         notify('success', 'Ticket archived');
@@ -220,7 +249,16 @@ const TicketCenterOptimizedV2 = () => {
     if (!newComment.trim()) return;
 
     try {
-      const response = await http.post(`tickets/${ticketId}/comments`, { text: newComment });
+      const token = tokenManager.getToken();
+      const response = await http.post(
+        `tickets/${ticketId}/comments`,
+        { text: newComment },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       if (response.data.success) {
         notify('success', 'Comment added');
