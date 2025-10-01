@@ -14,6 +14,11 @@ All notable changes to ClubOS will be documented in this file.
   - Completed tasks remain interactive - checkbox can be unchecked to restore
   - Result: Natural, satisfying task completion experience matching Google Keep behavior
 
+- **CORS PATCH Method Support**: Fixed task editing in production
+  - Added PATCH method to allowed CORS methods
+  - Tasks can now be edited properly from the frontend
+  - Resolved 'Method PATCH is not allowed' error
+
 ## [1.21.9] - 2025-09-30
 
 ### Fixed
