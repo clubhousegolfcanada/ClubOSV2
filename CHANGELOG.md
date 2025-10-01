@@ -2,12 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.12] - 2025-10-01
+
+### Fixed
+- **Google OAuth Domain Correction**: Fixed operator authentication domain
+  - Changed from @clubhouse247.com to @clubhouse247golf.com
+  - Updated backend ALLOWED_DOMAINS configuration
+  - Fixed Google Workspace hint domain in OAuth flow
+  - Updated frontend UI text to show correct domain
+  - Updated all documentation to reflect correct domain
+  - Result: Operators can now sign in with @clubhouse247golf.com accounts
+
 ## [1.21.11] - 2025-10-01
 
 ### Added
 - **Google OAuth Authentication**: Complete implementation for both operators and customers
   - Google Sign-In button for one-click authentication
-  - Operators: Restricted to @clubhouse247.com domain
+  - Operators: Restricted to @clubhouse247golf.com domain
   - Customers: Accept all Google accounts with auto-approval
   - Auto-creates user accounts and customer profiles on first sign-in
   - Links existing accounts when emails match
@@ -48,7 +59,7 @@ All notable changes to ClubOS will be documented in this file.
 ### Added
 - **Google Sign-In for ALL Users**: Universal OAuth authentication
   - One-click sign-in for both operators and customers
-  - Operators: Domain-restricted to @clubhouse247.com accounts
+  - Operators: Domain-restricted to @clubhouse247golf.com accounts
   - Customers: Accept all Google accounts (Gmail, etc.)
   - Auto-creates accounts on first Google sign-in
   - Auto-creates customer profiles with Google profile picture

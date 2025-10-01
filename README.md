@@ -8,9 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.11**
+**Current Version: v1.21.12**
 - **Google OAuth Authentication** - Sign in with Google for all users
-- Operators restricted to @clubhouse247.com domain
+- Operators restricted to @clubhouse247golf.com domain
 - Customers can use any Google account
 - Auto-creates accounts and profiles on first sign-in
 

@@ -13,7 +13,7 @@ const googleClient = new OAuth2Client({
 });
 
 // Domain restriction for Clubhouse employees
-const ALLOWED_DOMAINS = ['clubhouse247.com', 'clubhouseathleticclub.com'];
+const ALLOWED_DOMAINS = ['clubhouse247golf.com', 'clubhouseathleticclub.com'];
 const ALLOWED_TEST_EMAILS = process.env.GOOGLE_TEST_EMAILS?.split(',') || [];
 
 export interface GoogleUserInfo {
@@ -40,7 +40,7 @@ export const getGoogleAuthUrl = (): string => {
     access_type: 'offline',
     scope: scopes,
     prompt: 'select_account', // Always show account selection
-    hd: 'clubhouse247.com' // Hint for Google Workspace domain
+    hd: 'clubhouse247golf.com' // Hint for Google Workspace domain
   });
 
   return authUrl;

@@ -61,7 +61,7 @@
 4. Add authorized redirect URIs:
    - Production: `https://clubosv2-production.up.railway.app/api/auth/google/callback`
    - Development: `http://localhost:3000/api/auth/google/callback`
-5. Restrict to @clubhouse247.com domain in OAuth consent screen
+5. Restrict to @clubhouse247golf.com domain in OAuth consent screen
 6. Copy Client ID and Secret to environment variables
 
 ### UniFi Access (Optional)

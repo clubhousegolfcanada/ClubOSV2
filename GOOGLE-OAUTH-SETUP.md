@@ -4,7 +4,7 @@
 - Google Cloud Console account
 - Admin access to Railway (backend)
 - Admin access to Vercel (frontend)
-- Domain verification for @clubhouse247.com (for operator restrictions)
+- Domain verification for @clubhouse247golf.com (for operator restrictions)
 
 ## Step 1: Google Cloud Console Setup
 
@@ -27,7 +27,7 @@
 5. **Configure OAuth Consent Screen**
    - User type: Internal (if using Google Workspace) or External
    - App name: `ClubOS`
-   - User support email: `support@clubhouse247.com`
+   - User support email: `support@clubhouse247golf.com`
    - App domain: `clubhouse247.com`
    - Authorized domains: `clubhouse247.com`
    - Developer contact: Your email
@@ -110,7 +110,7 @@ cd ClubOSV1-backend
 npm run db:migrate
 ```
 
-## Step 6: Domain Verification (For @clubhouse247.com restriction)
+## Step 6: Domain Verification (For @clubhouse247golf.com restriction)
 
 1. **Verify domain ownership in Google Cloud Console**
    - Go to "APIs & Services" → "Domain verification"
@@ -118,7 +118,7 @@ npm run db:migrate
    - Follow Google's verification process (DNS TXT record)
 
 2. **Configure Google Workspace (if applicable)**
-   - Ensure @clubhouse247.com emails are part of Google Workspace
+   - Ensure @clubhouse247golf.com emails are part of Google Workspace
    - This enables single sign-on for operators
 
 ## Step 7: Testing
@@ -139,13 +139,13 @@ npm run db:migrate
 
 3. **Test login flows**:
    - Go to http://localhost:3001/login
-   - Test operator login with @clubhouse247.com account
+   - Test operator login with @clubhouse247golf.com account
    - Switch to customer mode and test with regular Gmail account
 
 ## Features
 
 ### For Operators
-- **Domain Restriction**: Only @clubhouse247.com emails can sign in
+- **Domain Restriction**: Only @clubhouse247golf.com emails can sign in
 - **Single Sign-On**: Uses existing Google Workspace accounts
 - **Remember Me**: 30-day tokens when checked, 7-day without
 
