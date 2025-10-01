@@ -28,6 +28,7 @@ if (process.env.NODE_ENV !== 'test') {
   }
 }
 import authRoutes from './routes/auth';
+import authGoogleRoutes from './routes/auth-google';
 import bookingsRoutes from './routes/bookings';
 import ticketsRoutes from './routes/tickets';
 import tasksRoutes from './routes/tasks';
@@ -247,6 +248,7 @@ app.use('/api/public', publicRoutes);
 
 // API Routes - V1 (existing routes remain active)
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', authGoogleRoutes); // Google OAuth routes
 
 // V2 Routes - Parallel deployment for gradual migration
 // TODO: Uncomment when refactored routes are ready

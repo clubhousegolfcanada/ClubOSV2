@@ -107,6 +107,26 @@ client.interceptors.response.use(
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
+      const requestUrl = error.config?.url || '';
+
+      // List of non-critical endpoints that shouldn't trigger logout
+      const nonCriticalEndpoints = [
+        '/ninjaone/',
+        '/system/check',
+        '/door-access/',
+        '/remote-actions/',
+        '/performance'
+      ];
+
+      // Check if this is a non-critical endpoint
+      const isNonCritical = nonCriticalEndpoints.some(endpoint =>
+        requestUrl.includes(endpoint)
+      );
+
+      // Don't logout for non-critical endpoints - just let them fail gracefully
+      if (isNonCritical) {
+        return Promise.reject(error);
+      }
 
       // Don't redirect if already on login or if it's an auth endpoint
       if (currentPath !== '/login' && !currentPath.startsWith('/auth/')) {
@@ -114,6 +134,7 @@ client.interceptors.response.use(
         tokenManager.clearToken();
         localStorage.removeItem('clubos_user');
         localStorage.removeItem('clubos_view_mode');
+        localStorage.removeItem('remoteActionsExpanded'); // Clear RemoteActionsBar state
 
         // Only redirect once, prevent loops
         if (!sessionStorage.getItem('redirecting_to_login')) {

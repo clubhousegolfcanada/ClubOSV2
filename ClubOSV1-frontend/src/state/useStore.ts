@@ -189,7 +189,9 @@ export const useAuthState = create<AuthState>()(
           tokenManager.clearToken();
           localStorage.removeItem('clubos_user');
           localStorage.removeItem('clubos_view_mode');
-          
+          // Clear RemoteActionsBar state to prevent auto-expansion issues
+          localStorage.removeItem('remoteActionsExpanded');
+
           // Clear any other auth-related items
           const keysToRemove = [];
           for (let i = 0; i < localStorage.length; i++) {

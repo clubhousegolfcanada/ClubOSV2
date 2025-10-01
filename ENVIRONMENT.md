@@ -45,6 +45,25 @@
 | `VAPID_PRIVATE_KEY` | Yes | - | Web push private key |
 | `VAPID_EMAIL` | Yes | - | Contact email for push service |
 
+### Google OAuth Configuration (NEW)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GOOGLE_CLIENT_ID` | No | - | Google OAuth client ID from Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | No | - | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | No | See below | OAuth callback URL |
+| `GOOGLE_TEST_EMAILS` | No | - | Comma-separated test emails for development |
+
+**Google OAuth Setup:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create/select project → Enable Google+ API
+3. Create OAuth 2.0 credentials (Web application type)
+4. Add authorized redirect URIs:
+   - Production: `https://clubos-backend.up.railway.app/api/auth/google/callback`
+   - Development: `http://localhost:3000/api/auth/google/callback`
+5. Restrict to @clubhouse247.com domain in OAuth consent screen
+6. Copy Client ID and Secret to environment variables
+
 ### UniFi Access (Optional)
 
 | Variable | Required | Default | Description |

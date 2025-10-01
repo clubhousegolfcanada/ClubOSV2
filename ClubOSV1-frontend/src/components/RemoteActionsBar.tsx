@@ -61,19 +61,36 @@ const RemoteActionsBar: React.FC = () => {
   // Load NinjaOne scripts and devices from database
   const loadNinjaOneData = async () => {
     try {
-      // Fetch scripts
-      const scriptsResponse = await http.get('ninjaone/scripts');
-      if (scriptsResponse.data.success) {
-        setAvailableScripts(scriptsResponse.data.scripts);
+      // Fetch scripts with error resilience
+      try {
+        const scriptsResponse = await http.get('ninjaone/scripts');
+        if (scriptsResponse.data.success) {
+          setAvailableScripts(scriptsResponse.data.scripts);
+        }
+      } catch (scriptsError: any) {
+        // Don't let script loading failure break the component
+        if (scriptsError.response?.status !== 401) {
+          logger.debug('Scripts endpoint not available, using defaults');
+        }
       }
-      
-      // Fetch devices
-      const devicesResponse = await http.get('ninjaone/devices');
-      if (devicesResponse.data.success) {
-        setAvailableDevices(devicesResponse.data.devices);
+
+      // Fetch devices with error resilience
+      try {
+        const devicesResponse = await http.get('ninjaone/devices');
+        if (devicesResponse.data.success) {
+          setAvailableDevices(devicesResponse.data.devices);
+        }
+      } catch (devicesError: any) {
+        // Don't let device loading failure break the component
+        if (devicesError.response?.status !== 401) {
+          logger.debug('Devices endpoint not available, using defaults');
+        }
       }
-    } catch (error) {
-      logger.error('Failed to load NinjaOne data:', error);
+    } catch (error: any) {
+      // Only log non-401 errors to avoid confusion
+      if (error.response?.status !== 401) {
+        logger.debug('NinjaOne data not available, using defaults');
+      }
       // Fallback to default scripts if database is empty
       setAvailableScripts([
         { script_id: 'restart-trackman', display_name: 'Restart TrackMan', category: 'trackman', icon: 'refresh-cw', requires_bay: true },

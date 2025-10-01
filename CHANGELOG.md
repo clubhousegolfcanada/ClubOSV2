@@ -2,6 +2,46 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.9] - 2025-09-30
+
+### Fixed
+- **Remote Actions Bar Logout Issue**: Fixed operators being logged out when expanding Remote Actions Bar
+  - Added RemoteActionsBar state cleanup on logout to prevent auto-expansion issues
+  - Made http interceptor more selective - non-critical endpoints no longer trigger logout
+  - Added error resilience to NinjaOne API calls in RemoteActionsBar
+  - Result: Operators can now use Remote Actions Bar without being unexpectedly logged out
+
+## [1.21.8] - 2025-09-27
+
+### Added
+- **Google Sign-In for ALL Users**: Universal OAuth authentication
+  - One-click sign-in for both operators and customers
+  - Operators: Domain-restricted to @clubhouse247.com accounts
+  - Customers: Accept all Google accounts (Gmail, etc.)
+  - Auto-creates accounts on first Google sign-in
+  - Auto-creates customer profiles with Google profile picture
+  - Links existing accounts when emails match
+  - Different button text: "Sign in with Google" vs "Continue with Google"
+  - Refresh token support for persistent sessions
+  - Audit logging for all OAuth sign-in attempts
+
+### Enhanced
+- **Customer Experience**: Seamless onboarding with Google
+  - No passwords to remember for customers
+  - Instant account creation with verified emails
+  - Google profile pictures automatically imported
+  - Auto-approved accounts (no pending status for Google users)
+  - Customer profiles created with default ClubCoin balance
+  - Works for both login and signup flows
+
+### Technical
+- Updated `isEmailAllowed()` to accept customer/operator distinction
+- Modified `findOrCreateGoogleUser()` to handle customer profiles
+- Enhanced OAuth routes to pass user type through state parameter
+- GoogleSignInButton component shows for both user types
+- Auto-detects role based on email domain and user selection
+- Migration 233 adds comprehensive OAuth support to database
+
 ## [1.21.7] - 2025-09-26
 
 ### Fixed

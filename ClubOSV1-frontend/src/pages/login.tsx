@@ -6,6 +6,7 @@ import { http } from '@/api/http';
 import { Eye, EyeOff, Users, User, ArrowRight } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -348,13 +349,23 @@ const LoginPage = () => {
               disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
-              {isLoading ? 
-                (isSignup ? 'Creating account...' : 'Signing in...') : 
+              {isLoading ?
+                (isSignup ? 'Creating account...' : 'Signing in...') :
                 (isSignup ? 'Create Account' : 'Sign In')
               }
             </button>
           </div>
         </form>
+
+        {/* Google Sign-In for both Operators and Customers */}
+        {!isSignup && (
+          <div className="mt-6">
+            <GoogleSignInButton
+              rememberMe={rememberMe}
+              loginMode={loginMode}
+            />
+          </div>
+        )}
 
         {/* Customer signup/login toggle */}
         {loginMode === 'customer' && (
