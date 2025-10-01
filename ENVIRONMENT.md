@@ -59,7 +59,7 @@
 2. Create/select project → Enable Google+ API
 3. Create OAuth 2.0 credentials (Web application type)
 4. Add authorized redirect URIs:
-   - Production: `https://clubos-backend.up.railway.app/api/auth/google/callback`
+   - Production: `https://clubosv2-production.up.railway.app/api/auth/google/callback`
    - Development: `http://localhost:3000/api/auth/google/callback`
 5. Restrict to @clubhouse247.com domain in OAuth consent screen
 6. Copy Client ID and Secret to environment variables

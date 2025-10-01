@@ -1,18 +1,18 @@
-# ClubOS v1.21.10 - Flexible Facility Management System
+# ClubOS v1.21.11 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
-**Production URL**: https://clubos-frontend.vercel.app
+**Production URL**: https://club-osv-2-owqx.vercel.app
 
 ## 🎯 Latest Updates
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.10**
-- **Fixed My Tasks Card Checkbox Behavior** - Google Keep-style task completion
-- Completed tasks stay visible with semi-transparent styling
-- Smooth animations when checking/unchecking tasks
-- Tasks automatically sort with completed items at bottom
+**Current Version: v1.21.11**
+- **Google OAuth Authentication** - Sign in with Google for all users
+- Operators restricted to @clubhouse247.com domain
+- Customers can use any Google account
+- Auto-creates accounts and profiles on first sign-in
 
 ## 🏗️ System Architecture
 
