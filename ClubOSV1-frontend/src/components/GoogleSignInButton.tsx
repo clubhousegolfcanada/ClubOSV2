@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import logger from '@/services/logger';
+import { http } from '@/api/http';
 
 interface GoogleSignInButtonProps {
   rememberMe: boolean;
@@ -27,13 +28,9 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         user_type: loginMode === 'customer' ? 'customer' : 'operator'
       });
 
-      const response = await fetch('/api/auth/google?' + params);
-
-      if (!response.ok) {
-        throw new Error('Failed to initiate Google sign-in');
-      }
-
-      const data = await response.json();
+      // Use http client which has the correct backend URL configured
+      const response = await http.get(`/auth/google?${params}`);
+      const data = response.data;
 
       if (data.success && data.data?.authUrl) {
         // Redirect to Google OAuth
