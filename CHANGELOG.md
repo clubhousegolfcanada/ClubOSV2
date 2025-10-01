@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.13] - 2025-10-01
+
+### Fixed
+- **Google OAuth Redirect URLs**: Fixed "Cannot GET /login" error
+  - Changed from NEXT_PUBLIC_FRONTEND_URL to FRONTEND_URL (already configured in Railway)
+  - Fixed all error redirects to use full frontend URLs instead of relative paths
+  - Success and error redirects now properly go to https://club-osv-2-owqx.vercel.app
+  - Result: OAuth flow completes successfully with proper redirects
+
 ## [1.21.12] - 2025-10-01
 
 ### Fixed

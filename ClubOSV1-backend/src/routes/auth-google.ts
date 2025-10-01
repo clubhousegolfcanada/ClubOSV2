@@ -75,12 +75,14 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     // Handle Google errors
     if (googleError) {
       logger.error('Google OAuth error:', googleError);
-      return res.redirect(`/login?error=${googleError}`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      return res.redirect(`${frontendUrl}/login?error=${googleError}`);
     }
 
     if (!code || typeof code !== 'string') {
       logger.error('No authorization code received');
-      return res.redirect('/login?error=no_code');
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      return res.redirect(`${frontendUrl}/login?error=no_code`);
     }
 
     // Parse state parameter
@@ -107,7 +109,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     // Redirect to frontend with token
     // In production, you might want to use a more secure method
-    const redirectUrl = new URL('/auth/success', process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001');
+    const redirectUrl = new URL('/auth/success', process.env.FRONTEND_URL || 'http://localhost:3001');
     redirectUrl.searchParams.append('token', result.token);
     redirectUrl.searchParams.append('user', JSON.stringify({
       id: result.user.id,
@@ -128,7 +130,8 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     // Redirect to login with error
     const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
-    res.redirect(`/login?error=oauth_failed&message=${errorMessage}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    res.redirect(`${frontendUrl}/login?error=oauth_failed&message=${errorMessage}`);
   }
 });
 
