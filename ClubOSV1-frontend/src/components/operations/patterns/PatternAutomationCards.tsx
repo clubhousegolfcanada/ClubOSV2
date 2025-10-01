@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Settings, Zap, Brain, TrendingUp, Clock, Edit2, Trash2, Plus, CheckCircle, AlertCircle,
   Gift, Calendar, Wrench, CreditCard, DollarSign, HelpCircle, DoorOpen, MessageCircle,
-  Archive, ChevronDown, ChevronRight, RotateCcw
+  Archive, ChevronDown, ChevronRight, RotateCcw, Activity
 } from 'lucide-react';
 import apiClient from '@/api/http';
 import logger from '@/services/logger';
