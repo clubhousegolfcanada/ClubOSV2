@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, ChevronDown, ChevronUp, Loader, Check, Edit2 } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronUp, Loader, Check, Edit2, Ticket } from 'lucide-react';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
+import { useRouter } from 'next/router';
 import logger from '@/services/logger';
 
 interface Task {
@@ -21,6 +22,7 @@ export const TaskList = () => {
   const [editingText, setEditingText] = useState('');
   const { notify } = useNotifications();
   const { user } = useAuthState();
+  const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
@@ -140,6 +142,26 @@ export const TaskList = () => {
     } catch (error) {
       notify('error', 'Failed to delete task');
     }
+  };
+
+  const createTicketFromTask = (taskText: string) => {
+    // Encode the task text for URL parameter
+    const encodedText = encodeURIComponent(taskText);
+    // Navigate to the terminal with ticket mode and pre-filled text
+    router.push(`/?ticketMode=true&text=${encodedText}`);
+
+    // Smooth scroll to RequestForm after navigation
+    setTimeout(() => {
+      const element = document.querySelector('[data-terminal="clubos-terminal"]');
+      if (element) {
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - 100;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
   };
 
   // Sort tasks: active first, then completed
@@ -274,23 +296,34 @@ export const TaskList = () => {
                         {task.text}
                       </span>
                     )}
-                    {/* Edit button - only for active tasks */}
+                    {/* Action buttons - only for active tasks */}
                     {!task.is_completed && (
-                      editingTaskId === task.id ? (
+                      <>
+                        {editingTaskId === task.id ? (
+                          <button
+                            onClick={() => saveEdit(task.id)}
+                            className="text-green-500 hover:text-green-600 transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => startEditing(task)}
+                            className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors opacity-0 group-hover:opacity-100"
+                            title="Edit task"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {/* Create ticket button */}
                         <button
-                          onClick={() => saveEdit(task.id)}
-                          className="text-green-500 hover:text-green-600 transition-colors"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => startEditing(task)}
+                          onClick={() => createTicketFromTask(task.text)}
                           className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors opacity-0 group-hover:opacity-100"
+                          title="Create ticket from task"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Ticket className="w-4 h-4" />
                         </button>
-                      )
+                      </>
                     )}
                     <button
                       onClick={() => deleteTask(task.id)}

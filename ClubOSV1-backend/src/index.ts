@@ -495,6 +495,66 @@ async function startServer() {
     await db.initialize();
     logger.info('✅ Database initialized successfully');
 
+    // Run Google OAuth migration - critical for authentication
+    try {
+      logger.info('🔄 Running Google OAuth migration...');
+
+      // Add OAuth columns to users table
+      await db.query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE,
+        ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(20) DEFAULT 'local' CHECK (auth_provider IN ('local', 'google', 'microsoft')),
+        ADD COLUMN IF NOT EXISTS oauth_email VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS oauth_picture_url TEXT,
+        ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false,
+        ADD COLUMN IF NOT EXISTS oauth_metadata JSONB
+      `);
+
+      // Create OAuth sessions table
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS oauth_sessions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          provider VARCHAR(20) NOT NULL,
+          access_token TEXT,
+          refresh_token TEXT,
+          token_expires_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create OAuth login audit table
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS oauth_login_audit (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          email VARCHAR(255) NOT NULL,
+          provider VARCHAR(20) NOT NULL,
+          google_id VARCHAR(255),
+          success BOOLEAN NOT NULL,
+          failure_reason TEXT,
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create indexes
+      await db.query(`
+        CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_users_auth_provider ON users(auth_provider);
+        CREATE INDEX IF NOT EXISTS idx_oauth_sessions_user_id ON oauth_sessions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_oauth_login_audit_email ON oauth_login_audit(email);
+      `);
+
+      logger.info('✅ Google OAuth migration completed');
+    } catch (error) {
+      logger.error('Failed to run Google OAuth migration:', error);
+      // Don't fail startup - log and continue
+    }
+
     // Run ticket photo migration - critical for ticket creation
     try {
       logger.info('🔄 Running ticket photo migration...');

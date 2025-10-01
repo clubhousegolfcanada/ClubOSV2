@@ -152,15 +152,27 @@ const RequestForm: React.FC = () => {
     }
   }, [showAdvancedRouting, isMounted]);
 
-  // Check for ticket query parameter on mount (client-side only)
+  // Check for ticket query parameter and text on mount (client-side only)
   useEffect(() => {
-    if (isMounted && (router.query.ticket === 'true' || router.query.ticketMode === 'true')) {
-      setIsTicketMode(true);
-      setSmartAssistEnabled(false);
-      // Remove the query parameter from URL without reload
-      router.replace('/', undefined, { shallow: true });
+    if (isMounted) {
+      // Check for ticket mode
+      if (router.query.ticket === 'true' || router.query.ticketMode === 'true') {
+        setIsTicketMode(true);
+        setSmartAssistEnabled(false);
+      }
+
+      // Check for pre-filled text
+      if (router.query.text && typeof router.query.text === 'string') {
+        const decodedText = decodeURIComponent(router.query.text);
+        setValue('requestDescription', decodedText);
+      }
+
+      // Remove the query parameters from URL without reload
+      if (router.query.ticket || router.query.ticketMode || router.query.text) {
+        router.replace('/', undefined, { shallow: true });
+      }
     }
-  }, [router.query.ticket, router.query.ticketMode, router, isMounted]);
+  }, [router.query.ticket, router.query.ticketMode, router.query.text, router, isMounted, setValue]);
 
   // Handle demo mode
   useEffect(() => {
@@ -656,7 +668,7 @@ const RequestForm: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: shimmerKeyframes }} />
       
       {/* Main Form Card */}
-      <div className="card group">
+      <div className="card group" data-terminal="clubos-terminal">
         {/* Title Header with Update button on right */}
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>

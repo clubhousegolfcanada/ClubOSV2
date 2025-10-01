@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.15] - 2025-10-01
+
+### Fixed
+- **Google OAuth Database Migration**: Added automatic migration on startup
+  - Migration 233 now runs automatically when backend starts
+  - Adds google_id, auth_provider, oauth_email columns to users table
+  - Creates oauth_sessions and oauth_login_audit tables
+  - Creates necessary indexes for performance
+  - Result: Google OAuth authentication now works in production
+
+## [1.21.14] - 2025-10-01
+
+### Added
+- **Create Ticket from Task**: Seamless task-to-ticket conversion
+  - Added ticket icon button to each active task in My Tasks card
+  - Clicking ticket icon navigates to ClubOS Terminal with task text pre-filled
+  - Automatically activates ticket mode in the terminal
+  - User can adjust priority, category, location, and add photos
+  - Smooth scroll to terminal after navigation
+  - Button appears on hover, consistent with Google Keep style
+  - Result: Quick workflow from task to ticket creation
+
 ## [1.21.13] - 2025-10-01
 
 ### Fixed
