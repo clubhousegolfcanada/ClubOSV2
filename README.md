@@ -1,4 +1,4 @@
-# ClubOS v1.21.15 - Flexible Facility Management System
+# ClubOS v1.21.16 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,7 +8,7 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.15**
+**Current Version: v1.21.16**
 - **Create Ticket from Task** - Convert My Tasks items to tickets instantly
 - **Google OAuth Authentication** - Sign in with Google for all users
 - Tasks now have ticket icon for one-click conversion to ClubOS Terminal

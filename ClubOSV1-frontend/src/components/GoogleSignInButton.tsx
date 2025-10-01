@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import logger from '@/services/logger';
@@ -17,6 +17,12 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isInIframe, setIsInIframe] = useState(false);
+
+  useEffect(() => {
+    // Check if we're in an iframe
+    setIsInIframe(window.self !== window.top);
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -44,6 +50,11 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       setIsLoading(false);
     }
   };
+
+  // Don't show if in iframe
+  if (isInIframe) {
+    return null;
+  }
 
   // Show for both operator and customer modes
   return (

@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.16] - 2025-10-01
+
+### Fixed
+- **Google OAuth Iframe Detection**: Hide Google Sign-In button when in iframe
+  - Detects if page is loaded within an iframe
+  - Hides Google OAuth button to prevent X-Frame-Options errors
+  - Google doesn't allow OAuth in iframes for security reasons
+  - Result: Cleaner experience when page is embedded, no confusing error messages
+
 ## [1.21.15] - 2025-10-01
 
 ### Fixed
