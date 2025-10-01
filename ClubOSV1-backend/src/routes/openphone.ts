@@ -173,10 +173,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
       return res.status(200).json({ received: true });
     }
     
-    // Enhanced logging for debugging
-    logger.info('OpenPhone webhook received', { 
-      type, 
-      dataKeys: Object.keys(data || {}),
+    // Enhanced logging for debugging webhook payloads
+    logger.info('OpenPhone webhook received - FULL DETAILS', {
+      type,
+      eventType: type, // Explicit event type
+      hasDirection: !!data.direction,
+      directionValue: data.direction,
+      hasStatus: !!data.status,
+      statusValue: data.status,
+      from: data.from,
+      to: data.to,
+      bodyPreview: (data.body || data.text || '').substring(0, 50),
+      allFields: Object.keys(data || {}),
+      isDeliveredEvent: type === 'message.delivered',
+      isReceivedEvent: type === 'message.received',
       rawBody: JSON.stringify(req.body).substring(0, 500),
       headers: req.headers,
       hasWrappedObject: !!req.body.object
@@ -210,9 +220,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
           sampleData: JSON.stringify(messageData).substring(0, 500)
         });
         
-        // Extract phone number based on direction
+        // Determine if message is outbound based on event type and fields
+        let isOutbound = false;
+        let messageDirection = messageData.direction;
+
+        // message.delivered events are ALWAYS outbound (operator sent them)
+        // message.received events are ALWAYS inbound (customer sent them)
+        if (type === 'message.delivered' || type === 'message.sent') {
+          isOutbound = true;
+          messageDirection = 'outbound';
+        } else if (type === 'message.received') {
+          isOutbound = false;
+          messageDirection = 'inbound';
+        } else if (messageData.direction) {
+          // Fallback to direction field if present (for message.created events)
+          isOutbound = messageData.direction === 'outgoing' || messageData.direction === 'outbound';
+          messageDirection = isOutbound ? 'outbound' : 'inbound';
+        } else {
+          // Default to inbound if we can't determine
+          isOutbound = false;
+          messageDirection = 'inbound';
+        }
+
+        // Extract phone number based on determined direction
         let phoneNumber;
-        if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
+        if (!isOutbound) {
           // For incoming messages, the customer is the sender
           phoneNumber = messageData.from;
         } else {
@@ -340,7 +372,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
           phoneNumber,
           customerName,
           employeeName,
-          messageDirection: messageData.direction,
+          originalDirection: messageData.direction,
+          determinedDirection: messageDirection,
+          isOutbound: isOutbound,
+          eventType: type,
           hasMessageBody: !!messageData.body || !!messageData.text
         });
         
@@ -352,7 +387,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           to: messageData.to, // Keep original format
           text: messageData.body || messageData.text || '', // body is primary field
           body: messageData.body || messageData.text || '', // Keep both for compatibility
-          direction: (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 'inbound' : 'outbound',
+          direction: messageDirection, // Use our determined direction from event type
           createdAt: messageData.createdAt || new Date().toISOString(),
           media: messageData.media || [],
           status: messageData.status,
@@ -609,41 +644,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, message: 'Escalated due to rapid messages' });
               }
 
-              // Process both AI automations AND Pattern Learning for existing conversations
+              // Process with V3-PLS FIRST (unified pattern system), then AI automations as fallback
               const messageText = messageData.body || messageData.text || '';
 
-              // First check AI automations (for confirmations and other automated responses)
-              try {
-                const automationResponse = await aiAutomationService.processMessage(
-                  phoneNumber,
-                  messageText,
-                  existingConv.rows[0].id,
-                  false // Not initial message
-                );
-                
-                if (automationResponse.handled && automationResponse.response) {
-                  logger.info('Sending AI automation response for existing conversation', {
-                    phoneNumber,
-                    response: automationResponse.response.substring(0, 100)
-                  });
-                  
-                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                  if (defaultNumber) {
-                    await openPhoneService.sendMessage(
-                      phoneNumber,
-                      defaultNumber,
-                      automationResponse.response
-                    );
-                  }
-                  
-                  // If automation handled it, we're done
-                  return res.json({ success: true, message: 'AI automation handled' });
-                }
-              } catch (automationError) {
-                logger.error('AI automation error in existing conversation:', automationError);
-              }
-              
-              // Then process with Pattern Learning System
+              // FIRST: Try V3-PLS Pattern Learning System
               try {
                 const patternResult = await patternLearningService.processMessage(
                   messageText,
@@ -673,7 +677,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     pattern: patternResult.pattern?.pattern_type,
                     reasoning: patternResult.reasoning?.thought_process
                   });
-                  
+
                   // Send automated response
                   const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
                   if (defaultNumber) {
@@ -682,14 +686,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       defaultNumber,
                       patternResult.response
                     );
-                    
+
                     // Store AI response in history
                     await db.query(`
-                      INSERT INTO conversation_messages 
+                      INSERT INTO conversation_messages
                       (conversation_id, sender_type, message_text, pattern_id)
                       VALUES ($1, 'ai', $2, $3)
                     `, [existingConv.rows[0].id, patternResult.response, patternResult.patternId]);
                   }
+
+                  // Pattern handled it, we're done
+                  return res.json({ success: true, message: 'V3-PLS pattern handled' });
                 } else if (patternResult.action === 'suggest' || patternResult.action === 'queue') {
                   logger.info('[Pattern Learning] SUGGESTION READY', {
                     action: patternResult.action,
@@ -745,6 +752,38 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 
               } catch (err) {
                 logger.error('[Pattern Learning] Error:', err);
+              }
+
+              // FALLBACK: If V3-PLS didn't auto-execute, try AI Automation Service
+              // This preserves existing working patterns (gift cards, trackman) while we migrate
+              try {
+                const automationResponse = await aiAutomationService.processMessage(
+                  phoneNumber,
+                  messageText,
+                  existingConv.rows[0].id,
+                  false // Not initial message
+                );
+
+                if (automationResponse.handled && automationResponse.response) {
+                  logger.info('[AI Automation] Fallback response for existing conversation', {
+                    phoneNumber,
+                    response: automationResponse.response.substring(0, 100)
+                  });
+
+                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                  if (defaultNumber) {
+                    await openPhoneService.sendMessage(
+                      phoneNumber,
+                      defaultNumber,
+                      automationResponse.response
+                    );
+                  }
+
+                  // AI automation handled it as fallback
+                  return res.json({ success: true, message: 'AI automation fallback handled' });
+                }
+              } catch (automationError) {
+                logger.error('AI automation fallback error:', automationError);
               }
             } catch (notifError) {
               // Don't fail webhook if notification fails

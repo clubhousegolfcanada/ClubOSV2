@@ -262,13 +262,12 @@ export class PatternLearningService {
       );
       
       // Apply confidence-based automation with reasoning
-      // If pattern is active (toggled on), that means operator wants it to execute
-      // Only check confidence if auto_executable is true, otherwise just check is_active
-      const shouldAutoExecute = bestMatch.is_active && (
-        bestMatch.auto_executable ? 
-        bestMatch.confidence_score >= this.config.autoExecuteThreshold : 
-        true // If not auto_executable but is_active, operator manually enabled it
-      );
+      // Pattern must be BOTH active AND auto_executable to auto-execute
+      // is_active = pattern is enabled for suggestions
+      // auto_executable = pattern is approved for automatic responses
+      const shouldAutoExecute = bestMatch.is_active &&
+        bestMatch.auto_executable &&
+        bestMatch.confidence_score >= this.config.autoExecuteThreshold;
       
       if (shouldAutoExecute) {
         return {

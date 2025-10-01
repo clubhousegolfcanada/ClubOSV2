@@ -509,15 +509,74 @@ router.post('/send',
         // Don't fail the send if pattern learning fails
       }
 
-      // Trust the webhook to update the database for consistency
-      // This prevents duplicate messages from appearing
-      // The webhook will handle storing the message with the correct OpenPhone ID
-      logger.info('Message sent via OpenPhone, awaiting webhook for database update', {
+      // Store message immediately as fallback (webhook will deduplicate if it arrives)
+      const tempMessage = {
+        id: result.id || `temp_${Date.now()}`,
+        body: text,
+        text: text,
+        direction: 'outbound',
+        from: formattedFrom,
+        to: formattedTo,
+        createdAt: new Date().toISOString(),
+        status: 'sent'
+      };
+
+      try {
+        // Check if conversation exists
+        const existing = await db.query(
+          'SELECT id, messages FROM openphone_conversations WHERE phone_number = $1 ORDER BY updated_at DESC LIMIT 1',
+          [formattedTo]
+        );
+
+        if (existing.rows.length > 0) {
+          // Append to existing conversation
+          const messages = existing.rows[0].messages || [];
+
+          // Check if message already exists (deduplication)
+          const messageExists = messages.some((msg: any) =>
+            msg.id === tempMessage.id ||
+            (msg.body === tempMessage.body &&
+             new Date(msg.createdAt).getTime() > Date.now() - 5000)
+          );
+
+          if (!messageExists) {
+            messages.push(tempMessage);
+
+            await db.query(
+              'UPDATE openphone_conversations SET messages = $1, updated_at = NOW() WHERE id = $2',
+              [JSON.stringify(messages), existing.rows[0].id]
+            );
+
+            logger.info('Message stored immediately as fallback', {
+              messageId: tempMessage.id,
+              phoneNumber: formattedTo,
+              conversationId: existing.rows[0].id
+            });
+          }
+        } else {
+          // Create new conversation
+          await db.query(
+            `INSERT INTO openphone_conversations (phone_number, messages, customer_name, employee_name, conversation_id, created_at, updated_at, unread_count)
+             VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), 0)`,
+            [formattedTo, JSON.stringify([tempMessage]), 'Customer', req.user?.name || 'Operator', result.conversationId || `conv_${formattedTo.replace(/\D/g, '')}`]
+          );
+
+          logger.info('New conversation created with message', {
+            messageId: tempMessage.id,
+            phoneNumber: formattedTo
+          });
+        }
+      } catch (storageError) {
+        logger.error('Failed to store message immediately:', storageError);
+        // Don't fail the send - webhook might still work
+      }
+
+      logger.info('Message sent via OpenPhone, stored locally', {
         to: formattedTo,
         messageId: result.id,
-        temporaryId: `pending_${Date.now()}`
+        temporaryId: tempMessage.id
       });
-      
+
       // Track staff response for learning
       await aiAutomationService.learnFromStaffResponse(
         formattedTo,

@@ -63,9 +63,12 @@ export async function handleOpenPhoneWebhook(req: Request, res: Response) {
     // Process based on event type
     switch (type) {
       case 'message.created':
-        await handleMessageCreated(data);
+      case 'message.received':  // Incoming messages
+      case 'message.delivered': // Outgoing messages
+      case 'message.sent':      // Outgoing messages
+        await handleMessageCreated(data, type);
         break;
-      
+
       case 'message.updated':
         await handleMessageUpdated(data);
         break;
@@ -96,10 +99,23 @@ export async function handleOpenPhoneWebhook(req: Request, res: Response) {
 /**
  * Handle message created event
  */
-async function handleMessageCreated(data: any) {
+async function handleMessageCreated(data: any, eventType?: string) {
   const { conversationId, from, to, body, direction, createdAt } = data;
 
   try {
+    // Determine actual direction based on event type
+    let actualDirection = direction;
+    if (eventType === 'message.delivered' || eventType === 'message.sent') {
+      actualDirection = 'outbound';
+    } else if (eventType === 'message.received') {
+      actualDirection = 'inbound';
+    } else if (direction) {
+      actualDirection = direction === 'incoming' || direction === 'inbound' ? 'inbound' : 'outbound';
+    }
+
+    // Extract phone number based on corrected direction
+    const phoneNumber = actualDirection === 'inbound' ? from : to;
+
     // Check if conversation exists
     const existing = await db.query(
       'SELECT id FROM openphone_conversations WHERE conversation_id = $1',
@@ -109,7 +125,7 @@ async function handleMessageCreated(data: any) {
     const message = {
       id: data.id,
       body,
-      direction,
+      direction: actualDirection,
       from,
       to,
       createdAt
@@ -119,33 +135,33 @@ async function handleMessageCreated(data: any) {
       // Create new conversation
       await insertOpenPhoneConversation({
         conversationId: conversationId,
-        phoneNumber: direction === 'incoming' ? from : to,
+        phoneNumber: phoneNumber,
         customerName: data.contactName || null,
         employeeName: 'System',
         messages: [message],
         metadata: {},
-        unreadCount: direction === 'incoming' ? 1 : 0,
+        unreadCount: actualDirection === 'inbound' ? 1 : 0,
         lastAssistantType: null
       });
     } else {
       // Add message to existing conversation
       await db.query(`
         UPDATE openphone_conversations
-        SET 
+        SET
           messages = messages || $2::jsonb,
           updated_at = NOW(),
           last_message_at = $3,
-          unread_count = CASE 
-            WHEN $4 = 'incoming' 
-            THEN unread_count + 1 
-            ELSE unread_count 
+          unread_count = CASE
+            WHEN $4 = 'inbound'
+            THEN unread_count + 1
+            ELSE unread_count
           END
         WHERE conversation_id = $1
-      `, [conversationId, JSON.stringify([message]), createdAt, direction]);
+      `, [conversationId, JSON.stringify([message]), createdAt, actualDirection]);
     }
 
     // Send push notification for incoming messages
-    if (direction === 'incoming') {
+    if (actualDirection === 'inbound') {
       // Format sender name
       const senderName = data.contactName || from;
       const messagePreview = body.substring(0, 100);
@@ -190,9 +206,13 @@ async function handleMessageCreated(data: any) {
 
     logger.info('Message processed', {
       conversationId,
-      direction,
+      originalDirection: direction,
+      actualDirection,
+      eventType,
       from,
-      to
+      to,
+      phoneNumber,
+      messageId: data.id
     });
   } catch (error) {
     logger.error('Error handling message created:', error);

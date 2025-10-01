@@ -2,6 +2,40 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.20] - 2025-10-01
+
+### Added
+- **Unified V3-PLS Pattern Management**: Migrated all AI automations to V3-PLS database
+  - Created migration script to transfer gift cards, trackman, and booking patterns
+  - Patterns now managed through single UI in PatternAutomationCards
+  - Added `auto_executable` flag to control which patterns can auto-respond
+  - Pattern Learning configured for suggestion-only mode by default
+
+### Changed
+- **Pattern Processing Order**: V3-PLS now processes messages FIRST, AI Automation as fallback
+  - Ensures unified pattern system takes priority
+  - Preserves existing working automations during migration
+  - Better learning from all interactions
+
+### Fixed
+- **OpenPhone Operator Messages**: Fixed operator messages not appearing in ClubOS
+  - Correctly identify `message.delivered` events as outbound messages
+  - Fixed direction detection based on webhook event type
+  - Added immediate storage fallback when sending messages
+  - Enhanced webhook logging for better debugging
+  - Result: All operator messages now visible regardless of source (OpenPhone app or ClubOS)
+
+- **Pattern Auto-Execution Logic**: Fixed to require BOTH `is_active` AND `auto_executable`
+  - `is_active` controls if pattern is enabled for suggestions
+  - `auto_executable` controls if pattern can send automatic responses
+  - Prevents unintended auto-responses from patterns not fully vetted
+
+### Technical
+- Added configuration table for pattern learning settings
+- Created helper functions for pattern promotion
+- Added monitoring view `v3_pls_pattern_status` for pattern analytics
+- Enhanced OpenPhone webhook handler to process all message event types
+
 ## [1.21.19] - 2025-10-01
 
 ### Fixed

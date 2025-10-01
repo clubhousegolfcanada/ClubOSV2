@@ -364,10 +364,22 @@ export const PatternAutomationCards: React.FC = () => {
                 <span className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(automation.confidence_score)}`}>
                   {Math.round(automation.confidence_score * 100)}% confident
                 </span>
+                {/* Auto-execute badge */}
+                {automation.auto_executable ? (
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 flex items-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    Auto-Response
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 flex items-center gap-1">
+                    <MessageCircle className="h-3 w-3" />
+                    Suggestion Only
+                  </span>
+                )}
                 {automation.execution_count > 0 && (
                   <>
                     <span className="text-xs text-gray-600 flex items-center gap-1">
-                      <Zap className="h-3 w-3" />
+                      <Activity className="h-3 w-3" />
                       {automation.execution_count} uses
                     </span>
                     <span className="text-xs text-gray-600 flex items-center gap-1">
