@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Check, Clock, AlertCircle, MessageSquare, X, ChevronRight, ChevronDown, ChevronUp, MapPin, Archive, Filter, Camera } from 'lucide-react';
+import { Plus, Check, Clock, AlertCircle, MessageSquare, X, ChevronRight, ChevronDown, ChevronUp, MapPin, Archive, Filter, Camera, Layers } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -59,6 +59,9 @@ const TicketCenterOptimizedV2 = () => {
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<TicketCategory | 'all'>('all');
+  const [groupByLocation, setGroupByLocation] = useState(false);
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +70,16 @@ const TicketCenterOptimizedV2 = () => {
   const [showTicketDetail, setShowTicketDetail] = useState(false);
 
   const locations = ['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford', 'Truro', 'Halifax'];
+
+  // Load saved preferences
+  useEffect(() => {
+    const savedGroupBy = localStorage.getItem('ticketGroupByLocation');
+    if (savedGroupBy === 'true') {
+      setGroupByLocation(true);
+      // Expand all locations by default when grouping is enabled
+      setExpandedLocations(new Set(locations));
+    }
+  }, []);
 
   // Load tickets on mount and when filters change
   useEffect(() => {
@@ -183,6 +196,88 @@ const TicketCenterOptimizedV2 = () => {
     if (days < 7) return `${days}d ago`;
     return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
+
+  // Get urgency based on age
+  const getTimeUrgency = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const hours = Math.floor((now.getTime() - then.getTime()) / 3600000);
+
+    if (hours >= 72) return 'critical';
+    if (hours >= 48) return 'high';
+    if (hours >= 24) return 'medium';
+    return 'normal';
+  };
+
+  // Get location background color
+  const getLocationColor = (location?: string) => {
+    if (!location) return '';
+    const locationKey = location.toLowerCase().replace(' ', '-');
+    return `var(--location-${locationKey})`;
+  };
+
+  // Toggle group by location
+  const toggleGroupByLocation = () => {
+    const newValue = !groupByLocation;
+    setGroupByLocation(newValue);
+    localStorage.setItem('ticketGroupByLocation', String(newValue));
+    if (newValue) {
+      // Expand all locations when enabling grouping
+      setExpandedLocations(new Set(locations));
+    }
+  };
+
+  // Toggle location expansion
+  const toggleLocationExpansion = (location: string) => {
+    const newSet = new Set(expandedLocations);
+    if (newSet.has(location)) {
+      newSet.delete(location);
+    } else {
+      newSet.add(location);
+    }
+    setExpandedLocations(newSet);
+  };
+
+  // Group tickets by location
+  const groupedTickets = useMemo(() => {
+    if (!groupByLocation) return { all: filteredTickets };
+
+    const groups: Record<string, Ticket[]> = {};
+
+    filteredTickets.forEach(ticket => {
+      const location = ticket.location || 'No Location';
+      if (!groups[location]) {
+        groups[location] = [];
+      }
+      groups[location].push(ticket);
+    });
+
+    // Sort groups by ticket count (descending)
+    const sortedGroups: Record<string, Ticket[]> = {};
+    Object.entries(groups)
+      .sort(([, a], [, b]) => b.length - a.length)
+      .forEach(([key, value]) => {
+        // Sort tickets within each group by age (oldest first)
+        sortedGroups[key] = value.sort((a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      });
+
+    return sortedGroups;
+  }, [filteredTickets, groupByLocation]);
+
+  // Count urgent tickets by location
+  const urgentByLocation = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tickets.forEach(ticket => {
+      if ((ticket.status === 'open' || ticket.status === 'in-progress') &&
+          (ticket.priority === 'urgent' || getTimeUrgency(ticket.createdAt) === 'critical')) {
+        const loc = ticket.location || 'No Location';
+        counts[loc] = (counts[loc] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [tickets]);
 
   const updateTicketStatus = async (ticketId: string, newStatus: TicketStatus) => {
     try {
@@ -339,14 +434,75 @@ const TicketCenterOptimizedV2 = () => {
             </button>
           </div>
 
-          <button
-            onClick={() => router.push('/?ticketMode=true')}
-            className="px-3 py-1.5 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleGroupByLocation}
+              className={`p-1.5 rounded-lg transition-all ${
+                groupByLocation
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+              title="Group by Location"
+            >
+              <Layers className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => router.push('/?ticketMode=true')}
+              className="px-3 py-1.5 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New</span>
+            </button>
+          </div>
         </div>
+
+        {/* Location Summary Bar */}
+        {activeTab === 'active' && (
+          <div className="flex items-center gap-2 mb-3 text-xs overflow-x-auto scrollbar-hide pb-1">
+            {locations.map(location => {
+              const count = tickets.filter(t =>
+                t.location === location &&
+                (t.status === 'open' || t.status === 'in-progress')
+              ).length;
+              const urgentCount = urgentByLocation[location] || 0;
+
+              if (count === 0) return null;
+
+              return (
+                <button
+                  key={location}
+                  onClick={() => {
+                    setSelectedLocation(selectedLocation === location ? 'all' : location);
+                    setShowLocationFilter(false);
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md whitespace-nowrap transition-all ${
+                    selectedLocation === location
+                      ? 'bg-[var(--accent)] text-white'
+                      : urgentCount > 0
+                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  <span>{location}</span>
+                  <span className={`font-semibold ${urgentCount > 0 ? '' : 'opacity-75'}`}>
+                    ({count})
+                  </span>
+                  {urgentCount > 0 && (
+                    <span className="text-red-500 font-bold animate-pulse">!</span>
+                  )}
+                </button>
+              );
+            })}
+            {selectedLocation !== 'all' && (
+              <button
+                onClick={() => setSelectedLocation('all')}
+                className="px-2 py-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Filters Section */}
         <div className="space-y-3 mb-4">
@@ -459,92 +615,182 @@ const TicketCenterOptimizedV2 = () => {
               </p>
             </div>
           ) : (
-            // Ticket cards - simplified like TaskList
-            filteredTickets.map(ticket => (
-              <div
-                key={ticket.id}
-                className="p-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-all group cursor-pointer"
-                onClick={() => {
-                  setSelectedTicket(ticket);
-                  setShowTicketDetail(true);
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  {/* Priority indicator as left border */}
-                  <div className={`w-1 self-stretch rounded ${priorityColors[ticket.priority]}`} />
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm text-[var(--text-primary)] truncate">
-                      {ticket.title}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[var(--text-muted)]">
-                      <span className={`px-2 py-0.5 rounded-full ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace('-', ' ')}
+            // Render grouped or ungrouped tickets
+            Object.entries(groupedTickets).map(([location, locationTickets]) => (
+              <div key={location} className="space-y-2">
+                {/* Location header (only if grouping is enabled) */}
+                {groupByLocation && location !== 'all' && (
+                  <button
+                    onClick={() => toggleLocationExpansion(location)}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-colors sticky top-0 z-10"
+                  >
+                    <div className="flex items-center gap-2">
+                      {expandedLocations.has(location) ? (
+                        <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+                      )}
+                      <span className="font-medium text-sm">{location}</span>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {locationTickets.length} {locationTickets.length === 1 ? 'ticket' : 'tickets'}
                       </span>
-                      <span>{ticket.category}</span>
-                      {ticket.location && (
-                        <>
-                          <span>•</span>
-                          <span>{ticket.location}</span>
-                        </>
-                      )}
-                      <span>•</span>
-                      <span>{formatTimeAgo(ticket.createdAt)}</span>
-                      {ticket.comments.length > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {ticket.comments.length}
-                          </span>
-                        </>
-                      )}
-                      {ticket.photo_urls && ticket.photo_urls.length > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Camera className="w-3 h-3" />
-                            {ticket.photo_urls.length}
-                          </span>
-                        </>
+                      {urgentByLocation[location] > 0 && (
+                        <span className="text-xs bg-red-500/20 text-red-600 px-2 py-0.5 rounded-full animate-pulse">
+                          {urgentByLocation[location]} urgent
+                        </span>
                       )}
                     </div>
-                  </div>
+                  </button>
+                )}
 
-                  {/* Quick actions - visible on hover */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {(ticket.status === 'open' || ticket.status === 'in-progress') && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateTicketStatus(ticket.id, 'resolved');
-                        }}
-                        className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
-                        title="Resolve"
-                      >
-                        <Check className="w-4 h-4 text-green-500" />
-                      </button>
-                    )}
-                    {ticket.status !== 'archived' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          archiveTicket(ticket.id);
-                        }}
-                        className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
-                        title="Archive"
-                      >
-                        <Archive className="w-4 h-4 text-gray-500" />
-                      </button>
-                    )}
+                {/* Ticket cards */}
+                {(!groupByLocation || location === 'all' || expandedLocations.has(location)) && (
+                  <div className="space-y-2">
+                    {locationTickets.map(ticket => {
+                      const urgency = getTimeUrgency(ticket.createdAt);
+                      const locationBg = getLocationColor(ticket.location);
+
+                      return (
+                        <div
+                          key={ticket.id}
+                          className="p-3 rounded-lg transition-all group cursor-pointer hover:bg-[var(--bg-tertiary)]"
+                          style={{ backgroundColor: locationBg }}
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setShowTicketDetail(true);
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Priority indicator as left border */}
+                            <div className={`w-1 self-stretch rounded ${priorityColors[ticket.priority]}`} />
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm text-[var(--text-primary)] truncate">
+                                {ticket.title}
+                              </h4>
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[var(--text-muted)]">
+                                <span className={`px-2 py-0.5 rounded-full ${getStatusColor(ticket.status)}`}>
+                                  {ticket.status.replace('-', ' ')}
+                                </span>
+                                <span>{ticket.category}</span>
+                                {ticket.location && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{ticket.location}</span>
+                                  </>
+                                )}
+                                <span>•</span>
+                                {/* Time with urgency indicator */}
+                                <span className={`flex items-center gap-1 ${
+                                  urgency === 'critical' ? 'text-red-500 font-semibold animate-pulse' :
+                                  urgency === 'high' ? 'text-orange-500 font-semibold' :
+                                  urgency === 'medium' ? 'text-yellow-500 font-semibold' :
+                                  ''
+                                }`}>
+                                  {urgency !== 'normal' && <Clock className="w-3 h-3" />}
+                                  {formatTimeAgo(ticket.createdAt)}
+                                </span>
+                                {ticket.comments.length > 0 && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3" />
+                                      {ticket.comments.length}
+                                    </span>
+                                  </>
+                                )}
+                                {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <Camera className="w-3 h-3" />
+                                      {ticket.photo_urls.length}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Photo thumbnail */}
+                            {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+                              <div className="relative flex-shrink-0">
+                                <img
+                                  src={ticket.photo_urls[0]}
+                                  alt="Ticket photo"
+                                  className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPhoto(ticket.photo_urls![0]);
+                                  }}
+                                />
+                                {ticket.photo_urls.length > 1 && (
+                                  <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[10px] px-1 rounded-full">
+                                    +{ticket.photo_urls.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Quick actions - visible on hover */}
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {(ticket.status === 'open' || ticket.status === 'in-progress') && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateTicketStatus(ticket.id, 'resolved');
+                                  }}
+                                  className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
+                                  title="Resolve"
+                                >
+                                  <Check className="w-4 h-4 text-green-500" />
+                                </button>
+                              )}
+                              {ticket.status !== 'archived' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    archiveTicket(ticket.id);
+                                  }}
+                                  className="p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors"
+                                  title="Archive"
+                                >
+                                  <Archive className="w-4 h-4 text-gray-500" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                )}
               </div>
             ))
           )}
         </div>
       </div>
+
+      {/* Photo Lightbox */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <img
+            src={selectedPhoto}
+            alt="Full size"
+            className="max-w-full max-h-full rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setSelectedPhoto(null)}
+            className="absolute top-4 right-4 p-2 bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {/* Ticket Detail Modal - Mobile optimized */}
       {showTicketDetail && selectedTicket && (

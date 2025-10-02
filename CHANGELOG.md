@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.24] - 2025-10-02
+
+### Enhanced
+- **Ticket Center Visual Improvements**: World-class at-a-glance ticket management
+  - Added subtle location-based color shading for instant visual identification
+  - Implemented minimal location summary bar showing ticket counts per location
+  - Added time-based urgency indicators with clock icons (24h yellow, 48h orange, 72h+ red pulse)
+  - Added photo thumbnail previews directly in ticket cards with lightbox viewing
+  - Implemented "Group by Location" toggle with collapsible sections
+  - Location headers show ticket counts and urgent ticket indicators
+  - Tickets sorted by age within location groups for better prioritization
+  - Muted, professional color palette that matches ClubOS design system
+  - Result: Operators can instantly identify problem areas and aging tickets
+
 ## [1.21.23] - 2025-10-02
 
 ### Fixed

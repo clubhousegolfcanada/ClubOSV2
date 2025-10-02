@@ -8,7 +8,7 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.23**
+**Current Version: v1.21.24**
 - **V3-PLS Fully Validated** - System is integrated and ready for activation
 - **Production Activation Scripts** - Safe two-step enablement process
 - **Suggestion-Only Mode** - Patterns suggest responses, operators approve
