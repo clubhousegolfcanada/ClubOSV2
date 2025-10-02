@@ -191,6 +191,32 @@ router.post('/webhook', async (req: Request, res: Response) => {
       headers: req.headers,
       hasWrappedObject: !!req.body.object
     });
+
+    // Special logging for message.delivered events to debug operator messages
+    if (type === 'message.delivered') {
+      logger.info('🔍 MESSAGE.DELIVERED EVENT DETAILS', {
+        type,
+        from: data.from,
+        to: data.to,
+        toType: typeof data.to,
+        toIsArray: Array.isArray(data.to),
+        toContent: JSON.stringify(data.to),
+        body: (data.body || data.text || '').substring(0, 100),
+        direction: data.direction,
+        status: data.status,
+        userId: data.userId,
+        userName: data.userName,
+        phoneNumberId: data.phoneNumberId,
+        allDataKeys: Object.keys(data || {}),
+        timestamp: new Date().toISOString()
+      });
+      console.log('📤 OPERATOR MESSAGE DELIVERED:', {
+        from: data.from,
+        to: data.to,
+        text: (data.body || data.text || '').substring(0, 50)
+      });
+    }
+
     console.log('OPENPHONE WEBHOOK [v2]:', JSON.stringify({ type, data }, null, 2));
 
     // Handle different webhook types
@@ -249,8 +275,28 @@ router.post('/webhook', async (req: Request, res: Response) => {
           phoneNumber = messageData.from;
         } else {
           // For outgoing messages, the customer is the recipient
-          // Note: 'to' can be either string or array depending on webhook version
-          phoneNumber = Array.isArray(messageData.to) ? messageData.to[0] : messageData.to;
+          // Handle various formats OpenPhone might send for 'to' field
+          if (Array.isArray(messageData.to)) {
+            // Array format: ["phoneNumber"] or [{phoneNumber: "..."}]
+            phoneNumber = typeof messageData.to[0] === 'string'
+              ? messageData.to[0]
+              : messageData.to[0]?.phoneNumber || messageData.to[0]?.number;
+          } else if (typeof messageData.to === 'string') {
+            // Simple string format
+            phoneNumber = messageData.to;
+          } else if (messageData.to && typeof messageData.to === 'object') {
+            // Object format: {phoneNumber: "..."} or {number: "..."}
+            phoneNumber = messageData.to.phoneNumber || messageData.to.number || messageData.to.to;
+          }
+
+          // Special handling for message.delivered events
+          if (type === 'message.delivered' && !phoneNumber) {
+            logger.warn('Failed to extract phone number from message.delivered event', {
+              to: messageData.to,
+              toType: typeof messageData.to,
+              toKeys: messageData.to ? Object.keys(messageData.to) : []
+            });
+          }
         }
         
         // Fallback to other fields if needed
@@ -376,8 +422,24 @@ router.post('/webhook', async (req: Request, res: Response) => {
           determinedDirection: messageDirection,
           isOutbound: isOutbound,
           eventType: type,
-          hasMessageBody: !!messageData.body || !!messageData.text
+          hasMessageBody: !!messageData.body || !!messageData.text,
+          from: messageData.from,
+          to: messageData.to,
+          messageId: messageData.id
         });
+
+        // Special logging for outbound message processing
+        if (isOutbound && type === 'message.delivered') {
+          logger.info('📤 PROCESSING OUTBOUND MESSAGE (message.delivered)', {
+            phoneNumber,
+            from: messageData.from,
+            to: messageData.to,
+            direction: messageDirection,
+            messagePreview: (messageData.body || messageData.text || '').substring(0, 50),
+            willStoreTo: phoneNumber,
+            timestamp: new Date().toISOString()
+          });
+        }
         
         // Build message object (body is the field from webhook)
         const newMessage = {
@@ -530,7 +592,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const updatedMessages = [...existingMessages, newMessage];
           
           // Update conversation and increment unread count if inbound
-          const unreadIncrement = (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 1 : 0;
+          // FIX: Use our determined direction, not the raw webhook data
+          const unreadIncrement = (messageDirection === 'inbound') ? 1 : 0;
           
           // Calculate new unread count
           const currentUnreadCount = existingConv.rows[0].unread_count || 0;
@@ -556,7 +619,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
           });
           
           // Send push notification for inbound messages
-          if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
+          // FIX: Use our determined direction, not the raw webhook data
+          if (messageDirection === 'inbound') {
             try {
               // Get all users with admin, operator, or support roles
               const users = await db.query(
@@ -789,7 +853,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
               // Don't fail webhook if notification fails
               logger.error('Failed to send push notification:', notifError);
             }
-          } else if (messageData.direction === 'outgoing' || messageData.direction === 'outbound') {
+          } else if (messageDirection === 'outbound') {
             // PATTERN LEARNING: Learn from operator responses
             try {
               // Get the last inbound message to learn the pattern
@@ -851,7 +915,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // Add timestamp to conversation ID to make it unique for time-based splits
         const timestamp = Date.now();
         const newConversationId = `conv_${phoneNumber.replace(/[^0-9]/g, '')}_${timestamp}`;
-        const initialUnreadCount = (messageData.direction === 'incoming' || messageData.direction === 'inbound') ? 1 : 0;
+        // FIX: Use our determined direction, not the raw webhook data
+        const initialUnreadCount = (messageDirection === 'inbound') ? 1 : 0;
         
         // Determine assistant type for new conversation
         const messageText = messageData.body || messageData.text || '';
@@ -888,7 +953,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
         });
         
         // Send push notification for new inbound conversation
-        if (messageData.direction === 'incoming' || messageData.direction === 'inbound') {
+        // FIX: Use our determined direction, not the raw webhook data
+        if (messageDirection === 'inbound') {
           try {
             const users = await db.query(
               `SELECT id FROM users 
