@@ -599,7 +599,7 @@ export default function Messages() {
                   setMessages(prevMessages => {
                     // Check if messages have actually changed
                     const hasChanges = recentMessages.length !== prevMessages.length ||
-                      recentMessages.some((msg, idx) => msg.id !== prevMessages[idx]?.id);
+                      recentMessages.some((msg: Message, idx: number) => msg.id !== prevMessages[idx]?.id);
                     return hasChanges ? recentMessages : prevMessages;
                   });
                   setFullMessageHistory(messages);
@@ -734,7 +734,7 @@ export default function Messages() {
                   setMessages(prevMessages => {
                     // Check if messages have actually changed
                     const hasChanges = recentMessages.length !== prevMessages.length ||
-                      recentMessages.some((msg, idx) => msg.id !== prevMessages[idx]?.id);
+                      recentMessages.some((msg: Message, idx: number) => msg.id !== prevMessages[idx]?.id);
                     return hasChanges ? recentMessages : prevMessages;
                   });
                   setFullMessageHistory(messages);
