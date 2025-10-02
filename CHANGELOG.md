@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.25] - 2025-10-02
+
+### Fixed
+- **Ticket Center Color Visibility**: Fixed location-based color shading
+  - Fixed space replacement bug to handle multi-word locations (River Oaks)
+  - Added CSS variable for River Oaks location with muted plum color
+  - Increased opacity from 0.04 to 0.08 (light) and 0.06 (dark) for better visibility
+  - Added proper border styling with priority indicator on left edge
+  - Ensured UI consistency with existing card containers
+  - Result: Location colors now properly visible and consistent
+
 ## [1.21.24] - 2025-10-02
 
 ### Enhanced

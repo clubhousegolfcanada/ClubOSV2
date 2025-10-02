@@ -69,7 +69,7 @@ const TicketCenterOptimizedV2 = () => {
   const [newComment, setNewComment] = useState('');
   const [showTicketDetail, setShowTicketDetail] = useState(false);
 
-  const locations = ['Bedford', 'Dartmouth', 'Bayers Lake', 'Stratford', 'Truro', 'Halifax'];
+  const locations = ['Bedford', 'Dartmouth', 'River Oaks', 'Bayers Lake', 'Stratford', 'Truro', 'Halifax'];
 
   // Load saved preferences
   useEffect(() => {
@@ -212,7 +212,7 @@ const TicketCenterOptimizedV2 = () => {
   // Get location background color
   const getLocationColor = (location?: string) => {
     if (!location) return '';
-    const locationKey = location.toLowerCase().replace(' ', '-');
+    const locationKey = location.toLowerCase().replace(/\s+/g, '-');
     return `var(--location-${locationKey})`;
   };
 
@@ -653,17 +653,17 @@ const TicketCenterOptimizedV2 = () => {
                       return (
                         <div
                           key={ticket.id}
-                          className="p-3 rounded-lg transition-all group cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                          style={{ backgroundColor: locationBg }}
+                          className="p-3 bg-[var(--bg-primary)] rounded-lg transition-all group cursor-pointer hover:bg-[var(--bg-tertiary)] border border-[var(--border-secondary)]"
+                          style={{
+                            backgroundColor: locationBg,
+                            borderLeft: `3px solid ${priorityColors[ticket.priority]}`
+                          }}
                           onClick={() => {
                             setSelectedTicket(ticket);
                             setShowTicketDetail(true);
                           }}
                         >
-                          <div className="flex items-start gap-3">
-                            {/* Priority indicator as left border */}
-                            <div className={`w-1 self-stretch rounded ${priorityColors[ticket.priority]}`} />
-
+                          <div className="flex items-start gap-2">
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium text-sm text-[var(--text-primary)] truncate">
