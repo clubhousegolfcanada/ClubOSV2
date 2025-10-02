@@ -8,6 +8,7 @@ import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, Mes
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
+import { ResponseDisplayEnhanced } from './ResponseDisplayEnhanced';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import PrioritySlider from './ui/PrioritySlider';
@@ -1273,18 +1274,6 @@ const RequestForm: React.FC = () => {
       {/* Response Area */}
       {showResponse && lastResponse && !isProcessing && (
         <div className="card response-area" id="response-area">
-          <div className="response-header">
-            <div className="status-badge">
-              <span className={`status-dot ${lastResponse.status === 'completed' ? 'status-success' : 'status-processing'}`}></span>
-              <span className="status-text capitalize">{lastResponse.status || 'Completed'}</span>
-            </div>
-            {smartAssistEnabled && lastResponse.llmResponse?.confidence !== undefined && (
-              <div className="confidence-meter">
-                Confidence: <strong>{Math.round((lastResponse.llmResponse.confidence || 0) * 100)}%</strong>
-              </div>
-            )}
-          </div>
-          
           <div className="response-content">
             {!smartAssistEnabled ? (
               <>
@@ -1437,31 +1426,17 @@ const RequestForm: React.FC = () => {
               </>
             ) : (
               <>
-                <ResponseDisplay 
-                  response={lastResponse.llmResponse} 
+                <ResponseDisplayEnhanced
+                  response={{
+                    ...lastResponse.llmResponse,
+                    status: lastResponse.status || 'completed',
+                    botRoute: lastResponse.botRoute,
+                    processingTime: lastResponse.processingTime,
+                    confidence: lastResponse.llmResponse?.confidence
+                  }}
                   route={lastResponse.botRoute}
+                  photos={photoAttachments}
                 />
-                
-                {(lastResponse.botRoute || lastResponse.processingTime) && (
-                  <div className="response-metadata">
-                    {lastResponse.botRoute && (
-                      <div>
-                        Route Used: <span className="text-[var(--text-muted)]">{lastResponse.botRoute}</span>
-                        {lastResponse.llmResponse?.isLocalKnowledge && (
-                          <span className="ml-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
-                            ✓ Internal Database
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {lastResponse.llmResponse?.dataSource && (
-                      <div>Data Source: <span className="text-[var(--text-muted)]">{lastResponse.llmResponse.dataSource}</span></div>
-                    )}
-                    {lastResponse.processingTime && (
-                      <div>Processing Time: <span className="text-[var(--text-muted)]">{lastResponse.processingTime}ms</span></div>
-                    )}
-                  </div>
-                )}
               </>
             )}
           </div>

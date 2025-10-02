@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.28] - 2025-10-02
+
+### Enhanced
+- **ClubOS Terminal Response Formatting**: World-class AI response display
+  - Created ResponseDisplayEnhanced component with structured content parsing
+  - Smart detection of technical specifications, measurements, and lists
+  - Visual confidence meter with color-coded progress bar
+  - Collapsible sections for better organization of long responses
+  - Photo gallery support with lightbox for future attachments
+  - Professional status badges with icons and colors
+  - Improved metadata display with route icons and performance indicators
+  - Automatic content parsing to detect dimensions, specifications, and bullet points
+  - Mobile-responsive design with touch-friendly interactions
+  - Result: AI responses are now beautifully formatted and easy to understand
+
 ## [1.21.27] - 2025-10-02
 
 ### Fixed
