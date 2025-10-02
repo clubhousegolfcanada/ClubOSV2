@@ -8,7 +8,7 @@ import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, Mes
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
-import { ResponseDisplayEnhanced } from './ResponseDisplayEnhanced';
+import { ResponseDisplaySimple } from './ResponseDisplaySimple';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import PrioritySlider from './ui/PrioritySlider';
@@ -1426,7 +1426,7 @@ const RequestForm: React.FC = () => {
               </>
             ) : (
               <>
-                <ResponseDisplayEnhanced
+                <ResponseDisplaySimple
                   response={{
                     ...lastResponse.llmResponse,
                     status: lastResponse.status || 'completed',
