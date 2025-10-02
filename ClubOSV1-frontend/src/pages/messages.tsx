@@ -410,11 +410,19 @@ export default function Messages() {
   };
 
   const selectConversation = async (conversation: Conversation) => {
+    // Check if switching to a different conversation
+    const isSwitchingConversation = selectedConversation?.phone_number !== conversation.phone_number;
+
     setSelectedConversation(conversation);
-    setMessages([]); // Clear messages while loading
-    setFullMessageHistory([]); // Clear full history
-    setHasMoreMessages(false); // Reset load more state
-    
+
+    // Only clear messages if switching to a different conversation
+    // Keep existing messages visible during refresh of same conversation
+    if (isSwitchingConversation) {
+      setMessages([]); // Clear messages only when switching conversations
+      setFullMessageHistory([]); // Clear full history
+      setHasMoreMessages(false); // Reset load more state
+    }
+
     // Focus input field after selecting conversation (desktop only)
     setTimeout(() => {
       const desktopInput = document.querySelector('.md\\:block input[placeholder="Type a message..."]') as HTMLInputElement;
@@ -422,7 +430,7 @@ export default function Messages() {
         desktopInput.focus();
       }
     }, 100);
-    
+
     // Fetch conversation history
     if (conversation.phone_number) {
       try {
@@ -433,10 +441,10 @@ export default function Messages() {
             `messages/conversations/${conversation.phone_number}/full-history`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
-          
+
           if (historyResponse.data.success) {
             const { messages, total_conversations, first_contact, last_contact } = historyResponse.data.data;
-            
+
             // Update selected conversation with full history info
             setSelectedConversation({
               ...conversation,
@@ -444,17 +452,17 @@ export default function Messages() {
               first_contact,
               last_contact
             });
-            
+
             // For better UX, only show recent messages initially (last 30-50 messages)
             // This prevents long scroll animations on conversations with extensive history
             const INITIAL_MESSAGE_COUNT = 30;
-            const recentMessages = messages.length > INITIAL_MESSAGE_COUNT 
-              ? messages.slice(-INITIAL_MESSAGE_COUNT) 
+            const recentMessages = messages.length > INITIAL_MESSAGE_COUNT
+              ? messages.slice(-INITIAL_MESSAGE_COUNT)
               : messages;
-            
-            // Set recent messages only
+
+            // Update messages smoothly - new data replaces old
             setMessages(recentMessages);
-            
+
             // Store full history and track if there are more messages
             setFullMessageHistory(messages);
             setHasMoreMessages(messages.length > INITIAL_MESSAGE_COUNT);
@@ -584,10 +592,16 @@ export default function Messages() {
                   const { messages } = historyResponse.data.data;
                   // Show last 30 messages
                   const INITIAL_MESSAGE_COUNT = 30;
-                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT 
-                    ? messages.slice(-INITIAL_MESSAGE_COUNT) 
+                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT
+                    ? messages.slice(-INITIAL_MESSAGE_COUNT)
                     : messages;
-                  setMessages(recentMessages);
+                  // Only update if there are actual changes to avoid flashing
+                  setMessages(prevMessages => {
+                    // Check if messages have actually changed
+                    const hasChanges = recentMessages.length !== prevMessages.length ||
+                      recentMessages.some((msg, idx) => msg.id !== prevMessages[idx]?.id);
+                    return hasChanges ? recentMessages : prevMessages;
+                  });
                   setFullMessageHistory(messages);
                 }
               }
@@ -713,10 +727,16 @@ export default function Messages() {
                   const { messages } = historyResponse.data.data;
                   // Show last 30 messages
                   const INITIAL_MESSAGE_COUNT = 30;
-                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT 
-                    ? messages.slice(-INITIAL_MESSAGE_COUNT) 
+                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT
+                    ? messages.slice(-INITIAL_MESSAGE_COUNT)
                     : messages;
-                  setMessages(recentMessages);
+                  // Only update if there are actual changes to avoid flashing
+                  setMessages(prevMessages => {
+                    // Check if messages have actually changed
+                    const hasChanges = recentMessages.length !== prevMessages.length ||
+                      recentMessages.some((msg, idx) => msg.id !== prevMessages[idx]?.id);
+                    return hasChanges ? recentMessages : prevMessages;
+                  });
                   setFullMessageHistory(messages);
                 }
               }

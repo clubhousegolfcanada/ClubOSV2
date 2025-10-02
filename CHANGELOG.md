@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.23] - 2025-10-02
+
+### Fixed
+- **Messages UI Flashing**: Eliminated screen flash when refreshing messages
+  - Messages are no longer cleared when refreshing the same conversation
+  - Only clear messages when switching to a different conversation
+  - Smart update logic to only re-render when messages actually change
+  - Result: Smoother, flicker-free message updates
+
 ## [1.21.22] - 2025-10-02
 
 ### Fixed
