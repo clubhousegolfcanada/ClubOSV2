@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.27] - 2025-10-02
+
+### Fixed
+- **Duplicate AI Escalation Messages**: Simple fix for repeated "I notice you've sent multiple messages"
+  - Root cause: System counted ALL messages (including AI responses) when detecting rapid messaging
+  - Fix: Only count inbound (customer) messages, never AI responses
+  - Conversation lock already prevents duplicate escalations
+  - Result: AI sends escalation message only once per conversation
+
 ## [1.21.26] - 2025-10-02
 
 ### Fixed

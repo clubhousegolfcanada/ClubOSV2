@@ -649,17 +649,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
             try {
               // Get all users with admin, operator, or support roles
               const users = await db.query(
-                `SELECT id FROM users 
-                 WHERE role IN ('admin', 'operator', 'support') 
+                `SELECT id FROM users
+                 WHERE role IN ('admin', 'operator', 'support')
                  AND is_active = true`
               );
-              
+
               const userIds = users.rows.map(u => u.id);
-              
+
               // Send notification to all eligible users
               await notificationService.sendToUsers(userIds, {
                 title: `New message from ${customerName}`,
-                body: (messageData.body || messageData.text || '').substring(0, 100) + 
+                body: (messageData.body || messageData.text || '').substring(0, 100) +
                       (messageData.body?.length > 100 ? '...' : ''),
                 icon: '/logo-192.png',
                 badge: '/badge-72.png',
@@ -678,12 +678,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   url: '/messages'
                 }
               });
-              
+
               logger.info('Push notifications sent for inbound message', {
                 phoneNumber,
                 userCount: userIds.length
               });
-              
+
               // SAFEGUARD: Check if operator is active or conversation is locked
               if (existingConv.rows[0].operator_active ||
                   existingConv.rows[0].conversation_locked ||
@@ -699,15 +699,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, message: 'Operator handling conversation' });
               }
 
-              // SAFEGUARD: Detect rapid messages (multiple messages in short time)
-              const recentMessages = updatedMessages.filter((m: any) =>
+              // SAFEGUARD: Detect rapid messages - ONLY count CUSTOMER messages
+              // FIX: Count only inbound messages (customer), never our AI responses
+              const recentCustomerMessages = updatedMessages.filter((m: any) =>
+                m.direction === 'inbound' && // Only customer messages
                 new Date(m.createdAt) > new Date(Date.now() - 60000) // Last 60 seconds
               );
 
-              if (recentMessages.length >= 3) {
-                logger.warn('[Safeguard] Multiple rapid messages detected - escalating', {
+              // If 3+ rapid customer messages, escalate (conversation lock above prevents duplicates)
+              if (recentCustomerMessages.length >= 3) {
+                logger.warn('[Safeguard] Multiple rapid CUSTOMER messages detected - escalating', {
                   phoneNumber,
-                  recentMessageCount: recentMessages.length
+                  customerMessageCount: recentCustomerMessages.length
                 });
 
                 // Send escalation message
@@ -720,14 +723,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   );
                 }
 
-                // Lock conversation
+                // Lock conversation to prevent any further AI responses
                 await db.query(`
                   UPDATE openphone_conversations
                   SET conversation_locked = true,
                       customer_sentiment = 'escalated',
                       rapid_message_count = $2
                   WHERE id = $1`,
-                  [existingConv.rows[0].id, recentMessages.length]
+                  [existingConv.rows[0].id, recentCustomerMessages.length]
                 );
 
                 return res.json({ success: true, message: 'Escalated due to rapid messages' });
