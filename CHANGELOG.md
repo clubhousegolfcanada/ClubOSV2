@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.26] - 2025-10-02
+
+### Fixed
+- **Knowledge Store Search**: Fixed full-text search for knowledge entries
+  - Added PostgreSQL trigger to automatically populate search_vector column
+  - Updated all existing knowledge entries with proper search vectors
+  - Knowledge added via UI now properly searchable by ClubOS
+  - Business strategy and other knowledge now correctly retrieved
+  - Result: ClubOS now finds and uses all stored knowledge correctly
+
 ## [1.21.25] - 2025-10-02
 
 ### Fixed
