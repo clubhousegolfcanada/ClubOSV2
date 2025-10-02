@@ -5,10 +5,12 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.21.22] - 2025-10-02
 
 ### Fixed
-- **OpenPhone Webhook Message Direction**: Fixed operator messages not appearing in ClubOS
+- **OpenPhone Webhook V3 Format**: Fixed critical webhook parsing issue preventing operator messages from appearing
+  - Fixed triple-nested OpenPhone V3 webhook structure parsing (object.data.object)
   - Fixed incorrect variable reference for determining message direction (was using raw webhook data instead of processed direction)
   - Improved phone number extraction for outbound messages to handle all OpenPhone formats (string, array, object)
   - Added comprehensive logging for message.delivered events to debug operator message handling
+  - Fixed operator_interventions table error by adding proper error handling
   - Result: Operator messages sent from OpenPhone app now properly appear in ClubOS conversations
 
 ## [1.21.21] - 2025-10-01

@@ -157,13 +157,29 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // The entire webhook is wrapped in an "object" field
     let webhookData = req.body;
     let type, data;
-    
-    // Check if this is the v3 wrapped format
+
+    // Check if this is the v3 wrapped format with triple nesting
+    // Format: { object: { type, data: { object: {...} } } }
     if (req.body.object && req.body.object.type) {
-      // V3 format: { object: { type, data, ... } }
+      // V3 format detected
       type = req.body.object.type;
-      // Check if data is nested in object.data or directly in object
-      data = req.body.object.data || req.body.object;
+
+      // Check if data contains another nested object
+      if (req.body.object.data && req.body.object.data.object) {
+        // Triple nested: { object: { type, data: { object: {...} } } }
+        data = req.body.object.data.object;
+        logger.info('OpenPhone V3 triple-nested webhook detected', {
+          type,
+          hasNestedObject: true,
+          messageId: data.id
+        });
+      } else if (req.body.object.data) {
+        // Double nested: { object: { type, data: {...} } }
+        data = req.body.object.data;
+      } else {
+        // Data is directly in object
+        data = req.body.object;
+      }
     } else if (req.body.type) {
       // Direct format: { type, data, ... }
       type = req.body.type;
@@ -480,13 +496,22 @@ router.post('/webhook', async (req: Request, res: Response) => {
             [phoneNumber]
           );
 
-          // Track operator intervention
-          await db.query(`
-            INSERT INTO operator_interventions
-            (phone_number, conversation_id, operator_id, intervention_type, message_sent, created_at)
-            VALUES ($1, $2, NULL, 'manual_response', $3, NOW())`,
-            [phoneNumber, conversationId, newMessage.text]
-          );
+          // Track operator intervention (skip if table doesn't exist)
+          try {
+            await db.query(`
+              INSERT INTO operator_interventions
+              (phone_number, conversation_id, operator_id, intervention_type, message_sent, created_at)
+              VALUES ($1, $2, NULL, 'manual_response', $3, NOW())`,
+              [phoneNumber, conversationId, newMessage.text]
+            );
+          } catch (error: any) {
+            // Table might not exist - log but don't fail
+            if (error.code === '42P01') {
+              logger.warn('operator_interventions table does not exist - skipping tracking');
+            } else {
+              logger.error('Failed to track operator intervention:', error);
+            }
+          }
 
           // LEARNING: Capture operator response as a learning example
           // Look for the last customer message to learn from

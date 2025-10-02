@@ -154,7 +154,38 @@ async function runTests() {
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Test 7: Check debug endpoint to see stored messages
+  // Test 7: ACTUAL OpenPhone V3 format (triple-nested) - THE REAL FORMAT
+  console.log('\nTest 7: ACTUAL OpenPhone V3 webhook format (triple-nested)');
+  await sendWebhook({
+    object: {
+      id: 'EV_test_001',
+      object: 'event',
+      createdAt: new Date().toISOString(),
+      apiVersion: 'v3',
+      type: 'message.delivered',
+      data: {
+        object: {
+          id: 'msg_v3_001',
+          object: 'message',
+          from: OPERATOR_PHONE,
+          to: CUSTOMER_PHONE,
+          createdBy: 'US5pWhhg5r',
+          direction: 'outgoing',
+          body: 'This is the ACTUAL V3 format OpenPhone uses',
+          media: [],
+          status: 'delivered',
+          createdAt: new Date().toISOString(),
+          userId: 'US5pWhhg5r',
+          phoneNumberId: 'PNsrXButS8',
+          conversationId: 'CNtest_v3_format'
+        }
+      }
+    }
+  });
+
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Test 8: Check debug endpoint to see stored messages
   console.log('\n\nTest 7: Checking stored conversations...');
   try {
     const debugResponse = await axios.get(`${BACKEND_URL}/api/openphone/debug/recent?limit=5`);
