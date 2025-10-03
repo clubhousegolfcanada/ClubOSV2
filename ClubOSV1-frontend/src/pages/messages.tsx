@@ -166,8 +166,8 @@ export default function Messages() {
         if (isTabVisible && !isRateLimited && isMounted) {
           loadConversations(false);
         }
-      }, 15000);
-      
+      }, 10000); // Changed from 15000 to match documented 10s interval
+
       // Only set state if component is mounted
       if (isMounted) {
         setRefreshInterval(interval);
@@ -305,14 +305,18 @@ export default function Messages() {
       if (response.data.success) {
         logger.debug('Loaded conversations:', response.data.data);
         const sortedConversations = response.data.data.sort((a: any, b: any) => {
-          return new Date(b.updated_at || b.created_at).getTime() - 
+          return new Date(b.updated_at || b.created_at).getTime() -
                  new Date(a.updated_at || a.created_at).getTime();
         });
+
+        // Track if we had conversations before this refresh
+        const hadConversationsBefore = conversations.length > 0;
+
         setConversations(sortedConversations);
-        
+
         // Auto-select first conversation ONLY on initial load (when conversations list was empty)
         // This prevents the bug where refresh would reset to first conversation
-        if (!selectedConversation && sortedConversations.length > 0 && conversations.length === 0) {
+        if (!selectedConversation && sortedConversations.length > 0 && !hadConversationsBefore) {
           const firstConversation = sortedConversations[0];
           // Use selectConversation to fetch full history
           selectConversation(firstConversation);
@@ -333,10 +337,17 @@ export default function Messages() {
             const updatedMessages = Array.isArray(updated.messages) ? updated.messages : [];
             const currentMessageCount = messages.length;
             const updatedMessageCount = updatedMessages.length;
-            
-            // Always update the conversation and messages to ensure we have the latest data
-            setSelectedConversation(updated);
-            
+
+            // Only update selectedConversation if data has actually changed
+            // This prevents unnecessary re-renders and flashing
+            setSelectedConversation(prevConversation => {
+              // Check if the conversation data has changed
+              if (JSON.stringify(prevConversation) !== JSON.stringify(updated)) {
+                return updated;
+              }
+              return prevConversation;
+            });
+
             // Deduplicate messages by ID to prevent duplicates
             const uniqueMessages = updatedMessages.reduce((acc: Message[], msg: Message) => {
               if (!acc.find(m => m.id === msg.id)) {
@@ -344,8 +355,14 @@ export default function Messages() {
               }
               return acc;
             }, []);
-            
-            setMessages(uniqueMessages);
+
+            // Only update messages if they've actually changed
+            // This prevents unnecessary re-renders and flashing
+            setMessages(prevMessages => {
+              const hasChanges = uniqueMessages.length !== prevMessages.length ||
+                uniqueMessages.some((msg: Message, idx: number) => msg.id !== prevMessages[idx]?.id);
+              return hasChanges ? uniqueMessages : prevMessages;
+            });
             
             // Check if there are new messages by comparing counts and checking the last message
             if (updatedMessageCount > currentMessageCount) {

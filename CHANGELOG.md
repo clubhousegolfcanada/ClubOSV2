@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.29] - 2025-10-03
+
+### Fixed
+- **Messages Conversation Jumping**: Fixed bug where selecting a conversation would jump to the most recent one
+  - Corrected auto-select logic to only trigger on initial load, not on refreshes
+  - Now properly tracks if conversations existed before refresh
+  - Result: Selected conversation stays selected during refreshes
+
+- **Messages UI Flashing**: Eliminated flashing that occurred every 10 seconds
+  - Implemented smart state updates that only re-render when data actually changes
+  - Added JSON comparison to prevent unnecessary selectedConversation updates
+  - Messages array now only updates when content differs
+  - Result: Smooth, flicker-free experience during auto-refresh
+
+- **Polling Interval**: Corrected refresh interval from 15s to documented 10s
+  - Changed interval to match CLAUDE.md documentation
+  - Messages now refresh every 10 seconds as intended
+  - Result: Consistent behavior with documented specifications
+
 ## [1.21.28] - 2025-10-02
 
 ### Enhanced
