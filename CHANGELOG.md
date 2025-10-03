@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.34] - 2025-10-03
+
+### Fixed
+- **Messages Performance Fix**: Resolved 5-10 second loading time issue
+  - Disabled HubSpot API enrichment in conversations endpoint (was making sequential API calls for every conversation)
+  - Added optimized database indexes for openphone_conversations table
+  - Created composite index for phone_number and updated_at for faster DISTINCT ON queries
+  - Added proper WHERE clause indexes to exclude null/empty phone numbers
+  - Result: Messages now load instantly instead of taking 5-10 seconds
+  - TODO: Implement background job for HubSpot enrichment instead of synchronous calls
+
 ## [1.21.33] - 2025-10-03
 
 ### Fixed

@@ -164,26 +164,30 @@ router.get('/conversations',
         filtered: result.rows.length - validConversations.length
       });
       
-      // Enrich conversations with HubSpot data if available
-      const enrichedConversations = await Promise.all(validConversations.map(async (row) => {
-        try {
-          // Only lookup if we don't already have a good name
-          if (row.phone_number && row.phone_number !== 'Unknown' && 
-              (!row.customer_name || row.customer_name === 'Unknown' || row.customer_name === row.phone_number)) {
-            const hubspotContact = await hubspotService.searchByPhone(row.phone_number);
-            if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
-              // Update the customer name with HubSpot data
-              row.customer_name = hubspotContact.name;
-              row.hubspot_company = hubspotContact.company;
-              row.hubspot_enriched = true;
-            }
-          }
-        } catch (error) {
-          // Don't let HubSpot errors break the conversation list
-          logger.debug('HubSpot enrichment failed for phone:', row.phone_number);
-        }
-        return row;
-      }));
+      // PERFORMANCE FIX: Skip HubSpot enrichment for now - it's causing 5-10 second delays
+      // TODO: Implement background job to enrich conversations asynchronously
+      const enrichedConversations = validConversations;
+
+      // OLD CODE (causing performance issues):
+      // const enrichedConversations = await Promise.all(validConversations.map(async (row) => {
+      //   try {
+      //     // Only lookup if we don't already have a good name
+      //     if (row.phone_number && row.phone_number !== 'Unknown' &&
+      //         (!row.customer_name || row.customer_name === 'Unknown' || row.customer_name === row.phone_number)) {
+      //       const hubspotContact = await hubspotService.searchByPhone(row.phone_number);
+      //       if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
+      //         // Update the customer name with HubSpot data
+      //         row.customer_name = hubspotContact.name;
+      //         row.hubspot_company = hubspotContact.company;
+      //         row.hubspot_enriched = true;
+      //       }
+      //     }
+      //   } catch (error) {
+      //     // Don't let HubSpot errors break the conversation list
+      //     logger.debug('HubSpot enrichment failed for phone:', row.phone_number);
+      //   }
+      //   return row;
+      // }));
       
       // Don't transform - frontend expects snake_case for OpenPhone data
       const transformedConversations = enrichedConversations.map(row => {
