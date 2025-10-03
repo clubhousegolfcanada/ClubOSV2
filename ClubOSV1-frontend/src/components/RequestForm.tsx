@@ -55,8 +55,6 @@ const RequestForm: React.FC = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [convertedTone, setConvertedTone] = useState<string>('');
   const [isConvertingTone, setIsConvertingTone] = useState(false);
-  const [feedbackGiven, setFeedbackGiven] = useState<string | null>(null);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [isTicketMode, setIsTicketMode] = useState(false);
   const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
   const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
@@ -333,7 +331,6 @@ const RequestForm: React.FC = () => {
     setIsNewSubmission(true); // Mark this as a new submission
     setLoadingStartTime(Date.now()); // Start loading timer
     setIsProcessing(true); // Start loading state
-    setFeedbackGiven(null); // Clear previous feedback
     setLastRequestData(data); // Store the request data for feedback
     
     // Gentle nudge scroll to loading area
@@ -508,7 +505,6 @@ const RequestForm: React.FC = () => {
     setShowResponse(false);
     resetRequestState();
     setConvertedTone('');
-    setFeedbackGiven(null);
     setIsTicketMode(false); // Reset to request mode
     setIsKnowledgeMode(false); // Reset knowledge mode
     setTicketPriority('medium'); // Reset ticket priority
@@ -526,95 +522,6 @@ const RequestForm: React.FC = () => {
     notify('info', 'Form reset to defaults');
   };
 
-  // Handle feedback submission
-  const handleFeedback = async (isUseful: boolean) => {
-    if (!lastResponse || feedbackGiven) return;
-    
-    // Check if user is authenticated before attempting feedback
-    const token = isMounted ? tokenManager.getToken() : null;
-    if (!token || !user) {
-      notify('error', 'Please log in to submit feedback');
-      // Store current location and redirect to login
-      if (isMounted) {
-        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-      }
-      router.push('/login');
-      return;
-    }
-    
-    setFeedbackLoading(true);
-    const feedbackType = isUseful ? 'useful' : 'not_useful';
-    
-    try {
-      // Log feedback data - include full structured response
-      const feedbackData = {
-        timestamp: new Date().toISOString(),
-        requestDescription: lastRequestData?.requestDescription || requestDescription || 'No description',
-        location: lastRequestData?.location || watch('location') || '',
-        route: lastResponse.botRoute || 'Unknown',
-        response: JSON.stringify({
-          text: lastResponse.llmResponse?.response || 'No response',
-          structured: lastResponse.llmResponse?.structured,
-          category: lastResponse.llmResponse?.category,
-          priority: lastResponse.llmResponse?.priority,
-          actions: lastResponse.llmResponse?.actions,
-          metadata: lastResponse.llmResponse?.metadata,
-          escalation: lastResponse.llmResponse?.escalation
-        }),
-        confidence: lastResponse.llmResponse?.confidence || 0,
-        isUseful: isUseful,
-        feedbackType: feedbackType
-      };
-      
-      if (isMounted) {
-        logger.debug('Sending feedback:', feedbackData);
-        logger.debug('Auth token present:', !!token);
-        logger.debug('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'no token');
-        // Removed debug logging
-      }
-      
-      // Auth header is automatically attached by http interceptor
-      const response = await http.post(`feedback`, feedbackData, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (isMounted) {
-        logger.debug('Feedback response:', response.data);
-      }
-      
-      setFeedbackGiven(feedbackType);
-      notify('success', isUseful ? 'Thanks for the feedback!' : 'Feedback recorded for improvement');
-      
-      // If not useful, also log to console for debugging
-      if (!isUseful && isMounted) {
-        logger.debug('Not useful response logged:', feedbackData);
-      }
-    } catch (error: any) {
-      logger.error('Failed to submit feedback:', error);
-      logger.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
-      
-      // Handle 401 specifically
-      if (error.message?.includes('401')) {
-        notify('error', 'Your session has expired. Please log in again.');
-        // Store current location and redirect to login
-        if (isMounted) {
-          sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-        }
-        router.push('/login');
-      } else {
-        notify('error', `Failed to record feedback: ${error.message}`);
-      }
-    } finally {
-      setFeedbackLoading(false);
-    }
-  };
 
   // Handle tone conversion
   const handleToneConversion = async () => {
@@ -1436,52 +1343,18 @@ const RequestForm: React.FC = () => {
                   }}
                   route={lastResponse.botRoute}
                   photos={photoAttachments}
+                  originalQuery={lastRequestData?.requestDescription || requestDescription}
                 />
               </>
             )}
           </div>
-          
-          {/* Feedback Section */}
+
+          {/* Edit Instruction */}
           {smartAssistEnabled && (
-            <div className="mt-6 pt-4 border-t border-[var(--border-secondary)]">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Was this response helpful?
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleFeedback(true)}
-                    disabled={feedbackGiven !== null || feedbackLoading}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-all ${
-                      feedbackGiven === 'useful'
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
-                    } ${feedbackGiven !== null || feedbackLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    Useful
-                  </button>
-                  <button
-                    onClick={() => handleFeedback(false)}
-                    disabled={feedbackGiven !== null || feedbackLoading}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-all ${
-                      feedbackGiven === 'not_useful'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                        : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
-                    } ${feedbackGiven !== null || feedbackLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <ThumbsDown className="w-4 h-4" />
-                    Not Useful
-                  </button>
-                </div>
-              </div>
-              {feedbackGiven && (
-                <p className="text-xs text-[var(--text-muted)] mt-2">
-                  {feedbackGiven === 'useful' 
-                    ? 'Thank you for your feedback!' 
-                    : 'Thank you. Your feedback will help us improve our responses.'}
-                </p>
-              )}
+            <div className="mt-4 pt-3 border-t border-[var(--border-secondary)]">
+              <p className="text-xs text-[var(--text-muted)] text-center">
+                Response incorrect? Click the edit icon to correct it
+              </p>
             </div>
           )}
         </div>

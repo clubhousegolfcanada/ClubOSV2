@@ -70,6 +70,7 @@ import knowledgeStoreRoutes from './routes/knowledge-store'; // Used internally 
 // import intelligentSearchRoutes from './routes/intelligent-search';
 // import knowledgeEnhanceRoutes from './routes/knowledge-enhance'; // Disabled - not used
 import knowledgeRouterRoutes from './routes/knowledge-router'; // Used by KnowledgeRouterPanel
+import knowledgeCorrectRoutes from './routes/knowledge-correct'; // Knowledge correction endpoint
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
 import callTranscriptRoutes from './routes/call-transcripts';
@@ -327,6 +328,7 @@ app.use('/api/knowledge', knowledgeRoutes);
 
 // Knowledge routes - only knowledge-router and knowledge-store are actively used
 app.use('/api/knowledge-router', knowledgeRouterRoutes); // Used by KnowledgeRouterPanel in Operations
+app.use('/api/knowledge-correct', knowledgeCorrectRoutes); // Knowledge correction endpoint
 app.use('/api/knowledge-store', knowledgeStoreRoutes); // Used internally by knowledgeSearchService
 
 // Disabled knowledge routes - not actively used in frontend

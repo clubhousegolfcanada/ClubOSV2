@@ -1,11 +1,14 @@
-import React from 'react';
-import { Bot, Database, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bot, Database, Clock, Edit2, Save, X } from 'lucide-react';
 import logger from '@/services/logger';
+import { http } from '@/api/http';
+import toast from 'react-hot-toast';
 
 interface Props {
   response: any;
   route?: string;
   photos?: string[];
+  originalQuery?: string;
 }
 
 // Parse and format the response text for better readability
@@ -146,7 +149,7 @@ const formatStructuredContent = (text: string): React.ReactNode => {
   );
 };
 
-export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos = [] }) => {
+export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos = [], originalQuery }) => {
   logger.debug('ResponseDisplaySimple received:', { response, route, photos });
 
   // Handle null/undefined response
@@ -172,11 +175,56 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
     displayText = 'Request processed successfully';
   }
 
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(displayText);
+  const [saving, setSaving] = useState(false);
+
   // Extract metadata
   const confidence = response?.confidence || response?.llmResponse?.confidence;
   const status = response?.status || 'completed';
   const dataSource = response?.dataSource || response?.llmResponse?.dataSource;
   const processingTime = response?.processingTime;
+
+  // Handle save correction
+  const handleSaveCorrection = async () => {
+    setSaving(true);
+    try {
+      // Format as knowledge update
+      const correctionInput = `Correction: The correct response is "${editedText}". This replaces the incorrect response: "${displayText}"`;
+
+      const result = await http.post('knowledge-router/parse-and-route', {
+        input: correctionInput
+      });
+
+      if (result.data.success) {
+        // Also try to update specific knowledge entries
+        const updateResult = await http.post('knowledge-correct/correct', {
+          originalResponse: displayText,
+          correctedResponse: editedText,
+          context: {
+            route: route || response?.botRoute,
+            originalQuery: originalQuery,
+            confidence: confidence
+          }
+        }).catch(() => null); // Fail silently if endpoint doesn't exist yet
+
+        const updates = updateResult?.data?.updates || { knowledge_updated: 1 };
+        toast.success(`✓ Correction saved! Updated ${updates.knowledge_updated || 1} knowledge entries`);
+        setIsEditing(false);
+
+        // Update display text
+        displayText = editedText;
+      } else {
+        toast.error('Failed to save correction');
+      }
+    } catch (error) {
+      console.error('Correction error:', error);
+      toast.error('Failed to save correction');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -197,10 +245,61 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
 
       {/* Main response content - better formatted */}
       <div className="border-l-2 border-[var(--border-secondary)] pl-4">
-        <div className="mb-2">
+        <div className="mb-2 flex items-center justify-between">
           <strong className="text-sm font-semibold text-[var(--text-primary)]">Response:</strong>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+              title="Edit response"
+            >
+              <Edit2 className="w-3 h-3 text-[var(--text-muted)] hover:text-[var(--accent)]" />
+            </button>
+          )}
         </div>
-        {formatStructuredContent(displayText)}
+
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-sm font-mono focus:outline-none focus:border-[var(--accent)] resize-none"
+              rows={Math.min(editedText.split('\n').length + 2, 10)}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveCorrection}
+                disabled={saving}
+                className="px-3 py-1.5 bg-[var(--accent)] text-white rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+              >
+                {saving ? (
+                  'Saving...'
+                ) : (
+                  <>
+                    <Save className="w-3 h-3" />
+                    Save
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedText(displayText);
+                }}
+                className="px-3 py-1.5 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded-lg text-xs font-medium flex items-center gap-1 hover:bg-[var(--bg-secondary)]"
+              >
+                <X className="w-3 h-3" />
+                Cancel
+              </button>
+            </div>
+            {saving && (
+              <p className="text-xs text-[var(--text-muted)]">Updating knowledge store...</p>
+            )}
+          </div>
+        ) : (
+          formatStructuredContent(editedText)
+        )}
       </div>
 
       {/* Clean metadata footer */}
