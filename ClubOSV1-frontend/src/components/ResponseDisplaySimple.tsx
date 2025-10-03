@@ -298,7 +298,7 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
             )}
           </div>
         ) : (
-          formatStructuredContent(editedText)
+          formatStructuredContent(displayText)
         )}
       </div>
 

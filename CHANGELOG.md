@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.32] - 2025-10-03
+
+### Fixed
+- **ClubOS Terminal Formatting**: Restored bold text formatting for measurements and technical specifications
+  - Fixed bug introduced in commit 57a3708 where `editedText` was being rendered instead of `displayText`
+  - When not in edit mode, the component now correctly renders the formatted response with bold measurements
+  - Bold formatting now properly appears for dimensions (205" × 135"), measurements, and section headers
+  - Result: AI responses in ClubOS Terminal are once again easy to read with proper visual hierarchy
+
 ## [1.21.31] - 2025-10-03
 
 ### Fixed
