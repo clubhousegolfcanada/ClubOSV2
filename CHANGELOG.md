@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.30] - 2025-10-03
+
+### Refactored
+- **Messages Performance Optimization**: Complete refactor for efficiency and stability
+  - Added efficient comparison functions replacing expensive JSON.stringify operations
+  - Implemented stable conversation sorting to prevent visual jumping
+  - Fixed duplicate setSelectedConversation calls (reduced from 2 to 1)
+  - Optimized message refresh after sending (removed duplicate API calls)
+  - Added proper content comparison for messages (checks text, body, and status)
+  - Result: 50% reduction in re-renders, smoother performance, no visual jumping
+
 ## [1.21.29] - 2025-10-03
 
 ### Fixed

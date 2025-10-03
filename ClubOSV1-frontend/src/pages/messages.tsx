@@ -42,6 +42,35 @@ interface Conversation {
   bay?: string;
 }
 
+// Helper function to check if two conversations are effectively the same (for UI purposes)
+const conversationsEqual = (conv1: Conversation | null, conv2: Conversation | null): boolean => {
+  if (!conv1 || !conv2) return conv1 === conv2;
+
+  // Only compare properties that affect UI rendering, not the entire object
+  return (
+    conv1.id === conv2.id &&
+    conv1.phone_number === conv2.phone_number &&
+    conv1.customer_name === conv2.customer_name &&
+    conv1.unread_count === conv2.unread_count &&
+    conv1.updated_at === conv2.updated_at
+  );
+};
+
+// Helper function to check if messages array has meaningful changes
+const messagesHaveChanged = (oldMessages: Message[], newMessages: Message[]): boolean => {
+  if (oldMessages.length !== newMessages.length) return true;
+
+  // Check if any message ID or content is different
+  return newMessages.some((msg, idx) => {
+    const oldMsg = oldMessages[idx];
+    return !oldMsg ||
+           msg.id !== oldMsg.id ||
+           msg.text !== oldMsg.text ||
+           msg.body !== oldMsg.body ||
+           msg.status !== oldMsg.status;
+  });
+};
+
 export default function Messages() {
   const { user } = useAuthState();
   const router = useRouter();
@@ -304,9 +333,27 @@ export default function Messages() {
       
       if (response.data.success) {
         logger.debug('Loaded conversations:', response.data.data);
+
+        // Sort conversations but maintain stable order for unchanged items
+        // This prevents visual jumping when conversation order changes
         const sortedConversations = response.data.data.sort((a: any, b: any) => {
-          return new Date(b.updated_at || b.created_at).getTime() -
-                 new Date(a.updated_at || a.created_at).getTime();
+          const aTime = new Date(a.updated_at || a.created_at).getTime();
+          const bTime = new Date(b.updated_at || b.created_at).getTime();
+
+          // If times are very close (within 1 second), maintain existing order
+          // This prevents jumping when messages arrive simultaneously
+          if (Math.abs(aTime - bTime) < 1000) {
+            // Find their current positions if they exist
+            const aIndex = conversations.findIndex(c => c.id === a.id);
+            const bIndex = conversations.findIndex(c => c.id === b.id);
+
+            // If both exist, maintain their relative order
+            if (aIndex !== -1 && bIndex !== -1) {
+              return aIndex - bIndex;
+            }
+          }
+
+          return bTime - aTime;
         });
 
         // Track if we had conversations before this refresh
@@ -341,8 +388,8 @@ export default function Messages() {
             // Only update selectedConversation if data has actually changed
             // This prevents unnecessary re-renders and flashing
             setSelectedConversation(prevConversation => {
-              // Check if the conversation data has changed
-              if (JSON.stringify(prevConversation) !== JSON.stringify(updated)) {
+              // Use efficient comparison instead of JSON.stringify
+              if (!conversationsEqual(prevConversation, updated)) {
                 return updated;
               }
               return prevConversation;
@@ -359,9 +406,7 @@ export default function Messages() {
             // Only update messages if they've actually changed
             // This prevents unnecessary re-renders and flashing
             setMessages(prevMessages => {
-              const hasChanges = uniqueMessages.length !== prevMessages.length ||
-                uniqueMessages.some((msg: Message, idx: number) => msg.id !== prevMessages[idx]?.id);
-              return hasChanges ? uniqueMessages : prevMessages;
+              return messagesHaveChanged(prevMessages, uniqueMessages) ? uniqueMessages : prevMessages;
             });
             
             // Check if there are new messages by comparing counts and checking the last message
@@ -430,8 +475,6 @@ export default function Messages() {
     // Check if switching to a different conversation
     const isSwitchingConversation = selectedConversation?.phone_number !== conversation.phone_number;
 
-    setSelectedConversation(conversation);
-
     // Only clear messages if switching to a different conversation
     // Keep existing messages visible during refresh of same conversation
     if (isSwitchingConversation) {
@@ -439,14 +482,6 @@ export default function Messages() {
       setFullMessageHistory([]); // Clear full history
       setHasMoreMessages(false); // Reset load more state
     }
-
-    // Focus input field after selecting conversation (desktop only)
-    setTimeout(() => {
-      const desktopInput = document.querySelector('.md\\:block input[placeholder="Type a message..."]') as HTMLInputElement;
-      if (desktopInput && window.innerWidth >= 768) {
-        desktopInput.focus();
-      }
-    }, 100);
 
     // Fetch conversation history
     if (conversation.phone_number) {
@@ -462,13 +497,16 @@ export default function Messages() {
           if (historyResponse.data.success) {
             const { messages, total_conversations, first_contact, last_contact } = historyResponse.data.data;
 
-            // Update selected conversation with full history info
-            setSelectedConversation({
+            // Update selected conversation with full history info (single update)
+            const conversationWithHistory = {
               ...conversation,
               total_conversations,
               first_contact,
               last_contact
-            });
+            };
+
+            // Set conversation only once with all data
+            setSelectedConversation(conversationWithHistory);
 
             // For better UX, only show recent messages initially (last 30-50 messages)
             // This prevents long scroll animations on conversations with extensive history
@@ -483,25 +521,31 @@ export default function Messages() {
             // Store full history and track if there are more messages
             setFullMessageHistory(messages);
             setHasMoreMessages(messages.length > INITIAL_MESSAGE_COUNT);
-            
+
             // Mark as read using shared context
             await markConversationAsRead(conversation.phone_number);
-            
+
             // Update local state
-            setConversations(prev => prev.map(c => 
+            setConversations(prev => prev.map(c =>
               c.id === conversation.id ? { ...c, unread_count: 0 } : c
             ));
-            
+
             // Instantly jump to bottom (no animation for initial load)
             setTimeout(() => {
               scrollToBottom('instant');
             }, 50);
+          } else {
+            // If API fails but we still need to set the conversation
+            setSelectedConversation(conversation);
           }
         }
       } catch (error) {
         logger.error('Error fetching conversation history:', error);
         toast.error('Failed to load conversation history');
-        
+
+        // Set conversation even on error
+        setSelectedConversation(conversation);
+
         // Fallback to local messages if API fails
         const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
         const uniqueMessages = conversationMessages.reduce((acc: Message[], msg: Message) => {
@@ -512,7 +556,19 @@ export default function Messages() {
         }, []);
         setMessages(uniqueMessages);
       }
+    } else {
+      // If no phone number, still set the conversation
+      setSelectedConversation(conversation);
     }
+
+    // Focus input field after selecting conversation (desktop only)
+    // Move this to the end so it happens regardless of API success
+    setTimeout(() => {
+      const desktopInput = document.querySelector('.md\\:block input[placeholder="Type a message..."]') as HTMLInputElement;
+      if (desktopInput && window.innerWidth >= 768) {
+        desktopInput.focus();
+      }
+    }, 100);
   };
 
   const loadMoreMessages = () => {
@@ -592,41 +648,10 @@ export default function Messages() {
         setTimeout(scrollToBottom, 100);
         
         // Delay refresh to allow backend to process
+        // Only refresh conversations list, not individual messages (they're already updated locally)
         setTimeout(async () => {
-          await loadConversations();
-          
-          // Also refresh the current conversation's messages
-          if (selectedConversation) {
-            try {
-              const token = tokenManager.getToken();
-              if (token) {
-                const historyResponse = await http.get(
-                  `messages/conversations/${selectedConversation.phone_number}/full-history`,
-                  { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-                
-                if (historyResponse.data.success) {
-                  const { messages } = historyResponse.data.data;
-                  // Show last 30 messages
-                  const INITIAL_MESSAGE_COUNT = 30;
-                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT
-                    ? messages.slice(-INITIAL_MESSAGE_COUNT)
-                    : messages;
-                  // Only update if there are actual changes to avoid flashing
-                  setMessages(prevMessages => {
-                    // Check if messages have actually changed
-                    const hasChanges = recentMessages.length !== prevMessages.length ||
-                      recentMessages.some((msg: Message, idx: number) => msg.id !== prevMessages[idx]?.id);
-                    return hasChanges ? recentMessages : prevMessages;
-                  });
-                  setFullMessageHistory(messages);
-                }
-              }
-            } catch (error) {
-              logger.error('Failed to refresh conversation messages:', error);
-            }
-          }
-        }, 1000);
+          await loadConversations(false); // Silent refresh, no loading indicator
+        }, 1500); // Slightly longer delay to ensure backend has processed
       }
     } catch (error: any) {
       logger.error('Failed to send message:', error);
@@ -727,41 +752,10 @@ export default function Messages() {
         setTimeout(scrollToBottom, 100);
         
         // Delay refresh to allow backend to process
+        // Only refresh conversations list, not individual messages (they're already updated locally)
         setTimeout(async () => {
-          await loadConversations();
-          
-          // Also refresh the current conversation's messages
-          if (selectedConversation) {
-            try {
-              const token = tokenManager.getToken();
-              if (token) {
-                const historyResponse = await http.get(
-                  `messages/conversations/${selectedConversation.phone_number}/full-history`,
-                  { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-                
-                if (historyResponse.data.success) {
-                  const { messages } = historyResponse.data.data;
-                  // Show last 30 messages
-                  const INITIAL_MESSAGE_COUNT = 30;
-                  const recentMessages = messages.length > INITIAL_MESSAGE_COUNT
-                    ? messages.slice(-INITIAL_MESSAGE_COUNT)
-                    : messages;
-                  // Only update if there are actual changes to avoid flashing
-                  setMessages(prevMessages => {
-                    // Check if messages have actually changed
-                    const hasChanges = recentMessages.length !== prevMessages.length ||
-                      recentMessages.some((msg: Message, idx: number) => msg.id !== prevMessages[idx]?.id);
-                    return hasChanges ? recentMessages : prevMessages;
-                  });
-                  setFullMessageHistory(messages);
-                }
-              }
-            } catch (error) {
-              logger.error('Failed to refresh conversation messages:', error);
-            }
-          }
-        }, 1000);
+          await loadConversations(false); // Silent refresh, no loading indicator
+        }, 1500); // Slightly longer delay to ensure backend has processed
       }
     } catch (error: any) {
       logger.error('Failed to send AI suggestion:', error);
