@@ -812,11 +812,20 @@ router.post('/suggest-response', authenticate, async (req: Request, res: Respons
 
     // Get relevant knowledge base entries
     const knowledgeQuery = await db.query(`
-      SELECT content, confidence_score 
-      FROM knowledge_store 
-      WHERE to_tsvector('english', content) @@ plainto_tsquery('english', $1)
-      ORDER BY confidence_score DESC
-      LIMIT 3
+      SELECT
+        key,
+        value,
+        confidence
+      FROM knowledge_store
+      WHERE
+        search_vector @@ plainto_tsquery('english', $1)
+        AND superseded_by IS NULL
+        AND verification_status != 'rejected'
+      ORDER BY
+        verification_status = 'verified' DESC,
+        confidence DESC,
+        updated_at DESC
+      LIMIT 5
     `, [context]);
 
     // Build enhanced context with knowledge base
@@ -824,7 +833,11 @@ router.post('/suggest-response', authenticate, async (req: Request, res: Respons
     if (knowledgeQuery.rows.length > 0) {
       enhancedContext += '\n\nRelevant Information:\n';
       knowledgeQuery.rows.forEach((row: any) => {
-        enhancedContext += `- ${row.content}\n`;
+        // Extract the actual response from the JSONB value field
+        const response = typeof row.value === 'string'
+          ? row.value
+          : (row.value?.response || row.value?.content || JSON.stringify(row.value));
+        enhancedContext += `- ${response}\n`;
       });
     }
 
@@ -851,8 +864,8 @@ router.post('/suggest-response', authenticate, async (req: Request, res: Respons
     const suggestion = completion.choices[0]?.message?.content || '';
     
     // Calculate confidence based on knowledge base matches
-    const confidence = knowledgeQuery.rows.length > 0 
-      ? Math.min(95, 70 + (knowledgeQuery.rows.length * 8))
+    const confidence = knowledgeQuery.rows.length > 0
+      ? Math.max(...knowledgeQuery.rows.map((r: any) => r.confidence * 100), 70)
       : 60;
 
     // Log the suggestion
