@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.31] - 2025-10-03
+
+### Fixed
+- **Messages Stale Closure Bug**: Properly fixed conversation jumping and flashing
+  - Used refs to track selectedConversation and conversations to avoid stale closures
+  - Converted loadConversations to useCallback with proper dependencies
+  - Fixed setInterval capturing stale state values
+  - Optimized setConversations to only update when data actually changes
+  - Result: Selected conversation stays selected, no flashing, no jumping to first conversation
+
 ## [1.21.30] - 2025-10-03
 
 ### Refactored

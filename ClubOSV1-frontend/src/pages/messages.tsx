@@ -78,6 +78,20 @@ export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+
+  // Use refs to avoid stale closure issues with setInterval
+  const selectedConversationRef = useRef<Conversation | null>(null);
+  const conversationsRef = useRef<Conversation[]>([]);
+  const loadConversationsRef = useRef<(showRefreshIndicator?: boolean) => Promise<void>>();
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
   
   // SECURITY: Block customer role from accessing messages
   useEffect(() => {
@@ -176,49 +190,49 @@ export default function Messages() {
     let interval: NodeJS.Timeout | null = null;
     let isTabVisible = true;
     let isMounted = true;
-    
+
     // Initial load
-    if (isMounted) {
-      loadConversations();
+    if (loadConversationsRef.current) {
+      loadConversationsRef.current();
     }
-    
+
     // Setup refresh interval with visibility check
     const startRefresh = () => {
       // Clear any existing interval first
       if (interval) {
         clearInterval(interval);
       }
-      
-      // Set up auto-refresh every 15 seconds (increased from 5s to reduce rate limit issues)
+
+      // Set up auto-refresh every 10 seconds
       interval = setInterval(() => {
-        // Only refresh if tab is visible, not rate limited, and component is mounted
-        if (isTabVisible && !isRateLimited && isMounted) {
-          loadConversations(false);
+        // Only refresh if tab is visible and component is mounted
+        if (isTabVisible && isMounted && loadConversationsRef.current) {
+          loadConversationsRef.current(false);
         }
-      }, 10000); // Changed from 15000 to match documented 10s interval
+      }, 10000);
 
       // Only set state if component is mounted
       if (isMounted) {
         setRefreshInterval(interval);
       }
     };
-    
+
     // Handle visibility changes
     const handleVisibilityChange = () => {
       isTabVisible = !document.hidden;
-      
-      if (isTabVisible && !isRateLimited && isMounted) {
+
+      if (isTabVisible && isMounted && loadConversationsRef.current) {
         // Reload when tab becomes visible
-        loadConversations(false);
+        loadConversationsRef.current(false);
       }
     };
-    
+
     // Start refresh
     startRefresh();
-    
+
     // Add visibility change listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       isMounted = false;
       if (interval) {
@@ -226,7 +240,7 @@ export default function Messages() {
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isRateLimited]); // Re-run when rate limit status changes
+  }, []); // Empty dependencies - we use the ref
 
   // Handle phone query parameter from URL
   useEffect(() => {
@@ -303,17 +317,18 @@ export default function Messages() {
     });
   };
 
-  const loadConversations = async (showRefreshIndicator = false) => {
+  // Store loadConversations in ref to avoid stale closures
+  const loadConversations = useCallback(async (showRefreshIndicator = false) => {
     // Skip if rate limited
     if (isRateLimited) {
       logger.debug('Skipping refresh - rate limited');
       return;
     }
-    
+
     if (showRefreshIndicator) {
       setRefreshing(true);
     }
-    
+
     try {
       const token = tokenManager.getToken();
       if (!token) {
@@ -324,57 +339,71 @@ export default function Messages() {
       }
 
       const response = await http.get(`messages/conversations`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         params: { limit: 100 }
       });
-      
+
       if (response.data.success) {
         logger.debug('Loaded conversations:', response.data.data);
 
-        // Sort conversations but maintain stable order for unchanged items
-        // This prevents visual jumping when conversation order changes
-        const sortedConversations = response.data.data.sort((a: any, b: any) => {
-          const aTime = new Date(a.updated_at || a.created_at).getTime();
-          const bTime = new Date(b.updated_at || b.created_at).getTime();
+        // Use functional setState to always have current state
+        setConversations(prevConversations => {
+          // Sort conversations but maintain stable order for unchanged items
+          const sortedConversations = response.data.data.sort((a: any, b: any) => {
+            const aTime = new Date(a.updated_at || a.created_at).getTime();
+            const bTime = new Date(b.updated_at || b.created_at).getTime();
 
-          // If times are very close (within 1 second), maintain existing order
-          // This prevents jumping when messages arrive simultaneously
-          if (Math.abs(aTime - bTime) < 1000) {
-            // Find their current positions if they exist
-            const aIndex = conversations.findIndex(c => c.id === a.id);
-            const bIndex = conversations.findIndex(c => c.id === b.id);
+            // If times are very close (within 1 second), maintain existing order
+            if (Math.abs(aTime - bTime) < 1000) {
+              // Find their current positions in previous conversations
+              const aIndex = prevConversations.findIndex(c => c.id === a.id);
+              const bIndex = prevConversations.findIndex(c => c.id === b.id);
 
-            // If both exist, maintain their relative order
-            if (aIndex !== -1 && bIndex !== -1) {
-              return aIndex - bIndex;
+              // If both exist, maintain their relative order
+              if (aIndex !== -1 && bIndex !== -1) {
+                return aIndex - bIndex;
+              }
             }
+
+            return bTime - aTime;
+          });
+
+          // Check if conversations actually changed to prevent unnecessary re-renders
+          const hasChanged = JSON.stringify(prevConversations.map(c => ({
+            id: c.id,
+            updated_at: c.updated_at
+          }))) !== JSON.stringify(sortedConversations.map((c: Conversation) => ({
+            id: c.id,
+            updated_at: c.updated_at
+          })));
+
+          // Only return new array if actually changed
+          if (!hasChanged) {
+            return prevConversations;
           }
 
-          return bTime - aTime;
+          return sortedConversations;
         });
 
-        // Track if we had conversations before this refresh
-        const hadConversationsBefore = conversations.length > 0;
+        // Use refs for checking conditions to avoid stale closure
+        const currentSelectedConversation = selectedConversationRef.current;
+        const hadConversationsBefore = conversationsRef.current.length > 0;
 
-        setConversations(sortedConversations);
-
-        // Auto-select first conversation ONLY on initial load (when conversations list was empty)
-        // This prevents the bug where refresh would reset to first conversation
-        if (!selectedConversation && sortedConversations.length > 0 && !hadConversationsBefore) {
-          const firstConversation = sortedConversations[0];
-          // Use selectConversation to fetch full history
+        // Auto-select first conversation ONLY on initial load
+        if (!currentSelectedConversation && response.data.data.length > 0 && !hadConversationsBefore) {
+          const firstConversation = response.data.data[0];
           selectConversation(firstConversation);
           logger.debug('Auto-selected first conversation on initial load:', firstConversation.customer_name);
         }
-        
+
         // Update selected conversation if it exists
-        else if (selectedConversation) {
+        else if (currentSelectedConversation) {
           // Normalize phone numbers for comparison (remove any formatting)
           const normalizePhone = (phone: string) => phone ? phone.replace(/\D/g, '') : '';
-          const selectedPhone = normalizePhone(selectedConversation.phone_number);
+          const selectedPhone = normalizePhone(currentSelectedConversation.phone_number);
           
           const updated = response.data.data.find((c: Conversation) => 
             normalizePhone(c.phone_number) === selectedPhone
@@ -430,7 +459,7 @@ export default function Messages() {
               logger.debug(`Updated conversation with ${newMessagesCount} new message(s)`);
             }
           } else {
-            logger.warn('Could not find updated conversation for phone:', selectedConversation.phone_number);
+            logger.warn('Could not find updated conversation for phone:', currentSelectedConversation.phone_number);
           }
         }
       } else {
@@ -469,9 +498,14 @@ export default function Messages() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [isRateLimited, router, messages.length, backoffDelay]);
 
-  const selectConversation = async (conversation: Conversation) => {
+  // Keep the ref updated with the latest function
+  useEffect(() => {
+    loadConversationsRef.current = loadConversations;
+  }, [loadConversations]);
+
+  const selectConversation = useCallback(async (conversation: Conversation) => {
     // Check if switching to a different conversation
     const isSwitchingConversation = selectedConversation?.phone_number !== conversation.phone_number;
 
@@ -569,7 +603,7 @@ export default function Messages() {
         desktopInput.focus();
       }
     }, 100);
-  };
+  }, [selectedConversation, markConversationAsRead, scrollToBottom]);
 
   const loadMoreMessages = () => {
     if (!hasMoreMessages || loadingMoreMessages) return;
