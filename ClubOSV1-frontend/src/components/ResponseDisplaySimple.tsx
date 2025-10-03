@@ -15,26 +15,41 @@ interface Props {
 const formatResponseText = (text: string): React.ReactNode => {
   if (!text) return null;
 
-  // Split into sentences and clean up
-  const lines = text
-    .replace(/\. /g, '.\n\n')  // Add line breaks after periods
-    .replace(/: /g, ':\n')      // Add line breaks after colons
-    .replace(/\d+"/g, (match) => `**${match}**`)  // Bold measurements
-    .replace(/\d+'/g, (match) => `**${match}**`)  // Bold feet measurements
-    .replace(/\d+ inches/gi, (match) => `**${match}**`)  // Bold inch measurements
-    .replace(/\d+ feet/gi, (match) => `**${match}**`)  // Bold feet text
+  // Handle numbered lists that may not have proper formatting
+  let formattedText = text
+    // Fix numbered lists that are inline (e.g., "steps: 1. Do this 2. Do that")
+    .replace(/(\d+)\.\s+/g, '\n$1. ')
+    // Add line break after colon if followed by numbered list
+    .replace(/:\s*(\d+\.)/g, ':\n$1')
+    // Add line break after colon followed by text
+    .replace(/:\s+(?=\w)/g, ':\n')
+    // Bold time measurements (30-45 seconds, etc)
+    .replace(/\b(\d+[-–]\d+)\s*(seconds?|minutes?|hours?)\b/gi, '**$1 $2**')
+    .replace(/\b(\d+)\s*(seconds?|minutes?|hours?)\b/gi, '**$1 $2**')
+    // Bold measurements (using proper quotes)
+    .replace(/\b(\d+)"/g, '**$1"**')
+    .replace(/\b(\d+)'/g, "**$1'**")
+    .replace(/\b(\d+)\s+(inches?|feet|ft|mm|cm|m)\b/gi, '**$1 $2**')
+    .replace(/\b(\d+)\s*[x×]\s*(\d+)/gi, '**$1 × $2**');
+
+  // Split into lines and clean up
+  const lines = formattedText
     .split('\n')
-    .filter(line => line.trim());
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {lines.map((line, index) => {
         const trimmedLine = line.trim();
 
-        // Check if this line is a header (ends with colon)
-        if (trimmedLine.endsWith(':')) {
+        // Check if this is a numbered list item
+        const isNumberedItem = /^\d+\.\s/.test(trimmedLine);
+
+        // Check if this line is a header (ends with colon but not part of numbered list)
+        if (trimmedLine.endsWith(':') && !isNumberedItem) {
           return (
-            <div key={index} className="mt-4">
+            <div key={index} className="mt-3 mb-2">
               <strong className="text-sm font-semibold text-[var(--text-primary)]">
                 {trimmedLine}
               </strong>
@@ -42,29 +57,27 @@ const formatResponseText = (text: string): React.ReactNode => {
           );
         }
 
-        // Check if this line contains measurements or dimensions
-        const hasMeasurements = /\d+["']|\d+\s*(inches|feet|mm|cm|m)/i.test(trimmedLine);
+        // Function to render text with bold parts
+        const renderWithBold = (text: string): React.ReactNode => {
+          // Split by ** markers
+          const parts = text.split(/\*\*([^*]+)\*\*/g);
 
-        if (hasMeasurements) {
-          // Parse the line and bold the measurements
-          const formattedLine = trimmedLine
-            .replace(/(\d+(?:\.\d+)?)\s*["']/g, '<strong>$1"</strong>')
-            .replace(/(\d+(?:\.\d+)?)\s*(inches|feet|mm|cm|m)/gi, '<strong>$1 $2</strong>')
-            .replace(/(\d+)\s*x\s*(\d+)/gi, '<strong>$1 × $2</strong>');
+          return parts.map((part, i) => {
+            // Every odd index is meant to be bold (captured group from regex)
+            if (i % 2 === 1) {
+              return <strong key={i} className="font-semibold">{part}</strong>;
+            }
+            return part;
+          });
+        };
 
-          return (
-            <div
-              key={index}
-              className="text-sm text-[var(--text-primary)] leading-relaxed pl-4"
-              dangerouslySetInnerHTML={{ __html: formattedLine }}
-            />
-          );
-        }
-
-        // Regular text line
+        // Render line with proper indentation
         return (
-          <div key={index} className="text-sm text-[var(--text-primary)] leading-relaxed pl-4">
-            {trimmedLine}
+          <div
+            key={index}
+            className={`text-sm text-[var(--text-primary)] leading-relaxed ${isNumberedItem ? 'pl-6' : 'pl-4'}`}
+          >
+            {renderWithBold(trimmedLine)}
           </div>
         );
       })}
@@ -298,7 +311,7 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
             )}
           </div>
         ) : (
-          formatStructuredContent(displayText)
+          formatResponseText(displayText)
         )}
       </div>
 

@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.33] - 2025-10-03
+
+### Fixed
+- **ClubOS Terminal Formatting (Complete Fix)**: Properly restored formatting with numbered lists and bold text
+  - Switched from `formatStructuredContent` to `formatResponseText` function
+  - Fixed issue where splitting on periods was breaking numbered lists (1. 2. 3. etc)
+  - Properly preserves numbered list formatting while adding line breaks between sentences
+  - Bold formatting now correctly renders for measurements (30-45 seconds, 205" × 135")
+  - Numbered lists display with proper indentation and structure
+  - Result: AI responses now display exactly as intended with clear numbered steps and bold measurements
+
 ## [1.21.32] - 2025-10-03
 
 ### Fixed
