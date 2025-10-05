@@ -2,6 +2,47 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.41] - 2025-10-05
+
+### Added
+- **Native Booking System - Part 5 Implementation**: Multi-Simulator Booking & Group Coordination
+  - Created database migration (235_multi_simulator_booking.sql) with multi-simulator support
+  - Added bookings_v2 table with space_ids array for booking multiple simulators
+  - Created spaces table for individual simulator management
+  - Added booking_spaces junction table for complex group bookings
+  - Implemented PostgreSQL exclusion constraint to prevent double bookings
+  - Built MultiSimulatorSelector component with real-time conflict detection
+  - Created GroupBookingCoordinator for managing participant assignments
+  - Added FavoriteSimulator component for saving and quick-booking preferences
+  - Built AvailabilityMatrix with visual grid and drag-to-select functionality
+  - Added favorite_space_ids to customer_profiles for preference tracking
+  - Created functions for space availability checking
+  - Supports full location rental (all simulators at once)
+  - Group booking coordination with email notifications
+  - One-click rebooking of favorite setups
+  - Result: Complete multi-simulator booking system ready for group events
+
+## [1.21.40] - 2025-10-05
+
+### Added
+- **Native Booking System - Part 1 Implementation**: BookingCalendar with Color-Coded Categories
+  - Created database migration (015_booking_system.sql) with complete booking schema
+  - Added customer_tiers table with 4 default tiers (New=$30/hr Blue, Member=$22.50/hr Yellow, Promo=$15/hr Green, Frequent=$20/hr Purple)
+  - Implemented booking_locations table with all 7 Clubhouse 24/7 facilities
+  - Created booking_spaces table with 22 simulator bays across locations
+  - Added bookings table with multi-simulator support and change tracking
+  - Built BookingConfigService for dynamic business rule management
+  - Created BookingCalendar component with Day/Week view toggle
+  - Implemented ColorLegend component showing customer tier colors
+  - Built DayGrid view with 30-minute time slots (6 AM - 11 PM)
+  - Added BookingBlock component with tier-based color coding
+  - Created booking API endpoints (/api/bookings/day, /availability, /spaces, /customer-tiers, /locations)
+  - Implemented 1-hour minimum booking with 30-minute increments after
+  - Added location filtering with all/specific location support
+  - Created placeholder WeekGrid and AdminBlockOff for future implementation
+  - Integrated with existing ClubOS authentication and notification systems
+  - Result: Foundation calendar system ready with color-coded customer tiers
+
 ## [1.21.39] - 2025-10-05
 
 ### Added

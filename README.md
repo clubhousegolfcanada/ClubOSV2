@@ -1,4 +1,4 @@
-# ClubOS v1.21.39 - Flexible Facility Management System
+# ClubOS v1.21.41 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.39**
-- **Native Booking System Part 3** - Tiered forms with change management & dynamic pricing
-- **Customer Tiers** - Blue=New ($30/hr), Yellow=Member ($22.50/hr), Green=Promo ($15/hr)
-- **Change Management** - 1 free reschedule, $10 fee after, flag at 2+ changes
-- **Smart Features** - Promo codes, recurring bookings, CRM notes for staff
-- **Native Booking System Part 4** - Multi-location management with notices
+**Current Version: v1.21.41**
+- **Native Booking System Part 5** - Multi-simulator booking support
+- **Multi-Simulator Selection** - Book multiple boxes in one transaction
+- **Group Booking Coordination** - Manage participants and space assignments
+- **Favorite Simulators** - Save preferences for quick rebooking
+- **Availability Matrix** - Visual grid with drag-to-select functionality
 
 ## 🏗️ System Architecture
 
