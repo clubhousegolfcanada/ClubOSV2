@@ -120,7 +120,7 @@ export class BookingConfigService {
         this.config = DEFAULT_CONFIG;
       }
     }
-    return this.config || this.getDefaultConfig();
+    return this.config || DEFAULT_CONFIG;
   }
 
   /**
@@ -132,7 +132,7 @@ export class BookingConfigService {
         value: updates
       });
       this.config = { ...DEFAULT_CONFIG, ...(data.value || {}) };
-      return this.config || this.getDefaultConfig();
+      return this.config || DEFAULT_CONFIG;
     } catch (error) {
       logger.error('Failed to update booking config:', error);
       throw error;

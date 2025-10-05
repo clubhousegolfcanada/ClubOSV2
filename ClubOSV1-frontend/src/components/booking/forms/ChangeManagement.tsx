@@ -106,8 +106,8 @@ export default function ChangeManagement({
             {/* Change Count Status */}
             <div className="flex items-center gap-3 mb-3">
               <StatusBadge
-                status={`${changeCount} ${changeCount === 1 ? 'Change' : 'Changes'}`}
-                color={changeCount === 0 ? '#10B981' : changeCount === 1 ? '#F59E0B' : '#EF4444'}
+                status={changeCount === 0 ? 'success' : changeCount === 1 ? 'warning' : 'error'}
+                label={`${changeCount} ${changeCount === 1 ? 'Change' : 'Changes'}`}
               />
 
               {validationResult?.shouldFlag && (

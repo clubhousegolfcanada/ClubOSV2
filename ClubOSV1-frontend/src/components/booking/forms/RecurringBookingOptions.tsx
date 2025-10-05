@@ -46,7 +46,7 @@ export default function RecurringBookingOptions({
           </span>
         </div>
         <Toggle
-          enabled={enabled}
+          checked={enabled}
           onChange={(checked: boolean) => onChange(checked, checked ? pattern || { frequency: 'weekly' } : undefined)}
         />
       </div>

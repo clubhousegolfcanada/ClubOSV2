@@ -136,7 +136,7 @@ class BookingConfigService {
       value: { ...this.config, ...updates }
     });
     this.config = response.data.value;
-    return this.config;
+    return this.config || this.getDefaultConfig();
   }
 
   /**
@@ -150,7 +150,7 @@ class BookingConfigService {
     try {
       const response = await http.get('/api/bookings/customer-tiers');
       this.tiers = response.data.data;
-      return this.tiers;
+      return this.tiers || [];
     } catch (error) {
       console.error('Failed to load customer tiers:', error);
       return [];
@@ -168,7 +168,7 @@ class BookingConfigService {
     try {
       const response = await http.get('/api/bookings/locations');
       this.locations = response.data.data;
-      return this.locations;
+      return this.locations || [];
     } catch (error) {
       console.error('Failed to load booking locations:', error);
       return [];

@@ -1,4 +1,4 @@
-import { db } from '../utils/database';
+import { db, pool } from '../utils/database';
 import { logger } from '../utils/logger';
 
 export interface BookingChange {
@@ -118,7 +118,7 @@ class ChangeManagementService {
       reason?: string;
     }
   ): Promise<void> {
-    const client = await db.pool.connect();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');

@@ -290,8 +290,8 @@ export default function TieredBookingForm({
         {customerTier && (
           <div className="flex items-center gap-2">
             <StatusBadge
-              status={customerTier.name}
-              color={customerTier.color}
+              status={customerTier.id === 'new' ? 'info' : customerTier.id === 'member' ? 'warning' : customerTier.id === 'frequent' ? 'success' : 'default'}
+              label={customerTier.name}
             />
             <span className="text-sm text-gray-600">
               ${customerTier.hourly_rate}/hour • Book up to {customerTier.max_advance_days} days ahead

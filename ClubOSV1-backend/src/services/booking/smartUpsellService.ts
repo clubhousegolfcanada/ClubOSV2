@@ -1,7 +1,12 @@
-import { db } from '../../utils/database';
+import { db, pool } from '../../utils/database';
 import { logger } from '../../utils/logger';
 import bookingConfigService from './bookingConfigService';
-import { sendNotification } from '../notificationService';
+
+// TODO: Replace with actual notification service when available
+async function sendNotification(notification: any): Promise<void> {
+  logger.info('Notification would be sent:', notification);
+  // In production, this would integrate with your notification service
+}
 
 export interface UpsellOffer {
   bookingId: string;
@@ -110,7 +115,7 @@ class SmartUpsellService {
    * Send upsell offer to customer
    */
   private async sendUpsellOffer(bookingId: string): Promise<void> {
-    const client = await db.pool.connect();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
@@ -264,7 +269,7 @@ class SmartUpsellService {
    * Accept an upsell offer
    */
   async acceptUpsell(offerId: string, userId: string): Promise<{ success: boolean; message: string }> {
-    const client = await db.pool.connect();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');

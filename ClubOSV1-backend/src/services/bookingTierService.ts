@@ -1,4 +1,4 @@
-import { db } from '../utils/database';
+import { db, pool } from '../utils/database';
 import { logger } from '../utils/logger';
 
 export interface CustomerTier {
@@ -141,7 +141,7 @@ class BookingTierService {
    * Manually upgrade/downgrade user tier
    */
   async upgradeUserTier(userId: string, newTierId: string, reason: string = 'admin_override'): Promise<void> {
-    const client = await db.pool.connect();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');

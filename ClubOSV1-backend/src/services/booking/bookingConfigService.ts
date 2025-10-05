@@ -1,4 +1,4 @@
-import { db } from '../../utils/database';
+import { db, pool } from '../../utils/database';
 import { logger } from '../../utils/logger';
 
 export interface BookingConfig {
@@ -131,7 +131,7 @@ class BookingConfigService {
    * Update configuration value
    */
   async updateConfig(updates: Partial<BookingConfig>, updatedBy?: string): Promise<BookingConfig> {
-    const client = await db.pool.connect();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
