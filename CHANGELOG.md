@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.43] - 2025-10-05
+
+### Fixed
+- **Booking System UI Consistency**: Aligned booking components with ClubOS design system
+  - Replaced all custom card styling with `.card` class for consistency
+  - Removed hardcoded Tailwind colors (bg-green-50, etc.) - now using CSS variables
+  - Simplified SmartUpsellPopup by removing excessive gradients
+  - Standardized spacing to p-3 throughout booking components
+  - Reduced typography scale (text-2xl → text-lg) to match dashboard patterns
+  - Simplified DurationPicker by removing badges and scale transforms
+  - Fixed border colors to use var(--border-primary)
+  - Result: Professional, minimal UI consistent with rest of ClubOS
+
 ## [1.21.42] - 2025-10-05
 
 ### Added

@@ -94,10 +94,10 @@ export default function ChangeManagement({
   return (
     <div className="space-y-4">
       {/* Change Status Card */}
-      <div className={`p-4 rounded-lg border-2 ${
+      <div className={`p-3 rounded-lg border-2 ${
         validationResult?.allowed
-          ? 'border-green-200 bg-green-50'
-          : 'border-red-200 bg-red-50'
+          ? 'border-[var(--status-success)] bg-[var(--status-success-bg)]'
+          : 'border-[var(--status-error)] bg-[var(--status-error-bg)]'
       }`}>
         <div className="flex items-start justify-between">
           <div>
@@ -111,7 +111,7 @@ export default function ChangeManagement({
               />
 
               {validationResult?.shouldFlag && (
-                <div className="flex items-center gap-1 text-red-600">
+                <div className="flex items-center gap-1 text-[var(--status-error)]">
                   <AlertTriangle className="w-4 h-4" />
                   <span className="text-sm font-medium">Flagged</span>
                 </div>

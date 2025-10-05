@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, TrendingUp, Star } from 'lucide-react';
+import { Clock, TrendingUp } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 interface DurationOption {
@@ -94,32 +94,14 @@ const DurationPicker: React.FC<DurationPickerProps> = ({
             key={option.minutes}
             onClick={() => onChange(option.minutes)}
             className={`
-              relative px-3 py-3 rounded-lg border-2 transition-all
-              hover:scale-105 hover:shadow-md
+              relative px-3 py-3 rounded-lg border transition-all
+              hover:bg-[var(--bg-hover)]
               ${selectedDuration === option.minutes
                 ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                : 'border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--accent)]/50'
+                : 'border-[var(--border-primary)] bg-[var(--bg-secondary)]'
               }
             `}
           >
-            {/* Popular badge */}
-            {option.popular && (
-              <div className="absolute -top-2 -right-2">
-                <div className="bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <Star className="w-3 h-3" />
-                  <span>Popular</span>
-                </div>
-              </div>
-            )}
-
-            {/* Discount badge */}
-            {option.discount && (
-              <div className="absolute -top-2 -left-2">
-                <div className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                  -{option.discount}%
-                </div>
-              </div>
-            )}
 
             <div className="text-sm font-medium">
               {option.label}

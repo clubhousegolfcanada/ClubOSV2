@@ -261,9 +261,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="card">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-[var(--color-primary)]" />
@@ -277,7 +277,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             {/* Location filter */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
             >
               <MapPin className="h-4 w-4" />
               <span>{selectedLocationId === 'all' ? 'All Locations' : locations.find(l => l.id === selectedLocationId)?.name}</span>
@@ -285,13 +285,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             </button>
 
             {/* View mode toggle */}
-            <div className="flex bg-gray-100 rounded-md p-0.5">
+            <div className="flex bg-[var(--bg-tertiary)] rounded-md p-0.5">
               <button
                 onClick={() => setViewMode('day')}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
                   viewMode === 'day'
-                    ? 'bg-white text-[var(--color-primary)] shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-[var(--bg-primary)] text-[var(--color-primary)] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 Day
@@ -300,8 +300,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 onClick={() => setViewMode('week')}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
                   viewMode === 'week'
-                    ? 'bg-white text-[var(--color-primary)] shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-[var(--bg-primary)] text-[var(--color-primary)] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 Week
@@ -323,7 +323,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
         {/* Filters dropdown */}
         {showFilters && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-md">
+          <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-md">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               <button
                 onClick={() => {
@@ -333,7 +333,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 className={`px-3 py-2 text-sm rounded-md transition-colors ${
                   selectedLocationId === 'all'
                     ? 'bg-[var(--color-primary)] text-white'
-                    : 'bg-white hover:bg-gray-100'
+                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
                 }`}
               >
                 All Locations
@@ -348,7 +348,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   className={`px-3 py-2 text-sm rounded-md transition-colors ${
                     selectedLocationId === location.id
                       ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-white hover:bg-gray-100'
+                      : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
                   }`}
                 >
                   {location.name}
@@ -371,25 +371,25 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       </div>
 
       {/* Date navigation */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="py-3 border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrevious}
-              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+              className="p-1.5 hover:bg-[var(--bg-hover)] rounded transition-colors"
               aria-label="Previous"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={handleToday}
-              className="px-3 py-1 text-sm bg-white hover:bg-gray-100 rounded-md transition-colors"
+              className="px-3 py-1 text-sm bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
             >
               Today
             </button>
             <button
               onClick={handleNext}
-              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+              className="p-1.5 hover:bg-[var(--bg-hover)] rounded transition-colors"
               aria-label="Next"
             >
               <ChevronRight className="h-4 w-4" />
@@ -406,7 +406,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       </div>
 
       {/* Calendar grid */}
-      <div className="p-4">
+      <div className="pt-3">
         {viewMode === 'day' ? (
           <DayGrid
             date={selectedDate}

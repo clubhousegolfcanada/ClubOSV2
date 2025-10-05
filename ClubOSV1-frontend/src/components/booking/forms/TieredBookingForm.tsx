@@ -280,10 +280,10 @@ export default function TieredBookingForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
+    <form onSubmit={handleSubmit} className="card max-w-2xl mx-auto">
       {/* Header with tier info */}
-      <div className="border-b pb-4">
-        <h2 className="text-2xl font-bold mb-2">
+      <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
+        <h2 className="text-lg font-semibold mb-2">
           {isReschedule ? 'Reschedule Booking' : 'New Booking'}
         </h2>
 
@@ -300,10 +300,10 @@ export default function TieredBookingForm({
         )}
 
         {isReschedule && (
-          <div className="mt-2 p-2 bg-yellow-50 rounded-lg">
+          <div className="mt-2 p-2 bg-[var(--status-warning-bg)] rounded-lg">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-yellow-600" />
-              <span className="text-sm text-yellow-800">
+              <AlertCircle className="w-4 h-4 text-[var(--status-warning)]" />
+              <span className="text-sm text-[var(--status-warning)]">
                 Change #{changeCount + 1}
                 {changeFeeApplied && ` • $${pricing.changeFee} change fee applies`}
               </span>
@@ -402,7 +402,7 @@ export default function TieredBookingForm({
 
       {/* Customer Info (for staff bookings) */}
       {isStaff && (
-        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+        <div className="space-y-4 p-3 bg-[var(--bg-tertiary)] rounded-lg">
           <h3 className="font-medium">Customer Information (Staff Only)</h3>
           <div className="grid grid-cols-2 gap-4">
             <Input
@@ -467,8 +467,8 @@ export default function TieredBookingForm({
 
       {/* Error Display */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm">{error}</p>
+        <div className="p-3 bg-[var(--status-error-bg)] border border-[var(--status-error)] rounded-lg">
+          <p className="text-[var(--status-error)] text-sm">{error}</p>
         </div>
       )}
 
