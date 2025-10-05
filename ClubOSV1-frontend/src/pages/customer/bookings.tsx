@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
+import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
 import Head from 'next/head';
-import { Calendar, MapPin, Clock, Info } from 'lucide-react';
+import { Calendar, MapPin, Clock, Info, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 export default function CustomerBookings() {
   const router = useRouter();
   const { user } = useAuthState();
   const [loading, setLoading] = useState(true);
+  const [showLegacySystem, setShowLegacySystem] = useState(false);
 
   useEffect(() => {
     // Check authentication
@@ -18,6 +21,12 @@ export default function CustomerBookings() {
       setLoading(false);
     }
   }, [user, router]);
+
+  const handleBookingSuccess = (booking: any) => {
+    // Show success message and redirect to bookings list
+    alert(`Booking confirmed! ID: ${booking.id}`);
+    // Could redirect to a bookings list page or show confirmation
+  };
 
   if (loading) {
     return (
@@ -41,22 +50,44 @@ export default function CustomerBookings() {
 
       <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
-        
+
         <main className="pb-24 lg:pb-8 pt-12 lg:pt-14">
-          {/* Skedda Booking System Embed - Full Width */}
-          <div className="h-full">
-            <iframe
-              src="https://clubhouse247golf.skedda.com/booking"
-              title="Clubhouse Golf Booking System"
-              className="w-full"
-              style={{ 
-                height: 'calc(100vh - 136px)', 
-                border: 'none',
-                minHeight: '600px'
-              }}
-              allow="payment; fullscreen; camera; microphone; geolocation"
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
-            />
+          <div className="container mx-auto px-4 py-6">
+            {/* Header with toggle */}
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold">Book a Simulator</h1>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowLegacySystem(!showLegacySystem)}
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                {showLegacySystem ? 'Use New System' : 'Use Legacy Skedda'}
+              </Button>
+            </div>
+
+            {showLegacySystem ? (
+              /* Legacy Skedda System */
+              <div className="h-full">
+                <iframe
+                  src="https://clubhouse247golf.skedda.com/booking"
+                  title="Clubhouse Golf Booking System"
+                  className="w-full"
+                  style={{
+                    height: 'calc(100vh - 200px)',
+                    border: 'none',
+                    minHeight: '600px'
+                  }}
+                  allow="payment; fullscreen; camera; microphone; geolocation"
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
+                />
+              </div>
+            ) : (
+              /* New ClubOS Booking System */
+              <TieredBookingForm
+                onSuccess={handleBookingSuccess}
+              />
+            )}
           </div>
         </main>
       </div>

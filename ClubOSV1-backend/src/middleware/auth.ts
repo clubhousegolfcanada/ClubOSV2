@@ -406,3 +406,6 @@ export const authenticateApiKey = (req: Request, res: Response, next: NextFuncti
 
   next();
 };
+
+// Alias for authorize to match common naming conventions
+export const requireRole = authorize;

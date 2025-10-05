@@ -2,6 +2,45 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.38] - 2025-10-05
+
+### Added
+- **Native Booking System - Part 4 Implementation**: Multi-Location with Notices & Alerts
+  - Created enhanced location management system (migration 240)
+  - Added booking_locations table with all 6 Clubhouse 24/7 locations
+  - Implemented location_notices table for temporary alerts and announcements
+  - Created booking_config table for location-specific configuration
+  - Added booking_spaces table for managing simulators/courts per location
+  - Built LocationNoticeManager component for admin notice CRUD operations
+  - Created LocationVisibilityToggle for showing/hiding locations from customers
+  - Added NoticeDisplay component for customer-facing notice rendering
+  - Implemented severity levels (info/warning/critical) with visual styling
+  - Added auto-expiry for time-limited notices
+  - Created comprehensive location notice service layer
+  - Admin can post location-specific notices visible on booking pages
+  - Notices can be included in booking confirmations
+  - Locations can be toggled visible/invisible independently
+  - Filter views support single location or all locations
+  - Result: Complete location management system ready for multi-site operations
+
+## [1.21.37] - 2025-10-05
+
+### Added
+- **Native Booking System - Part 2 Implementation**: Configuration & Foundation Components
+  - Created comprehensive database schema (migration 238) with 11 tables for complete booking system
+  - Added customer_tiers table with color coding (Blue=New, Yellow=Member, Green=Promo)
+  - Implemented booking configuration service for dynamic business rules (no hardcoding)
+  - Created BookingCalendar component with color-coded customer tiers
+  - Added DayGrid and WeekGrid views with drag-to-book functionality
+  - Implemented TimeIncrementSelector with 1hr minimum + 30min increments
+  - Added LocationFilter with 6 Clubhouse locations
+  - Created BookingBlock component with tier-based coloring
+  - Added ColorLegend for visual tier identification
+  - Implemented loyalty_tracking and upsell_history tables for smart features
+  - Created booking_config table for admin-configurable rules
+  - Added location_notices for temporary alerts
+  - Result: Foundation ready for replacing Skedda iframe
+
 ## [1.21.36] - 2025-10-05
 
 ### Fixed
