@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.39] - 2025-10-05
+
+### Added
+- **Native Booking System - Part 3 Implementation**: Tiered Booking Forms with Change Management
+  - Created customer tier system with dynamic pricing ($15-30/hr based on tier)
+  - Built TieredBookingForm component with tier-aware pricing and rules
+  - Implemented ChangeManagement component tracking reschedules and fees
+  - Added PromoCodeInput with real-time validation and discount application
+  - Created RecurringBookingOptions for Standard Members only
+  - Built CRMNotesPanel for staff-only behavior tracking
+  - Added PricingDisplay with tier-colored summary and breakdown
+  - Implemented change tracking: 1 free change, $10 fee after, flag at 2+
+  - Added booking configuration service for dynamic business rules
+  - Created backend services for tier management and change tracking
+  - Enhanced booking API with tier detection and pricing logic
+  - Added promo_codes table for gift cards and discounts
+  - Created customer_tier_history for tracking tier changes
+  - Added booking_changes table for complete change audit trail
+  - Integrated with existing users and system_settings tables
+  - Result: Complete tier-based booking system with change management
+
 ## [1.21.38] - 2025-10-05
 
 ### Added

@@ -1,168 +1,103 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Clock, Users, Lock, AlertCircle, DollarSign } from 'lucide-react';
+import { Clock, User, AlertTriangle } from 'lucide-react';
 import { Booking } from './BookingCalendar';
+import { BookingConfig, BookingConfigService } from '@/services/booking/bookingConfig';
 
 interface BookingBlockProps {
   booking: Booking;
   onClick?: () => void;
-  showDetails?: boolean;
-  className?: string;
+  config: BookingConfig;
+  compact?: boolean;
 }
 
 const BookingBlock: React.FC<BookingBlockProps> = ({
   booking,
   onClick,
-  showDetails = true,
-  className = ''
+  config,
+  compact = false
 }) => {
   const startTime = new Date(booking.startAt);
   const endTime = new Date(booking.endAt);
+  const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
+  const durationBlocks = Math.ceil(durationMinutes / (config.gridInterval || 30));
 
-  // Determine block styling based on booking type and status
-  const getBlockStyle = () => {
-    // Admin blocks (maintenance, cleaning)
+  // Determine block styles based on booking type
+  const getBlockStyles = () => {
     if (booking.isAdminBlock) {
       return {
-        backgroundColor: '#6B7280',
+        backgroundColor: '#6B7280', // Gray for admin blocks
         borderColor: '#4B5563',
         textColor: 'text-white'
       };
     }
 
-    // Cancelled bookings
-    if (booking.status === 'cancelled') {
-      return {
-        backgroundColor: '#FEE2E2',
-        borderColor: '#FCA5A5',
-        textColor: 'text-red-900',
-        opacity: '0.6'
-      };
-    }
-
-    // Color based on customer tier
     return {
-      backgroundColor: `${booking.tierColor}20`,
-      borderColor: booking.tierColor,
-      textColor: 'text-gray-900 dark:text-white'
+      backgroundColor: booking.tierColor || '#3B82F6',
+      borderColor: booking.tierColor || '#2563EB',
+      textColor: 'text-white'
     };
   };
 
-  const style = getBlockStyle();
+  const styles = getBlockStyles();
 
   return (
     <div
-      className={`
-        rounded-lg border-2 p-2 h-full cursor-pointer transition-all
-        hover:shadow-lg hover:scale-[1.02] ${style.textColor} ${className}
-      `}
+      className={`absolute inset-x-0 top-0 rounded-md border cursor-pointer transition-all hover:shadow-md ${styles.textColor}`}
       style={{
-        backgroundColor: style.backgroundColor,
-        borderColor: style.borderColor,
-        opacity: style.opacity || 1
+        backgroundColor: styles.backgroundColor,
+        borderColor: styles.borderColor,
+        height: `${durationBlocks * 40}px`,
+        minHeight: '40px',
+        zIndex: 10
       }}
       onClick={onClick}
     >
-      {/* Time header */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1 text-xs font-medium">
-          <Clock className="w-3 h-3" />
+      <div className={`p-1.5 ${compact ? 'text-xs' : 'text-sm'}`}>
+        {/* Header with time */}
+        <div className="flex items-center gap-1 font-medium">
+          <Clock className="h-3 w-3" />
           <span>
             {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
           </span>
         </div>
 
-        {/* Duration badge */}
-        <span
-          className="text-xs px-1.5 py-0.5 rounded-full"
-          style={{
-            backgroundColor: booking.tierColor,
-            color: 'white'
-          }}
-        >
-          {booking.durationMinutes}m
-        </span>
-      </div>
-
-      {showDetails && (
-        <>
-          {/* Admin block reason */}
-          {booking.isAdminBlock ? (
-            <div className="flex items-center gap-1 mt-1">
-              <Lock className="w-3 h-3" />
-              <span className="text-xs font-medium">
-                {booking.blockReason || 'Blocked'}
-              </span>
+        {/* Content based on type */}
+        {booking.isAdminBlock ? (
+          <div className="mt-1">
+            <div className="flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              <span className="text-xs">{booking.blockReason || 'Blocked'}</span>
             </div>
-          ) : (
-            <>
-              {/* Customer name or email */}
-              <div className="text-sm font-semibold truncate">
-                {booking.userName || booking.userEmail?.split('@')[0] || 'Guest'}
+          </div>
+        ) : (
+          <div className="mt-1">
+            {/* Customer info */}
+            {(booking.customerName || booking.customerEmail) && (
+              <div className="flex items-center gap-1 text-xs">
+                <User className="h-3 w-3" />
+                <span className="truncate">
+                  {booking.customerName || booking.customerEmail?.split('@')[0]}
+                </span>
               </div>
+            )}
 
-              {/* Tier and location */}
-              <div className="flex items-center justify-between mt-1">
-                <span
-                  className="text-xs px-1.5 py-0.5 rounded"
-                  style={{
-                    backgroundColor: `${booking.tierColor}40`,
-                    color: booking.tierColor
-                  }}
-                >
+            {/* Tier badge */}
+            {booking.tierName && !compact && (
+              <div className="mt-1">
+                <span className="inline-block px-1.5 py-0.5 text-xs font-medium bg-white/20 rounded">
                   {booking.tierName}
                 </span>
-
-                {/* Price if available */}
-                {booking.totalAmount && (
-                  <div className="flex items-center gap-0.5 text-xs">
-                    <DollarSign className="w-3 h-3" />
-                    <span>{booking.totalAmount.toFixed(0)}</span>
-                  </div>
-                )}
               </div>
+            )}
 
-              {/* Space names */}
-              {booking.spaces && booking.spaces.length > 0 && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-[var(--text-secondary)]">
-                  <Users className="w-3 h-3" />
-                  <span className="truncate">
-                    {booking.spaces.map(s => s.name).join(', ')}
-                  </span>
-                </div>
-              )}
-
-              {/* Status badges */}
-              {booking.status === 'pending' && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-yellow-600">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>Pending</span>
-                </div>
-              )}
-
-              {/* Admin notes indicator */}
-              {booking.adminNotes && (
-                <div className="mt-1 text-xs text-[var(--text-secondary)] italic truncate">
-                  Note: {booking.adminNotes}
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-
-      {/* Minimal view (just show colored bar with time) */}
-      {!showDetails && !booking.isAdminBlock && (
-        <div className="h-full flex items-center justify-center">
-          <div
-            className="w-1 h-full rounded-full mr-2"
-            style={{ backgroundColor: booking.tierColor }}
-          />
-          <span className="text-xs font-medium truncate">
-            {booking.userName || 'Booking'}
-          </span>
-        </div>
-      )}
+            {/* Duration */}
+            <div className="text-xs opacity-90 mt-0.5">
+              {BookingConfigService.formatDuration(durationMinutes)}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
