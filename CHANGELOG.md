@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.36] - 2025-10-05
+
+### Fixed
+- **Knowledge Correction System**: Connected corrections to pattern learning for automatic AI improvement
+  - Added response_tracking table to store all AI responses with tracking IDs
+  - Modified LLM endpoints to save response context (query, response, route, confidence)
+  - Created direct `/api/corrections/save` endpoint for inline response corrections
+  - Integrated V3-PLS pattern creation from corrections (auto-learns from operator fixes)
+  - Fixed silent failures in knowledge updates - now provides detailed success feedback
+  - Corrections now automatically train the AI system to prevent future mistakes
+  - Result: Every correction makes the system smarter, reducing repetitive fixes
+
 ## [1.21.35] - 2025-10-05
 
 ### Added
