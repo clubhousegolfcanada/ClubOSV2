@@ -5,7 +5,7 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
 import Head from 'next/head';
 import { Calendar, MapPin, Clock, Info, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import Button from '@/components/ui/Button';
 
 export default function CustomerBookings() {
   const router = useRouter();

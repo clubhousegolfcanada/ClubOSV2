@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { pool } from '../database';
-import { authMiddleware } from '../middleware/auth';
-import logger from '../services/logger';
+import { db } from '../utils/database';
+import { authenticate } from '../middleware/auth';
+import { logger } from '../utils/logger';
 import { z } from 'zod';
 
 const router = express.Router();
@@ -29,7 +29,7 @@ const UpdateBookingSchema = z.object({
 });
 
 // GET /api/bookings/day - Get bookings for a specific day
-router.get('/day', authMiddleware, async (req: Request, res: Response) => {
+router.get('/day', authenticate, async (req: Request, res: Response) => {
   try {
     const { locationId, date } = req.query;
 
@@ -79,7 +79,7 @@ router.get('/day', authMiddleware, async (req: Request, res: Response) => {
     query += ` GROUP BY b.id, bl.name, ct.name, ct.color, u.name, u.email`;
     query += ` ORDER BY b.start_at ASC`;
 
-    const result = await pool.query(query, params);
+    const result = await db.query(query, params);
 
     res.json({
       success: true,
@@ -95,7 +95,7 @@ router.get('/day', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // GET /api/bookings/availability - Check availability for a time slot
-router.get('/availability', authMiddleware, async (req: Request, res: Response) => {
+router.get('/availability', authenticate, async (req: Request, res: Response) => {
   try {
     const { locationId, spaceId, date } = req.query;
 
@@ -133,7 +133,7 @@ router.get('/availability', authMiddleware, async (req: Request, res: Response) 
       params.push(spaceId);
     }
 
-    const result = await pool.query(query, params);
+    const result = await db.query(query, params);
 
     // Calculate available time slots (30-minute intervals)
     const bookedSlots = result.rows.map(row => ({
@@ -185,13 +185,13 @@ router.get('/availability', authMiddleware, async (req: Request, res: Response) 
 });
 
 // POST /api/bookings - Create a new booking
-router.post('/', authMiddleware, async (req: Request, res: Response) => {
+router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
     const validated = CreateBookingSchema.parse(req.body);
     const userId = (req as any).user?.id;
 
     // Get booking configuration
-    const configResult = await pool.query(
+    const configResult = await db.query(
       "SELECT value FROM system_settings WHERE key = 'booking_config'"
     );
     const config = configResult.rows[0]?.value || {};
@@ -219,7 +219,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     // Get or assign customer tier
     let customerTierId = 'new'; // Default to new customer
     if (userId) {
-      const loyaltyResult = await pool.query(
+      const loyaltyResult = await db.query(
         'SELECT current_tier_id FROM loyalty_tracking WHERE user_id = $1',
         [userId]
       );
@@ -229,7 +229,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     // Get tier pricing
-    const tierResult = await pool.query(
+    const tierResult = await db.query(
       'SELECT hourly_rate FROM customer_tiers WHERE id = $1',
       [customerTierId]
     );
@@ -237,7 +237,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     const totalAmount = (hourlyRate * durationMinutes) / 60;
 
     // Create the booking
-    const insertResult = await pool.query(
+    const insertResult = await db.query(
       `INSERT INTO bookings (
         location_id, space_ids, user_id, customer_tier_id,
         customer_name, customer_email, customer_phone,
@@ -268,7 +268,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     // Update loyalty tracking if it's a regular booking
     if (!validated.isAdminBlock && userId) {
-      await pool.query(
+      await db.query(
         `INSERT INTO loyalty_tracking (user_id, total_bookings, current_tier_id)
          VALUES ($1, 1, $2)
          ON CONFLICT (user_id)
@@ -279,7 +279,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       );
 
       // Check for auto tier upgrade
-      const loyaltyCheck = await pool.query(
+      const loyaltyCheck = await db.query(
         `SELECT lt.total_bookings, ct.auto_upgrade_after
          FROM loyalty_tracking lt
          JOIN customer_tiers ct ON lt.current_tier_id = ct.id
@@ -291,7 +291,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         const { total_bookings, auto_upgrade_after } = loyaltyCheck.rows[0];
         if (auto_upgrade_after && total_bookings >= auto_upgrade_after) {
           // Upgrade to member tier
-          await pool.query(
+          await db.query(
             `UPDATE loyalty_tracking
              SET current_tier_id = 'member', last_tier_upgrade = CURRENT_TIMESTAMP
              WHERE user_id = $1`,
@@ -315,7 +315,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // PATCH /api/bookings/:id - Update a booking
-router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
+router.patch('/:id', authenticate, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const validated = UpdateBookingSchema.parse(req.body);
@@ -323,7 +323,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     const userRole = (req as any).user?.role;
 
     // Check if booking exists and user has permission
-    const bookingResult = await pool.query(
+    const bookingResult = await db.query(
       'SELECT * FROM bookings WHERE id = $1',
       [id]
     );
@@ -395,7 +395,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     values.push(id); // For WHERE clause
 
-    const updateResult = await pool.query(
+    const updateResult = await db.query(
       `UPDATE bookings
        SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
        WHERE id = $${paramCount}
@@ -417,14 +417,14 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // DELETE /api/bookings/:id - Cancel a booking
-router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
+router.delete('/:id', authenticate, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user?.id;
     const userRole = (req as any).user?.role;
 
     // Check if booking exists and user has permission
-    const bookingResult = await pool.query(
+    const bookingResult = await db.query(
       'SELECT * FROM bookings WHERE id = $1',
       [id]
     );
@@ -447,7 +447,7 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
     }
 
     // Cancel the booking
-    const updateResult = await pool.query(
+    const updateResult = await db.query(
       `UPDATE bookings
        SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
@@ -469,7 +469,7 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // GET /api/bookings/spaces - Get spaces for a location
-router.get('/spaces', authMiddleware, async (req: Request, res: Response) => {
+router.get('/spaces', authenticate, async (req: Request, res: Response) => {
   try {
     const { locationId } = req.query;
 
@@ -491,7 +491,7 @@ router.get('/spaces', authMiddleware, async (req: Request, res: Response) => {
 
     query += ` ORDER BY bs.location_id, bs.display_order`;
 
-    const result = await pool.query(query, params);
+    const result = await db.query(query, params);
 
     res.json({
       success: true,
@@ -507,9 +507,9 @@ router.get('/spaces', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // GET /api/bookings/customer-tiers - Get customer tiers
-router.get('/customer-tiers', authMiddleware, async (req: Request, res: Response) => {
+router.get('/customer-tiers', authenticate, async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
+    const result = await db.query(
       'SELECT * FROM customer_tiers ORDER BY hourly_rate DESC'
     );
 
@@ -527,9 +527,9 @@ router.get('/customer-tiers', authMiddleware, async (req: Request, res: Response
 });
 
 // GET /api/bookings/locations - Get all locations
-router.get('/locations', authMiddleware, async (req: Request, res: Response) => {
+router.get('/locations', authenticate, async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
+    const result = await db.query(
       'SELECT * FROM booking_locations WHERE is_active = true ORDER BY name'
     );
 

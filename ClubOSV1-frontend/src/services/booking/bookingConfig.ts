@@ -120,7 +120,7 @@ export class BookingConfigService {
         this.config = DEFAULT_CONFIG;
       }
     }
-    return this.config;
+    return this.config || this.getDefaultConfig();
   }
 
   /**
@@ -132,7 +132,7 @@ export class BookingConfigService {
         value: updates
       });
       this.config = { ...DEFAULT_CONFIG, ...(data.value || {}) };
-      return this.config;
+      return this.config || this.getDefaultConfig();
     } catch (error) {
       logger.error('Failed to update booking config:', error);
       throw error;
@@ -152,7 +152,7 @@ export class BookingConfigService {
         this.customerTiers = [];
       }
     }
-    return this.customerTiers;
+    return this.customerTiers || [];
   }
 
   /**

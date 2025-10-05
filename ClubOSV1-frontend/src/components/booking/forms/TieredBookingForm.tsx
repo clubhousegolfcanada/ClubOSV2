@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
-import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Input } from '@/components/Input';
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import StatusBadge from '@/components/ui/StatusBadge';
+import Input from '@/components/Input';
 import { Calendar, Clock, MapPin, DollarSign, AlertCircle, Users } from 'lucide-react';
 import PromoCodeInput from './PromoCodeInput';
 import RecurringBookingOptions from './RecurringBookingOptions';
@@ -408,19 +408,19 @@ export default function TieredBookingForm({
             <Input
               label="Customer Name"
               value={formData.customerName || ''}
-              onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, customerName: e.target.value })}
             />
             <Input
               label="Customer Email"
               type="email"
               value={formData.customerEmail || ''}
-              onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, customerEmail: e.target.value })}
             />
           </div>
           <Input
             label="Customer Phone"
             value={formData.customerPhone || ''}
-            onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, customerPhone: e.target.value })}
           />
         </div>
       )}

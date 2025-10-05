@@ -131,7 +131,7 @@ class BookingConfigService {
    * Update configuration value
    */
   async updateConfig(updates: Partial<BookingConfig>, updatedBy?: string): Promise<BookingConfig> {
-    const client = await db.getClient();
+    const client = await db.pool.connect();
 
     try {
       await client.query('BEGIN');
@@ -140,13 +140,15 @@ class BookingConfigService {
         const dbKey = this.toSnakeCase(key);
 
         // Convert value to string for storage
-        let dbValue = value;
+        let dbValue: string;
         if (typeof value === 'boolean') {
           dbValue = value.toString();
         } else if (typeof value === 'number') {
           dbValue = value.toString();
         } else if (typeof value === 'object') {
           dbValue = JSON.stringify(value);
+        } else {
+          dbValue = String(value);
         }
 
         await client.query(

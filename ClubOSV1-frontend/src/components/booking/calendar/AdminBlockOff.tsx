@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Space } from './BookingCalendar';
-import { Button } from '@/components/ui/Button';
+import Button from '@/components/ui/Button';
 
 interface AdminBlockOffProps {
   spaces: Space[];

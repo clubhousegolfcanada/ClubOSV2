@@ -141,7 +141,7 @@ class BookingTierService {
    * Manually upgrade/downgrade user tier
    */
   async upgradeUserTier(userId: string, newTierId: string, reason: string = 'admin_override'): Promise<void> {
-    const client = await db.getClient();
+    const client = await db.pool.connect();
 
     try {
       await client.query('BEGIN');

@@ -118,7 +118,7 @@ class ChangeManagementService {
       reason?: string;
     }
   ): Promise<void> {
-    const client = await db.getClient();
+    const client = await db.pool.connect();
 
     try {
       await client.query('BEGIN');

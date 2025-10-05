@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { http } from '@/api/http';
-import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import StatusBadge from '@/components/ui/StatusBadge';
 import { AlertTriangle, Clock, DollarSign, RefreshCw, XCircle } from 'lucide-react';
 
 interface BookingChange {

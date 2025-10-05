@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, Repeat } from 'lucide-react';
-import { Toggle } from '@/components/Toggle';
+import Toggle from '@/components/Toggle';
 
 interface RecurringPattern {
   frequency: 'weekly' | 'biweekly' | 'monthly';
@@ -47,7 +47,7 @@ export default function RecurringBookingOptions({
         </div>
         <Toggle
           enabled={enabled}
-          onChange={(checked) => onChange(checked, checked ? pattern || { frequency: 'weekly' } : undefined)}
+          onChange={(checked: boolean) => onChange(checked, checked ? pattern || { frequency: 'weekly' } : undefined)}
         />
       </div>
 

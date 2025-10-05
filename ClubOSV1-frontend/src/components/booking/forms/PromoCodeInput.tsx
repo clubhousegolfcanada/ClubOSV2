@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { http } from '@/api/http';
-import { Button } from '@/components/ui/Button';
+import Button from '@/components/ui/Button';
 import { Tag, CheckCircle, XCircle } from 'lucide-react';
 
 interface PromoCodeInputProps {

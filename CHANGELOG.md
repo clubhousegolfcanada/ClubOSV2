@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.42] - 2025-10-05
+
+### Added
+- **Native Booking System - Part 6 Implementation**: Smart Features & Time Increment Logic
+  - Created DurationPicker component with tier-based pricing and discounts
+  - Built AdvanceBookingValidator for tier-specific booking windows
+  - Implemented timeIncrementLogic utility enforcing 30-minute increments after first hour
+  - Created SmartUpsellService for automated session extension offers
+  - Built SmartUpsellPopup component with countdown timer and special pricing
+  - Added booking_config table for dynamic business rules
+  - Created booking_changes table for tracking reschedules and modifications
+  - Added booking_upsells table for tracking extension offers
+  - Implemented customer_tier_history for automatic tier upgrades
+  - Created loyalty_tracking table for customer rewards
+  - Added promo_codes table with percentage and fixed amount discounts
+  - Built booking_notifications table for tracking sent notifications
+  - Created transactions table for payment tracking
+  - Added auto-upsell logic triggering 10 minutes before session end
+  - Implemented 40% random trigger rate for upsells
+  - Added loyalty point tracking with 10-booking reward threshold
+  - Result: Complete smart booking features with automated upselling and loyalty rewards
+
 ## [1.21.41] - 2025-10-05
 
 ### Added
