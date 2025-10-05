@@ -164,9 +164,9 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      // In production, you might want to restrict this
-      // For now, allow all origins but log them
+      // Log unknown origins but still allow them for now
       logger.warn('CORS request from unknown origin:', origin);
+      // Always allow to prevent CORS blocking in production
       callback(null, true);
     }
   },
@@ -178,6 +178,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Explicitly handle OPTIONS requests for preflight
+app.options('*', cors(corsOptions));
 
 // Custom middleware to capture raw body for Slack signature verification
 app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, res, next) => {
@@ -388,7 +391,18 @@ app.get('/', (req, res) => {
     name: 'ClubOS API',
     version: process.env.npm_package_version || '1.0.0',
     status: 'running',
-    database: 'postgresql'
+    database: 'postgresql',
+    cors: 'enabled'
+  });
+});
+
+// Health check endpoint with explicit CORS
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    cors: 'enabled',
+    origin: req.headers.origin || 'no-origin'
   });
 });
 
