@@ -497,10 +497,51 @@ router.post('/request',
         dataSource = processedRequest.llmResponse?.assistantId?.startsWith('asst_') ? 'OPENAI_API' : 'CLUBOS_DATABASE';
       }
 
+      // Save response to tracking table for learning and corrections
+      let responseId: string | undefined;
+      if (processedRequest.llmResponse?.response) {
+        import('../utils/database').then(async ({ db }) => {
+          if (db.isEnabled()) {
+            try {
+              const trackingResult = await db.query(
+                `INSERT INTO response_tracking (
+                  user_id, original_query, response, route,
+                  assistant_id, thread_id, confidence, metadata
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id`,
+                [
+                  req.user?.id,
+                  userRequest.requestDescription,
+                  processedRequest.llmResponse?.response,
+                  processedRequest.botRoute,
+                  processedRequest.llmResponse?.assistantId || null,
+                  processedRequest.llmResponse?.threadId || null,
+                  processedRequest.llmResponse?.confidence || 0.5,
+                  JSON.stringify({
+                    location: userRequest.location,
+                    provider: provider,
+                    dataSource: dataSource,
+                    processingTime: processedRequest.processingTime
+                  })
+                ]
+              );
+
+              if (trackingResult.rows.length > 0) {
+                responseId = trackingResult.rows[0].id;
+                logger.info('Response tracked for learning:', { responseId, route: processedRequest.botRoute });
+              }
+            } catch (err) {
+              logger.error('Failed to track response:', err);
+            }
+          }
+        }).catch(err => logger.error('Failed to import database for tracking:', err));
+      }
+
       res.json({
         success: true,
         data: {
           requestId: processedRequest.id,
+          responseId: responseId, // Include response tracking ID
           botRoute: displayRoute,
           llmResponse: {
             route: displayRoute,

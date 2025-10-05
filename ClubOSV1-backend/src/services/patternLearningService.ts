@@ -466,7 +466,7 @@ export class PatternLearningService {
   /**
    * Generate a normalized signature for pattern matching
    */
-  private generateSignature(message: string): string {
+  public generateSignature(message: string): string {
     const normalized = message
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '') // Remove special characters

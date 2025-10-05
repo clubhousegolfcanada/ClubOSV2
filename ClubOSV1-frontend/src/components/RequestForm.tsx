@@ -1336,10 +1336,12 @@ const RequestForm: React.FC = () => {
                 <ResponseDisplaySimple
                   response={{
                     ...lastResponse.llmResponse,
+                    responseId: lastResponse.responseId, // Include response tracking ID
                     status: lastResponse.status || 'completed',
                     botRoute: lastResponse.botRoute,
                     processingTime: lastResponse.processingTime,
-                    confidence: lastResponse.llmResponse?.confidence
+                    confidence: lastResponse.llmResponse?.confidence,
+                    originalQuery: lastRequestData?.requestDescription || requestDescription
                   }}
                   route={lastResponse.botRoute}
                   photos={photoAttachments}

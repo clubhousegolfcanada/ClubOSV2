@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.35] - 2025-10-05
+
+### Added
+- **Booking System Master Plan**: Comprehensive implementation plan for replacing Skedda/Kisi
+  - 21 feature requirements documented from SOPs
+  - 6 parallel development tracks defined
+  - Color-coded customer tiers (Blue=New, Yellow=Member, Green=Promo)
+  - Dynamic pricing by tier ($15-30/hr)
+  - 1-hour minimum booking with 30-minute increments after
+  - Smart upsell system (SMS 10min before end, 40% trigger)
+  - Multi-simulator booking support
+  - Location-specific notices and alerts
+  - Loyalty rewards (free hour after 10 sessions)
+  - Configuration-driven design (all rules in database)
+  - Development workflow and documentation requirements
+
 ## [1.21.34] - 2025-10-03
 
 ### Fixed

@@ -203,37 +203,42 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
   const handleSaveCorrection = async () => {
     setSaving(true);
     try {
-      // Format as knowledge update
-      const correctionInput = `Correction: The correct response is "${editedText}". This replaces the incorrect response: "${displayText}"`;
-
-      const result = await http.post('knowledge-router/parse-and-route', {
-        input: correctionInput
+      // Use the new direct correction endpoint
+      const result = await http.post('corrections/save', {
+        responseId: response?.responseId, // Use response tracking ID if available
+        originalQuery: originalQuery || response?.originalQuery || '',
+        originalResponse: displayText,
+        correctedResponse: editedText,
+        route: route || response?.botRoute || response?.llmResponse?.route,
+        confidence: confidence
       });
 
       if (result.data.success) {
-        // Also try to update specific knowledge entries
-        const updateResult = await http.post('knowledge-correct/correct', {
-          originalResponse: displayText,
-          correctedResponse: editedText,
-          context: {
-            route: route || response?.botRoute,
-            originalQuery: originalQuery,
-            confidence: confidence
-          }
-        }).catch(() => null); // Fail silently if endpoint doesn't exist yet
+        const { results } = result.data;
 
-        const updates = updateResult?.data?.updates || { knowledge_updated: 1 };
-        toast.success(`✓ Correction saved! Updated ${updates.knowledge_updated || 1} knowledge entries`);
+        // Provide detailed feedback
+        let message = '✓ Correction saved!';
+        if (results.patternCreated) {
+          message += ' New pattern created for automation.';
+        } else if (results.patternId) {
+          message += ' Pattern updated.';
+        }
+        if (results.knowledgeUpdated > 0) {
+          message += ` ${results.knowledgeUpdated} knowledge entries updated.`;
+        }
+
+        toast.success(message);
         setIsEditing(false);
 
-        // Update display text
+        // Update display text locally
         displayText = editedText;
       } else {
-        toast.error('Failed to save correction');
+        toast.error(result.data.error || 'Failed to save correction');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Correction error:', error);
-      toast.error('Failed to save correction');
+      const errorMsg = error.response?.data?.error || 'Failed to save correction';
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
