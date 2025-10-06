@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.49] - 2025-10-06
+
+### Fixed
+- **Booking Calendar Method Name**: Fixed missing getCustomerTiers method in BookingConfigService
+  - BookingCalendar was calling getCustomerTiers() but the method was named getTiers()
+  - Renamed method to getCustomerTiers() to match usage
+  - Added getTiers() as an alias for backward compatibility
+  - Result: Booking calendar no longer crashes with "Something went wrong" error
+
 ## [1.21.48] - 2025-10-06
 
 ### Fixed
@@ -11,11 +20,11 @@ All notable changes to ClubOS will be documented in this file.
   - Prevents unnecessary API calls that were causing authentication errors for customers
   - Result: Customers can now access their portal without encountering "Something went wrong" errors
 
-### Identified
-- **Booking System Database**: Booking tables not created in production
-  - Found 7 booking migration files that haven't been run
-  - Booking calendar tries to fetch data from non-existent tables
-  - Next step: Run booking migrations in production to enable booking system
+### Completed
+- **Booking System Database**: Successfully created booking tables in production
+  - Ran 7 booking migration files successfully
+  - Created 7 booking locations, 21 spaces, and 4 customer tiers
+  - Booking system database is now fully configured
 
 ## [1.21.47] - 2025-10-05
 

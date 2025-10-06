@@ -142,7 +142,7 @@ class BookingConfigService {
   /**
    * Get all customer tiers
    */
-  static async getTiers(): Promise<CustomerTier[]> {
+  static async getCustomerTiers(): Promise<CustomerTier[]> {
     if (this.tiers) {
       return this.tiers;
     }
@@ -155,6 +155,13 @@ class BookingConfigService {
       console.error('Failed to load customer tiers:', error);
       return [];
     }
+  }
+
+  /**
+   * Alias for getCustomerTiers for backward compatibility
+   */
+  static async getTiers(): Promise<CustomerTier[]> {
+    return this.getCustomerTiers();
   }
 
   /**
