@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.46] - 2025-10-05
+
+### Fixed
+- **Critical Build Error Fix**: Fixed TypeScript compilation error in BookingService
+  - BookingService was calling non-existent `db.getClient()` method
+  - Updated to use `pool.connect()` following established pattern in 24 other services
+  - This was blocking all backend deployments since commit 97a9e3a
+  - Result: Backend builds and deploys successfully again
+
 ## [1.21.45] - 2025-10-05
 
 ### Fixed

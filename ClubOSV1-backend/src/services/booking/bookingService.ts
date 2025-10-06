@@ -1,4 +1,4 @@
-import { db } from '../../utils/database';
+import { db, pool } from '../../utils/database';
 import { logger } from '../../utils/logger';
 
 interface BookingData {
@@ -25,7 +25,7 @@ export class BookingService {
    * This prevents double bookings and ensures data consistency
    */
   static async createBookingWithTransaction(bookingData: BookingData) {
-    const client = await db.getClient();
+    const client = await pool.connect();
 
     try {
       // START TRANSACTION - All operations must succeed or all rollback
@@ -266,7 +266,7 @@ export class BookingService {
    * Cancel a booking with proper transaction handling
    */
   static async cancelBookingWithTransaction(bookingId: string, userId: string, reason?: string) {
-    const client = await db.getClient();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
@@ -355,7 +355,7 @@ export class BookingService {
     newEndAt: string,
     userId: string
   ) {
-    const client = await db.getClient();
+    const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
