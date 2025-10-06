@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.47] - 2025-10-05
+
+### Enhanced
+- **Booking System UI Polish**: Unified booking components with dashboard design system
+  - Replaced all hardcoded colors with CSS variables for proper theming
+  - Updated DayGrid to use theme variables (text-primary, border-primary, etc.)
+  - Enhanced BookingBlock with card-style hover effects matching dashboard
+  - Redesigned ColorLegend as badge pills matching dashboard patterns
+  - Updated customer bookings page layout with proper container and spacing
+  - Fixed AdminBlockOff to use form-input classes from global styles
+  - Added consistent transitions and hover states throughout
+  - Result: Booking system now matches the polished UI of operator/customer dashboards
+
 ## [1.21.46] - 2025-10-05
 
 ### Fixed

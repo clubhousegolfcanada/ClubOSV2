@@ -26,15 +26,16 @@ const BookingBlock: React.FC<BookingBlockProps> = ({
   const getBlockStyles = () => {
     if (booking.isAdminBlock) {
       return {
-        backgroundColor: '#6B7280', // Gray for admin blocks
-        borderColor: '#4B5563',
+        backgroundColor: 'var(--text-muted)', // Muted for admin blocks
+        borderColor: 'var(--text-disabled)',
         textColor: 'text-white'
       };
     }
 
+    // Use tier color or default accent
     return {
-      backgroundColor: booking.tierColor || '#3B82F6',
-      borderColor: booking.tierColor || '#2563EB',
+      backgroundColor: booking.tierColor || 'var(--accent)',
+      borderColor: booking.tierColor || 'var(--accent-hover)',
       textColor: 'text-white'
     };
   };
@@ -43,7 +44,7 @@ const BookingBlock: React.FC<BookingBlockProps> = ({
 
   return (
     <div
-      className={`absolute inset-x-0 top-0 rounded-md border cursor-pointer transition-all hover:shadow-md ${styles.textColor}`}
+      className={`absolute inset-x-0 top-0 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${styles.textColor}`}
       style={{
         backgroundColor: styles.backgroundColor,
         borderColor: styles.borderColor,

@@ -74,7 +74,7 @@ const DayGrid: React.FC<DayGridProps> = ({
 
   if (spaces.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-[var(--text-muted)]">
         <p>No spaces available for this location.</p>
         <p className="text-sm mt-2">Please select a specific location to view availability.</p>
       </div>
@@ -86,14 +86,14 @@ const DayGrid: React.FC<DayGridProps> = ({
       <div className="min-w-[800px]">
         {/* Header with space names */}
         <div className="grid grid-cols-[100px_1fr] gap-2 mb-2">
-          <div className="text-xs font-medium text-gray-600 text-right pr-2 pt-2">
+          <div className="text-xs font-medium text-[var(--text-secondary)] text-right pr-2 pt-2">
             Time / Space
           </div>
           <div className="grid" style={{ gridTemplateColumns: `repeat(${spaces.length}, 1fr)` }}>
             {spaces.map(space => (
               <div
                 key={space.id}
-                className="text-sm font-medium text-gray-900 text-center pb-2 border-b border-gray-200"
+                className="text-sm font-semibold text-[var(--text-primary)] text-center pb-2 border-b border-[var(--border-primary)]"
               >
                 {space.name}
               </div>
@@ -104,9 +104,9 @@ const DayGrid: React.FC<DayGridProps> = ({
         {/* Time slots grid */}
         <div className="space-y-0">
           {timeSlots.map((slot, slotIndex) => (
-            <div key={slotIndex} className="grid grid-cols-[100px_1fr] gap-2 hover:bg-gray-50">
+            <div key={slotIndex} className="grid grid-cols-[100px_1fr] gap-2 hover:bg-[var(--bg-hover)] transition-colors">
               {/* Time label */}
-              <div className="text-xs text-gray-600 text-right pr-2 py-2 border-r border-gray-100">
+              <div className="text-xs text-[var(--text-secondary)] text-right pr-2 py-2 border-r border-[var(--border-primary)]">
                 {format(slot, 'h:mm a')}
               </div>
 
@@ -126,9 +126,9 @@ const DayGrid: React.FC<DayGridProps> = ({
                   return (
                     <div
                       key={`${space.id}-${slotIndex}`}
-                      className={`relative border-l border-b border-gray-100 min-h-[40px] ${
+                      className={`relative border-l border-b border-[var(--border-primary)] min-h-[40px] transition-colors ${
                         isAvailable
-                          ? 'cursor-pointer hover:bg-blue-50'
+                          ? 'cursor-pointer hover:bg-[var(--accent-light)]'
                           : ''
                       }`}
                       onClick={() => {

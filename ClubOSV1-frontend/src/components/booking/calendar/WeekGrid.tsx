@@ -21,10 +21,10 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   onBookingSelect
 }) => {
   return (
-    <div className="text-center py-8 text-gray-500">
-      <p className="text-lg font-medium mb-2">Week View Coming Soon</p>
-      <p className="text-sm">The week view is under development and will be available in a future update.</p>
-      <p className="text-sm mt-2">Please use the Day view for now.</p>
+    <div className="text-center py-8 text-[var(--text-muted)]">
+      <p className="text-lg font-medium mb-2 text-[var(--text-primary)]">Week View Coming Soon</p>
+      <p className="text-sm text-[var(--text-secondary)]">The week view is under development and will be available in a future update.</p>
+      <p className="text-sm mt-2 text-[var(--text-secondary)]">Please use the Day view for now.</p>
     </div>
   );
 };

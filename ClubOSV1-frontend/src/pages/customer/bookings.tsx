@@ -51,15 +51,21 @@ export default function CustomerBookings() {
       <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
         <CustomerNavigation />
 
-        <main className="pb-24 lg:pb-8 pt-12 lg:pt-14">
-          <div className="container mx-auto px-4 py-6">
-            {/* Header with toggle */}
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold">Book a Simulator</h1>
+        <main className="pb-24 lg:pb-8 lg:pt-14">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Header with toggle - matching dashboard header style */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-[var(--text-primary)]">Book a Simulator</h1>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  Reserve your tee time at any Clubhouse 24/7 location
+                </p>
+              </div>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowLegacySystem(!showLegacySystem)}
+                className="self-start sm:self-center"
               >
                 <ExternalLink className="w-4 h-4 mr-1" />
                 {showLegacySystem ? 'Use New System' : 'Use Legacy Skedda'}
