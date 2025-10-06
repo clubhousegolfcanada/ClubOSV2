@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.45] - 2025-10-05
+
+### Fixed
+- **Booking Calendar View**: Restored Skedda-style day/week calendar view
+  - Fixed bookings page using basic form instead of calendar component
+  - BookingCalendar with DayGrid view now displays properly
+  - Shows simulator bays as columns with time slots on left (like Skedda)
+  - Color-coded customer tiers visible in calendar blocks
+  - Toggle between new calendar system and legacy Skedda iframe
+  - Result: Proper visual booking calendar as originally intended
+
 ## [1.21.44] - 2025-10-05
 
 ### Fixed

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
-import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
+import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import Head from 'next/head';
 import { Calendar, MapPin, Clock, Info, ExternalLink } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -83,9 +83,11 @@ export default function CustomerBookings() {
                 />
               </div>
             ) : (
-              /* New ClubOS Booking System */
-              <TieredBookingForm
-                onSuccess={handleBookingSuccess}
+              /* New ClubOS Booking System - Calendar View */
+              <BookingCalendar
+                onBookingCreate={handleBookingSuccess}
+                showColorLegend={true}
+                allowAdminBlock={user?.role === 'admin'}
               />
             )}
           </div>
