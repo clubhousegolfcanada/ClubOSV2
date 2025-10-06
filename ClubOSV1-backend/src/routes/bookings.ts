@@ -3,6 +3,7 @@ import { db } from '../utils/database';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
+import { BookingService } from '../services/booking/bookingService';
 
 const router = express.Router();
 
@@ -236,74 +237,44 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const hourlyRate = tierResult.rows[0]?.hourly_rate || 30;
     const totalAmount = (hourlyRate * durationMinutes) / 60;
 
-    // Create the booking
-    const insertResult = await db.query(
-      `INSERT INTO bookings (
-        location_id, space_ids, user_id, customer_tier_id,
-        customer_name, customer_email, customer_phone,
-        start_at, end_at, base_rate, total_amount,
-        promo_code, admin_notes, is_admin_block, block_reason,
-        status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-      RETURNING *`,
-      [
-        validated.locationId,
-        validated.spaceIds,
-        userId,
-        customerTierId,
-        validated.customerName,
-        validated.customerEmail,
-        validated.customerPhone,
-        validated.startAt,
-        validated.endAt,
-        hourlyRate,
-        totalAmount,
-        validated.promoCode,
-        validated.adminNotes,
-        validated.isAdminBlock || false,
-        validated.blockReason,
-        validated.isAdminBlock ? 'confirmed' : 'pending'
-      ]
-    );
+    // Use the new transactional service to create the booking
+    // This prevents double bookings and ensures data consistency
+    const result = await BookingService.createBookingWithTransaction({
+      locationId: validated.locationId,
+      spaceIds: validated.spaceIds,
+      userId,
+      customerTierId,
+      customerName: validated.customerName,
+      customerEmail: validated.customerEmail,
+      customerPhone: validated.customerPhone,
+      startAt: validated.startAt,
+      endAt: validated.endAt,
+      baseRate: hourlyRate,
+      totalAmount,
+      promoCode: validated.promoCode,
+      adminNotes: validated.adminNotes,
+      isAdminBlock: validated.isAdminBlock,
+      blockReason: validated.blockReason
+    });
 
-    // Update loyalty tracking if it's a regular booking
-    if (!validated.isAdminBlock && userId) {
-      await db.query(
-        `INSERT INTO loyalty_tracking (user_id, total_bookings, current_tier_id)
-         VALUES ($1, 1, $2)
-         ON CONFLICT (user_id)
-         DO UPDATE SET
-           total_bookings = loyalty_tracking.total_bookings + 1,
-           updated_at = CURRENT_TIMESTAMP`,
-        [userId, customerTierId]
-      );
+    // Handle transaction result
+    if (!result.success) {
+      // Return 409 Conflict for booking conflicts
+      const statusCode = result.errorCode === 'TIME_CONFLICT' ||
+                        result.errorCode === 'SPACE_CONFLICT' ||
+                        result.errorCode === 'BOOKING_CONFLICT' ? 409 : 400;
 
-      // Check for auto tier upgrade
-      const loyaltyCheck = await db.query(
-        `SELECT lt.total_bookings, ct.auto_upgrade_after
-         FROM loyalty_tracking lt
-         JOIN customer_tiers ct ON lt.current_tier_id = ct.id
-         WHERE lt.user_id = $1`,
-        [userId]
-      );
-
-      if (loyaltyCheck.rows[0]) {
-        const { total_bookings, auto_upgrade_after } = loyaltyCheck.rows[0];
-        if (auto_upgrade_after && total_bookings >= auto_upgrade_after) {
-          // Upgrade to member tier
-          await db.query(
-            `UPDATE loyalty_tracking
-             SET current_tier_id = 'member', last_tier_upgrade = CURRENT_TIMESTAMP
-             WHERE user_id = $1`,
-            [userId]
-          );
-        }
-      }
+      return res.status(statusCode).json({
+        success: false,
+        error: result.error,
+        errorCode: result.errorCode,
+        details: result.conflictingBookings || result.conflictingSpaces
+      });
     }
 
     res.json({
       success: true,
-      data: insertResult.rows[0]
+      data: result.data
     });
   } catch (error) {
     logger.error('Error creating booking:', error);

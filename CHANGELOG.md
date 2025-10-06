@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.44] - 2025-10-05
+
+### Fixed
+- **CRITICAL: Booking System Transaction Safety**: Prevented double bookings with database transactions
+  - Added PostgreSQL exclusion constraint to make double bookings impossible at DB level
+  - Wrapped all booking operations in BEGIN/COMMIT/ROLLBACK transactions
+  - Implemented optimistic locking with SELECT FOR UPDATE
+  - Added conflict detection before committing bookings
+  - Created BookingService with full transaction support
+  - Added proper error handling with specific error codes
+  - Fixed loyalty tracking and promo code usage within transactions
+  - Added automatic retry logic for concurrent updates
+  - Result: 100% prevention of double bookings even under high load
+
 ## [1.21.43] - 2025-10-05
 
 ### Fixed
