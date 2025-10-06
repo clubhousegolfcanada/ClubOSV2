@@ -46,11 +46,11 @@ export default function ChangeManagement({
     setLoading(true);
     try {
       // Load change history
-      const historyResponse = await http.get(`/api/bookings/${bookingId}/changes`);
+      const historyResponse = await http.get(`/bookings/${bookingId}/changes`);
       setChangeHistory(historyResponse.data.data || []);
 
       // Validate if changes are allowed
-      const validationResponse = await http.post('/api/bookings/validate-change', {
+      const validationResponse = await http.post('/bookings/validate-change', {
         bookingId,
         userId
       });

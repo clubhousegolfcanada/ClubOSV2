@@ -113,7 +113,7 @@ export class BookingConfigService {
   static async getConfig(): Promise<BookingConfig> {
     if (!this.config) {
       try {
-        const { data } = await http.get('/api/settings/booking_config');
+        const { data } = await http.get('/settings/booking_config');
         this.config = { ...DEFAULT_CONFIG, ...(data.value || {}) };
       } catch (error) {
         logger.error('Failed to load booking config, using defaults:', error);
@@ -128,7 +128,7 @@ export class BookingConfigService {
    */
   static async updateConfig(updates: Partial<BookingConfig>): Promise<BookingConfig> {
     try {
-      const { data } = await http.patch('/api/settings/booking_config', {
+      const { data } = await http.patch('/settings/booking_config', {
         value: updates
       });
       this.config = { ...DEFAULT_CONFIG, ...(data.value || {}) };
@@ -145,7 +145,7 @@ export class BookingConfigService {
   static async getCustomerTiers(): Promise<CustomerTier[]> {
     if (!this.customerTiers) {
       try {
-        const { data } = await http.get('/api/bookings/customer-tiers');
+        const { data } = await http.get('/bookings/customer-tiers');
         this.customerTiers = data.data || [];
       } catch (error) {
         logger.error('Failed to load customer tiers:', error);

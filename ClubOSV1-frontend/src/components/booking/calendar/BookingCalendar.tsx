@@ -103,7 +103,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       const [configData, tiersData, locationsData] = await Promise.all([
         BookingConfigService.getConfig(),
         BookingConfigService.getCustomerTiers(),
-        http.get('/api/bookings/locations')
+        http.get('/bookings/locations')
       ]);
 
       setConfig(configData);
@@ -112,7 +112,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       // Load spaces if location is selected
       if (selectedLocationId && selectedLocationId !== 'all') {
-        const spacesData = await http.get('/api/bookings/spaces', {
+        const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: selectedLocationId }
         });
         setSpaces(spacesData.data.data || []);
@@ -132,7 +132,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         : [selectedDate];
 
       const bookingPromises = dates.map(date =>
-        http.get('/api/bookings/day', {
+        http.get('/bookings/day', {
           params: {
             date: format(date, 'yyyy-MM-dd'),
             locationId: selectedLocationId !== 'all' ? selectedLocationId : undefined
@@ -216,7 +216,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     reason: string;
   }) => {
     try {
-      const response = await http.post('/api/bookings', {
+      const response = await http.post('/bookings', {
         locationId: selectedLocationId,
         spaceIds: blockData.spaceIds,
         startAt: blockData.startAt.toISOString(),

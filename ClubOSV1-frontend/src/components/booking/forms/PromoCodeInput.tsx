@@ -25,7 +25,7 @@ export default function PromoCodeInput({ value, onChange }: PromoCodeInputProps)
     setStatus('idle');
 
     try {
-      const response = await http.post('/api/promo-codes/validate', {
+      const response = await http.post('/promo-codes/validate', {
         code: code.toUpperCase()
       });
 

@@ -125,12 +125,12 @@ export default function TieredBookingForm({
       }
 
       // Load locations
-      const locationsResponse = await http.get('/api/bookings/locations');
+      const locationsResponse = await http.get('/bookings/locations');
       setLocations(locationsResponse.data.data);
 
       // Load customer tiers for staff
       if (isStaff) {
-        const tiersResponse = await http.get('/api/bookings/customer-tiers');
+        const tiersResponse = await http.get('/bookings/customer-tiers');
         // Store for staff tier selection
       }
     } catch (err: any) {
@@ -142,7 +142,7 @@ export default function TieredBookingForm({
 
   const loadSpaces = async (locationId: string) => {
     try {
-      const response = await http.get('/api/bookings/spaces', {
+      const response = await http.get('/bookings/spaces', {
         params: { locationId }
       });
       setSpaces(response.data.data);
@@ -155,7 +155,7 @@ export default function TieredBookingForm({
     if (!formData.locationId || !formData.startAt) return;
 
     try {
-      const response = await http.get('/api/bookings/availability', {
+      const response = await http.get('/bookings/availability', {
         params: {
           locationId: formData.locationId,
           date: formData.startAt.split('T')[0],
@@ -245,8 +245,8 @@ export default function TieredBookingForm({
 
     try {
       const endpoint = existingBooking
-        ? `/api/bookings/${existingBooking.id}`
-        : '/api/bookings';
+        ? `/bookings/${existingBooking.id}`
+        : '/bookings';
 
       const method = existingBooking ? 'PATCH' : 'POST';
 

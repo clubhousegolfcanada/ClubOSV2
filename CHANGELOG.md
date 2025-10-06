@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.50] - 2025-10-06
+
+### Fixed
+- **Booking Page API Calls**: Fixed "Something went wrong" error on booking page
+  - Removed incorrect '/api/' prefix from all booking component HTTP calls
+  - HTTP interceptor automatically adds '/api' prefix, was causing double prefix error
+  - Fixed in: BookingCalendar, BookingConfigService, bookingConfig, TieredBookingForm, PromoCodeInput, ChangeManagement
+  - Result: Booking page now loads correctly without errors
+
 ## [1.21.49] - 2025-10-06
 
 ### Fixed

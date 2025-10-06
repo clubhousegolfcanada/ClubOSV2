@@ -112,7 +112,7 @@ class BookingConfigService {
     }
 
     // Fetch config
-    this.configPromise = http.get('/api/settings/booking_config')
+    this.configPromise = http.get('/settings/booking_config')
       .then(response => {
         this.config = response.data.value || this.getDefaultConfig();
         this.configPromise = null;
@@ -132,7 +132,7 @@ class BookingConfigService {
    * Update booking configuration (admin only)
    */
   static async updateConfig(updates: Partial<BookingConfig>): Promise<BookingConfig> {
-    const response = await http.patch('/api/settings/booking_config', {
+    const response = await http.patch('/settings/booking_config', {
       value: { ...this.config, ...updates }
     });
     this.config = response.data.value;
@@ -148,7 +148,7 @@ class BookingConfigService {
     }
 
     try {
-      const response = await http.get('/api/bookings/customer-tiers');
+      const response = await http.get('/bookings/customer-tiers');
       this.tiers = response.data.data;
       return this.tiers || [];
     } catch (error) {
@@ -173,7 +173,7 @@ class BookingConfigService {
     }
 
     try {
-      const response = await http.get('/api/bookings/locations');
+      const response = await http.get('/bookings/locations');
       this.locations = response.data.data;
       return this.locations || [];
     } catch (error) {
