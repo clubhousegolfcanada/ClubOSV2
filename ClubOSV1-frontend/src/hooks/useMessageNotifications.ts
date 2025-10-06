@@ -25,6 +25,8 @@ export function useMessageNotifications() {
 
     // Check if user exists and has the correct role
     if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
+      // Set unread count to 0 for non-operator users and return early
+      setUnreadCount(0);
       return;
     }
 

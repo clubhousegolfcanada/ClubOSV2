@@ -52,6 +52,13 @@ export default function MessagesCardV3() {
   }, []);
 
   useEffect(() => {
+    // Check role first before doing anything
+    if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
+      setIsLoading(false);
+      setStopPolling(true);
+      return;
+    }
+
     if (!isAuthenticated) {
       setStopPolling(true);
       return;
@@ -69,8 +76,14 @@ export default function MessagesCardV3() {
 
   const fetchConversations = async () => {
     try {
+      // Check role BEFORE making any API calls
+      if (!user || !['admin', 'operator', 'support'].includes(user.role)) {
+        setIsLoading(false);
+        return;
+      }
+
       const token = tokenManager.getToken();
-      if (!token || !user || !['admin', 'operator', 'support'].includes(user.role)) {
+      if (!token) {
         setIsLoading(false);
         return;
       }

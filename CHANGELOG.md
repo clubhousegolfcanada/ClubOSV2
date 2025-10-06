@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.48] - 2025-10-06
+
+### Fixed
+- **Customer Portal Access**: Fixed 403 errors when customers access their portal
+  - MessagesCardV3 now checks user role BEFORE making API calls to operator-only endpoints
+  - useMessageNotifications hook properly returns early for non-operator users
+  - Prevents unnecessary API calls that were causing authentication errors for customers
+  - Result: Customers can now access their portal without encountering "Something went wrong" errors
+
+### Identified
+- **Booking System Database**: Booking tables not created in production
+  - Found 7 booking migration files that haven't been run
+  - Booking calendar tries to fetch data from non-existent tables
+  - Next step: Run booking migrations in production to enable booking system
+
 ## [1.21.47] - 2025-10-05
 
 ### Enhanced
