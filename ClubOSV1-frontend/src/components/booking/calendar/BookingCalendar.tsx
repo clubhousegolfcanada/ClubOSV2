@@ -123,7 +123,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       console.log('[BookingCalendar] Loaded locations:', loadedLocations.map((l: any) => ({ id: l.id, name: l.name })));
 
       // Set first location as default if no location is selected
-      let locationToLoad = selectedLocationId || propLocationId;
+      let locationToLoad: string = selectedLocationId || propLocationId || '';
       if (!locationToLoad && loadedLocations.length > 0) {
         locationToLoad = loadedLocations[0].id;
         console.log('[BookingCalendar] Setting default location:', locationToLoad);
