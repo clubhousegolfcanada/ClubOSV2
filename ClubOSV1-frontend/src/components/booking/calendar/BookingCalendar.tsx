@@ -72,7 +72,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // State
   const [selectedDate, setSelectedDate] = useState<Date>(propDate || new Date());
-  const [selectedLocationId, setSelectedLocationId] = useState<string>(propLocationId || 'all');
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(propLocationId || '');
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -95,6 +95,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   }, [selectedDate, selectedLocationId, viewMode]);
 
+  // Load spaces when location changes
+  useEffect(() => {
+    if (selectedLocationId && selectedLocationId !== 'all' && locations.length > 0) {
+      loadSpaces();
+    }
+  }, [selectedLocationId]);
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -108,12 +115,20 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       setConfig(configData);
       setCustomerTiers(tiersData);
-      setLocations(locationsData.data.data || []);
+      const loadedLocations = locationsData.data.data || [];
+      setLocations(loadedLocations);
 
-      // Load spaces if location is selected
-      if (selectedLocationId && selectedLocationId !== 'all') {
+      // Set first location as default if no location is selected
+      let locationToLoad = selectedLocationId;
+      if (!locationToLoad && loadedLocations.length > 0) {
+        locationToLoad = loadedLocations[0].id;
+        setSelectedLocationId(locationToLoad);
+      }
+
+      // Load spaces for the selected location
+      if (locationToLoad && locationToLoad !== 'all') {
         const spacesData = await http.get('/bookings/spaces', {
-          params: { locationId: selectedLocationId }
+          params: { locationId: locationToLoad }
         });
         setSpaces(spacesData.data.data || []);
       }
@@ -122,6 +137,22 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       notify('error', 'Failed to load booking data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSpaces = async () => {
+    try {
+      if (selectedLocationId && selectedLocationId !== 'all') {
+        const spacesData = await http.get('/bookings/spaces', {
+          params: { locationId: selectedLocationId }
+        });
+        setSpaces(spacesData.data.data || []);
+      } else {
+        setSpaces([]);
+      }
+    } catch (error) {
+      logger.error('Failed to load spaces:', error);
+      notify('error', 'Failed to load spaces');
     }
   };
 
@@ -280,7 +311,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
             >
               <MapPin className="h-4 w-4" />
-              <span>{selectedLocationId === 'all' ? 'All Locations' : locations.find(l => l.id === selectedLocationId)?.name}</span>
+              <span>{!selectedLocationId ? 'Select Location' : selectedLocationId === 'all' ? 'All Locations' : locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}</span>
               <Filter className="h-3 w-3" />
             </button>
 

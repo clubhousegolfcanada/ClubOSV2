@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.53] - 2025-10-06
+
+### Fixed
+- **Booking Calendar Box Display**: Fixed boxes not showing in booking calendar
+  - Calendar now automatically selects first location instead of defaulting to 'all'
+  - Spaces are properly loaded when switching between locations
+  - Added loadSpaces function to handle location changes
+  - Fixed initial state to ensure boxes display on page load
+  - Result: Booking calendar now correctly displays all simulator boxes
+
 ## [1.21.52] - 2025-10-06
 
 ### Fixed
