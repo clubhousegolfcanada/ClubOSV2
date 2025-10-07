@@ -100,12 +100,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     if (selectedLocationId && selectedLocationId !== 'all' && locations.length > 0) {
       loadSpaces();
     }
-  }, [selectedLocationId]);
+  }, [selectedLocationId, locations]);
 
   const loadInitialData = async () => {
     try {
       setLoading(true);
 
+      console.log('Loading initial booking data...');
       // Load configuration and tiers
       const [configData, tiersData, locationsData] = await Promise.all([
         BookingConfigService.getConfig(),
@@ -116,20 +117,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       setConfig(configData);
       setCustomerTiers(tiersData);
       const loadedLocations = locationsData.data.data || [];
+      console.log('Loaded locations:', loadedLocations);
       setLocations(loadedLocations);
 
       // Set first location as default if no location is selected
       let locationToLoad = selectedLocationId;
       if (!locationToLoad && loadedLocations.length > 0) {
         locationToLoad = loadedLocations[0].id;
+        console.log('Setting default location:', locationToLoad);
         setSelectedLocationId(locationToLoad);
       }
 
       // Load spaces for the selected location
       if (locationToLoad && locationToLoad !== 'all') {
+        console.log('Loading spaces for location:', locationToLoad);
         const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: locationToLoad }
         });
+        console.log('Loaded spaces:', spacesData.data.data);
         setSpaces(spacesData.data.data || []);
       }
     } catch (error) {
@@ -142,15 +147,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const loadSpaces = async () => {
     try {
+      console.log('loadSpaces called with location:', selectedLocationId);
       if (selectedLocationId && selectedLocationId !== 'all') {
         const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: selectedLocationId }
         });
+        console.log('Spaces loaded in loadSpaces:', spacesData.data.data);
         setSpaces(spacesData.data.data || []);
       } else {
+        console.log('Clearing spaces (no location or all)');
         setSpaces([]);
       }
     } catch (error) {
+      console.error('Failed to load spaces:', error);
       logger.error('Failed to load spaces:', error);
       notify('error', 'Failed to load spaces');
     }
