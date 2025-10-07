@@ -30,6 +30,7 @@ if (process.env.NODE_ENV !== 'test') {
 import authRoutes from './routes/auth';
 import authGoogleRoutes from './routes/auth-google';
 import bookingsRoutes from './routes/bookings';
+import bookingConfigRoutes from './routes/bookingConfig';
 import ticketsRoutes from './routes/tickets';
 import tasksRoutes from './routes/tasks';
 import feedbackRoutes from './routes/feedback';
@@ -370,6 +371,7 @@ app.use('/api/white-label-planner', whiteLabelPlannerRoutes);
 app.use('/api/white-label-scanner', whiteLabelScannerRoutes);
 app.use('/api/system-status', require('./routes/system-status').default);
 app.use('/api/system-settings', require('./routes/systemSettings').default);
+app.use('/api/settings', bookingConfigRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
 

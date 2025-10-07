@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.56] - 2025-10-07
+
+### Fixed
+- **Booking System Database**: Added missing location_id column to bookings table
+  - Created migration 317_fix_booking_location_id.sql to add the column
+  - Fixes 500 error "column b.location_id does not exist" on booking queries
+  - Also ensures booking_locations and booking_spaces tables are properly configured
+  - Result: Booking calendar can now properly fetch and display bookings
+
+- **Booking Configuration Endpoint**: Fixed missing /api/settings route
+  - Added bookingConfig router registration to backend index.ts
+  - Fixes 404 error on /api/settings/booking_config endpoint
+  - Result: Booking system can now properly load configuration settings
+
 ## [1.21.55] - 2025-10-06
 
 ### Fixed
