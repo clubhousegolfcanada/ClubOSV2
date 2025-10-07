@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
+import { Info } from 'lucide-react';
 import { Booking, Space } from './BookingCalendar';
 import { BookingConfig } from '@/services/booking/bookingConfig';
 import BookingBlock from './BookingBlock';
@@ -9,8 +10,9 @@ interface DayGridProps {
   bookings: Booking[];
   spaces: Space[];
   config: BookingConfig;
-  onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string) => void;
+  onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
   onBookingSelect?: (booking: Booking) => void;
+  onSpaceClick?: (space: Space) => void;
 }
 
 const DayGrid: React.FC<DayGridProps> = ({
@@ -19,7 +21,8 @@ const DayGrid: React.FC<DayGridProps> = ({
   spaces,
   config,
   onBookingCreate,
-  onBookingSelect
+  onBookingSelect,
+  onSpaceClick
 }) => {
   // Generate time slots for the day (6 AM to 11 PM)
   const timeSlots = useMemo(() => {
@@ -72,10 +75,7 @@ const DayGrid: React.FC<DayGridProps> = ({
     });
   };
 
-  console.log('[DayGrid] Rendering with', spaces.length, 'spaces and', dayBookings.length, 'bookings');
-
   if (spaces.length === 0) {
-    console.log('[DayGrid] No spaces available, showing empty state');
     return (
       <div className="text-center py-8 text-[var(--text-muted)]">
         <p>No spaces available for this location.</p>
@@ -85,76 +85,77 @@ const DayGrid: React.FC<DayGridProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto border border-[var(--border-primary)] rounded-lg">
       <div className="min-w-[800px]">
         {/* Header with space names */}
-        <div className="grid grid-cols-[100px_1fr] gap-2 mb-2">
-          <div className="text-xs font-medium text-[var(--text-secondary)] text-right pr-2 pt-2">
-            Time / Space
+        <div className="grid grid-cols-[80px_1fr] bg-[var(--bg-tertiary)]">
+          <div className="p-3 border-r border-b border-[var(--border-primary)]">
+            {/* Empty corner cell */}
           </div>
           <div className="grid" style={{ gridTemplateColumns: `repeat(${spaces.length}, 1fr)` }}>
             {spaces.map(space => (
-              <div
+              <button
                 key={space.id}
-                className="text-sm font-semibold text-[var(--text-primary)] text-center pb-2 border-b border-[var(--border-primary)]"
+                onClick={() => onSpaceClick?.(space)}
+                className="p-3 text-sm font-medium text-[var(--text-primary)] border-r border-b border-[var(--border-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1"
               >
                 {space.name}
-              </div>
+                <Info className="h-3 w-3 text-[var(--text-secondary)]" />
+              </button>
             ))}
           </div>
         </div>
 
         {/* Time slots grid */}
-        <div className="space-y-0">
-          {timeSlots.map((slot, slotIndex) => (
-            <div key={slotIndex} className="grid grid-cols-[100px_1fr] gap-2 hover:bg-[var(--bg-hover)] transition-colors">
-              {/* Time label */}
-              <div className="text-xs text-[var(--text-secondary)] text-right pr-2 py-2 border-r border-[var(--border-primary)]">
-                {format(slot, 'h:mm a')}
-              </div>
-
-              {/* Space slots */}
-              <div className="grid" style={{ gridTemplateColumns: `repeat(${spaces.length}, 1fr)` }}>
-                {spaces.map(space => {
-                  const slotBooking = dayBookings.find(booking => {
-                    const bookingStart = new Date(booking.startAt);
-                    return (
-                      booking.spaceIds.includes(space.id) &&
-                      bookingStart.getTime() === slot.getTime()
-                    );
-                  });
-
-                  const isAvailable = isSlotAvailable(slot, space.id);
-
-                  return (
-                    <div
-                      key={`${space.id}-${slotIndex}`}
-                      className={`relative border-l border-b border-[var(--border-primary)] min-h-[40px] transition-colors ${
-                        isAvailable
-                          ? 'cursor-pointer hover:bg-[var(--accent-light)]'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        if (isAvailable && onBookingCreate) {
-                          const endTime = addMinutes(slot, config.minDuration || 60);
-                          onBookingCreate(slot, endTime, space.id);
-                        }
-                      }}
-                    >
-                      {slotBooking && (
-                        <BookingBlock
-                          booking={slotBooking}
-                          onClick={() => onBookingSelect?.(slotBooking)}
-                          config={config}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+        {timeSlots.map((slot, slotIndex) => (
+          <div key={slotIndex} className="grid grid-cols-[80px_1fr]">
+            {/* Time label */}
+            <div className="px-2 py-2 text-xs text-[var(--text-secondary)] text-center border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+              {format(slot, 'h:mm a')}
             </div>
-          ))}
-        </div>
+
+            {/* Space slots */}
+            <div className="grid" style={{ gridTemplateColumns: `repeat(${spaces.length}, 1fr)` }}>
+              {spaces.map(space => {
+                const slotBooking = dayBookings.find(booking => {
+                  const bookingStart = new Date(booking.startAt);
+                  return (
+                    booking.spaceIds.includes(space.id) &&
+                    bookingStart.getTime() === slot.getTime()
+                  );
+                });
+
+                const isAvailable = isSlotAvailable(slot, space.id);
+
+                return (
+                  <div
+                    key={`${space.id}-${slotIndex}`}
+                    className={`relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-colors ${
+                      isAvailable
+                        ? 'cursor-pointer hover:bg-[var(--bg-hover)]'
+                        : ''
+                    }`}
+                    onClick={() => {
+                      if (isAvailable && onBookingCreate) {
+                        const endTime = addMinutes(slot, config.minDuration || 60);
+                        onBookingCreate(slot, endTime, space.id, space.name);
+                      }
+                    }}
+                  >
+                    {slotBooking && (
+                      <BookingBlock
+                        booking={slotBooking}
+                        onClick={() => onBookingSelect?.(slotBooking)}
+                        config={config}
+                        compact={true}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.57] - 2025-10-07
+
+### Enhanced
+- **Booking System UI Polish**: Professional Skedda-style improvements
+  - Added BoxInfoModal for displaying simulator details when clicking box headers
+  - Created NewBookingModal with pre-filled form data from time slot selection
+  - Cleaned up DayGrid with proper borders and hover states
+  - Box headers now clickable with info icons
+  - Empty time slots open booking form with pre-filled date/time/space
+  - Removed console.log debug statements
+  - Professional grid layout with clean borders and spacing
+  - Uses ClubOS design system variables throughout
+  - Result: Clean, minimal booking interface matching Skedda functionality
+
 ## [1.21.56] - 2025-10-07
 
 ### Fixed

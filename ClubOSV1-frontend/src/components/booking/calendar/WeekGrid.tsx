@@ -7,8 +7,9 @@ interface WeekGridProps {
   bookings: Booking[];
   spaces: Space[];
   config: BookingConfig;
-  onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string) => void;
+  onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
   onBookingSelect?: (booking: Booking) => void;
+  onSpaceClick?: (space: Space) => void;
 }
 
 // Placeholder component - will be implemented in future iteration

@@ -11,6 +11,8 @@ import DayGrid from './DayGrid';
 import WeekGrid from './WeekGrid';
 import ColorLegend from './ColorLegend';
 import AdminBlockOff from './AdminBlockOff';
+import BoxInfoModal from '../BoxInfoModal';
+import NewBookingModal from '../NewBookingModal';
 import logger from '@/services/logger';
 
 export interface Booking {
@@ -82,6 +84,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  // Modal states
+  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [showBoxInfoModal, setShowBoxInfoModal] = useState(false);
+  const [showNewBookingModal, setShowNewBookingModal] = useState(false);
+  const [bookingFormData, setBookingFormData] = useState<any>(null);
 
   // Load initial data
   useEffect(() => {
@@ -253,8 +261,29 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setSelectedDate(new Date());
   };
 
+  // Modal handlers
+  const handleSpaceClick = (space: Space) => {
+    // Get box info from backend or use mock data
+    const boxInfo = {
+      id: space.id,
+      name: space.name,
+      location: locations.find(l => l.id === space.locationId)?.name || '',
+      capacity: 4,
+      equipment: {
+        simulator: 'Trackman iO',
+        projector: 'BenQ 936ST',
+        tvs: '2x Club Data TVs',
+        audio: 'In-wall audio',
+        screen: '16\'x10\' impact screen'
+      },
+      image: undefined // Add image URLs when available
+    };
+    setSelectedSpace(boxInfo as any);
+    setShowBoxInfoModal(true);
+  };
+
   // Booking handlers
-  const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string) => {
+  const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => {
     if (!config) return;
 
     // Validate duration
@@ -264,19 +293,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       return;
     }
 
-    // Create booking object
-    const newBooking: Partial<Booking> = {
-      locationId: selectedLocationId !== 'all' ? selectedLocationId : undefined,
-      spaceIds: spaceId ? [spaceId] : [],
-      startAt: startTime.toISOString(),
-      endAt: endTime.toISOString(),
-      status: 'pending'
-    };
-
-    if (onBookingCreate) {
-      onBookingCreate(newBooking);
-    }
-  }, [config, selectedLocationId, notify, onBookingCreate]);
+    // Open booking modal with prefilled data
+    setBookingFormData({
+      date: startTime,
+      startTime,
+      endTime,
+      spaceId,
+      spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
+      locationId: selectedLocationId
+    });
+    setShowNewBookingModal(true);
+  }, [config, selectedLocationId, spaces, notify]);
 
   const handleAdminBlock = useCallback(async (blockData: {
     startAt: Date;
@@ -484,6 +511,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             config={config!}
             onBookingCreate={handleBookingCreate}
             onBookingSelect={onBookingSelect}
+            onSpaceClick={handleSpaceClick}
           />
         ) : (
           <WeekGrid
@@ -493,9 +521,30 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             config={config!}
             onBookingCreate={handleBookingCreate}
             onBookingSelect={onBookingSelect}
+            onSpaceClick={handleSpaceClick}
           />
         )}
       </div>
+
+      {/* Modals */}
+      <BoxInfoModal
+        box={selectedSpace as any}
+        isOpen={showBoxInfoModal}
+        onClose={() => setShowBoxInfoModal(false)}
+      />
+
+      <NewBookingModal
+        isOpen={showNewBookingModal}
+        onClose={() => setShowNewBookingModal(false)}
+        prefilledData={bookingFormData}
+        onSuccess={(booking) => {
+          if (onBookingCreate) {
+            onBookingCreate(booking);
+          }
+          // Reload bookings to show the new one
+          loadBookings();
+        }}
+      />
     </div>
   );
 };
