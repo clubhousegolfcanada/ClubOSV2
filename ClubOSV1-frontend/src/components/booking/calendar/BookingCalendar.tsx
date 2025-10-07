@@ -120,7 +120,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       const loadedLocations = locationsData.data.data || [];
       setLocations(loadedLocations);
 
-      console.log('[BookingCalendar] Loaded locations:', loadedLocations.map(l => ({ id: l.id, name: l.name })));
+      console.log('[BookingCalendar] Loaded locations:', loadedLocations.map((l: any) => ({ id: l.id, name: l.name })));
 
       // Set first location as default if no location is selected
       let locationToLoad = selectedLocationId || propLocationId;
@@ -137,7 +137,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           params: { locationId: locationToLoad }
         });
         const loadedSpaces = spacesData.data.data || [];
-        console.log('[BookingCalendar] Loaded spaces:', loadedSpaces.map(s => ({ id: s.id, name: s.name })));
+        console.log('[BookingCalendar] Loaded spaces:', loadedSpaces.map((s: any) => ({ id: s.id, name: s.name })));
         setSpaces(loadedSpaces);
 
         // Also load bookings for the initial view
@@ -157,9 +157,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
           const results = await Promise.all(bookingPromises);
           const allBookings = results.flatMap(r => r.data.data || []);
-          const bookingsWithColors = allBookings.map(booking => ({
+          const bookingsWithColors = allBookings.map((booking: any) => ({
             ...booking,
-            tierColor: tiersData.find(t => t.id === booking.customerTierId)?.color || '#6B7280'
+            tierColor: tiersData.find((t: any) => t.id === booking.customerTierId)?.color || '#6B7280'
           }));
           setBookings(bookingsWithColors);
         }
@@ -180,7 +180,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           params: { locationId: selectedLocationId }
         });
         const loadedSpaces = spacesData.data.data || [];
-        console.log('[BookingCalendar] Spaces loaded:', loadedSpaces.length, 'spaces', loadedSpaces.map(s => s.name));
+        console.log('[BookingCalendar] Spaces loaded:', loadedSpaces.length, 'spaces', loadedSpaces.map((s: any) => s.name));
         setSpaces(loadedSpaces);
       } else {
         console.log('[BookingCalendar] Clearing spaces (all locations selected)');
@@ -213,9 +213,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       console.log('[BookingCalendar] Loaded bookings:', allBookings.length, 'bookings');
 
       // Add tier colors to bookings
-      const bookingsWithColors = allBookings.map(booking => ({
+      const bookingsWithColors = allBookings.map((booking: any) => ({
         ...booking,
-        tierColor: customerTiers.find(t => t.id === booking.customerTierId)?.color || '#6B7280'
+        tierColor: customerTiers.find((t: CustomerTier) => t.id === booking.customerTierId)?.color || '#6B7280'
       }));
 
       setBookings(bookingsWithColors);
