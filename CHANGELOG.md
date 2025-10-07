@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.54] - 2025-10-06
+
+### Fixed
+- **Booking Calendar Spaces Loading**: Fixed dependency array in useEffect for proper space loading
+  - Added locations array to useEffect dependency to ensure spaces reload when locations change
+  - Removed debug console.log statements from production code
+  - Result: Booking calendar now reliably loads spaces when switching between locations
+
+### Development
+- **Local Development Setup**: Frontend now properly configured for local development
+  - Note: .env.local must use http://localhost:5005 for local development
+  - Production deployments will use the Railway URL
+
 ## [1.21.53] - 2025-10-06
 
 ### Fixed
