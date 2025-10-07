@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.51] - 2025-10-06
+
+### Fixed
+- **Booking System Boxes**: Corrected simulator box configuration for all locations
+  - Renamed "Bayers Lake" to "Halifax (Bayers Lake)" and removed duplicate Halifax entry
+  - Fixed box counts: Bedford (2), Dartmouth (4), Halifax (4), Truro (3), River Oaks (1), Stratford (3)
+  - Attempted to rename "Bay" to "Box" (partial success due to trigger constraints)
+  - Added Box 3 to Truro location
+  - Removed extra boxes from River Oaks (now has only 1 box)
+  - Result: Booking system now has correct number of simulator boxes per location
+
 ## [1.21.50] - 2025-10-06
 
 ### Fixed
