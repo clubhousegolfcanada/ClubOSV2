@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.52] - 2025-10-06
+
+### Fixed
+- **Booking System Box Naming**: Completed renaming of all simulator bays from "Bay" to "Box"
+  - Fixed database trigger issue by adding missing updated_at column to booking_spaces table
+  - Successfully renamed all 16 remaining "Bay" names to "Box" names
+  - All 17 simulator boxes across 6 locations now properly named as "Box 1", "Box 2", etc.
+  - Cleaned up 6 temporary migration files created during troubleshooting
+  - Result: Booking system now displays consistent "Box" naming for all simulators
+
 ## [1.21.51] - 2025-10-06
 
 ### Fixed

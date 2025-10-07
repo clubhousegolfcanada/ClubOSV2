@@ -1,4 +1,4 @@
-# ClubOS v1.21.51 - Flexible Facility Management System
+# ClubOS v1.21.52 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.51**
-- **Booking Boxes Fixed** - Corrected simulator box counts for all locations (Bedford: 2, Dartmouth: 4, Halifax: 4, Truro: 3, River Oaks: 1, Stratford: 3)
+**Current Version: v1.21.52**
+- **Box Naming Complete** - All simulator bays now properly named "Box 1", "Box 2", etc. instead of "Bay"
+- **Booking System Fixed** - Correct box counts: Bedford (2), Dartmouth (4), Halifax (4), Truro (3), River Oaks (1), Stratford (3)
 - **Booking Page Fix** - Removed incorrect '/api/' prefix from HTTP calls, fixing "Something went wrong" error
 - **Customer Portal Fix** - Resolved 403 errors for customer access
 - **Booking Database** - Successfully deployed all booking system migrations
