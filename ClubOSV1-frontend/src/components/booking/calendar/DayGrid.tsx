@@ -78,8 +78,8 @@ const DayGrid: React.FC<DayGridProps> = ({
   if (spaces.length === 0) {
     return (
       <div className="text-center py-8 text-[var(--text-muted)]">
-        <p>No spaces available for this location.</p>
-        <p className="text-sm mt-2">Please select a specific location to view availability.</p>
+        <p>Loading simulator boxes...</p>
+        <p className="text-sm mt-2">If this persists, please refresh the page.</p>
       </div>
     );
   }

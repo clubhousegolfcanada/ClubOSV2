@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.58] - 2025-10-07
+
+### Fixed
+- **Booking Calendar Location Display**: Fixed boxes not showing when selecting specific locations
+  - Removed confusing "All Locations" option that could lead to accidental wrong location bookings
+  - Fixed spaces loading logic to properly display boxes for each location
+  - Spaces now load immediately when switching between locations
+  - Improved "no spaces" message to indicate loading state
+  - Result: Each location now properly displays its simulator boxes (Bedford: 2, Dartmouth: 4, Halifax: 3, etc.)
+
 ## [1.21.57] - 2025-10-07
 
 ### Enhanced

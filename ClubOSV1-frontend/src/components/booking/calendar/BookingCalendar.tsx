@@ -105,7 +105,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Load spaces when location changes or locations are first loaded
   useEffect(() => {
-    if (selectedLocationId && selectedLocationId !== 'all' && locations.length > 0) {
+    if (selectedLocationId && locations.length > 0) {
       console.log('[BookingCalendar] Loading spaces for location:', selectedLocationId);
       loadSpaces();
     }
@@ -139,7 +139,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       }
 
       // Load spaces for the selected location immediately
-      if (locationToLoad && locationToLoad !== 'all') {
+      if (locationToLoad) {
         console.log('[BookingCalendar] Loading spaces for initial location:', locationToLoad);
         const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: locationToLoad }
@@ -158,7 +158,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             http.get('/bookings/day', {
               params: {
                 date: format(date, 'yyyy-MM-dd'),
-                locationId: locationToLoad !== 'all' ? locationToLoad : undefined
+                locationId: locationToLoad
               }
             })
           );
@@ -182,7 +182,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const loadSpaces = async () => {
     try {
-      if (selectedLocationId && selectedLocationId !== 'all') {
+      if (selectedLocationId) {
         console.log('[BookingCalendar] loadSpaces called for location:', selectedLocationId);
         const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: selectedLocationId }
@@ -190,9 +190,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         const loadedSpaces = spacesData.data.data || [];
         console.log('[BookingCalendar] Spaces loaded:', loadedSpaces.length, 'spaces', loadedSpaces.map((s: any) => s.name));
         setSpaces(loadedSpaces);
-      } else {
-        console.log('[BookingCalendar] Clearing spaces (all locations selected)');
-        setSpaces([]);
       }
     } catch (error) {
       logger.error('Failed to load spaces:', error);
@@ -211,7 +208,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         http.get('/bookings/day', {
           params: {
             date: format(date, 'yyyy-MM-dd'),
-            locationId: selectedLocationId !== 'all' ? selectedLocationId : undefined
+            locationId: selectedLocationId
           }
         })
       );
@@ -334,19 +331,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Filter bookings for selected location
   const filteredBookings = useMemo(() => {
-    if (selectedLocationId === 'all') {
-      return bookings;
-    }
     return bookings.filter(b => b.locationId === selectedLocationId);
   }, [bookings, selectedLocationId]);
 
-  // Get spaces for selected location
+  // Use the spaces that were loaded for the selected location
   const filteredSpaces = useMemo(() => {
-    if (selectedLocationId === 'all') {
-      return spaces;
-    }
-    return spaces.filter(s => s.locationId === selectedLocationId);
-  }, [spaces, selectedLocationId]);
+    return spaces; // Spaces are already filtered by location in loadSpaces
+  }, [spaces]);
 
   if (loading) {
     return (
@@ -376,7 +367,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
             >
               <MapPin className="h-4 w-4" />
-              <span>{!selectedLocationId ? 'Select Location' : selectedLocationId === 'all' ? 'All Locations' : locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}</span>
+              <span>{!selectedLocationId ? 'Select Location' : locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}</span>
               <Filter className="h-3 w-3" />
             </button>
 
@@ -421,19 +412,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         {showFilters && (
           <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-md">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              <button
-                onClick={() => {
-                  setSelectedLocationId('all');
-                  setShowFilters(false);
-                }}
-                className={`px-3 py-2 text-sm rounded-md transition-colors ${
-                  selectedLocationId === 'all'
-                    ? 'bg-[var(--color-primary)] text-white'
-                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
-                }`}
-              >
-                All Locations
-              </button>
               {locations.map(location => (
                 <button
                   key={location.id}
