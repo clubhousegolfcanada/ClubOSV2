@@ -1,4 +1,4 @@
-# ClubOS v1.21.54 - Flexible Facility Management System
+# ClubOS v1.21.55 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,7 +8,7 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.54**
+**Current Version: v1.21.55**
 - **Booking Calendar Fixed** - Simulator boxes now properly display in the calendar view
 - **Box Naming Complete** - All simulator bays properly named "Box 1", "Box 2", etc.
 - **Booking System Ready** - Correct box counts: Bedford (2), Dartmouth (4), Halifax (4), Truro (3), River Oaks (1), Stratford (3)

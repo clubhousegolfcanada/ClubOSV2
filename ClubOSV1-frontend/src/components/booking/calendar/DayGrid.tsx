@@ -72,7 +72,10 @@ const DayGrid: React.FC<DayGridProps> = ({
     });
   };
 
+  console.log('[DayGrid] Rendering with', spaces.length, 'spaces and', dayBookings.length, 'bookings');
+
   if (spaces.length === 0) {
+    console.log('[DayGrid] No spaces available, showing empty state');
     return (
       <div className="text-center py-8 text-[var(--text-muted)]">
         <p>No spaces available for this location.</p>

@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.55] - 2025-10-06
+
+### Fixed
+- **Booking Calendar Initial Load**: Fixed boxes not displaying on first page load
+  - Improved load sequence in BookingCalendar component to properly initialize spaces
+  - Added debug logging to trace data flow between locations and spaces
+  - Fixed race condition where spaces weren't loading when first location was auto-selected
+  - Spaces now load immediately when location is set, both on initial load and location change
+  - Result: Booking calendar now displays simulator boxes reliably on page load
+
+### Added
+- **Time Selector Components**: Built missing Part 2 booking components
+  - Created TimeIncrementSelector for enforcing 1-hour minimum with 30-minute increments
+  - Built DurationPicker with tier-based pricing display
+  - Added AdvanceBookingValidator for tier-based booking window restrictions
+  - Created timeIncrementLogic utility for business rule enforcement
+  - Result: Complete time selection UI ready for booking flow integration
+
+### Development
+- **Debug Logging**: Added comprehensive console logging for troubleshooting
+  - BookingCalendar logs location and space loading sequence
+  - DayGrid logs space and booking counts
+  - Helps identify data flow issues during development
+
 ## [1.21.54] - 2025-10-06
 
 ### Fixed
