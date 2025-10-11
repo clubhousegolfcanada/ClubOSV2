@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.61] - 2025-10-11
+
+### Fixed
+- **Ticket Status Column Name Fix**: Fixed column name issue in updateTicketStatus method
+  - Changed `updated_at` to `"updatedAt"` to match actual database column name
+  - Tickets table uses camelCase column names with quotes for timestamps
+  - Result: Ticket status updates now work correctly without column not found errors
+
 ## [1.21.60] - 2025-10-11
 
 ### Fixed

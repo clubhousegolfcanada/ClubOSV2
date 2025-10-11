@@ -452,7 +452,7 @@ class DatabaseService {
     const result = await query(
       `UPDATE tickets
        SET status = $1::VARCHAR(50),
-           updated_at = CURRENT_TIMESTAMP,
+           "updatedAt" = CURRENT_TIMESTAMP,
            resolved_at = CASE WHEN $1::VARCHAR(50) IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END,
            archived_at = CASE WHEN $1::VARCHAR(50) = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END
        WHERE id = $2
