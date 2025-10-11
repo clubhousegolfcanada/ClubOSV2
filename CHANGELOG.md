@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.59] - 2025-10-11
+
+### Fixed
+- **Complete Ticket System Overhaul**: Fixed all critical issues with ticket management
+  - Added 'archived' status support to tickets table schema
+  - Created ticket_comments table with proper foreign key constraints
+  - Fixed database layer to properly JOIN and return comments with tickets
+  - Added GET /api/tickets/:id endpoint for fetching single ticket with comments
+  - Fixed route ordering (stats and active-count now before /:id)
+  - Enhanced frontend to load full ticket details when opening modal
+  - Comments now properly persist and display in ticket details
+  - Archive functionality now works correctly
+  - Status updates including archived status now work properly
+  - Result: Ticket system is now fully functional with comments, status updates, and archiving
+
 ## [1.21.58] - 2025-10-07
 
 ### Fixed

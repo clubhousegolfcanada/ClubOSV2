@@ -49,7 +49,7 @@ export const createTablesSQL = {
       title VARCHAR(255) NOT NULL,
       description TEXT NOT NULL,
       category VARCHAR(50) NOT NULL CHECK (category IN ('facilities', 'tech')),
-      status VARCHAR(50) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in-progress', 'resolved', 'closed')),
+      status VARCHAR(50) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in-progress', 'resolved', 'closed', 'archived')),
       priority VARCHAR(50) NOT NULL CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
       location VARCHAR(255),
       created_by_id UUID NOT NULL,
@@ -62,8 +62,24 @@ export const createTablesSQL = {
       "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       resolved_at TIMESTAMP,
+      archived_at TIMESTAMP,
+      archived_by UUID,
       metadata JSONB DEFAULT '{}'::jsonb,
       photo_urls TEXT[] DEFAULT '{}'
+    );
+  `,
+
+  ticket_comments: `
+    CREATE TABLE IF NOT EXISTS ticket_comments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      ticket_id UUID NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      created_by_id UUID NOT NULL,
+      created_by_name VARCHAR(255) NOT NULL,
+      created_by_email VARCHAR(255) NOT NULL,
+      created_by_phone VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
   
@@ -166,6 +182,12 @@ export const createIndexesSQL = [
   'CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);',
   'CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(category);',
   'CREATE INDEX IF NOT EXISTS idx_tickets_created_by_id ON tickets(created_by_id);',
+  'CREATE INDEX IF NOT EXISTS idx_tickets_location ON tickets(location);',
+  'CREATE INDEX IF NOT EXISTS idx_tickets_archived_at ON tickets(archived_at) WHERE archived_at IS NOT NULL;',
+
+  // Ticket comments indexes
+  'CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);',
+  'CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_at ON ticket_comments(created_at);',
   
   // Booking indexes
   'CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);',

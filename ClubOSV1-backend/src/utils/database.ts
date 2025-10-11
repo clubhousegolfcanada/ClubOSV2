@@ -350,38 +350,59 @@ class DatabaseService {
     created_by_id?: string;
     location?: string;
   }): Promise<DbTicket[]> {
-    let queryText = 'SELECT * FROM tickets';
+    let queryText = `
+      SELECT
+        t.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', tc.id,
+              'text', tc.text,
+              'createdBy', json_build_object(
+                'id', tc.created_by_id,
+                'name', tc.created_by_name,
+                'email', tc.created_by_email,
+                'phone', tc.created_by_phone
+              ),
+              'createdAt', tc.created_at
+            ) ORDER BY tc.created_at DESC
+          ) FILTER (WHERE tc.id IS NOT NULL),
+          '[]'::json
+        ) as comments
+      FROM tickets t
+      LEFT JOIN ticket_comments tc ON t.id = tc.ticket_id
+    `;
     const conditions: string[] = [];
     const values: any[] = [];
     let paramCount = 0;
 
     if (filters?.status) {
       paramCount++;
-      conditions.push(`status = $${paramCount}`);
+      conditions.push(`t.status = $${paramCount}`);
       values.push(filters.status);
     }
 
     if (filters?.category) {
       paramCount++;
-      conditions.push(`category = $${paramCount}`);
+      conditions.push(`t.category = $${paramCount}`);
       values.push(filters.category);
     }
 
     if (filters?.assigned_to_id) {
       paramCount++;
-      conditions.push(`assigned_to_id = $${paramCount}`);
+      conditions.push(`t.assigned_to_id = $${paramCount}`);
       values.push(filters.assigned_to_id);
     }
 
     if (filters?.created_by_id) {
       paramCount++;
-      conditions.push(`created_by_id = $${paramCount}`);
+      conditions.push(`t.created_by_id = $${paramCount}`);
       values.push(filters.created_by_id);
     }
 
     if (filters?.location) {
       paramCount++;
-      conditions.push(`location = $${paramCount}`);
+      conditions.push(`t.location = $${paramCount}`);
       values.push(filters.location);
     }
 
@@ -389,10 +410,39 @@ class DatabaseService {
       queryText += ` WHERE ${conditions.join(' AND ')}`;
     }
 
-    queryText += ' ORDER BY "createdAt" DESC';
+    queryText += ' GROUP BY t.id ORDER BY t."createdAt" DESC';
 
     const result = await query(queryText, values);
     return result.rows;
+  }
+
+  async getTicketById(id: string): Promise<DbTicket | null> {
+    const result = await query(
+      `SELECT
+        t.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', tc.id,
+              'text', tc.text,
+              'createdBy', json_build_object(
+                'id', tc.created_by_id,
+                'name', tc.created_by_name,
+                'email', tc.created_by_email,
+                'phone', tc.created_by_phone
+              ),
+              'createdAt', tc.created_at
+            ) ORDER BY tc.created_at DESC
+          ) FILTER (WHERE tc.id IS NOT NULL),
+          '[]'::json
+        ) as comments
+      FROM tickets t
+      LEFT JOIN ticket_comments tc ON t.id = tc.ticket_id
+      WHERE t.id = $1
+      GROUP BY t.id`,
+      [id]
+    );
+    return result.rows[0] || null;
   }
 
   async updateTicketStatus(id: string, status: string): Promise<DbTicket | null> {
@@ -412,6 +462,32 @@ class DatabaseService {
   async deleteTicket(id: string): Promise<boolean> {
     const result = await query('DELETE FROM tickets WHERE id = $1', [id]);
     return (result.rowCount || 0) > 0;
+  }
+
+  async addTicketComment(ticketId: string, comment: {
+    text: string;
+    created_by_id: string;
+    created_by_name: string;
+    created_by_email: string;
+    created_by_phone?: string;
+  }): Promise<any> {
+    const id = uuidv4();
+    const result = await query(
+      `INSERT INTO ticket_comments (
+        id, ticket_id, text, created_by_id, created_by_name, created_by_email, created_by_phone
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *`,
+      [
+        id,
+        ticketId,
+        comment.text,
+        comment.created_by_id,
+        comment.created_by_name,
+        comment.created_by_email,
+        comment.created_by_phone
+      ]
+    );
+    return result.rows[0];
   }
 
   // Booking operations

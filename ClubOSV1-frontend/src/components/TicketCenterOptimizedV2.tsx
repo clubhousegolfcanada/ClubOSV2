@@ -360,24 +360,34 @@ const TicketCenterOptimizedV2 = () => {
         const newCommentData = response.data.data;
         setNewComment('');
 
-        setTickets(prevTickets =>
-          prevTickets.map(ticket =>
-            ticket.id === ticketId
-              ? {
-                  ...ticket,
-                  comments: [...(ticket.comments || []), newCommentData],
-                  updatedAt: new Date().toISOString()
-                }
-              : ticket
-          )
-        );
-
+        // Update the selected ticket with the new comment
         if (selectedTicket?.id === ticketId) {
-          setSelectedTicket(prev => prev ? {
-            ...prev,
-            comments: [...(prev.comments || []), newCommentData],
+          const updatedTicket = {
+            ...selectedTicket,
+            comments: [...(selectedTicket.comments || []), newCommentData],
             updatedAt: new Date().toISOString()
-          } : null);
+          };
+          setSelectedTicket(updatedTicket);
+
+          // Also update the tickets list
+          setTickets(prevTickets =>
+            prevTickets.map(ticket =>
+              ticket.id === ticketId ? updatedTicket : ticket
+            )
+          );
+        } else {
+          // If not the selected ticket, just update the tickets list
+          setTickets(prevTickets =>
+            prevTickets.map(ticket =>
+              ticket.id === ticketId
+                ? {
+                    ...ticket,
+                    comments: [...(ticket.comments || []), newCommentData],
+                    updatedAt: new Date().toISOString()
+                  }
+                : ticket
+            )
+          );
         }
       }
     } catch (error) {
@@ -658,9 +668,25 @@ const TicketCenterOptimizedV2 = () => {
                             backgroundColor: locationBg,
                             borderLeft: `3px solid ${priorityColors[ticket.priority]}`
                           }}
-                          onClick={() => {
+                          onClick={async () => {
                             setSelectedTicket(ticket);
                             setShowTicketDetail(true);
+
+                            // Load full ticket details with comments
+                            try {
+                              const token = tokenManager.getToken();
+                              const response = await http.get(`tickets/${ticket.id}`, {
+                                headers: {
+                                  Authorization: `Bearer ${token}`
+                                }
+                              });
+
+                              if (response.data.success) {
+                                setSelectedTicket(response.data.data);
+                              }
+                            } catch (error) {
+                              logger.error('Failed to load ticket details:', error);
+                            }
                           }}
                         >
                           <div className="flex items-start gap-2">

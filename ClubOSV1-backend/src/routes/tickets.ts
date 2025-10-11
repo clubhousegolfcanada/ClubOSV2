@@ -20,19 +20,103 @@ router.get('/', authenticate, async (req, res) => {
       assigned_to_id: assignedTo as string,
       location: location as string
     });
-    
+
     res.json({
       success: true,
-      data: tickets.map(t => ({
-        ...transformTicket(t),
-        comments: []
-      }))
+      data: tickets.map(t => transformTicket(t))
     });
   } catch (error) {
     logger.error('Failed to get tickets:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve tickets'
+    });
+  }
+});
+
+// GET /api/tickets/active-count - Get active ticket count (must be before /:id)
+router.get('/active-count', authenticate, async (req, res) => {
+  try {
+    const tickets = await db.getTickets({ status: 'open' });
+    const inProgressTickets = await db.getTickets({ status: 'in-progress' });
+    const activeCount = tickets.length + inProgressTickets.length;
+
+    res.json({
+      success: true,
+      count: activeCount
+    });
+  } catch (error) {
+    logger.error('Failed to get active ticket count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get active ticket count',
+      count: 0
+    });
+  }
+});
+
+// GET /api/tickets/stats - Get ticket statistics (must be before /:id)
+router.get('/stats', authenticate, async (req, res) => {
+  try {
+    const tickets = await db.getTickets();
+
+    const stats = {
+      total: tickets.length,
+      byStatus: {
+        open: tickets.filter(t => t.status === 'open').length,
+        'in-progress': tickets.filter(t => t.status === 'in-progress').length,
+        resolved: tickets.filter(t => t.status === 'resolved').length,
+        closed: tickets.filter(t => t.status === 'closed').length,
+        archived: tickets.filter(t => t.status === 'archived').length
+      },
+      byCategory: {
+        facilities: tickets.filter(t => t.category === 'facilities').length,
+        tech: tickets.filter(t => t.category === 'tech').length
+      },
+      byPriority: {
+        low: tickets.filter(t => t.priority === 'low').length,
+        medium: tickets.filter(t => t.priority === 'medium').length,
+        high: tickets.filter(t => t.priority === 'high').length,
+        urgent: tickets.filter(t => t.priority === 'urgent').length
+      }
+    };
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    logger.error('Failed to get ticket stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get ticket statistics'
+    });
+  }
+});
+
+// GET /api/tickets/:id - Get single ticket with comments
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await db.getTicketById(id);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: transformTicket(ticket)
+    });
+  } catch (error) {
+    logger.error('Failed to get ticket:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve ticket'
     });
   }
 });
@@ -208,110 +292,61 @@ router.post('/:id/comments', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const { text } = req.body;
-    
+
     if (!text || !text.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Comment text is required'
       });
     }
-    
+
     // Check if ticket exists
-    const tickets = await db.getTickets();
-    const ticket = tickets.find(t => t.id === id);
-    
+    const ticket = await db.getTicketById(id);
+
     if (!ticket) {
       return res.status(404).json({
         success: false,
         message: 'Ticket not found'
       });
     }
-    
+
     // Add comment
-    const comment = await ticketDb.addComment(id, {
+    const comment = await db.addTicketComment(id, {
       text: text.trim(),
-      createdBy: {
-        id: req.user!.id,
-        name: req.user!.name || req.user!.email.split('@')[0],
-        email: req.user!.email,
-        phone: req.user!.phone
-      }
+      created_by_id: req.user!.id,
+      created_by_name: req.user!.name || req.user!.email.split('@')[0],
+      created_by_email: req.user!.email,
+      created_by_phone: req.user!.phone
     });
-    
+
     logger.info('Comment added to ticket', {
       ticketId: id,
       commentId: comment.id,
       addedBy: req.user!.email
     });
-    
+
+    // Format the comment for response
+    const formattedComment = {
+      id: comment.id,
+      text: comment.text,
+      createdBy: {
+        id: comment.created_by_id,
+        name: comment.created_by_name,
+        email: comment.created_by_email,
+        phone: comment.created_by_phone
+      },
+      createdAt: comment.created_at
+    };
+
     res.json({
       success: true,
-      data: comment
+      data: formattedComment
     });
   } catch (error) {
     logger.error('Failed to add comment:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to add comment'
-    });
-  }
-});
-
-// GET /api/tickets/active-count - Get active ticket count
-router.get('/active-count', authenticate, async (req, res) => {
-  try {
-    const tickets = await db.getTickets({ status: 'open' });
-    const inProgressTickets = await db.getTickets({ status: 'in-progress' });
-    const activeCount = tickets.length + inProgressTickets.length;
-    
-    res.json({
-      success: true,
-      count: activeCount
-    });
-  } catch (error) {
-    logger.error('Failed to get active ticket count:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get active ticket count',
-      count: 0
-    });
-  }
-});
-
-// GET /api/tickets/stats - Get ticket statistics
-router.get('/stats', authenticate, async (req, res) => {
-  try {
-    const tickets = await db.getTickets();
-    
-    const stats = {
-      total: tickets.length,
-      byStatus: {
-        open: tickets.filter(t => t.status === 'open').length,
-        'in-progress': tickets.filter(t => t.status === 'in-progress').length,
-        resolved: tickets.filter(t => t.status === 'resolved').length,
-        closed: tickets.filter(t => t.status === 'closed').length
-      },
-      byCategory: {
-        facilities: tickets.filter(t => t.category === 'facilities').length,
-        tech: tickets.filter(t => t.category === 'tech').length
-      },
-      byPriority: {
-        low: tickets.filter(t => t.priority === 'low').length,
-        medium: tickets.filter(t => t.priority === 'medium').length,
-        high: tickets.filter(t => t.priority === 'high').length,
-        urgent: tickets.filter(t => t.priority === 'urgent').length
-      }
-    };
-    
-    res.json({
-      success: true,
-      data: stats
-    });
-  } catch (error) {
-    logger.error('Failed to get ticket stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get ticket statistics'
     });
   }
 });
