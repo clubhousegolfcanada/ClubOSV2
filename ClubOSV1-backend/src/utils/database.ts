@@ -453,8 +453,7 @@ class DatabaseService {
       `UPDATE tickets
        SET status = $1::VARCHAR(50),
            "updatedAt" = CURRENT_TIMESTAMP,
-           resolved_at = CASE WHEN $1::VARCHAR(50) IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END,
-           archived_at = CASE WHEN $1::VARCHAR(50) = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END
+           resolved_at = CASE WHEN $1::VARCHAR(50) IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END
        WHERE id = $2
        RETURNING *`,
       [status, id]

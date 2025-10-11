@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.62] - 2025-10-11
+
+### Fixed
+- **Ticket Status Update - Complete Fix**: Removed reference to non-existent archived_at column
+  - The archived_at and archived_by columns were never created in production database
+  - Removed archived_at CASE statement from updateTicketStatus method
+  - Status updates now work for all states: open, in-progress, resolved, closed
+  - Archive functionality temporarily removed until proper migration is created
+  - Result: Ticket status updates and check-off functionality fully restored
+
 ## [1.21.61] - 2025-10-11
 
 ### Fixed
