@@ -30,7 +30,7 @@ export interface DbTicket {
   title: string;
   description: string;
   category: 'facilities' | 'tech';
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  status: 'open' | 'in-progress' | 'resolved' | 'closed' | 'archived';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   location?: string;
   created_by_id: string;
@@ -43,8 +43,11 @@ export interface DbTicket {
   createdAt: Date;
   updatedAt: Date;
   resolved_at?: Date;
+  archived_at?: Date;
+  archived_by?: string;
   metadata?: any;
   photo_urls?: string[];
+  comments?: any[];
 }
 
 export interface DbFeedback {

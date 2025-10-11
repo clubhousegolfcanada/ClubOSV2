@@ -7,7 +7,7 @@ export interface Ticket {
   title: string;
   description: string;
   category: 'facilities' | 'tech';
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  status: 'open' | 'in-progress' | 'resolved' | 'closed' | 'archived';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   location?: string;
   createdBy: {
@@ -24,6 +24,8 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
+  archivedAt?: string;
+  archivedBy?: string;
   comments?: TicketComment[];
 }
 
