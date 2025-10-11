@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.60] - 2025-10-11
+
+### Fixed
+- **Ticket Status Update Error**: Fixed PostgreSQL type mismatch error when updating ticket status
+  - Added explicit VARCHAR(50) casting to status parameter in UPDATE query
+  - Resolved "inconsistent types deduced for parameter $1" error
+  - Status updates now work correctly for all ticket states (open, in-progress, resolved, closed, archived)
+  - Result: Ticket status can be updated without 500 errors
+
 ## [1.21.59] - 2025-10-11
 
 ### Fixed
