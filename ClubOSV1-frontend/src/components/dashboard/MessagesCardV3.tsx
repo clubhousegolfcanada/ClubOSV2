@@ -364,8 +364,29 @@ export default function MessagesCardV3() {
       {/* Content - Collapsible */}
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0' : 'max-h-[600px]'}`}>
         {isLoading ? (
-        <div className="p-8 text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--text-muted)] mx-auto"></div>
+        <div className="divide-y divide-[var(--border-secondary)]">
+          {/* Loading skeletons for 3 conversations */}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-3 animate-pulse">
+              <div className="flex items-start gap-2">
+                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 border border-[var(--border-primary)] rounded-lg bg-[var(--bg-tertiary)]">
+                  <div className="w-4 h-3 bg-[var(--bg-secondary)] rounded"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-2">
+                      <div className="w-24 h-3 bg-[var(--bg-secondary)] rounded"></div>
+                      <div className="w-full h-3 bg-[var(--bg-secondary)] rounded"></div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-2.5 bg-[var(--bg-secondary)] rounded"></div>
+                        <div className="w-20 h-2.5 bg-[var(--bg-secondary)] rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : conversations.length === 0 ? (
         <div className="p-8 text-center">

@@ -19,6 +19,18 @@ import { successResponse, errorResponse } from '../utils/responseHelpers';
 
 const router = Router();
 
+// Simple in-memory cache for conversations
+const conversationCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5000; // 5 seconds TTL for cache
+
+// Request deduplication to prevent concurrent identical requests
+const pendingRequests = new Map<string, Promise<any>>();
+
+// Helper to generate cache key
+const getCacheKey = (userId: string, limit: number, offset: number, search?: string) => {
+  return `${userId}-${limit}-${offset}-${search || ''}`;
+};
+
 // Health check endpoint
 router.get('/health', async (req, res) => {
   try {
@@ -55,20 +67,39 @@ router.get('/conversations',
   roleGuard(['admin', 'operator', 'support']),
   async (req, res, next) => {
     try {
-      const { limit = 50, offset = 0, search } = req.query;
-      
-      // First check if table exists
-      const tableExists = await db.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_name = 'openphone_conversations'
-        ) as exists
-      `);
-      
-      if (!tableExists.rows[0].exists) {
-        logger.warn('openphone_conversations table does not exist');
-        return res.json(successResponse([]));
+      const { limit = 25, offset = 0, search } = req.query;  // Reduced default from 50 to 25
+
+      // Check cache first
+      const cacheKey = getCacheKey(req.user!.id.toString(), Number(limit), Number(offset), search as string);
+      const cached = conversationCache.get(cacheKey);
+
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        logger.debug('Returning cached conversations', { cacheKey });
+        return res.json(successResponse(cached.data));
       }
+
+      // Check if there's already a pending request for the same data
+      if (pendingRequests.has(cacheKey)) {
+        logger.debug('Waiting for pending request', { cacheKey });
+        const result = await pendingRequests.get(cacheKey);
+        return res.json(successResponse(result));
+      }
+
+      // Create a promise for this request to enable deduplication
+      const requestPromise = (async () => {
+        try {
+          // First check if table exists
+          const tableExists = await db.query(`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables
+              WHERE table_name = 'openphone_conversations'
+            ) as exists
+          `);
+
+          if (!tableExists.rows[0].exists) {
+            logger.warn('openphone_conversations table does not exist');
+            return [];
+          }
       
       // Then check which columns exist
       const columnCheck = await db.query(`
@@ -83,9 +114,10 @@ router.get('/conversations',
       const hasLastReadAt = existingColumns.includes('last_read_at');
       const hasUpdatedAt = existingColumns.includes('updated_at');
       
-      // Simpler query that uses DISTINCT ON to get the most recent conversation per phone number
+      // Optimized query - simpler and faster without DISTINCT ON
+      // Get the most recent conversations, limited by pagination
       let query = `
-        SELECT DISTINCT ON (phone_number)
+        SELECT
           id,
           phone_number,
           customer_name,
@@ -95,27 +127,21 @@ router.get('/conversations',
           ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
           created_at${hasUpdatedAt ? ',\n          updated_at' : ''}
         FROM openphone_conversations
-        WHERE phone_number IS NOT NULL 
+        WHERE phone_number IS NOT NULL
           AND phone_number != ''
           AND phone_number != 'Unknown'
       `;
-      
+
       const params: any[] = [];
-      
+
       if (search) {
         query += ` AND (phone_number LIKE $1 OR customer_name ILIKE $1)`;
         params.push(`%${search}%`);
       }
-      
-      // For DISTINCT ON, we need to order by phone_number first, then by the timestamp DESC to get the latest
-      query += ` ORDER BY phone_number, ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
-      
-      // Wrap in a subquery to apply our desired ordering and pagination
-      query = `
-        SELECT * FROM (${query}) as distinct_conversations
-        ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC 
-        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-      `;
+
+      // Simple ORDER BY with pagination - much faster
+      query += ` ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
+      query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
       params.push(limit, offset);
       
       let result;
@@ -127,12 +153,12 @@ router.get('/conversations',
           code: queryError.code,
           detail: queryError.detail
         });
-        
+
         // If it's a column doesn't exist error, return empty array
         if (queryError.code === '42703') {
-          return res.json(successResponse([], 'Database schema issue - missing columns'));
+          return [];
         }
-        
+
         throw queryError;
       }
       
@@ -209,7 +235,42 @@ router.get('/conversations',
         };
       });
       
-      res.json(successResponse(transformedConversations));
+      // Cache the successful response
+      conversationCache.set(cacheKey, {
+        data: transformedConversations,
+        timestamp: Date.now()
+      });
+
+      // Clean up old cache entries periodically (keep cache size reasonable)
+      if (conversationCache.size > 100) {
+        const now = Date.now();
+        for (const [key, value] of conversationCache.entries()) {
+          if (now - value.timestamp > CACHE_TTL) {
+            conversationCache.delete(key);
+          }
+        }
+      }
+
+      return transformedConversations;
+        } catch (error) {
+          logger.error('Error in conversation fetch:', error);
+          throw error;
+        } finally {
+          // Clean up pending request
+          pendingRequests.delete(cacheKey);
+        }
+      })();
+
+      // Store the promise for deduplication
+      pendingRequests.set(cacheKey, requestPromise);
+
+      try {
+        const result = await requestPromise;
+        res.json(successResponse(result));
+      } catch (error) {
+        logger.error('Messages route error:', error);
+        next(error);
+      }
     } catch (error) {
       logger.error('Messages route error:', error);
       next(error);

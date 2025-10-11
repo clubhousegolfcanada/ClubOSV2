@@ -343,7 +343,7 @@ export default function Messages() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        params: { limit: 100 }
+        params: { limit: 25 }  // Reduced from 100 for faster initial load
       });
 
       if (response.data.success) {
