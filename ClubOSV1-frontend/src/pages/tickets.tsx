@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import TicketCenterOptimizedV3 from '@/components/TicketCenterOptimizedV3';
+import TicketCenterV4 from '@/components/TicketCenterV4';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -33,7 +33,7 @@ export default function TicketCenter() {
 
       <div className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-4 py-2 md:py-4">
-          {/* Header Section - Simplified for mobile */}
+          {/* Header Section - Minimal and clean like Messages page */}
           <div className="mb-4">
             <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
               Ticket Center
@@ -43,8 +43,8 @@ export default function TicketCenter() {
             </p>
           </div>
 
-          {/* Main Content */}
-          <TicketCenterOptimizedV3 />
+          {/* Main Content - New modernized component */}
+          <TicketCenterV4 />
         </div>
       </div>
     </>

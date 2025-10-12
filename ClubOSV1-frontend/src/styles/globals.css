@@ -18,6 +18,26 @@
     }
   }
 
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in-from-bottom-4 {
+    from {
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
   .animate-in {
     animation-duration: 200ms;
     animation-fill-mode: both;
@@ -25,6 +45,23 @@
 
   .slide-in-from-top-1 {
     animation-name: slide-in-from-top-1;
+  }
+
+  .fade-in {
+    animation-name: fade-in;
+  }
+
+  .slide-in-from-bottom-4 {
+    animation-name: slide-in-from-bottom-4;
+  }
+
+  /* Duration utilities for animations */
+  .duration-200 {
+    animation-duration: 200ms;
+  }
+
+  .duration-300 {
+    animation-duration: 300ms;
   }
 }
 
