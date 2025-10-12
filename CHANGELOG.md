@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.66] - 2025-10-12
+
+### Enhanced
+- **Ticket Center UI Polish**: World-class improvements for better scalability and visual hierarchy
+  - Created new TicketCenterOptimizedV3 component with card-based design pattern
+  - Added province-based location grouping (Nova Scotia, PEI, Ontario, New Brunswick)
+  - Implemented searchable grid layout for location filter (replacing horizontal scroll)
+  - Added location badges with MapPin icons on each ticket card
+  - Enhanced CSS variables for better location color visibility (opacity 0.08 → 0.15 light, 0.06 → 0.12 dark)
+  - Added proper card borders and spacing for better visual separation
+  - Implemented collapsible province and location groups with ticket counts
+  - Added toggle for both province-based and location-based grouping
+  - Maintained all existing functionality (photos, comments, status updates)
+  - Result: Professional, scalable UI ready for 20+ locations with clear visual organization
+
 ## [1.21.65] - 2025-10-11
 
 ### Fixed

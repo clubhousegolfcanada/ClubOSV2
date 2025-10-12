@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import TicketCenterOptimizedV2 from '@/components/TicketCenterOptimizedV2';
+import TicketCenterOptimizedV3 from '@/components/TicketCenterOptimizedV3';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -44,7 +44,7 @@ export default function TicketCenter() {
           </div>
 
           {/* Main Content */}
-          <TicketCenterOptimizedV2 />
+          <TicketCenterOptimizedV3 />
         </div>
       </div>
     </>
