@@ -114,10 +114,10 @@ router.get('/conversations',
       const hasLastReadAt = existingColumns.includes('last_read_at');
       const hasUpdatedAt = existingColumns.includes('updated_at');
       
-      // Optimized query - simpler and faster without DISTINCT ON
-      // Get the most recent conversations, limited by pagination
+      // Use DISTINCT ON to get only the most recent conversation per phone number
+      // This prevents duplicate entries for customers with multiple conversation records
       let query = `
-        SELECT
+        SELECT DISTINCT ON (phone_number)
           id,
           phone_number,
           customer_name,
@@ -139,9 +139,18 @@ router.get('/conversations',
         params.push(`%${search}%`);
       }
 
-      // Simple ORDER BY with pagination - much faster
-      query += ` ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
-      query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      // DISTINCT ON requires ORDER BY to include the distinct column first
+      // Then order by updated_at/created_at to get the most recent conversation per phone
+      query += ` ORDER BY phone_number, ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
+
+      // Wrap in subquery to apply pagination and final ordering
+      query = `
+        SELECT * FROM (
+          ${query}
+        ) as unique_conversations
+        ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
       params.push(limit, offset);
       
       let result;
