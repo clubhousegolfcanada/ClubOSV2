@@ -89,7 +89,9 @@ export default function MessagesCardV3() {
       }
 
       const response = await http.get(`messages/conversations?limit=3`, {
-
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (response.data.success) {
@@ -166,7 +168,9 @@ export default function MessagesCardV3() {
           bay: conv.bay
         },
         {
-
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
       );
 
@@ -270,7 +274,9 @@ export default function MessagesCardV3() {
           conversationId: conv.id
         },
         {
-
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
       );
 

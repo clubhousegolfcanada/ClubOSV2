@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.65] - 2025-10-11
+
+### Fixed
+- **Messages Dashboard CORS Error**: Fixed 403/CORS errors in MessagesCardV3 component
+  - Added missing Authorization headers to all HTTP requests in MessagesCardV3
+  - Fixed fetchConversations, fetchAiSuggestion, and handleSend methods
+  - Prevents 401 errors that were triggering CORS policy blocks
+  - Result: Messages dashboard card now loads properly without authentication errors
+
 ## [1.21.64] - 2025-10-11
 
 ### Fixed
