@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.70] - 2025-10-12
+
+### Enhanced
+- **Streamlined Ticket Status Updates**: Integrated status updates directly into ticket detail modal
+  - Status can now be updated directly from dropdown in ticket details (next to priority)
+  - Removed redundant "Update Status" button section for cleaner UI
+  - Improved UX flow with instant status changes via inline selection
+  - Cleaner modal design with less clutter and integrated status selector
+  - Result: More intuitive ticket management with fewer clicks
+
 ## [1.21.69] - 2025-10-12
 
 ### Fixed

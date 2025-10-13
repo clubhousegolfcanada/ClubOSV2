@@ -903,10 +903,26 @@ const TicketDetailModal: React.FC<{
           {/* Metadata grid */}
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-              <span className="text-[var(--text-muted)] text-xs">Status</span>
-              <div className={`mt-1 px-2 py-1 rounded-md inline-block ${getStatusConfig(ticket.status).bg} ${getStatusConfig(ticket.status).text}`}>
-                {getStatusConfig(ticket.status).label}
-              </div>
+              <span className="text-[var(--text-muted)] text-xs block mb-1">Status</span>
+              <select
+                value={ticket.status}
+                onChange={(e) => onUpdateStatus(ticket.id, e.target.value as TicketStatus)}
+                className={`w-full px-2 py-1 rounded-md text-sm font-medium border-0 cursor-pointer transition-all
+                  ${getStatusConfig(ticket.status).bg} ${getStatusConfig(ticket.status).text}
+                  focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-1
+                `}
+                style={{ backgroundColor: 'transparent' }}
+              >
+                {(['open', 'in-progress', 'resolved', 'closed', 'archived'] as TicketStatus[]).map(status => (
+                  <option
+                    key={status}
+                    value={status}
+                    className="bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                  >
+                    {getStatusConfig(status).label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
               <span className="text-[var(--text-muted)] text-xs">Priority</span>
@@ -925,31 +941,6 @@ const TicketDetailModal: React.FC<{
                 <div className="mt-1">{ticket.location}</div>
               </div>
             )}
-          </div>
-
-          {/* Status Update Buttons */}
-          <div>
-            <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-2">
-              Update Status
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {(['open', 'in-progress', 'resolved', 'closed', 'archived'] as TicketStatus[]).map(status => (
-                <button
-                  key={status}
-                  onClick={() => onUpdateStatus(ticket.id, status)}
-                  disabled={ticket.status === status}
-                  className={`
-                    px-3 py-2 text-sm rounded-lg transition-all duration-200
-                    ${ticket.status === status
-                      ? 'bg-[var(--accent)] text-white shadow-sm'
-                      : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
-                    }
-                  `}
-                >
-                  {getStatusConfig(status).label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Photos */}

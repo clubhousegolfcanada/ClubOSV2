@@ -1,4 +1,4 @@
-# ClubOS v1.21.69 - Flexible Facility Management System
+# ClubOS v1.21.70 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.69**
-- **Fixed Ticket Photo Display** - Photos now properly display in tickets after case conversion fix
-- **Frontend Field Name Correction** - Changed photo_urls to photoUrls to match API response
-- **Consistent camelCase Convention** - Aligned ticket system with standard JavaScript naming
-- **No Backend Changes Required** - Simple frontend field name fix with no API impact
+**Current Version: v1.21.70**
+- **Streamlined Status Updates** - Status can now be updated directly from dropdown in ticket details
+- **Removed Redundant UI** - Eliminated separate status update buttons section
+- **Improved UX Flow** - Status changes are instant with inline selection
+- **Cleaner Modal Design** - Less clutter with integrated status selector
 
 ## 🏗️ System Architecture
 
