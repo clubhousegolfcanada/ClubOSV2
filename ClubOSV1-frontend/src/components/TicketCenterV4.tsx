@@ -11,6 +11,9 @@ import { http } from '@/api/http';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import toast from 'react-hot-toast';
+import { useIsMobile } from '@/hooks/useMediaQuery';
+import { BottomSheet } from './shared/BottomSheet';
+import { FloatingActionButton } from './shared/FloatingActionButton';
 
 type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed' | 'archived';
 type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -67,6 +70,7 @@ const TicketCenterV4 = () => {
   const router = useRouter();
   const { notify } = useNotifications();
   const { user } = useAuthState();
+  const isMobile = useIsMobile();
 
   // State management
   const [activeTab, setActiveTab] = useState<'active' | 'resolved' | 'archived'>('active');
@@ -403,13 +407,14 @@ const TicketCenterV4 = () => {
                   key={filter.id}
                   onClick={() => setQuickFilter(filter.id as any)}
                   className={`
-                    px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200
+                    px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 touch-manipulation
                     ${quickFilter === filter.id
                       ? 'bg-[var(--accent)] text-white shadow-sm'
                       : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
                     }
                     ${filter.icon ? 'flex items-center gap-1.5' : ''}
                   `}
+                  style={{ minHeight: '48px' }}
                 >
                   {filter.icon}
                   {filter.label}
@@ -421,23 +426,27 @@ const TicketCenterV4 = () => {
               <button
                 onClick={toggleGroupByLocation}
                 className={`
-                  p-1.5 rounded-lg transition-all duration-200
+                  p-3 rounded-lg transition-all duration-200 touch-manipulation
                   ${groupByLocation
                     ? 'bg-[var(--accent)] text-white shadow-sm'
                     : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                   }
                 `}
+                style={{ minWidth: '48px', minHeight: '48px' }}
                 title="Group by Location"
               >
                 <Layers className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => router.push('/?ticketMode=true')}
-                className="px-3 py-1.5 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-all duration-200 flex items-center gap-2 shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New Ticket</span>
-              </button>
+              {!isMobile && (
+                <button
+                  onClick={() => router.push('/?ticketMode=true')}
+                  className="px-4 py-3 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-all duration-200 flex items-center gap-2 shadow-sm touch-manipulation"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Ticket</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -488,7 +497,8 @@ const TicketCenterV4 = () => {
             <div className="relative">
               <button
                 onClick={() => setShowLocationFilter(!showLocationFilter)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-all duration-200 text-sm"
+                className="flex items-center gap-2 px-4 py-3 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-all duration-200 text-sm touch-manipulation"
+                style={{ minHeight: '48px' }}
               >
                 <MapPin className="w-4 h-4 text-[var(--text-muted)]" />
                 <span>{selectedLocation === 'all' ? 'All Locations' : selectedLocation}</span>
@@ -550,7 +560,7 @@ const TicketCenterV4 = () => {
             </div>
 
             {/* Category Filter - Pill style */}
-            <div className="flex gap-1 bg-[var(--bg-tertiary)] p-1 rounded-lg">
+            <div className="flex gap-2 flex-wrap">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'facilities', label: 'Facilities' },
@@ -560,12 +570,13 @@ const TicketCenterV4 = () => {
                   key={category.id}
                   onClick={() => setCategoryFilter(category.id as any)}
                   className={`
-                    px-3 py-1 rounded text-xs font-medium transition-all duration-200
+                    px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 touch-manipulation
                     ${categoryFilter === category.id
-                      ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[var(--accent)] text-white shadow-sm'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }
                   `}
+                  style={{ minHeight: '48px' }}
                 >
                   {category.label}
                 </button>
@@ -697,19 +708,49 @@ const TicketCenterV4 = () => {
 
       {/* Ticket Detail Modal - Polished */}
       {showTicketDetail && selectedTicket && (
-        <TicketDetailModal
-          ticket={selectedTicket}
-          onClose={() => {
-            setShowTicketDetail(false);
-            setSelectedTicket(null);
-            setNewComment('');
-          }}
-          onUpdateStatus={updateTicketStatus}
-          onAddComment={() => addComment(selectedTicket.id)}
-          newComment={newComment}
-          setNewComment={setNewComment}
-          priorityConfig={priorityConfig}
-          getStatusConfig={getStatusConfig}
+        isMobile ? (
+          <BottomSheet
+            isOpen={showTicketDetail}
+            onClose={() => {
+              setShowTicketDetail(false);
+              setSelectedTicket(null);
+              setNewComment('');
+            }}
+            title="Ticket Details"
+          >
+            <TicketDetailContent
+              ticket={selectedTicket}
+              onUpdateStatus={updateTicketStatus}
+              onAddComment={() => addComment(selectedTicket.id)}
+              newComment={newComment}
+              setNewComment={setNewComment}
+              priorityConfig={priorityConfig}
+              getStatusConfig={getStatusConfig}
+            />
+          </BottomSheet>
+        ) : (
+          <TicketDetailModal
+            ticket={selectedTicket}
+            onClose={() => {
+              setShowTicketDetail(false);
+              setSelectedTicket(null);
+              setNewComment('');
+            }}
+            onUpdateStatus={updateTicketStatus}
+            onAddComment={() => addComment(selectedTicket.id)}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            priorityConfig={priorityConfig}
+            getStatusConfig={getStatusConfig}
+          />
+        )
+      )}
+
+      {/* Floating Action Button for mobile */}
+      {isMobile && (
+        <FloatingActionButton
+          onClick={() => router.push('/?ticketMode=true')}
+          label="Create new ticket"
         />
       )}
     </div>
@@ -832,7 +873,8 @@ const TicketCard: React.FC<{
                   e.stopPropagation();
                   onResolve();
                 }}
-                className="p-1.5 text-green-500 hover:bg-green-500/10 rounded transition-colors"
+                className="p-3 text-green-500 hover:bg-green-500/10 rounded-lg transition-colors touch-manipulation"
+                style={{ minWidth: '48px', minHeight: '48px' }}
                 title="Resolve"
               >
                 <Check className="w-4 h-4" />
@@ -844,7 +886,8 @@ const TicketCard: React.FC<{
                   e.stopPropagation();
                   onArchive();
                 }}
-                className="p-1.5 text-gray-500 hover:bg-gray-500/10 rounded transition-colors"
+                className="p-3 text-gray-500 hover:bg-gray-500/10 rounded-lg transition-colors touch-manipulation"
+                style={{ minWidth: '48px', minHeight: '48px' }}
                 title="Archive"
               >
                 <Archive className="w-4 h-4" />
@@ -852,6 +895,136 @@ const TicketCard: React.FC<{
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Ticket Detail Content - Shared between mobile and desktop
+const TicketDetailContent: React.FC<{
+  ticket: Ticket;
+  onUpdateStatus: (id: string, status: TicketStatus) => void;
+  onAddComment: () => void;
+  newComment: string;
+  setNewComment: (comment: string) => void;
+  priorityConfig: any;
+  getStatusConfig: any;
+}> = ({ ticket, onUpdateStatus, onAddComment, newComment, setNewComment, priorityConfig, getStatusConfig }) => {
+  return (
+    <div className="p-4 space-y-4">
+      {/* Title and Description */}
+      <div>
+        <h3 className="font-medium text-lg mb-2 text-[var(--text-primary)]">{ticket.title}</h3>
+        <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
+          {ticket.description}
+        </p>
+      </div>
+
+      {/* Metadata grid */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+          <span className="text-[var(--text-muted)] text-xs block mb-1">Status</span>
+          <select
+            value={ticket.status}
+            onChange={(e) => onUpdateStatus(ticket.id, e.target.value as TicketStatus)}
+            className={`w-full px-2 py-1 rounded-md text-sm font-medium border-0 cursor-pointer transition-all
+              ${getStatusConfig(ticket.status).bg} ${getStatusConfig(ticket.status).text}
+              focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-1
+            `}
+            style={{ backgroundColor: 'transparent' }}
+          >
+            {(['open', 'in-progress', 'resolved', 'closed', 'archived'] as TicketStatus[]).map(status => (
+              <option
+                key={status}
+                value={status}
+                className="bg-[var(--bg-primary)] text-[var(--text-primary)]"
+              >
+                {getStatusConfig(status).label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+          <span className="text-[var(--text-muted)] text-xs">Priority</span>
+          <div className="mt-1 flex items-center gap-1">
+            {priorityConfig[ticket.priority].icon}
+            <span className="capitalize">{ticket.priority}</span>
+          </div>
+        </div>
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+          <span className="text-[var(--text-muted)] text-xs">Category</span>
+          <div className="mt-1 capitalize">{ticket.category}</div>
+        </div>
+        {ticket.location && (
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+            <span className="text-[var(--text-muted)] text-xs">Location</span>
+            <div className="mt-1">{ticket.location}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Photos */}
+      {ticket.photoUrls && ticket.photoUrls.length > 0 && (
+        <div>
+          <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
+            Photos ({ticket.photoUrls.length})
+          </h4>
+          <div className="grid grid-cols-3 gap-2">
+            {ticket.photoUrls.map((photo, index) => (
+              <img
+                key={index}
+                src={photo}
+                alt={`Photo ${index + 1}`}
+                className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => window.open(photo, '_blank')}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Comments */}
+      <div>
+        <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
+          Comments ({ticket.comments.length})
+        </h4>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {ticket.comments.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)] text-center py-4">No comments yet</p>
+          ) : (
+            ticket.comments.map(comment => (
+              <div key={comment.id} className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{comment.createdBy.name}</span>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)]">{comment.text}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add Comment */}
+      <div>
+        <textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment..."
+          className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-sm resize-none focus:outline-none focus:border-[var(--accent)] transition-colors touch-manipulation"
+          rows={3}
+          style={{ minHeight: '80px' }}
+        />
+        <button
+          onClick={onAddComment}
+          disabled={!newComment.trim()}
+          className="mt-2 px-4 py-3 bg-[var(--accent)] text-white rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-all duration-200 touch-manipulation"
+          style={{ minHeight: '48px' }}
+        >
+          Add Comment
+        </button>
       </div>
     </div>
   );
@@ -869,13 +1042,8 @@ const TicketDetailModal: React.FC<{
   getStatusConfig: any;
 }> = ({ ticket, onClose, onUpdateStatus, onAddComment, newComment, setNewComment, priorityConfig, getStatusConfig }) => {
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center animate-in fade-in duration-200">
-      <div className="bg-[var(--bg-primary)] w-full sm:max-w-2xl h-[90vh] sm:h-auto sm:max-h-[90vh] rounded-t-2xl sm:rounded-lg overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-300">
-        {/* Mobile swipe indicator */}
-        <div className="sm:hidden py-2">
-          <div className="w-12 h-1 bg-gray-400 rounded-full mx-auto" />
-        </div>
-
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-in fade-in duration-200">
+      <div className="bg-[var(--bg-primary)] w-full max-w-2xl max-h-[90vh] rounded-lg overflow-hidden flex flex-col animate-in fade-in-up duration-300">
         {/* Modal Header */}
         <div className="p-4 border-b border-[var(--border-primary)] flex items-center justify-between">
           <div>
@@ -884,126 +1052,24 @@ const TicketDetailModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+            className="p-3 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors touch-manipulation"
+            style={{ minWidth: '48px', minHeight: '48px' }}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Title and Description */}
-          <div>
-            <h3 className="font-medium text-lg mb-2 text-[var(--text-primary)]">{ticket.title}</h3>
-            <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
-              {ticket.description}
-            </p>
-          </div>
-
-          {/* Metadata grid */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-              <span className="text-[var(--text-muted)] text-xs block mb-1">Status</span>
-              <select
-                value={ticket.status}
-                onChange={(e) => onUpdateStatus(ticket.id, e.target.value as TicketStatus)}
-                className={`w-full px-2 py-1 rounded-md text-sm font-medium border-0 cursor-pointer transition-all
-                  ${getStatusConfig(ticket.status).bg} ${getStatusConfig(ticket.status).text}
-                  focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-1
-                `}
-                style={{ backgroundColor: 'transparent' }}
-              >
-                {(['open', 'in-progress', 'resolved', 'closed', 'archived'] as TicketStatus[]).map(status => (
-                  <option
-                    key={status}
-                    value={status}
-                    className="bg-[var(--bg-primary)] text-[var(--text-primary)]"
-                  >
-                    {getStatusConfig(status).label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-              <span className="text-[var(--text-muted)] text-xs">Priority</span>
-              <div className="mt-1 flex items-center gap-1">
-                {priorityConfig[ticket.priority].icon}
-                <span className="capitalize">{ticket.priority}</span>
-              </div>
-            </div>
-            <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-              <span className="text-[var(--text-muted)] text-xs">Category</span>
-              <div className="mt-1 capitalize">{ticket.category}</div>
-            </div>
-            {ticket.location && (
-              <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-                <span className="text-[var(--text-muted)] text-xs">Location</span>
-                <div className="mt-1">{ticket.location}</div>
-              </div>
-            )}
-          </div>
-
-          {/* Photos */}
-          {ticket.photoUrls && ticket.photoUrls.length > 0 && (
-            <div>
-              <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
-                Photos ({ticket.photoUrls.length})
-              </h4>
-              <div className="grid grid-cols-3 gap-2">
-                {ticket.photoUrls.map((photo, index) => (
-                  <img
-                    key={index}
-                    src={photo}
-                    alt={`Photo ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => window.open(photo, '_blank')}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Comments */}
-          <div>
-            <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
-              Comments ({ticket.comments.length})
-            </h4>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {ticket.comments.length === 0 ? (
-                <p className="text-sm text-[var(--text-muted)] text-center py-4">No comments yet</p>
-              ) : (
-                ticket.comments.map(comment => (
-                  <div key={comment.id} className="bg-[var(--bg-secondary)] rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-[var(--text-primary)]">{comment.createdBy.name}</span>
-                      <span className="text-xs text-[var(--text-muted)]">
-                        {new Date(comment.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-[var(--text-secondary)]">{comment.text}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Add Comment */}
-          <div>
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="w-full p-3 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg text-sm resize-none focus:outline-none focus:border-[var(--accent)] transition-colors"
-              rows={3}
-            />
-            <button
-              onClick={onAddComment}
-              disabled={!newComment.trim()}
-              className="mt-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-all duration-200"
-            >
-              Add Comment
-            </button>
-          </div>
+        <div className="flex-1 overflow-y-auto">
+          <TicketDetailContent
+            ticket={ticket}
+            onUpdateStatus={onUpdateStatus}
+            onAddComment={onAddComment}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            priorityConfig={priorityConfig}
+            getStatusConfig={getStatusConfig}
+          />
         </div>
       </div>
     </div>

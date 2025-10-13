@@ -2,6 +2,38 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.71] - 2025-10-12
+
+### Added
+- **Mobile-Optimized Ticket System**: Complete mobile overhaul for world-class experience
+  - Created BottomSheet component with swipe-to-dismiss gesture (70vh max height)
+  - Added FloatingActionButton component for quick ticket creation (56px touch target)
+  - Implemented useMediaQuery hook for responsive design detection
+  - Body scroll lock implementation for proper modal management
+  - Separated mobile/desktop modal rendering for optimal UX
+
+### Fixed
+- **Touch Target Compliance**: Fixed all interactive elements to meet 48px minimum
+  - Quick filter buttons increased from py-1.5 (28px) to py-3 (48px)
+  - Location filter button enlarged to 48px touch target
+  - Category filter buttons properly sized for mobile interaction
+  - Group by location toggle increased to 48px
+  - Ticket card quick actions (resolve/archive) now 48px targets
+  - Modal close button properly sized for mobile
+  - Comment submit button meets accessibility standards
+
+### Changed
+- **Mobile Modal Pattern**: Replaced 90vh modal with 70vh BottomSheet for mobile
+  - Desktop users continue to see traditional centered modal
+  - Mobile users get native bottom sheet with swipe gesture
+  - Shared TicketDetailContent component for consistency
+  - Floating Action Button replaces desktop "New Ticket" button on mobile
+
+### Technical
+- **Performance**: Reduced modal height from 90vh to 70vh for better performance
+- **Accessibility**: All touch targets now meet WCAG 2.1 AAA standards
+- **Code Organization**: Extracted shared components for maintainability
+
 ## [1.21.70] - 2025-10-12
 
 ### Enhanced
