@@ -106,7 +106,7 @@ const TicketCard: React.FC<TicketCardProps> = memo(({
               )}
 
               {/* Comments indicator */}
-              {ticket.comments.length > 0 && (
+              {ticket.comments && ticket.comments.length > 0 && (
                 <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[var(--text-muted)]">
                   <MessageSquare className="w-3 h-3" />
                   {ticket.comments.length > 9 ? '9+' : ticket.comments.length}
@@ -177,7 +177,7 @@ const TicketCard: React.FC<TicketCardProps> = memo(({
     prevProps.ticket.id === nextProps.ticket.id &&
     prevProps.ticket.status === nextProps.ticket.status &&
     prevProps.ticket.updatedAt === nextProps.ticket.updatedAt &&
-    prevProps.ticket.comments.length === nextProps.ticket.comments.length &&
+    (prevProps.ticket.comments?.length || 0) === (nextProps.ticket.comments?.length || 0) &&
     prevProps.isMobile === nextProps.isMobile
   );
 });

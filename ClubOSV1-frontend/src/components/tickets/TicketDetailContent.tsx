@@ -103,10 +103,10 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = memo(({
       {/* Comments */}
       <div>
         <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
-          Comments ({ticket.comments.length})
+          Comments ({ticket.comments?.length || 0})
         </h4>
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {ticket.comments.length === 0 ? (
+          {!ticket.comments || ticket.comments.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)] text-center py-4">No comments yet</p>
           ) : (
             ticket.comments.map(comment => (
