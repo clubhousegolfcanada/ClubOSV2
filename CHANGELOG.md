@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.77] - 2025-10-13
+
+### Fixed
+- **Ticket Center Iframe Issue**: Fixed cross-origin iframe warning preventing ticket center from loading
+  - Removed window.confirm() dialog in archiveTicket function that was triggering deprecated iframe behavior
+  - Archive action now happens immediately with toast notification instead of confirmation dialog
+  - This fixes the "Unable to load ticket center" error when page was embedded or accessed in certain contexts
+  - Result: Ticket center loads properly without cross-origin iframe warnings
+
 ## [1.21.76] - 2025-10-13
 
 ### Fixed
