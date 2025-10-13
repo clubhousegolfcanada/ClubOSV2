@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import TicketCenterV4 from '@/components/TicketCenterV4';
+import TicketCenterV4 from '@/components/tickets/TicketCenterV4';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
