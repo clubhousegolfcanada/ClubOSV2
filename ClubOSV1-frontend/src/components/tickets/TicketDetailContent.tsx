@@ -112,7 +112,7 @@ const TicketDetailContent: React.FC<TicketDetailContentProps> = memo(({
             ticket.comments.map(comment => (
               <div key={comment.id} className="bg-[var(--bg-secondary)] rounded-lg p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-[var(--text-primary)]">{comment.createdBy.name}</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{comment.createdBy?.name || 'Unknown User'}</span>
                   <span className="text-xs text-[var(--text-muted)]">
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>

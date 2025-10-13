@@ -92,10 +92,11 @@ const TicketCenterV4: React.FC = () => {
       });
 
       if (response.data.success) {
-        // Ensure all tickets have a comments array
+        // Ensure all tickets have required fields
         const normalizedTickets = response.data.data.map((t: any) => ({
           ...t,
-          comments: t.comments || []
+          comments: t.comments || [],
+          createdBy: t.createdBy || { id: '', name: 'Unknown', email: '' }
         }));
         setTickets(normalizedTickets);
       }
@@ -124,7 +125,7 @@ const TicketCenterV4: React.FC = () => {
     if (quickFilter === 'urgent') {
       filtered = filtered.filter(t => t.priority === 'urgent' || t.priority === 'high');
     } else if (quickFilter === 'my-tickets') {
-      filtered = filtered.filter(t => t.createdBy.id === user?.id || t.assignedTo?.id === user?.id);
+      filtered = filtered.filter(t => t.createdBy?.id === user?.id || t.assignedTo?.id === user?.id);
     } else if (quickFilter === 'unassigned') {
       filtered = filtered.filter(t => !t.assignedTo);
     }
@@ -310,10 +311,11 @@ const TicketCenterV4: React.FC = () => {
         }
       });
       if (response.data.success) {
-        // Ensure the ticket has a comments array
+        // Ensure the ticket has required fields
         setSelectedTicket({
           ...response.data.data,
-          comments: response.data.data.comments || []
+          comments: response.data.data.comments || [],
+          createdBy: response.data.data.createdBy || { id: '', name: 'Unknown', email: '' }
         });
       }
     } catch (error) {

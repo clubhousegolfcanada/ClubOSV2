@@ -14,7 +14,7 @@ export interface TicketUser {
 export interface Comment {
   id: string;
   text: string;
-  createdBy: TicketUser;
+  createdBy?: TicketUser;  // Made optional to handle missing data
   createdAt: string;
 }
 
@@ -27,7 +27,7 @@ export interface Ticket {
   priority: TicketPriority;
   location?: string;
   photoUrls?: string[];
-  createdBy: TicketUser;
+  createdBy?: TicketUser;  // Made optional to handle missing data
   assignedTo?: Omit<TicketUser, 'phone'>;
   createdAt: string;
   updatedAt: string;
