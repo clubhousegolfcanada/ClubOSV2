@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.68] - 2025-10-12
+
+### Fixed
+- **Ticket Center UI Contrast**: Resolved visual hierarchy issues with dark cards
+  - Fixed "dark cards within dark container" problem by removing duplicate backgrounds
+  - Removed background colors from individual ticket cards for proper contrast
+  - Eliminated location color overlays that were nearly invisible on dark backgrounds
+  - Updated ticket cards to use transparent base with hover:bg-hover pattern
+  - Fixed loading skeletons to match new visual hierarchy
+  - Aligned with dashboard component patterns (MessagesCardV3, TaskList)
+  - Improved hover states for better visual feedback
+  - Result: Clear visual separation, better readability, consistent with ClubOS design philosophy
+
 ## [1.21.67] - 2025-10-12
 
 ### Enhanced

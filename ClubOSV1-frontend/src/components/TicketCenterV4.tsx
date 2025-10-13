@@ -237,11 +237,6 @@ const TicketCenterV4 = () => {
     return 'normal';
   };
 
-  const getLocationColor = (location?: string) => {
-    if (!location) return '';
-    const locationKey = location.toLowerCase().replace(/\s+/g, '-');
-    return `var(--location-${locationKey})`;
-  };
 
   const toggleGroupByLocation = () => {
     const newValue = !groupByLocation;
@@ -586,7 +581,7 @@ const TicketCenterV4 = () => {
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse">
-                  <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+                  <div className="rounded-lg p-3 border border-[var(--border-secondary)]">
                     <div className="flex items-start gap-3">
                       <div className="flex-1">
                         <div className="h-4 bg-[var(--bg-tertiary)] rounded w-1/3 mb-2" />
@@ -621,7 +616,7 @@ const TicketCenterV4 = () => {
                 {groupByLocation && location !== 'all' && (
                   <button
                     onClick={() => toggleLocationExpansion(location)}
-                    className="w-full flex items-center justify-between px-3 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-all duration-200"
+                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-all duration-200"
                   >
                     <div className="flex items-center gap-2">
                       {expandedLocations.has(location) ? (
@@ -669,7 +664,6 @@ const TicketCenterV4 = () => {
                         getStatusConfig={getStatusConfig}
                         formatTimeAgo={formatTimeAgo}
                         getTimeUrgency={getTimeUrgency}
-                        getLocationColor={getLocationColor}
                       />
                     ))}
                   </div>
@@ -733,21 +727,18 @@ const TicketCard: React.FC<{
   getStatusConfig: any;
   formatTimeAgo: (date: string) => string;
   getTimeUrgency: (date: string) => string;
-  getLocationColor: (location?: string) => string;
 }> = ({
   ticket, onSelect, onResolve, onArchive, onPhotoClick,
-  priorityConfig, getStatusConfig, formatTimeAgo, getTimeUrgency, getLocationColor
+  priorityConfig, getStatusConfig, formatTimeAgo, getTimeUrgency
 }) => {
   const urgency = getTimeUrgency(ticket.createdAt);
-  const locationBg = getLocationColor(ticket.location);
   const statusConfig = getStatusConfig(ticket.status);
   const priority = priorityConfig[ticket.priority];
 
   return (
     <div
-      className="group bg-[var(--bg-secondary)] rounded-lg transition-all duration-200 hover:bg-[var(--bg-tertiary)] hover:shadow-md cursor-pointer border border-[var(--border-secondary)] hover:border-[var(--border-primary)] hover:translate-y-[-1px]"
+      className="group rounded-lg transition-all duration-200 hover:bg-[var(--bg-hover)] cursor-pointer border border-[var(--border-secondary)] hover:border-[var(--border-primary)]"
       style={{
-        backgroundColor: locationBg || undefined,
         borderLeft: `3px solid ${priority.color}`
       }}
       onClick={onSelect}

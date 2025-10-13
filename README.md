@@ -1,4 +1,4 @@
-# ClubOS v1.21.67 - Flexible Facility Management System
+# ClubOS v1.21.68 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,15 +8,15 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.67**
-- **Modernized Ticket System** - Complete UI overhaul with polished 2026 design aesthetic
-- **Smart Quick Filters** - All, Urgent, My Tickets, Unassigned for rapid access
-- **Enhanced Tab Design** - Smooth transitions with animated badge counts
-- **Compact Location Filter** - Dropdown with search replacing bulky grid
-- **Pill-Style Category Filters** - Modern, minimal button design
-- **Polished Ticket Cards** - Consistent styling with hover effects and micro-animations
-- **Loading Skeletons** - Professional shimmer effects replacing text-based loading
-- **Slide-in Modals** - Smooth animations for ticket detail views
+**Current Version: v1.21.68**
+- **Fixed Ticket Center Contrast** - Resolved dark cards within dark container issue
+- **Improved Visual Hierarchy** - Proper separation between container and content
+- **Removed Location Overlays** - Cleaner design with better readability
+- **Consistent Card Styling** - Matches dashboard components like MessagesCardV3 and TaskList
+- **Better Hover States** - Clear visual feedback using bg-hover variable
+- **Cleaner Loading States** - Skeleton loaders match new visual hierarchy
+- **Professional Polish** - Aligned with ClubOS design system philosophy
+- **Enhanced Dark Mode** - Proper contrast ratios for better visibility
 
 ## 🏗️ System Architecture
 
