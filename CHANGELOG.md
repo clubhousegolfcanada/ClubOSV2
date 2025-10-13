@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.69] - 2025-10-12
+
+### Fixed
+- **Ticket Photo Display Issue**: Fixed photos not displaying in ticket details
+  - Changed `photo_urls` to `photoUrls` in TicketCenterV4 component to match camelCase API response
+  - Updated RequestForm to send `photoUrls` field name when creating tickets
+  - Photos are properly stored in database but weren't displaying due to field name mismatch
+  - Frontend now correctly reads `photoUrls` after case conversion from backend
+  - No backend changes required - simple frontend field name correction
+  - Result: Photos attached to tickets now display properly in both list view and detail modal
+
 ## [1.21.68] - 2025-10-12
 
 ### Fixed

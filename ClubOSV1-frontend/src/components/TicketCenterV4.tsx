@@ -24,7 +24,7 @@ interface Ticket {
   status: TicketStatus;
   priority: TicketPriority;
   location?: string;
-  photo_urls?: string[];
+  photoUrls?: string[];
   createdBy: {
     id: string;
     name: string;
@@ -795,30 +795,30 @@ const TicketCard: React.FC<{
               )}
 
               {/* Photos */}
-              {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+              {ticket.photoUrls && ticket.photoUrls.length > 0 && (
                 <span className="flex items-center gap-1 text-[var(--text-muted)]">
                   <Camera className="w-3 h-3" />
-                  {ticket.photo_urls.length}
+                  {ticket.photoUrls.length}
                 </span>
               )}
             </div>
           </div>
 
           {/* Photo thumbnail */}
-          {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+          {ticket.photoUrls && ticket.photoUrls.length > 0 && (
             <div className="relative flex-shrink-0">
               <img
-                src={ticket.photo_urls[0]}
+                src={ticket.photoUrls[0]}
                 alt="Ticket photo"
                 className="w-12 h-12 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onPhotoClick(ticket.photo_urls![0]);
+                  onPhotoClick(ticket.photoUrls![0]);
                 }}
               />
-              {ticket.photo_urls.length > 1 && (
+              {ticket.photoUrls.length > 1 && (
                 <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[10px] px-1 rounded-full">
-                  +{ticket.photo_urls.length - 1}
+                  +{ticket.photoUrls.length - 1}
                 </span>
               )}
             </div>
@@ -953,13 +953,13 @@ const TicketDetailModal: React.FC<{
           </div>
 
           {/* Photos */}
-          {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+          {ticket.photoUrls && ticket.photoUrls.length > 0 && (
             <div>
               <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
-                Photos ({ticket.photo_urls.length})
+                Photos ({ticket.photoUrls.length})
               </h4>
               <div className="grid grid-cols-3 gap-2">
-                {ticket.photo_urls.map((photo, index) => (
+                {ticket.photoUrls.map((photo, index) => (
                   <img
                     key={index}
                     src={photo}
