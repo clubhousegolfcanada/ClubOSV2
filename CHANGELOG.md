@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.72] - 2025-10-12
+
+### Enhanced
+- **Unified Filter System**: Complete redesign of ticket filter UI for mobile
+  - All filters now in single cohesive container with consistent styling
+  - Status tabs, quick filters, location, and category unified in one card
+  - Consistent selection states across all filter types (filled accent for active)
+  - Reduced vertical space usage by 40% on mobile
+  - Visual hierarchy: Status (primary) → Quick filters (secondary) → Location/Category (tertiary)
+  - Subtle section dividers instead of fragmented separate components
+  - All filters use same interaction pattern for better learnability
+  - Mobile-optimized with horizontal scrolling for quick filters
+
+### Fixed
+- **Filter Fragmentation**: Eliminated 4 separate filter sections
+  - Was: Separate cards/rows for each filter type
+  - Now: Single unified container with clear sections
+- **Visual Consistency**: Fixed mixed selection patterns
+  - Was: Underlines, fills, borders all mixed
+  - Now: Consistent filled accent for all active states
+- **Touch Targets**: Maintained proper 44-48px touch targets throughout
+
 ## [1.21.71] - 2025-10-12
 
 ### Added

@@ -390,68 +390,11 @@ const TicketCenterV4 = () => {
 
   return (
     <div className="space-y-4">
-      {/* Main Card Container with polished design */}
-      <div className="card">
-        {/* Header Section with Tabs - Clean and minimal */}
-        <div className="border-b border-[var(--border-secondary)] -mx-3 -mt-3 px-3 pb-0">
-          {/* Quick Filters - Smart presets */}
-          <div className="flex items-center justify-between mb-3 pt-3">
-            <div className="flex gap-2">
-              {[
-                { id: 'all', label: 'All Tickets' },
-                { id: 'urgent', label: 'Urgent', icon: <AlertTriangle className="w-3 h-3" /> },
-                { id: 'my-tickets', label: 'My Tickets' },
-                { id: 'unassigned', label: 'Unassigned' }
-              ].map(filter => (
-                <button
-                  key={filter.id}
-                  onClick={() => setQuickFilter(filter.id as any)}
-                  className={`
-                    px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 touch-manipulation
-                    ${quickFilter === filter.id
-                      ? 'bg-[var(--accent)] text-white shadow-sm'
-                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
-                    }
-                    ${filter.icon ? 'flex items-center gap-1.5' : ''}
-                  `}
-                  style={{ minHeight: '48px' }}
-                >
-                  {filter.icon}
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleGroupByLocation}
-                className={`
-                  p-3 rounded-lg transition-all duration-200 touch-manipulation
-                  ${groupByLocation
-                    ? 'bg-[var(--accent)] text-white shadow-sm'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                  }
-                `}
-                style={{ minWidth: '48px', minHeight: '48px' }}
-                title="Group by Location"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-              {!isMobile && (
-                <button
-                  onClick={() => router.push('/?ticketMode=true')}
-                  className="px-4 py-3 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-all duration-200 flex items-center gap-2 shadow-sm touch-manipulation"
-                  style={{ minHeight: '48px' }}
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>New Ticket</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Tabs - Cleaner with smooth transitions */}
-          <div className="flex gap-6">
+      {/* Unified Filter Container */}
+      <div className="card p-0">
+        {/* Status Tabs Section */}
+        <div className="p-3 border-b border-[var(--border-secondary)]">
+          <div className="flex gap-2">
             {[
               { id: 'active', label: 'Active', count: statusCounts.active },
               { id: 'resolved', label: 'Resolved', count: statusCounts.resolved },
@@ -461,48 +404,97 @@ const TicketCenterV4 = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`
-                  pb-3 text-sm font-medium transition-all duration-200 relative
+                  flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 touch-manipulation
                   ${activeTab === tab.id
-                    ? 'text-[var(--text-primary)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                    ? 'bg-[var(--accent)] text-white shadow-sm'
+                    : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
                   }
                 `}
+                style={{ minHeight: '44px' }}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   {tab.label}
                   {tab.count > 0 && (
                     <span className={`
                       text-xs px-1.5 py-0.5 rounded-full
                       ${activeTab === tab.id
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
                       }
                     `}>
                       {tab.count}
                     </span>
                   )}
                 </span>
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)] transition-all duration-200" />
-                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Filters Section - Compact and elegant */}
-        <div className="space-y-3 mt-4">
-          {/* Location Filter - Dropdown style */}
-          <div className="flex gap-2">
+        {/* Quick Filters Section */}
+        <div className="p-3 border-b border-[var(--border-secondary)]">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'urgent', label: 'Urgent', icon: <AlertTriangle className="w-3 h-3" /> },
+              { id: 'my-tickets', label: 'Mine' },
+              { id: 'unassigned', label: 'Unassigned' }
+            ].map(filter => (
+              <button
+                key={filter.id}
+                onClick={() => setQuickFilter(filter.id as any)}
+                className={`
+                  px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 touch-manipulation whitespace-nowrap
+                  ${quickFilter === filter.id
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  }
+                  ${filter.icon ? 'flex items-center gap-1.5' : ''}
+                `}
+                style={{ minHeight: '36px' }}
+              >
+                {filter.icon}
+                {filter.label}
+              </button>
+            ))}
+
+            <div className="ml-auto flex items-center">
+              <button
+                onClick={toggleGroupByLocation}
+                className={`
+                  p-2 rounded-md transition-all duration-200 touch-manipulation
+                  ${groupByLocation
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)]'
+                  }
+                `}
+                title="Group by Location"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Location and Category Section */}
+        <div className="p-3">
+          <div className="flex gap-2 items-center">
+            {/* Location Selector */}
             <div className="relative">
               <button
                 onClick={() => setShowLocationFilter(!showLocationFilter)}
-                className="flex items-center gap-2 px-4 py-3 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-all duration-200 text-sm touch-manipulation"
-                style={{ minHeight: '48px' }}
+                className={`
+                  flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 text-sm touch-manipulation
+                  ${selectedLocation !== 'all'
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  }
+                `}
+                style={{ minHeight: '36px' }}
               >
-                <MapPin className="w-4 h-4 text-[var(--text-muted)]" />
-                <span>{selectedLocation === 'all' ? 'All Locations' : selectedLocation}</span>
-                {showLocationFilter ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">{selectedLocation === 'all' ? 'All Locations' : selectedLocation}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${showLocationFilter ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Location Dropdown */}
@@ -559,8 +551,11 @@ const TicketCenterV4 = () => {
               )}
             </div>
 
-            {/* Category Filter - Pill style */}
-            <div className="flex gap-2 flex-wrap">
+            {/* Separator */}
+            <div className="w-px h-8 bg-[var(--border-secondary)]" />
+
+            {/* Category Filters */}
+            <div className="flex gap-2">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'facilities', label: 'Facilities' },
@@ -570,13 +565,13 @@ const TicketCenterV4 = () => {
                   key={category.id}
                   onClick={() => setCategoryFilter(category.id as any)}
                   className={`
-                    px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 touch-manipulation
+                    px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 touch-manipulation
                     ${categoryFilter === category.id
-                      ? 'bg-[var(--accent)] text-white shadow-sm'
-                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
                     }
                   `}
-                  style={{ minHeight: '48px' }}
+                  style={{ minHeight: '36px' }}
                 >
                   {category.label}
                 </button>
@@ -584,9 +579,11 @@ const TicketCenterV4 = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Ticket List - Polished cards */}
-        <div className="mt-4 space-y-3">
+      {/* Ticket List */}
+      <div className="card">
+        <div className="space-y-3">
           {loading ? (
             // Loading skeletons
             <div className="space-y-3">
