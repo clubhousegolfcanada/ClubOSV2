@@ -190,19 +190,19 @@ const TicketCenterOptimizedV3 = () => {
   }, [tickets]);
 
   const priorityColors = {
-    urgent: 'bg-red-500',
-    high: 'bg-orange-500',
-    medium: 'bg-yellow-500',
-    low: 'bg-green-500'
+    urgent: 'var(--status-error)',
+    high: '#f97316', // Orange for high priority
+    medium: 'var(--status-warning)',
+    low: 'var(--status-success)'
   };
 
   const getStatusColor = (status: TicketStatus) => {
     switch (status) {
-      case 'open': return 'text-yellow-600 bg-yellow-500/10';
-      case 'in-progress': return 'text-blue-600 bg-blue-500/10';
-      case 'resolved': return 'text-green-600 bg-green-500/10';
-      case 'closed': return 'text-gray-600 bg-gray-500/10';
-      case 'archived': return 'text-gray-500 bg-gray-500/10';
+      case 'open': return 'text-[var(--status-warning)] bg-[var(--status-warning)]/10';
+      case 'in-progress': return 'text-[var(--status-info)] bg-[var(--status-info)]/10';
+      case 'resolved': return 'text-[var(--status-success)] bg-[var(--status-success)]/10';
+      case 'closed': return 'text-[var(--text-secondary)] bg-[var(--text-secondary)]/10';
+      case 'archived': return 'text-[var(--text-muted)] bg-[var(--text-muted)]/10';
     }
   };
 
@@ -649,7 +649,7 @@ const TicketCenterOptimizedV3 = () => {
         </div>
 
         {/* Ticket List */}
-        <div className="space-y-3">
+        <div className="space-y-1">
           {loading ? (
             // Loading skeleton
             <div className="space-y-3">
@@ -711,7 +711,7 @@ const TicketCenterOptimizedV3 = () => {
                                 {tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'}
                               </span>
                               {urgentByLocation[location] > 0 && (
-                                <span className="text-xs bg-red-500/20 text-red-600 px-2 py-0.5 rounded-full animate-pulse">
+                                <span className="text-xs bg-[var(--status-error)]/20 text-[var(--status-error)] px-2 py-0.5 rounded-full animate-pulse">
                                   {urgentByLocation[location]} urgent
                                 </span>
                               )}
@@ -719,7 +719,7 @@ const TicketCenterOptimizedV3 = () => {
                           </button>
 
                           {expandedLocations.has(location) && (
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               {tickets.map(ticket => (
                                 <TicketCard
                                   key={ticket.id}
@@ -776,7 +776,7 @@ const TicketCenterOptimizedV3 = () => {
                           {locationTickets.length} {locationTickets.length === 1 ? 'ticket' : 'tickets'}
                         </span>
                         {urgentByLocation[location] > 0 && (
-                          <span className="text-xs bg-red-500/20 text-red-600 px-2 py-0.5 rounded-full animate-pulse">
+                          <span className="text-xs bg-[var(--status-error)]/20 text-[var(--status-error)] px-2 py-0.5 rounded-full animate-pulse">
                             {urgentByLocation[location]} urgent
                           </span>
                         )}
@@ -786,7 +786,7 @@ const TicketCenterOptimizedV3 = () => {
 
                   {/* Ticket cards */}
                   {(!groupByLocation || location === 'all' || expandedLocations.has(location)) && (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {(locationTickets as Ticket[]).map(ticket => (
                         <TicketCard
                           key={ticket.id}
@@ -864,7 +864,7 @@ const TicketCenterOptimizedV3 = () => {
   );
 };
 
-// Ticket Card Component
+// Ticket Card Component - Compact 2-line layout
 const TicketCard: React.FC<{
   ticket: Ticket;
   onSelect: () => void;
@@ -877,97 +877,87 @@ const TicketCard: React.FC<{
 
   return (
     <div
-      className="p-3 bg-[var(--bg-primary)] rounded-lg transition-all group cursor-pointer hover:bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] hover:shadow-md"
+      className="p-2 bg-[var(--bg-primary)] rounded-lg transition-all group cursor-pointer hover:bg-[var(--bg-hover)] border border-[var(--border-secondary)] hover:shadow-md"
       style={{
-        backgroundColor: locationBg,
-        borderLeft: `3px solid ${priorityColors[ticket.priority]}`
+        backgroundColor: locationBg ? `color-mix(in srgb, ${locationBg} 5%, transparent)` : undefined,
+        borderLeft: `2px solid ${priorityColors[ticket.priority]}`
       }}
       onClick={onSelect}
     >
-      <div className="flex items-start gap-3">
-        {/* Content */}
+      {/* Compact 2-line layout */}
+      <div className="flex items-center gap-2">
+        {/* Main content area */}
         <div className="flex-1 min-w-0">
-          {/* Location Badge */}
-          {ticket.location && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-[var(--accent-light)] text-[var(--accent)] rounded mb-2">
-              <MapPin className="w-3 h-3" />
-              {ticket.location}
-            </span>
-          )}
+          {/* Line 1: Title, Status, Time, Actions */}
+          <div className="flex items-center gap-2 mb-1">
+            {/* Priority indicator (small colored dot) */}
+            <div
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: priorityColors[ticket.priority] }}
+            />
 
-          <h4 className="font-medium text-base text-[var(--text-primary)] mb-1">
-            {ticket.title}
-          </h4>
+            {/* Title - truncated */}
+            <h4 className="flex-1 font-medium text-sm text-[var(--text-primary)] truncate">
+              {ticket.title}
+            </h4>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
-            <span className={`px-2 py-0.5 rounded-full ${getStatusColor(ticket.status)}`}>
-              {ticket.status.replace('-', ' ')}
+            {/* Status badge - compact */}
+            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${getStatusColor(ticket.status)}`}>
+              {ticket.status === 'in-progress' ? 'In Prog' : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
             </span>
-            <span className="font-medium">{ticket.category}</span>
-            <span>•</span>
-            {/* Time with urgency indicator */}
-            <span className={`flex items-center gap-1 ${
-              urgency === 'critical' ? 'text-red-500 font-semibold animate-pulse bg-red-500/10 px-2 py-0.5 rounded' :
-              urgency === 'high' ? 'text-orange-500 font-semibold' :
-              urgency === 'medium' ? 'text-yellow-500 font-semibold' :
-              ''
+
+            {/* Time with urgency coloring */}
+            <span className={`text-xs flex-shrink-0 ${
+              urgency === 'critical' ? 'text-[var(--status-error)] font-semibold' :
+              urgency === 'high' ? 'text-[var(--status-warning)]' :
+              urgency === 'medium' ? 'text-[var(--text-secondary)]' :
+              'text-[var(--text-muted)]'
             }`}>
-              {urgency !== 'normal' && <Clock className="w-3 h-3" />}
               {formatTimeAgo(ticket.createdAt)}
             </span>
+          </div>
+
+          {/* Line 2: Location, Category, and metadata */}
+          <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
+            {ticket.location && (
+              <>
+                <MapPin className="w-3 h-3" />
+                <span className="font-medium">{ticket.location}</span>
+                <span>•</span>
+              </>
+            )}
+            <span className="capitalize">{ticket.category}</span>
+            <span>•</span>
+            <span>{ticket.createdBy.name.split(' ')[0]}</span>
             {ticket.comments.length > 0 && (
               <>
                 <span>•</span>
-                <span className="flex items-center gap-1">
-                  <MessageSquare className="w-3 h-3" />
-                  {ticket.comments.length}
-                </span>
+                <MessageSquare className="w-3 h-3" />
+                <span>{ticket.comments.length}</span>
               </>
             )}
             {ticket.photo_urls && ticket.photo_urls.length > 0 && (
               <>
                 <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Camera className="w-3 h-3" />
-                  {ticket.photo_urls.length}
-                </span>
+                <Camera className="w-3 h-3" />
+                <span>{ticket.photo_urls.length}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Photo thumbnail */}
-        {ticket.photo_urls && ticket.photo_urls.length > 0 && (
-          <div className="relative flex-shrink-0">
-            <img
-              src={ticket.photo_urls[0]}
-              alt="Ticket photo"
-              className="w-12 h-12 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPhotoClick(ticket.photo_urls![0]);
-              }}
-            />
-            {ticket.photo_urls.length > 1 && (
-              <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[10px] px-1 rounded-full">
-                +{ticket.photo_urls.length - 1}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Quick actions - always visible */}
-        <div className="flex gap-1 flex-shrink-0">
+        {/* Quick actions - compact */}
+        <div className="flex gap-0.5 flex-shrink-0">
           {(ticket.status === 'open' || ticket.status === 'in-progress') && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onResolve();
               }}
-              className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition-colors"
+              className="p-1.5 text-[var(--status-success)] hover:bg-[var(--bg-hover)] rounded transition-colors"
               title="Resolve"
             >
-              <Check className="w-4 h-4" />
+              <Check className="w-3.5 h-3.5" />
             </button>
           )}
           {ticket.status !== 'archived' && (
@@ -976,10 +966,10 @@ const TicketCard: React.FC<{
                 e.stopPropagation();
                 onArchive();
               }}
-              className="p-2 text-gray-500 hover:bg-gray-500/10 rounded-lg transition-colors"
+              className="p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] rounded transition-colors"
               title="Archive"
             >
-              <Archive className="w-4 h-4" />
+              <Archive className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -991,18 +981,18 @@ const TicketCard: React.FC<{
 // Helper functions
 const priorityColors = {
   urgent: 'var(--status-error)',
-  high: '#f97316',
-  medium: '#eab308',
+  high: '#f97316', // Orange for high priority
+  medium: 'var(--status-warning)',
   low: 'var(--status-success)'
 };
 
 const getStatusColor = (status: TicketStatus) => {
   switch (status) {
-    case 'open': return 'text-yellow-600 bg-yellow-500/10';
-    case 'in-progress': return 'text-blue-600 bg-blue-500/10';
-    case 'resolved': return 'text-green-600 bg-green-500/10';
-    case 'closed': return 'text-gray-600 bg-gray-500/10';
-    case 'archived': return 'text-gray-500 bg-gray-500/10';
+    case 'open': return 'text-[var(--status-warning)] bg-[var(--status-warning)]/10';
+    case 'in-progress': return 'text-[var(--status-info)] bg-[var(--status-info)]/10';
+    case 'resolved': return 'text-[var(--status-success)] bg-[var(--status-success)]/10';
+    case 'closed': return 'text-[var(--text-secondary)] bg-[var(--text-secondary)]/10';
+    case 'archived': return 'text-[var(--text-muted)] bg-[var(--text-muted)]/10';
   }
 };
 

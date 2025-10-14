@@ -137,25 +137,25 @@
 
 /* Muted location color variables for ticket visual identification */
 :root {
-  /* Location-based colors - subtle, professional muted tones with better visibility */
-  --location-bedford: rgba(110, 110, 130, 0.15);    /* muted slate */
-  --location-dartmouth: rgba(100, 120, 100, 0.15);  /* muted sage */
-  --location-bayers-lake: rgba(120, 110, 130, 0.15); /* muted lavender */
-  --location-stratford: rgba(130, 115, 100, 0.15);  /* muted sand */
-  --location-truro: rgba(110, 120, 125, 0.15);      /* muted steel */
-  --location-halifax: rgba(100, 120, 120, 0.15);    /* muted teal */
-  --location-river-oaks: rgba(115, 105, 120, 0.15); /* muted plum */
+  /* Location-based colors - very subtle, professional muted tones */
+  --location-bedford: rgba(110, 110, 130, 0.05);    /* muted slate */
+  --location-dartmouth: rgba(100, 120, 100, 0.05);  /* muted sage */
+  --location-bayers-lake: rgba(120, 110, 130, 0.05); /* muted lavender */
+  --location-stratford: rgba(130, 115, 100, 0.05);  /* muted sand */
+  --location-truro: rgba(110, 120, 125, 0.05);      /* muted steel */
+  --location-halifax: rgba(100, 120, 120, 0.05);    /* muted teal */
+  --location-river-oaks: rgba(115, 105, 120, 0.05); /* muted plum */
 }
 
-/* Dark mode location colors - slightly adjusted for dark backgrounds */
+/* Dark mode location colors - very subtle for dark backgrounds */
 :root[data-theme="dark"] {
-  --location-bedford: rgba(110, 110, 130, 0.12);
-  --location-dartmouth: rgba(100, 120, 100, 0.12);
-  --location-bayers-lake: rgba(120, 110, 130, 0.12);
-  --location-stratford: rgba(130, 115, 100, 0.12);
-  --location-truro: rgba(110, 120, 125, 0.12);
-  --location-halifax: rgba(100, 120, 120, 0.12);
-  --location-river-oaks: rgba(115, 105, 120, 0.12);
+  --location-bedford: rgba(110, 110, 130, 0.03);
+  --location-dartmouth: rgba(100, 120, 100, 0.03);
+  --location-bayers-lake: rgba(120, 110, 130, 0.03);
+  --location-stratford: rgba(130, 115, 100, 0.03);
+  --location-truro: rgba(110, 120, 125, 0.03);
+  --location-halifax: rgba(100, 120, 120, 0.03);
+  --location-river-oaks: rgba(115, 105, 120, 0.03);
 }
 
 /* Prevent horizontal scroll on mobile */
