@@ -9,18 +9,13 @@ export function transformUser(dbUser: DbUser): any {
 
 // Transform database ticket to API ticket format
 export function transformTicket(dbTicket: DbTicket): any {
-  const transformed = dbToApi(dbTicket, {
+  return dbToApi(dbTicket, {
     ...COMMON_DB_TO_API_OPTIONS,
     nestedFields: {
       'created_by': ['id', 'name', 'email', 'phone'],
       'assigned_to': ['id', 'name', 'email']
     }
   });
-
-  // Ensure comments is always an array
-  transformed.comments = transformed.comments || [];
-
-  return transformed;
 }
 
 // Transform database feedback to API feedback format

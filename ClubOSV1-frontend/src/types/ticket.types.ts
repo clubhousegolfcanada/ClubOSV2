@@ -32,7 +32,7 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
-  comments?: Comment[];  // Made optional to match actual API behavior
+  comments: Comment[];
 }
 
 export interface PriorityConfig {

@@ -2,16 +2,6 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.21.75] - 2025-10-13
-
-### Fixed
-- **Ticket System Comments Crash**: Fixed critical error where tickets without comments array caused page crashes
-  - Added safe checks in TicketCard for optional comments array
-  - Normalized ticket data in TicketCenterV4 to ensure comments always exists
-  - Updated backend transformer to guarantee comments array in API responses
-  - Fixed TypeScript types to reflect comments as optional field
-  - Result: Ticket page now loads reliably without "Cannot read property 'length' of undefined" errors
-
 ## [1.21.74] - 2025-10-13
 
 ### Fixed

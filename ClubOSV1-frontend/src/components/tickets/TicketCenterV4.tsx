@@ -92,12 +92,7 @@ const TicketCenterV4: React.FC = () => {
       });
 
       if (response.data.success) {
-        // Ensure all tickets have a comments array
-        const normalizedTickets = response.data.data.map((t: any) => ({
-          ...t,
-          comments: t.comments || []
-        }));
-        setTickets(normalizedTickets);
+        setTickets(response.data.data);
       }
     } catch (error) {
       logger.error('Failed to load tickets:', error);
@@ -310,11 +305,7 @@ const TicketCenterV4: React.FC = () => {
         }
       });
       if (response.data.success) {
-        // Ensure the ticket has a comments array
-        setSelectedTicket({
-          ...response.data.data,
-          comments: response.data.data.comments || []
-        });
+        setSelectedTicket(response.data.data);
       }
     } catch (error) {
       logger.error('Failed to load ticket details:', error);
