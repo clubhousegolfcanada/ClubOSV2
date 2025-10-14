@@ -754,7 +754,7 @@ const TicketCenterV4 = () => {
   );
 };
 
-// Ticket Card Component - Compact two-line professional design
+// Ticket Card Component - Polished design
 const TicketCard: React.FC<{
   ticket: Ticket;
   onSelect: () => void;
@@ -772,21 +772,6 @@ const TicketCard: React.FC<{
   const urgency = getTimeUrgency(ticket.createdAt);
   const statusConfig = getStatusConfig(ticket.status);
   const priority = priorityConfig[ticket.priority];
-  const isMobile = useIsMobile();
-
-  // Get abbreviated location for mobile if needed
-  const getLocationDisplay = (location: string) => {
-    if (!location) return null;
-    // On mobile, abbreviate long location names
-    if (isMobile && location.length > 8) {
-      // Special cases for known locations
-      if (location === 'Bayers Lake') return 'BL';
-      if (location === 'River Oaks') return 'RO';
-      // Default: first 3 letters
-      return location.substring(0, 3).toUpperCase();
-    }
-    return location;
-  };
 
   return (
     <div
@@ -796,74 +781,60 @@ const TicketCard: React.FC<{
       }}
       onClick={onSelect}
     >
-      <div className="p-2 md:p-2.5">
-        {/* Two-line grid layout */}
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          {/* Left side: Title and metadata */}
-          <div className="min-w-0">
-            {/* Line 1: Location + Title + Time */}
-            <div className="flex items-center gap-2 mb-1.5">
-              {/* Location badge - compact */}
-              {ticket.location && (
-                <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded">
-                  <MapPin className="w-2.5 h-2.5" />
-                  {getLocationDisplay(ticket.location)}
-                </span>
-              )}
+      <div className="p-3">
+        <div className="flex items-start gap-3">
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Location Badge */}
+            {ticket.location && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-[var(--accent-light)] text-[var(--accent)] rounded mb-2">
+                <MapPin className="w-3 h-3" />
+                {ticket.location}
+              </span>
+            )}
 
-              {/* Title - single line with ellipsis */}
-              <h4 className="flex-1 font-medium text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">
-                {ticket.title}
-              </h4>
+            <h4 className="font-medium text-sm text-[var(--text-primary)] mb-1 group-hover:text-[var(--accent)] transition-colors">
+              {ticket.title}
+            </h4>
 
-              {/* Time - always visible, color indicates urgency */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {/* Status */}
+              <span className={`px-2 py-0.5 rounded-full ${statusConfig.bg} ${statusConfig.text} font-medium`}>
+                {statusConfig.label}
+              </span>
+
+              {/* Priority */}
+              <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${priority.bg} ${priority.text}`}>
+                {priority.icon}
+                {ticket.priority}
+              </span>
+
+              {/* Category */}
+              <span className="text-[var(--text-muted)] capitalize">{ticket.category}</span>
+
+              {/* Time */}
               <span className={`
-                flex-shrink-0 text-xs
-                ${urgency === 'critical' ? 'text-red-500 font-semibold' :
+                flex items-center gap-1
+                ${urgency === 'critical' ? 'text-red-500 font-semibold animate-pulse' :
                   urgency === 'high' ? 'text-orange-500' :
                   urgency === 'medium' ? 'text-yellow-500' :
                   'text-[var(--text-muted)]'}
               `}>
+                <Clock className="w-3 h-3" />
                 {formatTimeAgo(ticket.createdAt)}
               </span>
-            </div>
 
-            {/* Line 2: Status + Category + Metadata */}
-            <div className="flex items-center gap-1.5 text-xs">
-              {/* Status - compact pill */}
-              <span className={`px-1.5 py-0.5 rounded-full ${statusConfig.bg} ${statusConfig.text} font-medium`}>
-                {statusConfig.label}
-              </span>
-
-              {/* Priority - icon only on desktop, with text on mobile */}
-              <span className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${priority.bg} ${priority.text}`}>
-                {priority.icon}
-                <span className={isMobile ? '' : 'hidden md:inline'}>{ticket.priority}</span>
-              </span>
-
-              {/* Category - compact */}
-              <span className="px-1.5 py-0.5 text-[var(--text-muted)] capitalize">
-                {ticket.category}
-              </span>
-
-              {/* Assigned to - if exists */}
-              {ticket.assignedTo && (
-                <span className="px-1.5 py-0.5 text-[var(--text-muted)]">
-                  @{ticket.assignedTo.name.split(' ')[0]}
-                </span>
-              )}
-
-              {/* Comments indicator */}
+              {/* Comments */}
               {ticket.comments.length > 0 && (
-                <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[var(--text-muted)]">
+                <span className="flex items-center gap-1 text-[var(--text-muted)]">
                   <MessageSquare className="w-3 h-3" />
-                  {ticket.comments.length > 9 ? '9+' : ticket.comments.length}
+                  {ticket.comments.length}
                 </span>
               )}
 
-              {/* Photos indicator */}
+              {/* Photos */}
               {ticket.photoUrls && ticket.photoUrls.length > 0 && (
-                <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[var(--text-muted)]">
+                <span className="flex items-center gap-1 text-[var(--text-muted)]">
                   <Camera className="w-3 h-3" />
                   {ticket.photoUrls.length}
                 </span>
@@ -871,57 +842,54 @@ const TicketCard: React.FC<{
             </div>
           </div>
 
-          {/* Right side: Photo thumbnail and actions */}
-          <div className="flex items-center gap-1">
-            {/* Photo thumbnail - smaller */}
-            {ticket.photoUrls && ticket.photoUrls.length > 0 && (
-              <div className="relative flex-shrink-0">
-                <img
-                  src={ticket.photoUrls[0]}
-                  alt="Ticket photo"
-                  className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPhotoClick(ticket.photoUrls![0]);
-                  }}
-                />
-                {ticket.photoUrls.length > 1 && (
-                  <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[9px] px-0.5 rounded-full leading-none">
-                    +{ticket.photoUrls.length - 1}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Quick actions - more compact, visible on mobile */}
-            <div className={`flex gap-0.5 flex-shrink-0 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-              {(ticket.status === 'open' || ticket.status === 'in-progress') && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onResolve();
-                  }}
-                  className="p-2 text-green-500 hover:bg-green-500/10 rounded transition-colors touch-manipulation"
-                  style={{ minWidth: '36px', minHeight: '36px' }}
-                  title="Resolve"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {ticket.status !== 'archived' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onArchive();
-                  }}
-                  className="p-2 text-gray-500 hover:bg-gray-500/10 rounded transition-colors touch-manipulation"
-                  style={{ minWidth: '36px', minHeight: '36px' }}
-                  title="Archive"
-                >
-                  <Archive className="w-3.5 h-3.5" />
-                </button>
+          {/* Photo thumbnail */}
+          {ticket.photoUrls && ticket.photoUrls.length > 0 && (
+            <div className="relative flex-shrink-0">
+              <img
+                src={ticket.photoUrls[0]}
+                alt="Ticket photo"
+                className="w-12 h-12 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPhotoClick(ticket.photoUrls![0]);
+                }}
+              />
+              {ticket.photoUrls.length > 1 && (
+                <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[10px] px-1 rounded-full">
+                  +{ticket.photoUrls.length - 1}
+                </span>
               )}
             </div>
+          )}
+
+          {/* Quick actions */}
+          <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {(ticket.status === 'open' || ticket.status === 'in-progress') && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResolve();
+                }}
+                className="p-3 text-green-500 hover:bg-green-500/10 rounded-lg transition-colors touch-manipulation"
+                style={{ minWidth: '48px', minHeight: '48px' }}
+                title="Resolve"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            )}
+            {ticket.status !== 'archived' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive();
+                }}
+                className="p-3 text-gray-500 hover:bg-gray-500/10 rounded-lg transition-colors touch-manipulation"
+                style={{ minWidth: '48px', minHeight: '48px' }}
+                title="Archive"
+              >
+                <Archive className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>

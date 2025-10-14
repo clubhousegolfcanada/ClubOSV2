@@ -2,20 +2,6 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.21.73] - 2025-10-13
-
-### Enhanced
-- **Compact Ticket Cards**: Professional two-line layout for 50% height reduction
-  - Line 1: Priority strip, location badge, title, and time indicator
-  - Line 2: Status, category, assignee, comments, and photo counts
-  - Title now truncates with ellipsis for long text (full text on hover)
-  - Location abbreviates to 3 letters on mobile for space efficiency
-  - Time indicator uses color urgency (red=critical, orange=high, yellow=medium)
-  - Photo thumbnails reduced to 40x40px for cleaner layout
-  - Action buttons reduced to 36x36px but maintain touch accessibility
-  - Maintains ClubOS design philosophy with minimal, professional aesthetic
-  - Result: See 2x more tickets on screen with better information density
-
 ## [1.21.72] - 2025-10-12
 
 ### Enhanced
