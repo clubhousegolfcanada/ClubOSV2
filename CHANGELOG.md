@@ -2,17 +2,6 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.21.76] - 2025-10-13
-
-### Fixed
-- **Ticket System Additional Crash Fix**: Fixed crash caused by missing createdBy field on tickets
-  - Added safe navigation operator for createdBy access in filters
-  - Normalized ticket data to ensure createdBy always exists with default values
-  - Made createdBy and comment.createdBy optional in TypeScript types
-  - Fixed "My Tickets" filter that was crashing when createdBy was undefined
-  - Added fallback "Unknown User" display for missing user data
-  - Result: Ticket page now handles incomplete data gracefully without crashes
-
 ## [1.21.75] - 2025-10-13
 
 ### Fixed
