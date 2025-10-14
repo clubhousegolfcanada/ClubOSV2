@@ -672,7 +672,6 @@ const TicketCenterV4 = () => {
                         getStatusConfig={getStatusConfig}
                         formatTimeAgo={formatTimeAgo}
                         getTimeUrgency={getTimeUrgency}
-                        isMobile={isMobile}
                       />
                     ))}
                   </div>
@@ -766,14 +765,14 @@ const TicketCard: React.FC<{
   getStatusConfig: any;
   formatTimeAgo: (date: string) => string;
   getTimeUrgency: (date: string) => string;
-  isMobile: boolean;
 }> = ({
   ticket, onSelect, onResolve, onArchive, onPhotoClick,
-  priorityConfig, getStatusConfig, formatTimeAgo, getTimeUrgency, isMobile
+  priorityConfig, getStatusConfig, formatTimeAgo, getTimeUrgency
 }) => {
   const urgency = getTimeUrgency(ticket.createdAt);
   const statusConfig = getStatusConfig(ticket.status);
   const priority = priorityConfig[ticket.priority];
+  const isMobile = useIsMobile();
 
   // Get abbreviated location for mobile if needed
   const getLocationDisplay = (location: string) => {
