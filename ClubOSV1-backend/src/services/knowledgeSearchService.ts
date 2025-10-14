@@ -558,79 +558,90 @@ export class KnowledgeSearchService {
   formatResultsForResponse(results: SearchResult[]): string {
     if (results.length === 0) return '';
 
-    // Lower confidence threshold to 0.5 to include more SOP knowledge
-    const usableResults = results.filter(r => r.confidence >= 0.5);
+    // Use confidence AND relevance for filtering, not just confidence
+    const usableResults = results.filter(r => {
+      const combinedScore = r.confidence * r.relevance;
+      return combinedScore >= 0.4; // Lower threshold to 0.4 to include more results
+    });
+
     if (usableResults.length === 0) {
-      // If no high confidence results, use top result if it exists
-      if (results[0] && results[0].confidence >= 0.3) {
+      // If no high scoring results, use top result if it exists
+      if (results[0]) {
         usableResults.push(results[0]);
       } else {
         return '';
       }
     }
 
-    // Deduplicate and clean up results
+    // Sort by combined score (confidence * relevance) to get BEST result first
+    usableResults.sort((a, b) => {
+      const scoreA = a.confidence * a.relevance;
+      const scoreB = b.confidence * b.relevance;
+      return scoreB - scoreA;
+    });
+
+    // Extract content with better logic
+    const uniqueResults: Array<{content: string, score: number}> = [];
     const seenContent = new Set<string>();
-    const uniqueResults: string[] = [];
-    
+
     for (const result of usableResults.slice(0, 5)) {
-      let content = result.value.content || result.value.answer || result.value.title || result.value;
-      
+      let content = '';
+
+      // Extract content properly from various possible structures
+      if (typeof result.value === 'object' && result.value !== null) {
+        content = result.value.content ||
+                  result.value.answer ||
+                  result.value.title ||
+                  result.value.solution ||
+                  '';
+      } else if (typeof result.value === 'string') {
+        content = result.value;
+      }
+
+      if (!content) continue;
+
       // Clean up content
-      if (typeof content === 'string') {
-        // Fix common issues
-        content = content
-          .replace(/\bYou\b(?=\s+(on|at|through))/g, 'them') // Fix "You on our website" -> "them on our website"
-          .replace(/\s+/g, ' ') // Normalize whitespace
-          .trim();
-        
-        // Create a normalized version for deduplication (lowercase, no punctuation)
-        const normalized = content.toLowerCase().replace(/[^\w\s]/g, '').trim();
-        
-        // Skip if we've seen very similar content
-        const isDuplicate = Array.from(seenContent).some(seen => {
-          const similarity = this.calculateStringSimilarity(normalized, seen);
-          return similarity > 0.8; // 80% similar = duplicate
+      content = content
+        .replace(/\bYou\b(?=\s+(on|at|through))/g, 'them') // Fix "You on our website" -> "them on our website"
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+
+      // Create normalized version for deduplication
+      const normalized = content.toLowerCase().replace(/[^\w\s]/g, '').trim();
+
+      // Skip duplicates but track score
+      if (!seenContent.has(normalized) && content.length > 20) {
+        seenContent.add(normalized);
+        uniqueResults.push({
+          content,
+          score: result.confidence * result.relevance
         });
-        
-        if (!isDuplicate && content.length > 20) { // Skip very short snippets
-          seenContent.add(normalized);
-          uniqueResults.push(content);
-        }
       }
     }
-    
-    // If we have multiple results, pick the best one or combine intelligently
+
     if (uniqueResults.length === 0) return '';
-    
-    // For gift cards, use the most concise, clear response
-    if (uniqueResults.some(r => r.toLowerCase().includes('gift'))) {
+
+    // Special handling for gift cards
+    if (uniqueResults.some(r => r.content.toLowerCase().includes('gift'))) {
       // Find the result with the URL (most actionable)
-      const withUrl = uniqueResults.find(r => r.includes('clubhouse247golf.com'));
+      const withUrl = uniqueResults.find(r => r.content.includes('clubhouse247golf.com'));
       if (withUrl) {
-        return `Yes, we offer gift cards! You can purchase them online at ${this.extractUrl(withUrl)}`;
+        return `Yes, we offer gift cards! You can purchase them online at ${this.extractUrl(withUrl.content)}`;
       }
     }
-    
+
+    // Return the HIGHEST SCORING result, not the longest!
+    // Sort by score to get the best match
+    uniqueResults.sort((a, b) => b.score - a.score);
+
     // For single result, return as-is
     if (uniqueResults.length === 1) {
-      return uniqueResults[0];
+      return uniqueResults[0].content;
     }
-    
-    // For multiple unique results, combine them intelligently
-    // Start with the most comprehensive one (usually the longest)
-    const primary = uniqueResults.sort((a, b) => b.length - a.length)[0];
-    
-    // Add any unique information from other results
-    const additionalInfo = uniqueResults.slice(1)
-      .map(r => this.extractUniqueInfo(r, primary))
-      .filter(info => info.length > 0);
-    
-    if (additionalInfo.length > 0) {
-      return `${primary}\n\nAdditional information: ${additionalInfo.join('. ')}`;
-    }
-    
-    return primary;
+
+    // For multiple results, return the best one
+    // Could enhance this to combine information if needed
+    return uniqueResults[0].content;
   }
   
   /**

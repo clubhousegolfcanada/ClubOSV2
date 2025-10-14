@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.73] - 2025-10-14
+
+### Fixed
+- **Knowledge Retrieval Scoring Bug**: Fixed knowledge search returning wrong content
+  - Issue: Search was finding correct knowledge but returning lower-scored results
+  - Root cause: `formatResultsForResponse()` was sorting by text length instead of relevance score
+  - Fix: Now sorts results by combined score (confidence × relevance) to return best match
+  - Example: "What is the business number?" now correctly returns "778080028" instead of pricing info
+  - Preserves all existing search features (semantic search, PostgreSQL full-text, etc.)
+  - Result: Knowledge recall now returns the most relevant answer, not the longest text
+
 ## [1.21.72] - 2025-10-12
 
 ### Enhanced
