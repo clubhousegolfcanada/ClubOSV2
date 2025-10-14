@@ -231,7 +231,8 @@ const TicketCenterV4: React.FC = () => {
   }, [selectedTicket]);
 
   const archiveTicket = useCallback(async (ticketId: string) => {
-    // Using toast instead of confirm to avoid iframe issues
+    if (!confirm('Archive this ticket?')) return;
+
     try {
       const token = tokenManager.getToken();
       const response = await http.patch(
