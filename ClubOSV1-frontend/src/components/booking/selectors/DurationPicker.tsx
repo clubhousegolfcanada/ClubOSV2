@@ -95,11 +95,11 @@ const DurationPicker: React.FC<DurationPickerProps> = ({
       </div>
 
       {/* Info message */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+      <div className="bg-[var(--status-info)]/10 border border-[var(--status-info)]/30 rounded-lg p-3">
         <div className="flex items-start gap-2">
-          <TrendingUp className="w-4 h-4 text-blue-500 mt-0.5" />
-          <div className="text-xs text-blue-700 dark:text-blue-300">
-            <div className="font-medium">Duration Rules</div>
+          <TrendingUp className="w-4 h-4 text-[var(--status-info)] mt-0.5" />
+          <div className="text-xs text-[var(--text-secondary)]">
+            <div className="font-medium text-[var(--text-primary)]">Duration Rules</div>
             <ul className="mt-1 space-y-0.5">
               <li>• Minimum booking: {formatDuration(minDuration)}</li>
               <li>• After {formatDuration(minDuration)}: {incrementAfterFirstHour}-minute increments</li>

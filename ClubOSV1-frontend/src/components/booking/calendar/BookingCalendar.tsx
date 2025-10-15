@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Calendar, Clock, MapPin, Filter, Users, ChevronLeft, ChevronRight, Grid3X3, List } from 'lucide-react';
+import { Calendar, Clock, MapPin, Filter, Users, ChevronLeft, ChevronRight, Grid3X3, List, CalendarX } from 'lucide-react';
 import { format, startOfDay, addDays, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
@@ -358,10 +358,65 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return spaces; // Spaces are already filtered by location in loadSpaces
   }, [spaces]);
 
+  // Loading skeleton
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
+      <div className="card">
+        {/* Header skeleton */}
+        <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="h-7 w-48 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+            <div className="flex gap-2">
+              <div className="h-8 w-32 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+              <div className="h-8 w-24 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        {/* Date navigation skeleton */}
+        <div className="py-3 border-b border-[var(--border-primary)]">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <div className="h-8 w-8 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+              <div className="h-8 w-16 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+              <div className="h-8 w-8 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+            </div>
+            <div className="h-5 w-48 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+          </div>
+        </div>
+
+        {/* Grid skeleton */}
+        <div className="pt-3 space-y-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-24 bg-[var(--bg-tertiary)] rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state when no location selected
+  if (!selectedLocationId || locations.length === 0) {
+    return (
+      <div className="card">
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <CalendarX className="w-16 h-16 text-[var(--text-muted)] opacity-50 mb-4" />
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            No Location Selected
+          </h3>
+          <p className="text-sm text-[var(--text-secondary)] text-center max-w-md mb-6">
+            Please select a location to view available booking slots and manage reservations.
+          </p>
+          {locations.length > 0 && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setSelectedLocationId(locations[0].id)}
+            >
+              Select {locations[0].name}
+            </Button>
+          )}
+        </div>
       </div>
     );
   }

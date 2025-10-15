@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.76] - 2025-10-14
+
+### Enhanced
+- **Booking System UI Polish**: Aligned booking components with ClubOS design system
+  - Fixed all hardcoded colors to use CSS variables for proper theming
+  - Standardized alert/info boxes to use --status-info and --status-error colors
+  - Enhanced touch targets to meet 48px minimum for mobile accessibility
+  - Added skeleton loader pattern to BookingCalendar matching TicketCenterV4
+  - Implemented empty state with icon for when no location is selected
+  - Improved button styling with consistent hover states and transitions
+  - Standardized form inputs with proper focus states and accent color rings
+  - All components now use transition-all duration-200 for smooth interactions
+  - Result: Booking system UI now matches the polished aesthetic of ClubOS dashboard
+
 ## [1.21.75] - 2025-10-14
 
 ### Fixed

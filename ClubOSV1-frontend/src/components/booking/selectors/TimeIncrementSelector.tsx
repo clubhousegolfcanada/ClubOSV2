@@ -193,12 +193,13 @@ const TimeIncrementSelector: React.FC<TimeIncrementSelectorProps> = ({
               key={option.value}
               onClick={() => handleDurationChange(option.value)}
               className={`
-                px-3 py-2 text-sm font-medium rounded-lg transition-all
+                px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 touch-manipulation
+                min-h-[44px] sm:min-h-[40px]
                 ${durationMinutes === option.value
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  ? 'bg-[var(--accent)] text-white shadow-sm'
+                  : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-primary)]'
                 }
-                ${option.recommended ? 'ring-2 ring-green-500 ring-opacity-50' : ''}
+                ${option.recommended ? 'ring-2 ring-[var(--status-success)]/30' : ''}
               `}
             >
               {option.label}
@@ -261,7 +262,7 @@ const TimeIncrementSelector: React.FC<TimeIncrementSelectorProps> = ({
                 <button
                   key={time.label}
                   onClick={() => handleStartTimeChange(quickStart)}
-                  className="px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white rounded transition-colors"
+                  className="px-3 py-2 min-h-[36px] text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all duration-200 touch-manipulation border border-[var(--border-primary)] hover:border-[var(--accent)]"
                 >
                   {time.label}
                 </button>
@@ -273,14 +274,14 @@ const TimeIncrementSelector: React.FC<TimeIncrementSelectorProps> = ({
 
       {/* Validation Error */}
       {validationError && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+        <div className="bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-[var(--status-error)] mt-0.5" />
             <div>
-              <div className="text-sm font-medium text-red-800 dark:text-red-200">
+              <div className="text-sm font-medium text-[var(--text-primary)]">
                 Invalid Booking Time
               </div>
-              <div className="text-xs text-red-600 dark:text-red-300 mt-0.5">
+              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
                 {validationError}
               </div>
             </div>
@@ -290,14 +291,14 @@ const TimeIncrementSelector: React.FC<TimeIncrementSelectorProps> = ({
 
       {/* Tier-based restrictions info */}
       {customerTier === 'new' && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+        <div className="bg-[var(--status-info)]/10 border border-[var(--status-info)]/30 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <Info className="w-5 h-5 text-blue-500 mt-0.5" />
+            <Info className="w-5 h-5 text-[var(--status-info)] mt-0.5" />
             <div className="text-xs">
-              <div className="font-medium text-blue-800 dark:text-blue-200">
+              <div className="font-medium text-[var(--text-primary)]">
                 New Customer Booking Limits
               </div>
-              <ul className="mt-1 space-y-0.5 text-blue-600 dark:text-blue-300">
+              <ul className="mt-1 space-y-0.5 text-[var(--text-secondary)]">
                 <li>• Book up to {maxAdvanceDays} days in advance</li>
                 <li>• After 3 bookings, upgrade to Standard Member</li>
                 <li>• Standard Members can book 30 days ahead</li>

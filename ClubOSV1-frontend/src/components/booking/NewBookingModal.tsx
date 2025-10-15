@@ -155,7 +155,7 @@ const NewBookingModal: React.FC<NewBookingModalProps> = ({
                 type="date"
                 value={format(formData.date, 'yyyy-MM-dd')}
                 onChange={(e) => setFormData({...formData, date: new Date(e.target.value)})}
-                className="form-input"
+                className="form-input focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 required
               />
             </div>
@@ -346,10 +346,10 @@ const NewBookingModal: React.FC<NewBookingModalProps> = ({
             </div>
 
             {/* Info Box */}
-            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 text-sm text-[var(--text-secondary)]">
+            <div className="bg-[var(--accent-light)] border border-[var(--accent)]/20 rounded-lg p-3 text-sm">
               <div className="flex items-start gap-2">
                 <span className="text-[var(--accent)]">ℹ️</span>
-                <p>This booking will be created for {formData.spaceName} on {format(formData.date, 'MMMM d, yyyy')} from {format(formData.startTime, 'h:mm a')} to {format(formData.endTime, 'h:mm a')}.</p>
+                <p className="text-[var(--text-secondary)]">This booking will be created for {formData.spaceName} on {format(formData.date, 'MMMM d, yyyy')} from {format(formData.startTime, 'h:mm a')} to {format(formData.endTime, 'h:mm a')}.</p>
               </div>
             </div>
 
