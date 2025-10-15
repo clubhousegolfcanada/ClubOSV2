@@ -255,6 +255,100 @@ router.patch('/:id/status', authenticate, async (req, res) => {
   }
 });
 
+// PATCH /api/tickets/:id - Update ticket fields (status, priority, category, location)
+router.patch('/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, priority, category, location } = req.body;
+
+    // Build updates object with only provided fields
+    const updates: Partial<{
+      status: string;
+      priority: string;
+      category: string;
+      location: string;
+    }> = {};
+
+    // Only include fields that were provided in the request
+    if (status !== undefined) updates.status = status;
+    if (priority !== undefined) updates.priority = priority;
+    if (category !== undefined) updates.category = category;
+    if (location !== undefined) updates.location = location;
+
+    // Check if any fields were provided
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No fields to update'
+      });
+    }
+
+    // Validate field values
+    const validStatuses = ['open', 'in-progress', 'resolved', 'closed', 'archived'];
+    const validPriorities = ['low', 'medium', 'high', 'urgent'];
+    const validCategories = ['facilities', 'tech'];
+    const validLocations = ['bedford', 'nashua', 'crossfit-nashua', 'keene', 'concord', 'westford'];
+
+    if (updates.status && !validStatuses.includes(updates.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    if (updates.priority && !validPriorities.includes(updates.priority)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid priority. Must be one of: ${validPriorities.join(', ')}`
+      });
+    }
+
+    if (updates.category && !validCategories.includes(updates.category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Must be one of: ${validCategories.join(', ')}`
+      });
+    }
+
+    if (updates.location && !validLocations.includes(updates.location)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid location. Must be one of: ${validLocations.join(', ')}`
+      });
+    }
+
+    // Update the ticket
+    const updatedTicket = await db.updateTicket(id, updates);
+
+    if (!updatedTicket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
+    }
+
+    logger.info('Ticket updated', {
+      ticketId: id,
+      updates,
+      updatedBy: req.user!.email
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...transformTicket(updatedTicket),
+        comments: []
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to update ticket:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update ticket'
+    });
+  }
+});
+
 // DELETE /api/tickets/:id - Delete a ticket
 router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req, res) => {
   try {

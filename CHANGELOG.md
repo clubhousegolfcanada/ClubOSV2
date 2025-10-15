@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.74] - 2025-10-14
+
+### Enhanced
+- **Editable Ticket Fields**: Made ticket detail fields directly editable with dropdowns
+  - Status, Priority, Category, and Location now use select dropdowns in ticket detail modal
+  - Implemented optimistic UI updates with instant feedback and rollback on error
+  - Added field-level loading states and error handling
+  - Created unified PATCH /api/tickets/:id endpoint for flexible field updates
+  - Added dynamic SQL query building in updateTicket database method
+  - Removed redundant "Update Status" button section for cleaner UI
+  - Each field updates independently without affecting others
+  - Result: Streamlined ticket management with fewer clicks and cleaner interface
+
 ## [1.21.73] - 2025-10-14
 
 ### Fixed

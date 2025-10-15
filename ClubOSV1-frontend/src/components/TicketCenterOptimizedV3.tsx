@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Check, Clock, AlertCircle, MessageSquare, X, ChevronRight, ChevronDown, ChevronUp, MapPin, Archive, Filter, Camera, Layers, Search } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
@@ -1029,7 +1029,7 @@ const getLocationColor = (location?: string) => {
   return `var(--location-${locationKey})`;
 };
 
-// Ticket Detail Modal Component
+// Ticket Detail Modal Component with Editable Fields
 const TicketDetailModal: React.FC<{
   ticket: Ticket;
   onClose: () => void;
@@ -1039,6 +1039,82 @@ const TicketDetailModal: React.FC<{
   setNewComment: (comment: string) => void;
   formatTimeAgo: (date: string) => string;
 }> = ({ ticket, onClose, onUpdateStatus, onAddComment, newComment, setNewComment, formatTimeAgo }) => {
+  const { notify } = useNotifications();
+
+  // Local state for editable fields
+  const [localTicket, setLocalTicket] = useState(ticket);
+  const [fieldLoading, setFieldLoading] = useState<Record<string, boolean>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Track original values for rollback
+  const originalValues = useRef({
+    status: ticket.status,
+    priority: ticket.priority,
+    category: ticket.category,
+    location: ticket.location
+  });
+
+  // Update local state when ticket prop changes
+  useEffect(() => {
+    setLocalTicket(ticket);
+    originalValues.current = {
+      status: ticket.status,
+      priority: ticket.priority,
+      category: ticket.category,
+      location: ticket.location
+    };
+  }, [ticket]);
+
+  // Handle field updates
+  const updateField = async (field: 'status' | 'priority' | 'category' | 'location', value: string) => {
+    // Optimistically update UI
+    setLocalTicket(prev => ({ ...prev, [field]: value }));
+    setFieldLoading(prev => ({ ...prev, [field]: true }));
+    setFieldErrors(prev => ({ ...prev, [field]: '' }));
+
+    try {
+      const token = tokenManager.getToken();
+      const response = await http.patch(
+        `tickets/${ticket.id}`,
+        { [field]: value },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        // Update original values on success
+        originalValues.current = { ...originalValues.current, [field]: value };
+        notify('success', `${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
+
+        // If status was updated, also update parent component
+        if (field === 'status') {
+          onUpdateStatus(ticket.id, value as TicketStatus);
+        }
+      }
+    } catch (error: any) {
+      // Rollback on error
+      setLocalTicket(prev => ({
+        ...prev,
+        [field]: originalValues.current[field as keyof typeof originalValues.current]
+      }));
+      setFieldErrors(prev => ({
+        ...prev,
+        [field]: error.response?.data?.message || 'Failed to update'
+      }));
+      notify('error', `Failed to update ${field}`);
+    } finally {
+      setFieldLoading(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  const validStatuses: TicketStatus[] = ['open', 'in-progress', 'resolved', 'closed', 'archived'];
+  const validPriorities: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
+  const validCategories: TicketCategory[] = ['facilities', 'tech'];
+  const validLocations = ['bedford', 'nashua', 'crossfit-nashua', 'keene', 'concord', 'westford'];
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
       <div className="bg-[var(--bg-primary)] w-full sm:max-w-2xl h-[90vh] sm:h-auto sm:max-h-[90vh] rounded-t-2xl sm:rounded-lg overflow-hidden flex flex-col">
@@ -1065,60 +1141,103 @@ const TicketDetailModal: React.FC<{
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Title and Description */}
           <div>
-            <h3 className="font-medium text-lg mb-2">{ticket.title}</h3>
+            <h3 className="font-medium text-lg mb-2">{localTicket.title}</h3>
             <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
-              {ticket.description}
+              {localTicket.description}
             </p>
           </div>
 
-          {/* Metadata grid */}
+          {/* Editable Metadata Grid */}
           <div className="grid grid-cols-2 gap-3 text-sm">
+            {/* Status Dropdown */}
             <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
               <span className="text-[var(--text-muted)] text-xs">Status</span>
-              <div className={`mt-1 px-2 py-1 rounded-md inline-block ${getStatusColor(ticket.status)}`}>
-                {ticket.status.replace('-', ' ')}
-              </div>
+              <select
+                value={localTicket.status}
+                onChange={(e) => updateField('status', e.target.value)}
+                disabled={fieldLoading.status}
+                className={`mt-1 w-full px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-md text-sm focus:outline-none focus:border-[var(--accent)] transition-colors ${
+                  fieldLoading.status ? 'opacity-50 cursor-wait' : ''
+                }`}
+              >
+                {validStatuses.map(status => (
+                  <option key={status} value={status}>
+                    {status.replace('-', ' ')}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.status && (
+                <p className="text-xs text-[var(--status-error)] mt-1">{fieldErrors.status}</p>
+              )}
             </div>
+
+            {/* Priority Dropdown */}
             <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
               <span className="text-[var(--text-muted)] text-xs">Priority</span>
-              <div className="mt-1">
-                <span className={`inline-block w-2 h-2 rounded-full mr-2`}
-                  style={{ backgroundColor: priorityColors[ticket.priority] }} />
-                <span className="capitalize">{ticket.priority}</span>
-              </div>
+              <select
+                value={localTicket.priority}
+                onChange={(e) => updateField('priority', e.target.value)}
+                disabled={fieldLoading.priority}
+                className={`mt-1 w-full px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-md text-sm focus:outline-none focus:border-[var(--accent)] transition-colors ${
+                  fieldLoading.priority ? 'opacity-50 cursor-wait' : ''
+                }`}
+              >
+                {validPriorities.map(priority => (
+                  <option key={priority} value={priority}>
+                    {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.priority && (
+                <p className="text-xs text-[var(--status-error)] mt-1">{fieldErrors.priority}</p>
+              )}
             </div>
+
+            {/* Category Dropdown */}
             <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
               <span className="text-[var(--text-muted)] text-xs">Category</span>
-              <div className="mt-1 capitalize">{ticket.category}</div>
+              <select
+                value={localTicket.category}
+                onChange={(e) => updateField('category', e.target.value)}
+                disabled={fieldLoading.category}
+                className={`mt-1 w-full px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-md text-sm focus:outline-none focus:border-[var(--accent)] transition-colors ${
+                  fieldLoading.category ? 'opacity-50 cursor-wait' : ''
+                }`}
+              >
+                {validCategories.map(category => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.category && (
+                <p className="text-xs text-[var(--status-error)] mt-1">{fieldErrors.category}</p>
+              )}
             </div>
-            {ticket.location && (
-              <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
-                <span className="text-[var(--text-muted)] text-xs">Location</span>
-                <div className="mt-1">{ticket.location}</div>
-              </div>
-            )}
-          </div>
 
-          {/* Status Update Buttons */}
-          <div>
-            <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-2">
-              Update Status
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {(['open', 'in-progress', 'resolved', 'closed', 'archived'] as TicketStatus[]).map(status => (
-                <button
-                  key={status}
-                  onClick={() => onUpdateStatus(ticket.id, status)}
-                  disabled={ticket.status === status}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    ticket.status === status
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]'
-                  }`}
-                >
-                  {status.replace('-', ' ')}
-                </button>
-              ))}
+            {/* Location Dropdown */}
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+              <span className="text-[var(--text-muted)] text-xs">Location</span>
+              <select
+                value={localTicket.location || ''}
+                onChange={(e) => updateField('location', e.target.value)}
+                disabled={fieldLoading.location}
+                className={`mt-1 w-full px-2 py-1 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-md text-sm focus:outline-none focus:border-[var(--accent)] transition-colors ${
+                  fieldLoading.location ? 'opacity-50 cursor-wait' : ''
+                }`}
+              >
+                <option value="">No Location</option>
+                {validLocations.map(location => (
+                  <option key={location} value={location}>
+                    {location.split('-').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.location && (
+                <p className="text-xs text-[var(--status-error)] mt-1">{fieldErrors.location}</p>
+              )}
             </div>
           </div>
 

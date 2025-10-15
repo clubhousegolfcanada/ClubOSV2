@@ -461,6 +461,70 @@ class DatabaseService {
     return result.rows[0] || null;
   }
 
+  async updateTicket(id: string, updates: Partial<{
+    status: string;
+    priority: string;
+    category: string;
+    location: string;
+  }>): Promise<DbTicket | null> {
+    const updateFields: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    // Build dynamic update query based on provided fields
+    if (updates.status !== undefined) {
+      updateFields.push(`status = $${paramCount}::VARCHAR(50)`);
+      values.push(updates.status);
+      paramCount++;
+
+      // Handle resolved_at timestamp
+      if (updates.status === 'resolved' || updates.status === 'closed') {
+        updateFields.push(`resolved_at = CURRENT_TIMESTAMP`);
+      } else if (updates.status === 'open' || updates.status === 'in-progress') {
+        updateFields.push(`resolved_at = NULL`);
+      }
+    }
+
+    if (updates.priority !== undefined) {
+      updateFields.push(`priority = $${paramCount}::VARCHAR(50)`);
+      values.push(updates.priority);
+      paramCount++;
+    }
+
+    if (updates.category !== undefined) {
+      updateFields.push(`category = $${paramCount}::VARCHAR(50)`);
+      values.push(updates.category);
+      paramCount++;
+    }
+
+    if (updates.location !== undefined) {
+      updateFields.push(`location = $${paramCount}`);
+      values.push(updates.location);
+      paramCount++;
+    }
+
+    if (updateFields.length === 0) {
+      // No fields to update
+      return this.getTicketById(id);
+    }
+
+    // Always update the updatedAt timestamp
+    updateFields.push(`"updatedAt" = CURRENT_TIMESTAMP`);
+
+    // Add the ticket ID as the last parameter
+    values.push(id);
+
+    const result = await query(
+      `UPDATE tickets
+       SET ${updateFields.join(', ')}
+       WHERE id = $${paramCount}
+       RETURNING *`,
+      values
+    );
+
+    return result.rows[0] || null;
+  }
+
   async deleteTicket(id: string): Promise<boolean> {
     const result = await query('DELETE FROM tickets WHERE id = $1', [id]);
     return (result.rowCount || 0) > 0;
