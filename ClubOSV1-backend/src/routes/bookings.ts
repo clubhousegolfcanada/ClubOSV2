@@ -264,6 +264,18 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       });
     }
 
+    // Get or assign customer tier first (before using it)
+    let customerTierId = 'new'; // Default to new customer
+    if (userId) {
+      const loyaltyResult = await db.query(
+        'SELECT current_tier_id FROM loyalty_tracking WHERE user_id = $1',
+        [userId]
+      );
+      if (loyaltyResult.rows[0]) {
+        customerTierId = loyaltyResult.rows[0].current_tier_id;
+      }
+    }
+
     // Check advance booking limits by tier
     const maxAdvanceDays = {
       new: 14,
@@ -285,18 +297,6 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
           customerTier: customerTierId
         }
       });
-    }
-
-    // Get or assign customer tier
-    let customerTierId = 'new'; // Default to new customer
-    if (userId) {
-      const loyaltyResult = await db.query(
-        'SELECT current_tier_id FROM loyalty_tracking WHERE user_id = $1',
-        [userId]
-      );
-      if (loyaltyResult.rows[0]) {
-        customerTierId = loyaltyResult.rows[0].current_tier_id;
-      }
     }
 
     // Get tier pricing
