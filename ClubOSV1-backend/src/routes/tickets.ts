@@ -287,7 +287,8 @@ router.patch('/:id', authenticate, async (req, res) => {
     const validStatuses = ['open', 'in-progress', 'resolved', 'closed', 'archived'];
     const validPriorities = ['low', 'medium', 'high', 'urgent'];
     const validCategories = ['facilities', 'tech'];
-    const validLocations = ['bedford', 'nashua', 'crossfit-nashua', 'keene', 'concord', 'westford'];
+    // Correct Clubhouse 24/7 locations
+    const validLocations = ['bedford', 'dartmouth', 'halifax', 'bayers-lake', 'river-oaks', 'stratford', 'truro'];
 
     if (updates.status && !validStatuses.includes(updates.status)) {
       return res.status(400).json({

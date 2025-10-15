@@ -1113,7 +1113,8 @@ const TicketDetailModal: React.FC<{
   const validStatuses: TicketStatus[] = ['open', 'in-progress', 'resolved', 'closed', 'archived'];
   const validPriorities: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
   const validCategories: TicketCategory[] = ['facilities', 'tech'];
-  const validLocations = ['bedford', 'nashua', 'crossfit-nashua', 'keene', 'concord', 'westford'];
+  // Use the same locations as defined in LOCATION_CONFIG at the top of the file
+  const validLocations = ['bedford', 'dartmouth', 'halifax', 'bayers-lake', 'river-oaks', 'stratford', 'truro'];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
@@ -1227,13 +1228,17 @@ const TicketDetailModal: React.FC<{
                 }`}
               >
                 <option value="">No Location</option>
-                {validLocations.map(location => (
-                  <option key={location} value={location}>
-                    {location.split('-').map(word =>
-                      word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ')}
-                  </option>
-                ))}
+                {validLocations.map(location => {
+                  // Format location names properly
+                  const displayName = location === 'bayers-lake' ? 'Bayers Lake' :
+                                      location === 'river-oaks' ? 'River Oaks' :
+                                      location.charAt(0).toUpperCase() + location.slice(1);
+                  return (
+                    <option key={location} value={location}>
+                      {displayName}
+                    </option>
+                  );
+                })}
               </select>
               {fieldErrors.location && (
                 <p className="text-xs text-[var(--status-error)] mt-1">{fieldErrors.location}</p>
