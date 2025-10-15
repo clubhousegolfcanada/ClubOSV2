@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.75] - 2025-10-14
+
+### Fixed
+- **Booking System Critical Business Logic**: Enforced time validation rules for bookings
+  - ENFORCED 1-hour minimum booking duration (was allowing any duration)
+  - ENFORCED 30-minute increments after first hour (1h, 1.5h, 2h, 2.5h, etc.)
+  - Added advance booking limits by customer tier (New: 14 days, Members: 30 days)
+  - Cannot book less than 1 hour in advance
+  - Created TimeValidationService for consistent validation across frontend/backend
+  - Updated backend /api/bookings endpoint with strict validation
+  - Integrated validation in BookingCalendar component
+  - Updated DurationPicker to use validation service
+  - Result: Bookings now follow business rules preventing invalid durations and advance bookings
+
 ## [1.21.74] - 2025-10-14
 
 ### Enhanced

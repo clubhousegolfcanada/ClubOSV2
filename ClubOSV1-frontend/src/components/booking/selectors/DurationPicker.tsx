@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, TrendingUp } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { TimeValidationService, formatDuration } from '@/services/booking/timeValidationService';
 
 interface DurationOption {
   minutes: number;
@@ -28,54 +29,32 @@ const DurationPicker: React.FC<DurationPickerProps> = ({
   customerTier = 'new',
   className = ''
 }) => {
-  // Generate duration options based on config
+  // Generate duration options based on validation service
   const generateOptions = (): DurationOption[] => {
-    const options: DurationOption[] = [];
-
-    // Add minimum duration (1 hour)
-    options.push({
-      minutes: minDuration,
-      label: formatDuration(minDuration),
-      popular: true
+    const validDurations = TimeValidationService.getValidDurations({
+      minDuration,
+      maxDuration,
+      incrementAfterFirst: incrementAfterFirstHour
     });
 
-    // Add increments after first hour
-    let current = minDuration + incrementAfterFirstHour;
-    while (current <= maxDuration) {
+    return validDurations.map(minutes => {
       const option: DurationOption = {
-        minutes: current,
-        label: formatDuration(current)
+        minutes,
+        label: formatDuration(minutes)
       };
 
-      // Mark 2-hour as popular
-      if (current === 120) {
+      // Mark popular durations
+      if (minutes === 60 || minutes === 90 || minutes === 120) {
         option.popular = true;
       }
 
       // Add discount for longer sessions (member benefit)
-      if (customerTier === 'member' && current >= 180) {
+      if (customerTier === 'member' && minutes >= 180) {
         option.discount = 10; // 10% discount for 3+ hours
       }
 
-      options.push(option);
-      current += incrementAfterFirstHour;
-    }
-
-    return options;
-  };
-
-  // Format duration for display
-  const formatDuration = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-
-    if (hours === 0) {
-      return `${mins}min`;
-    } else if (mins === 0) {
-      return hours === 1 ? '1 hour' : `${hours} hours`;
-    } else {
-      return `${hours}h ${mins}m`;
-    }
+      return option;
+    });
   };
 
   const options = generateOptions();

@@ -5,6 +5,7 @@ import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { BookingConfigService, CustomerTier, BookingConfig } from '@/services/booking/bookingConfig';
+import { TimeValidationService } from '@/services/booking/timeValidationService';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import DayGrid from './DayGrid';
@@ -283,10 +284,27 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => {
     if (!config) return;
 
-    // Validate duration
-    const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
-    if (!BookingConfigService.isValidDuration(durationMinutes)) {
-      notify('error', `Invalid duration. Minimum ${config.minDuration} minutes, then ${config.incrementAfterFirst}-minute increments.`);
+    // Get current user's tier (default to 'new' if not logged in)
+    const currentUserTier = customerTiers.find(t => t.id === 'new') || { id: 'new' } as CustomerTier;
+    const tierType = currentUserTier.id as 'new' | 'member' | 'promo' | 'frequent';
+
+    // Validate booking with time validation service
+    const validation = TimeValidationService.validateBooking(
+      startTime,
+      endTime,
+      tierType,
+      {
+        minDuration: config.minDuration,
+        maxDuration: config.maxDuration,
+        incrementAfterFirst: config.incrementAfterFirst || 30
+      }
+    );
+
+    if (!validation.isValid) {
+      notify('error', validation.error || 'Invalid booking time');
+      if (validation.suggestion) {
+        notify('info', validation.suggestion);
+      }
       return;
     }
 
@@ -297,10 +315,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       endTime,
       spaceId,
       spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
-      locationId: selectedLocationId
+      locationId: selectedLocationId,
+      customerTier: currentUserTier
     });
     setShowNewBookingModal(true);
-  }, [config, selectedLocationId, spaces, notify]);
+  }, [config, selectedLocationId, spaces, notify, customerTiers]);
 
   const handleAdminBlock = useCallback(async (blockData: {
     startAt: Date;

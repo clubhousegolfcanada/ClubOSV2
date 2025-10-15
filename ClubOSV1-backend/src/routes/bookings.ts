@@ -197,23 +197,93 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     );
     const config = configResult.rows[0]?.value || {};
 
-    // Validate duration
+    // Validate duration with strict business rules
     const startTime = new Date(validated.startAt);
     const endTime = new Date(validated.endAt);
     const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
 
-    if (durationMinutes < (config.minDuration || 60)) {
+    // ENFORCE 1-HOUR MINIMUM
+    const minDuration = config.minDuration || 60;
+    if (durationMinutes < minDuration) {
       return res.status(400).json({
         success: false,
-        error: `Minimum booking duration is ${config.minDuration || 60} minutes`
+        error: `Minimum booking duration is ${minDuration} minutes (1 hour)`,
+        details: {
+          provided: durationMinutes,
+          minimum: minDuration
+        }
       });
     }
 
-    // Check for 30-minute increments after first hour
-    if (durationMinutes > 60 && (durationMinutes - 60) % 30 !== 0) {
+    // ENFORCE 30-MINUTE INCREMENTS AFTER FIRST HOUR
+    const incrementAfterFirst = config.incrementAfterFirst || 30;
+    if (durationMinutes > minDuration) {
+      const minutesAfterFirst = durationMinutes - minDuration;
+      if (minutesAfterFirst % incrementAfterFirst !== 0) {
+        const nextValid = minDuration + Math.ceil(minutesAfterFirst / incrementAfterFirst) * incrementAfterFirst;
+        const prevValid = minDuration + Math.floor(minutesAfterFirst / incrementAfterFirst) * incrementAfterFirst;
+
+        return res.status(400).json({
+          success: false,
+          error: `After the first hour, bookings must be in ${incrementAfterFirst}-minute increments`,
+          details: {
+            provided: durationMinutes,
+            validOptions: [prevValid, nextValid],
+            suggestion: `Try booking for ${prevValid / 60} or ${nextValid / 60} hours`
+          }
+        });
+      }
+    }
+
+    // Validate maximum duration
+    const maxDuration = config.maxDuration || 360;
+    if (durationMinutes > maxDuration) {
       return res.status(400).json({
         success: false,
-        error: 'Bookings after 1 hour must be in 30-minute increments (1.5h, 2h, 2.5h, etc)'
+        error: `Maximum booking duration is ${maxDuration} minutes (${maxDuration / 60} hours)`,
+        details: {
+          provided: durationMinutes,
+          maximum: maxDuration
+        }
+      });
+    }
+
+    // Validate advance booking limits based on customer tier
+    const now = new Date();
+    const hoursInAdvance = Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+
+    // Cannot book less than 1 hour in advance
+    if (hoursInAdvance < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bookings must be made at least 1 hour in advance',
+        details: {
+          currentTime: now.toISOString(),
+          requestedStart: startTime.toISOString()
+        }
+      });
+    }
+
+    // Check advance booking limits by tier
+    const maxAdvanceDays = {
+      new: 14,
+      member: 30,
+      promo: 14,
+      frequent: 30
+    };
+
+    const daysInAdvance = Math.floor(hoursInAdvance / 24);
+    const maxDays = maxAdvanceDays[customerTierId as keyof typeof maxAdvanceDays] || 14;
+
+    if (daysInAdvance > maxDays) {
+      return res.status(400).json({
+        success: false,
+        error: `${customerTierId === 'new' ? 'New customers' : `${customerTierId} tier`} can only book ${maxDays} days in advance`,
+        details: {
+          daysInAdvance,
+          maxAllowed: maxDays,
+          customerTier: customerTierId
+        }
       });
     }
 
