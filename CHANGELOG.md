@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.77] - 2025-10-14
+
+### Added
+- **Booking System Modernization**: Skedda-style compact calendar with ClubOS design system
+  - Created BookingCalendarCompact component with ultra-compact 80px header
+  - Built DayGridCompact with 38px row height matching Skedda's density
+  - Implemented WeekGridCompact with 30px rows for maximum visibility
+  - Used existing ClubOS CSS variables throughout (--bg-primary, --accent, etc.)
+  - Applied existing .card class pattern from dashboard components
+  - Reused patterns from MessagesCardV3 for consistency
+  - Added collapsible header with stats (bookings count, available slots)
+  - Compact date navigation bar (30px height) with Today highlight
+  - Professional grid layout with subtle hover states
+  - Mobile-optimized with proper touch targets (48px minimum)
+  - Result: Modern, space-efficient booking calendar matching Skedda's professional aesthetic
+
 ## [1.21.76] - 2025-10-14
 
 ### Enhanced

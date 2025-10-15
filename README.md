@@ -1,4 +1,4 @@
-# ClubOS v1.21.76 - Flexible Facility Management System
+# ClubOS v1.21.77 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.76**
-- **Booking System Time Validation** - Enforced 1-hour minimum and 30-minute increments
-- **Customer Tier Booking Limits** - New customers 14 days, Members 30 days advance
-- **TimeValidationService** - Consistent validation across frontend and backend
-- **DurationPicker Integration** - Shows only valid duration options
-- **Advance Booking Rules** - Cannot book less than 1 hour before start time
+**Current Version: v1.21.77**
+- **Booking System Modernization** - Skedda-style compact calendar with ClubOS design
+- **BookingCalendarCompact** - Ultra-compact 80px header with collapsible stats
+- **DayGridCompact** - 38px row height matching Skedda's professional density
+- **WeekGridCompact** - 30px rows with summary footer for maximum visibility
+- **ClubOS Design System** - Full integration with existing CSS variables and patterns
 
 ## 🏗️ System Architecture
 
