@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.82] - 2025-10-17
+
+### Enhanced
+- **Receipt OCR Integration with LLM System**: Unified receipt scanning with existing AI infrastructure
+  - Integrated receipt mode directly into RequestForm component (same as knowledge mode)
+  - Receipt button now activates mode instead of opening separate modal
+  - Uses existing `/api/llm/request` endpoint with `[RECEIPT OCR]` prefix
+  - Fixed OpenAI model from deprecated `gpt-4-vision-preview` to `gpt-4o`
+  - Receipt OCR processing happens through same LLM pipeline for consistency
+  - Photo upload area appears when receipt mode is active
+  - Automatic saving to database after successful scan
+  - Results displayed in ResponseDisplaySimple format
+  - All auth, rate limiting, and error handling inherited from LLM system
+  - Result: Receipt OCR is now a first-class feature like tickets and knowledge updates
+
 ## [1.21.81] - 2025-10-17
 
 ### Enhanced

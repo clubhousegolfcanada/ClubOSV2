@@ -9,7 +9,6 @@ import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
 import { ResponseDisplaySimple } from './ResponseDisplaySimple';
-import { ReceiptUploadButton } from './Terminal/ReceiptUploadButton';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import PrioritySlider from './ui/PrioritySlider';
@@ -58,6 +57,7 @@ const RequestForm: React.FC = () => {
   const [isConvertingTone, setIsConvertingTone] = useState(false);
   const [isTicketMode, setIsTicketMode] = useState(false);
   const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
+  const [isReceiptMode, setIsReceiptMode] = useState(false);
   const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [ticketCategory, setTicketCategory] = useState<'facilities' | 'tech'>('facilities');
   const [lastRequestData, setLastRequestData] = useState<FormData | null>(null);
@@ -324,7 +324,68 @@ const RequestForm: React.FC = () => {
       }
       return;
     }
-    
+
+    // If in receipt mode, process with OCR through LLM
+    if (isReceiptMode) {
+      setIsProcessing(true);
+      try {
+        const token = isMounted ? tokenManager.getToken() : null;
+
+        // Check if there's a photo attachment (receipt image)
+        if (photoAttachments.length === 0) {
+          notify('error', 'Please upload a receipt photo to scan');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Use the LLM endpoint with special prefix for receipt OCR
+        const response = await http.post(
+          `llm/request`,
+          {
+            requestDescription: `[RECEIPT OCR]\n${data.requestDescription || 'Process this receipt'}`,
+            imageData: photoAttachments[0], // Send the first photo as base64
+            routePreference: 'Receipt',
+            smartAssistEnabled: true
+          },
+        );
+
+        if (response.data.success) {
+          const ocrResult = response.data.data;
+
+          // Show the extracted receipt data
+          setLastResponse({
+            llmResponse: {
+              response: ocrResult.response,
+              confidence: ocrResult.confidence || 1.0,
+              route: 'Receipt OCR',
+              status: 'completed',
+              dataSource: 'OpenAI Vision'
+            },
+            status: 'completed',
+            botRoute: 'Receipt OCR'
+          } as any);
+
+          setShowResponse(true);
+          setIsNewSubmission(true);
+
+          notify('success', 'Receipt scanned successfully!');
+
+          // Optionally save to database
+          if (ocrResult.extractedData) {
+            await http.post('receipts/save', ocrResult.extractedData);
+          }
+        } else {
+          notify('error', response.data.error || 'Failed to scan receipt');
+        }
+      } catch (error) {
+        logger.error('Receipt OCR error:', error);
+        notify('error', 'Failed to scan receipt. Please try again.');
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
     // Clear everything immediately when starting a new request
     setShowResponse(false);
     setLastResponse(null); // Clear the response from state
@@ -508,6 +569,7 @@ const RequestForm: React.FC = () => {
     setConvertedTone('');
     setIsTicketMode(false); // Reset to request mode
     setIsKnowledgeMode(false); // Reset knowledge mode
+    setIsReceiptMode(false); // Reset receipt mode
     setTicketPriority('medium'); // Reset ticket priority
     setTicketCategory('facilities'); // Reset ticket category
     setLastRequestData(null);
@@ -582,8 +644,23 @@ const RequestForm: React.FC = () => {
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
           <div className="flex items-center gap-2">
-            {/* Receipt Upload button */}
-            <ReceiptUploadButton className="!py-1.5 !text-xs !rounded-full" />
+            {/* Receipt Upload button - activates receipt mode */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsReceiptMode(true);
+                setIsKnowledgeMode(false);
+                setIsTicketMode(false);
+                setPhotoAttachments([]); // Clear any existing photos
+              }}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105
+                bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)]
+                hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-600`}
+              disabled={isSubmitting || demoMode}
+            >
+              <Receipt className="inline w-3 h-3 mr-1" />
+              {isReceiptMode ? '✓ Receipt Mode' : 'Receipt'}
+            </button>
 
             {/* Update Knowledge button - top right */}
             <button
@@ -619,7 +696,8 @@ const RequestForm: React.FC = () => {
               className="form-textarea"
               placeholder={
                 isKnowledgeMode ? "Add knowledge: e.g., 'Gift cards are available at website.com/giftcards for $25, $50, or $100'" :
-                isTicketMode ? "Describe the issue for the support ticket..." : 
+                isReceiptMode ? "Add notes about this receipt (optional)..." :
+                isTicketMode ? "Describe the issue for the support ticket..." :
                 "Describe your request (e.g., power outage, equipment frozen, booking cancellation...)"
               }
               disabled={isSubmitting || demoMode}
@@ -908,6 +986,56 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
+          {/* Receipt Mode - Photo Upload */}
+          {isReceiptMode && (
+            <div className="form-group">
+              <label className="form-label flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Receipt Photo
+              </label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    id="receipt-photo-upload"
+                    disabled={isSubmitting}
+                  />
+                  <label
+                    htmlFor="receipt-photo-upload"
+                    className="px-4 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer transition-all"
+                  >
+                    <Camera className="inline w-4 h-4 mr-2" />
+                    {photoAttachments.length > 0 ? 'Change Receipt' : 'Upload Receipt'}
+                  </label>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    Take a photo or upload a receipt image (max 5MB)
+                  </span>
+                </div>
+
+                {/* Photo preview */}
+                {photoAttachments.length > 0 && (
+                  <div className="relative group">
+                    <img
+                      src={photoAttachments[0]}
+                      alt="Receipt"
+                      className="w-full max-w-sm h-48 object-contain rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-tertiary)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPhotoAttachments([])}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Ticket Options - Minimal Professional */}
           {isTicketMode && (
             <>
@@ -1111,7 +1239,8 @@ const RequestForm: React.FC = () => {
               )}
               {isProcessing ? (
                 <>
-                  {isKnowledgeMode ? 'Adding Knowledge...' : 
+                  {isKnowledgeMode ? 'Adding Knowledge...' :
+                   isReceiptMode ? 'Scanning Receipt...' :
                    smartAssistEnabled ? 'Processing...' : 'Sending...'}
                   <div style={{
                     position: 'absolute',
@@ -1125,8 +1254,9 @@ const RequestForm: React.FC = () => {
                   }} />
                 </>
               ) : (
-                isKnowledgeMode ? 'Add Knowledge' : 
-                isTicketMode ? 'Create' : 
+                isKnowledgeMode ? 'Add Knowledge' :
+                isReceiptMode ? 'Scan Receipt' :
+                isTicketMode ? 'Create' :
                 (smartAssistEnabled ? 'Process' : 'Send to Clubhouse Team')
               )}
             </button>

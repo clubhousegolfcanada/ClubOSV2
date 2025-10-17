@@ -151,9 +151,13 @@ router.post('/request',
       });
       
       // Check if this is a customer kiosk request
-      const isCustomerKiosk = req.body.requestDescription?.startsWith('[CUSTOMER KIOSK]') || 
+      const isCustomerKiosk = req.body.requestDescription?.startsWith('[CUSTOMER KIOSK]') ||
                             req.body.metadata?.source === 'customer_kiosk';
-      
+
+      // Check if this is a receipt OCR request
+      const isReceiptOCR = req.body.requestDescription?.startsWith('[RECEIPT OCR]') ||
+                          req.body.routePreference === 'Receipt';
+
       // Debug logging
       logger.info('Request processing debug', {
         fullBody: req.body,
@@ -164,6 +168,95 @@ router.post('/request',
         requestDescription: req.body.requestDescription?.substring(0, 50)
       });
       
+      // Handle receipt OCR request
+      if (isReceiptOCR) {
+        const { processReceiptWithOCR, formatOCRForDisplay } = await import('../services/ocr/receiptOCR');
+
+        // Get the image data from request
+        const imageData = req.body.imageData;
+        if (!imageData) {
+          return res.status(400).json({
+            success: false,
+            error: 'No receipt image provided'
+          });
+        }
+
+        try {
+          // Process with OCR
+          const ocrResult = await processReceiptWithOCR(imageData);
+          const ocrDisplayText = formatOCRForDisplay(ocrResult);
+
+          // Save to database if extraction was successful
+          let savedReceiptId = null;
+          if (ocrResult.vendor || ocrResult.totalAmount) {
+            const { db } = await import('../utils/database');
+            const insertResult = await db.query(`
+              INSERT INTO receipts (
+                vendor,
+                amount_cents,
+                tax_cents,
+                purchase_date,
+                category,
+                payment_method,
+                uploader_user_id,
+                ocr_status,
+                ocr_text,
+                ocr_json,
+                ocr_confidence,
+                line_items,
+                file_data
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+              RETURNING id
+            `, [
+              ocrResult.vendor || null,
+              ocrResult.totalAmount ? Math.round(ocrResult.totalAmount * 100) : null,
+              ocrResult.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+              ocrResult.purchaseDate || null,
+              ocrResult.category || null,
+              ocrResult.paymentMethod || null,
+              req.user?.id,
+              'completed',
+              ocrResult.rawText || null,
+              JSON.stringify(ocrResult),
+              ocrResult.confidence,
+              ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
+              imageData
+            ]);
+
+            if (insertResult.rows.length > 0) {
+              savedReceiptId = insertResult.rows[0].id;
+              logger.info('Receipt saved to database:', { receiptId: savedReceiptId });
+            }
+          }
+
+          return res.json({
+            success: true,
+            data: {
+              requestId,
+              response: ocrDisplayText,
+              confidence: ocrResult.confidence,
+              extractedData: {
+                vendor: ocrResult.vendor,
+                totalAmount: ocrResult.totalAmount,
+                taxAmount: ocrResult.taxAmount,
+                purchaseDate: ocrResult.purchaseDate,
+                category: ocrResult.category,
+                paymentMethod: ocrResult.paymentMethod,
+                lineItems: ocrResult.lineItems
+              },
+              receiptId: savedReceiptId,
+              status: 'completed'
+            }
+          });
+        } catch (ocrError) {
+          logger.error('Receipt OCR processing failed:', ocrError);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to process receipt'
+          });
+        }
+      }
+
       // For customer kiosk requests, always send to Slack
       if (isCustomerKiosk || !req.body.smartAssistEnabled) {
         // Send directly to Slack
