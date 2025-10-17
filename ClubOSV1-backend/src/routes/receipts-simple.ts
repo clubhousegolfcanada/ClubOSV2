@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
+import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ router.post('/upload',
         });
       }
 
-      const {
+      let {
         file_data,
         file_name,
         file_size,
@@ -77,7 +78,36 @@ router.post('/upload',
         location: club_location
       });
 
-      // Create database record
+      // First, run OCR on the image if it's an image file
+      let ocrResult = null;
+      let ocrDisplayText = '';
+
+      if (mime_type && mime_type.startsWith('image/')) {
+        logger.info('Running OCR on receipt image');
+
+        // Process with OCR
+        ocrResult = await processReceiptWithOCR(file_data);
+        ocrDisplayText = formatOCRForDisplay(ocrResult);
+
+        // Use OCR data if manual data not provided
+        if (!vendor && ocrResult.vendor) {
+          vendor = ocrResult.vendor;
+        }
+        if (!amount_cents && ocrResult.totalAmount) {
+          amount_cents = Math.round(ocrResult.totalAmount * 100);
+        }
+        if (!purchase_date && ocrResult.purchaseDate) {
+          purchase_date = ocrResult.purchaseDate;
+        }
+
+        logger.info('OCR processing completed', {
+          vendor: ocrResult.vendor,
+          amount: ocrResult.totalAmount,
+          confidence: ocrResult.confidence
+        });
+      }
+
+      // Create database record with OCR data
       const insertResult = await db.query(`
         INSERT INTO receipts (
           file_data,
@@ -86,12 +116,17 @@ router.post('/upload',
           mime_type,
           vendor,
           amount_cents,
+          tax_cents,
           purchase_date,
           club_location,
+          category,
+          payment_method,
           notes,
           uploader_user_id,
-          ocr_status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'manual')
+          ocr_status,
+          ocr_text,
+          ocr_json
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at
       `, [
         file_data,
@@ -100,10 +135,16 @@ router.post('/upload',
         mime_type || 'application/pdf',
         vendor || null,
         amount_cents ? parseInt(amount_cents.toString()) : null,
+        ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
         purchase_date || null,
         club_location || null,
+        ocrResult?.category || null,
+        ocrResult?.paymentMethod || null,
         notes || null,
-        user.id
+        user.id,
+        ocrResult ? 'completed' : 'manual',
+        ocrResult?.rawText || null,
+        ocrResult ? JSON.stringify(ocrResult) : null
       ]);
 
       const receipt = insertResult.rows[0];
@@ -122,7 +163,11 @@ router.post('/upload',
           purchase_date: receipt.purchase_date,
           location: receipt.club_location,
           created_at: receipt.created_at,
-          status: 'uploaded'
+          status: 'uploaded',
+          // Include OCR results for frontend to display
+          ocrResult: ocrResult,
+          ocrDisplay: ocrDisplayText,
+          ocrConfidence: ocrResult?.confidence || 0
         }
       });
 

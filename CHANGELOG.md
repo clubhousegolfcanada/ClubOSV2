@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.81] - 2025-10-17
+
+### Enhanced
+- **Receipt Upload with AI-Powered OCR**: Smart receipt scanning using OpenAI Vision
+  - Integrated OpenAI Vision API for automatic receipt data extraction
+  - Extracts vendor, amount, tax, date, payment method, and line items
+  - Displays OCR results in ResponseDisplaySimple format for review
+  - Auto-populates form fields with extracted data (editable)
+  - Confidence scoring shows extraction accuracy (0-100%)
+  - Smart vendor categorization (Supplies, Equipment, Office, etc.)
+  - Ignores promotional text, ads, and irrelevant receipt content
+  - OCR corrections improve future scanning accuracy via pattern learning
+  - Added line_items JSONB field for itemized receipt storage
+  - Search function works across all OCR-extracted text
+  - Result: Zero manual data entry - just snap, review, and save
+
 ## [1.21.80] - 2025-10-17
 
 ### Added

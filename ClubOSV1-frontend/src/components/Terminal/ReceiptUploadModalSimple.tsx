@@ -1,8 +1,9 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, Camera, Check, FileText } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { X, Upload, Camera, Check, FileText, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
+import { ResponseDisplaySimple } from '../ResponseDisplaySimple';
 
 interface ReceiptUploadModalProps {
   isOpen: boolean;
@@ -28,9 +29,13 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileDataUrl, setFileDataUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [ocrResult, setOcrResult] = useState<any>(null);
+  const [ocrDisplay, setOcrDisplay] = useState<string>('');
+  const [showOcrReview, setShowOcrReview] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { register, handleSubmit, setValue, watch } = useForm<ReceiptFormData>();
+  const { register, handleSubmit, setValue, watch, reset } = useForm<ReceiptFormData>();
   const { notify } = useNotifications();
 
   // Handle file selection - convert to base64 like tickets do
@@ -55,9 +60,14 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
 
     // Convert to base64 data URL
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
       setFileDataUrl(dataUrl);
+
+      // If it's an image, immediately process with OCR
+      if (file.type.startsWith('image/')) {
+        await processWithOCR(dataUrl, file.name, file.size, file.type);
+      }
     };
     reader.readAsDataURL(file);
   }, [notify]);
@@ -106,6 +116,49 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
     }
   };
 
+  // Process receipt with OCR
+  const processWithOCR = async (dataUrl: string, fileName: string, fileSize: number, mimeType: string) => {
+    setOcrProcessing(true);
+    setShowOcrReview(false);
+    if (onProcessingChange) onProcessingChange(true);
+
+    try {
+      // Send to backend for OCR processing
+      const response = await http.post('receipts/upload', {
+        file_data: dataUrl,
+        file_name: fileName,
+        file_size: fileSize,
+        mime_type: mimeType
+      });
+
+      if (response.data.success && response.data.data.ocrResult) {
+        const { ocrResult, ocrDisplay } = response.data.data;
+
+        setOcrResult(ocrResult);
+        setOcrDisplay(ocrDisplay);
+        setShowOcrReview(true);
+
+        // Auto-populate form fields with OCR data
+        if (ocrResult.vendor) setValue('vendor', ocrResult.vendor);
+        if (ocrResult.totalAmount) setValue('amount', `$${ocrResult.totalAmount.toFixed(2)}`);
+        if (ocrResult.purchaseDate) setValue('purchaseDate', ocrResult.purchaseDate);
+        if (ocrResult.category === 'Supplies' || ocrResult.category === 'Equipment') {
+          setValue('location', 'Bedford'); // Default location, user can change
+        }
+
+        notify('success', `Receipt scanned! Confidence: ${Math.round((ocrResult.confidence || 0) * 100)}%`);
+      } else {
+        notify('warning', 'Could not extract receipt data. Please enter manually.');
+      }
+    } catch (error: any) {
+      console.error('OCR processing error:', error);
+      notify('error', 'Failed to scan receipt. Please enter details manually.');
+    } finally {
+      setOcrProcessing(false);
+      if (onProcessingChange) onProcessingChange(false);
+    }
+  };
+
   // Handle camera capture for mobile
   const handleCameraCapture = () => {
     const input = document.createElement('input');
@@ -114,6 +167,15 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
     input.capture = 'environment' as any;
     input.onchange = (e: any) => handleFileSelect(e);
     input.click();
+  };
+
+  // Handle manual save after review
+  const handleSaveReceipt = async () => {
+    // The receipt is already saved in database from OCR processing
+    // Just notify and close
+    onUploadComplete(ocrResult);
+    notify('success', 'Receipt saved successfully!');
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -140,8 +202,41 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
 
+            {/* OCR Processing State */}
+            {ocrProcessing && (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[var(--accent)]" />
+                  <p className="text-sm font-medium text-[var(--text-primary)]">Scanning receipt...</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Using AI to extract information</p>
+                </div>
+              </div>
+            )}
+
+            {/* OCR Results Display */}
+            {showOcrReview && ocrDisplay && !ocrProcessing && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-[var(--text-primary)]">Receipt Scan Results</h3>
+                <div className="bg-[var(--bg-secondary)] rounded-lg p-4 border border-[var(--border-secondary)]">
+                  <ResponseDisplaySimple
+                    response={{
+                      response: ocrDisplay,
+                      confidence: ocrResult?.confidence,
+                      status: 'completed',
+                      route: 'OCR',
+                      dataSource: 'OpenAI Vision'
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                  <Check className="w-3 h-3 text-green-500" />
+                  <span>Data has been extracted and filled below. You can edit if needed.</span>
+                </div>
+              </div>
+            )}
+
             {/* File Selection */}
-            {!selectedFile && (
+            {!selectedFile && !ocrProcessing && (
               <div className="space-y-3">
                 <div className="flex gap-2">
                   <button
@@ -213,7 +308,7 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
             )}
 
             {/* Manual Input Fields */}
-            {selectedFile && (
+            {selectedFile && !ocrProcessing && (
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-[var(--text-secondary)]">
                   Receipt Details (Optional)
@@ -299,23 +394,35 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={!selectedFile || isUploading}
-              className="px-4 py-2 bg-[var(--accent)] text-white text-sm font-medium rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  Upload Receipt
-                </>
-              )}
-            </button>
+            {showOcrReview ? (
+              <button
+                type="button"
+                onClick={handleSaveReceipt}
+                disabled={isUploading}
+                className="px-4 py-2 bg-[var(--accent)] text-white text-sm font-medium rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Save Receipt
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!selectedFile || isUploading || ocrProcessing}
+                className="px-4 py-2 bg-[var(--accent)] text-white text-sm font-medium rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Upload Receipt
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </form>
       </div>
