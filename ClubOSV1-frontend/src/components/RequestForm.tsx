@@ -249,7 +249,7 @@ const RequestForm: React.FC = () => {
             category: ticketCategory,
             priority: ticketPriority,
             location: data.location || undefined,
-            photoUrls: photoAttachments.length > 0 ? photoAttachments : undefined,
+            photo_urls: photoAttachments.length > 0 ? photoAttachments : undefined,
           },
 
         );

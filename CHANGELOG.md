@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.78] - 2025-10-17
+
+### Fixed
+- **Ticket Photo Upload**: Fixed field name mismatch preventing photos from being saved
+  - Frontend was sending `photoUrls` (camelCase) but backend expected `photo_urls` (snake_case)
+  - Changed RequestForm.tsx to send `photo_urls` to match backend expectations
+  - Database schema and display components were already correct
+  - Photos now properly save to database and display in ticket list and detail views
+  - Result: Ticket photo attachments now work correctly end-to-end
+
 ## [1.21.77] - 2025-10-14
 
 ### Added
