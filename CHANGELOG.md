@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.79] - 2025-10-17
+
+### Fixed
+- **Ticket Photo Display**: Fixed photos not displaying in ticket system
+  - Root cause: SQL queries using `SELECT t.*` weren't properly including the `photo_urls` column
+  - Fixed getTickets and getTicketById methods to explicitly SELECT all columns including `photo_urls`
+  - The case converter can only transform fields that exist in query results
+  - Photos were being saved to database but not retrieved in API responses
+  - Result: Ticket photos now properly display in both list view and detail modal
+
 ## [1.21.78] - 2025-10-17
 
 ### Fixed
