@@ -355,27 +355,7 @@ class DatabaseService {
   }): Promise<DbTicket[]> {
     let queryText = `
       SELECT
-        t.id,
-        t.title,
-        t.description,
-        t.category,
-        t.status,
-        t.priority,
-        t.location,
-        t.created_by_id,
-        t.created_by_name,
-        t.created_by_email,
-        t.created_by_phone,
-        t.assigned_to_id,
-        t.assigned_to_name,
-        t.assigned_to_email,
-        t."createdAt",
-        t."updatedAt",
-        t.resolved_at,
-        t.archived_at,
-        t.archived_by,
-        t.metadata,
-        t.photo_urls,
+        t.*,
         COALESCE(
           json_agg(
             json_build_object(
@@ -442,27 +422,7 @@ class DatabaseService {
   async getTicketById(id: string): Promise<DbTicket | null> {
     const result = await query(
       `SELECT
-        t.id,
-        t.title,
-        t.description,
-        t.category,
-        t.status,
-        t.priority,
-        t.location,
-        t.created_by_id,
-        t.created_by_name,
-        t.created_by_email,
-        t.created_by_phone,
-        t.assigned_to_id,
-        t.assigned_to_name,
-        t.assigned_to_email,
-        t."createdAt",
-        t."updatedAt",
-        t.resolved_at,
-        t.archived_at,
-        t.archived_by,
-        t.metadata,
-        t.photo_urls,
+        t.*,
         COALESCE(
           json_agg(
             json_build_object(

@@ -286,6 +286,7 @@ app.use('/api', csrfRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/booking/locations', require('./routes/booking/locations').default);
 app.use('/api/tickets', ticketsRoutes);
+app.use('/api/receipts', require('./routes/receipts-simple').default);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
