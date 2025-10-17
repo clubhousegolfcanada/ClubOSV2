@@ -1,17 +1,19 @@
 import express from 'express';
-import { requireAuth } from '../middleware/auth';
-import { rateLimiter } from '../middleware/rateLimiter';
+import { authenticate } from '../middleware/auth';
+import rateLimit from 'express-rate-limit';
 import { db } from '../utils/database';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
 
 const router = express.Router();
 
 // Rate limiter for upload endpoint (10 uploads per minute per user)
-const uploadLimiter = rateLimiter({
+const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10,
-  message: 'Too many uploads. Please try again later.'
+  message: 'Too many uploads. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 /**
@@ -19,7 +21,7 @@ const uploadLimiter = rateLimiter({
  * Upload a receipt (simplified - using base64 like tickets)
  */
 router.post('/upload',
-  requireAuth,
+  authenticate,
   uploadLimiter,
   [
     body('file_data').notEmpty().withMessage('File data is required'),
@@ -139,7 +141,7 @@ router.post('/upload',
  * Search receipts with filters
  */
 router.get('/search',
-  requireAuth,
+  authenticate,
   [
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 100 })
@@ -280,7 +282,7 @@ router.get('/search',
  * Get single receipt details
  */
 router.get('/:id',
-  requireAuth,
+  authenticate,
   async (req, res) => {
     try {
       const { user } = req as any;
@@ -335,7 +337,7 @@ router.get('/:id',
  * Update receipt metadata
  */
 router.patch('/:id',
-  requireAuth,
+  authenticate,
   async (req, res) => {
     try {
       const { user } = req as any;
@@ -439,7 +441,7 @@ router.patch('/:id',
  * Delete a receipt
  */
 router.delete('/:id',
-  requireAuth,
+  authenticate,
   async (req, res) => {
     try {
       const { user } = req as any;
@@ -491,7 +493,7 @@ router.delete('/:id',
  * Mark multiple receipts as reconciled
  */
 router.post('/reconcile',
-  requireAuth,
+  authenticate,
   [
     body('receiptIds').isArray().withMessage('Receipt IDs must be an array'),
     body('receiptIds.*').isUUID().withMessage('Invalid receipt ID')

@@ -4,11 +4,12 @@ import { useRequestSubmission, useNotifications, useDemoMode } from '@/state/hoo
 import { useSettingsState, useAuthState } from '@/state/useStore';
 import { canAccessRoute, getRestrictedTooltip } from '@/utils/roleUtils';
 import type { UserRequest, RequestRoute } from '@/types/request';
-import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle, Camera, X } from 'lucide-react';
+import { Lock, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, Send, Clock, MessageCircle, Camera, X, Receipt } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { ResponseDisplay } from './ResponseDisplay';
 import { ResponseDisplaySimple } from './ResponseDisplaySimple';
+import { ReceiptUploadButton } from './Terminal/ReceiptUploadButton';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import PrioritySlider from './ui/PrioritySlider';
@@ -581,6 +582,9 @@ const RequestForm: React.FC = () => {
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">ClubOS Terminal</h3>
           <div className="flex items-center gap-2">
+            {/* Receipt Upload button */}
+            <ReceiptUploadButton className="!py-1.5 !text-xs !rounded-full" />
+
             {/* Update Knowledge button - top right */}
             <button
               type="button"
@@ -589,8 +593,8 @@ const RequestForm: React.FC = () => {
                 setIsTicketMode(false);
                 // Keep smartAssistEnabled as is (don't change the toggle)
               }}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105 
-                bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] 
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all transform hover:scale-105
+                bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-secondary)]
                 hover:border-[#4A154B]/50 hover:bg-[#4A154B]/10 hover:text-[#4A154B]`}
               disabled={isSubmitting || demoMode}
             >

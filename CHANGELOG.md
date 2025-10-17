@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.80] - 2025-10-17
+
+### Added
+- **Receipt Upload Feature**: Simplified receipt management system integrated into ClubOS Terminal
+  - Created ReceiptUploadButton component with role-based access (admin/staff/operator)
+  - Built ReceiptUploadModalSimple with file upload and camera capture support
+  - Supports PDF and image formats (JPEG, PNG) with 5MB size limit
+  - Uses base64 encoding pattern matching existing ticket photo implementation
+  - Optional metadata fields: vendor, amount, purchase date, location, notes
+  - Created backend routes for upload, search, view, update, delete, and reconciliation
+  - Database schema with receipts and receipt_audit_log tables
+  - Integrated into Terminal header next to Update Knowledge button
+  - Comprehensive documentation in RECEIPT_UPLOAD_SIMPLIFIED_DOCS.md
+  - Result: Staff can now upload and manage receipts directly from ClubOS Terminal
+
 ## [1.21.79] - 2025-10-17
 
 ### Fixed

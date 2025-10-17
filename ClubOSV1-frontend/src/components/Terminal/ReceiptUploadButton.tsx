@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Receipt, Upload, Camera, Loader2 } from 'lucide-react';
-import { ReceiptUploadModal } from './ReceiptUploadModal';
+import { Receipt, Loader2 } from 'lucide-react';
+import { ReceiptUploadModal } from './ReceiptUploadModalSimple';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 
@@ -23,7 +23,6 @@ export const ReceiptUploadButton: React.FC<ReceiptUploadButtonProps> = ({
 
   const handleUploadComplete = (receipt: any) => {
     setIsModalOpen(false);
-    notify('success', `Receipt uploaded successfully! ${receipt.driveLink ? 'View in Drive' : ''}`);
 
     if (onUploadComplete) {
       onUploadComplete(receipt);
