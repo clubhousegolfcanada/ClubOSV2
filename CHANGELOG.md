@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.83] - 2025-10-17
+
+### Fixed
+- **Receipt OCR Database Migration**: Added automatic table creation on backend startup
+  - Receipts table now automatically creates when backend starts
+  - Includes all necessary columns for OCR data storage
+  - Creates performance indexes for fast searching
+  - Adds receipt_audit_log table for tracking changes
+  - No manual database migration needed - runs automatically
+  - OCR extracts data successfully (vendor, amount, items)
+  - Receipt images stored as base64 in file_data column
+  - Result: Receipt OCR feature now fully functional in production
+
 ## [1.21.82] - 2025-10-17
 
 ### Enhanced

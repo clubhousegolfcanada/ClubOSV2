@@ -598,6 +598,71 @@ async function startServer() {
       // Don't fail startup - log and continue
     }
 
+    // Run receipts table migration - critical for receipt OCR feature
+    try {
+      logger.info('🔄 Running receipts table migration...');
+
+      // Create receipts table if it doesn't exist
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS receipts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          vendor TEXT,
+          amount_cents INTEGER,
+          tax_cents INTEGER,
+          subtotal_cents INTEGER,
+          purchase_date DATE,
+          club_location TEXT,
+          category TEXT,
+          payment_method TEXT,
+          notes TEXT,
+          file_data TEXT,
+          file_name TEXT,
+          file_size INTEGER,
+          mime_type TEXT,
+          uploader_user_id UUID REFERENCES users(id),
+          ocr_status TEXT DEFAULT 'pending',
+          ocr_text TEXT,
+          ocr_json JSONB,
+          ocr_confidence DECIMAL(3,2),
+          line_items JSONB,
+          reconciled BOOLEAN DEFAULT FALSE,
+          reconciled_at TIMESTAMP,
+          reconciled_by UUID REFERENCES users(id),
+          export_batch TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create indexes for performance
+      await db.query(`
+        CREATE INDEX IF NOT EXISTS idx_receipts_vendor ON receipts(vendor);
+        CREATE INDEX IF NOT EXISTS idx_receipts_created_at ON receipts(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_receipts_uploader ON receipts(uploader_user_id);
+        CREATE INDEX IF NOT EXISTS idx_receipts_reconciled ON receipts(reconciled);
+        CREATE INDEX IF NOT EXISTS idx_receipts_vendor_search ON receipts USING gin(to_tsvector('english', vendor));
+        CREATE INDEX IF NOT EXISTS idx_receipts_amount_range ON receipts(amount_cents);
+        CREATE INDEX IF NOT EXISTS idx_receipts_export_batch ON receipts(export_batch) WHERE export_batch IS NOT NULL;
+      `);
+
+      // Create audit log table
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS receipt_audit_log (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          receipt_id UUID REFERENCES receipts(id) ON DELETE CASCADE,
+          action TEXT NOT NULL,
+          changed_fields JSONB,
+          user_id UUID REFERENCES users(id),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      logger.info('✅ Receipts table migration completed');
+    } catch (error) {
+      logger.error('Failed to run receipts migration:', error);
+      // Don't fail startup - log and continue
+    }
+
     // Enable V3-PLS if not already enabled
     try {
       const { enableV3PLSOnStartup } = await import('./scripts/enable-v3pls-startup');
