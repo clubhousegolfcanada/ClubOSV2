@@ -59,9 +59,8 @@ const ReceiptExportCard: React.FC = () => {
         format: exportFormat
       });
 
-      // Use the base API URL from environment or fallback to localhost
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005';
-      const exportUrl = `${baseUrl}/api/receipts/export?${params.toString()}`;
+      // Build the export URL - the backend is at clubosv2-production.up.railway.app
+      const exportUrl = `https://clubosv2-production.up.railway.app/api/receipts/export?${params.toString()}`;
 
       // Get the auth token
       const token = localStorage.getItem('authToken');
