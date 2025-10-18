@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.84] - 2025-10-18
+
+### Added
+- **Receipt Export Functionality**: Comprehensive receipt export system with time-based filtering
+  - Created export endpoints with CSV and JSON format support
+  - Added period-based filtering (all time, yearly, monthly, weekly)
+  - Implemented receipt summary statistics endpoint
+  - Created ReceiptExportCard component for Operations > Integrations & AI tab
+  - CSV export includes all receipt fields formatted for accounting software
+  - JSON export for data backup and integration
+  - Automatic filename generation with period and date
+  - Client-side last export tracking with localStorage
+  - Integrated json2csv package for proper CSV generation
+  - Added "Operations & Export" section to Integrations page
+  - Result: Staff can now export receipts by time period directly from Operations Center
+
 ## [1.21.83] - 2025-10-17
 
 ### Fixed

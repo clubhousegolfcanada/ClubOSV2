@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube, Zap, Monitor, Edit2, Power, Save } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import ReceiptExportCard from './ReceiptExportCard';
 
 
 
@@ -647,7 +648,7 @@ export const OperationsIntegrations: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900">CRM & Support</h2>
           </div>
         </div>
-        
+
         <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* HubSpot Card */}
           <div className="border border-gray-200 rounded-lg p-4">
@@ -768,6 +769,21 @@ export const OperationsIntegrations: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Operations & Export Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center space-x-2">
+            <Building2 className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-gray-900">Operations & Export</h2>
+          </div>
+        </div>
+
+        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Receipt Export Card */}
+          <ReceiptExportCard />
         </div>
       </div>
 

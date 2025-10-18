@@ -5,6 +5,8 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
 import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
+import { format } from 'date-fns';
+import { Parser } from 'json2csv';
 
 const router = express.Router();
 
@@ -15,6 +17,232 @@ const uploadLimiter = rateLimit({
   message: 'Too many uploads. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false
+});
+
+/**
+ * GET /api/receipts/summary
+ * Get receipt summary statistics
+ */
+router.get('/summary', authenticate, async (req, res) => {
+  try {
+    const { period = 'month' } = req.query;
+
+    // Build date filter based on period
+    let dateFilter = '';
+    const now = new Date();
+
+    switch (period) {
+      case 'week':
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+        weekStart.setHours(0, 0, 0, 0);
+        dateFilter = `WHERE created_at >= '${weekStart.toISOString()}'`;
+        break;
+      case 'month':
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateFilter = `WHERE created_at >= '${monthStart.toISOString()}'`;
+        break;
+      case 'year':
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        dateFilter = `WHERE created_at >= '${yearStart.toISOString()}'`;
+        break;
+      case 'all':
+      default:
+        dateFilter = '';
+        break;
+    }
+
+    // Get summary statistics
+    const summaryQuery = `
+      SELECT
+        COUNT(*) as total_receipts,
+        COALESCE(SUM(amount_cents), 0) as total_amount_cents,
+        COALESCE(SUM(tax_cents), 0) as total_tax_cents,
+        MIN(created_at) as earliest_receipt,
+        MAX(created_at) as latest_receipt
+      FROM receipts
+      ${dateFilter}
+    `;
+
+    const summary = await db.query(summaryQuery);
+    const result = summary.rows[0] || {
+      total_receipts: 0,
+      total_amount_cents: 0,
+      total_tax_cents: 0,
+      earliest_receipt: null,
+      latest_receipt: null
+    };
+
+    // Get last export timestamp from a tracking table or localStorage
+    // For now, we'll return null and track this client-side
+
+    res.json({
+      totalReceipts: parseInt(result.total_receipts) || 0,
+      totalAmount: (parseInt(result.total_amount_cents) || 0) / 100,
+      totalTax: (parseInt(result.total_tax_cents) || 0) / 100,
+      dateRange: {
+        from: result.earliest_receipt,
+        to: result.latest_receipt
+      },
+      lastExport: null // Will be tracked client-side
+    });
+
+  } catch (error) {
+    logger.error('Error fetching receipt summary:', error);
+    res.status(500).json({
+      error: 'Failed to fetch receipt summary',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * GET /api/receipts/export
+ * Export receipts with filtering
+ */
+router.get('/export', authenticate, async (req, res) => {
+  try {
+    const {
+      period = 'month',
+      format: exportFormat = 'csv',
+      year,
+      month
+    } = req.query;
+
+    // Build date filter
+    let dateFilter = '';
+    const now = new Date();
+    let periodLabel = '';
+
+    switch (period) {
+      case 'week':
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        dateFilter = `WHERE created_at >= '${weekStart.toISOString()}'`;
+        periodLabel = `week_of_${format(weekStart, 'yyyy_MM_dd')}`;
+        break;
+
+      case 'month':
+        if (year && month) {
+          const customMonthStart = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
+          const customMonthEnd = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
+          dateFilter = `WHERE created_at >= '${customMonthStart.toISOString()}' AND created_at <= '${customMonthEnd.toISOString()}'`;
+          periodLabel = `${year}_${String(month).padStart(2, '0')}`;
+        } else {
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          dateFilter = `WHERE created_at >= '${monthStart.toISOString()}'`;
+          periodLabel = format(now, 'yyyy_MM');
+        }
+        break;
+
+      case 'year':
+        if (year) {
+          const customYearStart = new Date(parseInt(year as string), 0, 1);
+          const customYearEnd = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
+          dateFilter = `WHERE created_at >= '${customYearStart.toISOString()}' AND created_at <= '${customYearEnd.toISOString()}'`;
+          periodLabel = year as string;
+        } else {
+          const yearStart = new Date(now.getFullYear(), 0, 1);
+          dateFilter = `WHERE created_at >= '${yearStart.toISOString()}'`;
+          periodLabel = String(now.getFullYear());
+        }
+        break;
+
+      case 'all':
+      default:
+        dateFilter = '';
+        periodLabel = 'all_time';
+        break;
+    }
+
+    // Fetch receipts
+    const receiptsQuery = `
+      SELECT
+        r.*,
+        u.name as uploader_name,
+        u.email as uploader_email
+      FROM receipts r
+      LEFT JOIN users u ON r.uploader_user_id = u.id
+      ${dateFilter}
+      ORDER BY r.created_at DESC
+    `;
+
+    const receiptsResult = await db.query(receiptsQuery);
+    const receipts = receiptsResult.rows;
+
+    // Format based on export type
+    if (exportFormat === 'csv') {
+      // Prepare data for CSV
+      const csvData = receipts.map(receipt => ({
+        'Date': format(new Date(receipt.purchase_date || receipt.created_at), 'yyyy-MM-dd'),
+        'Vendor': receipt.vendor || '',
+        'Amount': receipt.amount_cents ? (receipt.amount_cents / 100).toFixed(2) : '0.00',
+        'Tax': receipt.tax_cents ? (receipt.tax_cents / 100).toFixed(2) : '0.00',
+        'Subtotal': receipt.subtotal_cents ? (receipt.subtotal_cents / 100).toFixed(2) : '0.00',
+        'Category': receipt.category || '',
+        'Payment Method': receipt.payment_method || '',
+        'Location': receipt.club_location || '',
+        'Notes': receipt.notes || '',
+        'Uploaded By': receipt.uploader_name || '',
+        'Upload Date': format(new Date(receipt.created_at), 'yyyy-MM-dd HH:mm'),
+        'Reconciled': receipt.reconciled ? 'Yes' : 'No'
+      }));
+
+      // Convert to CSV
+      const json2csvParser = new Parser({
+        fields: [
+          'Date', 'Vendor', 'Amount', 'Tax', 'Subtotal',
+          'Category', 'Payment Method', 'Location', 'Notes',
+          'Uploaded By', 'Upload Date', 'Reconciled'
+        ]
+      });
+      const csv = json2csvParser.parse(csvData);
+
+      // Set headers for download
+      const filename = `receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.csv`;
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csv);
+
+    } else if (exportFormat === 'json') {
+      // Return raw JSON data
+      const filename = `receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.json`;
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.json({
+        exportDate: now.toISOString(),
+        period: period,
+        periodLabel: periodLabel,
+        totalReceipts: receipts.length,
+        receipts: receipts.map(r => ({
+          ...r,
+          // Don't include the base64 image data in JSON export by default
+          file_data: r.file_data ? '[IMAGE DATA EXCLUDED]' : null
+        }))
+      });
+
+    } else if (exportFormat === 'pdf') {
+      // PDF export will be implemented in the next phase
+      res.status(501).json({
+        error: 'PDF export not yet implemented',
+        message: 'Please use CSV or JSON format for now'
+      });
+
+    } else {
+      res.status(400).json({
+        error: 'Invalid export format',
+        message: 'Supported formats: csv, json, pdf'
+      });
+    }
+
+  } catch (error) {
+    logger.error('Error exporting receipts:', error);
+    res.status(500).json({
+      error: 'Failed to export receipts',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 /**
