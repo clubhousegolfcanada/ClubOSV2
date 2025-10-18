@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, FileText, DollarSign, Calendar, AlertCircle } from 'lucide-react';
-import { apiRequest } from '../../../utils/api';
+import { http } from '@/api/http';
 
 interface ReceiptSummary {
   totalReceipts: number;
@@ -39,11 +39,8 @@ const ReceiptExportCard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiRequest('/api/receipts/summary', {
-        method: 'GET',
-        params: { period }
-      });
-      setSummary(response);
+      const response = await http.get(`receipts/summary?period=${period}`);
+      setSummary(response.data);
     } catch (err) {
       console.error('Failed to fetch receipt summary:', err);
       setError('Failed to load summary');
@@ -62,7 +59,9 @@ const ReceiptExportCard: React.FC = () => {
         format: exportFormat
       });
 
-      const exportUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/receipts/export?${params.toString()}`;
+      // Use the base API URL from environment or default
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005';
+      const exportUrl = `${baseUrl}/api/receipts/export?${params.toString()}`;
 
       // Get the auth token
       const token = localStorage.getItem('authToken');
