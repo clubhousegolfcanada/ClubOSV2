@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.86] - 2025-10-18
+
+### Fixed
+- **Ticket Photo Display**: Fixed photos not appearing in API responses
+  - Root cause: The transformTicket function wasn't preserving the photo_urls field during transformation
+  - Added explicit handling to ensure photo_urls is converted to photoUrls in API responses
+  - Database was correctly storing photos but the field was being dropped during snake_case to camelCase conversion
+  - Frontend UI code already existed to display photos, was just missing the data
+  - Result: Ticket photos now properly display in both list view thumbnails and detail modal galleries
+
 ## [1.21.85] - 2025-10-18
 
 ### Fixed
