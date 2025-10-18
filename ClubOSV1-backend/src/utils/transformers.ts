@@ -9,13 +9,22 @@ export function transformUser(dbUser: DbUser): any {
 
 // Transform database ticket to API ticket format
 export function transformTicket(dbTicket: DbTicket): any {
-  return dbToApi(dbTicket, {
+  const transformed = dbToApi(dbTicket, {
     ...COMMON_DB_TO_API_OPTIONS,
     nestedFields: {
       'created_by': ['id', 'name', 'email', 'phone'],
       'assigned_to': ['id', 'name', 'email']
     }
   });
+
+  // Explicitly preserve photo_urls as photoUrls
+  // The dbToApi converter should handle this, but we're being explicit
+  // to ensure the PostgreSQL array field is properly transformed
+  if (dbTicket.photo_urls !== undefined) {
+    transformed.photoUrls = dbTicket.photo_urls;
+  }
+
+  return transformed;
 }
 
 // Transform database feedback to API feedback format

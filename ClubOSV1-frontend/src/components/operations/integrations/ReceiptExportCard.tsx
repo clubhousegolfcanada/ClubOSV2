@@ -59,36 +59,18 @@ const ReceiptExportCard: React.FC = () => {
         format: exportFormat
       });
 
-      // Build the export URL - the backend is at clubosv2-production.up.railway.app
-      const exportUrl = `https://clubosv2-production.up.railway.app/api/receipts/export?${params.toString()}`;
-
-      // Get the auth token
-      const token = localStorage.getItem('authToken');
-
-      // Create a download link
-      const response = await fetch(exportUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Use http client to get the export data as blob
+      const response = await http.get(`receipts/export?${params.toString()}`, {
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
+      // Create blob from response data
+      const blob = response.data;
 
-      // Get the filename from Content-Disposition header or use default
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = `receipts_${period}_${new Date().toISOString().split('T')[0]}.${exportFormat}`;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      }
+      // Generate filename
+      const filename = `receipts_${period}_${new Date().toISOString().split('T')[0]}.${exportFormat}`;
 
-      // Download the file
-      const blob = await response.blob();
+      // Create download link and trigger download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

@@ -1,4 +1,4 @@
-# ClubOS v1.21.84 - Flexible Facility Management System
+# ClubOS v1.21.85 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.84**
+**Current Version: v1.21.85**
+- **Receipt Export Fix** - Properly fixed URL handling using http client
 - **Receipt Export System** - Export receipts by time period (all/yearly/monthly/weekly)
 - **Multiple Export Formats** - CSV for accounting, JSON for data backup
 - **Operations Integration** - Export card in Integrations & AI tab
 - **Summary Statistics** - View total receipts and amounts before export
-- **Client-side Tracking** - Remembers last export timestamp
 
 ## 🏗️ System Architecture
 

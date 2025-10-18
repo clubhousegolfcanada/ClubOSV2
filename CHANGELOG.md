@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.85] - 2025-10-18
+
+### Fixed
+- **Receipt Export URL Handling**: Properly fixed export URL construction
+  - Removed hardcoded production URL from ReceiptExportCard component
+  - Fixed to use http client with `responseType: 'blob'` instead of raw fetch()
+  - HTTP client automatically handles /api prefix and authentication
+  - Follows established download pattern from WhiteLabelPlanner component
+  - Result: Receipt exports now work correctly without double /api prefix or hardcoded URLs
+
 ## [1.21.84] - 2025-10-18
 
 ### Added
