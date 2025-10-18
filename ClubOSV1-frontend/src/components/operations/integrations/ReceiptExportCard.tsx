@@ -59,7 +59,7 @@ const ReceiptExportCard: React.FC = () => {
         format: exportFormat
       });
 
-      // Use the base API URL from environment or default
+      // Use the base API URL from environment or fallback to localhost
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005';
       const exportUrl = `${baseUrl}/api/receipts/export?${params.toString()}`;
 
