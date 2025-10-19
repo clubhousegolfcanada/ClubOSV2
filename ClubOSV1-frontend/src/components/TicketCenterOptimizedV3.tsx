@@ -506,29 +506,32 @@ const TicketCenterOptimizedV3 = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleGroupByProvince}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all touch-manipulation ${
                 groupByProvince
                   ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
+              style={{ minWidth: '40px', minHeight: '40px' }}
               title="Group by Province"
             >
               <MapPin className="w-4 h-4" />
             </button>
             <button
               onClick={toggleGroupByLocation}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all touch-manipulation ${
                 groupByLocation
                   ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
+              style={{ minWidth: '40px', minHeight: '40px' }}
               title="Group by Location"
             >
               <Layers className="w-4 h-4" />
             </button>
             <button
               onClick={() => router.push('/?ticketMode=true')}
-              className="px-3 py-1.5 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+              className="px-3 py-2.5 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-all touch-manipulation flex items-center gap-2"
+              style={{ minHeight: '40px' }}
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">New</span>
@@ -582,11 +585,12 @@ const TicketCenterOptimizedV3 = () => {
                       setSelectedLocation('all');
                       setShowLocationFilter(false);
                     }}
-                    className={`p-2 rounded-lg text-sm transition-colors ${
+                    className={`p-3 rounded-lg text-sm transition-colors touch-manipulation ${
                       selectedLocation === 'all'
                         ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]'
                     }`}
+                    style={{ minHeight: '48px' }}
                   >
                     <span className="block">All</span>
                     <span className="text-xs opacity-75">({locationCounts.all})</span>
@@ -598,11 +602,12 @@ const TicketCenterOptimizedV3 = () => {
                         setSelectedLocation(location);
                         setShowLocationFilter(false);
                       }}
-                      className={`p-2 rounded-lg text-sm transition-colors ${
+                      className={`p-3 rounded-lg text-sm transition-colors touch-manipulation ${
                         selectedLocation === location
                           ? 'bg-[var(--accent)] text-white'
                           : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]'
                       }`}
+                      style={{ minHeight: '48px' }}
                     >
                       <span className="block">{location}</span>
                       <span className="text-xs opacity-75">({locationCounts[location] || 0})</span>
@@ -617,31 +622,34 @@ const TicketCenterOptimizedV3 = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setCategoryFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
                 categoryFilter === 'all'
                   ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
               }`}
+              style={{ minHeight: '44px' }}
             >
               All
             </button>
             <button
               onClick={() => setCategoryFilter('facilities')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
                 categoryFilter === 'facilities'
                   ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
               }`}
+              style={{ minHeight: '44px' }}
             >
               Facilities
             </button>
             <button
               onClick={() => setCategoryFilter('tech')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
                 categoryFilter === 'tech'
                   ? 'bg-[var(--accent)] text-white'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
               }`}
+              style={{ minHeight: '44px' }}
             >
               Tech
             </button>
@@ -837,9 +845,10 @@ const TicketCenterOptimizedV3 = () => {
           />
           <button
             onClick={() => setSelectedPhoto(null)}
-            className="absolute top-4 right-4 p-2 bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors"
+            className="absolute top-4 right-4 p-3 bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors touch-manipulation"
+            style={{ minWidth: '48px', minHeight: '48px' }}
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
       )}
@@ -966,18 +975,19 @@ const TicketCard: React.FC<{
           </div>
         )}
 
-        {/* Quick actions - compact */}
-        <div className="flex gap-0.5 flex-shrink-0">
+        {/* Quick actions - compact with proper touch targets */}
+        <div className="flex gap-1 flex-shrink-0">
           {(ticket.status === 'open' || ticket.status === 'in-progress') && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onResolve();
               }}
-              className="p-1.5 text-[var(--status-success)] hover:bg-[var(--bg-hover)] rounded transition-colors"
+              className="p-2.5 text-[var(--status-success)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors touch-manipulation"
+              style={{ minWidth: '40px', minHeight: '40px' }}
               title="Resolve"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-4 h-4" />
             </button>
           )}
           {ticket.status !== 'archived' && (
@@ -986,10 +996,11 @@ const TicketCard: React.FC<{
                 e.stopPropagation();
                 onArchive();
               }}
-              className="p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] rounded transition-colors"
+              className="p-2.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors touch-manipulation"
+              style={{ minWidth: '40px', minHeight: '40px' }}
               title="Archive"
             >
-              <Archive className="w-3.5 h-3.5" />
+              <Archive className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -1065,6 +1076,7 @@ const TicketDetailModal: React.FC<{
   const [localTicket, setLocalTicket] = useState(ticket);
   const [fieldLoading, setFieldLoading] = useState<Record<string, boolean>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   // Track original values for rollback
   const originalValues = useRef({
@@ -1152,7 +1164,8 @@ const TicketDetailModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+            className="p-2.5 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors touch-manipulation"
+            style={{ minWidth: '44px', minHeight: '44px' }}
           >
             <X className="w-5 h-5" />
           </button>
@@ -1279,7 +1292,7 @@ const TicketDetailModal: React.FC<{
                     src={photo}
                     alt={`Photo ${index + 1}`}
                     className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => window.open(photo, '_blank')}
+                    onClick={() => setSelectedPhoto(photo)}
                   />
                 ))}
               </div>
@@ -1329,6 +1342,28 @@ const TicketDetailModal: React.FC<{
           </div>
         </div>
       </div>
+
+      {/* Photo Lightbox within Modal */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <img
+            src={selectedPhoto}
+            alt="Full size"
+            className="max-w-full max-h-full rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setSelectedPhoto(null)}
+            className="absolute top-4 right-4 p-3 bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors touch-manipulation"
+            style={{ minWidth: '48px', minHeight: '48px' }}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

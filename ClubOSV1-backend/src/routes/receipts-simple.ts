@@ -7,7 +7,7 @@ import { body, validationResult, query } from 'express-validator';
 import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
-import archiver from 'archiver';
+import * as archiver from 'archiver';
 
 const router = express.Router();
 

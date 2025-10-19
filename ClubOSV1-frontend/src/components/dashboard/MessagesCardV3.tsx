@@ -269,8 +269,8 @@ export default function MessagesCardV3() {
       await http.post(
         `messages/send`,
         {
-          phoneNumber: conv.phoneNumber,
-          message: message.trim(),
+          to: conv.phoneNumber,
+          text: message.trim(),
           conversationId: conv.id
         },
         {

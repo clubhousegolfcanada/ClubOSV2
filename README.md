@@ -1,4 +1,4 @@
-# ClubOS v1.21.87 - Flexible Facility Management System
+# ClubOS v1.21.89 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.88**
+**Current Version: v1.21.89**
+- **Mobile PWA Optimization** - World-class touch targets for all ticket system buttons (44-48px minimum)
 - **Receipt Photo Export** - Export receipts with photos in ZIP format (CSV + images)
-- **Ticket Photo Display** - Fixed photos not appearing in ticket system (field name mismatch)
+- **Ticket Photo Display** - Fixed photos not appearing in ticket system with proper lightbox
 - **Photo Thumbnails** - Added thumbnail preview in ticket cards with count badge
 - **Code Cleanup** - Removed unused TicketCenterV4 component
-- **Receipt Export SQL Fix** - Fixed ambiguous column error in receipt export queries
 
 ## 🏗️ System Architecture
 
