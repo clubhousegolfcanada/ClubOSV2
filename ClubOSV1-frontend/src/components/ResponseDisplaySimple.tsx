@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Database, Clock, Edit2, Save, X } from 'lucide-react';
+import { Bot, Database, Clock, Edit2, Save, X, Receipt, DollarSign, Calendar, MapPin, Trash2, Check } from 'lucide-react';
 import logger from '@/services/logger';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
@@ -162,6 +162,154 @@ const formatStructuredContent = (text: string): React.ReactNode => {
   );
 };
 
+// Component to render receipt data in a formatted way
+const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }> = ({ receipts, summary, actions }) => {
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
+
+  const handleReceiptAction = async (receiptId: string, action: string, value?: any) => {
+    setProcessingAction(receiptId);
+
+    try {
+      let result;
+
+      switch (action) {
+        case 'reconcile':
+          result = await http.post(`receipts/${receiptId}/reconcile`, { reconciled: true });
+          toast.success('Receipt marked as reconciled');
+          break;
+
+        case 'delete':
+          if (confirm('Are you sure you want to delete this receipt?')) {
+            result = await http.delete(`receipts/${receiptId}`);
+            toast.success('Receipt deleted successfully');
+          }
+          break;
+
+        case 'edit':
+          // For edit, we'd need to show a modal or inline form
+          toast.info('Edit functionality coming soon');
+          break;
+
+        default:
+          toast.error('Unknown action');
+      }
+    } catch (error: any) {
+      console.error('Receipt action error:', error);
+      toast.error(error.response?.data?.message || 'Action failed');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {receipts.map((receipt, index) => (
+        <div
+          key={receipt.id || index}
+          className="p-3 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Receipt className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="font-medium text-[var(--text-primary)]">
+                  {receipt.vendor || 'Unknown Vendor'}
+                </span>
+                {receipt.hasPhoto && (
+                  <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">📷</span>
+                )}
+                {receipt.reconciled && (
+                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">✓ Reconciled</span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
+                <div className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  <span className="font-semibold">${receipt.amount}</span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{receipt.date}</span>
+                </div>
+
+                {receipt.category && (
+                  <div className="col-span-1">
+                    <span className="text-[var(--text-muted)]">Category:</span> {receipt.category}
+                  </div>
+                )}
+
+                {receipt.location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    <span>{receipt.location}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-1 ml-3">
+              {!receipt.reconciled && (
+                <button
+                  onClick={() => handleReceiptAction(receipt.id, 'reconcile')}
+                  disabled={processingAction === receipt.id}
+                  className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                  title="Mark as reconciled"
+                >
+                  <Check className="w-4 h-4 text-green-600" />
+                </button>
+              )}
+
+              <button
+                onClick={() => handleReceiptAction(receipt.id, 'edit')}
+                disabled={processingAction === receipt.id}
+                className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                title="Edit receipt"
+              >
+                <Edit2 className="w-4 h-4 text-[var(--text-muted)]" />
+              </button>
+
+              <button
+                onClick={() => handleReceiptAction(receipt.id, 'delete')}
+                disabled={processingAction === receipt.id}
+                className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                title="Delete receipt"
+              >
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {summary && summary.count > 0 && (
+        <div className="mt-3 pt-3 border-t border-[var(--border-secondary)]">
+          <div className="text-sm text-[var(--text-secondary)] space-y-1">
+            <div className="flex justify-between">
+              <span>Total Receipts:</span>
+              <span className="font-semibold">{summary.count}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Amount:</span>
+              <span className="font-semibold text-green-600">
+                ${summary.totalAmount.toFixed(2)}
+              </span>
+            </div>
+            {summary.averageAmount && (
+              <div className="flex justify-between">
+                <span>Average:</span>
+                <span className="font-semibold">${summary.averageAmount.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos = [], originalQuery }) => {
   logger.debug('ResponseDisplaySimple received:', { response, route, photos });
 
@@ -198,6 +346,11 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
   const status = response?.status || 'completed';
   const dataSource = response?.dataSource || response?.llmResponse?.dataSource;
   const processingTime = response?.processingTime;
+
+  // Check if this is a receipt response
+  const hasReceipts = response?.receipts && Array.isArray(response.receipts) && response.receipts.length > 0;
+  const receiptSummary = response?.summary;
+  const receiptActions = response?.actions;
 
   // Handle save correction
   const handleSaveCorrection = async () => {
@@ -265,7 +418,7 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
       <div className="border-l-2 border-[var(--border-secondary)] pl-4">
         <div className="mb-2 flex items-center justify-between">
           <strong className="text-sm font-semibold text-[var(--text-primary)]">Response:</strong>
-          {!isEditing && (
+          {!isEditing && !hasReceipts && (
             <button
               onClick={() => setIsEditing(true)}
               className="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
@@ -316,7 +469,21 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
             )}
           </div>
         ) : (
-          formatResponseText(displayText)
+          <>
+            {/* Show formatted text response */}
+            {displayText && formatResponseText(displayText)}
+
+            {/* Show receipt cards if available */}
+            {hasReceipts && (
+              <div className="mt-4">
+                <ReceiptDisplay
+                  receipts={response.receipts}
+                  summary={receiptSummary}
+                  actions={receiptActions}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.90] - 2025-10-18
+
+### Added
+- **Receipt Query Terminal Integration**: Search and manage receipts through natural language in dashboard terminal
+  - Natural language receipt search (by vendor, date, amount, location)
+  - Receipt summaries with totals and averages
+  - Direct receipt actions (edit, delete, reconcile) from terminal
+  - Enhanced receipt display cards with action buttons
+  - Database indexes for optimized receipt searches
+  - Full-text search support for receipt content
+
 ## [1.21.89] - 2025-10-18
 
 ### Fixed

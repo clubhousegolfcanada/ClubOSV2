@@ -158,12 +158,22 @@ router.post('/request',
       const isReceiptOCR = req.body.requestDescription?.startsWith('[RECEIPT OCR]') ||
                           req.body.routePreference === 'Receipt';
 
+      // Check if this is a receipt query request (searching/managing receipts)
+      const isReceiptQuery = !isReceiptOCR && (
+        req.body.requestDescription?.toLowerCase().includes('receipt') ||
+        req.body.requestDescription?.toLowerCase().includes('expense') ||
+        req.body.requestDescription?.toLowerCase().includes('purchase') ||
+        req.body.requestDescription?.toLowerCase().includes('vendor') ||
+        req.body.requestDescription?.toLowerCase().includes('reconcile')
+      );
+
       // Debug logging
       logger.info('Request processing debug', {
         fullBody: req.body,
         smartAssistEnabled: req.body.smartAssistEnabled,
         smartAssistType: typeof req.body.smartAssistEnabled,
         isCustomerKiosk,
+        isReceiptQuery,
         willSendToSlack: isCustomerKiosk || !req.body.smartAssistEnabled,
         requestDescription: req.body.requestDescription?.substring(0, 50)
       });
@@ -253,6 +263,78 @@ router.post('/request',
           return res.status(500).json({
             success: false,
             error: 'Failed to process receipt'
+          });
+        }
+      }
+
+      // Handle receipt query requests (searching/managing existing receipts)
+      if (isReceiptQuery) {
+        const { receiptQueryService } = await import('../services/receiptQueryService');
+
+        try {
+          // Process the receipt query
+          const queryResult = await receiptQueryService.queryReceipts({
+            text: req.body.requestDescription,
+            userId: req.user?.id
+          });
+
+          // Format response based on query result type
+          let formattedResponse = '';
+
+          if (!queryResult.success) {
+            formattedResponse = queryResult.message || 'Unable to process receipt query';
+          } else if (queryResult.message) {
+            formattedResponse = queryResult.message;
+
+            // Add receipt details if available
+            if (queryResult.receipts && queryResult.receipts.length > 0) {
+              formattedResponse += '\n\nReceipts Found:\n';
+              queryResult.receipts.forEach((receipt: any, index: number) => {
+                formattedResponse += `\n${index + 1}. ${receipt.vendor} - $${receipt.amount}`;
+                formattedResponse += `\n   Date: ${receipt.date}`;
+                if (receipt.category) formattedResponse += ` | Category: ${receipt.category}`;
+                if (receipt.location) formattedResponse += ` | Location: ${receipt.location}`;
+                if (receipt.reconciled) formattedResponse += ' ✓ Reconciled';
+                if (receipt.hasPhoto) formattedResponse += ' 📷';
+              });
+            }
+
+            // Add summary if available
+            if (queryResult.summary && queryResult.summary.count > 0) {
+              if (!queryResult.receipts || queryResult.receipts.length === 0) {
+                formattedResponse += '\n\nSummary:\n';
+                formattedResponse += `Total Receipts: ${queryResult.summary.count}\n`;
+                formattedResponse += `Total Amount: $${queryResult.summary.totalAmount.toFixed(2)}`;
+                if (queryResult.summary.averageAmount) {
+                  formattedResponse += `\nAverage: $${queryResult.summary.averageAmount.toFixed(2)}`;
+                }
+              }
+            }
+          }
+
+          return res.json({
+            success: true,
+            data: {
+              requestId,
+              response: formattedResponse,
+              receipts: queryResult.receipts,
+              summary: queryResult.summary,
+              actions: queryResult.actions,
+              status: 'completed',
+              dataSource: 'RECEIPTS_DATABASE',
+              isLocalKnowledge: true
+            }
+          });
+        } catch (queryError) {
+          logger.error('Receipt query processing failed:', queryError);
+          return res.json({
+            success: true,
+            data: {
+              requestId,
+              response: 'I encountered an issue while searching for receipts. Please try rephrasing your query or contact support.',
+              status: 'error',
+              error: queryError instanceof Error ? queryError.message : 'Unknown error'
+            }
           });
         }
       }
