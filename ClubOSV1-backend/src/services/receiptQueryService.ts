@@ -169,7 +169,19 @@ export class ReceiptQueryService {
     const result = await db.query(queryStr, queryParams);
 
     // Format receipts
-    const receipts = result.rows.map(r => ({
+    const receipts: Array<{
+      id: string;
+      vendor: string;
+      amount: string;
+      tax: string | null;
+      date: string;
+      category: string;
+      paymentMethod: string;
+      location: string;
+      reconciled: boolean;
+      hasPhoto: boolean;
+      uploadedBy: string;
+    }> = result.rows.map(r => ({
       id: r.id,
       vendor: r.vendor || 'Unknown Vendor',
       amount: r.amount_cents ? (r.amount_cents / 100).toFixed(2) : '0.00',
