@@ -7,6 +7,7 @@ import { body, validationResult, query } from 'express-validator';
 import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
+import * as archiver from 'archiver';
 
 const router = express.Router();
 
@@ -106,7 +107,8 @@ router.get('/export', authenticate, async (req, res) => {
       period = 'month',
       format: exportFormat = 'csv',
       year,
-      month
+      month,
+      includePhotos
     } = req.query;
 
     // Build date filter
@@ -217,22 +219,135 @@ router.get('/export', authenticate, async (req, res) => {
         totalReceipts: receipts.length,
         receipts: receipts.map(r => ({
           ...r,
-          // Don't include the base64 image data in JSON export by default
-          file_data: r.file_data ? '[IMAGE DATA EXCLUDED]' : null
+          // Include or exclude image data based on parameter
+          file_data: includePhotos === 'true' ? r.file_data : (r.file_data ? '[IMAGE DATA EXCLUDED]' : null)
         }))
       });
+
+    } else if (exportFormat === 'zip') {
+      // Create ZIP with receipts metadata and photos
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.zip"`);
+
+      // Create archiver instance
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+
+      // Handle archive errors
+      archive.on('error', (err) => {
+        logger.error('Archive creation error:', err);
+        res.status(500).json({ error: 'Failed to create archive' });
+      });
+
+      // Pipe archive data to response
+      archive.pipe(res);
+
+      // Add CSV metadata file
+      const csvData = receipts.map(receipt => ({
+        'ID': receipt.id,
+        'Date': format(new Date(receipt.purchase_date || receipt.created_at), 'yyyy-MM-dd'),
+        'Vendor': receipt.vendor || '',
+        'Amount': receipt.amount_cents ? (receipt.amount_cents / 100).toFixed(2) : '0.00',
+        'Tax': receipt.tax_cents ? (receipt.tax_cents / 100).toFixed(2) : '0.00',
+        'Category': receipt.category || '',
+        'Payment Method': receipt.payment_method || '',
+        'Location': receipt.club_location || '',
+        'Notes': receipt.notes || '',
+        'Uploaded By': receipt.uploader_name || '',
+        'Upload Date': format(new Date(receipt.created_at), 'yyyy-MM-dd HH:mm'),
+        'Has Photo': receipt.file_data ? 'Yes' : 'No'
+      }));
+
+      const json2csvParser = new Parser({
+        fields: [
+          'ID', 'Date', 'Vendor', 'Amount', 'Tax', 'Category',
+          'Payment Method', 'Location', 'Notes', 'Uploaded By',
+          'Upload Date', 'Has Photo'
+        ]
+      });
+      const csv = json2csvParser.parse(csvData);
+      archive.append(csv, { name: 'receipts_metadata.csv' });
+
+      // Add manifest JSON
+      const manifest = {
+        exportDate: now.toISOString(),
+        period: period,
+        periodLabel: periodLabel,
+        totalReceipts: receipts.length,
+        receiptsWithPhotos: receipts.filter(r => r.file_data).length,
+        files: []
+      };
+
+      // Add receipt photos
+      let photoCount = 0;
+      for (const receipt of receipts) {
+        if (receipt.file_data) {
+          try {
+            // Extract base64 data and file extension
+            let base64Data = receipt.file_data;
+            let mimeType = receipt.mime_type || 'image/jpeg';
+            let extension = 'jpg';
+
+            // Handle data URL format
+            if (base64Data.includes(',')) {
+              const parts = base64Data.split(',');
+              base64Data = parts[1];
+              if (parts[0].includes('image/png')) {
+                extension = 'png';
+                mimeType = 'image/png';
+              } else if (parts[0].includes('application/pdf')) {
+                extension = 'pdf';
+                mimeType = 'application/pdf';
+              }
+            } else if (mimeType.includes('png')) {
+              extension = 'png';
+            } else if (mimeType.includes('pdf')) {
+              extension = 'pdf';
+            }
+
+            // Create safe filename
+            const vendor = (receipt.vendor || 'unknown').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const date = receipt.purchase_date ? format(new Date(receipt.purchase_date), 'yyyy-MM-dd') : 'no-date';
+            const filename = `images/${receipt.id}_${vendor}_${date}.${extension}`;
+
+            // Convert base64 to Buffer and add to archive
+            const buffer = Buffer.from(base64Data, 'base64');
+            archive.append(buffer, { name: filename });
+
+            manifest.files.push({
+              receiptId: receipt.id,
+              filename: filename,
+              size: buffer.length,
+              mimeType: mimeType
+            });
+
+            photoCount++;
+          } catch (err) {
+            logger.error(`Failed to add photo for receipt ${receipt.id}:`, err);
+          }
+        }
+      }
+
+      // Add manifest file
+      archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+
+      // Finalize the archive
+      archive.finalize();
+
+      logger.info(`Created ZIP export with ${photoCount} photos out of ${receipts.length} receipts`);
 
     } else if (exportFormat === 'pdf') {
       // PDF export will be implemented in the next phase
       res.status(501).json({
         error: 'PDF export not yet implemented',
-        message: 'Please use CSV or JSON format for now'
+        message: 'Please use CSV, JSON, or ZIP format for now'
       });
 
     } else {
       res.status(400).json({
         error: 'Invalid export format',
-        message: 'Supported formats: csv, json, pdf'
+        message: 'Supported formats: csv, json, zip, pdf'
       });
     }
 

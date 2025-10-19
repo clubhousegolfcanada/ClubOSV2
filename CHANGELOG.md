@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.88] - 2025-10-18
+
+### Added
+- **Receipt Photo Export**: Export receipt photos in ZIP format
+  - Added ZIP export format option alongside CSV and JSON
+  - ZIP archive includes: receipts_metadata.csv, images/ folder with all photos, and manifest.json
+  - Intelligent image extraction from base64 data with format detection (JPEG, PNG, PDF)
+  - Cross-platform compatible filename sanitization for exported files
+  - Uses archiver package for streaming ZIP creation with maximum compression
+  - Added includePhotos parameter for JSON exports to optionally include base64 data
+  - Result: Complete receipt data including photos can be exported for backup and accounting
+
+### Fixed
+- **Ticket Photo Display**: Fixed photos not displaying in ticket system
+  - Updated TicketCenterOptimizedV3 to use `photoUrls` field matching backend API
+  - Added photo thumbnail preview in ticket cards with count badge
+  - Removed unused TicketCenterV4 component
+  - Photos now correctly display in both ticket list and detail modal
+
 ## [1.21.87] - 2025-10-18
 
 ### Fixed

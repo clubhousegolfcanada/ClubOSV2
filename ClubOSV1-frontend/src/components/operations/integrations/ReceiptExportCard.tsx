@@ -22,7 +22,7 @@ const ReceiptExportCard: React.FC = () => {
     lastExport: null
   });
   const [period, setPeriod] = useState<'all' | 'year' | 'month' | 'week'>('month');
-  const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'pdf'>('csv');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'pdf' | 'zip'>('csv');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +68,8 @@ const ReceiptExportCard: React.FC = () => {
       const blob = response.data;
 
       // Generate filename
-      const filename = `receipts_${period}_${new Date().toISOString().split('T')[0]}.${exportFormat}`;
+      const extension = exportFormat === 'zip' ? 'zip' : exportFormat;
+      const filename = `receipts_${period}_${new Date().toISOString().split('T')[0]}.${extension}`;
 
       // Create download link and trigger download
       const url = window.URL.createObjectURL(blob);
@@ -192,6 +193,7 @@ const ReceiptExportCard: React.FC = () => {
           >
             <option value="csv">CSV (Excel)</option>
             <option value="json">JSON (Data)</option>
+            <option value="zip">ZIP (With Photos)</option>
             <option value="pdf" disabled>PDF (Coming Soon)</option>
           </select>
         </div>

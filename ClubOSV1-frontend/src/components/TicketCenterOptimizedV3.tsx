@@ -19,7 +19,7 @@ interface Ticket {
   status: TicketStatus;
   priority: TicketPriority;
   location?: string;
-  photo_urls?: string[];
+  photoUrls?: string[];
   createdBy: {
     id: string;
     name: string;
@@ -936,15 +936,35 @@ const TicketCard: React.FC<{
                 <span>{ticket.comments.length}</span>
               </>
             )}
-            {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+            {ticket.photoUrls && ticket.photoUrls.length > 0 && (
               <>
                 <span>•</span>
                 <Camera className="w-3 h-3" />
-                <span>{ticket.photo_urls.length}</span>
+                <span>{ticket.photoUrls.length}</span>
               </>
             )}
           </div>
         </div>
+
+        {/* Photo thumbnail */}
+        {ticket.photoUrls && ticket.photoUrls.length > 0 && (
+          <div className="relative flex-shrink-0">
+            <img
+              src={ticket.photoUrls[0]}
+              alt="Ticket photo"
+              className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPhotoClick(ticket.photoUrls![0]);
+              }}
+            />
+            {ticket.photoUrls.length > 1 && (
+              <span className="absolute -top-1 -right-1 bg-[var(--accent)] text-white text-[9px] px-1 rounded-full">
+                +{ticket.photoUrls.length - 1}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Quick actions - compact */}
         <div className="flex gap-0.5 flex-shrink-0">
@@ -1247,13 +1267,13 @@ const TicketDetailModal: React.FC<{
           </div>
 
           {/* Photos */}
-          {ticket.photo_urls && ticket.photo_urls.length > 0 && (
+          {ticket.photoUrls && ticket.photoUrls.length > 0 && (
             <div>
               <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
-                Photos ({ticket.photo_urls.length})
+                Photos ({ticket.photoUrls.length})
               </h4>
               <div className="grid grid-cols-3 gap-2">
-                {ticket.photo_urls.map((photo, index) => (
+                {ticket.photoUrls.map((photo, index) => (
                   <img
                     key={index}
                     src={photo}
