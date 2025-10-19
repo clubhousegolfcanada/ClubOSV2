@@ -9,11 +9,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
 **Current Version: v1.21.89**
+- **Dashboard Messages Fix** - Fixed message sending from dashboard Messages card (field name mismatch)
 - **Mobile PWA Optimization** - World-class touch targets for all ticket system buttons (44-48px minimum)
 - **Receipt Photo Export** - Export receipts with photos in ZIP format (CSV + images)
 - **Ticket Photo Display** - Fixed photos not appearing in ticket system with proper lightbox
 - **Photo Thumbnails** - Added thumbnail preview in ticket cards with count badge
-- **Code Cleanup** - Removed unused TicketCenterV4 component
 
 ## 🏗️ System Architecture
 

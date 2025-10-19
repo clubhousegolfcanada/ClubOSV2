@@ -4,6 +4,14 @@ All notable changes to ClubOS will be documented in this file.
 
 ## [1.21.89] - 2025-10-18
 
+### Fixed
+- **Dashboard Messages Sending**: Fixed 400 error when sending messages from dashboard
+  - Root cause: MessagesCardV3 was sending wrong field names to backend API
+  - Was sending: `phoneNumber` and `message` fields
+  - Backend expects: `to` and `text` fields (matching main Messages page)
+  - Fixed by aligning field names with backend validation requirements
+  - Result: Messages can now be sent successfully from both dashboard card and main Messages page
+
 ### Enhanced
 - **Ticket System Mobile PWA Optimization**: World-class mobile experience with proper touch targets
   - Fixed all interactive elements to meet 44-48px minimum touch target requirements
