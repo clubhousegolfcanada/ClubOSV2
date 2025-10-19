@@ -1,4 +1,4 @@
-# ClubOS v1.21.89 - Flexible Facility Management System
+# ClubOS v1.21.91 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,7 +8,7 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.90**
+**Current Version: v1.21.91**
 - **Receipt Query Terminal** - Search and manage receipts through natural language queries in terminal
 - **Dashboard Messages Fix** - Fixed message sending from dashboard Messages card (field name mismatch)
 - **Mobile PWA Optimization** - World-class touch targets for all ticket system buttons (44-48px minimum)

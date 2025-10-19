@@ -165,6 +165,8 @@ const formatStructuredContent = (text: string): React.ReactNode => {
 // Component to render receipt data in a formatted way
 const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }> = ({ receipts, summary, actions }) => {
   const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [editingReceipt, setEditingReceipt] = useState<string | null>(null);
+  const [editedFields, setEditedFields] = useState<any>({});
 
   const handleReceiptAction = async (receiptId: string, action: string, value?: any) => {
     setProcessingAction(receiptId);
@@ -186,8 +188,14 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
           break;
 
         case 'edit':
-          // For edit, we'd need to show a modal or inline form
-          toast.info('Edit functionality coming soon');
+          // Enter edit mode for this receipt
+          setEditingReceipt(receiptId);
+          setEditedFields({
+            vendor: receipts.find(r => r.id === receiptId)?.vendor || '',
+            amount: receipts.find(r => r.id === receiptId)?.amount || '',
+            category: receipts.find(r => r.id === receiptId)?.category || '',
+            location: receipts.find(r => r.id === receiptId)?.location || ''
+          });
           break;
 
         default:
@@ -201,6 +209,49 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
     }
   };
 
+  const handleSaveEdit = async (receiptId: string) => {
+    setProcessingAction(receiptId);
+
+    try {
+      // Convert amount to number for backend
+      const updateData: any = {
+        vendor: editedFields.vendor,
+        amount: parseFloat(editedFields.amount),
+        category: editedFields.category || null,
+        location: editedFields.location || null
+      };
+
+      // Remove null/undefined fields
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === null || updateData[key] === undefined || updateData[key] === '') {
+          delete updateData[key];
+        }
+      });
+
+      const result = await http.patch(`receipts/${receiptId}`, updateData);
+
+      // Update the local receipt data
+      const index = receipts.findIndex(r => r.id === receiptId);
+      if (index > -1) {
+        receipts[index] = { ...receipts[index], ...editedFields };
+      }
+
+      toast.success('Receipt updated successfully');
+      setEditingReceipt(null);
+      setEditedFields({});
+    } catch (error: any) {
+      console.error('Failed to save receipt:', error);
+      toast.error(error.response?.data?.message || 'Failed to save changes');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReceipt(null);
+    setEditedFields({});
+  };
+
   return (
     <div className="space-y-3">
       {receipts.map((receipt, index) => (
@@ -212,9 +263,20 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Receipt className="w-4 h-4 text-[var(--text-muted)]" />
-                <span className="font-medium text-[var(--text-primary)]">
-                  {receipt.vendor || 'Unknown Vendor'}
-                </span>
+                {editingReceipt === receipt.id ? (
+                  <input
+                    type="text"
+                    value={editedFields.vendor}
+                    onChange={(e) => setEditedFields({...editedFields, vendor: e.target.value})}
+                    className="flex-1 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded text-sm font-medium focus:outline-none focus:border-[var(--accent)]"
+                    placeholder="Vendor name"
+                    autoFocus
+                  />
+                ) : (
+                  <span className="font-medium text-[var(--text-primary)]">
+                    {receipt.vendor || 'Unknown Vendor'}
+                  </span>
+                )}
                 {receipt.hasPhoto && (
                   <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">📷</span>
                 )}
@@ -226,7 +288,18 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
                 <div className="flex items-center gap-1">
                   <DollarSign className="w-3 h-3" />
-                  <span className="font-semibold">${receipt.amount}</span>
+                  {editingReceipt === receipt.id ? (
+                    <input
+                      type="number"
+                      value={editedFields.amount}
+                      onChange={(e) => setEditedFields({...editedFields, amount: e.target.value})}
+                      className="w-24 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded text-xs focus:outline-none focus:border-[var(--accent)]"
+                      placeholder="0.00"
+                      step="0.01"
+                    />
+                  ) : (
+                    <span className="font-semibold">${receipt.amount}</span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1">
@@ -234,16 +307,37 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
                   <span>{receipt.date}</span>
                 </div>
 
-                {receipt.category && (
+                {(receipt.category || editingReceipt === receipt.id) && (
                   <div className="col-span-1">
-                    <span className="text-[var(--text-muted)]">Category:</span> {receipt.category}
+                    <span className="text-[var(--text-muted)]">Category:</span>
+                    {editingReceipt === receipt.id ? (
+                      <input
+                        type="text"
+                        value={editedFields.category}
+                        onChange={(e) => setEditedFields({...editedFields, category: e.target.value})}
+                        className="ml-1 w-24 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded text-xs focus:outline-none focus:border-[var(--accent)]"
+                        placeholder="Category"
+                      />
+                    ) : (
+                      <span> {receipt.category}</span>
+                    )}
                   </div>
                 )}
 
-                {receipt.location && (
+                {(receipt.location || editingReceipt === receipt.id) && (
                   <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
-                    <span>{receipt.location}</span>
+                    {editingReceipt === receipt.id ? (
+                      <input
+                        type="text"
+                        value={editedFields.location}
+                        onChange={(e) => setEditedFields({...editedFields, location: e.target.value})}
+                        className="w-24 px-2 py-0.5 bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded text-xs focus:outline-none focus:border-[var(--accent)]"
+                        placeholder="Location"
+                      />
+                    ) : (
+                      <span>{receipt.location}</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -251,34 +345,64 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
 
             {/* Action buttons */}
             <div className="flex gap-1 ml-3">
-              {!receipt.reconciled && (
-                <button
-                  onClick={() => handleReceiptAction(receipt.id, 'reconcile')}
-                  disabled={processingAction === receipt.id}
-                  className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
-                  title="Mark as reconciled"
-                >
-                  <Check className="w-4 h-4 text-green-600" />
-                </button>
+              {editingReceipt === receipt.id ? (
+                <>
+                  <button
+                    onClick={() => handleSaveEdit(receipt.id)}
+                    disabled={processingAction === receipt.id}
+                    className="px-2 py-1 bg-[var(--accent)] text-white rounded text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+                    title="Save changes"
+                  >
+                    {processingAction === receipt.id ? (
+                      'Saving...'
+                    ) : (
+                      <>
+                        <Save className="w-3 h-3" />
+                        Save
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-2 py-1 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded text-xs font-medium flex items-center gap-1 hover:bg-[var(--bg-secondary)]"
+                    title="Cancel editing"
+                  >
+                    <X className="w-3 h-3" />
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  {!receipt.reconciled && (
+                    <button
+                      onClick={() => handleReceiptAction(receipt.id, 'reconcile')}
+                      disabled={processingAction === receipt.id}
+                      className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                      title="Mark as reconciled"
+                    >
+                      <Check className="w-4 h-4 text-green-600" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => handleReceiptAction(receipt.id, 'edit')}
+                    disabled={processingAction === receipt.id}
+                    className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                    title="Edit receipt"
+                  >
+                    <Edit2 className="w-4 h-4 text-[var(--text-muted)]" />
+                  </button>
+
+                  <button
+                    onClick={() => handleReceiptAction(receipt.id, 'delete')}
+                    disabled={processingAction === receipt.id}
+                    className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                    title="Delete receipt"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </>
               )}
-
-              <button
-                onClick={() => handleReceiptAction(receipt.id, 'edit')}
-                disabled={processingAction === receipt.id}
-                className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
-                title="Edit receipt"
-              >
-                <Edit2 className="w-4 h-4 text-[var(--text-muted)]" />
-              </button>
-
-              <button
-                onClick={() => handleReceiptAction(receipt.id, 'delete')}
-                disabled={processingAction === receipt.id}
-                className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
-                title="Delete receipt"
-              >
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </button>
             </div>
           </div>
         </div>

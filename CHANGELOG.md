@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.91] - 2025-10-18
+
+### Fixed
+- **Receipt Terminal TypeScript Error**: Fixed toast.info TypeScript compilation error
+  - The react-hot-toast library doesn't have a toast.info() method
+  - Changed implementation to support inline receipt editing functionality
+  - Receipt edit feature now enters edit mode instead of showing info toast
+  - Build now compiles successfully without TypeScript errors
+
 ## [1.21.90] - 2025-10-18
 
 ### Added
