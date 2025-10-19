@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.87] - 2025-10-18
+
+### Fixed
+- **Receipt Export SQL Error**: Fixed ambiguous column reference in receipt export queries
+  - Root cause: Both receipts and users tables have created_at columns, causing ambiguity in WHERE clauses
+  - Fixed by prefixing created_at with proper table alias (r.created_at for receipts table)
+  - Affected both /api/receipts/summary and /api/receipts/export endpoints
+  - Result: Receipt exports now work correctly without PostgreSQL error 42702
+
 ## [1.21.86] - 2025-10-18
 
 ### Fixed

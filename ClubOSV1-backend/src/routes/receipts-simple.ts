@@ -119,7 +119,7 @@ router.get('/export', authenticate, async (req, res) => {
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        dateFilter = `WHERE created_at >= '${weekStart.toISOString()}'`;
+        dateFilter = `WHERE r.created_at >= '${weekStart.toISOString()}'`;
         periodLabel = `week_of_${format(weekStart, 'yyyy_MM_dd')}`;
         break;
 
@@ -127,11 +127,11 @@ router.get('/export', authenticate, async (req, res) => {
         if (year && month) {
           const customMonthStart = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
           const customMonthEnd = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
-          dateFilter = `WHERE created_at >= '${customMonthStart.toISOString()}' AND created_at <= '${customMonthEnd.toISOString()}'`;
+          dateFilter = `WHERE r.created_at >= '${customMonthStart.toISOString()}' AND r.created_at <= '${customMonthEnd.toISOString()}'`;
           periodLabel = `${year}_${String(month).padStart(2, '0')}`;
         } else {
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          dateFilter = `WHERE created_at >= '${monthStart.toISOString()}'`;
+          dateFilter = `WHERE r.created_at >= '${monthStart.toISOString()}'`;
           periodLabel = format(now, 'yyyy_MM');
         }
         break;
@@ -140,11 +140,11 @@ router.get('/export', authenticate, async (req, res) => {
         if (year) {
           const customYearStart = new Date(parseInt(year as string), 0, 1);
           const customYearEnd = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
-          dateFilter = `WHERE created_at >= '${customYearStart.toISOString()}' AND created_at <= '${customYearEnd.toISOString()}'`;
+          dateFilter = `WHERE r.created_at >= '${customYearStart.toISOString()}' AND r.created_at <= '${customYearEnd.toISOString()}'`;
           periodLabel = year as string;
         } else {
           const yearStart = new Date(now.getFullYear(), 0, 1);
-          dateFilter = `WHERE created_at >= '${yearStart.toISOString()}'`;
+          dateFilter = `WHERE r.created_at >= '${yearStart.toISOString()}'`;
           periodLabel = String(now.getFullYear());
         }
         break;
