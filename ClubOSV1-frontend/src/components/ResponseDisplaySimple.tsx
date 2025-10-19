@@ -213,6 +213,12 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
     setProcessingAction(receiptId);
 
     try {
+      // Get original receipt data for correction tracking
+      const originalReceipt = receipts.find(r => r.id === receiptId);
+      if (!originalReceipt) {
+        throw new Error('Receipt not found');
+      }
+
       // Convert amount to number for backend
       const updateData: any = {
         vendor: editedFields.vendor,
@@ -234,6 +240,28 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
       const index = receipts.findIndex(r => r.id === receiptId);
       if (index > -1) {
         receipts[index] = { ...receipts[index], ...editedFields };
+      }
+
+      // Track this edit as a correction for AI learning
+      try {
+        const originalText = `Vendor: ${originalReceipt.vendor}, Amount: $${originalReceipt.amount}, Category: ${originalReceipt.category || 'N/A'}, Location: ${originalReceipt.location || 'N/A'}`;
+        const correctedText = `Vendor: ${editedFields.vendor}, Amount: $${editedFields.amount}, Category: ${editedFields.category || 'N/A'}, Location: ${editedFields.location || 'N/A'}`;
+
+        // Only send correction if something actually changed
+        if (originalText !== correctedText) {
+          await http.post('corrections/save', {
+            originalQuery: `Receipt from ${originalReceipt.vendor}`,
+            originalResponse: originalText,
+            correctedResponse: correctedText,
+            route: 'receipt_edit',
+            confidence: 1.0
+          });
+
+          logger.debug('Receipt correction saved for AI learning');
+        }
+      } catch (correctionError) {
+        // Don't fail the main operation if correction tracking fails
+        logger.error('Failed to save receipt correction:', correctionError);
       }
 
       toast.success('Receipt updated successfully');
@@ -542,7 +570,7 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
       <div className="border-l-2 border-[var(--border-secondary)] pl-4">
         <div className="mb-2 flex items-center justify-between">
           <strong className="text-sm font-semibold text-[var(--text-primary)]">Response:</strong>
-          {!isEditing && !hasReceipts && (
+          {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
               className="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"

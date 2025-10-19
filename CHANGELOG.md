@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.92] - 2025-10-18
+
+### Enhanced
+- **Receipt Terminal Edit System**: Enhanced receipt editing through dashboard terminal
+  - Added inline field editing for receipt cards (vendor, amount, category, location)
+  - Integrated receipt edits with correction system for AI learning
+  - Connected edits to V3-PLS pattern creation for future automation
+  - Enabled response-level editing for both text and receipt responses
+  - Edit button now available for all response types in terminal
+  - Receipt field changes tracked as corrections to improve OCR accuracy
+  - Save/Cancel buttons appear during edit mode with proper state management
+  - Result: Complete receipt editing workflow with AI learning from corrections
+
 ## [1.21.91] - 2025-10-18
 
 ### Fixed
