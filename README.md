@@ -9,11 +9,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
 **Current Version: v1.21.88**
+- **Receipt Photo Export** - Export receipts with photos in ZIP format (CSV + images)
 - **Ticket Photo Display** - Fixed photos not appearing in ticket system (field name mismatch)
 - **Photo Thumbnails** - Added thumbnail preview in ticket cards with count badge
 - **Code Cleanup** - Removed unused TicketCenterV4 component
 - **Receipt Export SQL Fix** - Fixed ambiguous column error in receipt export queries
-- **Summary Statistics** - View total receipts and amounts before export
 
 ## 🏗️ System Architecture
 
