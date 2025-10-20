@@ -663,6 +663,34 @@ async function startServer() {
       // Don't fail startup - log and continue
     }
 
+    // Run personal card field migration for receipts
+    try {
+      logger.info('🔄 Running personal card field migration...');
+
+      await db.query(`
+        ALTER TABLE receipts
+        ADD COLUMN IF NOT EXISTS is_personal_card BOOLEAN DEFAULT FALSE
+      `);
+
+      // Add index for filtering personal card purchases
+      await db.query(`
+        CREATE INDEX IF NOT EXISTS idx_receipts_personal_card
+        ON receipts(is_personal_card)
+        WHERE is_personal_card = TRUE
+      `);
+
+      // Add to audit log for tracking changes
+      await db.query(`
+        ALTER TABLE receipt_audit_log
+        ADD COLUMN IF NOT EXISTS is_personal_card_changed BOOLEAN DEFAULT FALSE
+      `);
+
+      logger.info('✅ Personal card field migration completed');
+    } catch (error) {
+      logger.error('Failed to run personal card field migration:', error);
+      // Don't fail startup - log and continue
+    }
+
     // Enable V3-PLS if not already enabled
     try {
       const { enableV3PLSOnStartup } = await import('./scripts/enable-v3pls-startup');

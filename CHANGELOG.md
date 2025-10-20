@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.93] - 2025-10-20
+
+### Added
+- **Personal Card Receipt Tracking**: Track receipts purchased with personal cards requiring reimbursement
+  - Added checkbox in receipt upload modal for marking personal card purchases
+  - Checkbox displays "Purchased with personal card" with helper text
+  - Personal card field saved to database for tracking and reporting
+  - Export functionality includes "Personal Card" column in CSV and ZIP exports
+  - Database migration adds is_personal_card boolean field with indexes
+  - UI uses existing ClubOS design patterns with proper mobile touch targets
+  - Result: Staff can now easily track which receipts need reimbursement
+
 ## [1.21.92] - 2025-10-18
 
 ### Enhanced

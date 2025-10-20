@@ -185,6 +185,7 @@ router.get('/export', authenticate, async (req, res) => {
         'Category': receipt.category || '',
         'Payment Method': receipt.payment_method || '',
         'Location': receipt.club_location || '',
+        'Personal Card': receipt.is_personal_card ? 'Yes' : 'No',
         'Notes': receipt.notes || '',
         'Uploaded By': receipt.uploader_name || '',
         'Upload Date': format(new Date(receipt.created_at), 'yyyy-MM-dd HH:mm'),
@@ -195,7 +196,7 @@ router.get('/export', authenticate, async (req, res) => {
       const json2csvParser = new Parser({
         fields: [
           'Date', 'Vendor', 'Amount', 'Tax', 'Subtotal',
-          'Category', 'Payment Method', 'Location', 'Notes',
+          'Category', 'Payment Method', 'Location', 'Personal Card', 'Notes',
           'Uploaded By', 'Upload Date', 'Reconciled'
         ]
       });
@@ -253,6 +254,7 @@ router.get('/export', authenticate, async (req, res) => {
         'Category': receipt.category || '',
         'Payment Method': receipt.payment_method || '',
         'Location': receipt.club_location || '',
+        'Personal Card': receipt.is_personal_card ? 'Yes' : 'No',
         'Notes': receipt.notes || '',
         'Uploaded By': receipt.uploader_name || '',
         'Upload Date': format(new Date(receipt.created_at), 'yyyy-MM-dd HH:mm'),
@@ -262,7 +264,7 @@ router.get('/export', authenticate, async (req, res) => {
       const json2csvParser = new Parser({
         fields: [
           'ID', 'Date', 'Vendor', 'Amount', 'Tax', 'Category',
-          'Payment Method', 'Location', 'Notes', 'Uploaded By',
+          'Payment Method', 'Location', 'Personal Card', 'Notes', 'Uploaded By',
           'Upload Date', 'Has Photo'
         ]
       });
@@ -373,7 +375,8 @@ router.post('/upload',
     body('vendor').optional().trim(),
     body('amount_cents').optional().isInt(),
     body('purchase_date').optional().isISO8601(),
-    body('club_location').optional().isIn(['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'])
+    body('club_location').optional().isIn(['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks']),
+    body('is_personal_card').optional().isBoolean()
   ],
   async (req, res) => {
     try {
@@ -404,7 +407,8 @@ router.post('/upload',
         amount_cents,
         purchase_date,
         club_location,
-        notes
+        notes,
+        is_personal_card
       } = req.body;
 
       // Validate file size (5MB limit for base64, similar to ticket photos)
@@ -468,9 +472,10 @@ router.post('/upload',
           uploader_user_id,
           ocr_status,
           ocr_text,
-          ocr_json
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-        RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at
+          ocr_json,
+          is_personal_card
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
       `, [
         file_data,
         file_name,
@@ -487,7 +492,8 @@ router.post('/upload',
         user.id,
         ocrResult ? 'completed' : 'manual',
         ocrResult?.rawText || null,
-        ocrResult ? JSON.stringify(ocrResult) : null
+        ocrResult ? JSON.stringify(ocrResult) : null,
+        is_personal_card || false
       ]);
 
       const receipt = insertResult.rows[0];
@@ -506,6 +512,7 @@ router.post('/upload',
           purchase_date: receipt.purchase_date,
           location: receipt.club_location,
           created_at: receipt.created_at,
+          is_personal_card: receipt.is_personal_card || false,
           status: 'uploaded',
           // Include OCR results for frontend to display
           ocrResult: ocrResult,

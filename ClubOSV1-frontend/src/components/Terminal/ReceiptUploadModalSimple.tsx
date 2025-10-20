@@ -18,6 +18,7 @@ interface ReceiptFormData {
   purchaseDate?: string;
   location?: string;
   notes?: string;
+  isPersonalCard?: boolean;
 }
 
 export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
@@ -93,7 +94,8 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
         amount_cents: data.amount ? Math.round(parseFloat(data.amount.replace(/[^\d.]/g, '')) * 100) : undefined,
         purchase_date: data.purchaseDate,
         club_location: data.location,
-        notes: data.notes
+        notes: data.notes,
+        is_personal_card: data.isPersonalCard || false
       };
 
       // Upload to backend
@@ -367,6 +369,25 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
                       <option value="River Oaks">River Oaks</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Personal Card Checkbox */}
+                <div className="py-3 px-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      {...register('isPersonalCard')}
+                      type="checkbox"
+                      className="w-5 h-5 rounded border-[var(--border-secondary)] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
+                        Purchased with personal card
+                      </span>
+                      <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                        Check this if you need reimbursement for a personal card purchase
+                      </span>
+                    </div>
+                  </label>
                 </div>
 
                 <div>
