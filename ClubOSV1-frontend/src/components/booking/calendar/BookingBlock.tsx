@@ -7,7 +7,7 @@ import { BookingConfig, BookingConfigService } from '@/services/booking/bookingC
 interface BookingBlockProps {
   booking: Booking;
   onClick?: () => void;
-  config: BookingConfig;
+  config: BookingConfig | null;
   compact?: boolean;
 }
 
@@ -20,7 +20,7 @@ const BookingBlock: React.FC<BookingBlockProps> = ({
   const startTime = new Date(booking.startAt);
   const endTime = new Date(booking.endAt);
   const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
-  const durationBlocks = Math.ceil(durationMinutes / (config.gridInterval || 30));
+  const durationBlocks = Math.ceil(durationMinutes / (config?.gridInterval || 30));
 
   // Determine block styles based on booking type
   const getBlockStyles = () => {

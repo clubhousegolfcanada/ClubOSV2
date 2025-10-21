@@ -194,7 +194,7 @@ export default function ConflictDetector({
                   </h4>
                   <StatusBadge
                     status="error"
-                    text={`${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''}`}
+                    label={`${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''}`}
                   />
                 </div>
 

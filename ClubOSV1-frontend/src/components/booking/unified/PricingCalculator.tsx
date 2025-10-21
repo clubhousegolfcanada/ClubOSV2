@@ -325,8 +325,7 @@ export default function PricingCalculator({
               {customerTier.id !== 'new' && (
                 <StatusBadge
                   status="success"
-                  text={customerTier.name}
-                  icon={<TrendingUp className="w-3 h-3" />}
+                  label={customerTier.name}
                 />
               )}
             </div>

@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.3] - 2025-10-21
+
+### 🐛 Fixed
+- **TypeScript Compilation Errors**: Fixed all type errors across booking components
+  - Corrected role checks (replaced non-existent 'staff' with 'operator'/'support')
+  - Fixed BookingConfigService method calls (loadConfig → getConfig)
+  - Corrected notification system usage (single object → two parameters)
+  - Fixed StatusBadge prop names (text → label) in all unified booking components
+  - Updated component prop interfaces to match actual usage
+  - Fixed null type safety for config parameters
+  - Corrected import for Calendar icon (CalendarDays → Calendar)
+  - Fixed prop name mismatches between DayGrid/WeekGrid and their parent components
+
 ## [1.22.2] - 2025-10-21
 
 ### 🎯 Major UX Improvements

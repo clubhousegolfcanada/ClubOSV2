@@ -6,31 +6,31 @@ import BookingBlock from './BookingBlock';
 import { Clock } from 'lucide-react';
 
 interface WeekGridProps {
-  startDate: Date;
+  weekStart: Date;
   bookings: Booking[];
   spaces: Space[];
-  config: BookingConfig;
-  onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
-  onBookingSelect?: (booking: Booking) => void;
+  config: BookingConfig | null;
+  onTimeSlotClick?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
+  onBookingClick?: (booking: Booking) => void;
   onSpaceClick?: (space: Space) => void;
 }
 
 const WeekGrid: React.FC<WeekGridProps> = ({
-  startDate,
+  weekStart,
   bookings,
   spaces,
   config,
-  onBookingCreate,
-  onBookingSelect,
+  onTimeSlotClick,
+  onBookingClick,
   onSpaceClick
 }) => {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ day: number; hour: number } | null>(null);
 
-  // Generate week dates starting from the provided startDate
+  // Generate week dates starting from the provided weekStart
   const weekDates = useMemo(() => {
-    const weekStart = startOfWeek(startDate, { weekStartsOn: 0 }); // Start on Sunday
-    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  }, [startDate]);
+    const weekStartDate = startOfWeek(weekStart, { weekStartsOn: 0 }); // Start on Sunday
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
+  }, [weekStart]);
 
   // Generate time slots for the day (6 AM to 11 PM)
   const timeSlots = useMemo(() => {
@@ -89,10 +89,10 @@ const WeekGrid: React.FC<WeekGridProps> = ({
     const endTime = new Date(startTime);
     endTime.setHours(hour + 1, 0, 0, 0);
 
-    if (onBookingCreate) {
+    if (onTimeSlotClick) {
       // Use the first available space or let the modal handle space selection
       const availableSpace = spaces[0];
-      onBookingCreate(startTime, endTime, availableSpace?.id, availableSpace?.name);
+      onTimeSlotClick(startTime, endTime, availableSpace?.id, availableSpace?.name);
     }
   };
 
@@ -170,7 +170,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
                       className="pointer-events-auto"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onBookingSelect?.(booking);
+                        onBookingClick?.(booking);
                       }}
                     >
                       <div className={`h-full rounded-md p-2 text-xs overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] ${

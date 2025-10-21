@@ -373,7 +373,7 @@ export default function UnifiedBookingCard({
   if (showConfirmation && confirmationData) {
     return (
       <BookingConfirmation
-        data={confirmationData}
+        bookingData={confirmationData}
         mode={mode}
         onClose={() => {
           setShowConfirmation(false);
@@ -404,7 +404,7 @@ export default function UnifiedBookingCard({
             <span className="font-mono text-sm tracking-wider">{modeConfig.title}</span>
             <span className="text-xs text-gray-400 font-mono">v2.0</span>
             {conflicts.length > 0 && (
-              <StatusBadge status="error" text={`${conflicts.length} conflicts`} />
+              <StatusBadge status="error" label={`${conflicts.length} conflicts`} />
             )}
           </div>
           <div className="flex items-center gap-2">

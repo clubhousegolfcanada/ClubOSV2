@@ -71,7 +71,7 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
   const { notify } = useNotifications();
   const { user } = useAuthState();
   const isAdmin = user?.role === 'admin';
-  const isStaff = user?.role === 'staff' || isAdmin;
+  const isStaff = user?.role === 'operator' || user?.role === 'support' || isAdmin;
 
   // State
   const [selectedDate, setSelectedDate] = useState<Date>(propDate || new Date());
@@ -118,16 +118,14 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
       }
 
       // Load booking config
-      const configRes = await BookingConfigService.loadConfig();
-      setConfig(configRes.config);
-      setCustomerTiers(configRes.customerTiers);
+      const config = await BookingConfigService.getConfig();
+      setConfig(config);
+      const customerTiers = await BookingConfigService.getCustomerTiers();
+      setCustomerTiers(customerTiers);
 
     } catch (error) {
-      logger.error('Failed to load initial data:', error);
-      notify({
-        type: 'error',
-        message: 'Failed to load calendar data. Please refresh the page.'
-      });
+      logger.error('Failed to load initial data', error);
+      notify('error', 'Failed to load calendar data. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -170,17 +168,14 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
 
       setBookings(bookingsWithColors);
     } catch (error) {
-      logger.error('Failed to load bookings:', error);
-      notify({
-        type: 'error',
-        message: 'Failed to load bookings. Please try again.'
-      });
+      logger.error('Failed to load bookings', error);
+      notify('error', 'Failed to load bookings. Please try again.');
     }
   };
 
   const handleTimeSlotClick = useCallback((startAt: Date, endAt: Date, spaceId?: string, spaceName?: string) => {
     if (!config) {
-      notify({ type: 'error', message: 'Booking configuration not loaded' });
+      notify('error', 'Booking configuration not loaded');
       return;
     }
 
@@ -199,7 +194,7 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
     );
 
     if (!validation.isValid) {
-      notify({ type: 'error', message: validation.error || 'Invalid booking time' });
+      notify('error', validation.error || 'Invalid booking time');
       return;
     }
 
@@ -231,10 +226,7 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
     // Reload bookings to show the new one
     loadBookings();
     setShowUnifiedBooking(false);
-    notify({
-      type: 'success',
-      message: `${booking.isAdminBlock ? 'Time blocked' : 'Booking created'} successfully`
-    });
+    notify('success', `${booking.isAdminBlock ? 'Time blocked' : 'Booking created'} successfully`);
   };
 
   const handlePrevious = () => {
@@ -256,7 +248,7 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
       onBookingSelect(booking);
     } else {
       // Handle internally if needed
-      logger.info('Booking selected:', booking);
+      logger.info('Booking selected', booking);
     }
   };
 
@@ -450,7 +442,7 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
 
       {/* Modals */}
       <BoxInfoModal
-        space={selectedSpace}
+        box={selectedSpace as any}
         isOpen={showBoxInfoModal}
         onClose={() => setShowBoxInfoModal(false)}
       />
@@ -460,10 +452,13 @@ const BookingCalendarV2: React.FC<BookingCalendarProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl">
             <UnifiedBookingCard
-              initialMode={unifiedBookingMode}
-              prefilledData={bookingFormData}
+              initialStartTime={bookingFormData?.startAt ? new Date(bookingFormData.startAt) : undefined}
+              initialEndTime={bookingFormData?.endAt ? new Date(bookingFormData.endAt) : undefined}
+              initialSpaceId={bookingFormData?.spaceId}
+              initialSpaceName={bookingFormData?.spaceName}
+              initialLocationId={bookingFormData?.locationId || selectedLocationId}
               onSuccess={handleBookingSuccess}
-              onClose={() => setShowUnifiedBooking(false)}
+              onCancel={() => setShowUnifiedBooking(false)}
             />
           </div>
         </div>

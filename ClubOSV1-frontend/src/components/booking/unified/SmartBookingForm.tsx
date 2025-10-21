@@ -551,7 +551,7 @@ export default function SmartBookingForm({
       {(mode === 'event' || mode === 'class') && (
         <div className="space-y-4 p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
           <h3 className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-            <CalendarDays className="w-4 h-4" />
+            <Calendar className="w-4 h-4" />
             {mode === 'event' ? 'Event Details' : 'Class Information'}
           </h3>
 

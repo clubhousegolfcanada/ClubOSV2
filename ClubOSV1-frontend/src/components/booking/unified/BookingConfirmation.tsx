@@ -231,7 +231,7 @@ ${bookingData.totalAmount ? `Total: $${bookingData.totalAmount.toFixed(2)}` : ''
             </div>
             <StatusBadge
               status="success"
-              text={mode === 'booking' ? 'Confirmed' : 'Scheduled'}
+              label={mode === 'booking' ? 'Confirmed' : 'Scheduled'}
             />
           </div>
         </div>

@@ -579,19 +579,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             date={selectedDate}
             bookings={filteredBookings}
             spaces={filteredSpaces}
-            config={config!}
-            onBookingCreate={handleBookingCreate}
-            onBookingSelect={onBookingSelect}
+            config={config}
+            onTimeSlotClick={handleBookingCreate}
+            onBookingClick={onBookingSelect}
             onSpaceClick={handleSpaceClick}
           />
         ) : (
           <WeekGrid
-            startDate={startOfWeek(selectedDate)}
+            weekStart={startOfWeek(selectedDate)}
             bookings={filteredBookings}
             spaces={filteredSpaces}
-            config={config!}
-            onBookingCreate={handleBookingCreate}
-            onBookingSelect={onBookingSelect}
+            config={config}
+            onTimeSlotClick={handleBookingCreate}
+            onBookingClick={onBookingSelect}
             onSpaceClick={handleSpaceClick}
           />
         )}

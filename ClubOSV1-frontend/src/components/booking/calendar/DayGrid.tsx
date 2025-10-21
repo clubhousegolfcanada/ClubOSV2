@@ -10,9 +10,9 @@ interface DayGridProps {
   date: Date;
   bookings: Booking[];
   spaces: Space[];
-  config: BookingConfig;
-  onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
-  onBookingSelect?: (booking: Booking) => void;
+  config: BookingConfig | null;
+  onTimeSlotClick?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
+  onBookingClick?: (booking: Booking) => void;
   onSpaceClick?: (space: Space) => void;
 }
 
@@ -21,8 +21,8 @@ const DayGrid: React.FC<DayGridProps> = ({
   bookings,
   spaces,
   config,
-  onBookingCreate,
-  onBookingSelect,
+  onTimeSlotClick,
+  onBookingClick,
   onSpaceClick
 }) => {
   // Selection state
@@ -52,10 +52,10 @@ const DayGrid: React.FC<DayGridProps> = ({
     let current = startTime;
     while (current <= endTime) {
       slots.push(new Date(current));
-      current = addMinutes(current, config.gridInterval || 30);
+      current = addMinutes(current, config?.gridInterval || 30);
     }
     return slots;
-  }, [date, config.gridInterval]);
+  }, [date, config?.gridInterval]);
 
   // Filter bookings for this day
   const dayBookings = useMemo(() => {
@@ -79,7 +79,7 @@ const DayGrid: React.FC<DayGridProps> = ({
 
   // Check if a time slot is available for a space
   const isSlotAvailable = (slot: Date, spaceId: string): boolean => {
-    const slotEnd = addMinutes(slot, config.gridInterval || 30);
+    const slotEnd = addMinutes(slot, config?.gridInterval || 30);
     const spaceBookings = bookingsBySpace[spaceId] || [];
 
     return !spaceBookings.some(booking => {
@@ -135,14 +135,14 @@ const DayGrid: React.FC<DayGridProps> = ({
 
   // Confirm and create booking
   const confirmSelection = () => {
-    if (!selectionStart || !onBookingCreate) return;
+    if (!selectionStart || !onTimeSlotClick) return;
 
     const endIndex = selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1;
     const startTime = timeSlots[selectionStart.slotIndex];
     const endTime = timeSlots[endIndex + 1] || addMinutes(timeSlots[endIndex], 30);
     const space = spaces.find(s => s.id === selectionStart.spaceId);
 
-    onBookingCreate(startTime, endTime, selectionStart.spaceId, space?.name);
+    onTimeSlotClick(startTime, endTime, selectionStart.spaceId, space?.name);
     clearSelection();
   };
 
@@ -277,7 +277,7 @@ const DayGrid: React.FC<DayGridProps> = ({
                     {slotBooking && (
                       <BookingBlock
                         booking={slotBooking}
-                        onClick={() => onBookingSelect?.(slotBooking)}
+                        onClick={() => onBookingClick?.(slotBooking)}
                         config={config}
                         compact={true}
                       />
