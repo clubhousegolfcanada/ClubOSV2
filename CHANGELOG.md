@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.94] - 2025-10-21
+
+### Fixed
+- **Personal Card Receipt Toggle**: Fixed personal card checkbox not showing in receipt mode
+  - Issue: Personal card checkbox was added to unused ReceiptUploadModalSimple component
+  - Root cause: Receipt mode uses inline upload in RequestForm, not the modal
+  - Solution: Added personal card checkbox directly to RequestForm receipt mode section
+  - Backend now properly receives and stores isPersonalCard flag from OCR requests
+  - Result: Personal card purchases can now be properly marked for reimbursement tracking
+
+### Removed
+- **Unused Receipt Components**: Cleaned up confusing duplicate receipt components
+  - Deleted ReceiptUploadModal.tsx (old version, never used)
+  - Deleted ReceiptPreview.tsx (only used by old modal)
+  - Deleted ReceiptUploadButton.tsx (never imported anywhere)
+  - Kept ReceiptUploadModalSimple.tsx for potential future use
+  - Added clarifying comments to explain the architecture
+  - Result: Cleaner codebase with no duplicate/unused components causing confusion
+
 ## [1.21.93] - 2025-10-20
 
 ### Added

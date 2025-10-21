@@ -214,8 +214,9 @@ router.post('/request',
                 ocr_json,
                 ocr_confidence,
                 line_items,
-                file_data
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                file_data,
+                is_personal_card
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
               RETURNING id
             `, [
               ocrResult.vendor || null,
@@ -230,7 +231,8 @@ router.post('/request',
               JSON.stringify(ocrResult),
               ocrResult.confidence,
               ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
-              imageData
+              imageData,
+              req.body.isPersonalCard || false  // Add personal card flag from request
             ]);
 
             if (insertResult.rows.length > 0) {

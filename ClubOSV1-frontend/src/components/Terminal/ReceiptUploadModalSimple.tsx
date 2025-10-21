@@ -1,3 +1,18 @@
+/**
+ * ReceiptUploadModalSimple - Standalone receipt upload modal with OCR
+ *
+ * NOTE: This component is currently NOT USED in the main receipt flow.
+ * The main receipt upload flow is handled inline in RequestForm.tsx when receipt mode is activated.
+ *
+ * This modal is kept for potential future use cases where a standalone receipt upload is needed
+ * (e.g., bulk upload, separate receipt management page, etc.)
+ *
+ * Features:
+ * - Receipt photo upload with OCR processing
+ * - Personal card checkbox for reimbursement tracking
+ * - Manual field editing after OCR
+ */
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, Camera, Check, FileText, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';

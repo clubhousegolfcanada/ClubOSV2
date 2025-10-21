@@ -71,6 +71,7 @@ const RequestForm: React.FC = () => {
   const [sendingReply, setSendingReply] = useState(false);
   const [conversationExpanded, setConversationExpanded] = useState(true);
   const [photoAttachments, setPhotoAttachments] = useState<string[]>([]);
+  const [isPersonalCard, setIsPersonalCard] = useState(false);
 
   const { preferences } = useSettingsState();
   const { user } = useAuthState();
@@ -345,7 +346,8 @@ const RequestForm: React.FC = () => {
             requestDescription: `[RECEIPT OCR]\n${data.requestDescription || 'Process this receipt'}`,
             imageData: photoAttachments[0], // Send the first photo as base64
             routePreference: 'Receipt',
-            smartAssistEnabled: true
+            smartAssistEnabled: true,
+            isPersonalCard: isPersonalCard // Include personal card flag
           },
         );
 
@@ -570,6 +572,7 @@ const RequestForm: React.FC = () => {
     setIsTicketMode(false); // Reset to request mode
     setIsKnowledgeMode(false); // Reset knowledge mode
     setIsReceiptMode(false); // Reset receipt mode
+    setIsPersonalCard(false); // Reset personal card flag
     setTicketPriority('medium'); // Reset ticket priority
     setTicketCategory('facilities'); // Reset ticket category
     setLastRequestData(null);
@@ -986,7 +989,11 @@ const RequestForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Receipt Mode - Photo Upload */}
+          {/* Receipt Mode - Photo Upload
+              NOTE: This is the ACTIVE receipt upload implementation.
+              The ReceiptUploadModalSimple component exists but is not currently used.
+              This inline approach was chosen for better UX integration with the terminal flow.
+          */}
           {isReceiptMode && (
             <div className="form-group">
               <label className="form-label flex items-center gap-2">
@@ -1030,6 +1037,29 @@ const RequestForm: React.FC = () => {
                     >
                       <X className="w-4 h-4" />
                     </button>
+                  </div>
+                )}
+
+                {/* Personal Card Checkbox - Added for reimbursement tracking */}
+                {photoAttachments.length > 0 && (
+                  <div className="py-3 px-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-secondary)]">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isPersonalCard}
+                        onChange={(e) => setIsPersonalCard(e.target.checked)}
+                        className="w-5 h-5 rounded border-[var(--border-secondary)] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0 cursor-pointer"
+                        disabled={isSubmitting}
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-[var(--text-primary)]">
+                          Purchased with personal card
+                        </span>
+                        <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                          Check this if you need reimbursement for a personal card purchase
+                        </span>
+                      </div>
+                    </label>
                   </div>
                 )}
               </div>
