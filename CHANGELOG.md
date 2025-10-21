@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.6] - 2025-10-21
+
+### 🎨 UI Polish & Mobile Experience
+- **Loading Skeletons**: Added beautiful loading skeletons for calendar and booking lists
+  - Calendar grid skeleton preserves layout during loading
+  - Booking list skeleton with staggered animations
+  - Compact calendar skeleton for mobile view
+- **Enhanced Selection UX**: Refined calendar time slot selection
+  - Duration indicator shows booking length during drag selection
+  - Visual feedback with smooth 200ms transitions
+  - Improved selection colors using ClubOS design system
+- **Smart Button Positioning**: Intelligent floating confirmation button
+  - Context-aware positioning based on selection and viewport
+  - Smooth transitions when position changes
+  - Mobile-optimized with bottom docking
+  - Shows booking context: "Book 1 hour • Simulator 2"
+- **Mobile Navigation**: Added native gesture support
+  - Swipe left/right to navigate days/weeks
+  - Pull-to-refresh to reload bookings
+  - Touch-optimized with proper feedback
+  - Custom useSwipeGesture hook for reusability
+
+### 🔧 Technical Improvements
+- **Performance**: Removed unnecessary re-renders with proper memoization
+- **TypeScript**: Fixed all compilation errors
+- **Code Quality**: Created reusable components and hooks
+- **Design System**: Consistent use of ClubOS CSS variables throughout
+
 ## [1.22.5] - 2025-10-21
 
 ### 🚨 Critical Production Fix

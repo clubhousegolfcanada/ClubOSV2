@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
 import { Info } from 'lucide-react';
 import { Booking, Space } from './BookingCalendar';
@@ -25,6 +25,9 @@ const DayGrid: React.FC<DayGridProps> = ({
   onBookingClick,
   onSpaceClick
 }) => {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
+
   // Selection state
   const [selectionStart, setSelectionStart] = useState<{
     time: Date;
@@ -42,6 +45,89 @@ const DayGrid: React.FC<DayGridProps> = ({
     slotIndex: number;
     spaceId: string;
   } | null>(null);
+
+  // Smart button positioning state
+  const [buttonPosition, setButtonPosition] = useState<{
+    top?: string;
+    bottom?: string;
+    left?: string;
+    right?: string;
+    transform?: string;
+  }>({ bottom: '20px', right: '20px' });
+
+  // Calculate selection duration for display
+  const selectionDuration = useMemo(() => {
+    if (!selectionStart || !selectionEnd) return null;
+    const slots = Math.abs(selectionEnd.slotIndex - selectionStart.slotIndex) + 1;
+    const totalMinutes = slots * 30;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minutes`;
+    }
+  }, [selectionStart, selectionEnd]);
+
+  // Calculate smart button position based on selection and viewport
+  useEffect(() => {
+    if (!selectionStart || isDragging || !gridRef.current) return;
+
+    const calculatePosition = () => {
+      const gridRect = gridRef.current!.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      // Calculate selection position
+      const selectionEndY = (selectionEnd?.slotIndex || selectionStart.slotIndex) * 41 + 150;
+      const spaceIndex = spaces.findIndex(s => s.id === selectionStart.spaceId);
+      const spaceWidth = gridRect.width / spaces.length;
+      const selectionCenterX = gridRect.left + 80 + (spaceIndex + 0.5) * spaceWidth;
+
+      // Determine position based on available space
+      const position: typeof buttonPosition = {};
+
+      // Vertical positioning
+      if (selectionEndY + 150 < viewportHeight - 100) {
+        // Position below selection if space
+        position.top = `${selectionEndY + 20}px`;
+      } else if (window.innerWidth < 768) {
+        // Mobile: dock to bottom
+        position.bottom = '20px';
+      } else {
+        // Position above selection
+        position.bottom = `${viewportHeight - selectionEndY + 100}px`;
+      }
+
+      // Horizontal positioning
+      if (window.innerWidth < 768) {
+        // Mobile: center horizontally
+        position.left = '50%';
+        position.transform = 'translateX(-50%)';
+      } else if (selectionCenterX + 200 > viewportWidth) {
+        // Too close to right edge
+        position.right = '20px';
+      } else if (selectionCenterX < 200) {
+        // Too close to left edge
+        position.left = '20px';
+      } else {
+        // Center on selection
+        position.left = `${selectionCenterX}px`;
+        position.transform = 'translateX(-50%)';
+      }
+
+      setButtonPosition(position);
+    };
+
+    // Calculate on mount and window resize
+    calculatePosition();
+    window.addEventListener('resize', calculatePosition);
+    return () => window.removeEventListener('resize', calculatePosition);
+  }, [selectionStart, selectionEnd, isDragging, spaces]);
+
   // Generate time slots for the day (6 AM to 11 PM)
   const timeSlots = useMemo(() => {
     const slots: Date[] = [];
@@ -179,7 +265,7 @@ const DayGrid: React.FC<DayGridProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto border border-[var(--border-primary)] rounded-lg">
+    <div className="overflow-x-auto border border-[var(--border-primary)] rounded-lg" ref={gridRef}>
       <div className="min-w-[800px]">
         {/* Header with space names */}
         <div className="grid grid-cols-[80px_1fr] bg-[var(--bg-tertiary)]">
@@ -228,7 +314,7 @@ const DayGrid: React.FC<DayGridProps> = ({
                   <div
                     key={`${space.id}-${slotIndex}`}
                     className={`
-                      relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-all duration-150
+                      relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-all duration-200
                       ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                       ${isAvailable && !isSelected ? 'hover:bg-[var(--bg-hover)]' : ''}
                       ${isSelected ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400' : ''}
@@ -295,30 +381,42 @@ const DayGrid: React.FC<DayGridProps> = ({
         ))}
       </div>
 
+      {/* Duration indicator during selection */}
+      {isDragging && selectionStart && selectionEnd && selectionDuration && (
+        <div
+          className="absolute z-40 pointer-events-none animate-in fade-in duration-200"
+          style={{
+            // Position at the end of selection
+            left: '50%',
+            top: `${(selectionEnd.slotIndex + 1) * 41 + 100}px`,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <div className="bg-blue-600 text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg">
+            {selectionDuration}
+          </div>
+        </div>
+      )}
+
       {/* Floating confirmation button */}
       {selectionStart && !isDragging && (
-        <div className="absolute z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-700"
-             style={{
-               // Position it at the bottom-right of the selection
-               bottom: '20px',
-               right: '20px'
-             }}>
+        <div
+          ref={buttonRef}
+          className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-out"
+          style={buttonPosition}>
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            <div className="font-medium text-[var(--text-primary)]">
-              {spaces.find(s => s.id === selectionStart.spaceId)?.name}
+            <div className="font-semibold text-[var(--text-primary)] text-base">
+              Book {selectionDuration || '1 hour'} • {spaces.find(s => s.id === selectionStart.spaceId)?.name}
             </div>
-            <div className="mt-1">
+            <div className="mt-1 text-xs">
               {format(timeSlots[selectionStart.slotIndex], 'h:mm a')} -
               {' '}{format(timeSlots[(selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) + 1] ||
                            addMinutes(timeSlots[selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1], 30), 'h:mm a')}
             </div>
-            <div className="text-xs mt-1 text-[var(--text-muted)]">
-              Duration: {((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30} minutes
-            </div>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="primary" onClick={confirmSelection}>
-              Book Now
+              Confirm
             </Button>
             <Button size="sm" variant="ghost" onClick={clearSelection}>
               Cancel

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Calendar, Clock, MapPin, Filter, Users, ChevronLeft, ChevronRight, Grid3X3, List, CalendarX } from 'lucide-react';
 import { format, startOfDay, addDays, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
+import useSwipeGesture from '@/hooks/useSwipeGesture';
 import { BookingConfigService, CustomerTier, BookingConfig } from '@/services/booking/bookingConfig';
 import { TimeValidationService } from '@/services/booking/timeValidationService';
 import Button from '@/components/ui/Button';
@@ -14,6 +15,7 @@ import ColorLegend from './ColorLegend';
 import AdminBlockOff from './AdminBlockOff';
 import BoxInfoModal from '../BoxInfoModal';
 import NewBookingModal from '../NewBookingModal';
+import { CalendarSkeleton } from './CalendarSkeleton';
 import logger from '@/services/logger';
 
 export interface Booking {
@@ -72,6 +74,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const { notify } = useNotifications();
   const { user } = useAuthState();
   const isAdmin = user?.role === 'admin';
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // State
   const [selectedDate, setSelectedDate] = useState<Date>(propDate || new Date());
@@ -259,6 +263,30 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setSelectedDate(new Date());
   };
 
+  // Swipe gesture handlers for mobile navigation
+  useSwipeGesture(
+    calendarRef,
+    {
+      onSwipeLeft: handleNext,
+      onSwipeRight: handlePrevious,
+      onPullEnd: async (distance) => {
+        // Pull-to-refresh: reload if pulled > 100px
+        if (distance > 100 && !isRefreshing) {
+          setIsRefreshing(true);
+          await loadBookings();
+          setIsRefreshing(false);
+          notify('success', 'Calendar refreshed');
+        }
+      }
+    },
+    {
+      threshold: 50,
+      velocity: 0.3,
+      preventScroll: true,
+      enablePullToRefresh: true
+    }
+  );
+
   // Modal handlers
   const handleSpaceClick = (space: Space) => {
     // Get box info from backend or use mock data
@@ -381,35 +409,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   if (loading) {
     return (
       <div className="card">
-        {/* Header skeleton */}
-        <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
-          <div className="flex items-center justify-between">
-            <div className="h-7 w-48 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-            <div className="flex gap-2">
-              <div className="h-8 w-32 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-              <div className="h-8 w-24 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-            </div>
-          </div>
-        </div>
-
-        {/* Date navigation skeleton */}
-        <div className="py-3 border-b border-[var(--border-primary)]">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <div className="h-8 w-8 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-              <div className="h-8 w-16 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-              <div className="h-8 w-8 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-            </div>
-            <div className="h-5 w-48 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-          </div>
-        </div>
-
-        {/* Grid skeleton */}
-        <div className="pt-3 space-y-3">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-24 bg-[var(--bg-tertiary)] rounded-lg animate-pulse" />
-          ))}
-        </div>
+        <CalendarSkeleton variant={viewMode} showHeader={true} />
       </div>
     );
   }
@@ -441,7 +441,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   }
 
   return (
-    <div className="card">
+    <div className="card relative" ref={calendarRef}>
+      {/* Pull-to-refresh indicator */}
+      {isRefreshing && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-blue-500 text-white text-center py-2 animate-pulse">
+          <span className="text-sm">Refreshing...</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

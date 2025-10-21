@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/ui/StatusBadge';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
+import { BookingListSkeleton } from './calendar/CalendarSkeleton';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import logger from '@/services/logger';
@@ -186,8 +187,8 @@ const BookingListView: React.FC<BookingListViewProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-4">
+        <BookingListSkeleton count={8} />
       </div>
     );
   }

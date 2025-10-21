@@ -11,6 +11,7 @@ import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Skeleton from '@/components/ui/Skeleton';
+import { CompactCalendarSkeleton } from './CalendarSkeleton';
 import DayGridCompact from './DayGridCompact';
 import WeekGridCompact from './WeekGridCompact';
 import ColorLegend from './ColorLegend';
@@ -346,29 +347,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   if (loading) {
     return (
       <div className="card">
-        {/* Header skeleton */}
-        <div className="border-b border-[var(--border-primary)] pb-2 mb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Skeleton variant="text" width={150} height={24} />
-              <Skeleton variant="text" width={80} height={16} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Skeleton variant="button" width={100} height={32} />
-              <Skeleton variant="button" width={80} height={32} />
-            </div>
-          </div>
-        </div>
-
-        {/* Calendar skeleton */}
-        <div className="space-y-2">
-          <Skeleton variant="custom" height={40} className="rounded-md" />
-          <div className="grid grid-cols-5 gap-2">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <Skeleton key={i} variant="custom" height={60} className="rounded-md" />
-            ))}
-          </div>
-        </div>
+        <CompactCalendarSkeleton />
       </div>
     );
   }

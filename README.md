@@ -1,4 +1,4 @@
-# ClubOS v1.22.5 - Flexible Facility Management System
+# ClubOS v1.22.6 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,13 +8,13 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.22.5**
-- **🚨 Critical Database Fix** - Fixed missing location_id column in production
-- **Production Ready** - All booking endpoints now working correctly
-- **Booking Audit** - Comprehensive system audit with improvement roadmap
-- **Interactive Calendar** - Skedda-style click-and-drag time slot selection
-- **TypeScript Safety** - All compilation errors resolved
-- **Better UX** - Smooth calendar refresh without page reloads
+**Current Version: v1.22.6**
+- **🎨 UI Polish** - Loading skeletons, smart positioning, duration indicators
+- **📱 Mobile Gestures** - Swipe navigation and pull-to-refresh
+- **✨ Enhanced Selection** - Visual feedback and smooth animations
+- **🚀 Performance** - Optimized renders with proper memoization
+- **🔧 TypeScript Safety** - All compilation errors resolved
+- **💎 Design System** - Consistent ClubOS minimalist aesthetic
 
 ## 🏗️ System Architecture
 
