@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
 import { Info } from 'lucide-react';
 import { Booking, Space } from './BookingCalendar';
 import { BookingConfig } from '@/services/booking/bookingConfig';
 import BookingBlock from './BookingBlock';
+import Button from '@/components/ui/Button';
 
 interface DayGridProps {
   date: Date;
@@ -24,6 +25,23 @@ const DayGrid: React.FC<DayGridProps> = ({
   onBookingSelect,
   onSpaceClick
 }) => {
+  // Selection state
+  const [selectionStart, setSelectionStart] = useState<{
+    time: Date;
+    spaceId: string;
+    slotIndex: number;
+  } | null>(null);
+
+  const [selectionEnd, setSelectionEnd] = useState<{
+    time: Date;
+    slotIndex: number;
+  } | null>(null);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoveredSlot, setHoveredSlot] = useState<{
+    slotIndex: number;
+    spaceId: string;
+  } | null>(null);
   // Generate time slots for the day (6 AM to 11 PM)
   const timeSlots = useMemo(() => {
     const slots: Date[] = [];
@@ -74,6 +92,82 @@ const DayGrid: React.FC<DayGridProps> = ({
       );
     });
   };
+
+  // Check if a slot is within selection range
+  const isSlotSelected = (slotIndex: number, spaceId: string): boolean => {
+    if (!selectionStart || spaceId !== selectionStart.spaceId) return false;
+
+    const endIndex = selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1; // Min 1 hour (2 slots)
+    const startIndex = selectionStart.slotIndex;
+
+    return slotIndex >= Math.min(startIndex, endIndex) &&
+           slotIndex <= Math.max(startIndex, endIndex);
+  };
+
+  // Check if we can extend selection to a slot
+  const checkCanExtendSelection = (toSlotIndex: number, spaceId: string): boolean => {
+    if (!selectionStart || spaceId !== selectionStart.spaceId) return false;
+
+    const fromIndex = selectionStart.slotIndex;
+    const startIdx = Math.min(fromIndex, toSlotIndex);
+    const endIdx = Math.max(fromIndex, toSlotIndex);
+
+    // Check all slots in range are available
+    for (let i = startIdx; i <= endIdx; i++) {
+      if (i < timeSlots.length && !isSlotAvailable(timeSlots[i], spaceId)) {
+        return false;
+      }
+    }
+
+    // Check max duration (e.g., 4 hours = 8 slots)
+    if (endIdx - startIdx > 7) return false;
+
+    return true;
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setIsDragging(false);
+    setHoveredSlot(null);
+  };
+
+  // Confirm and create booking
+  const confirmSelection = () => {
+    if (!selectionStart || !onBookingCreate) return;
+
+    const endIndex = selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1;
+    const startTime = timeSlots[selectionStart.slotIndex];
+    const endTime = timeSlots[endIndex + 1] || addMinutes(timeSlots[endIndex], 30);
+    const space = spaces.find(s => s.id === selectionStart.spaceId);
+
+    onBookingCreate(startTime, endTime, selectionStart.spaceId, space?.name);
+    clearSelection();
+  };
+
+  // Global event listeners for mouse up and escape key
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearSelection();
+      }
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isDragging]);
 
   if (spaces.length === 0) {
     return (
@@ -126,19 +220,57 @@ const DayGrid: React.FC<DayGridProps> = ({
                 });
 
                 const isAvailable = isSlotAvailable(slot, space.id);
+                const isSelected = isSlotSelected(slotIndex, space.id);
+                const isSelectionStart = selectionStart?.spaceId === space.id && selectionStart?.slotIndex === slotIndex;
+                const isSelectionEnd = selectionStart?.spaceId === space.id && selectionEnd?.slotIndex === slotIndex;
 
                 return (
                   <div
                     key={`${space.id}-${slotIndex}`}
-                    className={`relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-colors ${
-                      isAvailable
-                        ? 'cursor-pointer hover:bg-[var(--bg-hover)]'
-                        : ''
-                    }`}
-                    onClick={() => {
-                      if (isAvailable && onBookingCreate) {
-                        const endTime = addMinutes(slot, config.minDuration || 60);
-                        onBookingCreate(slot, endTime, space.id, space.name);
+                    className={`
+                      relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-all duration-150
+                      ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                      ${isAvailable && !isSelected ? 'hover:bg-[var(--bg-hover)]' : ''}
+                      ${isSelected ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400' : ''}
+                      ${isSelectionStart ? 'ring-2 ring-blue-500 ring-inset z-10' : ''}
+                      ${isSelectionEnd ? 'ring-2 ring-blue-500 ring-inset z-10' : ''}
+                    `}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      if (isAvailable && !slotBooking) {
+                        setSelectionStart({
+                          time: slot,
+                          spaceId: space.id,
+                          slotIndex: slotIndex
+                        });
+                        setIsDragging(true);
+
+                        // Auto-select minimum 1 hour (next slot)
+                        if (slotIndex < timeSlots.length - 1) {
+                          setSelectionEnd({
+                            time: timeSlots[slotIndex + 1],
+                            slotIndex: slotIndex + 1
+                          });
+                        }
+                      }
+                    }}
+                    onMouseEnter={() => {
+                      if (isDragging && selectionStart && selectionStart.spaceId === space.id) {
+                        // Check if we can extend to this slot
+                        const canExtend = checkCanExtendSelection(slotIndex, space.id);
+                        if (canExtend) {
+                          setSelectionEnd({
+                            time: slot,
+                            slotIndex: slotIndex
+                          });
+                        }
+                      }
+                      setHoveredSlot({ slotIndex, spaceId: space.id });
+                    }}
+                    onMouseUp={() => {
+                      if (selectionStart && isDragging) {
+                        setIsDragging(false);
+                        // Selection is complete, ready for confirmation
                       }
                     }}
                   >
@@ -150,6 +282,11 @@ const DayGrid: React.FC<DayGridProps> = ({
                         compact={true}
                       />
                     )}
+                    {isSelected && !slotBooking && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-full h-full bg-blue-500/10 dark:bg-blue-400/10"></div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -157,6 +294,38 @@ const DayGrid: React.FC<DayGridProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Floating confirmation button */}
+      {selectionStart && !isDragging && (
+        <div className="absolute z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-700"
+             style={{
+               // Position it at the bottom-right of the selection
+               bottom: '20px',
+               right: '20px'
+             }}>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            <div className="font-medium text-[var(--text-primary)]">
+              {spaces.find(s => s.id === selectionStart.spaceId)?.name}
+            </div>
+            <div className="mt-1">
+              {format(timeSlots[selectionStart.slotIndex], 'h:mm a')} -
+              {' '}{format(timeSlots[(selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) + 1] ||
+                           addMinutes(timeSlots[selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1], 30), 'h:mm a')}
+            </div>
+            <div className="text-xs mt-1 text-[var(--text-muted)]">
+              Duration: {((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30} minutes
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="primary" onClick={confirmSelection}>
+              Book Now
+            </Button>
+            <Button size="sm" variant="ghost" onClick={clearSelection}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

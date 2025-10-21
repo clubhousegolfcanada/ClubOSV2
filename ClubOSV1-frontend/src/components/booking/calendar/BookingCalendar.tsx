@@ -308,18 +308,37 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       return;
     }
 
-    // Open booking modal with prefilled data
-    setBookingFormData({
-      date: startTime,
-      startTime,
-      endTime,
-      spaceId,
-      spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
-      locationId: selectedLocationId,
-      customerTier: currentUserTier
-    });
-    setShowNewBookingModal(true);
-  }, [config, selectedLocationId, spaces, notify, customerTiers]);
+    // Call parent's onBookingCreate callback if provided
+    if (onBookingCreate) {
+      // Create a partial booking object with the available data
+      const partialBooking: Partial<Booking> = {
+        startAt: startTime.toISOString(),
+        endAt: endTime.toISOString(),
+        spaceIds: spaceId ? [spaceId] : [],
+        locationId: selectedLocationId,
+        status: 'pending'
+      };
+      // Add extra data as properties for the parent to use
+      (partialBooking as any).startTime = startTime;
+      (partialBooking as any).endTime = endTime;
+      (partialBooking as any).spaceId = spaceId;
+      (partialBooking as any).spaceName = spaceName || spaces.find(s => s.id === spaceId)?.name || '';
+
+      onBookingCreate(partialBooking);
+    } else {
+      // Fall back to internal modal if no parent callback
+      setBookingFormData({
+        date: startTime,
+        startTime,
+        endTime,
+        spaceId,
+        spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
+        locationId: selectedLocationId,
+        customerTier: currentUserTier
+      });
+      setShowNewBookingModal(true);
+    }
+  }, [config, selectedLocationId, spaces, notify, customerTiers, onBookingCreate]);
 
   const handleAdminBlock = useCallback(async (blockData: {
     startAt: Date;
@@ -585,18 +604,18 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         onClose={() => setShowBoxInfoModal(false)}
       />
 
-      <NewBookingModal
-        isOpen={showNewBookingModal}
-        onClose={() => setShowNewBookingModal(false)}
-        prefilledData={bookingFormData}
-        onSuccess={(booking) => {
-          if (onBookingCreate) {
-            onBookingCreate(booking);
-          }
-          // Reload bookings to show the new one
-          loadBookings();
-        }}
-      />
+      {/* Only show internal modal if no parent callback provided */}
+      {!onBookingCreate && (
+        <NewBookingModal
+          isOpen={showNewBookingModal}
+          onClose={() => setShowNewBookingModal(false)}
+          prefilledData={bookingFormData}
+          onSuccess={(booking) => {
+            // Reload bookings to show the new one
+            loadBookings();
+          }}
+        />
+      )}
     </div>
   );
 };

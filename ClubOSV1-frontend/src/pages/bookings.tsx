@@ -6,7 +6,7 @@ import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
 import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
-import BookingTerminalCard from '@/components/booking/cards/BookingTerminalCard';
+import UnifiedBookingCard from '@/components/booking/unified/UnifiedBookingCard';
 import AdminBlockOff from '@/components/booking/calendar/AdminBlockOff';
 import Head from 'next/head';
 import { Calendar, ExternalLink, X } from 'lucide-react';
@@ -248,14 +248,14 @@ export default function Bookings() {
       {/* Modals */}
       {showCreateBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn p-4">
-          <div className="max-h-[90vh] overflow-y-auto w-full max-w-4xl">
-            <BookingTerminalCard
+          <div className="max-h-[90vh] overflow-y-auto w-full max-w-5xl">
+            <UnifiedBookingCard
               initialStartTime={selectedTimeSlot.startTime}
               initialEndTime={selectedTimeSlot.endTime}
               initialSpaceId={selectedTimeSlot.spaceId}
               initialSpaceName={selectedTimeSlot.spaceName}
-              onSuccess={(booking) => {
-                notify('success', `Booking created successfully! ID: ${booking.id}`);
+              onSuccess={(result) => {
+                notify('success', `Booking created successfully! ID: ${result.id || 'New'}`);
                 setShowCreateBooking(false);
                 setSelectedTimeSlot({}); // Clear selection after success
                 // Refresh the calendar if needed
@@ -267,6 +267,8 @@ export default function Bookings() {
                 setShowCreateBooking(false);
                 setSelectedTimeSlot({}); // Clear selection on cancel
               }}
+              defaultMode={isAdmin ? 'booking' : 'booking'}
+              allowModeSwitch={isStaff}
             />
           </div>
         </div>

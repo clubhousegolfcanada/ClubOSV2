@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.2] - 2025-10-21
+
+### 🎯 Major UX Improvements
+- **Interactive Calendar Selection**: Implemented Skedda-style time slot selection
+  - Click and drag to select booking duration
+  - Automatic 1-hour minimum selection (2 slots)
+  - Visual feedback with blue highlighting for selected time range
+  - Floating confirmation button shows selected time before booking
+  - Prevent selection across existing bookings
+  - Maximum 4-hour booking limit
+  - ESC key to cancel selection
+
+### 🔧 Technical Improvements
+- **Enhanced DayGrid Component**: Added stateful selection mechanism
+  - Mouse event handlers for click-and-drag functionality
+  - Global event listeners for mouse up and escape key
+  - Smart conflict detection prevents invalid selections
+  - Visual states for available, selected, and blocked slots
+
+### 🐛 Fixed
+- **Calendar Callback Issue**: Fixed BookingCalendar not calling parent's onBookingCreate
+  - Now properly propagates time slot clicks to parent component
+  - Opens UnifiedBookingCard instead of internal modal
+  - Maintains backward compatibility with fallback to internal modal
+
+### UI/UX
+- **Better Visual Feedback**: Clear indication of selected time range
+- **Confirmation Step**: Users see and confirm selection before booking opens
+- **Mobile Support**: Touch events ready for mobile devices
+- **Dark Mode Support**: Proper colors for both light and dark themes
+
 ## [1.22.1] - 2025-10-21
 
 ### 🎨 UI Enhancements
