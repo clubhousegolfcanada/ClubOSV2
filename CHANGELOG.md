@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.5] - 2025-10-21
+
+### 🚨 Critical Production Fix
+- **Fixed Database Schema Issue**: Added missing `location_id` column to bookings table
+- **Resolved 500 Errors**: Booking endpoints now working correctly in production
+- **Fixed CORS Issues**: Were secondary to the database errors, now resolved
+- **Migration Applied**: Successfully ran migration 317_fix_booking_location_id.sql
+
+### 🔧 Technical Details
+- **Root Cause**: Production database was missing location_id column in bookings table
+- **Solution**: Applied ALTER TABLE to add the missing column
+- **Impact**: All booking-related endpoints now functioning correctly
+- **Verification**: Tested /api/bookings/day endpoint - returns proper response
+
 ## [1.22.4] - 2025-10-21
 
 ### 🔧 Improvements
