@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.0] - 2025-10-21
+
+### 🔥 Critical Production Fixes
+- **Fixed Booking Calendar 500 Error**: Resolved database query issues preventing bookings from loading
+  - Simplified `/api/bookings/day` endpoint to handle inconsistent schema
+  - Removed complex JOINs with potentially missing tables
+  - Added COALESCE fallbacks for nullable fields
+  - Bookings now load and are clickable in the calendar
+- **Fixed Database Startup Error**: Added missing `archived_at` column to tickets table
+  - Created migration `999_fix_archived_at_column.sql`
+  - Added performance indexes for archived tickets
+  - Resolves index creation failure on server startup
+
 ## [1.21.98] - 2025-10-21
 
 ### Fixed
