@@ -1,39 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
-import Navigation from '@/components/Navigation';
-import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
 import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
 import AdminBlockOff from '@/components/booking/calendar/AdminBlockOff';
 import Head from 'next/head';
-import { Calendar, MapPin, Clock, Info, ExternalLink, TrendingUp, Users, DollarSign, AlertCircle, X } from 'lucide-react';
+import { Calendar, ExternalLink, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
-import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
-import { format } from 'date-fns';
-
-// Stats card component for operators
-const StatCard = ({ title, value, icon: Icon, trend }: any) => (
-  <div className="card p-4">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-[var(--text-secondary)]">{title}</p>
-        <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{value}</p>
-        {trend && (
-          <p className="text-xs text-[var(--status-success)] mt-1">
-            <TrendingUp className="inline w-3 h-3" /> {trend}
-          </p>
-        )}
-      </div>
-      {Icon && <Icon className="w-8 h-8 text-[var(--text-muted)]" />}
-    </div>
-  </div>
-);
 
 export default function Bookings() {
   const router = useRouter();
@@ -46,12 +24,6 @@ export default function Bookings() {
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [showAdminBlock, setShowAdminBlock] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [stats, setStats] = useState({
-    todayCount: 0,
-    todayRevenue: 0,
-    occupancy: 0,
-    pendingCount: 0
-  });
 
   // Role-based checks
   const isCustomer = user?.role === 'customer';
@@ -66,35 +38,11 @@ export default function Bookings() {
       router.push('/login');
     } else {
       setLoading(false);
-      if (isStaff) {
-        loadStats();
-      }
     }
   }, [user, router]);
 
-  const loadStats = async () => {
-    try {
-      const response = await http.get('/bookings/stats', {
-        params: {
-          date: format(new Date(), 'yyyy-MM-dd'),
-          locationId: 'all' // Can be filtered by location later
-        }
-      });
-      if (response.data.success) {
-        setStats(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to load booking stats:', error);
-      // Show user-friendly error message
-      notify('error', 'Unable to load booking statistics. Please refresh the page.');
-    }
-  };
-
   const handleBookingSuccess = (booking: any) => {
     notify('success', `Booking confirmed! ID: ${booking.id}`);
-    if (isStaff) {
-      loadStats(); // Refresh stats for staff
-    }
   };
 
   if (loading) {
@@ -131,9 +79,6 @@ export default function Bookings() {
       </Head>
 
       <div className={`min-h-screen bg-[var(--bg-primary)] ${isCustomer ? 'customer-app' : ''}`}>
-        {/* Use appropriate navigation based on role */}
-        {isCustomer ? <CustomerNavigation /> : <Navigation />}
-
         <main className={isCustomer ? 'pb-24 lg:pb-8 lg:pt-14' : 'pt-16'}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header with toggle - enhanced for operators */}
@@ -183,32 +128,6 @@ export default function Bookings() {
               </div>
             </div>
 
-            {/* Stats dashboard for staff */}
-            {isStaff && !showLegacySystem && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <StatCard
-                  title="Today's Bookings"
-                  value={stats.todayCount}
-                  icon={Calendar}
-                />
-                <StatCard
-                  title="Today's Revenue"
-                  value={`$${stats.todayRevenue.toFixed(2)}`}
-                  icon={DollarSign}
-                  trend="+12% from yesterday"
-                />
-                <StatCard
-                  title="Occupancy Rate"
-                  value={`${stats.occupancy}%`}
-                  icon={Users}
-                />
-                <StatCard
-                  title="Pending Actions"
-                  value={stats.pendingCount}
-                  icon={AlertCircle}
-                />
-              </div>
-            )}
 
             {showLegacySystem ? (
               /* Legacy Skedda System - Same for all users */
@@ -311,9 +230,6 @@ export default function Bookings() {
                 onSuccess={(booking) => {
                   notify('success', `Booking created successfully! ID: ${booking.id}`);
                   setShowCreateBooking(false);
-                  if (isStaff) {
-                    loadStats(); // Refresh stats for staff
-                  }
                 }}
                 onCancel={() => setShowCreateBooking(false)}
               />
