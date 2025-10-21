@@ -146,17 +146,17 @@ router.get('/search', authenticate, async (req: Request, res: Response) => {
       throw new Error(`HubSpot API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
 
     // Cache the results
     contactCache.set(cacheKey, {
-      data: data.results,
+      data: data.results || [],
       timestamp: Date.now()
     });
 
     res.json({
       success: true,
-      contacts: data.results,
+      contacts: data.results || [],
       source: 'hubspot'
     });
 
@@ -270,10 +270,10 @@ router.post('/sync-booking', authenticate, async (req: Request, res: Response) =
       throw new Error(`HubSpot API error: ${response.status}`);
     }
 
-    const deal = await response.json();
+    const deal: any = await response.json();
 
     // Associate deal with contact if customerId provided
-    if (customerId) {
+    if (customerId && deal.id) {
       await fetch(`${HUBSPOT_BASE_URL}/objects/deals/${deal.id}/associations/contacts/${customerId}/deal_to_contact`, {
         method: 'PUT',
         headers: {
@@ -282,15 +282,17 @@ router.post('/sync-booking', authenticate, async (req: Request, res: Response) =
       });
     }
 
-    // Update local database with HubSpot deal ID
-    await db.query(
-      'UPDATE bookings SET hubspot_deal_id = $1 WHERE id = $2',
-      [deal.id, bookingId]
-    );
+    // Update local database with HubSpot deal ID if we got one
+    if (deal.id) {
+      await db.query(
+        'UPDATE bookings SET hubspot_deal_id = $1 WHERE id = $2',
+        [deal.id, bookingId]
+      );
+    }
 
     res.json({
       success: true,
-      dealId: deal.id
+      dealId: deal.id || null
     });
 
   } catch (error) {
