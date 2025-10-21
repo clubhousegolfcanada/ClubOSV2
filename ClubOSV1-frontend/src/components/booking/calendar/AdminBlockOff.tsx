@@ -10,6 +10,9 @@ import { useNotifications } from '@/state/hooks';
 interface AdminBlockOffProps {
   spaces: Space[];
   initialDate?: Date;
+  initialStartTime?: Date;
+  initialEndTime?: Date;
+  initialSpaceId?: string;
   onBlock: (blockData: {
     startAt: Date;
     endAt: Date;
@@ -24,6 +27,9 @@ interface AdminBlockOffProps {
 const AdminBlockOff: React.FC<AdminBlockOffProps> = ({
   spaces,
   initialDate = new Date(),
+  initialStartTime,
+  initialEndTime,
+  initialSpaceId,
   onBlock,
   onCancel
 }) => {
@@ -52,15 +58,20 @@ const AdminBlockOff: React.FC<AdminBlockOffProps> = ({
   ];
 
   useEffect(() => {
-    // Initialize dates with sensible defaults
-    const now = startOfHour(addHours(new Date(), 1)); // Next hour
-    const end = addHours(now, 2); // 2 hours later
+    // Use provided initial times or default to next hour
+    const start = initialStartTime || startOfHour(addHours(new Date(), 1));
+    const end = initialEndTime || addHours(start, 2);
 
-    setStartDate(format(now, 'yyyy-MM-dd'));
-    setStartTime(format(now, 'HH:mm'));
+    setStartDate(format(start, 'yyyy-MM-dd'));
+    setStartTime(format(start, 'HH:mm'));
     setEndDate(format(end, 'yyyy-MM-dd'));
     setEndTime(format(end, 'HH:mm'));
-  }, []);
+
+    // Pre-select space if provided
+    if (initialSpaceId) {
+      setSelectedSpaces([initialSpaceId]);
+    }
+  }, [initialStartTime, initialEndTime, initialSpaceId]);
 
   const toggleSpace = (spaceId: string) => {
     setSelectedSpaces(prev =>

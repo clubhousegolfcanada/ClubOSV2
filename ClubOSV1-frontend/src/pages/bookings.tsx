@@ -25,6 +25,14 @@ export default function Bookings() {
   const [showAdminBlock, setShowAdminBlock] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
 
+  // Store selected time slot data for pre-population
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
+    startTime?: Date;
+    endTime?: Date;
+    spaceId?: string;
+    spaceName?: string;
+  }>({});
+
   // Role-based checks
   const isCustomer = user?.role === 'customer';
   const isOperator = user?.role === 'operator';
@@ -41,8 +49,34 @@ export default function Bookings() {
     }
   }, [user, router]);
 
-  const handleBookingSuccess = (booking: any) => {
-    notify('success', `Booking confirmed! ID: ${booking.id}`);
+  // Handle when a time slot is clicked on the calendar
+  const handleTimeSlotClick = (bookingOrStartTime: any, endTime?: Date, spaceId?: string, spaceName?: string) => {
+    // Check if this is from DayGrid/WeekGrid (separate params) or BookingCalendar (booking object)
+    if (bookingOrStartTime instanceof Date && endTime) {
+      // This is from DayGrid/WeekGrid - time slot click with separate parameters
+      setSelectedTimeSlot({
+        startTime: bookingOrStartTime,
+        endTime: endTime,
+        spaceId: spaceId,
+        spaceName: spaceName
+      });
+      setShowCreateBooking(true);
+    } else if (bookingOrStartTime && typeof bookingOrStartTime === 'object') {
+      // This is from BookingCalendar - booking object
+      if (bookingOrStartTime.startTime && bookingOrStartTime.endTime) {
+        // Time slot click from calendar
+        setSelectedTimeSlot({
+          startTime: bookingOrStartTime.startTime,
+          endTime: bookingOrStartTime.endTime,
+          spaceId: bookingOrStartTime.spaceId,
+          spaceName: bookingOrStartTime.spaceName
+        });
+        setShowCreateBooking(true);
+      } else if (bookingOrStartTime.id) {
+        // This is an actual booking confirmation
+        notify('success', `Booking confirmed! ID: ${bookingOrStartTime.id}`);
+      }
+    }
   };
 
   if (loading) {
@@ -59,7 +93,7 @@ export default function Bookings() {
 
   // Role-based calendar props
   const calendarProps = {
-    onBookingCreate: handleBookingSuccess,
+    onBookingCreate: handleTimeSlotClick,
     showColorLegend: true,
     allowAdminBlock: isAdmin,
     showAllBookings: isStaff, // Staff see all bookings
@@ -227,11 +261,19 @@ export default function Bookings() {
             {/* Modal Body with Booking Form */}
             <div className="flex-1 overflow-y-auto p-6">
               <TieredBookingForm
+                initialStartTime={selectedTimeSlot.startTime}
+                initialEndTime={selectedTimeSlot.endTime}
+                initialSpaceId={selectedTimeSlot.spaceId}
+                initialSpaceName={selectedTimeSlot.spaceName}
                 onSuccess={(booking) => {
                   notify('success', `Booking created successfully! ID: ${booking.id}`);
                   setShowCreateBooking(false);
+                  setSelectedTimeSlot({}); // Clear selection after success
                 }}
-                onCancel={() => setShowCreateBooking(false)}
+                onCancel={() => {
+                  setShowCreateBooking(false);
+                  setSelectedTimeSlot({}); // Clear selection on cancel
+                }}
               />
             </div>
           </div>
@@ -254,6 +296,9 @@ export default function Bookings() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn">
           <div className="max-w-2xl w-full mx-4">
             <AdminBlockOff
+              initialStartTime={selectedTimeSlot.startTime}
+              initialEndTime={selectedTimeSlot.endTime}
+              initialSpaceId={selectedTimeSlot.spaceId}
               spaces={[
                 { id: '1', name: 'Simulator 1', locationId: '1', displayOrder: 1, isActive: true },
                 { id: '2', name: 'Simulator 2', locationId: '1', displayOrder: 2, isActive: true },
@@ -266,12 +311,16 @@ export default function Bookings() {
                 // Block will be created via API in AdminBlockOff component
                 notify('success', `Time slots blocked: ${blockData.reason}`);
                 setShowAdminBlock(false);
+                setSelectedTimeSlot({}); // Clear selection after block
                 if (view === 'calendar') {
                   // Trigger calendar refresh if in calendar view
                   window.location.reload(); // TODO: Implement proper refresh
                 }
               }}
-              onCancel={() => setShowAdminBlock(false)}
+              onCancel={() => {
+                setShowAdminBlock(false);
+                setSelectedTimeSlot({}); // Clear selection on cancel
+              }}
             />
           </div>
         </div>

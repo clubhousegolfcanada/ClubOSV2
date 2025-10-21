@@ -41,6 +41,10 @@ interface TieredBookingFormProps {
   locationId?: string;
   spaceId?: string;
   date?: Date;
+  initialStartTime?: Date;
+  initialEndTime?: Date;
+  initialSpaceId?: string;
+  initialSpaceName?: string;
   onSuccess?: (booking: any) => void;
   onCancel?: () => void;
   existingBooking?: any; // For reschedules
@@ -50,6 +54,10 @@ export default function TieredBookingForm({
   locationId: defaultLocationId,
   spaceId: defaultSpaceId,
   date: defaultDate,
+  initialStartTime,
+  initialEndTime,
+  initialSpaceId,
+  initialSpaceName,
   onSuccess,
   onCancel,
   existingBooking
@@ -59,12 +67,24 @@ export default function TieredBookingForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper to format dates for datetime-local input
+  const formatDateForInput = (date: Date | undefined) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   // Form state
   const [formData, setFormData] = useState<BookingFormData>({
     locationId: defaultLocationId || '',
-    spaceIds: defaultSpaceId ? [defaultSpaceId] : [],
-    startAt: '',
-    endAt: '',
+    spaceIds: initialSpaceId ? [initialSpaceId] : (defaultSpaceId ? [defaultSpaceId] : []),
+    startAt: formatDateForInput(initialStartTime),
+    endAt: formatDateForInput(initialEndTime),
     isRecurring: false
   });
 
