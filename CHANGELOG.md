@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.1] - 2025-10-21
+
+### 🎨 UI Enhancements
+- **Terminal-Style Booking Card**: Redesigned booking creation interface with ClubOS terminal aesthetic
+  - Dark terminal header with monospace font and green accent
+  - Layered card design using standardized CSS variables
+  - Quick-add buttons for CRM notes to improve efficiency
+  - Mobile-responsive with full-width inputs and touch-friendly targets
+  - Blue-tinted booking summary card with pricing breakdown
+  - Improved visual hierarchy and user experience
+
+### 🐛 Fixed
+- **API Path Error**: Fixed `/api/` prefix issue in TieredBookingForm causing interceptor errors
+  - Changed `/api/users/${user.id}/tier` to `users/${user.id}/tier`
+  - Resolves "Do not include '/api' in request path" error messages
+
+### Added
+- **BookingTerminalCard Component**: New terminal-inspired booking interface
+  - Reuses existing UI components (Button, Input, LoadingSpinner)
+  - Follows ClubOS design system with CSS variables
+  - Staff-only sections for customer info and CRM notes
+  - Promo code application with visual feedback
+  - Cancellation policy display in booking summary
+
 ## [1.22.0] - 2025-10-21
 
 ### 🔥 Critical Production Fixes
