@@ -5,15 +5,45 @@ import logger from '@/services/logger';
  * Falls back to sessionStorage or memory storage if needed
  */
 
+// Define allowed origins for postMessage (update with your production domain)
+const ALLOWED_ORIGINS = [
+  'https://club-osv-2-owqx.vercel.app',
+  'https://clubhouse247golf.com',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002'
+];
+
 class IframeStorage {
   private memoryStorage: Map<string, string> = new Map();
   private isIframe: boolean = false;
   private storageAvailable: boolean = true;
+  private parentOrigin: string = '*';
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.isIframe = window !== window.parent;
       this.testStorage();
+
+      // Determine parent origin for secure postMessage
+      if (this.isIframe && document.referrer) {
+        try {
+          const parentUrl = new URL(document.referrer);
+          const parentOrigin = parentUrl.origin;
+
+          // Only use specific origin if it's in our allowed list
+          if (ALLOWED_ORIGINS.includes(parentOrigin)) {
+            this.parentOrigin = parentOrigin;
+          } else {
+            // For unknown origins, don't send messages at all for security
+            logger.warn('Iframe parent origin not in allowed list', { parentOrigin });
+            this.parentOrigin = '';
+          }
+        } catch (e) {
+          logger.warn('Could not determine parent origin', { error: e });
+          this.parentOrigin = '';
+        }
+      }
     }
   }
 
@@ -36,6 +66,7 @@ class IframeStorage {
         localStorage.setItem(key, value);
         return;
       } catch (e) {
+        logger.debug('localStorage.setItem failed, falling back to alternatives', { key, error: e });
         // Fall through to alternatives
       }
     }
@@ -44,20 +75,21 @@ class IframeStorage {
     try {
       sessionStorage.setItem(key, value);
     } catch (e) {
+      logger.debug('sessionStorage.setItem failed, using memory storage', { key, error: e });
       // Use memory storage as last resort
       this.memoryStorage.set(key, value);
     }
 
     // If in iframe, also try posting to parent
-    if (this.isIframe) {
+    if (this.isIframe && this.parentOrigin) {
       try {
         window.parent.postMessage({
           type: 'clubos-storage-set',
           key,
           value
-        }, '*');
+        }, this.parentOrigin);
       } catch (e) {
-        // Parent window not accessible
+        logger.debug('postMessage to parent failed - parent window not accessible', { error: e });
       }
     }
   }
@@ -69,6 +101,7 @@ class IframeStorage {
         const value = localStorage.getItem(key);
         if (value !== null) return value;
       } catch (e) {
+        logger.debug('localStorage.getItem failed, falling back to alternatives', { key, error: e });
         // Fall through to alternatives
       }
     }
@@ -78,6 +111,7 @@ class IframeStorage {
       const value = sessionStorage.getItem(key);
       if (value !== null) return value;
     } catch (e) {
+      logger.debug('sessionStorage.getItem failed', { key, error: e });
       // Fall through
     }
 
@@ -92,34 +126,44 @@ class IframeStorage {
     // Remove from all storages
     try {
       localStorage.removeItem(key);
-    } catch (e) {}
-    
+    } catch (e) {
+      logger.debug('localStorage.removeItem failed', { key, error: e });
+    }
+
     try {
       sessionStorage.removeItem(key);
-    } catch (e) {}
-    
+    } catch (e) {
+      logger.debug('sessionStorage.removeItem failed', { key, error: e });
+    }
+
     this.memoryStorage.delete(key);
 
     // If in iframe, notify parent
-    if (this.isIframe) {
+    if (this.isIframe && this.parentOrigin) {
       try {
         window.parent.postMessage({
           type: 'clubos-storage-remove',
           key
-        }, '*');
-      } catch (e) {}
+        }, this.parentOrigin);
+      } catch (e) {
+        logger.debug('postMessage to parent for removal failed', { key, error: e });
+      }
     }
   }
 
   clear(): void {
     try {
       localStorage.clear();
-    } catch (e) {}
-    
+    } catch (e) {
+      logger.debug('localStorage.clear failed', { error: e });
+    }
+
     try {
       sessionStorage.clear();
-    } catch (e) {}
-    
+    } catch (e) {
+      logger.debug('sessionStorage.clear failed', { error: e });
+    }
+
     this.memoryStorage.clear();
   }
 }

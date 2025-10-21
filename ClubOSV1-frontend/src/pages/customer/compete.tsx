@@ -320,40 +320,72 @@ export default function Compete() {
       const winner = await new Promise<string | null>((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-        modal.innerHTML = `
-          <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-            <h3 class="text-lg font-semibold mb-4">Who Won?</h3>
-            <p class="text-sm text-gray-600 mb-4">Select the winner of this challenge:</p>
-            <div class="space-y-2">
-              <button id="select-me" class="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
-                <div class="font-medium">Me</div>
-                <div class="text-sm text-gray-500">${isCreator ? challenge.creatorName : challenge.acceptorName}</div>
-              </button>
-              <button id="select-opponent" class="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
-                <div class="font-medium">Opponent</div>
-                <div class="text-sm text-gray-500">${isCreator ? challenge.acceptorName : challenge.creatorName}</div>
-              </button>
-              <button id="cancel" class="w-full p-2 text-gray-500 hover:text-gray-700">Cancel</button>
-            </div>
-          </div>
-        `;
+
+        // Create elements safely without innerHTML to prevent XSS
+        const modalContent = document.createElement('div');
+        modalContent.className = 'bg-white rounded-lg p-6 max-w-sm w-full mx-4';
+
+        const title = document.createElement('h3');
+        title.className = 'text-lg font-semibold mb-4';
+        title.textContent = 'Who Won?';
+
+        const description = document.createElement('p');
+        description.className = 'text-sm text-gray-600 mb-4';
+        description.textContent = 'Select the winner of this challenge:';
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'space-y-2';
+
+        // Create "Me" button
+        const selectMe = document.createElement('button');
+        selectMe.className = 'w-full p-3 border rounded-lg hover:bg-gray-50 text-left';
+        const meLabel = document.createElement('div');
+        meLabel.className = 'font-medium';
+        meLabel.textContent = 'Me';
+        const meName = document.createElement('div');
+        meName.className = 'text-sm text-gray-500';
+        meName.textContent = isCreator ? challenge.creatorName : challenge.acceptorName;
+        selectMe.appendChild(meLabel);
+        selectMe.appendChild(meName);
+
+        // Create "Opponent" button
+        const selectOpponent = document.createElement('button');
+        selectOpponent.className = 'w-full p-3 border rounded-lg hover:bg-gray-50 text-left';
+        const opponentLabel = document.createElement('div');
+        opponentLabel.className = 'font-medium';
+        opponentLabel.textContent = 'Opponent';
+        const opponentName = document.createElement('div');
+        opponentName.className = 'text-sm text-gray-500';
+        opponentName.textContent = isCreator ? challenge.acceptorName : challenge.creatorName;
+        selectOpponent.appendChild(opponentLabel);
+        selectOpponent.appendChild(opponentName);
+
+        // Create cancel button
+        const cancel = document.createElement('button');
+        cancel.className = 'w-full p-2 text-gray-500 hover:text-gray-700';
+        cancel.textContent = 'Cancel';
+
+        // Assemble the modal
+        buttonContainer.appendChild(selectMe);
+        buttonContainer.appendChild(selectOpponent);
+        buttonContainer.appendChild(cancel);
+        modalContent.appendChild(title);
+        modalContent.appendChild(description);
+        modalContent.appendChild(buttonContainer);
+        modal.appendChild(modalContent);
         document.body.appendChild(modal);
 
-        const selectMe = modal.querySelector('#select-me') as HTMLButtonElement;
-        const selectOpponent = modal.querySelector('#select-opponent') as HTMLButtonElement;
-        const cancel = modal.querySelector('#cancel') as HTMLButtonElement;
-
-        selectMe?.addEventListener('click', () => {
+        selectMe.addEventListener('click', () => {
           document.body.removeChild(modal);
           resolve(user?.id || null);
         });
 
-        selectOpponent?.addEventListener('click', () => {
+        selectOpponent.addEventListener('click', () => {
           document.body.removeChild(modal);
           resolve(isCreator ? challenge.acceptorId : challenge.creatorId);
         });
 
-        cancel?.addEventListener('click', () => {
+        cancel.addEventListener('click', () => {
           document.body.removeChild(modal);
           resolve(null);
         });

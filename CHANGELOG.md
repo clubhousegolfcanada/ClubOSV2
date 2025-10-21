@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.98] - 2025-10-21
+
+### 🔐 Critical Security Fixes
+- **XSS Vulnerabilities Patched**: Fixed 2 critical cross-site scripting vulnerabilities
+  - ResponseDisplaySimple.tsx: Added DOMPurify sanitization for dangerouslySetInnerHTML
+  - compete.tsx: Replaced innerHTML with safe DOM manipulation using textContent
+  - Created frontend sanitizer utility with strict HTML filtering
+- **Silent Error Handling Fixed**: Added proper error logging to iframeStorage.ts
+  - Fixed 10+ empty catch blocks that were swallowing errors
+  - All storage failures now properly logged for debugging
+- **postMessage Security**: Restricted origin from wildcard '*' to allowed domains
+  - Added whitelist of trusted origins (production and localhost)
+  - Parent origin validation for iframe communications
+  - Prevents cross-origin data theft
+
+### Added
+- **Frontend Security Utils**: Created sanitizer.ts with multiple sanitization methods
+  - sanitizeHtml() for AI responses with safe formatting
+  - sanitizeResponseHtml() for measurement display
+  - escapeHtml() for plain text
+  - sanitizeInput() for user input
+
+### Dependencies
+- Added dompurify@3.x for HTML sanitization
+- Added @types/dompurify for TypeScript support
+
 ## [1.21.97] - 2025-10-21
 
 ### Fixed

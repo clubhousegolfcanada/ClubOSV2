@@ -5,10 +5,12 @@ import Navigation from '@/components/Navigation';
 import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
+import BookingListView from '@/components/booking/BookingListView';
 import Head from 'next/head';
 import { Calendar, MapPin, Clock, Info, ExternalLink, TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { format } from 'date-fns';
@@ -160,7 +162,6 @@ export default function Bookings() {
                       variant={view === 'list' ? 'primary' : 'ghost'}
                       size="sm"
                       onClick={() => setView('list')}
-                      disabled // List view to be implemented
                     >
                       List
                     </Button>
@@ -280,10 +281,8 @@ export default function Bookings() {
                 <CalendarComponent {...calendarProps} />
               </div>
             ) : (
-              /* List view - To be implemented */
-              <div className="card p-8 text-center">
-                <p className="text-[var(--text-secondary)]">List view coming soon...</p>
-              </div>
+              /* List view - Full booking management table */
+              <BookingListView />
             )}
           </div>
         </main>
@@ -303,21 +302,15 @@ export default function Bookings() {
       )}
 
       {showCustomerSearch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Search Customers</h2>
-            <input
-              type="text"
-              placeholder="Search by name, email, or phone..."
-              className="w-full p-2 border border-[var(--border-primary)] rounded-lg mb-4"
-              autoFocus
-            />
-            <p className="text-[var(--text-secondary)] mb-4">
-              Customer search functionality will be integrated here.
-            </p>
-            <Button onClick={() => setShowCustomerSearch(false)}>Close</Button>
-          </div>
-        </div>
+        <CustomerSearchModal
+          isOpen={showCustomerSearch}
+          onClose={() => setShowCustomerSearch(false)}
+          onSelectCustomer={(customer) => {
+            notify('success', `Selected customer: ${customer.name}`);
+            setShowCustomerSearch(false);
+            // TODO: Open booking form with customer pre-filled
+          }}
+        />
       )}
 
       {showAdminBlock && isAdmin && (

@@ -3,6 +3,7 @@ import { Bot, Database, Clock, Edit2, Save, X, Receipt, DollarSign, Calendar, Ma
 import logger from '@/services/logger';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
+import { sanitizeResponseHtml } from '@/utils/sanitizer';
 
 interface Props {
   response: any;
@@ -146,11 +147,14 @@ const formatStructuredContent = (text: string): React.ReactNode => {
                   .replace(/(\d+)\s*[x×]\s*(\d+)/gi, '<strong>$1 × $2</strong>')
                   .replace(/(\d+)\s*[x×]\s*(\d+)\s*[x×]\s*(\d+)/gi, '<strong>$1 × $2 × $3</strong>');
 
+                // Sanitize HTML to prevent XSS attacks
+                const sanitized = sanitizeResponseHtml(formatted);
+
                 return (
                   <div
                     key={index}
                     className="text-sm text-[var(--text-primary)] leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: formatted }}
+                    dangerouslySetInnerHTML={{ __html: sanitized }}
                   />
                 );
               })}
