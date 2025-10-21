@@ -9,10 +9,10 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
 **Current Version: v1.21.98**
-- **🔐 Critical Security Fixes** - Fixed XSS vulnerabilities and silent error handling
-- **XSS Protection** - Added DOMPurify sanitization to prevent script injection
-- **Error Logging** - Fixed 10+ empty catch blocks now properly logging failures
-- **postMessage Security** - Restricted origins to prevent cross-origin attacks
+- **Receipt System Fixes** - Fixed 404 error when saving receipts and editing persistence
+- **OCR Save** - Receipt OCR now properly saves to database with required fields
+- **Edit Persistence** - Receipt edits now correctly save amount in cents
+- **Field Mapping** - Fixed field names to match database schema
 - **Frontend Sanitizer** - New utility for safe HTML rendering
 
 ## 🏗️ System Architecture

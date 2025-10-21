@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.98] - 2025-10-21
+
+### Fixed
+- **Receipt Save Endpoint 404 Error**: Fixed receipt OCR saving to database
+  - Changed frontend to use existing `/receipts/upload` endpoint instead of non-existent `/receipts/save`
+  - Added required `file_data` and `file_name` fields for proper receipt storage
+  - Fixed receipt amount editing to send `amount_cents` in cents instead of dollars
+  - Changed field name from `location` to `club_location` to match database schema
+  - Result: Receipt OCR and editing now work correctly end-to-end
+
 ## [1.21.99] - 2025-10-21
 
 ### 🎯 Major Enhancements

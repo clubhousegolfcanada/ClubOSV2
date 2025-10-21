@@ -223,12 +223,12 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
         throw new Error('Receipt not found');
       }
 
-      // Convert amount to number for backend
+      // Convert amount to cents for backend (database stores in cents)
       const updateData: any = {
         vendor: editedFields.vendor,
-        amount: parseFloat(editedFields.amount),
+        amount_cents: Math.round(parseFloat(editedFields.amount) * 100), // Convert dollars to cents
         category: editedFields.category || null,
-        location: editedFields.location || null
+        club_location: editedFields.location || null // Use correct field name
       };
 
       // Remove null/undefined fields

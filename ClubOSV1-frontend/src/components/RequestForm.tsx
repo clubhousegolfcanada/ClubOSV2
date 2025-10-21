@@ -372,9 +372,14 @@ const RequestForm: React.FC = () => {
 
           notify('success', 'Receipt scanned successfully!');
 
-          // Optionally save to database
+          // Save to database with required fields
           if (ocrResult.extractedData) {
-            await http.post('receipts/save', ocrResult.extractedData);
+            await http.post('receipts/upload', {
+              ...ocrResult.extractedData,
+              file_data: photoAttachments[0] || '', // Use the uploaded receipt image
+              file_name: 'receipt-ocr.jpg',
+              mime_type: 'image/jpeg'
+            });
           }
         } else {
           notify('error', response.data.error || 'Failed to scan receipt');
