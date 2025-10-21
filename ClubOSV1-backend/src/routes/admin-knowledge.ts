@@ -78,7 +78,7 @@ const staticKnowledge = [
     priority: 'medium',
     timeEstimate: '5-10 minutes',
     customerScript: 'I can fix that for you right away. Give me just a moment to restart the system.',
-    escalationPath: 'Tech Support → TrackMan Support (1-800-XXX-XXXX)'
+    escalationPath: 'Tech Support → TrackMan Support (1-810-225-9855)'
   },
   {
     category: 'tech',

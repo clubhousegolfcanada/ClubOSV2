@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs/promises';
 import { logger } from '../utils/logger';
+import { db } from '../utils/database';
 // JSON operations removed - using PostgreSQL
 
 const router = Router();
@@ -156,15 +157,28 @@ async function checkFile(filename: string): Promise<any> {
 
 async function getSystemStats(): Promise<any> {
   try {
-    // Database-based stats - JSON file operations removed
+    // Query actual database statistics
+    const userCountResult = await db.query('SELECT COUNT(*) as count FROM users');
+    const authLogCountResult = await db.query('SELECT COUNT(*) as count FROM auth_logs');
+    const recentLoginsResult = await db.query(
+      `SELECT COUNT(*) as count FROM auth_logs
+       WHERE created_at > NOW() - INTERVAL '24 hours'
+       AND action = 'login'
+       AND success = true`
+    );
+
     return {
-      totalUsers: 0, // TODO: Query database for user count
-      totalAuthLogs: 0, // TODO: Query database for auth logs
-      recentLogins24h: 0 // TODO: Query database for recent logins
+      totalUsers: parseInt(userCountResult.rows[0].count || '0'),
+      totalAuthLogs: parseInt(authLogCountResult.rows[0].count || '0'),
+      recentLogins24h: parseInt(recentLoginsResult.rows[0].count || '0')
     };
-  } catch {
+  } catch (error) {
+    logger.error('Failed to fetch system statistics:', error);
     return {
-      error: 'Could not fetch statistics'
+      totalUsers: 0,
+      totalAuthLogs: 0,
+      recentLogins24h: 0,
+      error: 'Could not fetch statistics from database'
     };
   }
 }

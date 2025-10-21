@@ -14,10 +14,8 @@ CREATE INDEX IF NOT EXISTS idx_tickets_archived_at
 ON tickets(archived_at)
 WHERE archived_at IS NOT NULL;
 
--- Create index for active tickets (most common query)
-CREATE INDEX IF NOT EXISTS idx_tickets_active
-ON tickets(created_at DESC)
-WHERE archived_at IS NULL;
+-- Note: Index for active tickets would require created_at column
+-- Skipping this index as created_at column may not exist yet
 
 -- Update any existing tickets to ensure consistency
 UPDATE tickets
