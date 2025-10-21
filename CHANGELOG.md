@@ -2,6 +2,59 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.99] - 2025-10-21
+
+### 🎯 Major Enhancements
+- **Complete Booking System Integration**: Unified operator and customer booking interfaces
+  - **List View Implemented**: Full-featured booking management table with sorting, filtering, CSV export
+  - **Week View Added**: 7-day calendar grid view for better scheduling visualization
+  - **HubSpot CRM Integration**: Customer search now queries HubSpot with local fallback
+  - **Create Booking Modal**: Wired up TieredBookingForm for complete booking creation
+  - **Admin Block-Off Tool**: Fully functional time blocking with recurring options
+
+### Added
+- **BookingListView Component**: Comprehensive table view for booking management
+  - Checkbox selection for bulk operations
+  - CSV export functionality
+  - Inline actions (edit, cancel, refund)
+  - Payment status indicators
+  - Customer tier badges
+- **WeekGrid Component**: Professional week view with time slots
+  - Visual booking blocks with status colors
+  - Click-to-create functionality
+  - Today highlighting
+  - 6 AM to 11 PM time range
+- **CustomerSearchModal**: HubSpot-integrated customer search
+  - Real-time search with debouncing
+  - Customer tier display
+  - Booking history and lifetime value
+  - Fallback to local database
+- **AdminBlockOff Component**: Time blocking for maintenance/events
+  - Date/time range selection
+  - Space-specific or all-space blocking
+  - Common reason quick-select buttons
+  - Recurring block patterns
+  - Validation and warning messages
+
+### Backend
+- **HubSpot Routes**: Created /api/hubspot endpoints for CRM integration
+  - `/search`: Customer search with caching
+  - `/contact/:id`: Individual contact fetch
+  - `/sync-booking`: Sync bookings as HubSpot deals
+  - Phone number normalization utility
+
+### Fixed
+- TypeScript compilation errors in booking components
+- Missing Check icon import in CustomerSearchModal
+- Space interface type requirements
+
+### Technical
+- Role-based UI rendering (customer, operator, admin, support)
+- Mobile-first responsive design
+- Standardized ClubOS UI components throughout
+- 5-minute cache for HubSpot data
+- Proper error handling with user notifications
+
 ## [1.21.98] - 2025-10-21
 
 ### 🔐 Critical Security Fixes
