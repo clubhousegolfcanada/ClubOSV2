@@ -114,8 +114,8 @@ const DayGridCompact: React.FC<DayGridCompactProps> = ({
               <button
                 key={space.id}
                 onClick={() => onSpaceClick?.(space)}
-                className="px-2 py-1 text-xs font-medium text-[var(--text-primary)] border-r border-b border-[var(--border-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1"
-                style={{ height: '25px' }}
+                className="px-2 py-1 text-xs font-medium text-[var(--text-primary)] border-r border-b border-[var(--border-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1 touch-manipulation"
+                style={{ minHeight: '44px' }}
               >
                 <span className="truncate">{space.name}</span>
                 <Info className="h-2.5 w-2.5 text-[var(--text-secondary)] flex-shrink-0" />
@@ -147,7 +147,7 @@ const DayGridCompact: React.FC<DayGridCompactProps> = ({
           });
 
           return (
-            <div key={slotIndex} className="grid grid-cols-[60px_1fr]" style={{ height: '38px' }}>
+            <div key={slotIndex} className="grid grid-cols-[60px_1fr]" style={{ minHeight: '44px' }}>
               {/* Time label (compact) */}
               <div className="px-1 flex items-center justify-center text-[10px] text-[var(--text-secondary)] border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
                 {format(slot, 'h:mm a')}
@@ -176,7 +176,7 @@ const DayGridCompact: React.FC<DayGridCompactProps> = ({
                       }`}
                       style={{
                         gridRow: `span ${rowSpan}`,
-                        height: `${38 * rowSpan}px`
+                        minHeight: `${44 * rowSpan}px`
                       }}
                       onClick={() => {
                         if (isAvailable && !booking && onBookingCreate) {

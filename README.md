@@ -1,4 +1,4 @@
-# ClubOS v1.21.94 - Flexible Facility Management System
+# ClubOS v1.21.95 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.21.94**
-- **Fixed Personal Card Toggle** - Personal card checkbox now shows properly in receipt mode
-- **Code Cleanup** - Removed confusing duplicate receipt components
-- **Personal Card Receipt Tracking** - Track personal card purchases requiring reimbursement
-- **Receipt Query Terminal** - Search and manage receipts through natural language queries in terminal
-- **Receipt Photo Export** - Export receipts with photos in ZIP format (CSV + images)
+**Current Version: v1.21.95**
+- **Unified Booking System** - Single /bookings page for all user roles with role-based features
+- **Mobile Booking UX** - MobileDatePicker and MobileTimePicker with 44-48px touch targets
+- **Operator Booking Dashboard** - Stats cards showing today's bookings, revenue, and occupancy
+- **Role-Based Calendar** - Customers see compact view, operators see full management interface
+- **Legacy Migration** - Automatic redirect from /customer/bookings to unified page
 
 ## 🏗️ System Architecture
 

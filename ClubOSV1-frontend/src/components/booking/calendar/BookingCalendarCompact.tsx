@@ -7,6 +7,10 @@ import { useAuthState } from '@/state/useStore';
 import { BookingConfigService, CustomerTier, BookingConfig } from '@/services/booking/bookingConfig';
 import { TimeValidationService } from '@/services/booking/timeValidationService';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import StatusBadge from '@/components/ui/StatusBadge';
+import Skeleton from '@/components/ui/Skeleton';
 import DayGridCompact from './DayGridCompact';
 import WeekGridCompact from './WeekGridCompact';
 import ColorLegend from './ColorLegend';
@@ -338,12 +342,32 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   const totalBookings = filteredBookings.filter(b => !b.isAdminBlock).length;
   const availableSlots = spaces.length * 34 - totalBookings; // 34 slots per day (6am-11pm, 30min intervals)
 
-  // Loading skeleton
+  // Loading skeleton with proper animation
   if (loading) {
     return (
       <div className="card">
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" />
+        {/* Header skeleton */}
+        <div className="border-b border-[var(--border-primary)] pb-2 mb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton variant="text" width={150} height={24} />
+              <Skeleton variant="text" width={80} height={16} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton variant="button" width={100} height={32} />
+              <Skeleton variant="button" width={80} height={32} />
+            </div>
+          </div>
+        </div>
+
+        {/* Calendar skeleton */}
+        <div className="space-y-2">
+          <Skeleton variant="custom" height={40} className="rounded-md" />
+          <div className="grid grid-cols-5 gap-2">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <Skeleton key={i} variant="custom" height={60} className="rounded-md" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -351,14 +375,14 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
 
   return (
     <>
-      <div className="card">
+      <div className="card gpu-accelerated">
         {/* Ultra-compact Header (max 80px height) */}
         <div className="border-b border-[var(--border-primary)] pb-2 mb-2">
           <div className="flex items-center justify-between">
             {/* Left: Title + Stats (single row) */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[var(--color-primary)]" />
+                <Calendar className="h-4 w-4 text-[var(--accent)]" />
                 <h2 className="text-base font-semibold">
                   {isCollapsed ? 'Calendar' : 'Booking Calendar'}
                 </h2>
@@ -405,7 +429,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                     onClick={() => setViewMode('day')}
                     className={`px-2 py-0.5 text-xs rounded transition-colors ${
                       viewMode === 'day'
-                        ? 'bg-[var(--bg-primary)] text-[var(--color-primary)] shadow-sm'
+                        ? 'bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm'
                         : 'text-[var(--text-secondary)]'
                     }`}
                   >
@@ -415,7 +439,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                     onClick={() => setViewMode('week')}
                     className={`px-2 py-0.5 text-xs rounded transition-colors ${
                       viewMode === 'week'
-                        ? 'bg-[var(--bg-primary)] text-[var(--color-primary)] shadow-sm'
+                        ? 'bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm'
                         : 'text-[var(--text-secondary)]'
                     }`}
                   >
@@ -452,7 +476,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                     }}
                     className={`px-2 py-1 text-xs rounded-md transition-colors ${
                       selectedLocationId === location.id
-                        ? 'bg-[var(--color-primary)] text-white'
+                        ? 'bg-[var(--accent)] text-white'
                         : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
@@ -519,8 +543,19 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
           )}
 
           {/* Calendar grid (compact) */}
-          <div className="pt-2">
-            {viewMode === 'day' ? (
+          <div className="pt-2 smooth-scroll">
+            {spaces.length === 0 ? (
+              <EmptyState
+                icon={Calendar}
+                title="No simulators available"
+                description="Select a location to view available booking slots"
+                action={{
+                  label: 'Select Location',
+                  onClick: () => setShowFilters(true)
+                }}
+                size="sm"
+              />
+            ) : viewMode === 'day' ? (
               <DayGridCompact
                 date={selectedDate}
                 bookings={filteredBookings}

@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.95] - 2025-10-21
+
+### Added
+- **Unified Booking System**: Single booking page for all user roles
+  - Operators see stats dashboard (bookings, revenue, occupancy, pending actions)
+  - Customers see compact mobile-optimized calendar view
+  - Role-based feature visibility (admin blocks, tier overrides, bulk actions)
+  - MobileDatePicker and MobileTimePicker for enhanced mobile UX
+  - Legacy redirect from /customer/bookings to /bookings
+  - 44-48px touch targets throughout for WCAG AAA compliance
+  - GPU-accelerated animations and professional loading skeletons
+  - Empty states with call-to-action when no simulators available
+  - Stats cards for operators showing today's metrics and trends
+  - Quick actions for staff (Create Booking, Search Customer, Block Time)
+  - Automatic role detection for appropriate UI rendering
+  - Result: Single source of truth for all booking operations
+
 ## [1.21.94] - 2025-10-21
 
 ### Fixed

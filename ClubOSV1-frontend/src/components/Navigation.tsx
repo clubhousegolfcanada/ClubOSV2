@@ -106,7 +106,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     ? [
         // Customer navigation
         { href: '/customer', label: 'Dashboard', roles: ['customer'] as UserRole[], icon: 'home' },
-        { href: '/customer/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
+        { href: '/bookings', label: 'Bookings', roles: ['customer'] as UserRole[], icon: 'calendar' },
         { href: '/customer/compete', label: 'Compete', roles: ['customer'] as UserRole[], icon: 'trophy' },
         { href: '/customer/leaderboard', label: 'Leaderboard', roles: ['customer'] as UserRole[], icon: 'chart' },
         { href: '/customer/profile', label: 'Profile', roles: ['customer'] as UserRole[], icon: 'user' },
@@ -115,6 +115,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         // All other roles see the full navigation
         { href: '/', label: 'Dashboard', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/messages', label: 'Messages', roles: ['admin', 'operator', 'support'] as UserRole[] },
+        { href: '/bookings', label: 'Bookings', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/tickets', label: 'Tickets', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/checklists', label: 'Checklists', roles: ['admin', 'operator', 'support'] as UserRole[] },

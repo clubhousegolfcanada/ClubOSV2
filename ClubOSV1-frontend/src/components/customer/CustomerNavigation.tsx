@@ -116,7 +116,7 @@ const CustomerNavigation: React.FC = () => {
   // Mobile: Leaderboard and Friends (Compete) are swapped
   const mainNavItems = [
     { icon: Home, label: 'Dashboard', path: '/customer', key: 'dashboard' },
-    { icon: Calendar, label: 'Bookings', path: '/customer/bookings', key: 'bookings' },
+    { icon: Calendar, label: 'Bookings', path: '/bookings', key: 'bookings' },
     { icon: BarChart3, label: 'Leaderboard', path: '/customer/leaderboard', key: 'leaderboard' },
     { icon: Users, label: isMobile ? 'Friends' : 'Compete', path: '/customer/compete', key: 'compete' },
     { icon: User, label: 'Profile', path: '/customer/profile', key: 'profile' }

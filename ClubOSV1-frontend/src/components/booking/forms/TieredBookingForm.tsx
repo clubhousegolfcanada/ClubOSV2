@@ -313,8 +313,8 @@ export default function TieredBookingForm({
       </div>
 
       {/* Location Selection */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
+      <div className="form-group">
+        <label className="form-label">
           <MapPin className="inline w-4 h-4 mr-1" />
           Location
         </label>
@@ -324,7 +324,7 @@ export default function TieredBookingForm({
             setFormData({ ...formData, locationId: e.target.value, spaceIds: [] });
             loadSpaces(e.target.value);
           }}
-          className="w-full p-2 border rounded-lg"
+          className="form-input"
           required
         >
           <option value="">Select Location</option>
@@ -336,14 +336,14 @@ export default function TieredBookingForm({
 
       {/* Space Selection */}
       {formData.locationId && (
-        <div>
-          <label className="block text-sm font-medium mb-2">
+        <div className="form-group">
+          <label className="form-label">
             <Users className="inline w-4 h-4 mr-1" />
             Simulator
           </label>
           <div className="grid grid-cols-2 gap-2">
             {spaces.map(space => (
-              <label key={space.id} className="flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+              <label key={space.id} className="flex items-center p-3 border border-[var(--border-primary)] rounded-lg cursor-pointer hover:bg-[var(--bg-hover)] transition-colors min-h-[48px] touch-manipulation">
                 <input
                   type="checkbox"
                   value={space.id}
@@ -365,9 +365,9 @@ export default function TieredBookingForm({
       )}
 
       {/* Date/Time Selection */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="form-group">
+          <label className="form-label">
             <Calendar className="inline w-4 h-4 mr-1" />
             Start Time
           </label>
@@ -379,13 +379,13 @@ export default function TieredBookingForm({
               checkAvailability();
             }}
             min={new Date().toISOString().slice(0, 16)}
-            className="w-full p-2 border rounded-lg"
+            className="form-input"
             required
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">
+        <div className="form-group">
+          <label className="form-label">
             <Clock className="inline w-4 h-4 mr-1" />
             End Time
           </label>
@@ -394,7 +394,7 @@ export default function TieredBookingForm({
             value={formData.endAt}
             onChange={(e) => setFormData({ ...formData, endAt: e.target.value })}
             min={formData.startAt}
-            className="w-full p-2 border rounded-lg"
+            className="form-input"
             required
           />
         </div>
