@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.4] - 2025-10-21
+
+### 🔧 Improvements
+- **Fixed Hardcoded Spaces**: Admin block modal now fetches actual spaces from API
+- **Removed Page Reloads**: Replaced `window.location.reload()` with proper state management
+- **Better Error Handling**: Added fallback spaces if API fetch fails
+- **Reduced Notification Spam**: Removed unnecessary "Opening..." notifications
+- **Calendar Refresh**: Implemented key-based refresh mechanism for smooth updates
+
+### 📝 Documentation
+- **Added Booking System Audit**: Comprehensive audit report with issues and recommendations
+- **Identified Priority Fixes**: Documented critical, UX, and performance improvements needed
+
 ## [1.22.3] - 2025-10-21
 
 ### 🐛 Fixed

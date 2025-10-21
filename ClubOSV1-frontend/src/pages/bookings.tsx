@@ -26,6 +26,8 @@ export default function Bookings() {
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [showAdminBlock, setShowAdminBlock] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // For calendar refresh without page reload
+  const [locationSpaces, setLocationSpaces] = useState<any[]>([]); // Store fetched spaces
 
   // Store selected time slot data for pre-population
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
@@ -48,8 +50,30 @@ export default function Bookings() {
       router.push('/login');
     } else {
       setLoading(false);
+      // Fetch spaces for the default location when admin
+      if (isAdmin) {
+        fetchSpacesForLocation();
+      }
     }
   }, [user, router]);
+
+  // Fetch spaces when admin opens block modal
+  const fetchSpacesForLocation = async (locationId?: string) => {
+    try {
+      const { http } = await import('@/api/http');
+      const response = await http.get('/bookings/spaces', {
+        params: { locationId: locationId || '1' } // Default to location 1
+      });
+      setLocationSpaces(response.data.data || []);
+    } catch (error) {
+      logger.error('Failed to fetch spaces', error);
+      // Fallback to some default spaces if fetch fails
+      setLocationSpaces([
+        { id: '1', name: 'Simulator 1', locationId: '1', displayOrder: 1, isActive: true },
+        { id: '2', name: 'Simulator 2', locationId: '1', displayOrder: 2, isActive: true },
+      ]);
+    }
+  };
 
   // Handle when a time slot is clicked on the calendar
   const handleTimeSlotClick = (bookingOrStartTime: any, endTime?: Date, spaceId?: string, spaceName?: string) => {
@@ -192,7 +216,6 @@ export default function Bookings() {
                       size="sm"
                       onClick={() => {
                         setShowCreateBooking(true);
-                        notify('info', 'Opening booking form...');
                       }}
                     >
                       Create Booking
@@ -202,7 +225,6 @@ export default function Bookings() {
                       size="sm"
                       onClick={() => {
                         setShowCustomerSearch(true);
-                        notify('info', 'Opening customer search...');
                       }}
                     >
                       Search Customer
@@ -212,9 +234,9 @@ export default function Bookings() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => {
+                          onClick={async () => {
+                            await fetchSpacesForLocation(); // Fetch fresh spaces
                             setShowAdminBlock(true);
-                            notify('info', 'Opening admin block-off tool...');
                           }}
                         >
                           Block Time
@@ -235,7 +257,7 @@ export default function Bookings() {
                 )}
 
                 {/* Calendar Component - Adjusts based on role */}
-                <CalendarComponent {...calendarProps} />
+                <CalendarComponent key={refreshKey} {...calendarProps} />
               </div>
             ) : (
               /* List view - Full booking management table */
@@ -258,10 +280,8 @@ export default function Bookings() {
                 notify('success', `Booking created successfully! ID: ${result.id || 'New'}`);
                 setShowCreateBooking(false);
                 setSelectedTimeSlot({}); // Clear selection after success
-                // Refresh the calendar if needed
-                if (view === 'calendar') {
-                  window.location.reload(); // TODO: Implement proper refresh
-                }
+                // Refresh the calendar without page reload
+                setRefreshKey(prev => prev + 1);
               }}
               onCancel={() => {
                 setShowCreateBooking(false);
@@ -293,23 +313,17 @@ export default function Bookings() {
               initialStartTime={selectedTimeSlot.startTime}
               initialEndTime={selectedTimeSlot.endTime}
               initialSpaceId={selectedTimeSlot.spaceId}
-              spaces={[
+              spaces={locationSpaces.length > 0 ? locationSpaces : [
                 { id: '1', name: 'Simulator 1', locationId: '1', displayOrder: 1, isActive: true },
                 { id: '2', name: 'Simulator 2', locationId: '1', displayOrder: 2, isActive: true },
-                { id: '3', name: 'Simulator 3', locationId: '1', displayOrder: 3, isActive: true },
-                { id: '4', name: 'Simulator 4', locationId: '1', displayOrder: 4, isActive: true },
-                { id: '5', name: 'Simulator 5', locationId: '1', displayOrder: 5, isActive: true },
-                { id: '6', name: 'Simulator 6', locationId: '1', displayOrder: 6, isActive: true }
-              ]} // TODO: Load actual spaces from location
+              ]} // Use fetched spaces or minimal fallback
               onBlock={async (blockData) => {
                 // Block will be created via API in AdminBlockOff component
                 notify('success', `Time slots blocked: ${blockData.reason}`);
                 setShowAdminBlock(false);
                 setSelectedTimeSlot({}); // Clear selection after block
-                if (view === 'calendar') {
-                  // Trigger calendar refresh if in calendar view
-                  window.location.reload(); // TODO: Implement proper refresh
-                }
+                // Refresh calendar without page reload
+                setRefreshKey(prev => prev + 1);
               }}
               onCancel={() => {
                 setShowAdminBlock(false);
