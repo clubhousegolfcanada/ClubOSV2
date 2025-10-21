@@ -587,4 +587,78 @@ router.get('/locations', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/bookings/stats - Get booking statistics for dashboard
+router.get('/stats', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { date, locationId } = req.query;
+    const targetDate = date ? new Date(date as string) : new Date();
+
+    // Set date range for today
+    const startOfDay = new Date(targetDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    // Build location filter
+    const locationFilter = locationId && locationId !== 'all'
+      ? 'AND b.location_id = $3'
+      : '';
+    const params: any[] = [startOfDay.toISOString(), endOfDay.toISOString()];
+    if (locationId && locationId !== 'all') {
+      params.push(locationId);
+    }
+
+    // Get today's booking count and revenue
+    const bookingStatsQuery = `
+      SELECT
+        COUNT(*) as today_count,
+        COALESCE(SUM(total_amount), 0) as today_revenue,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count
+      FROM bookings b
+      WHERE b.start_at >= $1
+        AND b.start_at <= $2
+        AND b.status IN ('pending', 'confirmed')
+        AND b.is_admin_block = false
+        ${locationFilter}
+    `;
+
+    const bookingStats = await db.query(bookingStatsQuery, params);
+
+    // Calculate occupancy rate (based on 6am-11pm = 17 hours = 34 slots per bay)
+    const spacesQuery = locationId && locationId !== 'all'
+      ? `SELECT COUNT(*) as space_count FROM booking_spaces WHERE location_id = $1 AND is_active = true`
+      : `SELECT COUNT(*) as space_count FROM booking_spaces WHERE is_active = true`;
+
+    const spacesResult = await db.query(
+      spacesQuery,
+      locationId && locationId !== 'all' ? [locationId] : []
+    );
+
+    const totalSpaces = spacesResult.rows[0]?.space_count || 1;
+    const totalSlots = totalSpaces * 34; // 34 half-hour slots per day per space
+    const bookedSlots = parseInt(bookingStats.rows[0]?.today_count || '0');
+    const occupancyRate = totalSlots > 0
+      ? Math.round((bookedSlots / totalSlots) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        todayCount: parseInt(bookingStats.rows[0]?.today_count || '0'),
+        todayRevenue: parseFloat(bookingStats.rows[0]?.today_revenue || '0'),
+        occupancy: occupancyRate,
+        pendingCount: parseInt(bookingStats.rows[0]?.pending_count || '0'),
+        date: targetDate.toISOString(),
+        locationId: locationId || 'all'
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching booking stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch booking statistics'
+    });
+  }
+});
+
 export default router;

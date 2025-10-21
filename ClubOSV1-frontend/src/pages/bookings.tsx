@@ -38,6 +38,10 @@ export default function Bookings() {
   const [loading, setLoading] = useState(true);
   const [showLegacySystem, setShowLegacySystem] = useState(false);
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [showCreateBooking, setShowCreateBooking] = useState(false);
+  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  const [showAdminBlock, setShowAdminBlock] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [stats, setStats] = useState({
     todayCount: 0,
     todayRevenue: 0,
@@ -68,7 +72,8 @@ export default function Bookings() {
     try {
       const response = await http.get('/bookings/stats', {
         params: {
-          date: format(new Date(), 'yyyy-MM-dd')
+          date: format(new Date(), 'yyyy-MM-dd'),
+          locationId: 'all' // Can be filtered by location later
         }
       });
       if (response.data.success) {
@@ -76,6 +81,8 @@ export default function Bookings() {
       }
     } catch (error) {
       console.error('Failed to load booking stats:', error);
+      // Show user-friendly error message
+      notify('error', 'Unable to load booking statistics. Please refresh the page.');
     }
   };
 
@@ -222,18 +229,46 @@ export default function Bookings() {
                 {/* Quick actions for staff */}
                 {isStaff && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <Button variant="primary" size="sm">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setShowCreateBooking(true);
+                        notify('info', 'Opening booking form...');
+                      }}
+                    >
                       Create Booking
                     </Button>
-                    <Button variant="secondary" size="sm">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setShowCustomerSearch(true);
+                        notify('info', 'Opening customer search...');
+                      }}
+                    >
                       Search Customer
                     </Button>
                     {isAdmin && (
                       <>
-                        <Button variant="secondary" size="sm">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setShowAdminBlock(true);
+                            notify('info', 'Opening admin block-off tool...');
+                          }}
+                        >
                           Block Time
                         </Button>
-                        <Button variant="secondary" size="sm">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setShowBulkActions(true);
+                            notify('info', 'Bulk actions coming soon!');
+                          }}
+                        >
                           Bulk Actions
                         </Button>
                       </>
@@ -253,6 +288,79 @@ export default function Bookings() {
           </div>
         </main>
       </div>
+
+      {/* Modals */}
+      {showCreateBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Create New Booking</h2>
+            <p className="text-[var(--text-secondary)] mb-4">
+              Booking form will be integrated here. For now, use the calendar to create bookings.
+            </p>
+            <Button onClick={() => setShowCreateBooking(false)}>Close</Button>
+          </div>
+        </div>
+      )}
+
+      {showCustomerSearch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Search Customers</h2>
+            <input
+              type="text"
+              placeholder="Search by name, email, or phone..."
+              className="w-full p-2 border border-[var(--border-primary)] rounded-lg mb-4"
+              autoFocus
+            />
+            <p className="text-[var(--text-secondary)] mb-4">
+              Customer search functionality will be integrated here.
+            </p>
+            <Button onClick={() => setShowCustomerSearch(false)}>Close</Button>
+          </div>
+        </div>
+      )}
+
+      {showAdminBlock && isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Block Time Slots</h2>
+            <p className="text-[var(--text-secondary)] mb-4">
+              Admin block-off functionality for maintenance, events, or other reasons.
+            </p>
+            <div className="space-y-4">
+              <input type="datetime-local" className="w-full p-2 border rounded-lg" />
+              <input type="datetime-local" className="w-full p-2 border rounded-lg" />
+              <textarea
+                placeholder="Reason for blocking..."
+                className="w-full p-2 border rounded-lg"
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button variant="primary">Block Time</Button>
+              <Button variant="secondary" onClick={() => setShowAdminBlock(false)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkActions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Bulk Actions</h2>
+            <p className="text-[var(--text-secondary)] mb-4">
+              Bulk booking management features are coming soon!
+            </p>
+            <ul className="list-disc list-inside text-[var(--text-secondary)] mb-4">
+              <li>Cancel multiple bookings</li>
+              <li>Reschedule groups</li>
+              <li>Send mass notifications</li>
+              <li>Export booking data</li>
+            </ul>
+            <Button onClick={() => setShowBulkActions(false)}>Close</Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

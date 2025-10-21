@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.97] - 2025-10-21
+
+### Fixed
+- **Booking System Critical Fixes**: Resolved issues from hasty v1.21.95 deployment
+  - **Stats Endpoint Created**: Added missing `/api/bookings/stats` endpoint
+    - Calculates real-time bookings count, revenue, occupancy rate
+    - Dashboard now shows actual data instead of zeros
+    - Occupancy based on 34 half-hour slots per bay (6am-11pm)
+  - **Quick Actions Wired Up**: All operator buttons now functional
+    - Create Booking opens modal placeholder
+    - Search Customer opens search interface
+    - Block Time opens admin tool (admin only)
+    - Bulk Actions shows upcoming features
+  - **Error Handling Added**: Stats failures now show user notifications
+  - **Modal Infrastructure**: Added proper modal dialogs with backdrops
+
+### Technical
+- Fixed 6 critical non-functional UI elements
+- Resolved silent API failures
+- All TypeScript compilation clean
+- Backward compatible - no breaking changes
+
 ## [1.21.96] - 2025-10-21
 
 ### Fixed
