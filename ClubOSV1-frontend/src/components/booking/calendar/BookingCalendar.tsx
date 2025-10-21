@@ -189,7 +189,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           params: { locationId: selectedLocationId }
         });
         const loadedSpaces = spacesData.data.data || [];
-        logger.debug('[BookingCalendar] Spaces loaded:', loadedSpaces.length, 'spaces', loadedSpaces.map((s: any) => s.name));
+        logger.debug(`[BookingCalendar] Spaces loaded: ${loadedSpaces.length} spaces`, { spaces: loadedSpaces.map((s: any) => s.name) });
         setSpaces(loadedSpaces);
       }
     } catch (error) {
@@ -200,7 +200,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const loadBookings = async () => {
     try {
-      logger.debug('[BookingCalendar] Loading bookings for date:', format(selectedDate, 'yyyy-MM-dd'), 'location:', selectedLocationId);
+      logger.debug(`[BookingCalendar] Loading bookings for date: ${format(selectedDate, 'yyyy-MM-dd')}`, { location: selectedLocationId });
       const dates = viewMode === 'week'
         ? getWeekDates(selectedDate)
         : [selectedDate];
@@ -216,7 +216,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       const results = await Promise.all(bookingPromises);
       const allBookings = results.flatMap(r => r.data.data || []);
-      logger.debug('[BookingCalendar] Loaded bookings:', allBookings.length, 'bookings');
+      logger.debug(`[BookingCalendar] Loaded bookings: ${allBookings.length} bookings`);
 
       // Add tier colors to bookings
       const bookingsWithColors = allBookings.map((booking: any) => ({
