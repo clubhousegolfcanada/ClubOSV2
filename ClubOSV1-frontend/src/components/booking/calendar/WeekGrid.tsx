@@ -186,11 +186,6 @@ const WeekGrid: React.FC<WeekGridProps> = ({
                         <div className="text-[var(--text-secondary)] truncate">
                           {format(new Date(booking.startAt), 'h:mm a')}
                         </div>
-                        {booking.spaceName && (
-                          <div className="text-[var(--text-muted)] truncate">
-                            {booking.spaceName}
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}

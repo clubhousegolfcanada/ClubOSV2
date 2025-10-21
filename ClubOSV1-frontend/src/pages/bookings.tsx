@@ -6,8 +6,10 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
+import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
+import AdminBlockOff from '@/components/booking/calendar/AdminBlockOff';
 import Head from 'next/head';
-import { Calendar, MapPin, Clock, Info, ExternalLink, TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
+import { Calendar, MapPin, Clock, Info, ExternalLink, TrendingUp, Users, DollarSign, AlertCircle, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
@@ -290,13 +292,32 @@ export default function Bookings() {
 
       {/* Modals */}
       {showCreateBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Create New Booking</h2>
-            <p className="text-[var(--text-secondary)] mb-4">
-              Booking form will be integrated here. For now, use the calendar to create bookings.
-            </p>
-            <Button onClick={() => setShowCreateBooking(false)}>Close</Button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn">
+          <div className="bg-[var(--bg-primary)] rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-primary)]">
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Create New Booking</h2>
+              <button
+                onClick={() => setShowCreateBooking(false)}
+                className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
+              </button>
+            </div>
+
+            {/* Modal Body with Booking Form */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <TieredBookingForm
+                onSuccess={(booking) => {
+                  notify('success', `Booking created successfully! ID: ${booking.id}`);
+                  setShowCreateBooking(false);
+                  if (isStaff) {
+                    loadStats(); // Refresh stats for staff
+                  }
+                }}
+                onCancel={() => setShowCreateBooking(false)}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -314,25 +335,28 @@ export default function Bookings() {
       )}
 
       {showAdminBlock && isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Block Time Slots</h2>
-            <p className="text-[var(--text-secondary)] mb-4">
-              Admin block-off functionality for maintenance, events, or other reasons.
-            </p>
-            <div className="space-y-4">
-              <input type="datetime-local" className="w-full p-2 border rounded-lg" />
-              <input type="datetime-local" className="w-full p-2 border rounded-lg" />
-              <textarea
-                placeholder="Reason for blocking..."
-                className="w-full p-2 border rounded-lg"
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="primary">Block Time</Button>
-              <Button variant="secondary" onClick={() => setShowAdminBlock(false)}>Cancel</Button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn">
+          <div className="max-w-2xl w-full mx-4">
+            <AdminBlockOff
+              spaces={[
+                { id: '1', name: 'Simulator 1', locationId: '1', displayOrder: 1, isActive: true },
+                { id: '2', name: 'Simulator 2', locationId: '1', displayOrder: 2, isActive: true },
+                { id: '3', name: 'Simulator 3', locationId: '1', displayOrder: 3, isActive: true },
+                { id: '4', name: 'Simulator 4', locationId: '1', displayOrder: 4, isActive: true },
+                { id: '5', name: 'Simulator 5', locationId: '1', displayOrder: 5, isActive: true },
+                { id: '6', name: 'Simulator 6', locationId: '1', displayOrder: 6, isActive: true }
+              ]} // TODO: Load actual spaces from location
+              onBlock={async (blockData) => {
+                // Block will be created via API in AdminBlockOff component
+                notify('success', `Time slots blocked: ${blockData.reason}`);
+                setShowAdminBlock(false);
+                if (view === 'calendar') {
+                  // Trigger calendar refresh if in calendar view
+                  window.location.reload(); // TODO: Implement proper refresh
+                }
+              }}
+              onCancel={() => setShowAdminBlock(false)}
+            />
           </div>
         </div>
       )}
