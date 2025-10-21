@@ -82,7 +82,7 @@ export const WhiteLabelPlanner: React.FC = () => {
       setSOPs(data.sops || []);
       setIntegrations(data.integrations || []);
     } catch (error) {
-      console.error('Error fetching inventory:', error);
+      logger.error('Error fetching inventory:', error);
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export const WhiteLabelPlanner: React.FC = () => {
       setFeatures([...features, data]);
       setNewFeature({});
     } catch (error) {
-      console.error('Error adding feature:', error);
+      logger.error('Error adding feature:', error);
     } finally {
       setSaving(false);
     }
@@ -112,7 +112,7 @@ export const WhiteLabelPlanner: React.FC = () => {
       setBranding([...branding, data]);
       setNewBranding({});
     } catch (error) {
-      console.error('Error adding branding:', error);
+      logger.error('Error adding branding:', error);
     } finally {
       setSaving(false);
     }
@@ -127,7 +127,7 @@ export const WhiteLabelPlanner: React.FC = () => {
       setSOPs([...sops, data]);
       setNewSOP({});
     } catch (error) {
-      console.error('Error adding SOP:', error);
+      logger.error('Error adding SOP:', error);
     } finally {
       setSaving(false);
     }
@@ -142,7 +142,7 @@ export const WhiteLabelPlanner: React.FC = () => {
       setIntegrations([...integrations, data]);
       setNewIntegration({});
     } catch (error) {
-      console.error('Error adding integration:', error);
+      logger.error('Error adding integration:', error);
     } finally {
       setSaving(false);
     }
@@ -167,7 +167,7 @@ export const WhiteLabelPlanner: React.FC = () => {
           break;
       }
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logger.error('Error deleting item:', error);
     }
   };
 
@@ -205,7 +205,7 @@ export const WhiteLabelPlanner: React.FC = () => {
       a.download = `white-label-blueprint-${data.id}.json`;
       a.click();
     } catch (error) {
-      console.error('Error generating blueprint:', error);
+      logger.error('Error generating blueprint:', error);
     } finally {
       setSaving(false);
     }

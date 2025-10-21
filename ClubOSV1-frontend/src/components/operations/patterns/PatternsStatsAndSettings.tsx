@@ -106,7 +106,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
         };
         setStats(transformedStats);
       } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        logger.error('Failed to fetch stats:', error);
         // Set empty stats on error
         setStats({
           totalResponses: 0,

@@ -10,4 +10,4 @@
 export * from './db';
 export { default } from './db';
 
-console.warn('[DEPRECATION WARNING] db-pool.ts is deprecated. Please use db.ts instead.');
+logger.warn('[DEPRECATION WARNING] db-pool.ts is deprecated. Please use db.ts instead.');

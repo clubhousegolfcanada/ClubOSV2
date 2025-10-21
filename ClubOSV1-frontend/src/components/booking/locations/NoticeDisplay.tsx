@@ -46,7 +46,7 @@ export const NoticeDisplay: React.FC<NoticeDisplayProps> = ({
         const parsed = JSON.parse(stored);
         setDismissedNotices(new Set(parsed));
       } catch (e) {
-        console.error('Failed to parse dismissed notices:', e);
+        logger.error('Failed to parse dismissed notices:', e);
       }
     }
   }, []);
@@ -75,7 +75,7 @@ export const NoticeDisplay: React.FC<NoticeDisplayProps> = ({
 
       setNotices(filtered);
     } catch (error) {
-      console.error('Error loading notices:', error);
+      logger.error('Error loading notices:', error);
       setNotices([]);
     } finally {
       setLoading(false);

@@ -286,7 +286,7 @@ class AchievementService {
       try {
         await this.awardAchievement(award);
       } catch (error) {
-        console.error(`Failed to award achievement to user ${award.userId}:`, error);
+        logger.error(`Failed to award achievement to user ${award.userId}:`, error);
         // Continue with other awards even if one fails
       }
     }

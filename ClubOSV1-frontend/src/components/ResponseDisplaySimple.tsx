@@ -206,7 +206,7 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
           toast.error('Unknown action');
       }
     } catch (error: any) {
-      console.error('Receipt action error:', error);
+      logger.error('Receipt action error:', error);
       toast.error(error.response?.data?.message || 'Action failed');
     } finally {
       setProcessingAction(null);
@@ -272,7 +272,7 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
       setEditingReceipt(null);
       setEditedFields({});
     } catch (error: any) {
-      console.error('Failed to save receipt:', error);
+      logger.error('Failed to save receipt:', error);
       toast.error(error.response?.data?.message || 'Failed to save changes');
     } finally {
       setProcessingAction(null);
@@ -545,7 +545,7 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
         toast.error(result.data.error || 'Failed to save correction');
       }
     } catch (error: any) {
-      console.error('Correction error:', error);
+      logger.error('Correction error:', error);
       const errorMsg = error.response?.data?.error || 'Failed to save correction';
       toast.error(errorMsg);
     } finally {

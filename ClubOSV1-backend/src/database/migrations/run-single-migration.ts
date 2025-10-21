@@ -85,8 +85,8 @@ Query performance should improve by 10-100x for:
 const migrationNumber = process.argv[2];
 
 if (!migrationNumber) {
-  console.error('Usage: tsx run-single-migration.ts <migration_number>');
-  console.error('Example: tsx run-single-migration.ts 231');
+  logger.error('Usage: tsx run-single-migration.ts <migration_number>');
+  logger.error('Example: tsx run-single-migration.ts 231');
   process.exit(1);
 }
 

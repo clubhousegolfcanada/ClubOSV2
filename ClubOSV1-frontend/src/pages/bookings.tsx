@@ -5,6 +5,7 @@ import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
 import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
+import BookingTerminalCard from '@/components/booking/cards/BookingTerminalCard';
 import AdminBlockOff from '@/components/booking/calendar/AdminBlockOff';
 import Head from 'next/head';
 import { Calendar, ExternalLink, X } from 'lucide-react';
@@ -245,37 +246,27 @@ export default function Bookings() {
 
       {/* Modals */}
       {showCreateBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn">
-          <div className="bg-[var(--bg-primary)] rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-primary)]">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Create New Booking</h2>
-              <button
-                onClick={() => setShowCreateBooking(false)}
-                className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-[var(--text-muted)]" />
-              </button>
-            </div>
-
-            {/* Modal Body with Booking Form */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <TieredBookingForm
-                initialStartTime={selectedTimeSlot.startTime}
-                initialEndTime={selectedTimeSlot.endTime}
-                initialSpaceId={selectedTimeSlot.spaceId}
-                initialSpaceName={selectedTimeSlot.spaceName}
-                onSuccess={(booking) => {
-                  notify('success', `Booking created successfully! ID: ${booking.id}`);
-                  setShowCreateBooking(false);
-                  setSelectedTimeSlot({}); // Clear selection after success
-                }}
-                onCancel={() => {
-                  setShowCreateBooking(false);
-                  setSelectedTimeSlot({}); // Clear selection on cancel
-                }}
-              />
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn p-4">
+          <div className="max-h-[90vh] overflow-y-auto w-full max-w-4xl">
+            <BookingTerminalCard
+              initialStartTime={selectedTimeSlot.startTime}
+              initialEndTime={selectedTimeSlot.endTime}
+              initialSpaceId={selectedTimeSlot.spaceId}
+              initialSpaceName={selectedTimeSlot.spaceName}
+              onSuccess={(booking) => {
+                notify('success', `Booking created successfully! ID: ${booking.id}`);
+                setShowCreateBooking(false);
+                setSelectedTimeSlot({}); // Clear selection after success
+                // Refresh the calendar if needed
+                if (view === 'calendar') {
+                  window.location.reload(); // TODO: Implement proper refresh
+                }
+              }}
+              onCancel={() => {
+                setShowCreateBooking(false);
+                setSelectedTimeSlot({}); // Clear selection on cancel
+              }}
+            />
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ export function initSentry() {
   const dsn = process.env.SENTRY_DSN;
 
   if (!dsn && environment === 'production') {
-    console.warn('⚠️  Sentry DSN not configured for production environment');
+    logger.warn('⚠️  Sentry DSN not configured for production environment');
     return;
   }
 
@@ -47,7 +47,7 @@ export function initSentry() {
     ],
   });
 
-  console.log(`✅ Sentry initialized for ${environment} environment`);
+  logger.debug(`✅ Sentry initialized for ${environment} environment`);
 }
 
 // Setup Sentry for Express app

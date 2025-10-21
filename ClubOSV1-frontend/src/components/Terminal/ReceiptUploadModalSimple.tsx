@@ -125,7 +125,7 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
       }
 
     } catch (error: any) {
-      console.error('Receipt upload error:', error);
+      logger.error('Receipt upload error:', error);
       notify('error', error.response?.data?.error || 'Failed to upload receipt');
     } finally {
       setIsUploading(false);
@@ -168,7 +168,7 @@ export const ReceiptUploadModal: React.FC<ReceiptUploadModalProps> = ({
         notify('warning', 'Could not extract receipt data. Please enter manually.');
       }
     } catch (error: any) {
-      console.error('OCR processing error:', error);
+      logger.error('OCR processing error:', error);
       notify('error', 'Failed to scan receipt. Please enter details manually.');
     } finally {
       setOcrProcessing(false);

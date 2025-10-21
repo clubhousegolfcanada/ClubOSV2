@@ -122,7 +122,7 @@ const DurationPicker: React.FC<DurationPickerProps> = ({
             variant="outline"
             onClick={() => {
               // This could open a modal or input for custom duration
-              console.log('Custom duration picker');
+              logger.debug('Custom duration picker');
             }}
           >
             Custom Time

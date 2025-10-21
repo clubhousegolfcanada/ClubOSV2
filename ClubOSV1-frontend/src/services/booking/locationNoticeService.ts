@@ -108,7 +108,7 @@ class LocationNoticeService {
       const data = await response.json();
       return data.data || [];
     } catch (error) {
-      console.error('Error fetching locations:', error);
+      logger.error('Error fetching locations:', error);
       throw error;
     }
   }
@@ -135,7 +135,7 @@ class LocationNoticeService {
       const data = await response.json();
       return data.data || [];
     } catch (error) {
-      console.error('Error fetching notices:', error);
+      logger.error('Error fetching notices:', error);
       throw error;
     }
   }
@@ -160,7 +160,7 @@ class LocationNoticeService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error creating notice:', error);
+      logger.error('Error creating notice:', error);
       throw error;
     }
   }
@@ -185,7 +185,7 @@ class LocationNoticeService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error updating notice:', error);
+      logger.error('Error updating notice:', error);
       throw error;
     }
   }
@@ -206,7 +206,7 @@ class LocationNoticeService {
         throw new Error(error.message || 'Failed to delete notice');
       }
     } catch (error) {
-      console.error('Error deleting notice:', error);
+      logger.error('Error deleting notice:', error);
       throw error;
     }
   }
@@ -228,7 +228,7 @@ class LocationNoticeService {
         throw new Error(error.message || 'Failed to update visibility');
       }
     } catch (error) {
-      console.error('Error updating visibility:', error);
+      logger.error('Error updating visibility:', error);
       throw error;
     }
   }
@@ -250,7 +250,7 @@ class LocationNoticeService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching config:', error);
+      logger.error('Error fetching config:', error);
       throw error;
     }
   }
@@ -277,7 +277,7 @@ class LocationNoticeService {
       const data = await response.json();
       return data.data || [];
     } catch (error) {
-      console.error('Error fetching spaces:', error);
+      logger.error('Error fetching spaces:', error);
       throw error;
     }
   }
@@ -301,7 +301,7 @@ class LocationNoticeService {
 
       return noticesByLocation;
     } catch (error) {
-      console.error('Error fetching all notices:', error);
+      logger.error('Error fetching all notices:', error);
       throw error;
     }
   }

@@ -6,7 +6,7 @@
 import { db } from '../utils/database';
 
 async function fixMessages() {
-  console.log('Fixing Mike\'s conversation messages...');
+  logger.debug('Fixing Mike\'s conversation messages...');
   
   // Get the current conversation
   const result = await db.query(
@@ -17,14 +17,14 @@ async function fixMessages() {
   );
   
   if (result.rows.length === 0) {
-    console.log('No conversation found');
+    logger.debug('No conversation found');
     process.exit(1);
   }
   
   const conv = result.rows[0];
   const currentMessages = conv.messages || [];
-  console.log(`Current message count: ${currentMessages.length}`);
-  console.log(`Last message: ${currentMessages[currentMessages.length - 1]?.body}`);
+  logger.debug(`Current message count: ${currentMessages.length}`);
+  logger.debug(`Last message: ${currentMessages[currentMessages.length - 1]?.body}`);
   
   // Add the missing messages
   const newMessages = [
@@ -80,13 +80,13 @@ async function fixMessages() {
     [JSON.stringify(allMessages), conv.id]
   );
   
-  console.log(`Updated conversation with ${newMessages.length} new messages`);
-  console.log(`Total messages now: ${allMessages.length}`);
+  logger.debug(`Updated conversation with ${newMessages.length} new messages`);
+  logger.debug(`Total messages now: ${allMessages.length}`);
   
   process.exit(0);
 }
 
 fixMessages().catch(error => {
-  console.error('Error:', error);
+  logger.error('Error:', error);
   process.exit(1);
 });

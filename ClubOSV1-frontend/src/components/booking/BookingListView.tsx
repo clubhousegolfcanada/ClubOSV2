@@ -78,7 +78,7 @@ const BookingListView: React.FC<BookingListViewProps> = ({
         setBookings(response.data.data);
       }
     } catch (error) {
-      console.error('Failed to load bookings:', error);
+      logger.error('Failed to load bookings:', error);
       notify('error', 'Failed to load bookings');
     } finally {
       setLoading(false);

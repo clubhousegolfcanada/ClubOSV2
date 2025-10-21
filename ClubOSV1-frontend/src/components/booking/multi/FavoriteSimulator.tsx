@@ -57,7 +57,7 @@ export const FavoriteSimulator: React.FC<FavoriteSimulatorProps> = ({
         setLastBookedSetup(lastSetup);
       }
     } catch (error) {
-      console.error('Failed to load spaces and history:', error);
+      logger.error('Failed to load spaces and history:', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export const FavoriteSimulator: React.FC<FavoriteSimulatorProps> = ({
         }
       });
     } catch (error) {
-      console.error('Failed to save favorites:', error);
+      logger.error('Failed to save favorites:', error);
     }
   };
 

@@ -119,7 +119,7 @@ class BookingConfigService {
         return this.config!;
       })
       .catch(error => {
-        console.error('Failed to load booking config:', error);
+        logger.error('Failed to load booking config:', error);
         this.config = this.getDefaultConfig();
         this.configPromise = null;
         return this.config!;
@@ -152,7 +152,7 @@ class BookingConfigService {
       this.tiers = response.data.data;
       return this.tiers || [];
     } catch (error) {
-      console.error('Failed to load customer tiers:', error);
+      logger.error('Failed to load customer tiers:', error);
       return [];
     }
   }
@@ -177,7 +177,7 @@ class BookingConfigService {
       this.locations = response.data.data;
       return this.locations || [];
     } catch (error) {
-      console.error('Failed to load booking locations:', error);
+      logger.error('Failed to load booking locations:', error);
       return [];
     }
   }
@@ -192,7 +192,7 @@ class BookingConfigService {
       });
       return response.data.data;
     } catch (error) {
-      console.error('Failed to load booking spaces:', error);
+      logger.error('Failed to load booking spaces:', error);
       return [];
     }
   }

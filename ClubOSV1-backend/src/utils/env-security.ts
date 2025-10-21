@@ -22,9 +22,9 @@ const securityChecks: EnvSecurityCheck[] = [
       if (val.length !== 32) {
         // If it's 64 chars (common base64 mistake), suggest trimming
         if (val.length === 64) {
-          console.log(`\n💡 TIP: Your ENCRYPTION_KEY is 64 characters (base64 encoded?).`);
-          console.log(`   You can use the first 32 characters: ${val.substring(0, 32)}`);
-          console.log(`   Or generate a new one with: node scripts/generate-encryption-key.js\n`);
+          logger.debug(`\n💡 TIP: Your ENCRYPTION_KEY is 64 characters (base64 encoded?).`);
+          logger.debug(`   You can use the first 32 characters: ${val.substring(0, 32)}`);
+          logger.debug(`   Or generate a new one with: node scripts/generate-encryption-key.js\n`);
         }
         return false;
       }
@@ -84,7 +84,7 @@ const securityChecks: EnvSecurityCheck[] = [
 ];
 
 export function validateEnvironmentSecurity(): void {
-  console.log('🔐 Validating environment security...\n');
+  logger.debug('🔐 Validating environment security...\n');
   
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -104,7 +104,7 @@ export function validateEnvironmentSecurity(): void {
       }
     } else {
       validCount++;
-      console.log(`✅ ${check.key} validated`);
+      logger.debug(`✅ ${check.key} validated`);
     }
   }
   
@@ -142,20 +142,20 @@ export function validateEnvironmentSecurity(): void {
   }
   
   // Print summary
-  console.log(`\n📊 Security Check Summary:`);
-  console.log(`   ✅ Valid: ${validCount}/${securityChecks.length}`);
-  console.log(`   ❌ Errors: ${errors.length}`);
-  console.log(`   ⚠️  Warnings: ${warnings.length}`);
+  logger.debug(`\n📊 Security Check Summary:`);
+  logger.debug(`   ✅ Valid: ${validCount}/${securityChecks.length}`);
+  logger.debug(`   ❌ Errors: ${errors.length}`);
+  logger.debug(`   ⚠️  Warnings: ${warnings.length}`);
   
   // Print results
   if (warnings.length > 0) {
-    console.log('\n⚠️  Warnings:');
-    warnings.forEach(w => console.log(w));
+    logger.debug('\n⚠️  Warnings:');
+    warnings.forEach(w => logger.debug(w));
   }
   
   if (errors.length > 0) {
-    console.log('\n❌ Critical Errors:');
-    errors.forEach(e => console.log(e));
+    logger.debug('\n❌ Critical Errors:');
+    errors.forEach(e => logger.debug(e));
     
     // Log critical failure
     logger.error('Environment security validation failed', { 
@@ -166,7 +166,7 @@ export function validateEnvironmentSecurity(): void {
     throw new Error('Environment security validation failed. Please fix the critical errors above.');
   }
   
-  console.log('\n✅ Environment security validation passed!\n');
+  logger.debug('\n✅ Environment security validation passed!\n');
   logger.info('Environment security validation passed', { 
     valid: validCount, 
     total: securityChecks.length,

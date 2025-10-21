@@ -11,7 +11,7 @@ export async function runRankTierMigration() {
     `);
     
     if (columnCheck.rows.length === 0) {
-      console.log('Adding missing rank_tier column to customer_profiles...');
+      logger.debug('Adding missing rank_tier column to customer_profiles...');
       
       // Add the column
       await db(`
@@ -25,12 +25,12 @@ export async function runRankTierMigration() {
         ON customer_profiles(rank_tier)
       `);
       
-      console.log('✅ rank_tier column added successfully');
+      logger.debug('✅ rank_tier column added successfully');
     } else {
-      console.log('rank_tier column already exists');
+      logger.debug('rank_tier column already exists');
     }
   } catch (error) {
-    console.error('Failed to run rank_tier migration:', error);
+    logger.error('Failed to run rank_tier migration:', error);
     // Don't throw - this is not critical for app startup
   }
 }

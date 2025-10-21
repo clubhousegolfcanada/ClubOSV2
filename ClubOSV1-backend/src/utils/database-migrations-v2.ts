@@ -322,26 +322,26 @@ export class MigrationRunner {
     const applied = await this.getAppliedMigrations();
     const appliedVersions = new Set(applied.map(m => m.version));
 
-    console.log('\nMigration Status:');
-    console.log('=================\n');
+    logger.debug('\nMigration Status:');
+    logger.debug('=================\n');
 
     for (const migration of migrations) {
       const isApplied = appliedVersions.has(migration.version);
       const appliedInfo = applied.find(a => a.version === migration.version);
       
-      console.log(`[${isApplied ? '✓' : ' '}] ${migration.version}_${migration.name}`);
+      logger.debug(`[${isApplied ? '✓' : ' '}] ${migration.version}_${migration.name}`);
       
       if (appliedInfo) {
-        console.log(`    Applied: ${appliedInfo.applied_at}`);
-        console.log(`    By: ${appliedInfo.applied_by}`);
-        console.log(`    Time: ${appliedInfo.execution_time_ms}ms`);
+        logger.debug(`    Applied: ${appliedInfo.applied_at}`);
+        logger.debug(`    By: ${appliedInfo.applied_by}`);
+        logger.debug(`    Time: ${appliedInfo.execution_time_ms}ms`);
       }
     }
 
     const pending = migrations.filter(m => !appliedVersions.has(m.version));
-    console.log(`\nTotal: ${migrations.length} migrations`);
-    console.log(`Applied: ${applied.length}`);
-    console.log(`Pending: ${pending.length}`);
+    logger.debug(`\nTotal: ${migrations.length} migrations`);
+    logger.debug(`Applied: ${applied.length}`);
+    logger.debug(`Pending: ${pending.length}`);
   }
 
   /**

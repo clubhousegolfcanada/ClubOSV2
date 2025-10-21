@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { DEVICE_REGISTRY } from '../config/ninjaDevices';
 import axios from 'axios';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ async function getNinjaOneToken(): Promise<string> {
     
     return ninjaOneToken;
   } catch (error) {
-    console.error('NinjaOne authentication failed:', error);
+    logger.error('NinjaOne authentication failed:', error);
     throw new Error('Failed to authenticate with NinjaOne');
   }
 }
@@ -115,7 +116,7 @@ router.post('/session', authenticate, roleGuard(['operator', 'admin']), async (r
       });
 
     } catch (ninjaError: any) {
-      console.error('NinjaOne remote session error:', ninjaError.response?.data || ninjaError.message);
+      logger.error('NinjaOne remote session error:', ninjaError.response?.data || ninjaError.message);
       
       // Fallback to alternative method
       return res.json({
@@ -131,7 +132,7 @@ router.post('/session', authenticate, roleGuard(['operator', 'admin']), async (r
     }
 
   } catch (error: any) {
-    console.error('Remote desktop session error:', error);
+    logger.error('Remote desktop session error:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message || 'Failed to create remote session' 
@@ -178,7 +179,7 @@ router.get('/device-info', authenticate, roleGuard(['operator', 'admin']), async
     });
 
   } catch (error: any) {
-    console.error('Device info error:', error);
+    logger.error('Device info error:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message || 'Failed to get device information' 

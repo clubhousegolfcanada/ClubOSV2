@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { achievementService } from '../services/achievementService';
 import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.get('/', authenticate, async (req, res) => {
     const achievements = await achievementService.getAllAchievements(category as string);
     res.json(achievements);
   } catch (error) {
-    console.error('Error fetching achievements:', error);
+    logger.error('Error fetching achievements:', error);
     res.status(500).json({ error: 'Failed to fetch achievements' });
   }
 });
@@ -24,7 +25,7 @@ router.get('/user/:userId', authenticate, async (req, res) => {
     const achievements = await achievementService.getUserAchievements(userId);
     res.json(achievements);
   } catch (error) {
-    console.error('Error fetching user achievements:', error);
+    logger.error('Error fetching user achievements:', error);
     res.status(500).json({ error: 'Failed to fetch user achievements' });
   }
 });
@@ -36,7 +37,7 @@ router.get('/user/:userId/featured', authenticate, async (req, res) => {
     const achievements = await achievementService.getFeaturedAchievements(userId);
     res.json(achievements);
   } catch (error) {
-    console.error('Error fetching featured achievements:', error);
+    logger.error('Error fetching featured achievements:', error);
     res.status(500).json({ error: 'Failed to fetch featured achievements' });
   }
 });
@@ -81,7 +82,7 @@ router.post('/create-custom', authenticate, roleGuard(['operator', 'admin']), as
       achievementId 
     });
   } catch (error: any) {
-    console.error('Error creating custom achievement:', error);
+    logger.error('Error creating custom achievement:', error);
     res.status(500).json({ error: 'Failed to create custom achievement' });
   }
 });
@@ -111,7 +112,7 @@ router.post('/award', authenticate, roleGuard(['operator', 'admin']), async (req
       achievement 
     });
   } catch (error: any) {
-    console.error('Error awarding achievement:', error);
+    logger.error('Error awarding achievement:', error);
     if (error.message === 'Achievement already awarded to this user') {
       return res.status(409).json({ error: error.message });
     }
@@ -142,7 +143,7 @@ router.post('/bulk-award', authenticate, roleGuard(['operator', 'admin']), async
       message: `Successfully processed ${awards.length} achievement awards`
     });
   } catch (error) {
-    console.error('Error bulk awarding achievements:', error);
+    logger.error('Error bulk awarding achievements:', error);
     res.status(500).json({ error: 'Failed to bulk award achievements' });
   }
 });
@@ -163,7 +164,7 @@ router.delete('/revoke', authenticate, roleGuard(['operator', 'admin']), async (
       message: 'Achievement revoked successfully' 
     });
   } catch (error) {
-    console.error('Error revoking achievement:', error);
+    logger.error('Error revoking achievement:', error);
     res.status(500).json({ error: 'Failed to revoke achievement' });
   }
 });
@@ -185,7 +186,7 @@ router.post('/featured', authenticate, async (req, res) => {
       message: 'Featured achievements updated successfully' 
     });
   } catch (error) {
-    console.error('Error setting featured achievements:', error);
+    logger.error('Error setting featured achievements:', error);
     res.status(500).json({ error: 'Failed to set featured achievements' });
   }
 });
@@ -196,7 +197,7 @@ router.get('/stats', authenticate, roleGuard(['operator', 'admin']), async (req,
     const stats = await achievementService.getAchievementStats();
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching achievement stats:', error);
+    logger.error('Error fetching achievement stats:', error);
     res.status(500).json({ error: 'Failed to fetch achievement statistics' });
   }
 });
@@ -208,7 +209,7 @@ router.get('/leaderboard', authenticate, async (req, res) => {
     const leaderboard = await achievementService.getAchievementLeaderboard(limit);
     res.json(leaderboard);
   } catch (error) {
-    console.error('Error fetching achievement leaderboard:', error);
+    logger.error('Error fetching achievement leaderboard:', error);
     res.status(500).json({ error: 'Failed to fetch achievement leaderboard' });
   }
 });
@@ -223,7 +224,7 @@ router.post('/check-milestones', authenticate, async (req, res) => {
       message: 'Milestone achievements checked' 
     });
   } catch (error) {
-    console.error('Error checking milestone achievements:', error);
+    logger.error('Error checking milestone achievements:', error);
     res.status(500).json({ error: 'Failed to check milestone achievements' });
   }
 });

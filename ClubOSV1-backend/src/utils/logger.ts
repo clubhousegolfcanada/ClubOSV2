@@ -9,7 +9,7 @@ const ensureLogsDirectory = async () => {
   try {
     await fs.mkdir(logsDir, { recursive: true });
   } catch (error) {
-    console.error('Failed to create logs directory:', error);
+    logger.error('Failed to create logs directory:', error);
   }
 };
 

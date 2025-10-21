@@ -60,7 +60,7 @@ export class MigrationRunner {
     `;
 
     await this.pool.query(initSql);
-    console.log('✅ Migration tracking table initialized');
+    logger.debug('✅ Migration tracking table initialized');
   }
 
   /**
@@ -121,15 +121,15 @@ export class MigrationRunner {
       await client.query('BEGIN');
 
       if (this.isDryRun) {
-        console.log(`🔍 [DRY RUN] Would execute migration ${migration.name}`);
-        console.log(`SQL Preview (first 500 chars):`);
-        console.log(migration.upSql.substring(0, 500));
+        logger.debug(`🔍 [DRY RUN] Would execute migration ${migration.name}`);
+        logger.debug(`SQL Preview (first 500 chars):`);
+        logger.debug(migration.upSql.substring(0, 500));
         await client.query('ROLLBACK');
         return;
       }
 
       // Execute the migration
-      console.log(`⚙️  Executing migration ${migration.name}...`);
+      logger.debug(`⚙️  Executing migration ${migration.name}...`);
       await client.query(migration.upSql);
 
       // Record successful migration
@@ -141,7 +141,7 @@ export class MigrationRunner {
       );
 
       await client.query('COMMIT');
-      console.log(`✅ Migration ${migration.name} completed in ${executionTime}ms`);
+      logger.debug(`✅ Migration ${migration.name} completed in ${executionTime}ms`);
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -157,7 +157,7 @@ export class MigrationRunner {
         [migration.version, migration.name, migration.checksum, Date.now() - startTime, false, errorMessage]
       );
 
-      console.error(`❌ Migration ${migration.name} failed: ${errorMessage}`);
+      logger.error(`❌ Migration ${migration.name} failed: ${errorMessage}`);
       throw error;
 
     } finally {
@@ -177,17 +177,17 @@ export class MigrationRunner {
     const pending = migrations.filter(m => !executed.has(m.version));
 
     if (pending.length === 0) {
-      console.log('✅ Database is up to date');
+      logger.debug('✅ Database is up to date');
       return;
     }
 
-    console.log(`📦 Found ${pending.length} pending migrations`);
+    logger.debug(`📦 Found ${pending.length} pending migrations`);
 
     for (const migration of pending) {
       await this.executeMigration(migration);
     }
 
-    console.log(`✅ All migrations completed successfully`);
+    logger.debug(`✅ All migrations completed successfully`);
   }
 
   /**
@@ -204,7 +204,7 @@ export class MigrationRunner {
     );
 
     if (result.rows.length === 0) {
-      console.log('⚠️  No migrations to rollback');
+      logger.debug('⚠️  No migrations to rollback');
       return;
     }
 
@@ -215,23 +215,23 @@ export class MigrationRunner {
         await client.query('BEGIN');
 
         if (this.isDryRun) {
-          console.log(`🔍 [DRY RUN] Would rollback migration ${row.name}`);
+          logger.debug(`🔍 [DRY RUN] Would rollback migration ${row.name}`);
           await client.query('ROLLBACK');
           continue;
         }
 
-        console.log(`⏪ Rolling back migration ${row.name}...`);
+        logger.debug(`⏪ Rolling back migration ${row.name}...`);
         await client.query(row.rollback_sql);
         
         // Remove migration record
         await client.query('DELETE FROM schema_migrations WHERE version = $1', [row.version]);
         
         await client.query('COMMIT');
-        console.log(`✅ Rolled back migration ${row.name}`);
+        logger.debug(`✅ Rolled back migration ${row.name}`);
 
       } catch (error) {
         await client.query('ROLLBACK');
-        console.error(`❌ Rollback failed for ${row.name}: ${error}`);
+        logger.error(`❌ Rollback failed for ${row.name}: ${error}`);
         throw error;
       } finally {
         client.release();
@@ -255,16 +255,16 @@ export class MigrationRunner {
       if (executed.has(migration.version)) {
         const storedChecksum = executed.get(migration.version);
         if (storedChecksum !== migration.checksum) {
-          console.error(`❌ Checksum mismatch for migration ${migration.name}`);
-          console.error(`   Expected: ${migration.checksum}`);
-          console.error(`   Stored:   ${storedChecksum}`);
+          logger.error(`❌ Checksum mismatch for migration ${migration.name}`);
+          logger.error(`   Expected: ${migration.checksum}`);
+          logger.error(`   Stored:   ${storedChecksum}`);
           valid = false;
         }
       }
     }
 
     if (valid) {
-      console.log('✅ All migration checksums are valid');
+      logger.debug('✅ All migration checksums are valid');
     }
 
     return valid;
@@ -277,20 +277,20 @@ export class MigrationRunner {
     const migrations = await this.loadMigrations();
     const executed = await this.getExecutedMigrations();
 
-    console.log('\n📊 Migration Status:');
-    console.log('─'.repeat(60));
+    logger.debug('\n📊 Migration Status:');
+    logger.debug('─'.repeat(60));
 
     for (const migration of migrations) {
       const isExecuted = executed.has(migration.version);
       const status = isExecuted ? '✅' : '⏳';
       const label = isExecuted ? 'Applied' : 'Pending';
       
-      console.log(`${status} ${migration.version} - ${migration.name} [${label}]`);
+      logger.debug(`${status} ${migration.version} - ${migration.name} [${label}]`);
     }
 
-    console.log('─'.repeat(60));
-    console.log(`Total: ${migrations.length} migrations`);
-    console.log(`Applied: ${executed.size} | Pending: ${migrations.length - executed.size}`);
+    logger.debug('─'.repeat(60));
+    logger.debug(`Total: ${migrations.length} migrations`);
+    logger.debug(`Applied: ${executed.size} | Pending: ${migrations.length - executed.size}`);
   }
 
   /**
@@ -313,17 +313,17 @@ export class MigrationRunner {
     readline.close();
 
     if (confirmation !== 'RESET DATABASE') {
-      console.log('❌ Reset cancelled');
+      logger.debug('❌ Reset cancelled');
       return;
     }
 
-    console.log('🗑️  Dropping all tables...');
+    logger.debug('🗑️  Dropping all tables...');
     await this.pool.query(`
       DROP SCHEMA public CASCADE;
       CREATE SCHEMA public;
     `);
 
-    console.log('✅ Database reset complete');
+    logger.debug('✅ Database reset complete');
     
     // Run all migrations
     await this.migrate();
@@ -370,7 +370,7 @@ if (require.main === module) {
           break;
         
         default:
-          console.log(`
+          logger.debug(`
 Migration Runner Commands:
   migrate   - Run all pending migrations
   rollback  - Rollback last N migrations (default: 1)
@@ -383,7 +383,7 @@ Options:
           `);
       }
     } catch (error) {
-      console.error('Migration failed:', error);
+      logger.error('Migration failed:', error);
       process.exit(1);
     } finally {
       await pool.end();

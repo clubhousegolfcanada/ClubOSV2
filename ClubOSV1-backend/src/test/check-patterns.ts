@@ -7,8 +7,8 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 
 async function checkPatterns() {
-  console.log('\n🔍 Checking Pattern Learning Status\n');
-  console.log('=' .repeat(60));
+  logger.debug('\n🔍 Checking Pattern Learning Status\n');
+  logger.debug('=' .repeat(60));
   
   // Check if pattern learning is enabled
   const configResult = await db.query(`
@@ -17,9 +17,9 @@ async function checkPatterns() {
     WHERE config_key IN ('enabled', 'shadow_mode', 'min_occurrences_to_learn')
   `);
   
-  console.log('\n📋 Configuration:');
+  logger.debug('\n📋 Configuration:');
   configResult.rows.forEach(row => {
-    console.log(`  ${row.config_key}: ${row.config_value}`);
+    logger.debug(`  ${row.config_key}: ${row.config_value}`);
   });
   
   // Check how many patterns exist
@@ -32,12 +32,12 @@ async function checkPatterns() {
     FROM decision_patterns
   `);
   
-  console.log('\n📊 Pattern Statistics:');
+  logger.debug('\n📊 Pattern Statistics:');
   const stats = patternsResult.rows[0];
-  console.log(`  Total patterns: ${stats.total}`);
-  console.log(`  Active patterns: ${stats.active}`);
-  console.log(`  Learned patterns: ${stats.learned}`);
-  console.log(`  Manual patterns: ${stats.manual}`);
+  logger.debug(`  Total patterns: ${stats.total}`);
+  logger.debug(`  Active patterns: ${stats.active}`);
+  logger.debug(`  Learned patterns: ${stats.learned}`);
+  logger.debug(`  Manual patterns: ${stats.manual}`);
   
   // Check recent patterns
   const recentPatterns = await db.query(`
@@ -53,16 +53,16 @@ async function checkPatterns() {
     LIMIT 5
   `);
   
-  console.log('\n📝 Recent Patterns:');
+  logger.debug('\n📝 Recent Patterns:');
   if (recentPatterns.rows.length === 0) {
-    console.log('  No patterns found');
+    logger.debug('  No patterns found');
   } else {
     recentPatterns.rows.forEach(p => {
-      console.log(`\n  Pattern #${p.id} (${p.pattern_type})`);
-      console.log(`  Trigger: ${p.trigger_text?.substring(0, 50)}...`);
-      console.log(`  Response: ${p.response_template?.substring(0, 50)}...`);
-      console.log(`  Confidence: ${p.confidence_score}`);
-      console.log(`  Active: ${p.is_active}`);
+      logger.debug(`\n  Pattern #${p.id} (${p.pattern_type})`);
+      logger.debug(`  Trigger: ${p.trigger_text?.substring(0, 50)}...`);
+      logger.debug(`  Response: ${p.response_template?.substring(0, 50)}...`);
+      logger.debug(`  Confidence: ${p.confidence_score}`);
+      logger.debug(`  Active: ${p.is_active}`);
     });
   }
   
@@ -75,11 +75,11 @@ async function checkPatterns() {
     FROM pattern_learning_examples
   `);
   
-  console.log('\n📚 Learning Examples:');
+  logger.debug('\n📚 Learning Examples:');
   const examples = examplesResult.rows[0];
-  console.log(`  Total examples: ${examples.total}`);
-  console.log(`  Unique patterns: ${examples.unique_patterns}`);
-  console.log(`  Added in last 24h: ${examples.recent}`);
+  logger.debug(`  Total examples: ${examples.total}`);
+  logger.debug(`  Unique patterns: ${examples.unique_patterns}`);
+  logger.debug(`  Added in last 24h: ${examples.recent}`);
   
   // Check recent conversations with messages
   const conversationsResult = await db.query(`
@@ -99,15 +99,15 @@ async function checkPatterns() {
     LIMIT 5
   `);
   
-  console.log('\n💬 Recent Conversations (last hour):');
+  logger.debug('\n💬 Recent Conversations (last hour):');
   if (conversationsResult.rows.length === 0) {
-    console.log('  No recent conversations');
+    logger.debug('  No recent conversations');
   } else {
     conversationsResult.rows.forEach(c => {
-      console.log(`\n  Conversation: ${c.id}`);
-      console.log(`  Phone: ${c.phone_number?.slice(-4) || 'Unknown'}`);
-      console.log(`  Messages: ${c.message_count} (${c.inbound_count} in, ${c.outbound_count} out)`);
-      console.log(`  Last message: ${c.last_message_at}`);
+      logger.debug(`\n  Conversation: ${c.id}`);
+      logger.debug(`  Phone: ${c.phone_number?.slice(-4) || 'Unknown'}`);
+      logger.debug(`  Messages: ${c.message_count} (${c.inbound_count} in, ${c.outbound_count} out)`);
+      logger.debug(`  Last message: ${c.last_message_at}`);
     });
   }
   
@@ -121,12 +121,12 @@ async function checkPatterns() {
     GROUP BY direction
   `);
   
-  console.log('\n🔄 Webhook Activity (last hour):');
+  logger.debug('\n🔄 Webhook Activity (last hour):');
   if (webhookMessages.rows.length === 0) {
-    console.log('  No webhook messages recorded');
+    logger.debug('  No webhook messages recorded');
   } else {
     webhookMessages.rows.forEach(m => {
-      console.log(`  ${m.direction}: ${m.count} messages`);
+      logger.debug(`  ${m.direction}: ${m.count} messages`);
     });
   }
   
@@ -140,17 +140,17 @@ async function checkPatterns() {
     FROM pattern_execution_history
   `);
   
-  console.log('\n⚡ Pattern Execution:');
+  logger.debug('\n⚡ Pattern Execution:');
   const exec = executionResult.rows[0];
-  console.log(`  Total executions: ${exec.total}`);
-  console.log(`  Last 24h: ${exec.recent}`);
-  console.log(`  Auto-executed: ${exec.auto_executed}`);
-  console.log(`  Suggested: ${exec.suggested}`);
+  logger.debug(`  Total executions: ${exec.total}`);
+  logger.debug(`  Last 24h: ${exec.recent}`);
+  logger.debug(`  Auto-executed: ${exec.auto_executed}`);
+  logger.debug(`  Suggested: ${exec.suggested}`);
   
-  console.log('\n' + '=' .repeat(60));
+  logger.debug('\n' + '=' .repeat(60));
   
   // Check specific conversation example
-  console.log('\n🔎 Looking for your specific conversation about clubs...');
+  logger.debug('\n🔎 Looking for your specific conversation about clubs...');
   const clubsConvo = await db.query(`
     SELECT 
       cm.*,
@@ -164,22 +164,22 @@ async function checkPatterns() {
   `);
   
   if (clubsConvo.rows.length > 0) {
-    console.log(`  Found ${clubsConvo.rows.length} messages about clubs:`);
+    logger.debug(`  Found ${clubsConvo.rows.length} messages about clubs:`);
     clubsConvo.rows.forEach(m => {
-      console.log(`\n  Message ID: ${m.id}`);
-      console.log(`  Direction: ${m.direction}`);
-      console.log(`  Text: ${m.body?.substring(0, 100)}...`);
-      console.log(`  Phone: ${m.phone_number?.slice(-4)}`);
-      console.log(`  Time: ${m.created_at}`);
+      logger.debug(`\n  Message ID: ${m.id}`);
+      logger.debug(`  Direction: ${m.direction}`);
+      logger.debug(`  Text: ${m.body?.substring(0, 100)}...`);
+      logger.debug(`  Phone: ${m.phone_number?.slice(-4)}`);
+      logger.debug(`  Time: ${m.created_at}`);
     });
   } else {
-    console.log('  No messages found about clubs availability');
+    logger.debug('  No messages found about clubs availability');
   }
   
   process.exit(0);
 }
 
 checkPatterns().catch(error => {
-  console.error('Error:', error);
+  logger.error('Error:', error);
   process.exit(1);
 });

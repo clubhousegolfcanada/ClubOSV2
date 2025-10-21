@@ -61,7 +61,7 @@ export const MultiSimulatorSelector: React.FC<MultiSimulatorSelectorProps> = ({
       setSpaceAvailability(availabilityMap);
       setConflicts(conflictSet);
     } catch (error) {
-      console.error('Failed to check availability:', error);
+      logger.error('Failed to check availability:', error);
     } finally {
       setLoading(false);
     }

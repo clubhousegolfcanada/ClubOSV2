@@ -56,7 +56,7 @@ export default function ChangeManagement({
       });
       setValidationResult(validationResponse.data);
     } catch (error) {
-      console.error('Failed to load change data:', error);
+      logger.error('Failed to load change data:', error);
     } finally {
       setLoading(false);
     }

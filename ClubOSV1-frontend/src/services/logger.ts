@@ -86,13 +86,13 @@ class Logger {
       const prefix = `[${level.toUpperCase()}] ${new Date().toISOString()}`;
       
       if (error) {
-        console.error(`%c${prefix} ${message}`, style, data || '', error);
+        logger.error(`%c${prefix} ${message}`, style, data || '', error);
       } else if (level === 'error') {
-        console.error(`%c${prefix} ${message}`, style, data || '');
+        logger.error(`%c${prefix} ${message}`, style, data || '');
       } else if (level === 'warn') {
-        console.warn(`%c${prefix} ${message}`, style, data || '');
+        logger.warn(`%c${prefix} ${message}`, style, data || '');
       } else {
-        console.log(`%c${prefix} ${message}`, style, data || '');
+        logger.debug(`%c${prefix} ${message}`, style, data || '');
       }
     }
 

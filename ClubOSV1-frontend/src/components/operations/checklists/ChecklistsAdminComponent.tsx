@@ -153,7 +153,7 @@ export function ChecklistsAdminComponent() {
         setCompletionStats(processedStats);
       }
     } catch (error) {
-      console.error('Failed to load completion stats:', error);
+      logger.error('Failed to load completion stats:', error);
     }
   };
 
@@ -171,7 +171,7 @@ export function ChecklistsAdminComponent() {
       setQrCodeUrl(qrDataUrl);
       toast.success('QR code generated!');
     } catch (error) {
-      console.error('Failed to generate QR code:', error);
+      logger.error('Failed to generate QR code:', error);
       toast.error('Failed to generate QR code');
     }
   };

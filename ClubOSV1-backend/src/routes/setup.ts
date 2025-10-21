@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { logger } from '../utils/logger';
 // import { setupDatabase } from '../scripts/setupDatabase';
 
 const router = Router();
@@ -16,7 +17,7 @@ router.post('/setup-database', async (req: Request, res: Response) => {
       });
     }
     
-    console.log('Starting database setup via HTTP endpoint...');
+    logger.debug('Starting database setup via HTTP endpoint...');
     
     // Run the setup
     // await setupDatabase();
@@ -27,7 +28,7 @@ router.post('/setup-database', async (req: Request, res: Response) => {
     });
     
   } catch (error: any) {
-    console.error('Database setup failed:', error);
+    logger.error('Database setup failed:', error);
     res.status(500).json({
       success: false,
       message: 'Database setup failed',

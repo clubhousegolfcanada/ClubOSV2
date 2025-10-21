@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 async function runMigration() {
-  console.log('Checking if white label tables exist...');
+  logger.debug('Checking if white label tables exist...');
   
   try {
     // Check if tables already exist
@@ -15,11 +15,11 @@ async function runMigration() {
     `);
     
     if (tableCheck.rows.length === 5) {
-      console.log('All white label tables already exist');
+      logger.debug('All white label tables already exist');
       return;
     }
     
-    console.log(`Found ${tableCheck.rows.length}/5 tables. Creating missing tables...`);
+    logger.debug(`Found ${tableCheck.rows.length}/5 tables. Creating missing tables...`);
     
     // Create tables
     await db(`
@@ -90,16 +90,16 @@ async function runMigration() {
     await db(`CREATE INDEX IF NOT EXISTS idx_sop_inventory_category ON sop_inventory(category)`);
     await db(`CREATE INDEX IF NOT EXISTS idx_integration_inventory_type ON integration_inventory(type)`);
     
-    console.log('White label tables created successfully');
+    logger.debug('White label tables created successfully');
     
     // Check if we should populate with initial data
     const featureCount = await db('SELECT COUNT(*) as count FROM feature_inventory');
     if (featureCount.rows[0].count === '0') {
-      console.log('Tables are empty. Run populate-white-label-inventory.ts to add data.');
+      logger.debug('Tables are empty. Run populate-white-label-inventory.ts to add data.');
     }
     
   } catch (error) {
-    console.error('Migration failed:', error);
+    logger.error('Migration failed:', error);
     throw error;
   }
 }
@@ -108,11 +108,11 @@ async function runMigration() {
 if (require.main === module) {
   runMigration()
     .then(() => {
-      console.log('Migration completed');
+      logger.debug('Migration completed');
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Migration failed:', error);
+      logger.error('Migration failed:', error);
       process.exit(1);
     });
 }

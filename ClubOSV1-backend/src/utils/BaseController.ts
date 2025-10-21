@@ -171,7 +171,7 @@ export abstract class BaseController {
     entityId: string | number,
     details?: any
   ): Promise<void> {
-    console.log('Activity Log:', {
+    logger.debug('Activity Log:', {
       userId,
       action,
       entityType,

@@ -140,7 +140,7 @@ export default function TieredBookingForm({
     try {
       // Load user tier
       if (user?.id) {
-        const tierResponse = await http.get(`/api/users/${user.id}/tier`);
+        const tierResponse = await http.get(`users/${user.id}/tier`);
         setCustomerTier(tierResponse.data.tier);
       }
 

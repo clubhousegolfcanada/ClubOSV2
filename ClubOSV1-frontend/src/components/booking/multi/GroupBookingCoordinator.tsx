@@ -34,7 +34,7 @@ export const GroupBookingCoordinator: React.FC<GroupBookingCoordinatorProps> = (
         setSpaces(data.data);
       }
     } catch (error) {
-      console.error('Failed to load spaces:', error);
+      logger.error('Failed to load spaces:', error);
     }
   };
 

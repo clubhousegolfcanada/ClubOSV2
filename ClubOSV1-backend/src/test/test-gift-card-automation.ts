@@ -16,7 +16,7 @@ async function getAuthToken() {
     });
     return response.data.token;
   } catch (error) {
-    console.error('Failed to login:', error);
+    logger.error('Failed to login:', error);
     throw error;
   }
 }
@@ -54,9 +54,9 @@ async function enableGiftCardAutomation(token: string, responseSource: 'database
       { headers: { Authorization: `Bearer ${token}` } }
     );
     
-    console.log(`✅ Gift card automation enabled with ${responseSource} response`);
+    logger.debug(`✅ Gift card automation enabled with ${responseSource} response`);
   } catch (error) {
-    console.error('Failed to enable gift card automation:', error);
+    logger.error('Failed to enable gift card automation:', error);
     throw error;
   }
 }
@@ -80,10 +80,10 @@ async function simulateWebhook(message: string, phoneNumber: string = '+15551234
       }
     };
     
-    console.log(`\n📱 Simulating inbound message: "${message}"`);
+    logger.debug(`\n📱 Simulating inbound message: "${message}"`);
     
     const response = await axios.post(`${API_URL}/api/openphone/webhook`, webhookData);
-    console.log('Webhook response:', response.status);
+    logger.debug('Webhook response:', response.status);
     
     // Wait a bit for processing
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -98,40 +98,40 @@ async function simulateWebhook(message: string, phoneNumber: string = '+15551234
     
     if (result.rows.length > 0) {
       const usage = result.rows[0];
-      console.log('\n🤖 Automation triggered:');
-      console.log('- Success:', usage.success);
-      console.log('- Response:', usage.output_data?.response);
-      console.log('- Execution time:', usage.execution_time_ms, 'ms');
+      logger.debug('\n🤖 Automation triggered:');
+      logger.debug('- Success:', usage.success);
+      logger.debug('- Response:', usage.output_data?.response);
+      logger.debug('- Execution time:', usage.execution_time_ms, 'ms');
     } else {
-      console.log('\n❌ No automation triggered');
+      logger.debug('\n❌ No automation triggered');
     }
     
   } catch (error) {
-    console.error('Webhook simulation failed:', error);
+    logger.error('Webhook simulation failed:', error);
   }
 }
 
 async function runTests() {
-  console.log('🧪 Testing Gift Card Automation System\n');
+  logger.debug('🧪 Testing Gift Card Automation System\n');
   
   try {
     // Get auth token
-    console.log('1️⃣ Getting auth token...');
+    logger.debug('1️⃣ Getting auth token...');
     const token = await getAuthToken();
-    console.log('✅ Authenticated');
+    logger.debug('✅ Authenticated');
     
     // Test 1: Database response mode
-    console.log('\n2️⃣ Testing DATABASE response mode...');
+    logger.debug('\n2️⃣ Testing DATABASE response mode...');
     await enableGiftCardAutomation(token, 'database');
     await simulateWebhook('Do you sell gift cards?');
     
     // Test 2: Hardcoded response mode
-    console.log('\n3️⃣ Testing HARDCODED response mode...');
+    logger.debug('\n3️⃣ Testing HARDCODED response mode...');
     await enableGiftCardAutomation(token, 'hardcoded');
     await simulateWebhook('I want to buy a gift certificate');
     
     // Test 3: Pattern matching variations
-    console.log('\n4️⃣ Testing pattern matching...');
+    logger.debug('\n4️⃣ Testing pattern matching...');
     const testMessages = [
       'how can I purchase a gift card?',
       'Looking for a birthday gift',
@@ -144,21 +144,21 @@ async function runTests() {
     }
     
     // Test 4: Negative patterns (should NOT trigger)
-    console.log('\n5️⃣ Testing negative patterns (should NOT trigger)...');
+    logger.debug('\n5️⃣ Testing negative patterns (should NOT trigger)...');
     await simulateWebhook('I received a gift card, how do I use it?');
     await simulateWebhook('What is my gift card balance?');
     
     // Test 5: Response limit
-    console.log('\n6️⃣ Testing response limit (max 2)...');
+    logger.debug('\n6️⃣ Testing response limit (max 2)...');
     const testPhone = '+15551111111';
     await simulateWebhook('Do you have gift cards?', testPhone);
     await simulateWebhook('Thank you!', testPhone);
     await simulateWebhook('One more question about gift cards', testPhone); // Should not respond
     
-    console.log('\n✅ All tests completed!');
+    logger.debug('\n✅ All tests completed!');
     
   } catch (error) {
-    console.error('Test failed:', error);
+    logger.error('Test failed:', error);
   } finally {
     // Clean up
     await db.end();

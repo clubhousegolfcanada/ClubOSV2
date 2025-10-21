@@ -3,6 +3,7 @@ import { getPoolStats } from '../utils/db';
 import { cacheService } from '../services/cacheService';
 import { authenticate, authorize } from '../middleware/auth';
 import { query } from '../utils/db';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -87,7 +88,7 @@ router.get('/', authenticate, authorize(['admin']), async (req: Request, res: Re
 
     res.json(stats);
   } catch (error) {
-    console.error('Performance monitor error:', error);
+    logger.error('Performance monitor error:', error);
     res.status(500).json({
       error: 'Failed to get performance stats',
       message: error instanceof Error ? error.message : 'Unknown error'

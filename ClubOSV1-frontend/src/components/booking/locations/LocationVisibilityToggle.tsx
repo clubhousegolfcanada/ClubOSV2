@@ -42,7 +42,7 @@ export const LocationVisibilityToggle: React.FC<LocationVisibilityToggleProps> =
       setLocations(data);
     } catch (error) {
       showError('Failed to load locations');
-      console.error('Error loading locations:', error);
+      logger.error('Error loading locations:', error);
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ export const LocationVisibilityToggle: React.FC<LocationVisibilityToggleProps> =
       await loadLocations();
     } catch (error) {
       showError('Failed to update location visibility');
-      console.error('Error toggling visibility:', error);
+      logger.error('Error toggling visibility:', error);
     }
   };
 

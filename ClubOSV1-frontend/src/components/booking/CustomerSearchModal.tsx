@@ -98,7 +98,7 @@ const CustomerSearchModal: React.FC<CustomerSearchModalProps> = ({
         setCustomers(transformedCustomers);
       }
     } catch (err: any) {
-      console.error('Customer search error:', err);
+      logger.error('Customer search error:', err);
 
       // Fallback to local database search if HubSpot fails
       try {

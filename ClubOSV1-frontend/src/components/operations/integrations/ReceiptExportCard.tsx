@@ -42,7 +42,7 @@ const ReceiptExportCard: React.FC = () => {
       const response = await http.get(`receipts/summary?period=${period}`);
       setSummary(response.data);
     } catch (err) {
-      console.error('Failed to fetch receipt summary:', err);
+      logger.error('Failed to fetch receipt summary:', err);
       setError('Failed to load summary');
     } finally {
       setLoading(false);
@@ -89,7 +89,7 @@ const ReceiptExportCard: React.FC = () => {
       // Refresh summary
       fetchSummary();
     } catch (err) {
-      console.error('Failed to export receipts:', err);
+      logger.error('Failed to export receipts:', err);
       setError('Failed to export receipts');
     } finally {
       setExporting(false);

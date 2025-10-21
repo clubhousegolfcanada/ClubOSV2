@@ -78,8 +78,8 @@ router.post('/webhook-debug', async (req: Request, res: Response) => {
     body: JSON.stringify(req.body, null, 2).substring(0, 3000)
   });
   
-  console.log('=== RAW WEBHOOK BODY ===');
-  console.log(JSON.stringify(req.body, null, 2));
+  logger.debug('=== RAW WEBHOOK BODY ===');
+  logger.debug(JSON.stringify(req.body, null, 2));
   
   res.status(200).json({ received: true, debug: true });
 });
@@ -226,14 +226,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
         allDataKeys: Object.keys(data || {}),
         timestamp: new Date().toISOString()
       });
-      console.log('📤 OPERATOR MESSAGE DELIVERED:', {
+      logger.debug('📤 OPERATOR MESSAGE DELIVERED:', {
         from: data.from,
         to: data.to,
         text: (data.body || data.text || '').substring(0, 50)
       });
     }
 
-    console.log('OPENPHONE WEBHOOK [v2]:', JSON.stringify({ type, data }, null, 2));
+    logger.debug('OPENPHONE WEBHOOK [v2]:', JSON.stringify({ type, data }, null, 2));
 
     // Handle different webhook types
     switch (type) {
@@ -1351,7 +1351,7 @@ router.get('/health', async (req: Request, res: Response) => {
 
 // Simple webhook test (no auth, just logs)
 router.post('/webhook-test', async (req: Request, res: Response) => {
-  console.log('WEBHOOK TEST RECEIVED:', JSON.stringify(req.body, null, 2));
+  logger.debug('WEBHOOK TEST RECEIVED:', JSON.stringify(req.body, null, 2));
   logger.info('Webhook test received', { body: req.body });
   
   // Extract and analyze the data
@@ -1373,7 +1373,7 @@ router.post('/webhook-test', async (req: Request, res: Response) => {
     phoneNumberId: messageData?.phoneNumberId
   };
   
-  console.log('WEBHOOK ANALYSIS:', JSON.stringify(analysis, null, 2));
+  logger.debug('WEBHOOK ANALYSIS:', JSON.stringify(analysis, null, 2));
   
   // Test storing a properly formatted message
   if (messageData?.from && messageData?.body) {

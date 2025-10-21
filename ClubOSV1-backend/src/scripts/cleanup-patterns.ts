@@ -1,7 +1,7 @@
 import { query as db } from '../utils/db';
 
 async function cleanupPatterns() {
-  console.log('Starting pattern cleanup...');
+  logger.debug('Starting pattern cleanup...');
   
   try {
     // First, let's see what patterns we have
@@ -25,7 +25,7 @@ async function cleanupPatterns() {
       ORDER BY created_at DESC
     `);
     
-    console.log(`Found ${allPatterns.rows.length} total patterns`);
+    logger.debug(`Found ${allPatterns.rows.length} total patterns`);
     
     // Categorize patterns
     const lowPerformers = allPatterns.rows.filter(p => 
@@ -56,23 +56,23 @@ async function cleanupPatterns() {
       }
     }
     
-    console.log('\n=== Pattern Analysis ===');
-    console.log(`Low performers (< 50% success): ${lowPerformers.length}`);
-    console.log(`Unused patterns (> 7 days old): ${unused.length}`);
-    console.log(`Duplicate patterns: ${duplicates.length}`);
+    logger.debug('\n=== Pattern Analysis ===');
+    logger.debug(`Low performers (< 50% success): ${lowPerformers.length}`);
+    logger.debug(`Unused patterns (> 7 days old): ${unused.length}`);
+    logger.debug(`Duplicate patterns: ${duplicates.length}`);
     
     // Mark patterns as deleted (soft delete)
     const toDelete = [...new Set([...lowPerformers, ...unused, ...duplicates])];
     
     if (toDelete.length > 0) {
-      console.log(`\nMarking ${toDelete.length} patterns as deleted...`);
+      logger.debug(`\nMarking ${toDelete.length} patterns as deleted...`);
       
       for (const pattern of toDelete) {
         await db(
           'UPDATE decision_patterns SET is_deleted = true, is_active = false WHERE id = $1',
           [pattern.id]
         );
-        console.log(`- Deleted: ${pattern.pattern_type} (${pattern.success_rate.toFixed(0)}% success rate)`);
+        logger.debug(`- Deleted: ${pattern.pattern_type} (${pattern.success_rate.toFixed(0)}% success rate)`);
       }
     }
     
@@ -93,15 +93,15 @@ async function cleanupPatterns() {
       ORDER BY success_rate DESC
     `);
     
-    console.log('\n=== Remaining Active Patterns ===');
+    logger.debug('\n=== Remaining Active Patterns ===');
     for (const p of activePatterns.rows) {
-      console.log(`✓ ${p.pattern_type}: ${p.success_rate.toFixed(0)}% success (${p.execution_count} uses)`);
+      logger.debug(`✓ ${p.pattern_type}: ${p.success_rate.toFixed(0)}% success (${p.execution_count} uses)`);
     }
     
-    console.log(`\nCleanup complete! ${activePatterns.rows.length} active patterns remain.`);
+    logger.debug(`\nCleanup complete! ${activePatterns.rows.length} active patterns remain.`);
     
   } catch (error) {
-    console.error('Error during cleanup:', error);
+    logger.error('Error during cleanup:', error);
     throw error;
   }
 }
@@ -111,7 +111,7 @@ if (require.main === module) {
   cleanupPatterns()
     .then(() => process.exit(0))
     .catch(error => {
-      console.error('Cleanup failed:', error);
+      logger.error('Cleanup failed:', error);
       process.exit(1);
     });
 }

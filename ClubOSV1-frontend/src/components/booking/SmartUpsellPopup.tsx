@@ -66,7 +66,7 @@ const SmartUpsellPopup: React.FC<SmartUpsellPopupProps> = ({
       await onAccept(offer.id);
       onClose();
     } catch (error) {
-      console.error('Failed to accept offer:', error);
+      logger.error('Failed to accept offer:', error);
       setIsAccepting(false);
     }
   };

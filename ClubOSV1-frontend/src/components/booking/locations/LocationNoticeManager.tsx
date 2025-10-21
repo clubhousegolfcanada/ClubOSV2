@@ -56,7 +56,7 @@ export const LocationNoticeManager: React.FC<LocationNoticeManagerProps> = ({
       setNotices(data);
     } catch (error) {
       showError('Failed to load notices');
-      console.error('Error loading notices:', error);
+      logger.error('Error loading notices:', error);
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export const LocationNoticeManager: React.FC<LocationNoticeManagerProps> = ({
       await loadNotices();
     } catch (error) {
       showError(editingNotice ? 'Failed to update notice' : 'Failed to create notice');
-      console.error('Error saving notice:', error);
+      logger.error('Error saving notice:', error);
     }
   };
 
@@ -98,7 +98,7 @@ export const LocationNoticeManager: React.FC<LocationNoticeManagerProps> = ({
       await loadNotices();
     } catch (error) {
       showError('Failed to delete notice');
-      console.error('Error deleting notice:', error);
+      logger.error('Error deleting notice:', error);
     }
   };
 
@@ -124,7 +124,7 @@ export const LocationNoticeManager: React.FC<LocationNoticeManagerProps> = ({
       await loadNotices();
     } catch (error) {
       showError('Failed to update notice status');
-      console.error('Error toggling notice:', error);
+      logger.error('Error toggling notice:', error);
     }
   };
 

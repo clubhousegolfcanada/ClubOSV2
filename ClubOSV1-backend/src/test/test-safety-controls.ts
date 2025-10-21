@@ -54,28 +54,28 @@ const testMessages = [
 ];
 
 async function testSafetyControls() {
-  console.log('\n🔒 Testing V3-PLS Safety Controls\n');
-  console.log('=' .repeat(60));
+  logger.debug('\n🔒 Testing V3-PLS Safety Controls\n');
+  logger.debug('=' .repeat(60));
   
   let passedTests = 0;
   let failedTests = 0;
   
   // First, show current settings
   const settings = await patternSafetyService.getSettings();
-  console.log('\n📋 Current Safety Settings:');
-  console.log(`  Blacklist Topics (${settings.blacklistTopics.length}):`, 
+  logger.debug('\n📋 Current Safety Settings:');
+  logger.debug(`  Blacklist Topics (${settings.blacklistTopics.length}):`, 
     settings.blacklistTopics.slice(0, 5).join(', '), '...');
-  console.log(`  Escalation Keywords (${settings.escalationKeywords.length}):`, 
+  logger.debug(`  Escalation Keywords (${settings.escalationKeywords.length}):`, 
     settings.escalationKeywords.slice(0, 5).join(', '), '...');
-  console.log(`  Approval Required: ${settings.requireApprovalForNew}`);
-  console.log(`  Min Examples: ${settings.minExamplesRequired}`);
-  console.log('\n' + '=' .repeat(60));
+  logger.debug(`  Approval Required: ${settings.requireApprovalForNew}`);
+  logger.debug(`  Min Examples: ${settings.minExamplesRequired}`);
+  logger.debug('\n' + '=' .repeat(60));
   
   // Test each message
   for (const test of testMessages) {
-    console.log(`\n📝 Test: ${test.description}`);
-    console.log(`   Message: "${test.message}"`);
-    console.log(`   Expected: ${test.expected}`);
+    logger.debug(`\n📝 Test: ${test.description}`);
+    logger.debug(`   Message: "${test.message}"`);
+    logger.debug(`   Expected: ${test.expected}`);
     
     try {
       // Test with patternSafetyService directly
@@ -86,17 +86,17 @@ async function testSafetyControls() {
         actualResult = safetyResult.alertType || 'blocked';
       }
       
-      console.log(`   Actual: ${actualResult}`);
+      logger.debug(`   Actual: ${actualResult}`);
       
       if (actualResult === test.expected) {
-        console.log(`   ✅ PASSED`);
+        logger.debug(`   ✅ PASSED`);
         if (safetyResult.triggeredKeywords) {
-          console.log(`   Triggered by: ${safetyResult.triggeredKeywords.join(', ')}`);
+          logger.debug(`   Triggered by: ${safetyResult.triggeredKeywords.join(', ')}`);
         }
         passedTests++;
       } else {
-        console.log(`   ❌ FAILED`);
-        console.log(`   Safety Result:`, safetyResult);
+        logger.debug(`   ❌ FAILED`);
+        logger.debug(`   Safety Result:`, safetyResult);
         failedTests++;
       }
       
@@ -108,24 +108,24 @@ async function testSafetyControls() {
           'test-conversation-' + Date.now()
         );
         
-        console.log(`   AI Service handled: ${automationResult.handled}`);
-        console.log(`   AI Service type: ${automationResult.assistantType}`);
+        logger.debug(`   AI Service handled: ${automationResult.handled}`);
+        logger.debug(`   AI Service type: ${automationResult.assistantType}`);
         
         // Should not auto-handle blacklisted/escalated messages
         if (automationResult.handled) {
-          console.log(`   ⚠️  WARNING: AI Service auto-handled a blocked message!`);
+          logger.debug(`   ⚠️  WARNING: AI Service auto-handled a blocked message!`);
         }
       }
       
     } catch (error) {
-      console.log(`   ❌ ERROR:`, error);
+      logger.debug(`   ❌ ERROR:`, error);
       failedTests++;
     }
   }
   
   // Check escalation alerts were created
-  console.log('\n' + '=' .repeat(60));
-  console.log('\n🚨 Checking Escalation Alerts:');
+  logger.debug('\n' + '=' .repeat(60));
+  logger.debug('\n🚨 Checking Escalation Alerts:');
   
   const alerts = await db.query(`
     SELECT id, trigger_keyword, alert_type, created_at 
@@ -135,32 +135,32 @@ async function testSafetyControls() {
     LIMIT 5
   `);
   
-  console.log(`  Found ${alerts.rows.length} recent alerts`);
+  logger.debug(`  Found ${alerts.rows.length} recent alerts`);
   alerts.rows.forEach(alert => {
-    console.log(`  - Alert #${alert.id}: ${alert.alert_type} - Keywords: ${alert.trigger_keyword}`);
+    logger.debug(`  - Alert #${alert.id}: ${alert.alert_type} - Keywords: ${alert.trigger_keyword}`);
   });
   
   // Summary
-  console.log('\n' + '=' .repeat(60));
-  console.log('\n📊 Test Summary:');
-  console.log(`  Total Tests: ${passedTests + failedTests}`);
-  console.log(`  ✅ Passed: ${passedTests}`);
-  console.log(`  ❌ Failed: ${failedTests}`);
-  console.log(`  Success Rate: ${Math.round(passedTests / (passedTests + failedTests) * 100)}%`);
+  logger.debug('\n' + '=' .repeat(60));
+  logger.debug('\n📊 Test Summary:');
+  logger.debug(`  Total Tests: ${passedTests + failedTests}`);
+  logger.debug(`  ✅ Passed: ${passedTests}`);
+  logger.debug(`  ❌ Failed: ${failedTests}`);
+  logger.debug(`  Success Rate: ${Math.round(passedTests / (passedTests + failedTests) * 100)}%`);
   
   if (failedTests === 0) {
-    console.log('\n🎉 All safety controls are working correctly!');
+    logger.debug('\n🎉 All safety controls are working correctly!');
   } else {
-    console.log('\n⚠️  Some safety controls are not working as expected.');
-    console.log('Check the database configuration and service integration.');
+    logger.debug('\n⚠️  Some safety controls are not working as expected.');
+    logger.debug('Check the database configuration and service integration.');
   }
   
-  console.log('\n' + '=' .repeat(60));
+  logger.debug('\n' + '=' .repeat(60));
   process.exit(failedTests === 0 ? 0 : 1);
 }
 
 // Run the test
 testSafetyControls().catch(error => {
-  console.error('Test failed:', error);
+  logger.error('Test failed:', error);
   process.exit(1);
 });

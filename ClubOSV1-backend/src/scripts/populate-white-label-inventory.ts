@@ -87,10 +87,10 @@ async function populateFeatures() {
         [feature.name, feature.category, feature.is_transferable, feature.notes]
       );
     } catch (error) {
-      console.error(`Error inserting feature ${feature.name}:`, error);
+      logger.error(`Error inserting feature ${feature.name}:`, error);
     }
   }
-  console.log(`Populated ${features.length} features`);
+  logger.debug(`Populated ${features.length} features`);
 }
 
 async function populateBranding() {
@@ -122,10 +122,10 @@ async function populateBranding() {
         [item.element_type, item.current_value, item.is_customizable, item.notes]
       );
     } catch (error) {
-      console.error(`Error inserting branding ${item.element_type}:`, error);
+      logger.error(`Error inserting branding ${item.element_type}:`, error);
     }
   }
-  console.log(`Populated ${branding.length} branding items`);
+  logger.debug(`Populated ${branding.length} branding items`);
 }
 
 async function populateSOPs() {
@@ -165,10 +165,10 @@ async function populateSOPs() {
         [sop.name, sop.category, sop.is_industry_specific, sop.notes]
       );
     } catch (error) {
-      console.error(`Error inserting SOP ${sop.name}:`, error);
+      logger.error(`Error inserting SOP ${sop.name}:`, error);
     }
   }
-  console.log(`Populated ${sops.length} SOPs`);
+  logger.debug(`Populated ${sops.length} SOPs`);
 }
 
 async function populateIntegrations() {
@@ -205,14 +205,14 @@ async function populateIntegrations() {
         [integration.name, integration.type, integration.is_required, integration.notes]
       );
     } catch (error) {
-      console.error(`Error inserting integration ${integration.name}:`, error);
+      logger.error(`Error inserting integration ${integration.name}:`, error);
     }
   }
-  console.log(`Populated ${integrations.length} integrations`);
+  logger.debug(`Populated ${integrations.length} integrations`);
 }
 
 async function populateInventory() {
-  console.log('Starting White Label inventory population...');
+  logger.debug('Starting White Label inventory population...');
   
   try {
     await populateFeatures();
@@ -220,7 +220,7 @@ async function populateInventory() {
     await populateSOPs();
     await populateIntegrations();
     
-    console.log('White Label inventory population completed successfully!');
+    logger.debug('White Label inventory population completed successfully!');
     
     // Show summary
     const [features, branding, sops, integrations] = await Promise.all([
@@ -230,14 +230,14 @@ async function populateInventory() {
       db('SELECT COUNT(*) as count, SUM(CASE WHEN is_required THEN 1 ELSE 0 END) as required FROM integration_inventory')
     ]);
     
-    console.log('\n=== White Label Inventory Summary ===');
-    console.log(`Features: ${features.rows[0].count} total (${features.rows[0].transferable} transferable)`);
-    console.log(`Branding: ${branding.rows[0].count} total (${branding.rows[0].customizable} customizable)`);
-    console.log(`SOPs: ${sops.rows[0].count} total (${sops.rows[0].specific} golf-specific)`);
-    console.log(`Integrations: ${integrations.rows[0].count} total (${integrations.rows[0].required} required)`);
+    logger.debug('\n=== White Label Inventory Summary ===');
+    logger.debug(`Features: ${features.rows[0].count} total (${features.rows[0].transferable} transferable)`);
+    logger.debug(`Branding: ${branding.rows[0].count} total (${branding.rows[0].customizable} customizable)`);
+    logger.debug(`SOPs: ${sops.rows[0].count} total (${sops.rows[0].specific} golf-specific)`);
+    logger.debug(`Integrations: ${integrations.rows[0].count} total (${integrations.rows[0].required} required)`);
     
   } catch (error) {
-    console.error('Error populating inventory:', error);
+    logger.error('Error populating inventory:', error);
     process.exit(1);
   }
 }

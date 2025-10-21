@@ -107,7 +107,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   // Load spaces when location changes or locations are first loaded
   useEffect(() => {
     if (selectedLocationId && locations.length > 0) {
-      console.log('[BookingCalendar] Loading spaces for location:', selectedLocationId);
+      logger.debug('[BookingCalendar] Loading spaces for location:', selectedLocationId);
       loadSpaces();
     }
   }, [selectedLocationId, locations]);
@@ -115,7 +115,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      console.log('[BookingCalendar] Starting initial data load');
+      logger.debug('[BookingCalendar] Starting initial data load');
 
       // Load configuration and tiers
       const [configData, tiersData, locationsData] = await Promise.all([
@@ -129,24 +129,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       const loadedLocations = locationsData.data.data || [];
       setLocations(loadedLocations);
 
-      console.log('[BookingCalendar] Loaded locations:', loadedLocations.map((l: any) => ({ id: l.id, name: l.name })));
+      logger.debug('[BookingCalendar] Loaded locations:', loadedLocations.map((l: any) => ({ id: l.id, name: l.name })));
 
       // Set first location as default if no location is selected
       let locationToLoad: string = selectedLocationId || propLocationId || '';
       if (!locationToLoad && loadedLocations.length > 0) {
         locationToLoad = loadedLocations[0].id;
-        console.log('[BookingCalendar] Setting default location:', locationToLoad);
+        logger.debug('[BookingCalendar] Setting default location:', locationToLoad);
         setSelectedLocationId(locationToLoad);
       }
 
       // Load spaces for the selected location immediately
       if (locationToLoad) {
-        console.log('[BookingCalendar] Loading spaces for initial location:', locationToLoad);
+        logger.debug('[BookingCalendar] Loading spaces for initial location:', locationToLoad);
         const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: locationToLoad }
         });
         const loadedSpaces = spacesData.data.data || [];
-        console.log('[BookingCalendar] Loaded spaces:', loadedSpaces.map((s: any) => ({ id: s.id, name: s.name })));
+        logger.debug('[BookingCalendar] Loaded spaces:', loadedSpaces.map((s: any) => ({ id: s.id, name: s.name })));
         setSpaces(loadedSpaces);
 
         // Also load bookings for the initial view
@@ -184,12 +184,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const loadSpaces = async () => {
     try {
       if (selectedLocationId) {
-        console.log('[BookingCalendar] loadSpaces called for location:', selectedLocationId);
+        logger.debug('[BookingCalendar] loadSpaces called for location:', selectedLocationId);
         const spacesData = await http.get('/bookings/spaces', {
           params: { locationId: selectedLocationId }
         });
         const loadedSpaces = spacesData.data.data || [];
-        console.log('[BookingCalendar] Spaces loaded:', loadedSpaces.length, 'spaces', loadedSpaces.map((s: any) => s.name));
+        logger.debug('[BookingCalendar] Spaces loaded:', loadedSpaces.length, 'spaces', loadedSpaces.map((s: any) => s.name));
         setSpaces(loadedSpaces);
       }
     } catch (error) {
@@ -200,7 +200,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const loadBookings = async () => {
     try {
-      console.log('[BookingCalendar] Loading bookings for date:', format(selectedDate, 'yyyy-MM-dd'), 'location:', selectedLocationId);
+      logger.debug('[BookingCalendar] Loading bookings for date:', format(selectedDate, 'yyyy-MM-dd'), 'location:', selectedLocationId);
       const dates = viewMode === 'week'
         ? getWeekDates(selectedDate)
         : [selectedDate];
@@ -216,7 +216,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       const results = await Promise.all(bookingPromises);
       const allBookings = results.flatMap(r => r.data.data || []);
-      console.log('[BookingCalendar] Loaded bookings:', allBookings.length, 'bookings');
+      logger.debug('[BookingCalendar] Loaded bookings:', allBookings.length, 'bookings');
 
       // Add tier colors to bookings
       const bookingsWithColors = allBookings.map((booking: any) => ({

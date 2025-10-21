@@ -60,7 +60,7 @@ class NinjaOneService {
       
       return this.accessToken;
     } catch (error) {
-      console.error('NinjaOne authentication failed:', error);
+      logger.error('NinjaOne authentication failed:', error);
       throw new AppError('Failed to authenticate with NinjaOne', 500);
     }
   }
@@ -86,7 +86,7 @@ class NinjaOneService {
 
       return response.data;
     } catch (error) {
-      console.error('Script execution failed:', error);
+      logger.error('Script execution failed:', error);
       throw new AppError('Failed to execute remote action', 500);
     }
   }
@@ -106,7 +106,7 @@ class NinjaOneService {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to get job status:', error);
+      logger.error('Failed to get job status:', error);
       throw new AppError('Failed to get job status', 500);
     }
   }
@@ -126,7 +126,7 @@ class NinjaOneService {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to get devices:', error);
+      logger.error('Failed to get devices:', error);
       throw new AppError('Failed to get devices', 500);
     }
   }
@@ -146,7 +146,7 @@ class NinjaOneService {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to get device status:', error);
+      logger.error('Failed to get device status:', error);
       throw new AppError('Failed to get device status', 500);
     }
   }
