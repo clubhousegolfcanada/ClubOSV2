@@ -112,7 +112,7 @@ router.post('/save',
         // Check if pattern exists
         const existingPattern = await db.query(`
           SELECT id, confidence_score, execution_count
-          FROM v3_pls_patterns
+          FROM decision_patterns
           WHERE pattern_signature = $1
         `, [patternSignature]);
 
@@ -122,7 +122,7 @@ router.post('/save',
           const newConfidence = Math.min(pattern.confidence_score + 0.15, 1.0);
 
           await db.query(`
-            UPDATE v3_pls_patterns
+            UPDATE decision_patterns
             SET
               response_template = $1,
               confidence_score = $2,
@@ -147,7 +147,7 @@ router.post('/save',
         } else {
           // Create new pattern from correction
           const insertResult = await db.query(`
-            INSERT INTO v3_pls_patterns (
+            INSERT INTO decision_patterns (
               pattern_type, pattern_signature, trigger_text,
               response_template, confidence_score, is_active,
               auto_executable, created_by, metadata
