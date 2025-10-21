@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import logger from '@/services/logger';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import BookingCalendar from '@/components/booking/calendar/BookingCalendar';

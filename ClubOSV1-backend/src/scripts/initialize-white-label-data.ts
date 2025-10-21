@@ -1,4 +1,5 @@
 import { query as db } from '../utils/db';
+import { logger } from '../utils/logger';
 import { populateInventory } from './populate-white-label-inventory';
 
 export async function initializeWhiteLabelData() {

@@ -1,4 +1,5 @@
 import React from 'react';
+import logger from '@/services/logger';
 import { Clock, TrendingUp } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { TimeValidationService, formatDuration } from '@/services/booking/timeValidationService';

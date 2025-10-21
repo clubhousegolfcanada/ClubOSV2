@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '../utils/logger';
 import dotenv from 'dotenv';
 import { db } from '../utils/database';
 

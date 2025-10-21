@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { logger } from '../utils/logger';
 import { AppError } from '../middleware/errorHandler';
 
 interface NinjaOneToken {

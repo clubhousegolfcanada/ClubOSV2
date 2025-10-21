@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
+import logger from '@/services/logger';
 
 interface Booking {
   id: string;

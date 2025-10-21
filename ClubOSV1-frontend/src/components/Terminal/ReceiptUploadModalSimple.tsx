@@ -19,6 +19,7 @@ import { useForm } from 'react-hook-form';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
 import { ResponseDisplaySimple } from '../ResponseDisplaySimple';
+import logger from '@/services/logger';
 
 interface ReceiptUploadModalProps {
   isOpen: boolean;

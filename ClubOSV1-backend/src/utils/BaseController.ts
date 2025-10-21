@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from './logger';
 import { ApiResponse } from './ApiResponse';
 import { asyncHandler } from './asyncHandler';
 

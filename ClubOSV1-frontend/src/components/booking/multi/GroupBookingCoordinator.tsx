@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Users, UserPlus, Mail, Shuffle, ChevronDown, ChevronUp } from 'lucide-react';
 import type { GroupBookingCoordinatorProps, Space } from '@/types/booking';
 

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import { logger } from './logger';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { Application } from 'express';
 

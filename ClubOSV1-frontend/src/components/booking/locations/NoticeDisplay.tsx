@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { AlertCircle, Info, AlertTriangle, X, Clock } from 'lucide-react';
 import { locationNoticeService } from '../../../services/booking/locationNoticeService';
 

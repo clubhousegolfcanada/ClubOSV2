@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Eye, EyeOff, MapPin, Filter, Check } from 'lucide-react';
 import { locationNoticeService } from '../../../services/booking/locationNoticeService';
 import { useNotifications } from '../../../hooks/useNotifications';

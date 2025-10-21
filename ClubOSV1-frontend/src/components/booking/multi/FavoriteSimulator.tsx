@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Star, Zap, Clock, TrendingUp } from 'lucide-react';
 import type { FavoriteSimulatorProps, Space } from '@/types/booking';
 import { http } from '@/api/http';

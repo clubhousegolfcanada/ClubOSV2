@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Check, Square, CheckSquare, Users, AlertCircle } from 'lucide-react';
 import type {
   MultiSimulatorSelectorProps,

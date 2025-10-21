@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Clock, TrendingUp, X, DollarSign } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { formatDuration } from '@/utils/booking/timeIncrementLogic';

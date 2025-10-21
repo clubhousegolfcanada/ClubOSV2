@@ -1,4 +1,5 @@
 #!/usr/bin/env npx tsx
+import { logger } from '../utils/logger';
 /**
  * Fix Mike's conversation by adding missing messages
  */

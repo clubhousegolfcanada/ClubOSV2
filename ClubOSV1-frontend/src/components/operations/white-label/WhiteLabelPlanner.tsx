@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Package, Palette, FileText, Link, Settings, Plus, Save, Download, Trash2, Check, X, Filter, AlertCircle } from 'lucide-react';
 import { http } from '@/api/http';
 import { SimpleThemeConfig } from './SimpleThemeConfig';

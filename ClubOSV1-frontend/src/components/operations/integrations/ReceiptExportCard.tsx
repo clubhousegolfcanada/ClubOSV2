@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/services/logger';
 import { Download, FileText, DollarSign, Calendar, AlertCircle } from 'lucide-react';
 import { http } from '@/api/http';
 

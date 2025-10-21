@@ -1,4 +1,5 @@
 import { query as db } from '../utils/db';
+import { logger } from '../utils/logger';
 
 interface FeatureItem {
   name: string;

@@ -1,4 +1,5 @@
 import { http } from '@/api/http';
+import logger from '@/services/logger';
 
 export interface BookingConfig {
   // Time Settings

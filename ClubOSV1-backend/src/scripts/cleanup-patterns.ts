@@ -1,4 +1,5 @@
 import { query as db } from '../utils/db';
+import { logger } from '../utils/logger';
 
 async function cleanupPatterns() {
   logger.debug('Starting pattern cleanup...');
