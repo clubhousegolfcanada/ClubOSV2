@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.21.96] - 2025-10-21
+
+### Fixed
+- **Code Quality Audit**: Fixed issues from crashed Claude instances
+  - Removed unnecessary type assertions in receiptQueryService.ts
+  - Fixed duplicate migration number conflict (237 → 334 for response_tracking)
+  - Added Jest type definitions to fix test suite compilation
+  - Created setupTests.ts for @testing-library/jest-dom matchers
+  - Fixed Button component import in test files (named → default)
+  - Result: Clean TypeScript compilation with zero errors
+
+### Verified
+- **Receipt Personal Card Feature**: Confirmed fully implemented
+  - Frontend checkbox properly connected to state
+  - Backend correctly receives and stores isPersonalCard flag
+  - Database migration 325 already applied
+  - Feature working end-to-end as intended
+
 ## [1.21.95] - 2025-10-21
 
 ### Added

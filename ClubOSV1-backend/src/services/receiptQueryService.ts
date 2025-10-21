@@ -211,7 +211,7 @@ export class ReceiptQueryService {
       summary: {
         count: receipts.length,
         totalAmount: receipts.reduce((sum, r) => sum + parseFloat(r.amount), 0),
-        vendors: [...new Set(receipts.map(r => r.vendor as string))].slice(0, 5)
+        vendors: [...new Set(receipts.map(r => r.vendor))].slice(0, 5)
       },
       message
     };
@@ -323,7 +323,7 @@ export class ReceiptQueryService {
       success: true,
       message: `Ready to ${action} receipt ${receiptId}. Please confirm this action.`,
       actions: {
-        type: action as any,
+        type: action as 'edit' | 'delete' | 'reconcile' | 'view',
         receiptId
       }
     };
