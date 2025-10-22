@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.12] - 2025-10-22
+
+### 🚨 Critical Fix
+- **Booking System Database Schema**: Fixed missing space_ids column causing 500 errors
+  - Added migration 336 to add missing space_ids array column to bookings table
+  - Handles migration from legacy single space_id or simulator_id columns if they exist
+  - Added proper indexes for performance
+  - Result: Booking calendar now loads without errors
+
 ## [1.22.11] - 2025-10-22
 
 ### 🔧 Fixed

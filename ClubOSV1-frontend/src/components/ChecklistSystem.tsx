@@ -47,14 +47,17 @@ interface SupplyItem {
 }
 
 
-export const ChecklistSystem: React.FC = () => {
+interface ChecklistSystemProps {
+  activeTab?: 'checklist' | 'tracker';
+}
+
+export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'checklist' }) => {
   const [activeCategory, setActiveCategory] = useState<'cleaning' | 'tech'>('cleaning');
   const [activeType, setActiveType] = useState<'daily' | 'weekly' | 'quarterly'>('daily');
   const [selectedLocation, setSelectedLocation] = useState('Bedford');
   const [currentTemplate, setCurrentTemplate] = useState<ChecklistTemplate | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'tracker'>('checklist');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [trackerLocation, setTrackerLocation] = useState<string>('all');
