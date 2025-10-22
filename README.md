@@ -1,4 +1,4 @@
-# ClubOS v1.23.6 - Flexible Facility Management System
+# ClubOS v1.23.7 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,9 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.23.6**
-- **🎯 UI Optimization** - Maximized booking window space and simplified navigation
-- **🔧 Google Sign-In Fix** - Customers can sign up/login with any Google account (v1.23.5)
+**Current Version: v1.23.7**
+- **🎨 Tickets Page Enhancement** - Filters moved to sub-nav, clean text-only design
+- **🧭 Navigation Restored** - Re-added Bookings and Commands to main nav
+- **🎯 Previous: UI Optimization** - Maximized booking window space (v1.23.6)
+- **🔧 Previous: Google Sign-In Fix** - Customers can sign up/login with any Google account (v1.23.5)
 - **🎨 Previous: UI Enhancement** - Moved booking action buttons into sub-nav bar (v1.23.4)
 - **🔄 Previous: Booking Default** - Page defaults to Skedda iframe for stability (v1.23.3)
 - **🚀 Performance** - 500+ customer optimization with Redis caching (v1.23.0)

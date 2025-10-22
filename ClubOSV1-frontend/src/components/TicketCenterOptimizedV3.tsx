@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Check, Clock, AlertCircle, MessageSquare, X, ChevronRight, ChevronDown, ChevronUp, MapPin, Archive, Filter, Camera, Layers, Search } from 'lucide-react';
+import { Plus, Check, Clock, AlertCircle, MessageSquare, X, ChevronRight, ChevronDown, Archive, Filter, Camera, Layers, MapPin } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
@@ -60,18 +60,20 @@ const ALL_LOCATIONS = Object.values(LOCATION_CONFIG).flat();
 
 interface TicketCenterOptimizedV3Props {
   activeTab?: 'active' | 'resolved' | 'archived';
+  selectedLocation?: string;
+  categoryFilter?: TicketCategory | 'all';
 }
 
-const TicketCenterOptimizedV3 = ({ activeTab = 'active' }: TicketCenterOptimizedV3Props) => {
+const TicketCenterOptimizedV3 = ({
+  activeTab = 'active',
+  selectedLocation = 'all',
+  categoryFilter = 'all'
+}: TicketCenterOptimizedV3Props) => {
   const router = useRouter();
   const { notify } = useNotifications();
   const { user } = useAuthState();
-  const [selectedLocation, setSelectedLocation] = useState<string>('all');
-  const [locationSearch, setLocationSearch] = useState('');
-  const [showLocationFilter, setShowLocationFilter] = useState(false);
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<TicketCategory | 'all'>('all');
   const [groupByLocation, setGroupByLocation] = useState(false);
   const [groupByProvince, setGroupByProvince] = useState(false);
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
@@ -161,13 +163,6 @@ const TicketCenterOptimizedV3 = ({ activeTab = 'active' }: TicketCenterOptimized
 
     return filtered;
   }, [tickets, activeTab, statusFilter]);
-
-  // Filter locations by search
-  const filteredLocations = useMemo(() => {
-    if (!locationSearch) return ALL_LOCATIONS;
-    const search = locationSearch.toLowerCase();
-    return ALL_LOCATIONS.filter(loc => loc.toLowerCase().includes(search));
-  }, [locationSearch]);
 
   // Count tickets by location
   const locationCounts = useMemo(() => {
@@ -459,7 +454,7 @@ const TicketCenterOptimizedV3 = ({ activeTab = 'active' }: TicketCenterOptimized
     <div className="space-y-4">
       {/* Main Card Container */}
       <div className="card">
-        {/* Header with action buttons */}
+        {/* Header with grouping buttons */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <button
@@ -485,131 +480,6 @@ const TicketCenterOptimizedV3 = ({ activeTab = 'active' }: TicketCenterOptimized
               title="Group by Location"
             >
               <Layers className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => router.push('/?ticketMode=true')}
-              className="px-3 py-2.5 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 transition-all touch-manipulation flex items-center gap-2"
-              style={{ minHeight: '40px' }}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Filters Section */}
-        <div className="space-y-3 mb-4">
-          {/* Location Filter - Grid layout with search */}
-          <div className="border border-[var(--border-secondary)] rounded-lg">
-            <button
-              onClick={() => setShowLocationFilter(!showLocationFilter)}
-              className="w-full flex items-center justify-between p-3 hover:bg-[var(--bg-tertiary)] transition-colors rounded-lg"
-            >
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[var(--text-muted)]" />
-                <span className="text-sm font-medium">
-                  {selectedLocation === 'all' ? 'All Locations' : selectedLocation}
-                </span>
-                {selectedLocation !== 'all' && (
-                  <span className="text-xs bg-[var(--accent)] text-white px-2 py-0.5 rounded-full">
-                    {locationCounts[selectedLocation]}
-                  </span>
-                )}
-              </div>
-              {showLocationFilter ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-
-            {/* Location Grid */}
-            {showLocationFilter && (
-              <div className="p-3 border-t border-[var(--border-secondary)]">
-                {/* Search input */}
-                <div className="mb-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                    <input
-                      type="text"
-                      value={locationSearch}
-                      onChange={(e) => setLocationSearch(e.target.value)}
-                      placeholder="Search locations..."
-                      className="w-full pl-10 pr-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border-secondary)] rounded-lg focus:outline-none focus:border-[var(--accent)]"
-                    />
-                  </div>
-                </div>
-
-                {/* Location grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedLocation('all');
-                      setShowLocationFilter(false);
-                    }}
-                    className={`p-3 rounded-lg text-sm transition-colors touch-manipulation ${
-                      selectedLocation === 'all'
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]'
-                    }`}
-                    style={{ minHeight: '48px' }}
-                  >
-                    <span className="block">All</span>
-                    <span className="text-xs opacity-75">({locationCounts.all})</span>
-                  </button>
-                  {filteredLocations.map(location => (
-                    <button
-                      key={location}
-                      onClick={() => {
-                        setSelectedLocation(location);
-                        setShowLocationFilter(false);
-                      }}
-                      className={`p-3 rounded-lg text-sm transition-colors touch-manipulation ${
-                        selectedLocation === location
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]'
-                      }`}
-                      style={{ minHeight: '48px' }}
-                    >
-                      <span className="block">{location}</span>
-                      <span className="text-xs opacity-75">({locationCounts[location] || 0})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Category Filter - Simple toggle buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCategoryFilter('all')}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                categoryFilter === 'all'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-              }`}
-              style={{ minHeight: '44px' }}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setCategoryFilter('facilities')}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                categoryFilter === 'facilities'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-              }`}
-              style={{ minHeight: '44px' }}
-            >
-              Facilities
-            </button>
-            <button
-              onClick={() => setCategoryFilter('tech')}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                categoryFilter === 'tech'
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-              }`}
-              style={{ minHeight: '44px' }}
-            >
-              Tech
             </button>
           </div>
         </div>

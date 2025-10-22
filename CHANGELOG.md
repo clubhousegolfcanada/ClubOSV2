@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.7] - 2025-10-22
+
+### 🎨 UI Improvements
+- **Tickets Page Enhancement**: Moved filters to sub-navigation bar for consistency
+  - Location dropdown, category filters (All/Facilities/Tech) now in sub-nav
+  - New Ticket button positioned next to status tabs
+  - Removed duplicate filter UI from TicketCenterOptimizedV3 component
+  - Clean text-only filters without icons for professional appearance
+  - Props passed down from page level for single source of truth
+- **Navigation Restoration**: Re-added Bookings and Commands to main navigation
+  - Bookings restored for admin/operator roles
+  - Commands restored for admin/operator/support roles
+  - Customer navigation includes Bookings link
+  - Previous removal was misunderstanding - only mobile icons to be removed later
+
 ## [1.23.6] - 2025-10-22
 
 ### 🎯 UI Optimization & Consistency
