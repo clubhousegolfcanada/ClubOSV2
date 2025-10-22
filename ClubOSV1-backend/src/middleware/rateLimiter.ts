@@ -114,10 +114,10 @@ export const llmRateLimiter = rateLimit({
 
 // Progressive rate limiting for signup (multiple layers of protection)
 export const signupRateLimiters = [
-  // Layer 1: Immediate protection (5 attempts per 5 minutes)
+  // Layer 1: Immediate protection (25 attempts per 5 minutes - more lenient for testing)
   rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 5,
+    max: 25,
     skipSuccessfulRequests: true,
     message: 'Too many signup attempts. Please wait 5 minutes.',
     standardHeaders: true,
@@ -126,10 +126,10 @@ export const signupRateLimiters = [
     validate: false,
   }),
 
-  // Layer 2: Medium-term protection (20 attempts per hour)
+  // Layer 2: Medium-term protection (50 attempts per hour - adjusted proportionally)
   rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 20,
+    max: 50,
     skipSuccessfulRequests: true,
     message: 'Too many signup attempts. Please wait an hour.',
     standardHeaders: true,
@@ -138,10 +138,10 @@ export const signupRateLimiters = [
     validate: false,
   }),
 
-  // Layer 3: Long-term protection (50 attempts per day)
+  // Layer 3: Long-term protection (100 attempts per day)
   rateLimit({
     windowMs: 24 * 60 * 60 * 1000, // 24 hours
-    max: 50,
+    max: 100,
     skipSuccessfulRequests: true,
     message: 'Too many signup attempts. Please try again tomorrow.',
     standardHeaders: true,

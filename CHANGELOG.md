@@ -16,10 +16,10 @@ All notable changes to ClubOS will be documented in this file.
   - 24-hour token expiration with resend capability
   - Database migration adds verification tracking
   - Graceful fallback if email service not configured
-- **Progressive Rate Limiting**: Multi-layer abuse protection
-  - Layer 1: 5 attempts per 5 minutes (immediate)
-  - Layer 2: 20 attempts per hour (medium-term)
-  - Layer 3: 50 attempts per day (long-term)
+- **Progressive Rate Limiting**: Multi-layer abuse protection (adjusted for better UX)
+  - Layer 1: 25 attempts per 5 minutes (immediate) - increased from 5
+  - Layer 2: 50 attempts per hour (medium-term) - increased from 20
+  - Layer 3: 100 attempts per day (long-term) - increased from 50
   - Automatic Sentry alerts for excessive attempts
   - Only counts failed attempts, not successful signups
 
