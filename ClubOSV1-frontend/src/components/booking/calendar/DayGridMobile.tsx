@@ -127,8 +127,8 @@ const DayGridMobile: React.FC<DayGridMobileProps> = ({
 
     const rect = gridRef.current.getBoundingClientRect();
     const relativeY = clientY - rect.top;
-    const slotHeight = 32; // Height of each slot
-    const headerHeight = 44; // Height of header
+    const slotHeight = 24; // Reduced height for modern look
+    const headerHeight = 40; // Compact header
 
     const slotIndex = Math.floor((relativeY - headerHeight) / slotHeight);
     const clampedIndex = Math.max(0, Math.min(slotIndex, timeSlots.length - 1));
@@ -220,14 +220,14 @@ const DayGridMobile: React.FC<DayGridMobileProps> = ({
               key={space.id}
               onClick={() => setSelectedSpace(space)}
               className={`
-                flex-shrink-0 px-4 py-2 border-r border-[var(--border-primary)] transition-all touch-manipulation
-                ${selectedSpace?.id === space.id ? 'bg-[var(--accent)] text-white' : 'hover:bg-[var(--bg-hover)]'}
+                flex-shrink-0 px-3 py-1.5 border-r-[0.5px] border-[var(--border-primary)] transition-all duration-150 touch-manipulation
+                ${selectedSpace?.id === space.id ? 'bg-[var(--accent)] text-white' : 'hover:bg-[var(--accent)]/[0.04]'}
               `}
-              style={{ minWidth: '100px', minHeight: '44px' }}
+              style={{ minWidth: '90px', minHeight: '40px' }}
             >
-              <div className="text-sm font-medium">{space.name}</div>
-              <div className="text-xs opacity-75">
-                {availableSlots} slots free
+              <div className="text-xs font-medium">{space.name}</div>
+              <div className="text-[10px] opacity-75">
+                {availableSlots} free
               </div>
             </button>
           );
@@ -253,12 +253,12 @@ const DayGridMobile: React.FC<DayGridMobileProps> = ({
                 <div
                   key={slotIndex}
                   className={`
-                    flex items-center border-b border-[var(--border-primary)] transition-all
-                    ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                    ${isSelected ? 'bg-[var(--accent)]/10 border-l-4 border-l-[var(--accent)]' : ''}
-                    ${!isSelected && isAvailable ? 'hover:bg-[var(--bg-hover)]' : ''}
+                    flex items-center border-b-[0.5px] border-[var(--border-primary)] transition-all duration-150
+                    ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
+                    ${isSelected ? 'bg-[var(--accent)]/[0.08] border-l-2 border-l-[var(--accent)]' : ''}
+                    ${!isSelected && isAvailable ? 'hover:bg-[var(--accent)]/[0.04]' : ''}
                   `}
-                  style={{ minHeight: '32px' }}
+                  style={{ height: '24px' }}
                   onTouchStart={(e) => {
                     e.preventDefault();
                     if (isAvailable) {
@@ -273,28 +273,28 @@ const DayGridMobile: React.FC<DayGridMobileProps> = ({
                     }
                   }}
                 >
-                  {/* Time label */}
-                  <div className="w-20 px-2 text-xs text-[var(--text-secondary)]">
-                    {format(slot, 'h:mm a')}
+                  {/* Time label - compact */}
+                  <div className="w-14 px-1 text-[10px] font-mono text-[var(--text-secondary)]">
+                    {format(slot, slotIndex % 2 === 0 ? 'h:mma' : 'h:mm').toLowerCase()}
                   </div>
 
-                  {/* Availability indicator */}
-                  <div className="flex-1 px-2">
+                  {/* Availability indicator - minimal */}
+                  <div className="flex-1 px-1">
                     {booking ? (
-                      <div className="text-xs text-[var(--text-muted)]">
-                        Booked: {booking.customerName || 'Reserved'}
+                      <div className="text-[10px] text-[var(--text-muted)] truncate">
+                        {booking.customerName?.split(' ')[0] || '•••'}
                       </div>
                     ) : isAvailable ? (
-                      <div className="text-xs text-[var(--status-success)]">Available</div>
+                      <div className="text-[10px] text-[var(--accent)]/60">—</div>
                     ) : (
-                      <div className="text-xs text-[var(--text-muted)]">Unavailable</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">×</div>
                     )}
                   </div>
 
-                  {/* Selection indicator */}
-                  {isSelected && (
-                    <div className="px-2">
-                      <div className="w-2 h-2 bg-[var(--accent)] rounded-full"></div>
+                  {/* Live time display on selection */}
+                  {isSelected && selectionStart === slotIndex && (
+                    <div className="absolute right-2 text-[9px] font-medium text-[var(--accent)]">
+                      {format(slot, 'h:mm a')}
                     </div>
                   )}
                 </div>
@@ -304,9 +304,9 @@ const DayGridMobile: React.FC<DayGridMobileProps> = ({
         </div>
       )}
 
-      {/* Selection summary panel */}
+      {/* Selection summary panel with glass morphism */}
       {selectionStart !== null && !isDragging && selectedSpace && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] p-4 shadow-lg z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t-[0.5px] border-[var(--accent)]/20 p-3 shadow-xl z-50">
           <div className="max-w-lg mx-auto">
             <div className="flex items-start justify-between mb-3">
               <div className="space-y-1">

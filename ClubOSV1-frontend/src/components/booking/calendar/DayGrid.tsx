@@ -99,8 +99,8 @@ const DayGrid: React.FC<DayGridProps> = ({
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
 
-      // Calculate selection position
-      const selectionEndY = (selectionEnd?.slotIndex || selectionStart.slotIndex) * 41 + 150;
+      // Calculate selection position (28px per slot now)
+      const selectionEndY = (selectionEnd?.slotIndex || selectionStart.slotIndex) * 28 + 150;
       const spaceIndex = spaces.findIndex(s => s.id === selectionStart.spaceId);
       const spaceWidth = gridRect.width / spaces.length;
       const selectionCenterX = gridRect.left + 80 + (spaceIndex + 0.5) * spaceWidth;
@@ -321,9 +321,9 @@ const DayGrid: React.FC<DayGridProps> = ({
         {/* Time slots grid */}
         {timeSlots.map((slot, slotIndex) => (
           <div key={slotIndex} className="grid grid-cols-[80px_1fr]">
-            {/* Time label */}
-            <div className="px-2 py-2 text-xs text-[var(--text-secondary)] text-center border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
-              {format(slot, 'h:mm a')}
+            {/* Time label - more compact */}
+            <div className="px-1 flex items-center justify-center h-7 text-[10px] font-mono text-[var(--text-secondary)] border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+              {slotIndex % 2 === 0 ? format(slot, 'h:mm a') : format(slot, 'h:mm').replace(':00', '')}
             </div>
 
             {/* Space slots */}
@@ -346,12 +346,12 @@ const DayGrid: React.FC<DayGridProps> = ({
                   <div
                     key={`${space.id}-${slotIndex}`}
                     className={`
-                      relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-all duration-200
+                      relative border-r border-b border-[var(--border-primary)] h-7 transition-all duration-150
                       ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                      ${isAvailable && !isSelected ? 'hover:bg-[var(--bg-hover)]' : ''}
-                      ${isSelected ? 'bg-[var(--accent)]/10 border-[var(--accent)]' : ''}
-                      ${isSelectionStart ? 'ring-2 ring-[var(--accent)] ring-inset z-10' : ''}
-                      ${isSelectionEnd ? 'ring-2 ring-[var(--accent)] ring-inset z-10' : ''}
+                      ${isAvailable && !isSelected ? 'hover:bg-[var(--accent)]/[0.04]' : ''}
+                      ${isSelected ? 'bg-[var(--accent)]/[0.08] border-[var(--accent)]/30' : ''}
+                      ${isSelectionStart ? 'ring-1 ring-[var(--accent)] ring-inset z-10' : ''}
+                      ${isSelectionEnd ? 'ring-1 ring-[var(--accent)] ring-inset z-10' : ''}
                       ${isTouchDevice ? 'touch-manipulation' : ''}
                     `}
                     data-slot-index={slotIndex}
@@ -458,14 +458,11 @@ const DayGrid: React.FC<DayGridProps> = ({
                       />
                     )}
                     {isSelected && !slotBooking && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="w-full h-full bg-[var(--accent)]/5"></div>
-                        {/* Show "30 min" marker on each selected slot */}
-                        {!isSelectionStart && !isSelectionEnd && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[10px] text-[var(--accent)] opacity-50">30min</span>
-                          </div>
-                        )}
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        {/* Subtle gradient overlay */}
+                        <div className="w-full h-full bg-gradient-to-b from-[var(--accent)]/[0.06] to-[var(--accent)]/[0.08]"></div>
+                        {/* Thin selection border */}
+                        <div className="absolute inset-0 ring-[0.5px] ring-inset ring-[var(--accent)]/20 rounded-[2px]"></div>
                       </div>
                     )}
                   </div>
@@ -476,18 +473,35 @@ const DayGrid: React.FC<DayGridProps> = ({
         ))}
       </div>
 
-      {/* Minimal duration indicator during selection */}
-      {isDragging && selectionStart && selectionEnd && selectionDuration && (
+      {/* Live time display within selection area */}
+      {selectionStart && selectionEnd && (
         <div
-          className="fixed z-40 pointer-events-none"
+          className="absolute z-30 pointer-events-none animate-in fade-in duration-150"
           style={{
-            // Follow the drag position
-            bottom: '20px',
-            right: '20px',
+            // Position at center of selection
+            left: (() => {
+              const spaceIndex = spaces.findIndex(s => s.id === selectionStart.spaceId);
+              const spaceWidth = gridRef.current ? (gridRef.current.offsetWidth - 80) / spaces.length : 0;
+              return `${80 + spaceIndex * spaceWidth + spaceWidth / 2}px`;
+            })(),
+            top: (() => {
+              const startIdx = Math.min(selectionStart.slotIndex, selectionEnd.slotIndex);
+              const endIdx = Math.max(selectionStart.slotIndex, selectionEnd.slotIndex);
+              const centerSlot = startIdx + (endIdx - startIdx) / 2;
+              return `${150 + centerSlot * 28}px`; // 28px per slot
+            })(),
+            transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="bg-[var(--accent)] text-white text-sm font-medium px-3 py-1.5 rounded-md shadow-lg">
-            {selectionDuration}
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 rounded-md shadow-sm border border-[var(--accent)]/20">
+            <div className="text-xs font-medium text-[var(--accent)]">
+              {format(timeSlots[Math.min(selectionStart.slotIndex, selectionEnd.slotIndex)], 'h:mm a')}
+              <span className="mx-1 text-[var(--text-muted)]">→</span>
+              {format(addMinutes(timeSlots[Math.max(selectionStart.slotIndex, selectionEnd.slotIndex)], 30), 'h:mm a')}
+            </div>
+            <div className="text-[10px] text-[var(--text-muted)] text-center mt-0.5">
+              {selectionDuration}
+            </div>
           </div>
         </div>
       )}

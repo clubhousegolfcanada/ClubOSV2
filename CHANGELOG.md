@@ -2,6 +2,39 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.2] - 2025-10-23
+
+### 🎨 Modern 2026 Design Polish for Booking Calendar
+
+#### Visual Updates
+- **Compact Time Slots**: Reduced from 41px to 28px height (32% more visible slots)
+- **ClubOS Green Selection**: Replaced blue colors with transparent green overlays
+  - Selection: `rgba(11, 61, 58, 0.08)` background
+  - Borders: Ultra-thin 0.5px with `rgba(11, 61, 58, 0.3)`
+  - Hover states: Subtle `rgba(11, 61, 58, 0.04)`
+- **Live Time Display**: Shows selection time range within the highlighted area
+  - Floating indicator with glass morphism effect
+  - Updates in real-time while dragging
+  - Shows format: "3:00 PM → 4:30 PM"
+
+#### Modern Aesthetics
+- **Glass Morphism**: Added backdrop-blur effects on overlays
+- **Micro-borders**: Reduced to 0.5px for cleaner look
+- **Monospace Time Labels**: Better alignment with `font-mono`
+- **Faster Animations**: 150ms transitions (vs 200ms before)
+- **Gradient Overlays**: Subtle gradient within selections
+
+#### Mobile Optimizations
+- **Ultra-Compact Mobile**: 24px slot height (from 32px)
+- **Minimal Labels**: Shortened time format (6:30 vs 6:30 AM)
+- **Glass Bottom Panel**: Frosted glass effect on booking confirmation
+- **Improved Touch Targets**: Still maintains 40px+ for accessibility
+
+#### Information Density
+- **30% More Visible**: Can see more time slots without scrolling
+- **Cleaner Time Labels**: Shows AM/PM only on hour marks
+- **Compact Simulator Tabs**: Reduced padding while maintaining readability
+
 ## [1.24.1] - 2025-10-22
 
 ### 🚨 Emergency Booking Hotfix v2
