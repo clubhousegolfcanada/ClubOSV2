@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.9] - 2025-10-22
+
+### 🔧 Fixed
+- **Corrections System Database Errors**: Fixed critical schema issues preventing corrections from saving
+  - Added missing `updated_by` column to knowledge_store table
+  - Added missing `metadata` and `last_modified_by` columns to decision_patterns table
+  - Created response_corrections table for tracking all corrections
+  - Created response_tracking table for AI response history
+  - Made corrections route defensive to handle missing columns gracefully
+  - Corrections system now fully operational for pattern learning from operator fixes
+
+### 🔒 Technical
+- **Migration 335**: Comprehensive schema fix for corrections system
+- **Defensive Coding**: Route now checks column existence before using them
+- **Idempotent Migration**: Uses IF NOT EXISTS clauses throughout for safe re-runs
+
 ## [1.22.8] - 2025-10-22
 
 ### 🎨 UI Enhancement - Complete Standardization

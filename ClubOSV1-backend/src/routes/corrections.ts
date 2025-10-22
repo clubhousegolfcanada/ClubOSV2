@@ -47,25 +47,50 @@ router.post('/save',
 
       // Step 1: Update or create knowledge store entry
       try {
+        // Check if updated_by column exists
+        const hasUpdatedBy = await db.query(`
+          SELECT EXISTS(
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'knowledge_store' AND column_name = 'updated_by'
+          )
+        `);
+
+        // Build update query based on available columns
+        const updateQuery = hasUpdatedBy.rows[0]?.exists
+          ? `UPDATE knowledge_store
+             SET
+               value = jsonb_set(
+                 COALESCE(value, '{}'::jsonb),
+                 '{response}',
+                 to_jsonb($1::text)
+               ),
+               confidence = 1.0,
+               verification_status = 'verified',
+               updated_at = NOW(),
+               updated_by = $2,
+               source_type = 'operator_correction'
+             WHERE
+               (value->>'response' ILIKE $3 OR value::text ILIKE $3)
+               AND verification_status != 'verified'
+             RETURNING id, key`
+          : `UPDATE knowledge_store
+             SET
+               value = jsonb_set(
+                 COALESCE(value, '{}'::jsonb),
+                 '{response}',
+                 to_jsonb($1::text)
+               ),
+               confidence = 1.0,
+               verification_status = 'verified',
+               updated_at = NOW(),
+               source_type = 'operator_correction'
+             WHERE
+               (value->>'response' ILIKE $3 OR value::text ILIKE $3)
+               AND verification_status != 'verified'
+             RETURNING id, key`;
+
         // First try to update existing knowledge that matches the original response
-        const updateResult = await db.query(`
-          UPDATE knowledge_store
-          SET
-            value = jsonb_set(
-              COALESCE(value, '{}'::jsonb),
-              '{response}',
-              to_jsonb($1::text)
-            ),
-            confidence = 1.0,
-            verification_status = 'verified',
-            updated_at = NOW(),
-            updated_by = $2,
-            source_type = 'operator_correction'
-          WHERE
-            (value->>'response' ILIKE $3 OR value::text ILIKE $3)
-            AND verification_status != 'verified'
-          RETURNING id, key
-        `, [
+        const updateResult = await db.query(updateQuery, [
           correctedResponse,
           userId,
           `%${originalResponse.substring(0, 100)}%`
@@ -121,20 +146,34 @@ router.post('/save',
           const pattern = existingPattern.rows[0];
           const newConfidence = Math.min(pattern.confidence_score + 0.15, 1.0);
 
-          await db.query(`
-            UPDATE decision_patterns
-            SET
-              response_template = $1,
-              confidence_score = $2,
-              updated_at = NOW(),
-              last_modified_by = $3
-            WHERE id = $4
-          `, [
-            correctedResponse,
-            newConfidence,
-            userId,
-            pattern.id
-          ]);
+          // Check if last_modified_by column exists
+          const hasLastModifiedBy = await db.query(`
+            SELECT EXISTS(
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'decision_patterns' AND column_name = 'last_modified_by'
+            )
+          `);
+
+          const updatePatternQuery = hasLastModifiedBy.rows[0]?.exists
+            ? `UPDATE decision_patterns
+               SET
+                 response_template = $1,
+                 confidence_score = $2,
+                 updated_at = NOW(),
+                 last_modified_by = $3
+               WHERE id = $4`
+            : `UPDATE decision_patterns
+               SET
+                 response_template = $1,
+                 confidence_score = $2,
+                 last_modified = NOW()
+               WHERE id = $3`;
+
+          const updateParams = hasLastModifiedBy.rows[0]?.exists
+            ? [correctedResponse, newConfidence, userId, pattern.id]
+            : [correctedResponse, newConfidence, pattern.id];
+
+          await db.query(updatePatternQuery, updateParams);
 
           results.patternId = pattern.id;
           results.patternCreated = false;
@@ -145,27 +184,52 @@ router.post('/save',
             route
           });
         } else {
+          // Check if metadata column exists
+          const hasMetadata = await db.query(`
+            SELECT EXISTS(
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'decision_patterns' AND column_name = 'metadata'
+            )
+          `);
+
           // Create new pattern from correction
-          const insertResult = await db.query(`
-            INSERT INTO decision_patterns (
-              pattern_type, pattern_signature, trigger_text,
-              response_template, confidence_score, is_active,
-              auto_executable, created_by, metadata
-            ) VALUES (
-              'correction', $1, $2, $3, 0.6, true, false, $4, $5
-            ) RETURNING id
-          `, [
-            patternSignature,
-            originalQuery,
-            correctedResponse,
-            userId,
-            JSON.stringify({
-              source: 'operator_correction',
-              original_response: originalResponse,
-              route: route,
-              corrected_at: new Date().toISOString()
-            })
-          ]);
+          const insertQuery = hasMetadata.rows[0]?.exists
+            ? `INSERT INTO decision_patterns (
+                 pattern_type, pattern_signature, trigger_text,
+                 response_template, confidence_score, is_active,
+                 auto_executable, created_by, metadata
+               ) VALUES (
+                 'correction', $1, $2, $3, 0.6, true, false, $4, $5
+               ) RETURNING id`
+            : `INSERT INTO decision_patterns (
+                 pattern_type, pattern_signature, trigger_text,
+                 response_template, confidence_score, is_active,
+                 auto_executable, created_by
+               ) VALUES (
+                 'correction', $1, $2, $3, 0.6, true, false, $4
+               ) RETURNING id`;
+
+          const insertParams = hasMetadata.rows[0]?.exists
+            ? [
+                patternSignature,
+                originalQuery,
+                correctedResponse,
+                userId,
+                JSON.stringify({
+                  source: 'operator_correction',
+                  original_response: originalResponse,
+                  route: route,
+                  corrected_at: new Date().toISOString()
+                })
+              ]
+            : [
+                patternSignature,
+                originalQuery,
+                correctedResponse,
+                userId
+              ];
+
+          const insertResult = await db.query(insertQuery, insertParams);
 
           if (insertResult.rows.length > 0) {
             results.patternId = insertResult.rows[0].id;
@@ -211,29 +275,41 @@ router.post('/save',
 
       // Step 4: Log the correction for audit
       try {
-        await db.query(`
-          INSERT INTO response_corrections (
-            response_id, original_response, corrected_response,
-            knowledge_updated, pattern_id, pattern_created,
-            user_id, user_email, context
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        `, [
-          responseId || null,
-          originalResponse,
-          correctedResponse,
-          results.knowledgeUpdated,
-          results.patternId,
-          results.patternCreated,
-          userId,
-          userEmail,
-          JSON.stringify({
-            route,
-            originalQuery,
-            confidence
-          })
-        ]);
+        // Check if response_corrections table exists
+        const tableExists = await db.query(`
+          SELECT EXISTS(
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'response_corrections'
+          )
+        `);
+
+        if (tableExists.rows[0]?.exists) {
+          await db.query(`
+            INSERT INTO response_corrections (
+              response_id, original_response, corrected_response,
+              knowledge_updated, pattern_id, pattern_created,
+              user_id, user_email, context
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `, [
+            responseId || null,
+            originalResponse,
+            correctedResponse,
+            results.knowledgeUpdated,
+            results.patternId,
+            results.patternCreated,
+            userId,
+            userEmail,
+            JSON.stringify({
+              route,
+              originalQuery,
+              confidence
+            })
+          ]);
+        } else {
+          logger.debug('Response corrections table does not exist yet');
+        }
       } catch (err) {
-        logger.debug('Corrections audit table might not exist yet:', err);
+        logger.debug('Error saving correction audit:', err);
       }
 
       // Commit transaction
