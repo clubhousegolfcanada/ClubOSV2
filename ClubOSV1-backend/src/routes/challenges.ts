@@ -5,10 +5,11 @@ import { challengeService } from '../services/challengeService';
 import { clubCoinService } from '../services/clubCoinService';
 import { pool } from '../utils/database';
 import { logger } from '../utils/logger';
-import { 
+import { cacheService, CACHE_TTL } from '../services/cacheService';
+import {
   challengeRateLimiters,
   challengeCreationRateLimiters,
-  challengeAcceptanceRateLimiters 
+  challengeAcceptanceRateLimiters
 } from '../middleware/challengeRateLimiter';
 
 const router = Router();
@@ -28,13 +29,21 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.user?.id;
     const { status, limit = 50 } = req.query;
-    
-    const challenges = await challengeService.getUserChallenges(
-      userId,
-      status as string,
-      parseInt(limit as string)
+
+    // Cache user challenges for 60 seconds
+    const cacheKey = `challenges:${userId}:${status || 'all'}:${limit}`;
+    const challenges = await cacheService.withCache(
+      cacheKey,
+      async () => {
+        return await challengeService.getUserChallenges(
+          userId,
+          status as string,
+          parseInt(limit as string)
+        );
+      },
+      { ttl: 60 } // 60 second cache for challenge lists
     );
-    
+
     res.json({
       success: true,
       data: challenges
