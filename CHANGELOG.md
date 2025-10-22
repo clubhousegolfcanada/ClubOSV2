@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.1] - 2025-10-22
+
+### 🚨 Emergency Booking Hotfix v2
+- **Fixed Missing Date Column Defensive Handling**: The booking view was still crashing
+  - Error: "column b.start_at does not exist" - production has start_time not start_at
+  - Added defensive checks for date columns (start_at vs start_time, end_at vs end_time)
+  - Query now handles duration column if end_at/end_time don't exist
+  - WHERE clause also made defensive to use correct date column
+  - Result: Booking view will actually work now with old column names
+
 ## [1.24.0] - 2025-10-23
 
 ### 📱 Enhanced Booking Calendar with Sliding Time Selection

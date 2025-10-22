@@ -70,6 +70,12 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
     const hasDepositAmount = columns.includes('deposit_amount');
     const hasPaymentStatus = columns.includes('payment_status');
     const hasAmountCents = columns.includes('amount_cents');
+    // Check for date/time columns
+    const hasStartAt = columns.includes('start_at');
+    const hasStartTime = columns.includes('start_time');
+    const hasEndAt = columns.includes('end_at');
+    const hasEndTime = columns.includes('end_time');
+    const hasDuration = columns.includes('duration');
 
     // Build space_ids field based on what columns exist
     let spaceIdsField = 'ARRAY[]::INTEGER[] as space_ids'; // Default empty array
@@ -129,6 +135,27 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
       paymentStatusField = "COALESCE(b.payment_status, 'pending') as payment_status";
     }
 
+    // Build date/time fields
+    let startField = "CURRENT_TIMESTAMP as start_at";
+    let endField = "CURRENT_TIMESTAMP as end_at";
+    let whereStartField = "TRUE"; // Default to always true if no date columns
+
+    if (hasStartAt) {
+      startField = "b.start_at";
+      endField = hasEndAt ? "b.end_at" : "b.start_at + INTERVAL '60 minutes' as end_at";
+      whereStartField = "b.start_at";
+    } else if (hasStartTime) {
+      startField = "b.start_time as start_at";
+      if (hasEndTime) {
+        endField = "b.end_time as end_at";
+      } else if (hasDuration) {
+        endField = "b.start_time + (b.duration || ' minutes')::INTERVAL as end_at";
+      } else {
+        endField = "b.start_time + INTERVAL '60 minutes' as end_at";
+      }
+      whereStartField = "b.start_time";
+    }
+
     // Build the JOIN clause based on available columns
     let joinClause = '';
     if (hasUserId || hasCustomerId) {
@@ -143,8 +170,8 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
         b.location_id,
         ${spaceIdsField},
         ${userIdField},
-        b.start_at,
-        b.end_at,
+        ${startField},
+        ${endField},
         b.status,
         ${customerNameField},
         ${customerEmailField},
@@ -155,7 +182,7 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
         ${joinClause ? ', u.name as user_name, u.email as user_email' : ", NULL as user_name, NULL as user_email"}
       FROM bookings b
       ${joinClause}
-      WHERE b.start_at >= $1 AND b.start_at <= $2
+      WHERE ${whereStartField} >= $1 AND ${whereStartField} <= $2
     `;
 
     const params: any[] = [startOfDay.toISOString(), endOfDay.toISOString()];
