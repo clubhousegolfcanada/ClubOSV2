@@ -28,8 +28,8 @@ router.get('/google', (req: Request, res: Response) => {
       });
     }
 
-    // Generate Google OAuth URL
-    const authUrl = getGoogleAuthUrl();
+    // Generate Google OAuth URL with user type
+    const authUrl = getGoogleAuthUrl(userType as 'operator' | 'customer');
 
     // Store preferences in state parameter
     const stateParam = Buffer.from(JSON.stringify({

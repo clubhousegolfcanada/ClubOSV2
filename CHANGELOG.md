@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.5] - 2025-10-22
+
+### 🔧 Fixed
+- **Google Sign-In for Customers**: Enabled customer Google OAuth with any Google account
+  - Removed domain restriction that was blocking non-@clubhouse247golf.com emails
+  - Modified `getGoogleAuthUrl()` to only restrict domain for operators, not customers
+  - Google Sign-In button now appears during customer signup, not just login
+  - Customers can use Gmail, Outlook.com, or any Google account to sign up
+  - Auto-creates customer accounts with Google profile data
+  - Auto-approves accounts with verified Google emails
+  - Result: Customers can sign up or sign in instantly with Google - no passwords needed
+
 ## [1.23.4] - 2025-10-22
 
 ### 🎨 UI Improvements

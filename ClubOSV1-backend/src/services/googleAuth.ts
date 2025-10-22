@@ -29,19 +29,25 @@ export interface GoogleUserInfo {
 /**
  * Generate Google OAuth URL for sign-in
  */
-export const getGoogleAuthUrl = (): string => {
+export const getGoogleAuthUrl = (userType: 'operator' | 'customer' = 'operator'): string => {
   const scopes = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'openid'
   ];
 
-  const authUrl = googleClient.generateAuthUrl({
+  const authOptions: any = {
     access_type: 'offline',
     scope: scopes,
     prompt: 'select_account', // Always show account selection
-    hd: 'clubhouse247golf.com' // Hint for Google Workspace domain
-  });
+  };
+
+  // Only restrict domain for operators
+  if (userType === 'operator') {
+    authOptions.hd = 'clubhouse247golf.com'; // Hint for Google Workspace domain
+  }
+
+  const authUrl = googleClient.generateAuthUrl(authOptions);
 
   return authUrl;
 };

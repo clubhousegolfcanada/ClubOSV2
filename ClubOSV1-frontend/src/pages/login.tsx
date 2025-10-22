@@ -358,7 +358,8 @@ const LoginPage = () => {
         </form>
 
         {/* Google Sign-In for both Operators and Customers */}
-        {!isSignup && (
+        {/* Show for operators only during login, but for customers during both signup and login */}
+        {(loginMode === 'customer' || !isSignup) && (
           <div className="mt-6">
             <GoogleSignInButton
               rememberMe={rememberMe}

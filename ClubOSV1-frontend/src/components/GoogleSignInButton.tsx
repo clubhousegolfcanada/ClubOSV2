@@ -112,7 +112,7 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       )}
       {loginMode === 'customer' && (
         <p className="text-xs text-center text-[var(--text-muted)] mt-2">
-          Sign in securely with your Google account
+          Sign up or sign in instantly with any Google account
         </p>
       )}
     </>
