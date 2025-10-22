@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.8] - 2025-10-22
+
+### 🔒 Security Enhancements for Customer Signup
+- **Enhanced Password Requirements**: Strengthened password security
+  - Increased minimum length from 6 to 8 characters
+  - Added special character requirement (!@#$%^&*...)
+  - Clear requirements shown during customer signup
+  - Applied to all user creation endpoints
+- **Email Verification System**: Complete verification workflow
+  - Verification tokens sent automatically on signup
+  - Beautiful HTML email templates for verification and welcome
+  - 24-hour token expiration with resend capability
+  - Database migration adds verification tracking
+  - Graceful fallback if email service not configured
+- **Progressive Rate Limiting**: Multi-layer abuse protection
+  - Layer 1: 5 attempts per 5 minutes (immediate)
+  - Layer 2: 20 attempts per hour (medium-term)
+  - Layer 3: 50 attempts per day (long-term)
+  - Automatic Sentry alerts for excessive attempts
+  - Only counts failed attempts, not successful signups
+
 ## [1.23.7] - 2025-10-22
 
 ### 🎨 UI Improvements

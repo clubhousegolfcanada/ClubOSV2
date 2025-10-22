@@ -6,33 +6,35 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 import { authenticate, generateToken, verifyToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { transformUser } from '../utils/transformers';
 import { passwordChangeLimiter } from '../middleware/passwordChangeLimiter';
-import { authRateLimiter } from '../middleware/rateLimiter';
+import { authRateLimiter, signupRateLimiters } from '../middleware/rateLimiter';
 import { contractorService } from '../services/contractorService';
 
 const router = Router();
 
 // Customer Registration endpoint (public)
 router.post('/signup',
-  authRateLimiter,
+  ...signupRateLimiters, // Apply progressive rate limiting
   validate([
     body('email')
       .trim()
       .isEmail()
       .withMessage('Valid email is required'),
     body('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
       .matches(/[A-Z]/)
       .withMessage('Password must contain at least one uppercase letter')
       .matches(/[a-z]/)
       .withMessage('Password must contain at least one lowercase letter')
       .matches(/[0-9]/)
-      .withMessage('Password must contain at least one number'),
+      .withMessage('Password must contain at least one number')
+      .matches(/[!@#$%^&*(),.?":{}|<>]/)
+      .withMessage('Password must contain at least one special character'),
     body('name')
       .trim()
       .notEmpty()
@@ -86,6 +88,26 @@ router.post('/signup',
         role: 'customer',
         status: autoApprove ? 'active' : 'pending_approval'
       });
+
+      // Generate and save email verification token
+      try {
+        const { emailService } = await import('../services/emailService');
+        const verificationToken = emailService.generateVerificationToken();
+
+        // Save token to database (expires in 24 hours)
+        await db.query(
+          `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+           VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '24 hours')`,
+          [userId, verificationToken]
+        );
+
+        // Send verification email
+        await emailService.sendVerificationEmail(email, name, verificationToken);
+        logger.info('Verification email sent to:', email);
+      } catch (emailError) {
+        logger.error('Failed to send verification email:', emailError);
+        // Don't fail signup if email sending fails
+      }
       
       // Create customer profile automatically
       await db.query(
@@ -568,7 +590,17 @@ router.post('/users',
   roleGuard(['admin']),
   validate([
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/)
+      .withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('Password must contain at least one lowercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must contain at least one number')
+      .matches(/[!@#$%^&*(),.?":{}|<>]/)
+      .withMessage('Password must contain at least one special character'),
     body('name').notEmpty().withMessage('Name is required'),
     body('role').isIn(['admin', 'operator', 'support', 'kiosk', 'customer', 'contractor']).withMessage('Invalid role'),
     body('phone').optional(),
@@ -1109,6 +1141,163 @@ router.delete('/users/:userId',
       });
       
     } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Email verification endpoint
+router.get('/verify-email',
+  validate([
+    query('token')
+      .notEmpty()
+      .withMessage('Verification token is required')
+      .isLength({ min: 64, max: 64 })
+      .withMessage('Invalid token format')
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { token } = req.query;
+
+      // Find the token in database
+      const tokenResult = await db.query(
+        `SELECT user_id, expires_at, used_at
+         FROM email_verification_tokens
+         WHERE token = $1`,
+        [token]
+      );
+
+      if (tokenResult.rows.length === 0) {
+        throw new AppError('Invalid or expired verification token', 400, 'INVALID_TOKEN');
+      }
+
+      const tokenData = tokenResult.rows[0];
+
+      // Check if already used
+      if (tokenData.used_at) {
+        throw new AppError('This verification link has already been used', 400, 'TOKEN_USED');
+      }
+
+      // Check if expired
+      if (new Date(tokenData.expires_at) < new Date()) {
+        throw new AppError('This verification link has expired', 400, 'TOKEN_EXPIRED');
+      }
+
+      // Mark email as verified
+      await db.query(
+        `UPDATE users
+         SET email_verified = true, email_verified_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [tokenData.user_id]
+      );
+
+      // Mark token as used
+      await db.query(
+        `UPDATE email_verification_tokens
+         SET used_at = CURRENT_TIMESTAMP
+         WHERE token = $1`,
+        [token]
+      );
+
+      // Get user details for welcome email
+      const userResult = await db.query(
+        `SELECT email, name FROM users WHERE id = $1`,
+        [tokenData.user_id]
+      );
+
+      if (userResult.rows.length > 0) {
+        const user = userResult.rows[0];
+        // Send welcome email
+        try {
+          const { emailService } = await import('../services/emailService');
+          await emailService.sendWelcomeEmail(user.email, user.name);
+        } catch (error) {
+          logger.error('Failed to send welcome email:', error);
+        }
+      }
+
+      logger.info('Email verified successfully:', { userId: tokenData.user_id });
+
+      // Redirect to login with success message
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      res.redirect(`${frontendUrl}/login?verified=true`);
+
+    } catch (error) {
+      logger.error('Email verification failed:', error);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const errorMessage = error instanceof AppError ? error.message : 'Verification failed';
+      res.redirect(`${frontendUrl}/login?verification_error=${encodeURIComponent(errorMessage)}`);
+    }
+  }
+);
+
+// Resend verification email endpoint
+router.post('/resend-verification',
+  authRateLimiter, // Rate limit to prevent abuse
+  validate([
+    body('email')
+      .trim()
+      .isEmail()
+      .withMessage('Valid email is required')
+  ]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body;
+
+      // Find user
+      const userResult = await db.query(
+        `SELECT id, name, email_verified FROM users WHERE email = $1 AND role = 'customer'`,
+        [email.toLowerCase()]
+      );
+
+      if (userResult.rows.length === 0) {
+        // Don't reveal if email exists or not
+        return res.json({
+          success: true,
+          message: 'If an account exists with this email, a verification link has been sent.'
+        });
+      }
+
+      const user = userResult.rows[0];
+
+      // Check if already verified
+      if (user.email_verified) {
+        return res.json({
+          success: true,
+          message: 'Your email is already verified. You can sign in.'
+        });
+      }
+
+      // Generate new token
+      const { emailService } = await import('../services/emailService');
+      const verificationToken = emailService.generateVerificationToken();
+
+      // Save token (expires old ones)
+      await db.query(
+        `UPDATE email_verification_tokens
+         SET used_at = CURRENT_TIMESTAMP
+         WHERE user_id = $1 AND used_at IS NULL`,
+        [user.id]
+      );
+
+      await db.query(
+        `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+         VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '24 hours')`,
+        [user.id, verificationToken]
+      );
+
+      // Send email
+      await emailService.sendVerificationEmail(email, user.name, verificationToken);
+
+      logger.info('Verification email resent:', { email });
+
+      res.json({
+        success: true,
+        message: 'Verification email sent. Please check your inbox.'
+      });
+
+    } catch (error) {
+      logger.error('Failed to resend verification email:', error);
       next(error);
     }
   }

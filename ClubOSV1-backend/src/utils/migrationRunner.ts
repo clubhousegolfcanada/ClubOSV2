@@ -3,6 +3,10 @@ import { logger } from './logger';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 /**
  * Enhanced Migration Runner with rollback support
@@ -58,10 +62,64 @@ export class MigrationRunner {
         error_message TEXT,
         rollback_sql TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS migration_locks (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        locked_at TIMESTAMP,
+        locked_by VARCHAR(255),
+        CONSTRAINT single_lock CHECK (id = 1)
+      );
     `;
 
     await this.pool.query(initSql);
     logger.debug('✅ Migration tracking table initialized');
+  }
+
+  /**
+   * Acquire migration lock to prevent concurrent migrations
+   */
+  async acquireLock(): Promise<boolean> {
+    const hostname = require('os').hostname();
+    const lockTimeout = 30000; // 30 seconds
+
+    try {
+      // First, clean up any stale locks older than timeout
+      await this.pool.query(`
+        DELETE FROM migration_locks
+        WHERE locked_at < NOW() - INTERVAL '${lockTimeout} milliseconds'
+      `);
+
+      // Try to acquire lock
+      const result = await this.pool.query(`
+        INSERT INTO migration_locks (id, locked_at, locked_by)
+        VALUES (1, NOW(), $1)
+        ON CONFLICT (id) DO NOTHING
+        RETURNING id
+      `, [hostname]);
+
+      if (result.rowCount > 0) {
+        logger.info(`Migration lock acquired by ${hostname}`);
+        return true;
+      }
+
+      logger.warn('Migration lock is held by another process');
+      return false;
+    } catch (error) {
+      logger.error('Failed to acquire migration lock:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Release migration lock
+   */
+  async releaseLock(): Promise<void> {
+    try {
+      await this.pool.query('DELETE FROM migration_locks WHERE id = 1');
+      logger.debug('Migration lock released');
+    } catch (error) {
+      logger.error('Failed to release migration lock:', error);
+    }
   }
 
   /**
@@ -169,26 +227,48 @@ export class MigrationRunner {
   /**
    * Run all pending migrations
    */
-  async migrate(): Promise<void> {
+  async migrate(): Promise<MigrationRecord[]> {
     await this.initialize();
 
-    const migrations = await this.loadMigrations();
-    const executed = await this.getExecutedMigrations();
-    
-    const pending = migrations.filter(m => !executed.has(m.version));
-
-    if (pending.length === 0) {
-      logger.debug('✅ Database is up to date');
-      return;
+    // Try to acquire lock
+    const lockAcquired = await this.acquireLock();
+    if (!lockAcquired) {
+      logger.warn('Could not acquire migration lock - another migration may be running');
+      return [];
     }
 
-    logger.debug(`📦 Found ${pending.length} pending migrations`);
+    try {
+      const migrations = await this.loadMigrations();
+      const executed = await this.getExecutedMigrations();
 
-    for (const migration of pending) {
-      await this.executeMigration(migration);
+      const pending = migrations.filter(m => !executed.has(m.version));
+
+      if (pending.length === 0) {
+        logger.debug('✅ Database is up to date');
+        return [];
+      }
+
+      logger.debug(`📦 Found ${pending.length} pending migrations`);
+
+      const results: MigrationRecord[] = [];
+      for (const migration of pending) {
+        await this.executeMigration(migration);
+        results.push({
+          version: migration.version,
+          name: migration.name,
+          executed_at: new Date(),
+          checksum: migration.checksum,
+          execution_time_ms: 0,
+          success: true
+        });
+      }
+
+      logger.debug(`✅ All migrations completed successfully`);
+      return results;
+    } finally {
+      // Always release lock
+      await this.releaseLock();
     }
-
-    logger.debug(`✅ All migrations completed successfully`);
   }
 
   /**

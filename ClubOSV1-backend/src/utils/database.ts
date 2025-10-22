@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { createTablesSQL, createIndexesSQL } from './database-tables';
 import { runMigrations as runHardcodedMigrations } from './database-migrations';
-// import { runMigrations as runSqlMigrations } from '../scripts/runMigrations';
+import { MigrationRunner } from './migrationRunner';
+import * as path from 'path';
 
 // Import the pool and query from db.ts
 import { pool, query } from './db';
@@ -149,7 +150,21 @@ class DatabaseService {
       // Run SQL migrations from files
       try {
         logger.info('Running SQL migrations...');
-        // await runSqlMigrations();
+        const migrationsPath = path.join(__dirname, '..', 'database', 'migrations');
+        const isDryRun = process.env.DRY_RUN === 'true';
+        const migrationRunner = new MigrationRunner(pool, migrationsPath, isDryRun);
+
+        // Initialize migration tracking table
+        await migrationRunner.initialize();
+
+        // Run all pending migrations
+        const results = await migrationRunner.migrate();
+
+        if (results.length > 0) {
+          logger.info(`Successfully ran ${results.length} migrations`);
+        } else {
+          logger.info('No pending migrations to run');
+        }
       } catch (error) {
         logger.error('SQL migrations failed:', error);
         // Don't throw - allow app to start even if migrations fail

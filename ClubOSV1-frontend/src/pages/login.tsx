@@ -312,6 +312,12 @@ const LoginPage = () => {
                   )}
                 </button>
               </div>
+              {/* Password requirements hint for signup */}
+              {loginMode === 'customer' && isSignup && (
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  Must be at least 8 characters with uppercase, lowercase, number, and special character (!@#$%^&*...)
+                </p>
+              )}
             </div>
           </div>
 

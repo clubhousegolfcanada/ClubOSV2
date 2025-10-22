@@ -112,6 +112,67 @@ export const llmRateLimiter = rateLimit({
   }
 });
 
+// Progressive rate limiting for signup (multiple layers of protection)
+export const signupRateLimiters = [
+  // Layer 1: Immediate protection (5 attempts per 5 minutes)
+  rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 5,
+    skipSuccessfulRequests: true,
+    message: 'Too many signup attempts. Please wait 5 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator,
+    validate: false,
+  }),
+
+  // Layer 2: Medium-term protection (20 attempts per hour)
+  rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 20,
+    skipSuccessfulRequests: true,
+    message: 'Too many signup attempts. Please wait an hour.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator,
+    validate: false,
+  }),
+
+  // Layer 3: Long-term protection (50 attempts per day)
+  rateLimit({
+    windowMs: 24 * 60 * 60 * 1000, // 24 hours
+    max: 50,
+    skipSuccessfulRequests: true,
+    message: 'Too many signup attempts. Please try again tomorrow.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator,
+    validate: false,
+    handler: (req, res) => {
+      logger.error('Signup daily rate limit exceeded', {
+        ip: req.ip,
+        email: req.body?.email
+      });
+
+      // Track potential abuse
+      Sentry.captureMessage('Excessive signup attempts detected', {
+        level: 'warning',
+        extra: {
+          ip: req.ip,
+          email: req.body?.email,
+          userAgent: req.get('user-agent')
+        }
+      });
+
+      res.status(429).json({
+        success: false,
+        message: 'Too many signup attempts. Please try again tomorrow.',
+        retryAfter: req.rateLimit?.resetTime
+      });
+    }
+  })
+];
+
 // Rate limiter for sending messages
 export const messageSendLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
