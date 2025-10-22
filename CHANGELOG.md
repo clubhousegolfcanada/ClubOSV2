@@ -24,7 +24,7 @@ All notable changes to ClubOS will be documented in this file.
 - **Root Cause**: Schema mismatch between old database and new backend code
 - **Solution**: Complete schema rebuild with migration 319
 - **Impact**: Booking system now ready for production use with proper scalable schema
-- **Next Step**: Run migration 319 to apply the clean schema
+- **Deployment**: Migration 319 will run automatically on deploy via Railway pipeline
 
 ## [1.22.6] - 2025-10-21
 

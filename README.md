@@ -13,7 +13,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 - **📊 Clean Rebuild** - Migration 319 for scalable booking system
 - **🚀 Performance Ready** - Proper indexes and array support
 - **✅ Zero Data Loss** - Empty table allowed clean rebuild
-- **🎯 Production Ready** - Schema now matches backend expectations
+- **🎯 Auto-Deploy** - Migration runs via Railway pipeline on push
 - **📱 Previous: UI Polish** - Loading skeletons, mobile gestures (v1.22.6)
 
 ## 🏗️ System Architecture
