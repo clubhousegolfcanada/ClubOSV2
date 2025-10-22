@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.10] - 2025-10-22
+
+### 🎨 UI Enhancement
+- **Removed ClubOS Boy from Navigation**: Temporarily removed unused feature
+  - Creates more space in the navigation bar
+  - Cleaner, more focused navigation
+  - Better spacing between remaining navigation items
+  - Especially helpful on mobile devices where nav space is limited
+  - Can be re-added when feature is ready for production
+
 ## [1.22.9] - 2025-10-22
 
 ### 🔧 Fixed
