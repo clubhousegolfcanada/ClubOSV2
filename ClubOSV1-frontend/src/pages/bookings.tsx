@@ -18,7 +18,7 @@ export default function Bookings() {
   const { user } = useAuthState();
   const { notify } = useNotifications();
   const [loading, setLoading] = useState(true);
-  const [showLegacySystem, setShowLegacySystem] = useState(false);
+  const [showLegacySystem, setShowLegacySystem] = useState(true);
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showCreateBooking, setShowCreateBooking] = useState(false);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);

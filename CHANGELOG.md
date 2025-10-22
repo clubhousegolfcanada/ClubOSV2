@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.3] - 2025-10-22
+
+### 🔄 Booking System Default Change
+- **Changed Default**: Booking page now defaults to Skedda iframe instead of ClubOS native system
+- **User Choice**: Users can still toggle to ClubOS booking system using the "Use Legacy Skedda"/"Use ClubOS" button
+- **Reason**: Provides stable booking experience while ClubOS native system is being enhanced
+
 ## [1.23.2] - 2025-10-22
 
 ### 🚨 Critical Fix
