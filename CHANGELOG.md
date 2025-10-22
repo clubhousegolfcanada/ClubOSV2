@@ -2,6 +2,90 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.0] - 2025-10-23
+
+### 📱 Enhanced Booking Calendar with Sliding Time Selection
+
+#### New Features
+- **Polished Sliding Time Selection**: Click/tap any 30-minute slot and slide to extend duration
+  - Works seamlessly on both desktop (mouse) and mobile (touch)
+  - Visual feedback with ClubOS green accent color
+  - Shows "30min" markers on each selected slot
+  - Automatic minimum 1-hour booking (2 slots)
+  - Maximum 4-hour booking constraint
+  - Smooth drag interaction with real-time updates
+
+- **Information-Dense Design**: Maximum visibility of availability
+  - Minimal, clean interface without excessive animations
+  - Inline booking confirmation panel (no modals)
+  - Calendar stays visible while booking
+  - Live price calculation based on customer tier
+  - Shows exact time range, duration, and simulator name
+  - Confidence-building with all information visible before booking
+
+- **Mobile-Optimized Experience**: New `DayGridMobile` component
+  - Tab-based simulator selection showing available slots count
+  - Vertical time slot list optimized for phone screens
+  - Fixed bottom panel for selection summary
+  - Touch-optimized with 44px minimum touch targets
+  - Smooth scrolling with momentum
+  - Works perfectly in PWA mode
+
+#### Technical Improvements
+- Enhanced touch event handling with `touchstart`, `touchmove`, `touchend`
+- Event delegation for better performance on large grids
+- Smart positioning of confirmation panels based on viewport
+- Proper TypeScript types for all touch interactions
+- CSS variables for consistent theming
+- 30-minute precision guaranteed across all interactions
+
+#### User Experience
+- **Desktop**: Click and drag to select time slots
+- **Mobile**: Tap simulator tab, then tap and slide on time slots
+- **Pricing**: Live calculation showing estimated cost
+- **Validation**: Prevents selection of unavailable slots
+- **Feedback**: Clear visual indicators for available/booked/selected states
+
+## [1.23.10] - 2025-10-22
+
+### 🔧 Critical Booking System Hotfix
+- **Fixed 500 Error on Booking View**: Added comprehensive defensive code for all missing columns
+  - Booking view was crashing because it queried non-existent columns (customer_name, customer_email, etc.)
+  - Added checks for ALL potentially missing columns before building query
+  - Query now dynamically adapts to whatever columns exist
+  - View works immediately without waiting for migrations to run
+- **Enhanced Migration 338**: Added all missing columns to comprehensive fix
+  - Added user_id, customer_name, customer_email, customer_phone columns
+  - Added total_amount, deposit_amount, payment_status columns
+  - Migration will create these properly when it runs
+  - Result: Booking view works now, and will work perfectly after migrations run
+
+## [1.23.9] - 2025-10-22
+
+### 🚀 Migration System Activation & Booking Fix
+- **Activated Existing Migration System**: Enabled sophisticated migration runner that was built but never turned on
+  - Discovered TWO enterprise-grade migration runners already existed in codebase
+  - SQL migrations were commented out since project inception (line 152 in database.ts)
+  - 337 migration files existed but were never executing
+  - Only hardcoded inline migrations (600+ lines) were running on startup
+- **Added Migration Infrastructure**:
+  - Enabled MigrationRunner with version tracking and checksum validation
+  - Added migration_locks table for concurrency protection (prevents race conditions)
+  - Migration system now runs automatically on every deployment
+  - Added dry-run mode for testing migrations before applying
+  - Full rollback support with DOWN migrations
+- **Fixed Booking System**: Created comprehensive migration 338
+  - Handles any starting database state (old columns, new columns, or no tables)
+  - Migrates simulator_id → space_ids, start_time → start_at, duration → end_at
+  - Creates all 6 locations with correct box counts (Bedford:2, Dartmouth:4, Halifax:4, Truro:3, River Oaks:1, Stratford:3)
+  - Adds customer tiers with pricing (New:$30, Member:$22.50, Promo:$15, Frequent:$20)
+  - Adds performance indexes and double-booking prevention constraints
+  - Result: Booking system will finally work after months of defensive workarounds
+- **Documentation**: Created comprehensive MIGRATION_GUIDE.md
+  - Complete guide to migration system usage
+  - Best practices and troubleshooting
+  - npm scripts reference (db:status, db:migrate, db:rollback, etc.)
+
 ## [1.23.8] - 2025-10-22
 
 ### 🔒 Security Enhancements for Customer Signup

@@ -15,6 +15,7 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS bookings (
   id SERIAL PRIMARY KEY,
   customer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   location_id INTEGER,
   start_at TIMESTAMP WITH TIME ZONE NOT NULL,
   end_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -22,6 +23,11 @@ CREATE TABLE IF NOT EXISTS bookings (
   status VARCHAR(50) DEFAULT 'confirmed',
   payment_status VARCHAR(50) DEFAULT 'pending',
   amount_cents INTEGER,
+  total_amount INTEGER,
+  deposit_amount INTEGER,
+  customer_name VARCHAR(255),
+  customer_email VARCHAR(255),
+  customer_phone VARCHAR(50),
   promo_code VARCHAR(100),
   discount_cents INTEGER,
   notes TEXT,
@@ -88,6 +94,46 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='bookings' AND column_name='space_ids') THEN
     ALTER TABLE bookings ADD COLUMN space_ids INTEGER[];
+  END IF;
+
+  -- Add user_id column if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='user_id') THEN
+    ALTER TABLE bookings ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+    -- Copy from customer_id if it exists
+    UPDATE bookings SET user_id = customer_id WHERE user_id IS NULL AND customer_id IS NOT NULL;
+  END IF;
+
+  -- Add customer columns if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='customer_name') THEN
+    ALTER TABLE bookings ADD COLUMN customer_name VARCHAR(255);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='customer_email') THEN
+    ALTER TABLE bookings ADD COLUMN customer_email VARCHAR(255);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='customer_phone') THEN
+    ALTER TABLE bookings ADD COLUMN customer_phone VARCHAR(50);
+  END IF;
+
+  -- Add payment columns if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='total_amount') THEN
+    ALTER TABLE bookings ADD COLUMN total_amount INTEGER;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='deposit_amount') THEN
+    ALTER TABLE bookings ADD COLUMN deposit_amount INTEGER;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='bookings' AND column_name='payment_status') THEN
+    ALTER TABLE bookings ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending';
   END IF;
 END $$;
 

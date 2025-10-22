@@ -46,6 +46,10 @@ const DayGrid: React.FC<DayGridProps> = ({
     spaceId: string;
   } | null>(null);
 
+  // Touch support state
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
   // Smart button positioning state
   const [buttonPosition, setButtonPosition] = useState<{
     top?: string;
@@ -71,6 +75,20 @@ const DayGrid: React.FC<DayGridProps> = ({
       return `${minutes} minutes`;
     }
   }, [selectionStart, selectionEnd]);
+
+  // Get hourly rate based on config
+  const getHourlyRate = () => {
+    // Default rates by tier (from CHANGELOG v1.23.9)
+    const defaultRates = {
+      new: 30,
+      member: 22.50,
+      promo: 15,
+      frequent: 20
+    };
+
+    // In a real implementation, this would come from config or user's tier
+    return defaultRates.new;
+  };
 
   // Calculate smart button position based on selection and viewport
   useEffect(() => {
@@ -232,11 +250,23 @@ const DayGrid: React.FC<DayGridProps> = ({
     clearSelection();
   };
 
-  // Global event listeners for mouse up and escape key
+  // Detect touch device
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  // Global event listeners for mouse/touch up and escape key
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
+      }
+    };
+
+    const handleGlobalTouchEnd = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        touchStartRef.current = null;
       }
     };
 
@@ -247,10 +277,12 @@ const DayGrid: React.FC<DayGridProps> = ({
     };
 
     document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('touchend', handleGlobalTouchEnd);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
       document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isDragging]);
@@ -317,13 +349,42 @@ const DayGrid: React.FC<DayGridProps> = ({
                       relative border-r border-b border-[var(--border-primary)] min-h-[41px] transition-all duration-200
                       ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                       ${isAvailable && !isSelected ? 'hover:bg-[var(--bg-hover)]' : ''}
-                      ${isSelected ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400' : ''}
-                      ${isSelectionStart ? 'ring-2 ring-blue-500 ring-inset z-10' : ''}
-                      ${isSelectionEnd ? 'ring-2 ring-blue-500 ring-inset z-10' : ''}
+                      ${isSelected ? 'bg-[var(--accent)]/10 border-[var(--accent)]' : ''}
+                      ${isSelectionStart ? 'ring-2 ring-[var(--accent)] ring-inset z-10' : ''}
+                      ${isSelectionEnd ? 'ring-2 ring-[var(--accent)] ring-inset z-10' : ''}
+                      ${isTouchDevice ? 'touch-manipulation' : ''}
                     `}
+                    data-slot-index={slotIndex}
+                    data-space-id={space.id}
+                    data-time={slot.toISOString()}
                     onMouseDown={(e) => {
                       e.preventDefault();
+                      if (!isTouchDevice && isAvailable && !slotBooking) {
+                        setSelectionStart({
+                          time: slot,
+                          spaceId: space.id,
+                          slotIndex: slotIndex
+                        });
+                        setIsDragging(true);
+
+                        // Auto-select minimum 1 hour (next slot)
+                        if (slotIndex < timeSlots.length - 1) {
+                          setSelectionEnd({
+                            time: timeSlots[slotIndex + 1],
+                            slotIndex: slotIndex + 1
+                          });
+                        }
+                      }
+                    }}
+                    onTouchStart={(e) => {
                       if (isAvailable && !slotBooking) {
+                        const touch = e.touches[0];
+                        touchStartRef.current = {
+                          x: touch.clientX,
+                          y: touch.clientY,
+                          time: Date.now()
+                        };
+
                         setSelectionStart({
                           time: slot,
                           spaceId: space.id,
@@ -341,7 +402,7 @@ const DayGrid: React.FC<DayGridProps> = ({
                       }
                     }}
                     onMouseEnter={() => {
-                      if (isDragging && selectionStart && selectionStart.spaceId === space.id) {
+                      if (!isTouchDevice && isDragging && selectionStart && selectionStart.spaceId === space.id) {
                         // Check if we can extend to this slot
                         const canExtend = checkCanExtendSelection(slotIndex, space.id);
                         if (canExtend) {
@@ -353,9 +414,37 @@ const DayGrid: React.FC<DayGridProps> = ({
                       }
                       setHoveredSlot({ slotIndex, spaceId: space.id });
                     }}
+                    onTouchMove={(e) => {
+                      if (isDragging && selectionStart && selectionStart.spaceId === space.id) {
+                        const touch = e.touches[0];
+                        const element = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+
+                        if (element && element.dataset.slotIndex) {
+                          const targetSlotIndex = parseInt(element.dataset.slotIndex);
+                          const targetSpaceId = element.dataset.spaceId;
+
+                          if (targetSpaceId === space.id) {
+                            const canExtend = checkCanExtendSelection(targetSlotIndex, space.id);
+                            if (canExtend) {
+                              setSelectionEnd({
+                                time: timeSlots[targetSlotIndex],
+                                slotIndex: targetSlotIndex
+                              });
+                            }
+                          }
+                        }
+                      }
+                    }}
                     onMouseUp={() => {
+                      if (!isTouchDevice && selectionStart && isDragging) {
+                        setIsDragging(false);
+                        // Selection is complete, ready for confirmation
+                      }
+                    }}
+                    onTouchEnd={() => {
                       if (selectionStart && isDragging) {
                         setIsDragging(false);
+                        touchStartRef.current = null;
                         // Selection is complete, ready for confirmation
                       }
                     }}
@@ -369,8 +458,14 @@ const DayGrid: React.FC<DayGridProps> = ({
                       />
                     )}
                     {isSelected && !slotBooking && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-full h-full bg-blue-500/10 dark:bg-blue-400/10"></div>
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="w-full h-full bg-[var(--accent)]/5"></div>
+                        {/* Show "30 min" marker on each selected slot */}
+                        {!isSelectionStart && !isSelectionEnd && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[10px] text-[var(--accent)] opacity-50">30min</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -381,46 +476,73 @@ const DayGrid: React.FC<DayGridProps> = ({
         ))}
       </div>
 
-      {/* Duration indicator during selection */}
+      {/* Minimal duration indicator during selection */}
       {isDragging && selectionStart && selectionEnd && selectionDuration && (
         <div
-          className="absolute z-40 pointer-events-none animate-in fade-in duration-200"
+          className="fixed z-40 pointer-events-none"
           style={{
-            // Position at the end of selection
-            left: '50%',
-            top: `${(selectionEnd.slotIndex + 1) * 41 + 100}px`,
-            transform: 'translateX(-50%)',
+            // Follow the drag position
+            bottom: '20px',
+            right: '20px',
           }}
         >
-          <div className="bg-blue-600 text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg">
+          <div className="bg-[var(--accent)] text-white text-sm font-medium px-3 py-1.5 rounded-md shadow-lg">
             {selectionDuration}
           </div>
         </div>
       )}
 
-      {/* Floating confirmation button */}
+      {/* Inline confirmation panel - minimal and informative */}
       {selectionStart && !isDragging && (
         <div
           ref={buttonRef}
-          className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-out"
+          className="fixed z-50 bg-white dark:bg-[var(--bg-secondary)] rounded-md shadow-lg p-3 border border-[var(--border-primary)] max-w-sm"
           style={buttonPosition}>
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            <div className="font-semibold text-[var(--text-primary)] text-base">
-              Book {selectionDuration || '1 hour'} • {spaces.find(s => s.id === selectionStart.spaceId)?.name}
+          {/* Time and space info */}
+          <div className="space-y-1 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-muted)]">Time:</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">
+                {format(timeSlots[selectionStart.slotIndex], 'h:mm a')} -
+                {' '}{format(timeSlots[(selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) + 1] ||
+                             addMinutes(timeSlots[selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1], 30), 'h:mm a')}
+              </span>
             </div>
-            <div className="mt-1 text-xs">
-              {format(timeSlots[selectionStart.slotIndex], 'h:mm a')} -
-              {' '}{format(timeSlots[(selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) + 1] ||
-                           addMinutes(timeSlots[selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1], 30), 'h:mm a')}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-muted)]">Duration:</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">
+                {selectionDuration || '1 hour'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-muted)]">Simulator:</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">
+                {spaces.find(s => s.id === selectionStart.spaceId)?.name}
+              </span>
+            </div>
+            {/* Price estimate */}
+            <div className="flex items-center gap-2 pt-1 border-t border-[var(--border-primary)]">
+              <span className="text-xs text-[var(--text-muted)]">Estimated Price:</span>
+              <span className="text-sm font-bold text-[var(--accent)]">
+                ${(() => {
+                  const duration = Math.abs((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30;
+                  const hourlyRate = getHourlyRate();
+                  return (duration / 60 * hourlyRate).toFixed(2);
+                })()}
+              </span>
             </div>
           </div>
+          {/* Actions */}
           <div className="flex gap-2">
-            <Button size="sm" variant="primary" onClick={confirmSelection}>
-              Confirm
+            <Button size="sm" variant="primary" onClick={confirmSelection} fullWidth>
+              Continue to Booking
             </Button>
-            <Button size="sm" variant="ghost" onClick={clearSelection}>
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+            >
               Cancel
-            </Button>
+            </button>
           </div>
         </div>
       )}

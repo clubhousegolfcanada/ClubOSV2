@@ -53,22 +53,87 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
       SELECT column_name
       FROM information_schema.columns
       WHERE table_name = 'bookings'
-      AND column_name IN ('space_ids', 'space_id', 'simulator_id')
     `);
 
     const columns = checkColumns.rows.map(row => row.column_name);
+
+    // Check for all potentially missing columns
     const hasSpaceIds = columns.includes('space_ids');
     const hasSpaceId = columns.includes('space_id');
     const hasSimulatorId = columns.includes('simulator_id');
+    const hasUserId = columns.includes('user_id');
+    const hasCustomerId = columns.includes('customer_id');
+    const hasCustomerName = columns.includes('customer_name');
+    const hasCustomerEmail = columns.includes('customer_email');
+    const hasCustomerPhone = columns.includes('customer_phone');
+    const hasTotalAmount = columns.includes('total_amount');
+    const hasDepositAmount = columns.includes('deposit_amount');
+    const hasPaymentStatus = columns.includes('payment_status');
+    const hasAmountCents = columns.includes('amount_cents');
 
     // Build space_ids field based on what columns exist
-    let spaceIdsField = 'ARRAY[]::VARCHAR(50)[] as space_ids'; // Default empty array
+    let spaceIdsField = 'ARRAY[]::INTEGER[] as space_ids'; // Default empty array
     if (hasSpaceIds) {
       spaceIdsField = 'b.space_ids';
     } else if (hasSpaceId) {
-      spaceIdsField = 'ARRAY[b.space_id]::VARCHAR(50)[] as space_ids';
+      spaceIdsField = 'ARRAY[b.space_id]::INTEGER[] as space_ids';
     } else if (hasSimulatorId) {
-      spaceIdsField = 'ARRAY[b.simulator_id::VARCHAR(50)] as space_ids';
+      spaceIdsField = 'ARRAY[b.simulator_id]::INTEGER[] as space_ids';
+    }
+
+    // Build user/customer ID field
+    let userIdField = 'NULL::INTEGER as user_id';
+    if (hasUserId) {
+      userIdField = 'b.user_id';
+    } else if (hasCustomerId) {
+      userIdField = 'b.customer_id as user_id';
+    }
+
+    // Build customer fields
+    let customerNameField = "'Guest'::VARCHAR as customer_name";
+    if (hasCustomerName) {
+      customerNameField = "COALESCE(b.customer_name, u.name, 'Guest') as customer_name";
+    } else if (hasUserId || hasCustomerId) {
+      customerNameField = "COALESCE(u.name, 'Guest') as customer_name";
+    }
+
+    let customerEmailField = "''::VARCHAR as customer_email";
+    if (hasCustomerEmail) {
+      customerEmailField = "COALESCE(b.customer_email, u.email, '') as customer_email";
+    } else if (hasUserId || hasCustomerId) {
+      customerEmailField = "COALESCE(u.email, '') as customer_email";
+    }
+
+    let customerPhoneField = "''::VARCHAR as customer_phone";
+    if (hasCustomerPhone) {
+      customerPhoneField = "COALESCE(b.customer_phone, u.phone, '') as customer_phone";
+    } else if (hasUserId || hasCustomerId) {
+      customerPhoneField = "COALESCE(u.phone, '') as customer_phone";
+    }
+
+    // Build payment fields
+    let totalAmountField = '0::INTEGER as total_amount';
+    if (hasTotalAmount) {
+      totalAmountField = 'COALESCE(b.total_amount, 0) as total_amount';
+    } else if (hasAmountCents) {
+      totalAmountField = 'COALESCE(b.amount_cents, 0) as total_amount';
+    }
+
+    let depositAmountField = '0::INTEGER as deposit_amount';
+    if (hasDepositAmount) {
+      depositAmountField = 'COALESCE(b.deposit_amount, 0) as deposit_amount';
+    }
+
+    let paymentStatusField = "'pending'::VARCHAR as payment_status";
+    if (hasPaymentStatus) {
+      paymentStatusField = "COALESCE(b.payment_status, 'pending') as payment_status";
+    }
+
+    // Build the JOIN clause based on available columns
+    let joinClause = '';
+    if (hasUserId || hasCustomerId) {
+      const joinColumn = hasUserId ? 'b.user_id' : 'b.customer_id';
+      joinClause = `LEFT JOIN users u ON ${joinColumn} = u.id`;
     }
 
     // Build query based on available columns
@@ -77,20 +142,19 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
         b.id,
         b.location_id,
         ${spaceIdsField},
-        b.user_id,
+        ${userIdField},
         b.start_at,
         b.end_at,
         b.status,
-        COALESCE(b.customer_name, u.name, 'Guest') as customer_name,
-        COALESCE(b.customer_email, u.email, '') as customer_email,
-        COALESCE(b.customer_phone, u.phone, '') as customer_phone,
-        COALESCE(b.total_amount, 0) as total_amount,
-        COALESCE(b.deposit_amount, 0) as deposit_amount,
-        COALESCE(b.payment_status, 'pending') as payment_status,
-        u.name as user_name,
-        u.email as user_email
+        ${customerNameField},
+        ${customerEmailField},
+        ${customerPhoneField},
+        ${totalAmountField},
+        ${depositAmountField},
+        ${paymentStatusField}
+        ${joinClause ? ', u.name as user_name, u.email as user_email' : ", NULL as user_name, NULL as user_email"}
       FROM bookings b
-      LEFT JOIN users u ON b.user_id = u.id
+      ${joinClause}
       WHERE b.start_at >= $1 AND b.start_at <= $2
     `;
 

@@ -13,6 +13,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Skeleton from '@/components/ui/Skeleton';
 import { CompactCalendarSkeleton } from './CalendarSkeleton';
 import DayGridCompact from './DayGridCompact';
+import DayGridMobile from './DayGridMobile';
 import WeekGridCompact from './WeekGridCompact';
 import ColorLegend from './ColorLegend';
 import AdminBlockOff from './AdminBlockOff';
@@ -535,15 +536,27 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                 size="sm"
               />
             ) : viewMode === 'day' ? (
-              <DayGridCompact
-                date={selectedDate}
-                bookings={filteredBookings}
-                spaces={spaces}
-                config={config!}
-                onBookingCreate={handleBookingCreate}
-                onBookingSelect={onBookingSelect}
-                onSpaceClick={handleSpaceClick}
-              />
+              // Use mobile-optimized grid on phones, compact grid on tablets
+              typeof window !== 'undefined' && window.innerWidth < 640 ? (
+                <DayGridMobile
+                  date={selectedDate}
+                  bookings={filteredBookings}
+                  spaces={spaces}
+                  config={config!}
+                  onBookingCreate={handleBookingCreate}
+                  onBookingSelect={onBookingSelect}
+                />
+              ) : (
+                <DayGridCompact
+                  date={selectedDate}
+                  bookings={filteredBookings}
+                  spaces={spaces}
+                  config={config!}
+                  onBookingCreate={handleBookingCreate}
+                  onBookingSelect={onBookingSelect}
+                  onSpaceClick={handleSpaceClick}
+                />
+              )
             ) : (
               <WeekGridCompact
                 startDate={startOfWeek(selectedDate)}
