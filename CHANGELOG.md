@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.2] - 2025-10-22
+
+### 🚨 Critical Fix
+- **Booking System Defensive Schema Handling**: Fixed 500 errors by making backend handle missing columns
+  - Backend now checks which columns exist before querying (space_ids, space_id, simulator_id)
+  - Dynamically builds queries based on actual database schema
+  - Works with both old and new database schemas
+  - Handles production database that hasn't run migration 336 yet
+  - Result: Booking system works regardless of which migrations have run
+
 ## [1.23.1] - 2025-10-22
 
 ### 🎨 UI Consistency & Navigation Improvements

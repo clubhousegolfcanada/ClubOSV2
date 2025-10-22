@@ -48,12 +48,35 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
     const endOfDay = new Date(queryDate);
     endOfDay.setUTCHours(23, 59, 59, 999);
 
-    // Simplified query that works with inconsistent schema
+    // Check which columns exist (defensive for production)
+    const checkColumns = await db.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'bookings'
+      AND column_name IN ('space_ids', 'space_id', 'simulator_id')
+    `);
+
+    const columns = checkColumns.rows.map(row => row.column_name);
+    const hasSpaceIds = columns.includes('space_ids');
+    const hasSpaceId = columns.includes('space_id');
+    const hasSimulatorId = columns.includes('simulator_id');
+
+    // Build space_ids field based on what columns exist
+    let spaceIdsField = 'ARRAY[]::VARCHAR(50)[] as space_ids'; // Default empty array
+    if (hasSpaceIds) {
+      spaceIdsField = 'b.space_ids';
+    } else if (hasSpaceId) {
+      spaceIdsField = 'ARRAY[b.space_id]::VARCHAR(50)[] as space_ids';
+    } else if (hasSimulatorId) {
+      spaceIdsField = 'ARRAY[b.simulator_id::VARCHAR(50)] as space_ids';
+    }
+
+    // Build query based on available columns
     let query = `
       SELECT
         b.id,
         b.location_id,
-        b.space_ids,
+        ${spaceIdsField},
         b.user_id,
         b.start_at,
         b.end_at,
@@ -137,11 +160,21 @@ router.get('/availability', authenticate, async (req: Request, res: Response) =>
     const endOfDay = new Date(queryDate);
     endOfDay.setUTCHours(23, 59, 59, 999);
 
+    // Check if space_ids column exists
+    const checkCol = await db.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'bookings'
+      AND column_name = 'space_ids'
+    `);
+
+    const hasSpaceIdsCol = checkCol.rows.length > 0;
+
     let query = `
       SELECT
         start_at,
         end_at,
-        space_ids,
+        ${hasSpaceIdsCol ? 'space_ids' : 'ARRAY[]::VARCHAR(50)[] as space_ids'},
         is_admin_block
       FROM bookings
       WHERE location_id = $1
@@ -152,7 +185,7 @@ router.get('/availability', authenticate, async (req: Request, res: Response) =>
 
     const params: any[] = [locationId, startOfDay.toISOString(), endOfDay.toISOString()];
 
-    if (spaceId) {
+    if (spaceId && hasSpaceIdsCol) {
       query += ` AND $4 = ANY(space_ids)`;
       params.push(spaceId);
     }
