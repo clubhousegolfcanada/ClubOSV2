@@ -2,7 +2,7 @@
 
 All notable changes to ClubOS will be documented in this file.
 
-## [1.22.8] - 2025-10-21
+## [1.22.8] - 2025-10-22
 
 ### 🎨 UI Enhancement
 - **Removed Redundant Page Headers**: Eliminated duplicate headers from all operator pages
@@ -12,11 +12,13 @@ All notable changes to ClubOS will be documented in this file.
   - Cleaner, more minimal interface following modern UI principles
   - Consistent experience across all operator pages
   - Perfect responsive design on both mobile and desktop viewports
+  - Fixed excessive top padding on Bookings page for proper spacing
 
 ### 🔧 Technical Details
 - **Affected Pages**: 6 operator pages updated for consistency
 - **Mobile Impact**: Significant improvement in available screen space on mobile devices
 - **Desktop Impact**: Cleaner, more professional appearance without visual redundancy
+- **Bookings Fix**: Reduced top padding from 64px to 16px for consistent spacing
 - **No Breaking Changes**: Purely visual enhancement with no functional changes
 
 ## [1.22.7] - 2025-10-21
