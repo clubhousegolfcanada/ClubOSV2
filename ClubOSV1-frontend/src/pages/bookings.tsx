@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
-import logger from '@/services/logger';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
-import TieredBookingForm from '@/components/booking/forms/TieredBookingForm';
 import UnifiedBookingCard from '@/components/booking/unified/UnifiedBookingCard';
-import AdminBlockOff from '@/components/booking/calendar/AdminBlockOff';
 import Head from 'next/head';
 import { Calendar, ExternalLink, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
 import { useNotifications } from '@/state/hooks';
+import { BookingMode } from '@/components/booking/unified/UnifiedBookingCard';
 
 export default function Bookings() {
   const router = useRouter();
@@ -24,10 +22,8 @@ export default function Bookings() {
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showCreateBooking, setShowCreateBooking] = useState(false);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
-  const [showAdminBlock, setShowAdminBlock] = useState(false);
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // For calendar refresh without page reload
-  const [locationSpaces, setLocationSpaces] = useState<any[]>([]); // Store fetched spaces
+  const [bookingMode, setBookingMode] = useState<BookingMode>('booking'); // Track which mode to open
 
   // Store selected time slot data for pre-population
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
@@ -50,30 +46,8 @@ export default function Bookings() {
       router.push('/login');
     } else {
       setLoading(false);
-      // Fetch spaces for the default location when admin
-      if (isAdmin) {
-        fetchSpacesForLocation();
-      }
     }
   }, [user, router]);
-
-  // Fetch spaces when admin opens block modal
-  const fetchSpacesForLocation = async (locationId?: string) => {
-    try {
-      const { http } = await import('@/api/http');
-      const response = await http.get('/bookings/spaces', {
-        params: { locationId: locationId || '1' } // Default to location 1
-      });
-      setLocationSpaces(response.data.data || []);
-    } catch (error) {
-      logger.error('Failed to fetch spaces', error);
-      // Fallback to some default spaces if fetch fails
-      setLocationSpaces([
-        { id: '1', name: 'Simulator 1', locationId: '1', displayOrder: 1, isActive: true },
-        { id: '2', name: 'Simulator 2', locationId: '1', displayOrder: 2, isActive: true },
-      ]);
-    }
-  };
 
   // Handle when a time slot is clicked on the calendar
   const handleTimeSlotClick = (bookingOrStartTime: any, endTime?: Date, spaceId?: string, spaceName?: string) => {
@@ -86,6 +60,7 @@ export default function Bookings() {
         spaceId: spaceId,
         spaceName: spaceName
       });
+      setBookingMode('booking'); // Default to booking mode when clicking time slot
       setShowCreateBooking(true);
     } else if (bookingOrStartTime && typeof bookingOrStartTime === 'object') {
       // This is from BookingCalendar - booking object
@@ -97,6 +72,7 @@ export default function Bookings() {
           spaceId: bookingOrStartTime.spaceId,
           spaceName: bookingOrStartTime.spaceName
         });
+        setBookingMode('booking'); // Default to booking mode when clicking time slot
         setShowCreateBooking(true);
       } else if (bookingOrStartTime.id) {
         // This is an actual booking confirmation
@@ -205,6 +181,7 @@ export default function Bookings() {
                       variant="primary"
                       size="sm"
                       onClick={() => {
+                        setBookingMode('booking');
                         setShowCreateBooking(true);
                       }}
                     >
@@ -224,9 +201,9 @@ export default function Bookings() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={async () => {
-                            await fetchSpacesForLocation(); // Fetch fresh spaces
-                            setShowAdminBlock(true);
+                          onClick={() => {
+                            setBookingMode('block');
+                            setShowCreateBooking(true);
                           }}
                         >
                           Block Time
@@ -235,11 +212,11 @@ export default function Bookings() {
                           variant="secondary"
                           size="sm"
                           onClick={() => {
-                            setShowBulkActions(true);
-                            notify('info', 'Bulk actions coming soon!');
+                            setBookingMode('maintenance');
+                            setShowCreateBooking(true);
                           }}
                         >
-                          Bulk Actions
+                          Schedule Maintenance
                         </Button>
                       </>
                     )}
@@ -267,17 +244,24 @@ export default function Bookings() {
               initialSpaceId={selectedTimeSlot.spaceId}
               initialSpaceName={selectedTimeSlot.spaceName}
               onSuccess={(result) => {
-                notify('success', `Booking created successfully! ID: ${result.id || 'New'}`);
+                const successMessage = bookingMode === 'block'
+                  ? `Time blocked successfully!`
+                  : bookingMode === 'maintenance'
+                  ? `Maintenance scheduled successfully!`
+                  : `Booking created successfully! ID: ${result.id || 'New'}`;
+                notify('success', successMessage);
                 setShowCreateBooking(false);
                 setSelectedTimeSlot({}); // Clear selection after success
+                setBookingMode('booking'); // Reset to default mode
                 // Refresh the calendar without page reload
                 setRefreshKey(prev => prev + 1);
               }}
               onCancel={() => {
                 setShowCreateBooking(false);
                 setSelectedTimeSlot({}); // Clear selection on cancel
+                setBookingMode('booking'); // Reset to default mode
               }}
-              defaultMode={isAdmin ? 'booking' : 'booking'}
+              defaultMode={bookingMode}
               allowModeSwitch={isStaff}
             />
           </div>
@@ -296,51 +280,6 @@ export default function Bookings() {
         />
       )}
 
-      {showAdminBlock && isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn">
-          <div className="max-w-2xl w-full mx-4">
-            <AdminBlockOff
-              initialStartTime={selectedTimeSlot.startTime}
-              initialEndTime={selectedTimeSlot.endTime}
-              initialSpaceId={selectedTimeSlot.spaceId}
-              spaces={locationSpaces.length > 0 ? locationSpaces : [
-                { id: '1', name: 'Simulator 1', locationId: '1', displayOrder: 1, isActive: true },
-                { id: '2', name: 'Simulator 2', locationId: '1', displayOrder: 2, isActive: true },
-              ]} // Use fetched spaces or minimal fallback
-              onBlock={async (blockData) => {
-                // Block will be created via API in AdminBlockOff component
-                notify('success', `Time slots blocked: ${blockData.reason}`);
-                setShowAdminBlock(false);
-                setSelectedTimeSlot({}); // Clear selection after block
-                // Refresh calendar without page reload
-                setRefreshKey(prev => prev + 1);
-              }}
-              onCancel={() => {
-                setShowAdminBlock(false);
-                setSelectedTimeSlot({}); // Clear selection on cancel
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {showBulkActions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[var(--bg-primary)] rounded-lg p-6 max-w-2xl w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Bulk Actions</h2>
-            <p className="text-[var(--text-secondary)] mb-4">
-              Bulk booking management features are coming soon!
-            </p>
-            <ul className="list-disc list-inside text-[var(--text-secondary)] mb-4">
-              <li>Cancel multiple bookings</li>
-              <li>Reschedule groups</li>
-              <li>Send mass notifications</li>
-              <li>Export booking data</li>
-            </ul>
-            <Button onClick={() => setShowBulkActions(false)}>Close</Button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

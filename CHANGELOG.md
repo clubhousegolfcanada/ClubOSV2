@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.11] - 2025-10-22
+
+### 🔧 Fixed
+- **Unified Booking System Consolidation**: Cleaned up duplicate booking modal implementations
+  - Removed redundant AdminBlockOff modal usage - now everything uses UnifiedBookingCard
+  - "Create Booking" button opens UnifiedBookingCard in 'booking' mode
+  - "Block Time" button opens UnifiedBookingCard in 'block' mode (admin only)
+  - Added "Schedule Maintenance" button that opens UnifiedBookingCard in 'maintenance' mode
+  - UnifiedBookingCard already supported all modes (booking, block, maintenance, event, class) but wasn't being utilized
+  - Cleaned up unused imports and state variables (removed showAdminBlock, locationSpaces, fetchSpacesForLocation)
+  - Proper mode detection based on which button is clicked
+  - Result: Single unified modal for all booking operations with cleaner, more maintainable code
+
+### 🎨 Code Quality
+- **Removed Duplicate Code**: Eliminated redundant AdminBlockOff implementation
+- **Simplified State Management**: Reduced from 2 modal states to 1
+- **Better UX**: Consistent interface for all booking types
+
 ## [1.22.10] - 2025-10-22
 
 ### 🎨 UI Enhancement
