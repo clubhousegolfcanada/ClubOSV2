@@ -116,85 +116,118 @@ export default function Bookings() {
 
       <div className={`min-h-screen bg-[var(--bg-primary)] ${isCustomer ? 'customer-app' : ''}`}>
         {/* Sub Navigation - Operations Style (only for staff) */}
-        {isStaff && !showLegacySystem && (
+        {isStaff && (
           <div className="bg-white border-b border-gray-200">
             <div className="px-4 sm:px-6 lg:px-8">
               <div className="max-w-7xl mx-auto">
                 <nav className="flex justify-between items-center">
-                  {/* View Tabs */}
-                  <div className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
-                    <button
-                      onClick={() => setView('calendar')}
-                      className={`
-                        flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                        ${view === 'calendar'
-                          ? 'border-[var(--accent)] text-[var(--accent)]'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }
-                      `}
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span>Calendar</span>
-                    </button>
-                    <button
-                      onClick={() => setView('list')}
-                      className={`
-                        flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                        ${view === 'list'
-                          ? 'border-[var(--accent)] text-[var(--accent)]'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }
-                      `}
-                    >
-                      <List className="w-4 h-4" />
-                      <span>List View</span>
-                    </button>
+                  {/* Left: View Tabs and Create Button */}
+                  <div className="flex items-center space-x-2">
+                    {!showLegacySystem && (
+                      <>
+                        {/* View Tabs */}
+                        <div className="flex space-x-1 sm:space-x-4 pb-px">
+                          <button
+                            onClick={() => setView('calendar')}
+                            className={`
+                              flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                              ${view === 'calendar'
+                                ? 'border-[var(--accent)] text-[var(--accent)]'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                              }
+                            `}
+                          >
+                            <Calendar className="w-4 h-4" />
+                            <span>Calendar</span>
+                          </button>
+                          <button
+                            onClick={() => setView('list')}
+                            className={`
+                              flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                              ${view === 'list'
+                                ? 'border-[var(--accent)] text-[var(--accent)]'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                              }
+                            `}
+                          >
+                            <List className="w-4 h-4" />
+                            <span>List View</span>
+                          </button>
+                        </div>
+
+                        {/* Create Booking Button */}
+                        <div className="border-l border-gray-200 pl-2 ml-2">
+                          <button
+                            onClick={() => {
+                              setBookingMode('booking');
+                              setShowCreateBooking(true);
+                            }}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Create Booking</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex items-center space-x-2 py-2">
-                    <button
-                      onClick={() => {
-                        setBookingMode('booking');
-                        setShowCreateBooking(true);
-                      }}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="hidden sm:inline">Create Booking</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCustomerSearch(true);
-                      }}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                    >
-                      <Search className="w-4 h-4" />
-                      <span className="hidden sm:inline">Search</span>
-                    </button>
-                    {isAdmin && (
+                  {/* Right: Action Buttons and System Toggle */}
+                  <div className="flex items-center space-x-2 py-1">
+                    {!showLegacySystem && (
                       <>
                         <button
                           onClick={() => {
-                            setBookingMode('block');
-                            setShowCreateBooking(true);
+                            setShowCustomerSearch(true);
                           }}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
                         >
-                          <Ban className="w-4 h-4" />
-                          <span className="hidden sm:inline">Block</span>
+                          <Search className="w-4 h-4" />
+                          <span className="hidden sm:inline">Search</span>
                         </button>
-                        <button
-                          onClick={() => {
-                            setBookingMode('maintenance');
-                            setShowCreateBooking(true);
-                          }}
-                          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                        >
-                          <Wrench className="w-4 h-4" />
-                          <span className="hidden sm:inline">Maintenance</span>
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setBookingMode('block');
+                                setShowCreateBooking(true);
+                              }}
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                            >
+                              <Ban className="w-4 h-4" />
+                              <span className="hidden sm:inline">Block</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setBookingMode('maintenance');
+                                setShowCreateBooking(true);
+                              }}
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                            >
+                              <Wrench className="w-4 h-4" />
+                              <span className="hidden sm:inline">Maintenance</span>
+                            </button>
+                          </>
+                        )}
+                        <div className="border-l border-gray-200 pl-2 ml-2">
+                          <button
+                            onClick={() => setShowLegacySystem(!showLegacySystem)}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            <span className="hidden sm:inline">Use Legacy Skedda</span>
+                          </button>
+                        </div>
                       </>
+                    )}
+                    {showLegacySystem && (
+                      <button
+                        onClick={() => setShowLegacySystem(!showLegacySystem)}
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>Use ClubOS</span>
+                      </button>
                     )}
                   </div>
                 </nav>
@@ -203,43 +236,25 @@ export default function Bookings() {
           </div>
         )}
 
-        <main className={isCustomer ? 'pb-24 lg:pb-8 lg:pt-14' : 'pt-4'}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            {/* Legacy system toggle */}
-            <div className="flex justify-end mb-4">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowLegacySystem(!showLegacySystem)}
-              >
-                <ExternalLink className="w-4 h-4 mr-1" />
-                {showLegacySystem ? 'Use ClubOS' : 'Use Legacy Skedda'}
-              </Button>
-            </div>
-
-
+        <main className={isCustomer ? 'pb-24 lg:pb-8 lg:pt-14' : ''}>
+          <div className={showLegacySystem ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2'}>
             {showLegacySystem ? (
-              /* Legacy Skedda System - Same for all users */
-              <div className="h-full">
-                <iframe
-                  src="https://clubhouse247golf.skedda.com/booking"
-                  title="Clubhouse Golf Booking System"
-                  className="w-full rounded-lg"
-                  style={{
-                    height: 'calc(100vh - 200px)',
-                    border: 'none',
-                    minHeight: '600px'
-                  }}
-                  allow="payment; fullscreen; camera; microphone; geolocation"
-                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
-                />
-              </div>
+              /* Legacy Skedda System - Full screen for maximum space */
+              <iframe
+                src="https://clubhouse247golf.skedda.com/booking"
+                title="Clubhouse Golf Booking System"
+                className="w-full"
+                style={{
+                  height: isStaff ? 'calc(100vh - 120px)' : 'calc(100vh - 64px)', // Account for nav + sub-nav height
+                  border: 'none',
+                  minHeight: '600px'
+                }}
+                allow="payment; fullscreen; camera; microphone; geolocation"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
+              />
             ) : view === 'calendar' ? (
-              /* ClubOS Booking System - Role-based calendar */
-              <div className="space-y-4">
-                {/* Calendar Component - Adjusts based on role */}
-                <CalendarComponent key={refreshKey} {...calendarProps} />
-              </div>
+              /* ClubOS Booking System - Maximized calendar space */
+              <CalendarComponent key={refreshKey} {...calendarProps} />
             ) : (
               /* List view - Full booking management table */
               <BookingListView />

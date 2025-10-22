@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar, Ticket } from 'lucide-react';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
@@ -836,80 +836,60 @@ export default function Messages() {
       </Head>
 
       <div className={`min-h-screen bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.className}`}>
-        {/* Desktop Layout - Standard ClubOS design */}
-        <div className="hidden md:block">
-          <div className="container mx-auto px-4 py-4">
-            {/* Quick Actions Bar */}
-            <div className="mb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {/* Quick Actions Bar */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => router.push('/tickets?create=true')}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs"
-                      title="Create new ticket"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Ticket</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => window.open('https://clubhouse247golf.skedda.com/booking', '_blank')}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs"
-                      title="Check booking site"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Bookings</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        // Check if on mobile device
-                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                        
-                        if (isMobile) {
-                          // On mobile, try to open the Splashtop app
-                          // Using a hidden iframe method which is more reliable
-                          // Use simple URL scheme for all mobile platforms
-                          // st-business:// is the correct scheme for Splashtop Business app
-                          window.location.href = 'st-business://com.splashtop.business';
-                          
-                          // Fallback: After a short delay, if user is still here, open web version
-                          setTimeout(() => {
-                            // Check if page is still visible (app didn't open)
-                            if (!document.hidden) {
-                              window.location.href = 'https://my.splashtop.com/computers';
-                            }
-                          }, 2500);
-                        } else {
-                          // On desktop, open web interface
-                          window.open('https://my.splashtop.com/computers', '_blank');
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs"
-                      title="Remote control simulators"
-                    >
-                      <Monitor className="w-3.5 h-3.5" />
-                      <span>Control</span>
-                    </button>
-                  </div>
+        {/* Sub Navigation - Operations Style */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <nav className="flex justify-between items-center">
+                {/* Left: Quick Actions */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => router.push('/tickets?create=true')}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span className="hidden sm:inline">Create Ticket</span>
+                  </button>
+                  <button
+                    onClick={() => router.push('/bookings')}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span className="hidden sm:inline">Bookings</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                      if (isMobile) {
+                        window.location.href = 'st-business://com.splashtop.business';
+                        setTimeout(() => {
+                          if (!document.hidden) {
+                            window.location.href = 'https://my.splashtop.com/computers';
+                          }
+                        }, 2500);
+                      } else {
+                        window.open('https://my.splashtop.com/computers', '_blank');
+                      }
+                    }}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                  >
+                    <Monitor className="w-4 h-4" />
+                    <span className="hidden sm:inline">Remote Control</span>
+                  </button>
                 </div>
-                
-                {/* Push Notification Toggle */}
-                <div className="flex items-center gap-2">
+
+                {/* Right: Push Notification Toggle */}
+                <div className="flex items-center space-x-2 py-1">
                   {!isClient ? (
                     // Server-side placeholder to prevent hydration mismatch
-                    <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
-                      <span className="text-sm text-[var(--text-muted)]">Loading...</span>
-                    </div>
+                    <span className="text-sm text-gray-500">Loading...</span>
                   ) : isInIframe && !isSubscribed ? (
                     // In iframe - show pop-out button for notifications
                     <button
                       onClick={() => {
                         const url = `${window.location.origin}/messages`;
                         const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
-                        
+
                         if (newWindow) {
                           toast('Opening ClubOS in a new window to enable notifications', {
                             duration: 5000,
@@ -919,42 +899,46 @@ export default function Messages() {
                           toast.error('Please allow pop-ups to enable notifications');
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent)]/90 transition-colors"
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
                       title="Open in new window for notifications"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      <span className="text-sm">Enable Notifications</span>
+                      <span className="hidden sm:inline">Enable Notifications</span>
                     </button>
                   ) : !isSupported ? null : notificationLoading ? (
-                    <div className="px-4 py-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)]">
-                      <span className="text-sm text-[var(--text-muted)]">Loading...</span>
-                    </div>
+                    <span className="text-sm text-gray-500">Loading...</span>
                   ) : isSubscribed ? (
                     <button
                       onClick={unsubscribe}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-all text-sm font-medium"
                       title="Disable push notifications"
                     >
-                      <Bell className="w-3.5 h-3.5" />
-                      <span className="text-xs">Notifications</span>
+                      <Bell className="w-4 h-4" />
+                      <span className="hidden sm:inline">Notifications On</span>
                     </button>
                   ) : (
                     <button
                       onClick={subscribe}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-lg border border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
                       title="Enable push notifications"
                     >
-                      <BellOff className="w-3.5 h-3.5" />
-                      <span className="text-xs">Enable</span>
+                      <BellOff className="w-4 h-4" />
+                      <span className="hidden sm:inline">Enable Notifications</span>
                     </button>
                   )}
                 </div>
-              </div>
+              </nav>
             </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout - Standard ClubOS design */}
+        <div className="hidden md:block">
+          <div className="container mx-auto px-4 py-4">
 
             {/* Messages Interface - Better height calculation */}
             <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] overflow-hidden">
-              <div className={`grid grid-cols-3 transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-200px)]' : 'h-[calc(100vh-150px)]'}`}>
+              <div className={`grid grid-cols-3 transition-all duration-300 ${remoteActionsBar.isVisible ? 'h-[calc(100vh-250px)]' : 'h-[calc(100vh-200px)]'}`}>
                 
                 {/* Conversations List */}
                 <div className="border-r border-[var(--border-secondary)] overflow-y-auto">

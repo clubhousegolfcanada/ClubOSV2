@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.6] - 2025-10-22
+
+### 🎯 UI Optimization & Consistency
+- **Maximized Booking Window Space**: Optimized layout for better user experience
+  - Moved legacy system toggle (Skedda/ClubOS) into navigation bar
+  - Repositioned Create Booking button next to view tabs for logical grouping
+  - Reduced navigation bar padding from py-3 to py-2 for more vertical space
+  - Removed unnecessary padding from main content area when showing Skedda
+  - Skedda iframe now uses calc(100vh - 120px) for staff to maximize space
+  - ClubOS calendar gets more screen real estate with reduced wrapper padding
+  - Navigation bar now shows consistently for both Skedda and ClubOS modes
+  - Added visual separators (borders) between button groups for clarity
+  - Result: 15-20% more vertical space for booking interface
+- **Simplified Navigation**: Removed redundant navigation items
+  - Removed Bookings and Commands from main nav (available on dashboard)
+  - Removed Bookings from customer nav (available on customer dashboard)
+  - Cleaner navigation with less clutter and better focus
+- **Messages Page Standardization**: Applied Operations-style sub-navigation
+  - Moved Ticket, Bookings, Control, and Enable buttons to sub-nav bar
+  - Consistent styling with other operator pages
+  - Create Ticket as primary action (accent color)
+  - Notification toggle properly integrated into sub-nav
+  - Adjusted message grid height to account for new sub-nav
+
 ## [1.23.5] - 2025-10-22
 
 ### 🔧 Fixed
