@@ -839,19 +839,11 @@ export default function Messages() {
         {/* Desktop Layout - Standard ClubOS design */}
         <div className="hidden md:block">
           <div className="container mx-auto px-3 sm:px-4 py-3">
-            {/* Header Section - More compact */}
+            {/* Quick Actions Bar */}
             <div className="mb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div>
-                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                      Messages
-                    </h1>
-                    <p className="text-[var(--text-secondary)] text-xs font-light">
-                      SMS via OpenPhone
-                    </p>
-                  </div>
-                  {/* Quick Actions Bar - Inline with title */}
+                  {/* Quick Actions Bar */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => router.push('/tickets?create=true')}
@@ -1265,19 +1257,17 @@ export default function Messages() {
         </div>
 
         {/* Mobile Layout - Standard messaging app layout */}
-        <div 
+        <div
           className="md:hidden flex flex-col bg-[var(--bg-primary)]"
           style={{
             height: remoteActionsBar.isVisible ? 'calc(100vh - 48px)' : '100vh',
             transition: 'height 150ms ease-out'
           }}
         >
-          {/* Header - Fixed at top */}
+          {/* Quick Actions and Notifications - Fixed at top */}
           <div className="flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
             <div className="px-4 py-3">
               <div className="flex items-center justify-between">
-                <h1 className="text-xl font-semibold text-[var(--text-primary)]">Messages</h1>
-                
                 {/* Push Notification Toggle */}
                 {isClient && isSupported && (
                   <button

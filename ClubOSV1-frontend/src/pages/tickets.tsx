@@ -33,16 +33,6 @@ export default function TicketCenter() {
 
       <div className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-4 py-2 md:py-4">
-          {/* Header Section - Minimal and clean like Messages page */}
-          <div className="mb-4">
-            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
-              Ticket Center
-            </h1>
-            <p className="text-[var(--text-secondary)] text-xs md:text-sm font-light mt-1">
-              Manage support tickets across all locations
-            </p>
-          </div>
-
           {/* Main Content - New modernized component */}
           <TicketCenterOptimizedV3 />
         </div>

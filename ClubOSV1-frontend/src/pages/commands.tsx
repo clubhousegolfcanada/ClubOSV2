@@ -731,16 +731,6 @@ export default function CommandsRedesigned() {
       
       <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          {/* Header Section */}
-          <div className="mb-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
-              Commands & Actions
-            </h1>
-            <p className="text-[var(--text-secondary)] text-sm font-light max-w-3xl">
-              Remote actions and automated controls for simulator and facility management.
-            </p>
-          </div>
-
           {/* Tab Navigation */}
           <div className="flex items-center gap-4 mb-4 overflow-x-auto">
             <button

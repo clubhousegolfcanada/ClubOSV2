@@ -141,18 +141,8 @@ export default function Bookings() {
       <div className={`min-h-screen bg-[var(--bg-primary)] ${isCustomer ? 'customer-app' : ''}`}>
         <main className={isCustomer ? 'pb-24 lg:pb-8 lg:pt-14' : 'pt-16'}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {/* Header with toggle - enhanced for operators */}
+            {/* View and toggle controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                  {isStaff ? 'Booking Management' : 'Book a Simulator'}
-                </h1>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  {isStaff
-                    ? `Managing bookings across all Clubhouse 24/7 locations`
-                    : 'Reserve your tee time at any Clubhouse 24/7 location'}
-                </p>
-              </div>
               <div className="flex gap-2">
                 {/* View toggle for staff */}
                 {isStaff && !showLegacySystem && (

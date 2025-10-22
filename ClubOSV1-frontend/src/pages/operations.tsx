@@ -131,19 +131,8 @@ export default function Operations() {
       </Head>
 
       <div className="min-h-screen bg-[var(--bg-primary)]">
-        {/* Header */}
+        {/* Tab Navigation */}
         <div className="bg-white border-b border-gray-200">
-          <div className="px-4 sm:px-6 lg:px-8 py-2">
-            <div className="max-w-7xl mx-auto">
-              <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
-                Operations Center
-              </h1>
-              <p className="text-[var(--text-secondary)] text-sm mt-1">
-                {getTabDescription()}
-              </p>
-            </div>
-          </div>
-
           {/* Tab Navigation */}
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
