@@ -115,43 +115,55 @@ export default function Bookings() {
       </Head>
 
       <div className={`min-h-screen bg-[var(--bg-primary)] ${isCustomer ? 'customer-app' : ''}`}>
+        {/* Sub Navigation - Operations Style (only for staff) */}
+        {isStaff && !showLegacySystem && (
+          <div className="bg-white border-b border-gray-200">
+            <div className="px-4 sm:px-6 lg:px-8">
+              <div className="max-w-7xl mx-auto">
+                <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
+                  <button
+                    onClick={() => setView('calendar')}
+                    className={`
+                      flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                      ${view === 'calendar'
+                        ? 'border-[var(--accent)] text-[var(--accent)]'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>Calendar</span>
+                  </button>
+                  <button
+                    onClick={() => setView('list')}
+                    className={`
+                      flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                      ${view === 'list'
+                        ? 'border-[var(--accent)] text-[var(--accent)]'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <span>List View</span>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+
         <main className={isCustomer ? 'pb-24 lg:pb-8 lg:pt-14' : 'pt-4'}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            {/* View and toggle controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div className="flex gap-2">
-                {/* View toggle for staff */}
-                {isStaff && !showLegacySystem && (
-                  <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-lg p-1">
-                    <Button
-                      variant={view === 'calendar' ? 'primary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setView('calendar')}
-                    >
-                      <Calendar className="w-4 h-4 mr-1" />
-                      Calendar
-                    </Button>
-                    <Button
-                      variant={view === 'list' ? 'primary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setView('list')}
-                    >
-                      List
-                    </Button>
-                  </div>
-                )}
-
-                {/* Legacy system toggle */}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowLegacySystem(!showLegacySystem)}
-                  className="self-start sm:self-center"
-                >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  {showLegacySystem ? 'Use ClubOS' : 'Use Legacy Skedda'}
-                </Button>
-              </div>
+            {/* Legacy system toggle */}
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowLegacySystem(!showLegacySystem)}
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                {showLegacySystem ? 'Use ClubOS' : 'Use Legacy Skedda'}
+              </Button>
             </div>
 
 

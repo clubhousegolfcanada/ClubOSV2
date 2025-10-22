@@ -58,13 +58,14 @@ const LOCATION_CONFIG: Record<string, string[]> = {
 // Flatten locations for easy access
 const ALL_LOCATIONS = Object.values(LOCATION_CONFIG).flat();
 
-const TicketCenterOptimizedV3 = () => {
+interface TicketCenterOptimizedV3Props {
+  activeTab?: 'active' | 'resolved' | 'archived';
+}
+
+const TicketCenterOptimizedV3 = ({ activeTab = 'active' }: TicketCenterOptimizedV3Props) => {
   const router = useRouter();
   const { notify } = useNotifications();
   const { user } = useAuthState();
-
-  // Simplified tabs: Active, Resolved, Archived
-  const [activeTab, setActiveTab] = useState<'active' | 'resolved' | 'archived'>('active');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [locationSearch, setLocationSearch] = useState('');
   const [showLocationFilter, setShowLocationFilter] = useState(false);
@@ -458,51 +459,8 @@ const TicketCenterOptimizedV3 = () => {
     <div className="space-y-4">
       {/* Main Card Container */}
       <div className="card">
-        {/* Header with tabs */}
+        {/* Header with action buttons */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab('active')}
-              className={`pb-2 text-sm font-semibold transition-colors relative ${
-                activeTab === 'active'
-                  ? 'text-[var(--text-primary)] border-b-2 border-[var(--accent)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Active
-              {(statusCounts.open + statusCounts['in-progress']) > 0 && (
-                <span className="ml-2 text-xs bg-[var(--accent)] text-white px-1.5 py-0.5 rounded-full">
-                  {statusCounts.open + statusCounts['in-progress']}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('resolved')}
-              className={`pb-2 text-sm font-semibold transition-colors relative ${
-                activeTab === 'resolved'
-                  ? 'text-[var(--text-primary)] border-b-2 border-[var(--accent)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Resolved
-              {(statusCounts.resolved + statusCounts.closed) > 0 && (
-                <span className="ml-2 text-xs bg-gray-500 text-white px-1.5 py-0.5 rounded-full">
-                  {statusCounts.resolved + statusCounts.closed}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('archived')}
-              className={`pb-2 text-sm font-semibold transition-colors relative ${
-                activeTab === 'archived'
-                  ? 'text-[var(--text-primary)] border-b-2 border-[var(--accent)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Archived
-            </button>
-          </div>
-
           <div className="flex items-center gap-2">
             <button
               onClick={toggleGroupByProvince}

@@ -730,36 +730,43 @@ export default function CommandsRedesigned() {
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
-        <div className="container mx-auto px-4 py-4">
-          {/* Tab Navigation */}
-          <div className="flex items-center gap-4 mb-4 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('remote-actions')}
-              className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
-                activeTab === 'remote-actions' 
-                  ? 'text-[var(--text-primary)]' 
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Remote Actions
-              {activeTab === 'remote-actions' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('commands')}
-              className={`text-lg md:text-xl font-semibold transition-all relative pb-1 whitespace-nowrap ${
-                activeTab === 'commands' 
-                  ? 'text-[var(--text-primary)]' 
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Commands
-              {activeTab === 'commands' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"></div>
-              )}
-            </button>
+        {/* Sub Navigation - Operations Style */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
+                <button
+                  onClick={() => setActiveTab('remote-actions')}
+                  className={`
+                    flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                    ${activeTab === 'remote-actions'
+                      ? 'border-[var(--accent)] text-[var(--accent)]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }
+                  `}
+                >
+                  <Power className="w-4 h-4" />
+                  <span>Remote Actions</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('commands')}
+                  className={`
+                    flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                    ${activeTab === 'commands'
+                      ? 'border-[var(--accent)] text-[var(--accent)]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }
+                  `}
+                >
+                  <Terminal className="w-4 h-4" />
+                  <span>Commands</span>
+                </button>
+              </nav>
+            </div>
           </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-4">
 
           {/* Search removed for cleaner UI */}
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { pool } from '../utils/database';
 import { logger } from '../utils/logger';
+import { cacheService, CACHE_TTL } from '../services/cacheService';
 
 const router = Router();
 

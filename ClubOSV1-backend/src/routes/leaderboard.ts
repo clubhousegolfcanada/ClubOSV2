@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { pool } from '../utils/database';
 import { logger } from '../utils/logger';
+import { cacheService, CACHE_TTL } from '../services/cacheService';
 
 const router = Router();
 
@@ -15,45 +16,55 @@ router.use(authenticate);
 router.get('/seasonal', async (req, res) => {
   try {
     const { limit = 100 } = req.query;
-    
-    const query = `
-      SELECT 
-        u.id,
-        u.name,
-        cp.current_rank,
-        sce.cc_net,
-        sce.challenges_completed,
-        ra.percentile,
-        ra.win_rate,
-        RANK() OVER (ORDER BY sce.cc_net DESC) as position,
-        EXISTS(
-          SELECT 1 FROM champion_markers cm 
-          WHERE cm.user_id = u.id AND cm.is_active = true
-        ) as has_champion_marker
-      FROM seasonal_cc_earnings sce
-      JOIN users u ON u.id = sce.user_id
-      JOIN customer_profiles cp ON cp.user_id = u.id
-      LEFT JOIN rank_assignments ra ON ra.user_id = u.id AND ra.season_id = sce.season_id
-      WHERE sce.season_id = get_current_season()
-      AND sce.cc_net > 0
-      ORDER BY sce.cc_net DESC
-      LIMIT $1
-    `;
-    
-    const result = await pool.query(query, [limit]);
-    
+
+    // Cache seasonal leaderboard for 30 seconds
+    const cacheKey = `leaderboard:seasonal:${limit}`;
+    const leaderboardData = await cacheService.withCache(
+      cacheKey,
+      async () => {
+        const query = `
+          SELECT
+            u.id,
+            u.name,
+            cp.current_rank,
+            sce.cc_net,
+            sce.challenges_completed,
+            ra.percentile,
+            ra.win_rate,
+            RANK() OVER (ORDER BY sce.cc_net DESC) as position,
+            EXISTS(
+              SELECT 1 FROM champion_markers cm
+              WHERE cm.user_id = u.id AND cm.is_active = true
+            ) as has_champion_marker
+          FROM seasonal_cc_earnings sce
+          JOIN users u ON u.id = sce.user_id
+          JOIN customer_profiles cp ON cp.user_id = u.id
+          LEFT JOIN rank_assignments ra ON ra.user_id = u.id AND ra.season_id = sce.season_id
+          WHERE sce.season_id = get_current_season()
+          AND sce.cc_net > 0
+          ORDER BY sce.cc_net DESC
+          LIMIT $1
+        `;
+
+        const result = await pool.query(query, [limit]);
+
+        return result.rows.map(row => ({
+          id: row.id,
+          name: row.name,
+          position: parseInt(row.position),
+          currentRank: row.current_rank,
+          ccNet: parseFloat(row.cc_net || 0),
+          challengesCompleted: parseInt(row.challenges_completed || 0),
+          winRate: parseFloat(row.win_rate || 0),
+          hasChampionMarker: row.has_champion_marker
+        }));
+      },
+      { ttl: 30 } // 30 second cache for real-time competition feel
+    );
+
     res.json({
       success: true,
-      data: result.rows.map(row => ({
-        id: row.id,
-        name: row.name,
-        position: parseInt(row.position),
-        currentRank: row.current_rank,
-        ccNet: parseFloat(row.cc_net || 0),
-        challengesCompleted: parseInt(row.challenges_completed || 0),
-        winRate: parseFloat(row.win_rate || 0),
-        hasChampionMarker: row.has_champion_marker
-      }))
+      data: leaderboardData
     });
   } catch (error) {
     logger.error('Error fetching seasonal leaderboard:', error);

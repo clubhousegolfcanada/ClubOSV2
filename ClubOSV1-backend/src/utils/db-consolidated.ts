@@ -16,7 +16,7 @@ const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzh
 const pool = new Pool({
   connectionString: dbUrl,
   ssl: dbUrl.includes('railway') ? { rejectUnauthorized: false } : false,
-  max: 20, // Railway Pro plan supports many connections
+  max: 30, // Increased for 500+ concurrent customers (Railway Pro supports up to 100)
   idleTimeoutMillis: 10000, // 10 seconds idle timeout
   connectionTimeoutMillis: 5000,
   // Additional performance settings
