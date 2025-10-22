@@ -838,7 +838,7 @@ export default function Messages() {
       <div className={`min-h-screen bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.className}`}>
         {/* Desktop Layout - Standard ClubOS design */}
         <div className="hidden md:block">
-          <div className="container mx-auto px-3 sm:px-4 py-3">
+          <div className="container mx-auto px-4 py-4">
             {/* Quick Actions Bar */}
             <div className="mb-3">
               <div className="flex items-center justify-between">

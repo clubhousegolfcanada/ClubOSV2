@@ -318,7 +318,7 @@ export default function Home() {
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
-        <div className="container mx-auto px-4 py-2 md:py-3 lg:py-4">
+        <div className="container mx-auto px-4 py-4">
           {/* Main Content Grid - Optimized for no-scroll */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
             {/* Request Form - Takes up 8 columns on large screens */}

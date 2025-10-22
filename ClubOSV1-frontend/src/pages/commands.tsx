@@ -730,7 +730,7 @@ export default function CommandsRedesigned() {
       </Head>
       
       <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="container mx-auto px-4 py-4">
           {/* Tab Navigation */}
           <div className="flex items-center gap-4 mb-4 overflow-x-auto">
             <button
