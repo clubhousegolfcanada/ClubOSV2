@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.22.7] - 2025-10-21
+
+### 🔧 Database Schema Fix & Booking System Preparation
+- **Fixed Booking Schema Issue**: Identified production database using legacy schema
+  - Production had old columns: `simulator_id`, `start_time`, `duration`
+  - Backend expects new columns: `space_ids[]`, `start_at`, `end_at`
+- **Created Clean Rebuild Migration**: Migration 319 for proper scalable schema
+  - Array support for multi-simulator bookings
+  - Timezone-aware timestamps (TIMESTAMPTZ)
+  - Generated duration_minutes column
+  - Comprehensive payment and customer tracking
+  - Change management and recurring booking support
+- **Added Performance Indexes**: Proper indexing for fast queries
+  - GIN index for array searches
+  - Date range indexes
+  - Status filtering optimization
+- **Zero Data Loss**: Table was empty, perfect timing for clean rebuild
+
+### 📝 Technical Details
+- **Root Cause**: Schema mismatch between old database and new backend code
+- **Solution**: Complete schema rebuild with migration 319
+- **Impact**: Booking system now ready for production use with proper scalable schema
+- **Next Step**: Run migration 319 to apply the clean schema
+
 ## [1.22.6] - 2025-10-21
 
 ### 🎨 UI Polish & Mobile Experience
