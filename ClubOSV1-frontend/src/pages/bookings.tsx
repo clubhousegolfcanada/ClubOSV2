@@ -6,7 +6,7 @@ import BookingCalendarCompact from '@/components/booking/calendar/BookingCalenda
 import BookingListView from '@/components/booking/BookingListView';
 import UnifiedBookingCard from '@/components/booking/unified/UnifiedBookingCard';
 import Head from 'next/head';
-import { Calendar, ExternalLink, X } from 'lucide-react';
+import { Calendar, ExternalLink, X, Plus, Search, Ban, Wrench, List } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
@@ -120,32 +120,83 @@ export default function Bookings() {
           <div className="bg-white border-b border-gray-200">
             <div className="px-4 sm:px-6 lg:px-8">
               <div className="max-w-7xl mx-auto">
-                <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
-                  <button
-                    onClick={() => setView('calendar')}
-                    className={`
-                      flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                      ${view === 'calendar'
-                        ? 'border-[var(--accent)] text-[var(--accent)]'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }
-                    `}
-                  >
-                    <Calendar className="w-4 h-4" />
-                    <span>Calendar</span>
-                  </button>
-                  <button
-                    onClick={() => setView('list')}
-                    className={`
-                      flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                      ${view === 'list'
-                        ? 'border-[var(--accent)] text-[var(--accent)]'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }
-                    `}
-                  >
-                    <span>List View</span>
-                  </button>
+                <nav className="flex justify-between items-center">
+                  {/* View Tabs */}
+                  <div className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
+                    <button
+                      onClick={() => setView('calendar')}
+                      className={`
+                        flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                        ${view === 'calendar'
+                          ? 'border-[var(--accent)] text-[var(--accent)]'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }
+                      `}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>Calendar</span>
+                    </button>
+                    <button
+                      onClick={() => setView('list')}
+                      className={`
+                        flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                        ${view === 'list'
+                          ? 'border-[var(--accent)] text-[var(--accent)]'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }
+                      `}
+                    >
+                      <List className="w-4 h-4" />
+                      <span>List View</span>
+                    </button>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-2 py-2">
+                    <button
+                      onClick={() => {
+                        setBookingMode('booking');
+                        setShowCreateBooking(true);
+                      }}
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="hidden sm:inline">Create Booking</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCustomerSearch(true);
+                      }}
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                    >
+                      <Search className="w-4 h-4" />
+                      <span className="hidden sm:inline">Search</span>
+                    </button>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setBookingMode('block');
+                            setShowCreateBooking(true);
+                          }}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                        >
+                          <Ban className="w-4 h-4" />
+                          <span className="hidden sm:inline">Block</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setBookingMode('maintenance');
+                            setShowCreateBooking(true);
+                          }}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                        >
+                          <Wrench className="w-4 h-4" />
+                          <span className="hidden sm:inline">Maintenance</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </nav>
               </div>
             </div>
@@ -186,55 +237,6 @@ export default function Bookings() {
             ) : view === 'calendar' ? (
               /* ClubOS Booking System - Role-based calendar */
               <div className="space-y-4">
-                {/* Quick actions for staff */}
-                {isStaff && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        setBookingMode('booking');
-                        setShowCreateBooking(true);
-                      }}
-                    >
-                      Create Booking
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setShowCustomerSearch(true);
-                      }}
-                    >
-                      Search Customer
-                    </Button>
-                    {isAdmin && (
-                      <>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setBookingMode('block');
-                            setShowCreateBooking(true);
-                          }}
-                        >
-                          Block Time
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setBookingMode('maintenance');
-                            setShowCreateBooking(true);
-                          }}
-                        >
-                          Schedule Maintenance
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
-
                 {/* Calendar Component - Adjusts based on role */}
                 <CalendarComponent key={refreshKey} {...calendarProps} />
               </div>

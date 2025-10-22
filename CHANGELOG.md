@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.23.4] - 2025-10-22
+
+### 🎨 UI Improvements
+- **Booking Page Navigation Enhancement**: Moved action buttons into sub-navigation bar for consistency
+  - Create Booking, Search Customer, Block Time, and Schedule Maintenance now in sub-nav
+  - Action buttons positioned on the right side of sub-nav with proper spacing
+  - Primary action (Create Booking) uses accent color for visibility
+  - Secondary actions use subtle gray styling
+  - Icons remain visible on mobile while text hides for space efficiency
+  - Cleaner page layout with reduced clutter in main content area
+
 ## [1.23.3] - 2025-10-22
 
 ### 🔄 Booking System Default Change
