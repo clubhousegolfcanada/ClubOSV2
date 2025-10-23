@@ -99,8 +99,9 @@ const DayGrid: React.FC<DayGridProps> = ({
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
 
-      // Calculate selection position (28px per slot now)
-      const selectionEndY = (selectionEnd?.slotIndex || selectionStart.slotIndex) * 28 + 150;
+      // Calculate selection position (28px desktop, 32px mobile)
+      const slotHeight = window.innerWidth < 640 ? 32 : 28;
+      const selectionEndY = (selectionEnd?.slotIndex || selectionStart.slotIndex) * slotHeight + 150;
       const spaceIndex = spaces.findIndex(s => s.id === selectionStart.spaceId);
       const spaceWidth = gridRect.width / spaces.length;
       const selectionCenterX = gridRect.left + 80 + (spaceIndex + 0.5) * spaceWidth;
@@ -239,12 +240,30 @@ const DayGrid: React.FC<DayGridProps> = ({
 
   // Confirm and create booking
   const confirmSelection = () => {
-    if (!selectionStart || !onTimeSlotClick) return;
+    console.log('🎯 DayGrid confirmSelection called', {
+      hasSelectionStart: !!selectionStart,
+      hasOnTimeSlotClick: !!onTimeSlotClick
+    });
+
+    if (!selectionStart || !onTimeSlotClick) {
+      console.error('❌ Cannot confirm selection:', {
+        selectionStart,
+        onTimeSlotClick
+      });
+      return;
+    }
 
     const endIndex = selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1;
     const startTime = timeSlots[selectionStart.slotIndex];
     const endTime = timeSlots[endIndex + 1] || addMinutes(timeSlots[endIndex], 30);
     const space = spaces.find(s => s.id === selectionStart.spaceId);
+
+    console.log('📅 Calling onTimeSlotClick with:', {
+      startTime,
+      endTime,
+      spaceId: selectionStart.spaceId,
+      spaceName: space?.name
+    });
 
     onTimeSlotClick(startTime, endTime, selectionStart.spaceId, space?.name);
     clearSelection();
@@ -296,23 +315,49 @@ const DayGrid: React.FC<DayGridProps> = ({
     );
   }
 
+  // Responsive column sizing - optimize for 4 columns on mobile
+  const getGridTemplateColumns = () => {
+    if (typeof window === 'undefined') return `repeat(${spaces.length}, 1fr)`;
+
+    const width = window.innerWidth;
+    const numSpaces = spaces.length;
+
+    if (width < 640) { // Mobile
+      // Target 4 columns, range 3-5
+      if (numSpaces <= 3) return `repeat(${numSpaces}, 1fr)`;
+      if (numSpaces === 4) return 'repeat(4, minmax(70px, 1fr))';
+      if (numSpaces === 5) return 'repeat(5, minmax(60px, 1fr))';
+      // More than 5: show 4 with scroll
+      return 'repeat(auto-fit, minmax(75px, 1fr))';
+    } else if (width < 1024) { // Tablet
+      return `repeat(${numSpaces}, minmax(80px, 1fr))`;
+    }
+    // Desktop
+    return `repeat(${numSpaces}, minmax(100px, 1fr))`;
+  };
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const minWidth = isMobile ? '320px' : '800px';
+
   return (
     <div className="overflow-x-auto border border-[var(--border-primary)] rounded-lg" ref={gridRef}>
-      <div className="min-w-[800px]">
-        {/* Header with space names */}
-        <div className="grid grid-cols-[80px_1fr] bg-[var(--bg-tertiary)]">
+      <div style={{ minWidth }}>
+        {/* Header with space names - sticky on mobile */}
+        <div className={`grid grid-cols-[80px_1fr] bg-[var(--bg-tertiary)] ${isMobile ? 'sticky top-0 z-20' : ''}`}>
           <div className="p-3 border-r border-b border-[var(--border-primary)]">
             {/* Empty corner cell */}
           </div>
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${spaces.length}, 1fr)` }}>
+          <div className="grid" style={{ gridTemplateColumns: getGridTemplateColumns() }}>
             {spaces.map(space => (
               <button
                 key={space.id}
                 onClick={() => onSpaceClick?.(space)}
-                className="p-3 text-sm font-medium text-[var(--text-primary)] border-r border-b border-[var(--border-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1"
+                className={`${isMobile ? 'p-2' : 'p-3'} text-sm font-medium text-[var(--text-primary)] border-r border-b border-[var(--border-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1`}
               >
-                {space.name}
-                <Info className="h-3 w-3 text-[var(--text-secondary)]" />
+                <span className={isMobile ? 'text-xs' : ''}>
+                  {isMobile ? space.name.replace('Dartmouth - ', '').replace('Box ', 'B') : space.name}
+                </span>
+                {!isMobile && <Info className="h-3 w-3 text-[var(--text-secondary)]" />}
               </button>
             ))}
           </div>
@@ -321,13 +366,13 @@ const DayGrid: React.FC<DayGridProps> = ({
         {/* Time slots grid */}
         {timeSlots.map((slot, slotIndex) => (
           <div key={slotIndex} className="grid grid-cols-[80px_1fr]">
-            {/* Time label - more compact */}
-            <div className="px-1 flex items-center justify-center h-7 text-[10px] font-mono text-[var(--text-secondary)] border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
-              {slotIndex % 2 === 0 ? format(slot, 'h:mm a') : format(slot, 'h:mm').replace(':00', '')}
+            {/* Time label - always with AM/PM */}
+            <div className={`px-1 flex items-center justify-center ${isMobile ? 'h-8' : 'h-7'} text-[10px] font-mono text-[var(--text-secondary)] border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] sticky left-0 z-10`}>
+              {format(slot, 'h:mm a')}
             </div>
 
-            {/* Space slots */}
-            <div className="grid" style={{ gridTemplateColumns: `repeat(${spaces.length}, 1fr)` }}>
+            {/* Space slots - responsive columns */}
+            <div className="grid" style={{ gridTemplateColumns: getGridTemplateColumns() }}>
               {spaces.map(space => {
                 const slotBooking = dayBookings.find(booking => {
                   const bookingStart = new Date(booking.startAt);
@@ -346,7 +391,7 @@ const DayGrid: React.FC<DayGridProps> = ({
                   <div
                     key={`${space.id}-${slotIndex}`}
                     className={`
-                      relative border-r border-b border-[var(--border-primary)] h-7 transition-all duration-150
+                      relative border-r border-b border-[var(--border-primary)] ${isMobile ? 'h-8' : 'h-7'} transition-all duration-150
                       ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                       ${isAvailable && !isSelected ? 'hover:bg-[var(--accent)]/[0.04]' : ''}
                       ${isSelected ? 'bg-[var(--accent)]/[0.08] border-[var(--accent)]/30' : ''}
@@ -488,7 +533,8 @@ const DayGrid: React.FC<DayGridProps> = ({
               const startIdx = Math.min(selectionStart.slotIndex, selectionEnd.slotIndex);
               const endIdx = Math.max(selectionStart.slotIndex, selectionEnd.slotIndex);
               const centerSlot = startIdx + (endIdx - startIdx) / 2;
-              return `${150 + centerSlot * 28}px`; // 28px per slot
+              const slotHeight = isMobile ? 32 : 28;
+              return `${150 + centerSlot * slotHeight}px`;
             })(),
             transform: 'translate(-50%, -50%)',
           }}

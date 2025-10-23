@@ -57,6 +57,12 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
 
     const columns = checkColumns.rows.map(row => row.column_name);
 
+    // Log detected columns for debugging
+    logger.info('Bookings table columns detected:', {
+      columns: columns,
+      count: columns.length
+    });
+
     // Check for all potentially missing columns
     const hasSpaceIds = columns.includes('space_ids');
     const hasSpaceId = columns.includes('space_id');
@@ -76,6 +82,15 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
     const hasEndAt = columns.includes('end_at');
     const hasEndTime = columns.includes('end_time');
     const hasDuration = columns.includes('duration');
+
+    // Log date column detection
+    logger.info('Date column detection:', {
+      hasStartAt,
+      hasStartTime,
+      hasEndAt,
+      hasEndTime,
+      hasDuration
+    });
 
     // Build space_ids field based on what columns exist
     let spaceIdsField = 'ARRAY[]::INTEGER[] as space_ids'; // Default empty array
@@ -192,12 +207,16 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
       params.push(locationId);
     }
 
-    query += ` ORDER BY b.start_at ASC`;
+    // Use the correct field for ORDER BY based on what exists
+    const orderByField = hasStartAt ? 'b.start_at' : hasStartTime ? 'b.start_time' : 'b.id';
+    query += ` ORDER BY ${orderByField} ASC`;
 
     logger.info('Executing booking day query', {
       startOfDay: startOfDay.toISOString(),
       endOfDay: endOfDay.toISOString(),
-      locationId
+      locationId,
+      queryPreview: query.substring(0, 500), // Log first 500 chars of query
+      orderByField
     });
 
     const result = await db.query(query, params);

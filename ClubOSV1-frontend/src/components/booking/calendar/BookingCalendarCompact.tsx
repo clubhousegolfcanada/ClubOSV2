@@ -13,8 +13,8 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Skeleton from '@/components/ui/Skeleton';
 import { CompactCalendarSkeleton } from './CalendarSkeleton';
 import DayGridCompact from './DayGridCompact';
-import DayGridMobile from './DayGridMobile';
 import WeekGridCompact from './WeekGridCompact';
+import DayGrid from './DayGrid';
 import ColorLegend from './ColorLegend';
 import AdminBlockOff from './AdminBlockOff';
 import BoxInfoModal from '../BoxInfoModal';
@@ -97,6 +97,14 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   const [showBoxInfoModal, setShowBoxInfoModal] = useState(false);
   const [showNewBookingModal, setShowNewBookingModal] = useState(false);
   const [bookingFormData, setBookingFormData] = useState<any>(null);
+
+  // Debug effect to monitor modal state
+  useEffect(() => {
+    console.log('🔍 Modal state changed:', {
+      showNewBookingModal,
+      hasFormData: !!bookingFormData
+    });
+  }, [showNewBookingModal, bookingFormData]);
 
   // Load saved collapsed state
   useEffect(() => {
@@ -269,11 +277,24 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
 
   // Booking handlers
   const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => {
-    if (!config) return;
+    console.log('🎯 handleBookingCreate called:', {
+      startTime,
+      endTime,
+      spaceId,
+      spaceName,
+      config: !!config
+    });
+
+    if (!config) {
+      console.error('❌ No config available');
+      return;
+    }
 
     // Get current user's tier
     const currentUserTier = customerTiers.find(t => t.id === 'new') || { id: 'new' } as CustomerTier;
     const tierType = currentUserTier.id as 'new' | 'member' | 'promo' | 'frequent';
+
+    console.log('👤 User tier:', tierType);
 
     // Validate booking
     const validation = TimeValidationService.validateBooking(
@@ -287,7 +308,10 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
       }
     );
 
+    console.log('✅ Validation result:', validation);
+
     if (!validation.isValid) {
+      console.error('❌ Validation failed:', validation.error);
       notify('error', validation.error || 'Invalid booking time');
       if (validation.suggestion) {
         notify('info', validation.suggestion);
@@ -296,7 +320,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
     }
 
     // Open booking modal with prefilled data
-    setBookingFormData({
+    const formData = {
       date: startTime,
       startTime,
       endTime,
@@ -304,7 +328,12 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
       spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
       locationId: selectedLocationId,
       customerTier: currentUserTier
-    });
+    };
+
+    console.log('📝 Setting booking form data:', formData);
+    setBookingFormData(formData);
+
+    console.log('🔓 Opening modal - setting showNewBookingModal to true');
     setShowNewBookingModal(true);
   }, [config, selectedLocationId, spaces, notify, customerTiers]);
 
@@ -536,27 +565,16 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                 size="sm"
               />
             ) : viewMode === 'day' ? (
-              // Use mobile-optimized grid on phones, compact grid on tablets
-              typeof window !== 'undefined' && window.innerWidth < 640 ? (
-                <DayGridMobile
-                  date={selectedDate}
-                  bookings={filteredBookings}
-                  spaces={spaces}
-                  config={config!}
-                  onBookingCreate={handleBookingCreate}
-                  onBookingSelect={onBookingSelect}
-                />
-              ) : (
-                <DayGridCompact
-                  date={selectedDate}
-                  bookings={filteredBookings}
-                  spaces={spaces}
-                  config={config!}
-                  onBookingCreate={handleBookingCreate}
-                  onBookingSelect={onBookingSelect}
-                  onSpaceClick={handleSpaceClick}
-                />
-              )
+              // Use unified DayGrid for all screen sizes
+              <DayGrid
+                date={selectedDate}
+                bookings={filteredBookings}
+                spaces={spaces}
+                config={config!}
+                onTimeSlotClick={handleBookingCreate}
+                onBookingClick={onBookingSelect}
+                onSpaceClick={handleSpaceClick}
+              />
             ) : (
               <WeekGridCompact
                 startDate={startOfWeek(selectedDate)}

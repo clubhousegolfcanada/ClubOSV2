@@ -89,7 +89,19 @@ const NewBookingModal: React.FC<NewBookingModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  // Debug logging
+  console.log('🎭 NewBookingModal render:', {
+    isOpen,
+    hasPrefilledData: !!prefilledData,
+    formData: formData
+  });
+
+  if (!isOpen) {
+    console.log('❌ Modal not rendering - isOpen is false');
+    return null;
+  }
+
+  console.log('✅ Modal rendering - isOpen is true');
 
   return (
     <>

@@ -71,7 +71,7 @@ const humorousMessages = [
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuthState();
   const router = useRouter();
-  const token = user?.token;
+  // Remove direct token access - http client handles this automatically
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
@@ -102,52 +102,46 @@ export const CustomerDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (token) {
+    // Fetch data if user is authenticated
+    if (user) {
       fetchCustomerData();
     }
     // Select a random humorous message
     const randomIndex = Math.floor(Math.random() * humorousMessages.length);
     setWelcomeMessage(humorousMessages[randomIndex]);
-  }, [token]);
+  }, [user]);
 
   const fetchCustomerData = async () => {
     setLoading(true);
     try {
-      if (token) {
-        // Fetch customer profile
-        try {
-          const response = await http.get('customer-profile', {
-
-          });
-          if (response.data.success) {
-            setCustomerProfile(response.data.data);
-          }
-        } catch (error) {
-          logger.error('Failed to fetch customer profile:', error);
+      // Fetch customer profile - http client handles auth automatically
+      try {
+        const response = await http.get('customer-profile');
+        if (response.data.success) {
+          setCustomerProfile(response.data.data);
         }
+      } catch (error) {
+        logger.error('Failed to fetch customer profile:', error);
+      }
 
-        // Fetch active challenges count and CC balance
-        try {
-          const challengesResponse = await http.get('challenges/my-challenges', {
-
-          });
-          if (challengesResponse.data.success) {
-            const activeChallenges = challengesResponse.data.data.filter((c: any) => 
-              c.status === 'active' || c.status === 'accepted'
-            ).length;
-            setQuickStats(prev => ({ ...prev, activeChallenges }));
-          }
-        } catch (error) {
-          logger.error('Failed to fetch challenges:', error);
+      // Fetch active challenges count and CC balance
+      try {
+        const challengesResponse = await http.get('challenges/my-challenges');
+        if (challengesResponse.data.success) {
+          const activeChallenges = challengesResponse.data.data.filter((c: any) =>
+            c.status === 'active' || c.status === 'accepted'
+          ).length;
+          setQuickStats(prev => ({ ...prev, activeChallenges }));
         }
-        
-        // Fetch CC balance
-        try {
-          const ccResponse = await http.get('challenges/cc-balance', {
+      } catch (error) {
+        logger.error('Failed to fetch challenges:', error);
+      }
 
-          });
-          if (ccResponse.data.success) {
-            const balance = ccResponse.data.data.balance || 0;
+      // Fetch CC balance
+      try {
+        const ccResponse = await http.get('challenges/cc-balance');
+        if (ccResponse.data.success) {
+          const balance = ccResponse.data.data.balance || 0;
             setQuickStats(prev => ({ ...prev, ccBalance: balance }));
           }
         } catch (error) {
@@ -166,9 +160,7 @@ export const CustomerDashboard: React.FC = () => {
         
         // Fetch pending friend requests
         try {
-          const friendRequestsResponse = await http.get('friends/pending?direction=incoming', {
-
-          });
+          const friendRequestsResponse = await http.get('friends/pending?direction=incoming');
           if (friendRequestsResponse.data.success) {
             const pendingRequests = friendRequestsResponse.data.data?.requests?.length || 0;
             setQuickStats(prev => ({ ...prev, pendingFriendRequests: pendingRequests }));
@@ -176,15 +168,13 @@ export const CustomerDashboard: React.FC = () => {
         } catch (error) {
           logger.error('Failed to fetch friend requests:', error);
         }
-        
+
         // Fetch box stats
         try {
-          const boxResponse = await http.get('boxes/stats', {
-
-          });
+          const boxResponse = await http.get('boxes/stats');
           if (boxResponse.data) {
-            setQuickStats(prev => ({ 
-              ...prev, 
+            setQuickStats(prev => ({
+              ...prev,
               availableBoxes: boxResponse.data.availableCount || 0,
               boxProgress: boxResponse.data.progress?.current || 0
             }));
@@ -192,7 +182,6 @@ export const CustomerDashboard: React.FC = () => {
         } catch (error) {
           logger.error('Failed to fetch box stats:', error);
         }
-      }
       
       // Set default location
       const savedLocation = localStorage.getItem('preferredClubhouse');
@@ -399,7 +388,7 @@ export const CustomerDashboard: React.FC = () => {
       </div>
 
       {/* Recent Challenges */}
-      <RecentChallenges userId={user?.id} userToken={token} />
+      <RecentChallenges userId={user?.id} />
       
       {/* Quick Book Card */}
       <QuickBookCard className="mt-4" />

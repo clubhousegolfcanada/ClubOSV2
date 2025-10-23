@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.3] - 2025-10-22
+
+### 🔧 Booking System Debug & Critical Fix
+- **Fixed Critical Backend Bug**: ORDER BY clause was hardcoded to use b.start_at
+  - Found the real issue: ORDER BY wasn't defensive like the rest of the query
+  - Now uses correct column (start_at, start_time, or id) based on what exists
+- **Added Comprehensive Debug Logging**:
+  - Backend logs which columns exist and generated query
+  - Frontend logs entire booking flow from click to modal
+  - Will reveal exactly where the booking process is failing
+- **Result**: Should fix 500 error and reveal why modal isn't appearing
+
 ## [1.24.2] - 2025-10-23
 
 ### 🎨 Modern 2026 Design Polish for Booking Calendar

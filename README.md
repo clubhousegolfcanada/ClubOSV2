@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.2**
-- **🎨 Modern 2026 Design Polish** - Compact slots, ClubOS green selection, glass morphism
+**Current Version: v1.24.3**
+- **🔧 Booking Debug Fix** - Fixed ORDER BY bug, added comprehensive logging
+- **🎨 Previous: Design Polish** - Compact slots, ClubOS green selection (v1.24.2)
 - **🚨 Previous: Emergency Hotfix** - Fixed booking view crash by handling old date column names (v1.24.1)
 - **📱 Previous: Calendar** - Polished sliding time selection with 30-min precision (v1.24.0)
 - **🔧 Previous: Booking Hotfix** - Fixed 500 error on booking view with comprehensive defensive code (v1.23.10)
