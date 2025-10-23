@@ -21,7 +21,7 @@ const router = Router();
 
 // Simple in-memory cache for conversations
 const conversationCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5000; // 5 seconds TTL for cache
+const CACHE_TTL = 30000; // 30 seconds TTL for cache - aligned with frontend polling interval
 
 // Request deduplication to prevent concurrent identical requests
 const pendingRequests = new Map<string, Promise<any>>();
@@ -67,7 +67,7 @@ router.get('/conversations',
   roleGuard(['admin', 'operator', 'support']),
   async (req, res, next) => {
     try {
-      const { limit = 25, offset = 0, search } = req.query;  // Reduced default from 50 to 25
+      const { limit = 15, offset = 0, search } = req.query;  // Optimized: reduced from 25 to 15 for faster initial load
 
       // Check cache first
       const cacheKey = getCacheKey(req.user!.id.toString(), Number(limit), Number(offset), search as string);
@@ -114,40 +114,57 @@ router.get('/conversations',
       const hasLastReadAt = existingColumns.includes('last_read_at');
       const hasUpdatedAt = existingColumns.includes('updated_at');
       
-      // Use DISTINCT ON to get only the most recent conversation per phone number
-      // This prevents duplicate entries for customers with multiple conversation records
+      // Optimized query using window function instead of DISTINCT ON for better performance
+      // Also limits messages JSONB to reduce data transfer
       let query = `
-        SELECT DISTINCT ON (phone_number)
+        WITH ranked_conversations AS (
+          SELECT
+            id,
+            phone_number,
+            customer_name,
+            employee_name,
+            -- Limit messages array to last 30 messages for performance
+            CASE
+              WHEN jsonb_array_length(messages) > 30
+              THEN messages[jsonb_array_length(messages) - 30:jsonb_array_length(messages)]
+              ELSE messages
+            END as messages,
+            ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+            ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+            created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
+            ROW_NUMBER() OVER (PARTITION BY phone_number ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC) as rn
+          FROM openphone_conversations
+          WHERE phone_number IS NOT NULL
+            AND phone_number != ''
+            AND phone_number != 'Unknown'
+        )
+        SELECT
           id,
           phone_number,
           customer_name,
           employee_name,
           messages,
-          ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
-          ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+          unread_count,
+          last_read_at,
           created_at${hasUpdatedAt ? ',\n          updated_at' : ''}
-        FROM openphone_conversations
-        WHERE phone_number IS NOT NULL
-          AND phone_number != ''
-          AND phone_number != 'Unknown'
+        FROM ranked_conversations
+        WHERE rn = 1
       `;
 
       const params: any[] = [];
 
       if (search) {
-        query += ` AND (phone_number LIKE $1 OR customer_name ILIKE $1)`;
+        // Add search condition inside the CTE
+        query = query.replace(
+          "AND phone_number != 'Unknown'",
+          `AND phone_number != 'Unknown'
+            AND (phone_number LIKE $1 OR customer_name ILIKE $1)`
+        );
         params.push(`%${search}%`);
       }
 
-      // DISTINCT ON requires ORDER BY to include the distinct column first
-      // Then order by updated_at/created_at to get the most recent conversation per phone
-      query += ` ORDER BY phone_number, ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC`;
-
-      // Wrap in subquery to apply pagination and final ordering
-      query = `
-        SELECT * FROM (
-          ${query}
-        ) as unique_conversations
+      // Add ordering and pagination
+      query += `
         ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
       `;

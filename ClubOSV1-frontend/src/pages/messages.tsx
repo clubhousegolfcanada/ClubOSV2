@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { MessageCircle, Send, Search, Phone, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar, Ticket } from 'lucide-react';
@@ -56,6 +56,64 @@ const conversationsEqual = (conv1: Conversation | null, conv2: Conversation | nu
     conv1.updated_at === conv2.updated_at
   );
 };
+
+// Memoized conversation item component to prevent unnecessary re-renders
+interface ConversationItemProps {
+  conversation: Conversation;
+  isSelected: boolean;
+  onClick: () => void;
+  formatDistance: (date: Date) => string;
+  isClient: boolean;
+}
+
+const ConversationItem = memo<ConversationItemProps>(({
+  conversation,
+  isSelected,
+  onClick,
+  formatDistance,
+  isClient
+}) => (
+  <div
+    onClick={onClick}
+    className={`p-2.5 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out transform hover:translate-x-0.5 ${
+      isSelected ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
+    }`}
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <div className="px-1.5 py-0.5 border border-gray-300 rounded text-[10px] font-medium text-gray-600 flex-shrink-0">
+          {conversation.bay ? `B${conversation.bay}` : conversation.location ? conversation.location.substring(0, 3).toUpperCase() : 'GEN'}
+        </div>
+        <span className="font-medium text-xs truncate">
+          {conversation.customer_name || 'Unknown'}
+        </span>
+      </div>
+      {conversation.unread_count > 0 && (
+        <span className="bg-[var(--accent)] text-white text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1">
+          {conversation.unread_count}
+        </span>
+      )}
+    </div>
+    <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-1">
+      <Phone className="w-2.5 h-2.5" />
+      <span>{conversation.phone_number}</span>
+      <span className="ml-auto">
+        {!isClient ? '•' : conversation.updated_at ? formatDistance(new Date(conversation.updated_at)) : '•'}
+      </span>
+    </div>
+    {conversation.lastMessage && (conversation.lastMessage.text || conversation.lastMessage.body) && (
+      <p className="text-[11px] text-[var(--text-secondary)] truncate mt-1">
+        {conversation.lastMessage.direction === 'outbound' && '↗ '}
+        {conversation.lastMessage.text || conversation.lastMessage.body}
+      </p>
+    )}
+  </div>
+), (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  return conversationsEqual(prevProps.conversation, nextProps.conversation) &&
+         prevProps.isSelected === nextProps.isSelected &&
+         prevProps.isClient === nextProps.isClient;
+});
 
 // Helper function to check if messages array has meaningful changes
 const messagesHaveChanged = (oldMessages: Message[], newMessages: Message[]): boolean => {
@@ -344,7 +402,7 @@ export default function Messages() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        params: { limit: 25 }  // Reduced from 100 for faster initial load
+        params: { limit: 15 }  // Optimized: reduced from 25 to 15 for faster initial load
       });
 
       if (response.data.success) {
@@ -964,42 +1022,14 @@ export default function Messages() {
                       </div>
                     ) : (
                       filteredConversations.map(conv => (
-                        <div
+                        <ConversationItem
                           key={conv.id}
+                          conversation={conv}
+                          isSelected={selectedConversation?.id === conv.id}
                           onClick={() => selectConversation(conv)}
-                          className={`p-2.5 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out transform hover:translate-x-0.5 ${
-                            selectedConversation?.id === conv.id ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <div className="px-1.5 py-0.5 border border-gray-300 rounded text-[10px] font-medium text-gray-600 flex-shrink-0">
-                                {conv.bay ? `B${conv.bay}` : conv.location ? conv.location.substring(0, 3).toUpperCase() : 'GEN'}
-                              </div>
-                              <span className="font-medium text-xs truncate">
-                                {conv.customer_name || 'Unknown'}
-                              </span>
-                            </div>
-                            {conv.unread_count > 0 && (
-                              <span className="bg-[var(--accent)] text-white text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1">
-                                {conv.unread_count}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-1">
-                            <Phone className="w-2.5 h-2.5" />
-                            <span>{conv.phone_number}</span>
-                            <span className="ml-auto">
-                              {!isClient ? '•' : conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }).replace(' ago', '') : '•'}
-                            </span>
-                          </div>
-                          {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
-                            <p className="text-[11px] text-[var(--text-secondary)] truncate mt-1">
-                              {conv.lastMessage.direction === 'outbound' && '↗ '}
-                              {conv.lastMessage.text || conv.lastMessage.body}
-                            </p>
-                          )}
-                        </div>
+                          formatDistance={(date) => formatDistanceToNow(date, { addSuffix: true }).replace(' ago', '')}
+                          isClient={isClient}
+                        />
                       ))
                     )}
                   </div>

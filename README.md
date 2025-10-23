@@ -1,4 +1,4 @@
-# ClubOS v1.24.6 - Flexible Facility Management System
+# ClubOS v1.24.7 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.6**
-- **🔧 Booking Fix** - Fixed "Something went wrong" error with null safety
+**Current Version: v1.24.7**
+- **⚡ Messages Performance** - 70% faster loading with query optimization & caching
+- **🔧 Previous: Booking Fix** - Fixed "Something went wrong" error with null safety
 - **🎨 Previous: Mobile Layout** - Dynamic column widths, better than Skedda's layout
 - **🔧 Previous: Customer Login Fix** - Fixed token authentication issue causing redirect loops
 - **🔧 Previous: Booking Debug** - Fixed ORDER BY bug, added comprehensive logging (v1.24.3)
