@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import Head from 'next/head';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
-import { 
-  Search, 
-  Zap, 
-  Loader2, 
-  ChevronDown, 
+import {
+  Search,
+  Zap,
+  Loader2,
+  ChevronDown,
   ChevronRight,
   AlertCircle,
   Terminal,
@@ -34,6 +33,8 @@ import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
 import { unifiDoorsAPI } from '@/api/unifiDoors';
 import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
+import OperatorLayout from '@/components/OperatorLayout';
+import SubNavigation, { SubNavTab } from '@/components/SubNavigation';
 
 interface Command {
   id: string;
@@ -723,50 +724,24 @@ export default function CommandsRedesigned() {
     return null;
   }
 
-  return (
-    <>
-      <Head>
-        <title>Commands & Actions - ClubOS</title>
-      </Head>
-      
-      <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
-        {/* Sub Navigation - Operations Style */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-              <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
-                <button
-                  onClick={() => setActiveTab('remote-actions')}
-                  className={`
-                    flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                    ${activeTab === 'remote-actions'
-                      ? 'border-[var(--accent)] text-[var(--accent)]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <Power className="w-4 h-4" />
-                  <span>Remote Actions</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('commands')}
-                  className={`
-                    flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                    ${activeTab === 'commands'
-                      ? 'border-[var(--accent)] text-[var(--accent)]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <Terminal className="w-4 h-4" />
-                  <span>Commands</span>
-                </button>
-              </nav>
-            </div>
-          </div>
-        </div>
+  // Define tabs for SubNavigation
+  const tabs: SubNavTab[] = [
+    { id: 'remote-actions', label: 'Remote Actions', icon: Power },
+    { id: 'commands', label: 'Commands', icon: Terminal }
+  ];
 
-        <div className="container mx-auto px-4 py-4">
+  return (
+    <OperatorLayout
+      title="Commands & Actions - ClubOS"
+      description="Manage remote actions and system commands"
+      subNavigation={
+        <SubNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as 'commands' | 'remote-actions')}
+        />
+      }
+    >
 
           {/* Search removed for cleaner UI */}
 
@@ -1314,8 +1289,6 @@ export default function CommandsRedesigned() {
               )}
             </ul>
           </div>
-        </div>
-      </main>
-    </>
+    </OperatorLayout>
   );
 }

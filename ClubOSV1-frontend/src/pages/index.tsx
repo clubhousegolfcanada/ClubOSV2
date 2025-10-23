@@ -1,4 +1,3 @@
-import Head from 'next/head';
 import RequestForm from '@/components/RequestForm';
 import DatabaseExternalTools from '@/components/DatabaseExternalTools';
 import Link from 'next/link';
@@ -19,6 +18,7 @@ import { TaskList } from '@/components/dashboard/TaskList';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import { DashboardErrorBoundary, SectionErrorBoundary } from '@/components/SectionErrorBoundary';
+import OperatorLayout from '@/components/OperatorLayout';
 
 
 interface QuickStat {
@@ -310,15 +310,11 @@ export default function Home() {
   ];
 
   return (
-    <>
-      <Head>
-        <title>ClubOS - Golf Simulator Management</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-        <meta name="deploy-version" content="2024-11-26-hydration-fix" />
-      </Head>
-      
-      <main className="min-h-screen bg-[var(--bg-primary)] pb-12">
-        <div className="container mx-auto px-4 py-4">
+    <OperatorLayout
+      title="ClubOS - Golf Simulator Management"
+      description="Dashboard for golf simulator facility management"
+      padding="lg"
+    >
           {/* Main Content Grid - Optimized for no-scroll */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
             {/* Request Form - Takes up 8 columns on large screens */}
@@ -362,11 +358,9 @@ export default function Home() {
               </SectionErrorBoundary>
             </div>
           </div>
-        </div>
-        
+
         {/* Command Shortcut Bar - Desktop only */}
         <CommandShortcutBar />
-      </main>
-    </>
+    </OperatorLayout>
   );
 }

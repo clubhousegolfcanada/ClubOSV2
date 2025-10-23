@@ -1,4 +1,3 @@
-import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
@@ -11,6 +10,8 @@ import { useRemoteActionsBar } from '@/hooks/useRemoteActionsBar';
 import { useMessages } from '@/contexts/MessagesContext';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import OperatorLayout from '@/components/OperatorLayout';
+import SubNavigation, { SubNavAction } from '@/components/SubNavigation';
 
 
 interface Message {
@@ -825,112 +826,107 @@ export default function Messages() {
     return null;
   }
 
+  // Define actions for SubNavigation
+  const actions: SubNavAction[] = [
+    {
+      id: 'create-ticket',
+      label: 'Create Ticket',
+      icon: Ticket,
+      onClick: () => router.push('/tickets?create=true'),
+      variant: 'primary',
+      hideOnMobile: true
+    },
+    {
+      id: 'bookings',
+      label: 'Bookings',
+      icon: Calendar,
+      onClick: () => router.push('/bookings'),
+      hideOnMobile: true
+    },
+    {
+      id: 'remote-control',
+      label: 'Remote Control',
+      icon: Monitor,
+      onClick: () => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = 'st-business://com.splashtop.business';
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.location.href = 'https://my.splashtop.com/computers';
+            }
+          }, 2500);
+        } else {
+          window.open('https://my.splashtop.com/computers', '_blank');
+        }
+      },
+      hideOnMobile: true
+    }
+  ];
+
+  // Notification toggle content for right side
+  const notificationToggle = (
+    <div className="flex items-center space-x-2">
+      {!isClient ? (
+        // Server-side placeholder to prevent hydration mismatch
+        <span className="text-sm text-gray-500">Loading...</span>
+      ) : isInIframe && !isSubscribed ? (
+        // In iframe - show pop-out button for notifications
+        <button
+          onClick={() => {
+            const url = `${window.location.origin}/messages`;
+            const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
+
+            if (newWindow) {
+              toast('Opening ClubOS in a new window to enable notifications', {
+                duration: 5000,
+                icon: '🔔'
+              });
+            } else {
+              toast.error('Please allow pop-ups to enable notifications');
+            }
+          }}
+          className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
+          title="Open in new window for notifications"
+        >
+          <ExternalLink className="w-4 h-4" />
+          <span className="hidden sm:inline">Enable Notifications</span>
+        </button>
+      ) : !isSupported ? null : notificationLoading ? (
+        <span className="text-sm text-gray-500">Loading...</span>
+      ) : isSubscribed ? (
+        <button
+          onClick={unsubscribe}
+          className="flex items-center space-x-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-all text-sm font-medium"
+          title="Disable push notifications"
+        >
+          <Bell className="w-4 h-4" />
+          <span className="hidden sm:inline">Notifications On</span>
+        </button>
+      ) : (
+        <button
+          onClick={subscribe}
+          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+          title="Enable push notifications"
+        >
+          <BellOff className="w-4 h-4" />
+          <span className="hidden sm:inline">Enable Notifications</span>
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <>
-      <Head>
-        <title>ClubOS - Messages</title>
-        <meta name="description" content="OpenPhone SMS messaging interface" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      </Head>
-
-      <div className={`min-h-screen bg-[var(--bg-primary)] transition-all duration-300 ${remoteActionsBar.className}`}>
-        {/* Sub Navigation - Operations Style */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-              <nav className="flex justify-between items-center">
-                {/* Left: Quick Actions */}
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => router.push('/tickets?create=true')}
-                    className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
-                  >
-                    <Ticket className="w-4 h-4" />
-                    <span className="hidden sm:inline">Create Ticket</span>
-                  </button>
-                  <button
-                    onClick={() => router.push('/bookings')}
-                    className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    <span className="hidden sm:inline">Bookings</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                      if (isMobile) {
-                        window.location.href = 'st-business://com.splashtop.business';
-                        setTimeout(() => {
-                          if (!document.hidden) {
-                            window.location.href = 'https://my.splashtop.com/computers';
-                          }
-                        }, 2500);
-                      } else {
-                        window.open('https://my.splashtop.com/computers', '_blank');
-                      }
-                    }}
-                    className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                  >
-                    <Monitor className="w-4 h-4" />
-                    <span className="hidden sm:inline">Remote Control</span>
-                  </button>
-                </div>
-
-                {/* Right: Push Notification Toggle */}
-                <div className="flex items-center space-x-2 py-1">
-                  {!isClient ? (
-                    // Server-side placeholder to prevent hydration mismatch
-                    <span className="text-sm text-gray-500">Loading...</span>
-                  ) : isInIframe && !isSubscribed ? (
-                    // In iframe - show pop-out button for notifications
-                    <button
-                      onClick={() => {
-                        const url = `${window.location.origin}/messages`;
-                        const newWindow = window.open(url, 'clubos-messages', 'width=1200,height=800,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
-
-                        if (newWindow) {
-                          toast('Opening ClubOS in a new window to enable notifications', {
-                            duration: 5000,
-                            icon: '🔔'
-                          });
-                        } else {
-                          toast.error('Please allow pop-ups to enable notifications');
-                        }
-                      }}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
-                      title="Open in new window for notifications"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      <span className="hidden sm:inline">Enable Notifications</span>
-                    </button>
-                  ) : !isSupported ? null : notificationLoading ? (
-                    <span className="text-sm text-gray-500">Loading...</span>
-                  ) : isSubscribed ? (
-                    <button
-                      onClick={unsubscribe}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-all text-sm font-medium"
-                      title="Disable push notifications"
-                    >
-                      <Bell className="w-4 h-4" />
-                      <span className="hidden sm:inline">Notifications On</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={subscribe}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                      title="Enable push notifications"
-                    >
-                      <BellOff className="w-4 h-4" />
-                      <span className="hidden sm:inline">Enable Notifications</span>
-                    </button>
-                  )}
-                </div>
-              </nav>
-            </div>
-          </div>
-        </div>
+    <OperatorLayout
+      title="Messages - ClubOS"
+      description="OpenPhone SMS messaging interface"
+      subNavigation={
+        <SubNavigation
+          actions={actions}
+          rightContent={notificationToggle}
+        />
+      }
+    >
 
         {/* Desktop Layout - Standard ClubOS design */}
         <div className="hidden md:block">
@@ -1684,7 +1680,6 @@ export default function Messages() {
             </div>
           </div>
         </div>
-      </div>
-    </>
+    </OperatorLayout>
   );
 }
