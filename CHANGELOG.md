@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.4] - 2025-10-22
+
+### 🔧 Fix Customer Login Token Issue
+- **Fixed Customer Portal Authentication**: Customer accounts were redirecting to login due to token mismatch
+  - Problem: CustomerDashboard was checking `user?.token` instead of using tokenManager
+  - Solution: Removed all manual token checks - http client handles auth automatically
+  - Simplified compete.tsx and CustomerDashboard.tsx by removing tokenManager dependencies
+  - Result: Customer login now works correctly without redirect loops
+
 ## [1.24.3] - 2025-10-22
 
 ### 🔧 Booking System Debug & Critical Fix
