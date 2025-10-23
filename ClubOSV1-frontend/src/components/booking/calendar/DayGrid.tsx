@@ -323,12 +323,31 @@ const DayGrid: React.FC<DayGridProps> = ({
     const numSpaces = spaces.length;
 
     if (width < 640) { // Mobile
-      // Target 4 columns, range 3-5
-      if (numSpaces <= 3) return `repeat(${numSpaces}, 1fr)`;
-      if (numSpaces === 4) return 'repeat(4, minmax(70px, 1fr))';
-      if (numSpaces === 5) return 'repeat(5, minmax(60px, 1fr))';
-      // More than 5: show 4 with scroll
-      return 'repeat(auto-fit, minmax(75px, 1fr))';
+      // Calculate available width (viewport width - time column - borders)
+      const timeColumnWidth = 70; // Time column is 70px on mobile
+      const availableWidth = width - timeColumnWidth - 16; // 16px for padding/scrollbar
+
+      // Target 4 columns, range 3-5 with dynamic sizing
+      if (numSpaces <= 3) {
+        // For 3 or fewer, use all available space
+        return `repeat(${numSpaces}, 1fr)`;
+      }
+
+      if (numSpaces === 4) {
+        // Sweet spot - 4 columns, calculate optimal width
+        const minWidth = Math.max(65, Math.floor(availableWidth / 4.5)); // Slightly tighter than even split
+        return `repeat(4, minmax(${minWidth}px, 1fr))`;
+      }
+
+      if (numSpaces === 5) {
+        // 5 columns - bit tighter
+        const minWidth = Math.max(55, Math.floor(availableWidth / 5.5));
+        return `repeat(5, minmax(${minWidth}px, 1fr))`;
+      }
+
+      // For 6+, show scrollable grid with reasonable min width
+      const minWidth = Math.max(70, Math.floor(availableWidth / 5));
+      return `repeat(${numSpaces}, minmax(${minWidth}px, 1fr))`;
     } else if (width < 1024) { // Tablet
       return `repeat(${numSpaces}, minmax(80px, 1fr))`;
     }
@@ -343,7 +362,7 @@ const DayGrid: React.FC<DayGridProps> = ({
     <div className="overflow-x-auto border border-[var(--border-primary)] rounded-lg" ref={gridRef}>
       <div style={{ minWidth }}>
         {/* Header with space names - sticky on mobile */}
-        <div className={`grid grid-cols-[80px_1fr] bg-[var(--bg-tertiary)] ${isMobile ? 'sticky top-0 z-20' : ''}`}>
+        <div className={`grid ${isMobile ? 'grid-cols-[70px_1fr]' : 'grid-cols-[80px_1fr]'} bg-[var(--bg-tertiary)] ${isMobile ? 'sticky top-0 z-20' : ''}`}>
           <div className="p-3 border-r border-b border-[var(--border-primary)]">
             {/* Empty corner cell */}
           </div>
@@ -354,8 +373,15 @@ const DayGrid: React.FC<DayGridProps> = ({
                 onClick={() => onSpaceClick?.(space)}
                 className={`${isMobile ? 'p-2' : 'p-3'} text-sm font-medium text-[var(--text-primary)] border-r border-b border-[var(--border-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1`}
               >
-                <span className={isMobile ? 'text-xs' : ''}>
-                  {isMobile ? space.name.replace('Dartmouth - ', '').replace('Box ', 'B') : space.name}
+                <span className={isMobile ? 'text-xs font-medium' : ''}>
+                  {isMobile
+                    ? space.name
+                        .replace('Dartmouth - ', 'D')
+                        .replace('Bedford - ', 'B')
+                        .replace('Box ', '')
+                        .replace('Simulator ', 'S')
+                    : space.name
+                  }
                 </span>
                 {!isMobile && <Info className="h-3 w-3 text-[var(--text-secondary)]" />}
               </button>
@@ -365,7 +391,7 @@ const DayGrid: React.FC<DayGridProps> = ({
 
         {/* Time slots grid */}
         {timeSlots.map((slot, slotIndex) => (
-          <div key={slotIndex} className="grid grid-cols-[80px_1fr]">
+          <div key={slotIndex} className={`grid ${isMobile ? 'grid-cols-[70px_1fr]' : 'grid-cols-[80px_1fr]'}`}>
             {/* Time label - always with AM/PM */}
             <div className={`px-1 flex items-center justify-center ${isMobile ? 'h-8' : 'h-7'} text-[10px] font-mono text-[var(--text-secondary)] border-r border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] sticky left-0 z-10`}>
               {format(slot, 'h:mm a')}

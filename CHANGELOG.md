@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.5] - 2025-10-22
+
+### 🎨 Optimized Mobile Column Layout
+
+#### Mobile Improvements
+- **Dynamic Column Widths**: Better than Skedda's fixed layout
+  - Calculates optimal width based on viewport (minus time column)
+  - 4 columns: Sweet spot with dynamic minmax widths
+  - 5 columns: Tighter spacing for better visibility
+  - 6+ columns: Scrollable with reasonable minimum widths
+- **Smaller Time Column**: Reduced from 80px to 70px on mobile
+- **Better Simulator Labels**:
+  - "Dartmouth - Box 2" → "D2" (mobile)
+  - "Bedford - Box 1" → "B1" (mobile)
+  - Removes redundant text for maximum space efficiency
+- **Result**: Fits more simulators than Skedda while maintaining readability
+
 ## [1.24.4] - 2025-10-22
 
 ### 🔧 Fix Customer Login Token Issue
