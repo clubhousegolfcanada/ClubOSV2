@@ -5,7 +5,7 @@ import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
 import UnifiedBookingCard from '@/components/booking/unified/UnifiedBookingCard';
-import { Calendar, ExternalLink, X, Plus, Search, Ban, Wrench, List } from 'lucide-react';
+import { Calendar, ExternalLink, X, Plus, Search, Ban, Wrench, List, MapPin, ChevronDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
@@ -13,6 +13,8 @@ import { useNotifications } from '@/state/hooks';
 import { BookingMode } from '@/components/booking/unified/UnifiedBookingCard';
 import SubNavigation, { SubNavTab, SubNavAction } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
+import { BookingConfigService } from '@/services/booking/bookingConfig';
+import { http } from '@/api/http';
 
 export default function Bookings() {
   const router = useRouter();
@@ -25,6 +27,12 @@ export default function Bookings() {
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // For calendar refresh without page reload
   const [bookingMode, setBookingMode] = useState<BookingMode>('booking'); // Track which mode to open
+
+  // Location and tier state for SubNavigation
+  const [locations, setLocations] = useState<any[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+  const [customerTiers, setCustomerTiers] = useState<any[]>([]);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
 
   // Store selected time slot data for pre-population
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
@@ -47,8 +55,30 @@ export default function Bookings() {
       router.push('/login');
     } else {
       setLoading(false);
+      // Load locations and tiers for SubNavigation
+      loadInitialData();
     }
   }, [user, router]);
+
+  const loadInitialData = async () => {
+    try {
+      const [tiersData, locationsData] = await Promise.all([
+        BookingConfigService.getCustomerTiers(),
+        http.get('/bookings/locations')
+      ]);
+
+      setCustomerTiers(tiersData);
+      const loadedLocations = locationsData.data.data || [];
+      setLocations(loadedLocations);
+
+      // Set first location as default if none selected
+      if (!selectedLocationId && loadedLocations.length > 0) {
+        setSelectedLocationId(loadedLocations[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load booking data:', error);
+    }
+  };
 
   // Handle when a time slot is clicked on the calendar
   const handleTimeSlotClick = (bookingOrStartTime: any, endTime?: Date, spaceId?: string, spaceName?: string) => {

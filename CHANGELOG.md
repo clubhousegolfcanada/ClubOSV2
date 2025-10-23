@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.8] - 2025-10-23
+
+### 🚨 HOTFIX: PostgreSQL 13 Compatibility Fix
+
+#### Critical Production Fix
+- **Fixed 500 Error**: Messages page was crashing with "jsonb subscript does not support slices"
+  - Root cause: Array slicing syntax `[start:end]` requires PostgreSQL 14+
+  - Production database is running PostgreSQL 13
+- **Solution**: Replaced array slicing with PostgreSQL 13-compatible approach
+  - Uses `jsonb_array_elements` with `ORDINALITY` and subquery
+  - Still limits messages to last 30 for performance
+  - Maintains all performance improvements from v1.24.7
+- **Result**: Messages page now works in production with PostgreSQL 13
+
 ## [1.24.7] - 2025-10-23
 
 ### ⚡ Critical Performance Fix: Messages Loading 70% Faster

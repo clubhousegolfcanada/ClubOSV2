@@ -26,6 +26,8 @@ interface SubNavigationProps {
   rightContent?: React.ReactNode;
   className?: string;
   mobileBottom?: boolean; // For mobile, render at bottom above main nav
+  topRowContent?: React.ReactNode; // Additional content for top row (filters, legend, etc)
+  compactMode?: boolean; // Reduce height on mobile for more content space
 }
 
 export const SubNavigation: React.FC<SubNavigationProps> = ({
@@ -35,7 +37,9 @@ export const SubNavigation: React.FC<SubNavigationProps> = ({
   actions = [],
   rightContent,
   className = '',
-  mobileBottom = false
+  mobileBottom = false,
+  topRowContent,
+  compactMode = false
 }) => {
   const [isMobile, setIsMobile] = React.useState(false);
 
@@ -66,9 +70,18 @@ export const SubNavigation: React.FC<SubNavigationProps> = ({
 
   return (
     <div className={`bg-white border-b border-gray-200 ${positionStyles} ${className}`}>
+      {/* Top Row Content - for filters, legend, etc */}
+      {topRowContent && (
+        <div className={`px-4 sm:px-6 lg:px-8 border-b border-gray-100 ${compactMode ? 'py-1' : 'py-2'}`}>
+          <div className="max-w-7xl mx-auto">
+            {topRowContent}
+          </div>
+        </div>
+      )}
+
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <nav className="flex justify-between items-center">
+          <nav className={`flex justify-between items-center ${compactMode && isMobile ? 'h-10' : ''}`}>
             {/* Left: Tabs and Primary Actions */}
             <div className="flex items-center space-x-2">
               {/* Tab Navigation */}

@@ -115,7 +115,7 @@ router.get('/conversations',
       const hasUpdatedAt = existingColumns.includes('updated_at');
       
       // Optimized query using window function instead of DISTINCT ON for better performance
-      // Also limits messages JSONB to reduce data transfer
+      // PostgreSQL 13 compatible - using subquery instead of array slicing
       let query = `
         WITH ranked_conversations AS (
           SELECT
@@ -123,12 +123,19 @@ router.get('/conversations',
             phone_number,
             customer_name,
             employee_name,
-            -- Limit messages array to last 30 messages for performance
-            CASE
-              WHEN jsonb_array_length(messages) > 30
-              THEN messages[jsonb_array_length(messages) - 30:jsonb_array_length(messages)]
-              ELSE messages
-            END as messages,
+            -- PostgreSQL 13 compatible: Get last 30 messages using subquery
+            COALESCE(
+              (SELECT jsonb_agg(elem ORDER BY ord)
+               FROM (
+                 SELECT elem, ord
+                 FROM jsonb_array_elements(messages) WITH ORDINALITY AS t(elem, ord)
+                 ORDER BY ord DESC
+                 LIMIT 30
+               ) AS last_messages
+               ORDER BY ord ASC
+              ),
+              messages
+            ) as messages,
             ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
             ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
             created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
