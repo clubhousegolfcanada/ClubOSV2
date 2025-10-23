@@ -169,13 +169,9 @@ export default function Compete() {
 
   const loadChallenges = async () => {
     try {
-      const token = tokenManager.getToken();
-      if (!token) return; // Don't make request without token
-      
+      // http client handles auth automatically
       // Load challenges ONCE and filter client-side
-      const response = await http.get(`challenges/my-challenges`, {
-
-      });
+      const response = await http.get('challenges/my-challenges');
       
       if (response.data.success) {
         let filteredChallenges = response.data.data || [];
@@ -202,7 +198,7 @@ export default function Compete() {
       // Handle auth errors
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
-        tokenManager.clearToken();
+        // Token clearing is handled by http interceptor
         localStorage.removeItem('clubos_user');
         setTimeout(() => {
           router.push('/login');
