@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.6] - 2025-10-22
+
+### 🔧 Fix Booking Calendar Rendering Errors
+
+#### Null Safety Fixes
+- **Fixed "Something went wrong" error**: Booking calendar was crashing on initial render
+  - Added null checks for config object throughout components
+  - Protected locations.find() calls with optional chaining
+  - Added loading state while config is being fetched
+- **WeekGridCompact improvements**:
+  - Made config parameter nullable to handle loading states
+  - Added default values for all config property accesses
+- **BookingCalendarCompact enhancements**:
+  - Added defensive rendering for empty arrays
+  - Show loading spinner when config is null
+  - Properly handle initial data loading phase
+- **Result**: Booking page now loads reliably without errors
+
 ## [1.24.5] - 2025-10-22
 
 ### 🎨 Optimized Mobile Column Layout

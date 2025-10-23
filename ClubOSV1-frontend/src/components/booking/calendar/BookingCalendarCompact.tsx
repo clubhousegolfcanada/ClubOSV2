@@ -260,7 +260,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
     const boxInfo = {
       id: space.id,
       name: space.name,
-      location: locations.find(l => l.id === space.locationId)?.name || '',
+      location: locations?.find(l => l.id === space.locationId)?.name || '',
       capacity: 4,
       equipment: {
         simulator: 'Trackman iO',
@@ -412,21 +412,21 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
 
             {/* Right: Controls (compact) */}
             <div className="flex items-center gap-1">
-              {showColorLegend && customerTiers.length > 0 && !isCollapsed && (
+              {showColorLegend && customerTiers && customerTiers.length > 0 && !isCollapsed && (
                 <div className="hidden sm:block">
                   <ColorLegend tiers={customerTiers} />
                 </div>
               )}
 
               {/* Location selector (compact) */}
-              {!isCollapsed && (
+              {!isCollapsed && locations && locations.length > 0 && (
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
                 >
                   <MapPin className="h-3 w-3" />
                   <span className="hidden sm:inline">
-                    {locations.find(l => l.id === selectedLocationId)?.name || 'Select'}
+                    {locations?.find(l => l.id === selectedLocationId)?.name || 'Select'}
                   </span>
                 </button>
               )}
@@ -473,7 +473,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
           </div>
 
           {/* Filters dropdown (compact) */}
-          {showFilters && !isCollapsed && (
+          {showFilters && !isCollapsed && locations && locations.length > 0 && (
             <div className="mt-2 p-2 bg-[var(--bg-tertiary)] rounded-md">
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
                 {locations.map(location => (
@@ -564,13 +564,18 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                 }}
                 size="sm"
               />
+            ) : !config ? (
+              // Show loading skeleton while config is loading
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner />
+              </div>
             ) : viewMode === 'day' ? (
               // Use unified DayGrid for all screen sizes
               <DayGrid
                 date={selectedDate}
                 bookings={filteredBookings}
                 spaces={spaces}
-                config={config!}
+                config={config}
                 onTimeSlotClick={handleBookingCreate}
                 onBookingClick={onBookingSelect}
                 onSpaceClick={handleSpaceClick}
@@ -580,7 +585,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
                 startDate={startOfWeek(selectedDate)}
                 bookings={filteredBookings}
                 spaces={spaces}
-                config={config!}
+                config={config}
                 onBookingCreate={handleBookingCreate}
                 onBookingSelect={onBookingSelect}
                 onSpaceClick={handleSpaceClick}

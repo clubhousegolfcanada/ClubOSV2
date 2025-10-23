@@ -7,7 +7,7 @@ interface WeekGridCompactProps {
   startDate: Date;
   bookings: Booking[];
   spaces: Space[];
-  config: BookingConfig;
+  config: BookingConfig | null;
   onBookingCreate?: (startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => void;
   onBookingSelect?: (booking: Booking) => void;
   onSpaceClick?: (space: Space) => void;
@@ -41,10 +41,10 @@ const WeekGridCompact: React.FC<WeekGridCompactProps> = ({
     let current = startTime;
     while (current <= endTime) {
       slots.push(new Date(current));
-      current = addMinutes(current, config.gridInterval || 30);
+      current = addMinutes(current, config?.gridInterval || 30);
     }
     return slots;
-  }, [config.gridInterval]);
+  }, [config?.gridInterval]);
 
   // Group bookings by day and space
   const bookingsByDayAndSpace = useMemo(() => {
@@ -70,7 +70,7 @@ const WeekGridCompact: React.FC<WeekGridCompactProps> = ({
     const dayKey = format(day, 'yyyy-MM-dd');
     const slotTime = new Date(day);
     slotTime.setHours(slot.getHours(), slot.getMinutes(), 0, 0);
-    const slotEnd = addMinutes(slotTime, config.gridInterval || 30);
+    const slotEnd = addMinutes(slotTime, config?.gridInterval || 30);
 
     const spaceBookings = bookingsByDayAndSpace[dayKey]?.[spaceId] || [];
 
@@ -189,7 +189,7 @@ const WeekGridCompact: React.FC<WeekGridCompactProps> = ({
                         style={{ height: '30px' }}
                         onClick={() => {
                           if (isAvailable && !booking && onBookingCreate) {
-                            const endTime = addMinutes(slotTime, config.minDuration || 60);
+                            const endTime = addMinutes(slotTime, config?.minDuration || 60);
                             onBookingCreate(slotTime, endTime, space.id, space.name);
                           }
                         }}
