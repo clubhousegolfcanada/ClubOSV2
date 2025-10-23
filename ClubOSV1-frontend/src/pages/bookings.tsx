@@ -5,13 +5,14 @@ import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
 import UnifiedBookingCard from '@/components/booking/unified/UnifiedBookingCard';
-import Head from 'next/head';
 import { Calendar, ExternalLink, X, Plus, Search, Ban, Wrench, List } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
 import { useNotifications } from '@/state/hooks';
 import { BookingMode } from '@/components/booking/unified/UnifiedBookingCard';
+import SubNavigation, { SubNavTab, SubNavAction } from '@/components/SubNavigation';
+import OperatorLayout from '@/components/OperatorLayout';
 
 export default function Bookings() {
   const router = useRouter();
@@ -105,163 +106,119 @@ export default function Bookings() {
     showAnalytics: isStaff, // Show analytics panel
   };
 
-  return (
-    <>
-      <Head>
-        <title>{isStaff ? 'Booking Management' : 'Book a Simulator'} - ClubOS</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      </Head>
+  // Define tabs for SubNavigation
+  const tabs: SubNavTab[] = showLegacySystem ? [] : [
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'list', label: 'List View', icon: List },
+  ];
 
-      <div className={`min-h-screen bg-[var(--bg-primary)] ${isCustomer ? 'customer-app' : ''}`}>
-        {/* Sub Navigation - Operations Style (only for staff) */}
-        {isStaff && (
-          <div className="bg-white border-b border-gray-200">
-            <div className="px-4 sm:px-6 lg:px-8">
-              <div className="max-w-7xl mx-auto">
-                <nav className="flex justify-between items-center">
-                  {/* Left: View Tabs and Create Button */}
-                  <div className="flex items-center space-x-2">
-                    {!showLegacySystem && (
-                      <>
-                        {/* View Tabs */}
-                        <div className="flex space-x-1 sm:space-x-4 pb-px">
-                          <button
-                            onClick={() => setView('calendar')}
-                            className={`
-                              flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                              ${view === 'calendar'
-                                ? 'border-[var(--accent)] text-[var(--accent)]'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                              }
-                            `}
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span>Calendar</span>
-                          </button>
-                          <button
-                            onClick={() => setView('list')}
-                            className={`
-                              flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                              ${view === 'list'
-                                ? 'border-[var(--accent)] text-[var(--accent)]'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                              }
-                            `}
-                          >
-                            <List className="w-4 h-4" />
-                            <span>List View</span>
-                          </button>
-                        </div>
+  // Define actions for SubNavigation
+  const actions: SubNavAction[] = showLegacySystem ? [] : [
+    {
+      id: 'create-booking',
+      label: 'Create Booking',
+      icon: Plus,
+      onClick: () => {
+        setBookingMode('booking');
+        setShowCreateBooking(true);
+      },
+      variant: 'primary',
+      hideOnMobile: true
+    }
+  ];
 
-                        {/* Create Booking Button */}
-                        <div className="border-l border-gray-200 pl-2 ml-2">
-                          <button
-                            onClick={() => {
-                              setBookingMode('booking');
-                              setShowCreateBooking(true);
-                            }}
-                            className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Create Booking</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
+  // Define secondary actions for SubNavigation
+  const secondaryActions: SubNavAction[] = [
+    {
+      id: 'search',
+      label: 'Search',
+      icon: Search,
+      onClick: () => setShowCustomerSearch(true),
+      hideOnMobile: true
+    },
+    ...(isAdmin ? [
+      {
+        id: 'block',
+        label: 'Block',
+        icon: Ban,
+        onClick: () => {
+          setBookingMode('block');
+          setShowCreateBooking(true);
+        },
+        hideOnMobile: true
+      },
+      {
+        id: 'maintenance',
+        label: 'Maintenance',
+        icon: Wrench,
+        onClick: () => {
+          setBookingMode('maintenance');
+          setShowCreateBooking(true);
+        },
+        hideOnMobile: true
+      }
+    ] as SubNavAction[] : [])
+  ];
 
-                  {/* Right: Action Buttons and System Toggle */}
-                  <div className="flex items-center space-x-2 py-1">
-                    {!showLegacySystem && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setShowCustomerSearch(true);
-                          }}
-                          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                        >
-                          <Search className="w-4 h-4" />
-                          <span className="hidden sm:inline">Search</span>
-                        </button>
-                        {isAdmin && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setBookingMode('block');
-                                setShowCreateBooking(true);
-                              }}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                            >
-                              <Ban className="w-4 h-4" />
-                              <span className="hidden sm:inline">Block</span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                setBookingMode('maintenance');
-                                setShowCreateBooking(true);
-                              }}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                            >
-                              <Wrench className="w-4 h-4" />
-                              <span className="hidden sm:inline">Maintenance</span>
-                            </button>
-                          </>
-                        )}
-                        <div className="border-l border-gray-200 pl-2 ml-2">
-                          <button
-                            onClick={() => setShowLegacySystem(!showLegacySystem)}
-                            className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                            <span className="hidden sm:inline">Use Legacy Skedda</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    {showLegacySystem && (
-                      <button
-                        onClick={() => setShowLegacySystem(!showLegacySystem)}
-                        className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-opacity-90 transition-all text-sm font-medium"
-                      >
-                        <Calendar className="w-4 h-4" />
-                        <span>Use ClubOS</span>
-                      </button>
-                    )}
-                  </div>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <main className={isCustomer ? 'pb-24 lg:pb-8 lg:pt-14' : ''}>
-          <div className={showLegacySystem ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2'}>
-            {showLegacySystem ? (
-              /* Legacy Skedda System - Full screen for maximum space */
-              <iframe
-                src="https://clubhouse247golf.skedda.com/booking"
-                title="Clubhouse Golf Booking System"
-                className="w-full"
-                style={{
-                  height: isStaff ? 'calc(100vh - 120px)' : 'calc(100vh - 64px)', // Account for nav + sub-nav height
-                  border: 'none',
-                  minHeight: '600px'
-                }}
-                allow="payment; fullscreen; camera; microphone; geolocation"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
-              />
-            ) : view === 'calendar' ? (
-              /* ClubOS Booking System - Maximized calendar space */
-              <CalendarComponent key={refreshKey} {...calendarProps} />
-            ) : (
-              /* List view - Full booking management table */
-              <BookingListView />
-            )}
+  // For customers, just render the content directly without operator layout
+  if (isCustomer) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
+        <main className="pb-24 lg:pb-8 lg:pt-14">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <CalendarComponent key={refreshKey} {...calendarProps} />
           </div>
         </main>
       </div>
+    );
+  }
+
+  return (
+    <OperatorLayout
+      title={isStaff ? 'Booking Management - ClubOS' : 'Book a Simulator - ClubOS'}
+      description="Manage facility bookings and reservations"
+      subNavigation={
+        isStaff ? (
+          <SubNavigation
+            tabs={tabs}
+            activeTab={view}
+            onTabChange={(tabId) => setView(tabId as 'calendar' | 'list')}
+            actions={[...actions, ...secondaryActions]}
+            rightContent={
+              <div className="border-l border-gray-200 pl-2 ml-2">
+                <button
+                  onClick={() => setShowLegacySystem(!showLegacySystem)}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span className="hidden sm:inline">{showLegacySystem ? 'Use ClubOS' : 'Use Legacy Skedda'}</span>
+                </button>
+              </div>
+            }
+          />
+        ) : null}
+    >
+      {showLegacySystem ? (
+        /* Legacy Skedda System - Full screen for maximum space */
+        <iframe
+          src="https://clubhouse247golf.skedda.com/booking"
+          title="Clubhouse Golf Booking System"
+          className="w-full"
+          style={{
+            height: isStaff ? 'calc(100vh - 120px)' : 'calc(100vh - 64px)', // Account for nav + sub-nav height
+            border: 'none',
+            minHeight: '600px'
+          }}
+          allow="payment; fullscreen; camera; microphone; geolocation"
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
+        />
+      ) : view === 'calendar' ? (
+        /* ClubOS Booking System - Maximized calendar space */
+        <CalendarComponent key={refreshKey} {...calendarProps} />
+      ) : (
+        /* List view - Full booking management table */
+        <BookingListView />
+      )}
 
       {/* Modals */}
       {showCreateBooking && (
@@ -308,7 +265,6 @@ export default function Bookings() {
           }}
         />
       )}
-
-    </>
+    </OperatorLayout>
   );
 }

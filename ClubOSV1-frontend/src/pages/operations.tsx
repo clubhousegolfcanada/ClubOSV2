@@ -1,7 +1,8 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import Head from 'next/head';
 import { useAuthState } from '@/state/useStore';
 import { Users, Zap, Brain, ClipboardList, Layers } from 'lucide-react';
+import SubNavigation, { SubNavTab } from '@/components/SubNavigation';
+import OperatorLayout from '@/components/OperatorLayout';
 
 // Lazy load operation components for better performance
 const OperationsUsers = lazy(() => import('@/components/operations/users/OperationsUsers').then(m => ({ default: m.OperationsUsers })));
@@ -71,15 +72,23 @@ export default function Operations() {
     );
   }
 
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
-    { id: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, adminOnly: true },
-    { id: 'integrations', label: 'Integrations & AI', icon: <Zap className="h-4 w-4" />, adminOnly: true },
-    { id: 'patterns', label: 'V3-PLS', icon: <Brain className="h-4 w-4" />, adminOnly: false },
-    { id: 'checklists-admin', label: 'Checklists Admin', icon: <ClipboardList className="h-4 w-4" />, adminOnly: true },
-    { id: 'white-label', label: 'White Label', icon: <Layers className="h-4 w-4" />, adminOnly: true }
+  // Convert icons to LucideIcon types for SubNavigation
+  const tabConfigs = [
+    { id: 'users', label: 'Users', icon: Users, adminOnly: true },
+    { id: 'integrations', label: 'Integrations & AI', icon: Zap, adminOnly: true },
+    { id: 'patterns', label: 'V3-PLS', icon: Brain, adminOnly: false },
+    { id: 'checklists-admin', label: 'Checklists Admin', icon: ClipboardList, adminOnly: true },
+    { id: 'white-label', label: 'White Label', icon: Layers, adminOnly: true }
   ];
 
-  const visibleTabs = tabs.filter(tab => !tab.adminOnly || user.role === 'admin');
+  const visibleTabConfigs = tabConfigs.filter(tab => !tab.adminOnly || user.role === 'admin');
+
+  // Convert to SubNavTab format
+  const tabs: SubNavTab[] = visibleTabConfigs.map(tab => ({
+    id: tab.id,
+    label: tab.label,
+    icon: tab.icon
+  }));
 
   const getTabDescription = () => {
     switch (activeTab) {
@@ -125,46 +134,24 @@ export default function Operations() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Operations - ClubOS</title>
-      </Head>
-
-      <div className="min-h-screen bg-[var(--bg-primary)]">
-        {/* Tab Navigation */}
-        <div className="bg-white border-b border-gray-200">
-          {/* Tab Navigation */}
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-              <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto pb-px">
-                {visibleTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      flex items-center space-x-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                      ${activeTab === tab.id
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }
-                    `}
-                  >
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="max-w-7xl mx-auto">
-            {renderTabContent()}
-          </div>
-        </div>
+    <OperatorLayout
+      title="Operations - ClubOS"
+      description="Manage system operations, integrations, and configurations"
+      subNavigation={
+        <SubNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as TabType)}
+        />
+      }
+    >
+      {/* Tab description for context */}
+      <div className="mb-4">
+        <p className="text-sm text-[var(--text-muted)]">{getTabDescription()}</p>
       </div>
+
+      {/* Tab content */}
+      {renderTabContent()}
 
       <style jsx>{`
         :root {
@@ -217,6 +204,6 @@ export default function Operations() {
           }
         }
       `}</style>
-    </>
+    </OperatorLayout>
   );
 }
