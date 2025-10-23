@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, memo } from 'react';
 import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
 import { Info } from 'lucide-react';
 import { Booking, Space } from './BookingCalendar';
@@ -16,7 +16,7 @@ interface DayGridProps {
   onSpaceClick?: (space: Space) => void;
 }
 
-const DayGrid: React.FC<DayGridProps> = ({
+const DayGridComponent: React.FC<DayGridProps> = ({
   date,
   bookings,
   spaces,
@@ -99,8 +99,8 @@ const DayGrid: React.FC<DayGridProps> = ({
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
 
-      // Calculate selection position (28px desktop, 32px mobile)
-      const slotHeight = window.innerWidth < 640 ? 32 : 28;
+      // Calculate selection position (24px for both desktop and mobile for consistency)
+      const slotHeight = 24;
       const selectionEndY = (selectionEnd?.slotIndex || selectionStart.slotIndex) * slotHeight + 150;
       const spaceIndex = spaces.findIndex(s => s.id === selectionStart.spaceId);
       const spaceWidth = gridRect.width / spaces.length;
@@ -417,7 +417,7 @@ const DayGrid: React.FC<DayGridProps> = ({
                   <div
                     key={`${space.id}-${slotIndex}`}
                     className={`
-                      relative border-r border-b border-[var(--border-primary)] ${isMobile ? 'h-8' : 'h-7'} transition-all duration-150
+                      relative border-r border-b border-[var(--border-primary)] h-6 transition-all duration-150
                       ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                       ${isAvailable && !isSelected ? 'hover:bg-[var(--accent)]/[0.04]' : ''}
                       ${isSelected ? 'bg-[var(--accent)]/[0.08] border-[var(--accent)]/30' : ''}
@@ -635,5 +635,16 @@ const DayGrid: React.FC<DayGridProps> = ({
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+// Only re-render if date, bookings, or spaces change
+const DayGrid = memo(DayGridComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.date.getTime() === nextProps.date.getTime() &&
+    prevProps.bookings.length === nextProps.bookings.length &&
+    prevProps.spaces.length === nextProps.spaces.length &&
+    prevProps.config === nextProps.config
+  );
+});
 
 export default DayGrid;

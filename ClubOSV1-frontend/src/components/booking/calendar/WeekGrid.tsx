@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo } from 'react';
 import { Booking, Space } from './BookingCalendar';
 import { BookingConfig } from '@/services/booking/bookingConfig';
 import { format, startOfWeek, addDays, isSameDay, isWithinInterval, differenceInMinutes } from 'date-fns';
@@ -15,7 +15,7 @@ interface WeekGridProps {
   onSpaceClick?: (space: Space) => void;
 }
 
-const WeekGrid: React.FC<WeekGridProps> = ({
+const WeekGridComponent: React.FC<WeekGridProps> = ({
   weekStart,
   bookings,
   spaces,
@@ -136,7 +136,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
             {timeSlots.map((slot) => (
               <div
                 key={slot.hour}
-                className="h-[60px] px-2 py-1 text-xs text-[var(--text-secondary)] border-b border-[var(--border-primary)]"
+                className="h-[48px] px-2 py-1 text-xs text-[var(--text-secondary)] border-b border-[var(--border-primary)]"
               >
                 {slot.label}
               </div>
@@ -154,7 +154,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
                 {timeSlots.map((slot) => (
                   <div
                     key={`${dayIndex}-${slot.hour}`}
-                    className={`h-[60px] border-b border-[var(--border-primary)] cursor-pointer transition-colors ${
+                    className={`h-[48px] border-b border-[var(--border-primary)] cursor-pointer transition-colors ${
                       isToday ? 'bg-[var(--accent)]/5' : 'bg-[var(--bg-primary)]'
                     } hover:bg-[var(--bg-hover)]`}
                     onClick={() => handleTimeSlotClick(dayIndex, slot.hour)}
@@ -217,5 +217,15 @@ const WeekGrid: React.FC<WeekGridProps> = ({
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+const WeekGrid = memo(WeekGridComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.weekStart?.getTime() === nextProps.weekStart?.getTime() &&
+    prevProps.bookings.length === nextProps.bookings.length &&
+    prevProps.spaces.length === nextProps.spaces.length &&
+    prevProps.config === nextProps.config
+  );
+});
 
 export default WeekGrid;

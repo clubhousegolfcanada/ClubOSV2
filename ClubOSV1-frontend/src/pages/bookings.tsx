@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import BookingCalendar from '@/components/booking/calendar/BookingCalendar';
 import BookingCalendarCompact from '@/components/booking/calendar/BookingCalendarCompact';
 import BookingListView from '@/components/booking/BookingListView';
-import UnifiedBookingCard from '@/components/booking/unified/UnifiedBookingCard';
 import { Calendar, ExternalLink, X, Plus, Search, Ban, Wrench, List, MapPin, ChevronDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import CustomerSearchModal from '@/components/booking/CustomerSearchModal';
 import { useNotifications } from '@/state/hooks';
 import { BookingMode } from '@/components/booking/unified/UnifiedBookingCard';
 import SubNavigation, { SubNavTab, SubNavAction } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
 import { BookingConfigService } from '@/services/booking/bookingConfig';
 import { http } from '@/api/http';
+
+// Lazy load modals for better performance
+const UnifiedBookingCard = lazy(() => import('@/components/booking/unified/UnifiedBookingCard'));
+const CustomerSearchModal = lazy(() => import('@/components/booking/CustomerSearchModal'));
 
 export default function Bookings() {
   const router = useRouter();
@@ -126,8 +128,9 @@ export default function Bookings() {
 
   // Role-based calendar props
   const calendarProps = {
+    locationId: selectedLocationId,
     onBookingCreate: handleTimeSlotClick,
-    showColorLegend: true,
+    showColorLegend: false, // Now handled in SubNavigation
     allowAdminBlock: isAdmin,
     showAllBookings: isStaff, // Staff see all bookings
     showCustomerInfo: isStaff, // Display customer details
@@ -190,6 +193,64 @@ export default function Bookings() {
     ] as SubNavAction[] : [])
   ];
 
+  // Create the top row content with location selector and color legend
+  const topRowContent = !showLegacySystem && isStaff ? (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      {/* Location Selector */}
+      <div className="relative">
+        <button
+          onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
+        >
+          <MapPin className="w-4 h-4 text-gray-600" />
+          <span className="font-medium">
+            {selectedLocationId ? locations.find(l => l.id === selectedLocationId)?.name || 'Select Location' : 'Select Location'}
+          </span>
+          <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${showLocationDropdown ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Location Dropdown */}
+        {showLocationDropdown && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+            {locations.map(location => (
+              <button
+                key={location.id}
+                onClick={() => {
+                  setSelectedLocationId(location.id);
+                  setShowLocationDropdown(false);
+                  setRefreshKey(prev => prev + 1);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                  selectedLocationId === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : ''
+                }`}
+              >
+                {location.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Color Legend as Inline Badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        {customerTiers.map(tier => (
+          <div
+            key={tier.id}
+            className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-full"
+          >
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: tier.color }}
+            />
+            <span className="text-xs font-medium text-gray-700">
+              {tier.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   // For customers, just render the content directly without operator layout
   if (isCustomer) {
     return (
@@ -207,6 +268,7 @@ export default function Bookings() {
     <OperatorLayout
       title={isStaff ? 'Booking Management - ClubOS' : 'Book a Simulator - ClubOS'}
       description="Manage facility bookings and reservations"
+      padding={showLegacySystem ? 'md' : 'none'} // No padding when using calendar for maximum space
       subNavigation={
         isStaff ? (
           <SubNavigation
@@ -214,6 +276,8 @@ export default function Bookings() {
             activeTab={view}
             onTabChange={(tabId) => setView(tabId as 'calendar' | 'list')}
             actions={[...actions, ...secondaryActions]}
+            topRowContent={topRowContent}
+            compactMode={true} // Use compact mode for more calendar space
             rightContent={
               <div className="border-l border-gray-200 pl-2 ml-2">
                 <button
@@ -254,7 +318,8 @@ export default function Bookings() {
       {showCreateBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn p-4">
           <div className="max-h-[90vh] overflow-y-auto w-full max-w-5xl">
-            <UnifiedBookingCard
+            <Suspense fallback={<LoadingSpinner />}>
+              <UnifiedBookingCard
               initialStartTime={selectedTimeSlot.startTime}
               initialEndTime={selectedTimeSlot.endTime}
               initialSpaceId={selectedTimeSlot.spaceId}
@@ -280,12 +345,14 @@ export default function Bookings() {
               defaultMode={bookingMode}
               allowModeSwitch={isStaff}
             />
+            </Suspense>
           </div>
         </div>
       )}
 
       {showCustomerSearch && (
-        <CustomerSearchModal
+        <Suspense fallback={<LoadingSpinner />}>
+          <CustomerSearchModal
           isOpen={showCustomerSearch}
           onClose={() => setShowCustomerSearch(false)}
           onSelectCustomer={(customer) => {
@@ -294,6 +361,7 @@ export default function Bookings() {
             // TODO: Open booking form with customer pre-filled
           }}
         />
+        </Suspense>
       )}
     </OperatorLayout>
   );
