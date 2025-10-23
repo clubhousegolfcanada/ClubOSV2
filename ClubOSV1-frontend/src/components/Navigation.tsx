@@ -139,7 +139,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     return (
       <>
         {/* Bottom Navigation Bar for Mobile Operators */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg pb-safe">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-30 shadow-lg pb-safe">
           <div className="flex items-center justify-around h-16">
             {navItems.slice(0, 5).map((item) => {
               const isActive = router.pathname === item.href;

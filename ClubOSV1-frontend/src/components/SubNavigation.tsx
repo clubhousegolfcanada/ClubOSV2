@@ -61,7 +61,7 @@ export const SubNavigation: React.FC<SubNavigationProps> = ({
 
   // Mobile bottom positioning styles - above bottom nav
   const positionStyles = isMobile && mobileBottom
-    ? 'fixed bottom-16 left-0 right-0 z-30 lg:relative lg:bottom-auto'
+    ? 'fixed bottom-16 left-0 right-0 z-40 lg:relative lg:bottom-auto lg:z-auto'
     : '';
 
   return (

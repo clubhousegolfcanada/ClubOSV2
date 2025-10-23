@@ -59,15 +59,15 @@ export const OperatorLayout: React.FC<OperatorLayoutProps> = ({
   };
 
   // Calculate padding based on navigation elements
-  // Desktop: Account for top nav (48px) + optional sub-nav (48px) + remote actions (48px)
-  // Mobile: Account for bottom nav (64px) + optional sub-nav (48px) + space
+  // Desktop: Account for remote actions bar at bottom
+  // Mobile: Account for bottom nav (64px) + optional sub-nav (48px) + remote actions FAB
   const getPaddingBottom = () => {
     if (isMobile) {
-      // Mobile: bottom nav (64px) + sub-nav (48px) + extra space
-      return subNavigation ? 'pb-28' : 'pb-20';
+      // Mobile: bottom nav (64px) + optional sub-nav (48px) + remote actions FAB (56px) + extra space
+      return subNavigation ? 'pb-32' : 'pb-24';
     } else {
-      // Desktop: remote actions bar only
-      return 'pb-14';
+      // Desktop: remote actions bar (48px) + extra space
+      return 'pb-16';
     }
   };
 

@@ -260,13 +260,23 @@ const RemoteActionsBar: React.FC = () => {
     return null;
   }
 
+  // Mobile: Position as FAB above navigation
+  // Desktop: Keep at bottom as usual
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
   return (
-    <div 
-      className={`fixed left-0 right-0 z-40 transition-all duration-300 ease-out ${
+    <div
+      className={`fixed z-50 transition-all duration-300 ease-out ${
         isExpanded ? 'h-auto max-h-[70vh] overflow-hidden' : 'h-12'
-      }`}
+      } ${
+        isMobile
+          ? 'right-4 left-4 rounded-t-lg shadow-lg' // Mobile: FAB style
+          : 'left-0 right-0' // Desktop: full width
+      } lg:z-40 lg:left-0 lg:right-0 lg:rounded-none`}
       style={{
-        bottom: 'env(safe-area-inset-bottom, 0px)',
+        bottom: isMobile
+          ? 'calc(env(safe-area-inset-bottom, 0px) + 76px)' // Mobile: above nav + sub-nav
+          : 'env(safe-area-inset-bottom, 0px)', // Desktop: at bottom
         paddingBottom: isExpanded ? 'env(safe-area-inset-bottom, 0px)' : '0'
       }}
     >
