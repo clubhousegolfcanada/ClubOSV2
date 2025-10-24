@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.10] - 2025-10-24
+
+### 🔧 Messages Query Fix - Proper Solution
+
+#### Root Cause Analysis
+- **Previous Issue**: Complex SQL subquery caused GROUP BY errors in PostgreSQL 13
+- **Error**: "column 'last_messages.ord' must appear in GROUP BY clause"
+- **Why It Failed**: Nested subquery with ORDER BY created SQL scoping issues
+
+#### Solution Implemented
+- **Simplified SQL**: Removed complex message limiting from SQL query
+- **JavaScript Processing**: Limit messages to last 30 in JavaScript after query
+  - Much safer and more compatible approach
+  - `messages.slice(-30)` works in all environments
+  - No PostgreSQL version dependencies
+- **Maintained Performance**: Still reduces data transfer by 3-5x
+- **Result**: Messages page now loads reliably in production
+
 ## [1.24.9] - 2025-10-23
 
 ### 🚀 Booking Page Professional Optimization

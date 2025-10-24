@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Calendar, Clock, MapPin, Filter, Users, ChevronLeft, ChevronRight, Grid3X3, List, CalendarX } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Grid3X3, List, CalendarX } from 'lucide-react';
 import { format, startOfDay, addDays, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
@@ -11,8 +11,6 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import DayGrid from './DayGrid';
 import WeekGrid from './WeekGrid';
-import ColorLegend from './ColorLegend';
-import AdminBlockOff from './AdminBlockOff';
 import BoxInfoModal from '../BoxInfoModal';
 import NewBookingModal from '../NewBookingModal';
 import { CalendarSkeleton } from './CalendarSkeleton';
@@ -55,10 +53,11 @@ export interface Location {
 export interface BookingCalendarProps {
   locationId?: string;
   date?: Date;
+  viewMode?: 'day' | 'week'; // Controlled from parent
   onBookingCreate?: (booking: Partial<Booking>) => void;
   onBookingSelect?: (booking: Booking) => void;
-  showColorLegend?: boolean;
-  allowAdminBlock?: boolean;
+  showColorLegend?: boolean; // Deprecated - remove in next version
+  allowAdminBlock?: boolean; // Deprecated - handled in parent
 }
 
 type ViewMode = 'day' | 'week';
@@ -66,10 +65,11 @@ type ViewMode = 'day' | 'week';
 const BookingCalendar: React.FC<BookingCalendarProps> = ({
   locationId: propLocationId,
   date: propDate,
+  viewMode: propViewMode = 'day',
   onBookingCreate,
   onBookingSelect,
-  showColorLegend = true,
-  allowAdminBlock = false
+  showColorLegend = false, // Deprecated
+  allowAdminBlock = false // Deprecated
 }) => {
   const { notify } = useNotifications();
   const { user } = useAuthState();
@@ -80,15 +80,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   // State
   const [selectedDate, setSelectedDate] = useState<Date>(propDate || new Date());
   const [selectedLocationId, setSelectedLocationId] = useState<string>(propLocationId || '');
-  const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const viewMode = propViewMode; // Use prop instead of internal state
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [customerTiers, setCustomerTiers] = useState<CustomerTier[]>([]);
   const [config, setConfig] = useState<BookingConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Modal states
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
@@ -368,32 +366,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   }, [config, selectedLocationId, spaces, notify, customerTiers, onBookingCreate]);
 
-  const handleAdminBlock = useCallback(async (blockData: {
-    startAt: Date;
-    endAt: Date;
-    spaceIds: string[];
-    reason: string;
-  }) => {
-    try {
-      const response = await http.post('/bookings', {
-        locationId: selectedLocationId,
-        spaceIds: blockData.spaceIds,
-        startAt: blockData.startAt.toISOString(),
-        endAt: blockData.endAt.toISOString(),
-        isAdminBlock: true,
-        blockReason: blockData.reason
-      });
-
-      if (response.data.success) {
-        notify('success', 'Admin block created successfully');
-        loadBookings(); // Refresh bookings
-        setShowAdminPanel(false);
-      }
-    } catch (error) {
-      logger.error('Failed to create admin block:', error);
-      notify('error', 'Failed to create admin block');
-    }
-  }, [selectedLocationId, notify]);
+  // Admin block handled in parent component now
 
   // Filter bookings for selected location
   const filteredBookings = useMemo(() => {
@@ -449,100 +422,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         </div>
       )}
 
-      {/* Header */}
-      <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-[var(--color-primary)]" />
-            <h2 className="text-lg font-semibold">Booking Calendar</h2>
-            {showColorLegend && customerTiers.length > 0 && (
-              <ColorLegend tiers={customerTiers} />
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Location filter */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
-            >
-              <MapPin className="h-4 w-4" />
-              <span>{!selectedLocationId ? 'Select Location' : locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}</span>
-              <Filter className="h-3 w-3" />
-            </button>
-
-            {/* View mode toggle */}
-            <div className="flex bg-[var(--bg-tertiary)] rounded-md p-0.5">
-              <button
-                onClick={() => setViewMode('day')}
-                className={`px-3 py-1 text-sm rounded transition-colors ${
-                  viewMode === 'day'
-                    ? 'bg-[var(--bg-primary)] text-[var(--color-primary)] shadow-sm'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                Day
-              </button>
-              <button
-                onClick={() => setViewMode('week')}
-                className={`px-3 py-1 text-sm rounded transition-colors ${
-                  viewMode === 'week'
-                    ? 'bg-[var(--bg-primary)] text-[var(--color-primary)] shadow-sm'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                Week
-              </button>
-            </div>
-
-            {/* Admin controls */}
-            {isAdmin && allowAdminBlock && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowAdminPanel(!showAdminPanel)}
-              >
-                Admin Block
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Filters dropdown */}
-        {showFilters && (
-          <div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-md">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {locations.map(location => (
-                <button
-                  key={location.id}
-                  onClick={() => {
-                    setSelectedLocationId(location.id);
-                    setShowFilters(false);
-                  }}
-                  className={`px-3 py-2 text-sm rounded-md transition-colors ${
-                    selectedLocationId === location.id
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
-                  }`}
-                >
-                  {location.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Admin panel */}
-        {showAdminPanel && (
-          <div className="mt-4">
-            <AdminBlockOff
-              spaces={filteredSpaces}
-              onBlock={handleAdminBlock}
-              onCancel={() => setShowAdminPanel(false)}
-            />
-          </div>
-        )}
-      </div>
+      {/* Header section removed - all controls in SubNavigation */}
 
       {/* Date navigation */}
       <div className="py-3 border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">

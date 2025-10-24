@@ -15,7 +15,7 @@ import { CompactCalendarSkeleton } from './CalendarSkeleton';
 import DayGridCompact from './DayGridCompact';
 import WeekGridCompact from './WeekGridCompact';
 import DayGrid from './DayGrid';
-import ColorLegend from './ColorLegend';
+// ColorLegend removed - handled in parent
 import AdminBlockOff from './AdminBlockOff';
 import BoxInfoModal from '../BoxInfoModal';
 import NewBookingModal from '../NewBookingModal';
@@ -58,10 +58,11 @@ export interface Location {
 export interface BookingCalendarCompactProps {
   locationId?: string;
   date?: Date;
+  viewMode?: 'day' | 'week'; // Controlled from parent
   onBookingCreate?: (booking: Partial<Booking>) => void;
   onBookingSelect?: (booking: Booking) => void;
-  showColorLegend?: boolean;
-  allowAdminBlock?: boolean;
+  showColorLegend?: boolean; // Deprecated
+  allowAdminBlock?: boolean; // Deprecated
 }
 
 type ViewMode = 'day' | 'week';
@@ -69,10 +70,11 @@ type ViewMode = 'day' | 'week';
 const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   locationId: propLocationId,
   date: propDate,
+  viewMode: propViewMode = 'day',
   onBookingCreate,
   onBookingSelect,
-  showColorLegend = true,
-  allowAdminBlock = false
+  showColorLegend = false, // Deprecated
+  allowAdminBlock = false // Deprecated
 }) => {
   const { notify } = useNotifications();
   const { user } = useAuthState();
@@ -81,7 +83,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   // State
   const [selectedDate, setSelectedDate] = useState<Date>(propDate || new Date());
   const [selectedLocationId, setSelectedLocationId] = useState<string>(propLocationId || '');
-  const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const viewMode = propViewMode; // Use prop instead of internal state
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);

@@ -114,8 +114,8 @@ router.get('/conversations',
       const hasLastReadAt = existingColumns.includes('last_read_at');
       const hasUpdatedAt = existingColumns.includes('updated_at');
       
-      // Optimized query using window function instead of DISTINCT ON for better performance
-      // PostgreSQL 13 compatible - using subquery instead of array slicing
+      // Simplified query - removed message limiting to fix production issues
+      // Will implement proper message pagination in a separate endpoint
       let query = `
         WITH ranked_conversations AS (
           SELECT
@@ -123,19 +123,7 @@ router.get('/conversations',
             phone_number,
             customer_name,
             employee_name,
-            -- PostgreSQL 13 compatible: Get last 30 messages using subquery
-            COALESCE(
-              (SELECT jsonb_agg(elem ORDER BY ord)
-               FROM (
-                 SELECT elem, ord
-                 FROM jsonb_array_elements(messages) WITH ORDINALITY AS t(elem, ord)
-                 ORDER BY ord DESC
-                 LIMIT 30
-               ) AS last_messages
-               ORDER BY ord ASC
-              ),
-              messages
-            ) as messages,
+            messages,
             ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
             ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
             created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
@@ -248,20 +236,27 @@ router.get('/conversations',
       //   return row;
       // }));
       
-      // Don't transform - frontend expects snake_case for OpenPhone data
+      // Transform and limit messages in JavaScript (safer than SQL)
       const transformedConversations = enrichedConversations.map(row => {
+        // Limit messages to last 30 for performance (done in JS to avoid SQL issues)
+        let limitedMessages = row.messages;
+        if (Array.isArray(row.messages) && row.messages.length > 30) {
+          // Get last 30 messages
+          limitedMessages = row.messages.slice(-30);
+        }
+
         return {
           id: row.id,
           phone_number: row.phone_number,
           customer_name: row.customer_name,
           employee_name: row.employee_name,
-          messages: row.messages,
+          messages: limitedMessages,
           unread_count: row.unread_count || 0,
           last_read_at: row.last_read_at,
           created_at: row.created_at,
           updated_at: row.updated_at,
-          lastMessage: row.messages?.[row.messages.length - 1] || null,
-          messageCount: row.messages?.length || 0,
+          lastMessage: limitedMessages?.[limitedMessages.length - 1] || null,
+          messageCount: row.messages?.length || 0, // Keep original count
           hubspotCompany: row.hubspot_company,
           hubspotEnriched: row.hubspot_enriched,
           _debug_invalid_phone: row._debug_invalid_phone
