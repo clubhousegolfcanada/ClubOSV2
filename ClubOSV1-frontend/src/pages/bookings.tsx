@@ -336,11 +336,11 @@ export default function Bookings() {
           <div className="max-h-[90vh] overflow-y-auto w-full max-w-5xl">
             <Suspense fallback={<LoadingSpinner />}>
               <UnifiedBookingCard
-              initialStartTime={selectedTimeSlot.startTime}
-              initialEndTime={selectedTimeSlot.endTime}
-              initialSpaceId={selectedTimeSlot.spaceId}
-              initialSpaceName={selectedTimeSlot.spaceName}
-              onSuccess={(result) => {
+                initialStartTime={selectedTimeSlot.startTime}
+                initialEndTime={selectedTimeSlot.endTime}
+                initialSpaceId={selectedTimeSlot.spaceId}
+                initialSpaceName={selectedTimeSlot.spaceName}
+                onSuccess={(result) => {
                 const successMessage = bookingMode === 'block'
                   ? `Time blocked successfully!`
                   : bookingMode === 'maintenance'
@@ -353,14 +353,14 @@ export default function Bookings() {
                 // Refresh the calendar without page reload
                 setRefreshKey(prev => prev + 1);
               }}
-              onCancel={() => {
-                setShowCreateBooking(false);
-                setSelectedTimeSlot({}); // Clear selection on cancel
-                setBookingMode('booking'); // Reset to default mode
-              }}
-              defaultMode={bookingMode}
-              allowModeSwitch={isStaff}
-            />
+                onCancel={() => {
+                  setShowCreateBooking(false);
+                  setSelectedTimeSlot({}); // Clear selection on cancel
+                  setBookingMode('booking'); // Reset to default mode
+                }}
+                defaultMode={bookingMode}
+                allowModeSwitch={isStaff}
+              />
             </Suspense>
           </div>
         </div>

@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.13] - 2025-10-23
+
+### 🔧 Critical Fix: Create Booking Button Blank Page
+
+#### Fixed Create Booking Modal Not Showing
+- **Root Cause**: Malformed JSX syntax in bookings.tsx prevented UnifiedBookingCard from rendering
+- **Issue**: Component props weren't properly indented, causing silent failure with lazy loading
+- **Fix**: Corrected JSX formatting with proper indentation for all props
+- **Result**: Create Booking button now properly displays the booking modal
+- **Impact**: All booking modes (standard, maintenance, block) now work correctly
+
 ## [1.24.12] - 2025-10-23
 
 ### 🔧 Critical Fix: Login Authentication Issues
