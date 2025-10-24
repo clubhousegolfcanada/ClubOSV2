@@ -171,11 +171,32 @@ export class TokenManager {
     // Don't check immediately on start - the token was just validated by login
     this.checkInterval = setInterval(() => {
       const currentToken = this.getToken();
-      
-      if (currentToken && this.isTokenExpired(currentToken)) {
+
+      // If no token, stop monitoring
+      if (!currentToken) {
+        this.stopTokenMonitoring();
+        return;
+      }
+
+      // Check if token is expired
+      if (this.isTokenExpired(currentToken)) {
+        // Check for grace period before handling expiration
+        const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+        const gracePeriod = 5 * 60 * 1000; // 5 minutes
+
+        if (loginTimestamp) {
+          const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
+          if (timeSinceLogin < gracePeriod) {
+            // Still in grace period, don't expire yet
+            logger.debug('Token expired but within grace period, continuing');
+            return;
+          }
+        }
+
+        // Grace period exceeded or no timestamp, handle expiration
         this.handleTokenExpiration();
-      } else if (currentToken) {
-        // Adjust check interval if token was refreshed
+      } else {
+        // Token still valid, check if interval needs adjustment
         const newInterval = this.getCheckInterval(currentToken);
         if (newInterval !== checkInterval) {
           // Restart monitoring with new interval

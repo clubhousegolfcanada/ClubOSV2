@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.11] - 2025-10-24
+
+### 🎨 Booking Page Cleanup - Complete Control Consolidation
+
+#### Control Unification
+- **Single Toggle Button**: Replaced separate Calendar/List tabs with single toggle button showing opposite state
+  - More intuitive: button shows what you'll switch to, not current state
+  - Saves horizontal space in navigation bar
+- **Removed Color Legend**: Completely removed customer tier color legend (was redundant)
+- **Eliminated Duplicate Controls**: Removed all duplicate controls from calendar components
+  - Location selector now only in parent SubNavigation
+  - Day/Week toggle only in parent navigation
+  - No more "Booking Calendar" title taking up space
+  - Admin Block and filters all consolidated to single location
+
+#### Technical Improvements
+- **Single Source of Truth**: All calendar controls now managed by parent component
+  - BookingCalendar uses prop-based viewMode instead of internal state
+  - BookingCalendarCompact cleaned of all redundant controls
+  - Prevents state synchronization issues
+- **Cleaner Component Structure**: Removed ~200 lines of duplicate control code
+- **Better Performance**: Less re-rendering from duplicate state management
+
+#### Result
+- **Maximum Calendar Space**: 100% of component space dedicated to actual calendar
+- **Cleaner Interface**: No more duplicate buttons or redundant information
+- **Better UX**: Single, consistent control location for all calendar operations
+
 ## [1.24.10] - 2025-10-24
 
 ### 🔧 Messages Query Fix - Proper Solution

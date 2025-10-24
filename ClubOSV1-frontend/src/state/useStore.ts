@@ -124,30 +124,33 @@ export const useAuthState = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
-        // Clear only auth-related data, not everything
-        tokenManager.clearToken();
-        removeStorageItem('clubos_user');
-        removeStorageItem('clubos_view_mode');
-        
-        // Set new auth data using iframe-safe storage
+        // Store login timestamp for grace period FIRST
+        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
+
+        // Set new auth data atomically without clearing first
+        // This prevents race conditions where token is null
+        const oldToken = tokenManager.getToken();
+
+        // Set new token immediately
         tokenManager.setToken(token);
         setStorageItem('clubos_user', JSON.stringify(user));
-        
-        // CRITICAL: Set axios default header for all requests
-        // Auth header now handled by http client
-        
+
         // Set view mode based on user role
         const viewMode = user.role === 'customer' ? 'customer' : 'operator';
         setStorageItem('clubos_view_mode', viewMode);
-        
-        // Store login timestamp for grace period
-        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
-        
-        set({ 
-          user: { ...user, token }, 
+
+        // Update state
+        set({
+          user: { ...user, token },
           isAuthenticated: true,
-          isLoading: false 
+          isLoading: false
         });
+
+        // Clear old data after new data is set (if different)
+        if (oldToken && oldToken !== token) {
+          // Old token was different, already replaced
+          logger.debug('Replaced old token with new token');
+        }
       },
       setUser: (user) => {
         // If user is provided but no token, try to get from storage

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Calendar, MapPin, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfDay, addDays, addMinutes, isSameDay, startOfWeek, endOfWeek, isToday } from 'date-fns';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
@@ -15,8 +15,7 @@ import { CompactCalendarSkeleton } from './CalendarSkeleton';
 import DayGridCompact from './DayGridCompact';
 import WeekGridCompact from './WeekGridCompact';
 import DayGrid from './DayGrid';
-// ColorLegend removed - handled in parent
-import AdminBlockOff from './AdminBlockOff';
+// ColorLegend and AdminBlockOff removed - handled in parent
 import BoxInfoModal from '../BoxInfoModal';
 import NewBookingModal from '../NewBookingModal';
 import logger from '@/services/logger';
@@ -90,9 +89,6 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   const [customerTiers, setCustomerTiers] = useState<CustomerTier[]>([]);
   const [config, setConfig] = useState<BookingConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Modal states
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
@@ -108,13 +104,6 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
     });
   }, [showNewBookingModal, bookingFormData]);
 
-  // Load saved collapsed state
-  useEffect(() => {
-    const savedState = localStorage.getItem('booking-calendar-collapsed');
-    if (savedState === 'true') {
-      setIsCollapsed(true);
-    }
-  }, []);
 
   // Load initial data
   useEffect(() => {
@@ -250,12 +239,6 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
     setSelectedDate(new Date());
   };
 
-  // Toggle collapse state
-  const toggleCollapse = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem('booking-calendar-collapsed', newState.toString());
-  };
 
   // Modal handlers
   const handleSpaceClick = (space: Space) => {
@@ -358,7 +341,6 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
       if (response.data.success) {
         notify('success', 'Admin block created successfully');
         loadBookings();
-        setShowAdminPanel(false);
       }
     } catch (error) {
       logger.error('Failed to create admin block:', error);
@@ -387,213 +369,82 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   return (
     <>
       <div className="card gpu-accelerated">
-        {/* Ultra-compact Header (max 80px height) */}
-        <div className="border-b border-[var(--border-primary)] pb-2 mb-2">
+        {/* Compact date navigation (30px height) */}
+        <div className="py-1.5 border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
           <div className="flex items-center justify-between">
-            {/* Left: Title + Stats (single row) */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[var(--accent)]" />
-                <h2 className="text-base font-semibold">
-                  {isCollapsed ? 'Calendar' : 'Booking Calendar'}
-                </h2>
-              </div>
-              {!isCollapsed && (
-                <>
-                  <div className="hidden sm:flex items-center gap-1 text-xs text-[var(--text-secondary)]">
-                    <span className="font-medium">{totalBookings}</span>
-                    <span>bookings</span>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-1 text-xs text-[var(--text-secondary)]">
-                    <span className="font-medium text-[var(--status-success)]">{availableSlots}</span>
-                    <span>available</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Right: Controls (compact) */}
             <div className="flex items-center gap-1">
-              {showColorLegend && customerTiers && customerTiers.length > 0 && !isCollapsed && (
-                <div className="hidden sm:block">
-                  <ColorLegend tiers={customerTiers} />
-                </div>
-              )}
-
-              {/* Location selector (compact) */}
-              {!isCollapsed && locations && locations.length > 0 && (
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
-                >
-                  <MapPin className="h-3 w-3" />
-                  <span className="hidden sm:inline">
-                    {locations?.find(l => l.id === selectedLocationId)?.name || 'Select'}
-                  </span>
-                </button>
-              )}
-
-              {/* View mode toggle (ultra-compact) */}
-              {!isCollapsed && (
-                <div className="flex bg-[var(--bg-tertiary)] rounded-md p-0.5">
-                  <button
-                    onClick={() => setViewMode('day')}
-                    className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                      viewMode === 'day'
-                        ? 'bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm'
-                        : 'text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    Day
-                  </button>
-                  <button
-                    onClick={() => setViewMode('week')}
-                    className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                      viewMode === 'week'
-                        ? 'bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm'
-                        : 'text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    Week
-                  </button>
-                </div>
-              )}
-
-              {/* Collapse toggle */}
               <button
-                onClick={toggleCollapse}
+                onClick={handlePrevious}
                 className="p-1 hover:bg-[var(--bg-hover)] rounded transition-colors"
-                aria-label={isCollapsed ? 'Expand calendar' : 'Collapse calendar'}
+                aria-label="Previous"
               >
-                {isCollapsed ? (
-                  <ChevronDown className="w-3 h-3 text-[var(--text-secondary)]" />
-                ) : (
-                  <ChevronUp className="w-3 h-3 text-[var(--text-secondary)]" />
-                )}
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+              <button
+                onClick={handleToday}
+                className={`px-2 py-0.5 text-xs rounded-md transition-colors ${
+                  isToday(selectedDate)
+                    ? 'bg-[var(--color-primary)] text-white'
+                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={handleNext}
+                className="p-1 hover:bg-[var(--bg-hover)] rounded transition-colors"
+                aria-label="Next"
+              >
+                <ChevronRight className="h-3 w-3" />
               </button>
             </div>
-          </div>
 
-          {/* Filters dropdown (compact) */}
-          {showFilters && !isCollapsed && locations && locations.length > 0 && (
-            <div className="mt-2 p-2 bg-[var(--bg-tertiary)] rounded-md">
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
-                {locations.map(location => (
-                  <button
-                    key={location.id}
-                    onClick={() => {
-                      setSelectedLocationId(location.id);
-                      setShowFilters(false);
-                    }}
-                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                      selectedLocationId === location.id
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
-                    }`}
-                  >
-                    {location.name}
-                  </button>
-                ))}
-              </div>
+            <div className="text-xs font-medium">
+              {viewMode === 'week'
+                ? `${format(startOfWeek(selectedDate), 'MMM d')} - ${format(endOfWeek(selectedDate), 'MMM d, yyyy')}`
+                : format(selectedDate, 'EEEE, MMMM d, yyyy')
+              }
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Collapsible content */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isCollapsed ? 'max-h-0' : 'max-h-[2000px]'
-        }`}>
-          {/* Compact date navigation (30px height) */}
-          <div className="py-1.5 border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handlePrevious}
-                  className="p-1 hover:bg-[var(--bg-hover)] rounded transition-colors"
-                  aria-label="Previous"
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                </button>
-                <button
-                  onClick={handleToday}
-                  className={`px-2 py-0.5 text-xs rounded-md transition-colors ${
-                    isToday(selectedDate)
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]'
-                  }`}
-                >
-                  Today
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="p-1 hover:bg-[var(--bg-hover)] rounded transition-colors"
-                  aria-label="Next"
-                >
-                  <ChevronRight className="h-3 w-3" />
-                </button>
-              </div>
 
-              <div className="text-xs font-medium">
-                {viewMode === 'week'
-                  ? `${format(startOfWeek(selectedDate), 'MMM d')} - ${format(endOfWeek(selectedDate), 'MMM d, yyyy')}`
-                  : format(selectedDate, 'EEEE, MMMM d, yyyy')
-                }
-              </div>
+        {/* Calendar grid (compact) */}
+        <div className="pt-2 smooth-scroll">
+          {spaces.length === 0 ? (
+            <EmptyState
+              icon={Calendar}
+              title="No simulators available"
+              description="Select a location to view available booking slots"
+              size="sm"
+            />
+          ) : !config ? (
+            // Show loading skeleton while config is loading
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner />
             </div>
-          </div>
-
-          {/* Admin panel (compact) */}
-          {showAdminPanel && (
-            <div className="mt-2">
-              <AdminBlockOff
-                spaces={spaces}
-                onBlock={handleAdminBlock}
-                onCancel={() => setShowAdminPanel(false)}
-              />
-            </div>
+          ) : viewMode === 'day' ? (
+            // Use unified DayGrid for all screen sizes
+            <DayGrid
+              date={selectedDate}
+              bookings={filteredBookings}
+              spaces={spaces}
+              config={config}
+              onTimeSlotClick={handleBookingCreate}
+              onBookingClick={onBookingSelect}
+              onSpaceClick={handleSpaceClick}
+            />
+          ) : (
+            <WeekGridCompact
+              startDate={startOfWeek(selectedDate)}
+              bookings={filteredBookings}
+              spaces={spaces}
+              config={config}
+              onBookingCreate={handleBookingCreate}
+              onBookingSelect={onBookingSelect}
+              onSpaceClick={handleSpaceClick}
+            />
           )}
-
-          {/* Calendar grid (compact) */}
-          <div className="pt-2 smooth-scroll">
-            {spaces.length === 0 ? (
-              <EmptyState
-                icon={Calendar}
-                title="No simulators available"
-                description="Select a location to view available booking slots"
-                action={{
-                  label: 'Select Location',
-                  onClick: () => setShowFilters(true)
-                }}
-                size="sm"
-              />
-            ) : !config ? (
-              // Show loading skeleton while config is loading
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : viewMode === 'day' ? (
-              // Use unified DayGrid for all screen sizes
-              <DayGrid
-                date={selectedDate}
-                bookings={filteredBookings}
-                spaces={spaces}
-                config={config}
-                onTimeSlotClick={handleBookingCreate}
-                onBookingClick={onBookingSelect}
-                onSpaceClick={handleSpaceClick}
-              />
-            ) : (
-              <WeekGridCompact
-                startDate={startOfWeek(selectedDate)}
-                bookings={filteredBookings}
-                spaces={spaces}
-                config={config}
-                onBookingCreate={handleBookingCreate}
-                onBookingSelect={onBookingSelect}
-                onSpaceClick={handleSpaceClick}
-              />
-            )}
-          </div>
         </div>
       </div>
 

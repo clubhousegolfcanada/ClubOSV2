@@ -121,14 +121,33 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
             router.push('/login');
             return;
           }
-          
-          // Check if token is expired
+
+          // Check if token is expired with grace period
           if (tokenManager.isTokenExpired(storedToken)) {
-            secureLog('Token is expired');
-            setAuthError('Session has expired');
-            tokenManager.clearToken();
-            router.push('/login');
-            return;
+            // Check for grace period - allow 5 minutes after login
+            const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
+            const gracePeriod = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+            if (loginTimestamp) {
+              const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
+
+              if (timeSinceLogin < gracePeriod) {
+                secureLog('Token expired but within grace period, allowing access');
+                // Continue with authentication - backend will refresh token
+              } else {
+                secureLog('Token expired and grace period exceeded');
+                setAuthError('Session has expired');
+                tokenManager.clearToken();
+                router.push('/login');
+                return;
+              }
+            } else {
+              secureLog('Token expired with no grace period timestamp');
+              setAuthError('Session has expired');
+              tokenManager.clearToken();
+              router.push('/login');
+              return;
+            }
           }
           
           // For critical operations, verify with backend

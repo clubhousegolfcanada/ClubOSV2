@@ -25,9 +25,14 @@ const LoginPage = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [rememberMe, setRememberMe] = useState(true); // Default to true for PWA experience
   
-  // Stop token monitoring when login page loads
+  // Stop token monitoring when login page loads (only for unauthenticated users)
   useEffect(() => {
-    tokenManager.stopTokenMonitoring();
+    // Only stop monitoring if user is not authenticated
+    // This prevents issues when authenticated users visit login page
+    const token = tokenManager.getToken();
+    if (!token) {
+      tokenManager.stopTokenMonitoring();
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,19 +118,19 @@ const LoginPage = () => {
           setViewMode('operator');
         }
 
-        // Ensure state is properly set before navigation
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
+        // Show success message immediately
         toast.success(`Welcome ${isSignup ? '' : 'back'}, ${user.name}!`);
-        
-        // Navigate based on user role
-        if (user.role === 'customer' || loginMode === 'customer') {
-          router.push('/customer/');
-        } else if (user.role === 'contractor') {
-          router.push('/checklists');
-        } else {
-          router.push('/');
-        }
+
+        // Navigate based on user role with proper promise handling
+        // This ensures navigation completes properly without arbitrary delays
+        const targetPath = user.role === 'customer' || loginMode === 'customer'
+          ? '/customer/'
+          : user.role === 'contractor'
+          ? '/checklists'
+          : '/';
+
+        // Use router.push with promise to ensure proper navigation
+        await router.push(targetPath);
       }
     } catch (error: any) {
       logger.error('Login error:', error);
@@ -328,7 +333,13 @@ const LoginPage = () => {
                 name="remember-me"
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                onChange={(e) => {
+                  e.stopPropagation(); // Prevent event bubbling
+                  setRememberMe(e.target.checked);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent any click event bubbling
+                }}
                 className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-[var(--text-secondary)]">
