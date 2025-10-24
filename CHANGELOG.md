@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.12] - 2025-10-23
+
+### 🔧 Critical Fix: Login Authentication Issues
+
+#### Fixed "Keep Me Logged In" Checkbox Kicking Users Out
+- **Root Cause**: Multiple race conditions and aggressive token checking
+- **Login Page Fixes**:
+  - Removed arbitrary 200ms delay that caused race conditions
+  - Fixed token monitoring to not stop for authenticated users
+  - Added event propagation prevention on checkbox to avoid form submission
+  - Replaced setTimeout with proper promise-based navigation
+- **AuthGuard Improvements**:
+  - Added 5-minute grace period after login to prevent immediate logout
+  - Token expiry now checks login timestamp before kicking users out
+  - Improved error handling and logging for debugging
+- **Token Storage Fixes**:
+  - Made token updates atomic (no more clear-then-set pattern)
+  - Eliminated race condition window where token could be null
+  - Login timestamp now stored before any other operations
+- **Token Manager Enhancements**:
+  - Added grace period checking in monitoring loop
+  - Improved handling of token refresh scenarios
+  - Better cleanup when monitoring stops
+- **Result**: Users can now use "Keep me logged in" without getting kicked out
+  - Customers get 90-day tokens when checked
+  - Operators get 30-day tokens when checked
+  - Proper session persistence for all user roles
+
 ## [1.24.11] - 2025-10-24
 
 ### 🎨 Booking Page Cleanup - Complete Control Consolidation
