@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.14] - 2025-10-24
+
+### 🔧 Critical Fix: Create Booking Runtime Error
+
+#### Fixed "Something went wrong" Error in Booking Modal
+- **Root Cause**: Two issues causing React ErrorBoundary to catch runtime errors
+- **Date Handling Fix**:
+  - formatDateForInput now properly handles undefined/null dates
+  - Added isNaN check to prevent "Invalid Date" strings
+  - Wrapped date formatting in try/catch for safety
+- **Component Rendering Fix**:
+  - Fixed dynamic React component reference for modeConfig.icon
+  - Extracted icon to capitalized variable for proper React rendering
+- **Result**: Create Booking button now opens modal without errors
+- **Impact**: All booking modes work correctly without runtime exceptions
+
 ## [1.24.13] - 2025-10-23
 
 ### 🔧 Critical Fix: Create Booking Button Blank Page

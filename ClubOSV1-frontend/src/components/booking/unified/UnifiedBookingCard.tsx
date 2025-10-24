@@ -176,13 +176,20 @@ export default function UnifiedBookingCard({
   // Helper function to format date for input
   function formatDateForInput(date: Date | undefined): string {
     if (!date) return '';
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    try {
+      const d = new Date(date);
+      // Check if date is valid
+      if (isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+      logger.error('Error formatting date:', error);
+      return '';
+    }
   }
 
   // Mode-specific configuration
@@ -394,13 +401,16 @@ export default function UnifiedBookingCard({
     );
   }
 
+  // Extract icon component for proper React rendering
+  const IconComponent = modeConfig.icon;
+
   return (
     <div className={`w-full ${compactView ? 'max-w-2xl' : 'max-w-5xl'} mx-auto`}>
       {/* Terminal-style header with mode indicator */}
       <div className="bg-gray-900 text-white px-4 py-3 rounded-t-xl border-b border-gray-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <modeConfig.icon className={`w-5 h-5 ${modeConfig.color}`} />
+            <IconComponent className={`w-5 h-5 ${modeConfig.color}`} />
             <span className="font-mono text-sm tracking-wider">{modeConfig.title}</span>
             <span className="text-xs text-gray-400 font-mono">v2.0</span>
             {conflicts.length > 0 && (
