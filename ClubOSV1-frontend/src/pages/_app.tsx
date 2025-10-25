@@ -223,11 +223,15 @@ function AppContent({ Component, pageProps }: AppContentProps) {
         <Component {...pageProps} />
       ) : (
         <AuthGuard>
-          {/* Add padding-bottom for fixed remote actions bar */}
-          <div className={viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' ? 'pb-14' : ''}>
+          {/* Add padding-bottom for fixed remote actions bar (desktop only) */}
+          <div className={viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' ? 'md:pb-14' : ''}>
             <Component {...pageProps} />
           </div>
-          {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && <RemoteActionsBar />}
+          {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && (
+            <div className="hidden md:block">
+              <RemoteActionsBar />
+            </div>
+          )}
         </AuthGuard>
       )}
       <Notifications />

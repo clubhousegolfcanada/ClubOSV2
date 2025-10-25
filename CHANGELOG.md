@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.18] - 2025-10-25
+
+### 📱 Mobile UX Improvement
+
+#### Hide Remote Actions Bar on Mobile
+- **Mobile Optimization**: Remote Actions Bar now hidden on mobile devices (<768px)
+- **Screen Space**: Reclaimed valuable screen real estate for core functionality
+- **Desktop Only**: Remote facility controls only show on tablets and desktops
+- **Clean Implementation**: Uses Tailwind's responsive utilities (`hidden md:block`)
+- **Result**: Cleaner mobile interface focused on essential operator tasks
+- **Impact**: Better mobile experience for operators on the go
+
 ## [1.24.17] - 2025-10-25
 
 ### 🧹 Messages Card Simplification
