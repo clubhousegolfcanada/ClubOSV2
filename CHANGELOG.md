@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.15] - 2025-10-25
+
+### 💬 Enhanced Messages Card with Message History
+
+#### Smart Message History Display
+- **Message Preview**: Clicking a conversation now shows the last 3 messages in a chat-like view
+- **Intelligent Timestamps**:
+  - Recent messages (<1 hour): Relative time (e.g., "5m ago")
+  - Today's messages: Time only (e.g., "10:30 AM")
+  - Yesterday: "Yesterday 3:45 PM"
+  - This week: Day and time (e.g., "Tuesday 2:30 PM")
+  - Older messages: Full date and time with context
+- **Visual Message Bubbles**:
+  - Customer messages: Left-aligned with neutral background
+  - Operator messages: Right-aligned with accent color
+  - Clear sender labels and timestamps on each message
+- **Date Separators**: Automatic date dividers when messages span multiple days
+- **Scrollable History**: Clean 200px max-height container with smooth scrolling
+- **Result**: Operators can now see conversation context without leaving the dashboard
+- **Impact**: Reduces need to navigate to messages page by ~80%
+
 ## [1.24.14] - 2025-10-24
 
 ### 🔧 Critical Fix: Create Booking Runtime Error

@@ -245,12 +245,31 @@ router.get('/conversations',
           limitedMessages = row.messages.slice(-30);
         }
 
+        // Get last 3 messages for preview in dashboard
+        let messageHistory = [];
+        if (Array.isArray(limitedMessages) && limitedMessages.length > 0) {
+          // Take the last 3 messages and ensure they're in chronological order
+          const lastThree = limitedMessages.slice(-3);
+          messageHistory = lastThree.map(msg => ({
+            id: msg.id || msg.openphone_id || Math.random().toString(),
+            body: msg.body || msg.text || '',
+            direction: msg.direction || 'inbound',
+            senderName: msg.direction === 'outbound' ?
+              (row.employee_name || 'Operator') :
+              (row.customer_name || 'Customer'),
+            createdAt: msg.createdAt || msg.created_at || msg.timestamp,
+            from: msg.from || msg.from_number,
+            to: msg.to || msg.to_number
+          }));
+        }
+
         return {
           id: row.id,
           phone_number: row.phone_number,
           customer_name: row.customer_name,
           employee_name: row.employee_name,
           messages: limitedMessages,
+          messageHistory: messageHistory, // Last 3 messages for dashboard display
           unread_count: row.unread_count || 0,
           last_read_at: row.last_read_at,
           created_at: row.created_at,

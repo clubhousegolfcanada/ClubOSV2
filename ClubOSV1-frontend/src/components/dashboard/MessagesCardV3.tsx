@@ -10,6 +10,16 @@ import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 
 
+interface MessageHistory {
+  id: string;
+  body: string;
+  direction: 'inbound' | 'outbound';
+  senderName?: string;
+  createdAt: string;
+  from?: string;
+  to?: string;
+}
+
 interface Conversation {
   id: string;
   phoneNumber: string;
@@ -20,6 +30,7 @@ interface Conversation {
   unreadCount: number;
   location?: string;
   bay?: string;
+  messageHistory?: MessageHistory[];
 }
 
 interface AiSuggestion {
@@ -108,7 +119,8 @@ export default function MessagesCardV3() {
             timestamp: lastMsg?.createdAt || conv.updated_at,
             unreadCount: conv.unread_count || 0,
             location: conv.location || null,
-            bay: conv.bay || null
+            bay: conv.bay || null,
+            messageHistory: conv.messageHistory || []
           };
         }) : [];
         
@@ -318,6 +330,102 @@ export default function MessagesCardV3() {
     return `${Math.floor(hours / 24)}d ago`;
   };
 
+  // Enhanced timestamp formatting for message history
+  const formatMessageTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+
+    // Helper to format time
+    const formatTimeOnly = (d: Date) => {
+      return d.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    };
+
+    // Less than 1 hour - show relative time
+    if (mins < 60) {
+      if (mins < 1) return 'now';
+      return `${mins}m ago`;
+    }
+
+    // Today - show time only
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+      return formatTimeOnly(date);
+    }
+
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+    if (isYesterday) {
+      return `Yesterday ${formatTimeOnly(date)}`;
+    }
+
+    // This week - show day and time
+    if (days < 7) {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      return `${dayName} ${formatTimeOnly(date)}`;
+    }
+
+    // This year - show month, day, and time
+    const isThisYear = date.getFullYear() === now.getFullYear();
+    if (isThisYear) {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      }) + ' ' + formatTimeOnly(date);
+    }
+
+    // Older than this year - include year
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }) + ' ' + formatTimeOnly(date);
+  };
+
+  // Get date separator text if messages span different days
+  const getDateSeparator = (currentMsg: MessageHistory, prevMsg: MessageHistory | null) => {
+    if (!prevMsg) return null;
+
+    const currentDate = new Date(currentMsg.createdAt);
+    const prevDate = new Date(prevMsg.createdAt);
+
+    if (currentDate.toDateString() === prevDate.toDateString()) {
+      return null; // Same day, no separator needed
+    }
+
+    const now = new Date();
+    const isToday = currentDate.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return 'Today';
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = currentDate.toDateString() === yesterday.toDateString();
+
+    if (isYesterday) {
+      return 'Yesterday';
+    }
+
+    // Return formatted date
+    return currentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: currentDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+  };
+
   const toggleCollapse = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
@@ -460,6 +568,55 @@ export default function MessagesCardV3() {
                 {/* Expanded Reply Section - Compact */}
                 {isExpanded && (
                   <div className="border-t border-[var(--border-secondary)] bg-[var(--bg-tertiary)] p-3 space-y-2">
+                    {/* Message History Section */}
+                    {conv.messageHistory && conv.messageHistory.length > 0 && (
+                      <div className="mb-3">
+                        <div className="max-h-[200px] overflow-y-auto space-y-2 p-2 bg-[var(--bg-secondary)] rounded-lg">
+                          {conv.messageHistory.map((msg, index) => {
+                            const prevMsg = index > 0 ? conv.messageHistory![index - 1] : null;
+                            const dateSeparator = getDateSeparator(msg, prevMsg);
+                            const isOutbound = msg.direction === 'outbound';
+
+                            return (
+                              <div key={msg.id}>
+                                {/* Date Separator */}
+                                {dateSeparator && (
+                                  <div className="flex items-center justify-center my-2">
+                                    <div className="flex-1 h-px bg-[var(--border-secondary)]"></div>
+                                    <span className="px-2 text-xs text-[var(--text-muted)]">
+                                      {dateSeparator}
+                                    </span>
+                                    <div className="flex-1 h-px bg-[var(--border-secondary)]"></div>
+                                  </div>
+                                )}
+
+                                {/* Message Bubble */}
+                                <div className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
+                                  <div
+                                    className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                                      isOutbound
+                                        ? 'bg-[var(--accent-light)] text-[var(--text-primary)] ml-auto'
+                                        : 'bg-[var(--bg-primary)] text-[var(--text-primary)]'
+                                    }`}
+                                  >
+                                    <div className="flex items-baseline gap-2 mb-1">
+                                      <span className="text-xs font-medium">
+                                        {isOutbound ? 'You' : conv.customerName}
+                                      </span>
+                                      <span className="text-xs text-[var(--text-muted)]">
+                                        {formatMessageTime(msg.createdAt)}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm break-words">{msg.body}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* AI Suggestion Section - Above input field */}
                     {!suggestion && !isLoadingAi ? (
                       // Show Get AI Suggestion button
