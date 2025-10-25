@@ -5,6 +5,7 @@ interface BookingData {
   locationId: string;
   spaceIds: string[];
   userId?: string;
+  customerId?: string;
   customerTierId: string;
   customerName?: string;
   customerEmail?: string;
@@ -13,10 +14,22 @@ interface BookingData {
   endAt: string;
   baseRate: number;
   totalAmount: number;
+  customPrice?: number;
   promoCode?: string;
   adminNotes?: string;
   isAdminBlock?: boolean;
   blockReason?: string;
+  maintenanceType?: 'cleaning' | 'repair' | 'inspection' | 'other';
+  recurringPattern?: {
+    frequency?: 'daily' | 'weekly' | 'monthly';
+    interval?: number;
+    endDate?: string;
+    daysOfWeek?: number[];
+  } | null;
+  eventName?: string;
+  expectedAttendees?: number;
+  requiresDeposit?: boolean;
+  photoUrls?: string[];
 }
 
 export class BookingService {
@@ -74,7 +87,45 @@ export class BookingService {
         };
       }
 
-      // Step 3: Create the booking
+      // Step 3: Prepare admin notes with event/class metadata
+      let adminNotesData: any = {};
+
+      // Include original admin notes if provided
+      if (bookingData.adminNotes) {
+        adminNotesData.notes = bookingData.adminNotes;
+      }
+
+      // Add event/class specific data
+      if (bookingData.eventName) {
+        adminNotesData.eventName = bookingData.eventName;
+        adminNotesData.bookingType = 'event';
+      }
+      if (bookingData.expectedAttendees) {
+        adminNotesData.expectedAttendees = bookingData.expectedAttendees;
+      }
+      if (bookingData.requiresDeposit) {
+        adminNotesData.requiresDeposit = bookingData.requiresDeposit;
+      }
+      if (bookingData.maintenanceType) {
+        adminNotesData.maintenanceType = bookingData.maintenanceType;
+        adminNotesData.bookingType = 'maintenance';
+      }
+      if (bookingData.recurringPattern) {
+        adminNotesData.recurringPattern = bookingData.recurringPattern;
+      }
+      if (bookingData.photoUrls && bookingData.photoUrls.length > 0) {
+        adminNotesData.photoUrls = bookingData.photoUrls;
+      }
+      if (bookingData.customPrice) {
+        adminNotesData.customPrice = bookingData.customPrice;
+      }
+
+      // Convert to JSON string for storage
+      const adminNotesJson = Object.keys(adminNotesData).length > 0
+        ? JSON.stringify(adminNotesData)
+        : bookingData.adminNotes || null;
+
+      // Step 4: Create the booking
       const bookingResult = await client.query(
         `INSERT INTO bookings (
           location_id, space_ids, user_id, customer_tier_id,
@@ -87,7 +138,7 @@ export class BookingService {
         [
           bookingData.locationId,
           bookingData.spaceIds,
-          bookingData.userId || null,
+          bookingData.userId || bookingData.customerId || null,
           bookingData.customerTierId,
           bookingData.customerName || null,
           bookingData.customerEmail || null,
@@ -97,7 +148,7 @@ export class BookingService {
           bookingData.baseRate,
           bookingData.totalAmount,
           bookingData.promoCode || null,
-          bookingData.adminNotes || null,
+          adminNotesJson,
           bookingData.isAdminBlock || false,
           bookingData.blockReason || null,
           bookingData.isAdminBlock ? 'confirmed' : 'pending'
@@ -107,7 +158,7 @@ export class BookingService {
       const newBooking = bookingResult.rows[0];
       logger.info('Booking created successfully:', newBooking.id);
 
-      // Step 4: Update loyalty tracking (if applicable)
+      // Step 5: Update loyalty tracking (if applicable)
       if (!bookingData.isAdminBlock && bookingData.userId) {
         const loyaltyResult = await client.query(
           `INSERT INTO loyalty_tracking (user_id, total_bookings, current_tier_id)

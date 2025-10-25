@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.19] - 2025-10-25
+
+### 🔧 Critical Fix: Event and Class Booking Modes
+
+#### Fixed Event/Class Booking Error Page Issue
+- **Root Cause**: Backend Zod schema validation was rejecting event/class specific fields
+- **Schema Updates**: Extended `CreateBookingSchema` to accept:
+  - `eventName`, `expectedAttendees`, `requiresDeposit` for events
+  - `maintenanceType`, `recurringPattern`, `photoUrls` for maintenance
+  - `customPrice`, `totalAmount` for custom pricing
+- **Data Storage**: Event/class metadata stored in `admin_notes` field as JSON
+- **Backward Compatibility**: Existing bookings remain unaffected
+- **Result**: Event and Class booking modes now work correctly alongside Block and Maintenance modes
+- **Impact**: All 5 booking modes (standard, block, maintenance, event, class) fully functional
+
 ## [1.24.18] - 2025-10-25
 
 ### 📱 Mobile UX Improvement

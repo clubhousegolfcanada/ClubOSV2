@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 import { BookingService } from '../services/booking/bookingService';
+import { AvailabilityService } from '../services/booking/availabilityService';
 
 const router = express.Router();
 
@@ -16,10 +17,25 @@ const CreateBookingSchema = z.object({
   customerName: z.string().optional(),
   customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
+  customerId: z.string().optional(),
   promoCode: z.string().optional(),
   adminNotes: z.string().optional(),
   isAdminBlock: z.boolean().optional(),
-  blockReason: z.string().optional()
+  blockReason: z.string().optional(),
+  maintenanceType: z.enum(['cleaning', 'repair', 'inspection', 'other']).optional(),
+  recurringPattern: z.object({
+    frequency: z.enum(['daily', 'weekly', 'monthly']),
+    interval: z.number(),
+    endDate: z.string().optional(),
+    daysOfWeek: z.array(z.number()).optional()
+  }).optional(),
+  // Event/Class specific fields
+  eventName: z.string().optional(),
+  expectedAttendees: z.number().optional(),
+  requiresDeposit: z.boolean().optional(),
+  customPrice: z.number().optional(),
+  totalAmount: z.number().optional(),
+  photoUrls: z.array(z.string()).optional()
 });
 
 const UpdateBookingSchema = z.object({
@@ -483,14 +499,22 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       customerName: validated.customerName,
       customerEmail: validated.customerEmail,
       customerPhone: validated.customerPhone,
+      customerId: validated.customerId,
       startAt: validated.startAt,
       endAt: validated.endAt,
       baseRate: hourlyRate,
-      totalAmount,
+      totalAmount: validated.totalAmount || totalAmount,
+      customPrice: validated.customPrice,
       promoCode: validated.promoCode,
       adminNotes: validated.adminNotes,
       isAdminBlock: validated.isAdminBlock,
-      blockReason: validated.blockReason
+      blockReason: validated.blockReason,
+      maintenanceType: validated.maintenanceType,
+      recurringPattern: validated.recurringPattern,
+      eventName: validated.eventName,
+      expectedAttendees: validated.expectedAttendees,
+      requiresDeposit: validated.requiresDeposit,
+      photoUrls: validated.photoUrls
     });
 
     // Handle transaction result
