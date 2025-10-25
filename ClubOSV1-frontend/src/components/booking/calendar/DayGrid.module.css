@@ -1,0 +1,206 @@
+/* DayGrid Professional Styles */
+
+/* Prevent scrolling when selecting */
+.scroll-locked {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+.container-scroll-locked {
+  overflow: hidden !important;
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Time slot enhancements */
+.time-slot {
+  transition: all 150ms ease;
+  position: relative;
+  min-height: 44px; /* Mobile touch target size */
+}
+
+.time-slot:hover::before {
+  content: 'Click to select 1 hour';
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  animation: fadeIn 200ms forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Selection visual feedback */
+.slot-selected {
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--accent-rgb), 0.08),
+    rgba(var(--accent-rgb), 0.12)
+  );
+  border-color: rgba(var(--accent-rgb), 0.4);
+  animation: pulseSelection 2s infinite;
+}
+
+@keyframes pulseSelection {
+  0%, 100% {
+    background-color: rgba(var(--accent-rgb), 0.08);
+  }
+  50% {
+    background-color: rgba(var(--accent-rgb), 0.15);
+  }
+}
+
+/* Drag handle indicators */
+.selection-edge::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.selection-edge.top::after {
+  top: 2px;
+}
+
+.selection-edge.bottom::after {
+  bottom: 2px;
+}
+
+/* Mobile-specific enhancements */
+@media (max-width: 640px) {
+  .time-slot {
+    min-height: 48px;
+  }
+
+  /* Larger touch targets on mobile */
+  .time-slot-touch {
+    position: relative;
+  }
+
+  .time-slot-touch::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    z-index: 1;
+  }
+
+  /* Bottom sheet confirmation on mobile */
+  .confirmation-mobile {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-width: none !important;
+    animation: slideUp 300ms ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Cursor states */
+.cursor-drag {
+  cursor: ns-resize !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Touch feedback */
+.touch-active {
+  background-color: rgba(var(--accent-rgb), 0.2) !important;
+  transform: scale(0.98);
+}
+
+/* Smooth animations */
+.animate-smooth {
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Visual hints for drag zones */
+.drag-zone-active {
+  position: relative;
+  overflow: visible;
+}
+
+.drag-zone-active::before,
+.drag-zone-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.drag-zone-active::before {
+  top: -20px;
+  background: linear-gradient(to bottom, transparent, rgba(var(--accent-rgb), 0.05));
+}
+
+.drag-zone-active::after {
+  bottom: -20px;
+  background: linear-gradient(to top, transparent, rgba(var(--accent-rgb), 0.05));
+}
+
+/* Accessibility focus states */
+.time-slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 10;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .slot-selected {
+    background: linear-gradient(
+      to bottom,
+      rgba(var(--accent-rgb), 0.15),
+      rgba(var(--accent-rgb), 0.2)
+    );
+  }
+
+  .time-slot:hover::before {
+    background: var(--accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}

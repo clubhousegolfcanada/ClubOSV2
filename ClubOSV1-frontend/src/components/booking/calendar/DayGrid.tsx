@@ -1,10 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef, memo } from 'react';
 import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
-import { Info } from 'lucide-react';
+import { Info, Move, Clock } from 'lucide-react';
 import { Booking, Space } from './BookingCalendar';
 import { BookingConfig } from '@/services/booking/bookingConfig';
 import BookingBlock from './BookingBlock';
 import Button from '@/components/ui/Button';
+import { useScrollLock, useContainerScrollLock } from '@/hooks/useScrollLock';
 
 interface DayGridProps {
   date: Date;
@@ -49,6 +50,10 @@ const DayGridComponent: React.FC<DayGridProps> = ({
   // Touch support state
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  // Scroll locking during selection
+  useScrollLock(isDragging, { reserveScrollBarGap: true });
+  useContainerScrollLock(gridRef, isDragging);
 
   // Smart button positioning state
   const [buttonPosition, setButtonPosition] = useState<{
@@ -419,12 +424,18 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                     className={`
                       relative border-r border-b border-[var(--border-primary)] h-6 transition-all duration-150
                       ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                      ${isAvailable && !isSelected ? 'hover:bg-[var(--accent)]/[0.04]' : ''}
-                      ${isSelected ? 'bg-[var(--accent)]/[0.08] border-[var(--accent)]/30' : ''}
-                      ${isSelectionStart ? 'ring-1 ring-[var(--accent)] ring-inset z-10' : ''}
-                      ${isSelectionEnd ? 'ring-1 ring-[var(--accent)] ring-inset z-10' : ''}
-                      ${isTouchDevice ? 'touch-manipulation' : ''}
+                      ${isAvailable && !isSelected && !isDragging ? 'hover:bg-[var(--accent)]/[0.04] hover:border-[var(--accent)]/20' : ''}
+                      ${isSelected ? 'bg-[var(--accent)]/[0.12] border-[var(--accent)]/40' : ''}
+                      ${isSelectionStart ? 'ring-2 ring-[var(--accent)] ring-inset z-20 border-t-2 border-t-[var(--accent)]' : ''}
+                      ${isSelectionEnd ? 'ring-2 ring-[var(--accent)] ring-inset z-20 border-b-2 border-b-[var(--accent)]' : ''}
+                      ${isDragging && selectionStart?.spaceId === space.id ? 'cursor-ns-resize' : ''}
+                      ${isTouchDevice ? 'touch-manipulation min-h-[44px]' : ''}
                     `}
+                    style={{
+                      touchAction: isDragging ? 'none' : 'auto',
+                      userSelect: isDragging ? 'none' : 'auto',
+                      WebkitUserSelect: isDragging ? 'none' : 'auto',
+                    }}
                     data-slot-index={slotIndex}
                     data-space-id={space.id}
                     data-time={slot.toISOString()}
@@ -449,12 +460,21 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                     }}
                     onTouchStart={(e) => {
                       if (isAvailable && !slotBooking) {
+                        // Prevent default to avoid scrolling and text selection
+                        e.preventDefault();
+                        e.stopPropagation();
+
                         const touch = e.touches[0];
                         touchStartRef.current = {
                           x: touch.clientX,
                           y: touch.clientY,
                           time: Date.now()
                         };
+
+                        // Add haptic feedback if available
+                        if ('vibrate' in navigator) {
+                          navigator.vibrate(10);
+                        }
 
                         setSelectionStart({
                           time: slot,
@@ -487,6 +507,10 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                     }}
                     onTouchMove={(e) => {
                       if (isDragging && selectionStart && selectionStart.spaceId === space.id) {
+                        // Prevent default to avoid scrolling
+                        e.preventDefault();
+                        e.stopPropagation();
+
                         const touch = e.touches[0];
                         const element = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
 
@@ -497,6 +521,12 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                           if (targetSpaceId === space.id) {
                             const canExtend = checkCanExtendSelection(targetSlotIndex, space.id);
                             if (canExtend) {
+                              // Provide haptic feedback on successful extension
+                              if ('vibrate' in navigator &&
+                                  selectionEnd?.slotIndex !== targetSlotIndex) {
+                                navigator.vibrate(5);
+                              }
+
                               setSelectionEnd({
                                 time: timeSlots[targetSlotIndex],
                                 slotIndex: targetSlotIndex
@@ -530,10 +560,16 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                     )}
                     {isSelected && !slotBooking && (
                       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        {/* Subtle gradient overlay */}
-                        <div className="w-full h-full bg-gradient-to-b from-[var(--accent)]/[0.06] to-[var(--accent)]/[0.08]"></div>
-                        {/* Thin selection border */}
-                        <div className="absolute inset-0 ring-[0.5px] ring-inset ring-[var(--accent)]/20 rounded-[2px]"></div>
+                        {/* Subtle gradient overlay with animation */}
+                        <div className="w-full h-full bg-gradient-to-b from-[var(--accent)]/[0.08] to-[var(--accent)]/[0.12] animate-pulse"></div>
+                        {/* Selection border with visual hints */}
+                        <div className="absolute inset-0 ring-1 ring-inset ring-[var(--accent)]/30 rounded-sm"></div>
+                        {/* Drag hint on edges */}
+                        {isSelectionEnd && (
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)]/40 flex items-center justify-center">
+                            <div className="w-8 h-0.5 bg-[var(--accent)] rounded-full"></div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -544,10 +580,10 @@ const DayGridComponent: React.FC<DayGridProps> = ({
         ))}
       </div>
 
-      {/* Live time display within selection area */}
-      {selectionStart && selectionEnd && (
+      {/* Enhanced live time display with visual hints */}
+      {selectionStart && !isDragging && (
         <div
-          className="absolute z-30 pointer-events-none animate-in fade-in duration-150"
+          className="absolute z-30 pointer-events-none animate-in slide-in-from-bottom-2 fade-in duration-200"
           style={{
             // Position at center of selection
             left: (() => {
@@ -556,8 +592,8 @@ const DayGridComponent: React.FC<DayGridProps> = ({
               return `${80 + spaceIndex * spaceWidth + spaceWidth / 2}px`;
             })(),
             top: (() => {
-              const startIdx = Math.min(selectionStart.slotIndex, selectionEnd.slotIndex);
-              const endIdx = Math.max(selectionStart.slotIndex, selectionEnd.slotIndex);
+              const startIdx = Math.min(selectionStart.slotIndex, selectionEnd?.slotIndex || selectionStart.slotIndex + 1);
+              const endIdx = Math.max(selectionStart.slotIndex, selectionEnd?.slotIndex || selectionStart.slotIndex + 1);
               const centerSlot = startIdx + (endIdx - startIdx) / 2;
               const slotHeight = isMobile ? 32 : 28;
               return `${150 + centerSlot * slotHeight}px`;
@@ -565,70 +601,112 @@ const DayGridComponent: React.FC<DayGridProps> = ({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 rounded-md shadow-sm border border-[var(--accent)]/20">
-            <div className="text-xs font-medium text-[var(--accent)]">
-              {format(timeSlots[Math.min(selectionStart.slotIndex, selectionEnd.slotIndex)], 'h:mm a')}
-              <span className="mx-1 text-[var(--text-muted)]">→</span>
-              {format(addMinutes(timeSlots[Math.max(selectionStart.slotIndex, selectionEnd.slotIndex)], 30), 'h:mm a')}
+          <div className="bg-white dark:bg-gray-900 backdrop-blur-md px-4 py-2.5 rounded-lg shadow-lg border-2 border-[var(--accent)] relative">
+            {/* Drag indicator */}
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] text-[var(--accent)] font-medium bg-white dark:bg-gray-900 px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
+              <Move className="w-3 h-3" />
+              <span>Drag to extend</span>
             </div>
-            <div className="text-[10px] text-[var(--text-muted)] text-center mt-0.5">
-              {selectionDuration}
+
+            {/* Time display */}
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[var(--accent)]" />
+              <div>
+                <div className="text-sm font-semibold text-[var(--text-primary)]">
+                  {format(timeSlots[Math.min(selectionStart.slotIndex, selectionEnd?.slotIndex || selectionStart.slotIndex + 1)], 'h:mm a')}
+                  <span className="mx-1 text-[var(--text-muted)]">→</span>
+                  {format(addMinutes(timeSlots[Math.max(selectionStart.slotIndex, selectionEnd?.slotIndex || selectionStart.slotIndex + 1)], 30), 'h:mm a')}
+                </div>
+                <div className="text-xs text-[var(--text-secondary)] font-medium">
+                  {selectionDuration || '1 hour minimum'}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Inline confirmation panel - minimal and informative */}
+      {/* Professional inline confirmation panel */}
       {selectionStart && !isDragging && (
         <div
           ref={buttonRef}
-          className="fixed z-50 bg-white dark:bg-[var(--bg-secondary)] rounded-md shadow-lg p-3 border border-[var(--border-primary)] max-w-sm"
+          className="fixed z-50 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border-2 border-[var(--accent)]/20 max-w-sm animate-in slide-in-from-bottom-3 fade-in duration-200"
           style={buttonPosition}>
-          {/* Time and space info */}
-          <div className="space-y-1 mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">Time:</span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
-                {format(timeSlots[selectionStart.slotIndex], 'h:mm a')} -
-                {' '}{format(timeSlots[(selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) + 1] ||
-                             addMinutes(timeSlots[selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1], 30), 'h:mm a')}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">Duration:</span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
-                {selectionDuration || '1 hour'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">Simulator:</span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
-                {spaces.find(s => s.id === selectionStart.spaceId)?.name}
-              </span>
-            </div>
-            {/* Price estimate */}
-            <div className="flex items-center gap-2 pt-1 border-t border-[var(--border-primary)]">
-              <span className="text-xs text-[var(--text-muted)]">Estimated Price:</span>
-              <span className="text-sm font-bold text-[var(--accent)]">
-                ${(() => {
-                  const duration = Math.abs((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30;
-                  const hourlyRate = getHourlyRate();
-                  return (duration / 60 * hourlyRate).toFixed(2);
-                })()}
-              </span>
+          {/* Header with visual indicator */}
+          <div className="px-4 py-3 border-b border-[var(--border-primary)] bg-gradient-to-r from-[var(--accent)]/5 to-[var(--accent)]/10 rounded-t-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <div className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></div>
+                Confirm Booking
+              </h3>
+              <button
+                onClick={clearSelection}
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button size="sm" variant="primary" onClick={confirmSelection} fullWidth>
+
+          {/* Content */}
+          <div className="p-4 space-y-3">
+            {/* Time details */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Time</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                  {format(timeSlots[selectionStart.slotIndex], 'h:mm a')} -
+                  {' '}{format(timeSlots[(selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) + 1] ||
+                               addMinutes(timeSlots[selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1], 30), 'h:mm a')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Duration</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                  {selectionDuration || '1 hour'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Simulator</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                  {spaces.find(s => s.id === selectionStart.spaceId)?.name}
+                </span>
+              </div>
+            </div>
+
+            {/* Price estimate with visual emphasis */}
+            <div className="bg-gradient-to-r from-[var(--accent)]/5 to-[var(--accent)]/10 rounded-lg p-3 border border-[var(--accent)]/20">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Estimated Price</span>
+                <span className="text-lg font-bold text-[var(--accent)]">
+                  ${(() => {
+                    const duration = Math.abs((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30;
+                    const hourlyRate = getHourlyRate();
+                    return (duration / 60 * hourlyRate).toFixed(2);
+                  })()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions with better styling */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl border-t border-[var(--border-primary)] flex gap-2">
+            <Button
+              variant="primary"
+              onClick={confirmSelection}
+              className="flex-1 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-semibold"
+            >
               Continue to Booking
             </Button>
-            <button
+            <Button
+              variant="ghost"
               onClick={clearSelection}
-              className="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

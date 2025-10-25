@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.16] - 2025-10-24
+
+### 🚀 Professional Booking Time Selection System
+
+#### Enhanced Drag-to-Expand Time Selection
+- **Scroll Locking**: Prevents page scrolling during time selection with custom useScrollLock hook
+- **Visual Feedback Improvements**:
+  - Animated selection highlighting with pulse effect
+  - Clear drag indicators showing selection can be extended
+  - "Drag to extend" hint appears after initial selection
+  - Professional confirmation panel with time, duration, and price display
+- **Mobile Optimization**:
+  - Minimum 44px touch targets for better mobile interaction
+  - Haptic feedback on selection and extension (when available)
+  - Touch event improvements preventing scroll conflicts
+  - Bottom sheet style confirmation on mobile devices
+- **Professional UI Elements**:
+  - Gradient overlays on selected time slots
+  - Visual edge indicators for drag zones
+  - Animated confirmation panel with slide-in effect
+  - Real-time price calculation display
+- **Result**: Intuitive click-and-drag booking experience that works smoothly on all devices
+
 ## [1.24.15] - 2025-10-25
 
 ### 💬 Enhanced Messages Card with Message History
