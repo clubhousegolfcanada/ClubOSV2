@@ -267,102 +267,138 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/bookings/availability - Check availability for a time slot
+// GET /api/bookings/availability - Enhanced availability check with duration options
 router.get('/availability', authenticate, async (req: Request, res: Response) => {
   try {
-    const { locationId, spaceId, date } = req.query;
+    const { locationId, spaceId, startTime } = req.query;
 
-    if (!locationId || !date) {
+    if (!locationId || !spaceId || !startTime) {
       return res.status(400).json({
         success: false,
-        error: 'locationId and date are required'
+        error: 'locationId, spaceId, and startTime are required'
       });
     }
 
-    // Get all bookings for the location on this date
-    const queryDate = new Date(date as string);
-    const startOfDay = new Date(queryDate);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const endOfDay = new Date(queryDate);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    // Get user's tier if authenticated
+    const userId = (req as any).user?.id;
+    let customerTierId = 'new'; // Default to new customer
 
-    // Check if space_ids column exists
-    const checkCol = await db.query(`
-      SELECT column_name
-      FROM information_schema.columns
-      WHERE table_name = 'bookings'
-      AND column_name = 'space_ids'
-    `);
-
-    const hasSpaceIdsCol = checkCol.rows.length > 0;
-
-    let query = `
-      SELECT
-        start_at,
-        end_at,
-        ${hasSpaceIdsCol ? 'space_ids' : 'ARRAY[]::VARCHAR(50)[] as space_ids'},
-        is_admin_block
-      FROM bookings
-      WHERE location_id = $1
-        AND start_at >= $2
-        AND start_at <= $3
-        AND status IN ('confirmed', 'pending')
-    `;
-
-    const params: any[] = [locationId, startOfDay.toISOString(), endOfDay.toISOString()];
-
-    if (spaceId && hasSpaceIdsCol) {
-      query += ` AND $4 = ANY(space_ids)`;
-      params.push(spaceId);
-    }
-
-    const result = await db.query(query, params);
-
-    // Calculate available time slots (30-minute intervals)
-    const bookedSlots = result.rows.map(row => ({
-      start: new Date(row.start_at),
-      end: new Date(row.end_at),
-      isAdminBlock: row.is_admin_block
-    }));
-
-    // Generate available slots for the day
-    const slots = [];
-    const current = new Date(startOfDay);
-    current.setUTCHours(6, 0, 0, 0); // Start at 6 AM
-
-    while (current < endOfDay) {
-      const slotEnd = new Date(current);
-      slotEnd.setMinutes(slotEnd.getMinutes() + 30);
-
-      // Check if this slot overlaps with any booking
-      const isBooked = bookedSlots.some(booked =>
-        (current >= booked.start && current < booked.end) ||
-        (slotEnd > booked.start && slotEnd <= booked.end)
+    if (userId) {
+      const loyaltyResult = await db.query(
+        'SELECT current_tier_id FROM loyalty_tracking WHERE user_id = $1',
+        [userId]
       );
-
-      slots.push({
-        start: current.toISOString(),
-        end: slotEnd.toISOString(),
-        available: !isBooked
-      });
-
-      current.setMinutes(current.getMinutes() + 30);
+      if (loyaltyResult.rows[0]) {
+        customerTierId = loyaltyResult.rows[0].current_tier_id;
+      }
     }
+
+    // Use the new availability service
+    const availability = await AvailabilityService.checkAvailability(
+      locationId as string,
+      spaceId as string,
+      new Date(startTime as string),
+      customerTierId
+    );
 
     res.json({
       success: true,
-      data: {
-        date: queryDate.toISOString(),
-        locationId,
-        spaceId,
-        slots
-      }
+      data: availability
     });
   } catch (error) {
     logger.error('Error checking availability:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to check availability'
+    });
+  }
+});
+
+// GET /api/bookings/validate-duration - Validate duration options with pricing
+router.get('/validate-duration', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { locationId, spaceId, startTime } = req.query;
+
+    if (!locationId || !spaceId || !startTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId, spaceId, and startTime are required'
+      });
+    }
+
+    // Get user's tier
+    const userId = (req as any).user?.id;
+    let customerTierId = 'new';
+
+    if (userId) {
+      const loyaltyResult = await db.query(
+        'SELECT current_tier_id FROM loyalty_tracking WHERE user_id = $1',
+        [userId]
+      );
+      if (loyaltyResult.rows[0]) {
+        customerTierId = loyaltyResult.rows[0].current_tier_id;
+      }
+    }
+
+    // Validate duration options
+    const validation = await AvailabilityService.validateDuration(
+      locationId as string,
+      spaceId as string,
+      new Date(startTime as string),
+      customerTierId
+    );
+
+    res.json({
+      success: true,
+      data: validation
+    });
+  } catch (error) {
+    logger.error('Error validating duration:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate duration'
+    });
+  }
+});
+
+// GET /api/bookings/check-conflicts - Check for booking conflicts
+router.post('/check-conflicts', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { locationId, spaceIds, startTime, endTime } = req.body;
+
+    if (!locationId || !spaceIds || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId, spaceIds, startTime, and endTime are required'
+      });
+    }
+
+    // Check conflicts for multiple spaces
+    const conflictCheck = await AvailabilityService.checkMultiSpaceAvailability(
+      locationId,
+      spaceIds,
+      new Date(startTime),
+      new Date(endTime)
+    );
+
+    res.json({
+      success: true,
+      data: {
+        canBook: conflictCheck.allAvailable,
+        conflicts: conflictCheck.unavailableSpaces,
+        details: Array.from(conflictCheck.spaceAvailability.entries()).map(([spaceId, availability]) => ({
+          spaceId,
+          available: availability.isAvailable,
+          maxDuration: availability.maxAvailableDuration,
+          nextBooking: availability.nextBookingTime
+        }))
+      }
+    });
+  } catch (error) {
+    logger.error('Error checking conflicts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check conflicts'
     });
   }
 });

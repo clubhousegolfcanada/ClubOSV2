@@ -1,11 +1,16 @@
-import React, { useMemo, useState, useEffect, useRef, memo } from 'react';
-import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
-import { Info, Move, Clock } from 'lucide-react';
+import React, { useMemo, useState, useEffect, useRef, memo, lazy, Suspense } from 'react';
+import { format, startOfDay, addMinutes, isSameDay, differenceInMinutes } from 'date-fns';
+import { Info, Move, Clock, Lock, AlertCircle, ChevronDown, GripVertical } from 'lucide-react';
 import { Booking, Space } from './BookingCalendar';
 import { BookingConfig } from '@/services/booking/bookingConfig';
 import BookingBlock from './BookingBlock';
 import Button from '@/components/ui/Button';
 import { useScrollLock, useContainerScrollLock } from '@/hooks/useScrollLock';
+import { useBookingAvailability } from '@/hooks/useBookingAvailability';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+
+// Lazy load the duration picker
+const DurationPicker = lazy(() => import('../panels/DurationPicker'));
 
 interface DayGridProps {
   date: Date;
@@ -29,11 +34,12 @@ const DayGridComponent: React.FC<DayGridProps> = ({
   const gridRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
 
-  // Selection state
+  // Enhanced selection state with locked start time
   const [selectionStart, setSelectionStart] = useState<{
     time: Date;
     spaceId: string;
     slotIndex: number;
+    locked: boolean; // Start time is locked after initial selection
   } | null>(null);
 
   const [selectionEnd, setSelectionEnd] = useState<{
@@ -42,18 +48,43 @@ const DayGridComponent: React.FC<DayGridProps> = ({
   } | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false); // New state for resize mode
+  const [showDurationPicker, setShowDurationPicker] = useState(false); // Show duration picker modal
   const [hoveredSlot, setHoveredSlot] = useState<{
     slotIndex: number;
     spaceId: string;
   } | null>(null);
 
+  // Track maximum available duration
+  const [maxAvailableDuration, setMaxAvailableDuration] = useState<number>(360); // Default 6 hours
+  const [nextBookingTime, setNextBookingTime] = useState<Date | null>(null);
+
   // Touch support state
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
+  // Get location ID from first booking or space (assumes all are same location)
+  const locationId = useMemo(() => {
+    if (bookings.length > 0) return bookings[0].locationId;
+    if (spaces.length > 0) return spaces[0].locationId;
+    return '';
+  }, [bookings, spaces]);
+
+  // Use availability hook for the selected space
+  const {
+    checkAvailability,
+    availability,
+    isDurationAvailable
+  } = useBookingAvailability({
+    locationId,
+    spaceId: selectionStart?.spaceId,
+    startTime: selectionStart?.time,
+    autoCheck: false // We'll check manually when selection starts
+  });
+
   // Scroll locking during selection
-  useScrollLock(isDragging, { reserveScrollBarGap: true });
-  useContainerScrollLock(gridRef, isDragging);
+  useScrollLock(isDragging || isResizing, { reserveScrollBarGap: true });
+  useContainerScrollLock(gridRef, isDragging || isResizing);
 
   // Smart button positioning state
   const [buttonPosition, setButtonPosition] = useState<{
@@ -240,37 +271,72 @@ const DayGridComponent: React.FC<DayGridProps> = ({
     setSelectionStart(null);
     setSelectionEnd(null);
     setIsDragging(false);
+    setIsResizing(false);
     setHoveredSlot(null);
+    setShowDurationPicker(false);
+  };
+
+  // Handle initial time slot selection
+  const handleSlotSelection = async (slotIndex: number, spaceId: string) => {
+    const slot = timeSlots[slotIndex];
+    const space = spaces.find(s => s.id === spaceId);
+
+    // Set and lock the start time
+    setSelectionStart({
+      time: slot,
+      spaceId,
+      slotIndex,
+      locked: true
+    });
+
+    // Default to 1 hour (2 slots)
+    setSelectionEnd({
+      time: timeSlots[slotIndex + 1] || addMinutes(slot, 30),
+      slotIndex: Math.min(slotIndex + 1, timeSlots.length - 1)
+    });
+
+    // Check availability for this slot
+    if (locationId && spaceId && slot) {
+      const availabilityData = await checkAvailability(spaceId, slot);
+      if (availabilityData) {
+        setMaxAvailableDuration(availabilityData.maxAvailableDuration);
+        setNextBookingTime(availabilityData.nextBookingTime);
+      }
+    }
+  };
+
+  // Handle duration adjustment via drag
+  const handleDurationResize = (newEndIndex: number) => {
+    if (!selectionStart) return;
+
+    // Ensure minimum 1 hour (2 slots)
+    const minEndIndex = selectionStart.slotIndex + 1;
+    const actualEndIndex = Math.max(minEndIndex, newEndIndex);
+
+    // Check if we can extend to this duration
+    const duration = (actualEndIndex - selectionStart.slotIndex + 1) * 30;
+    if (duration <= maxAvailableDuration) {
+      setSelectionEnd({
+        time: timeSlots[actualEndIndex] || addMinutes(timeSlots[actualEndIndex - 1], 30),
+        slotIndex: actualEndIndex
+      });
+    }
   };
 
   // Confirm and create booking
   const confirmSelection = () => {
-    console.log('🎯 DayGrid confirmSelection called', {
-      hasSelectionStart: !!selectionStart,
-      hasOnTimeSlotClick: !!onTimeSlotClick
-    });
+    if (!selectionStart || !onTimeSlotClick) return;
 
-    if (!selectionStart || !onTimeSlotClick) {
-      console.error('❌ Cannot confirm selection:', {
-        selectionStart,
-        onTimeSlotClick
-      });
-      return;
-    }
+    // Show duration picker instead of immediate confirmation
+    setShowDurationPicker(true);
+  };
 
-    const endIndex = selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1;
-    const startTime = timeSlots[selectionStart.slotIndex];
-    const endTime = timeSlots[endIndex + 1] || addMinutes(timeSlots[endIndex], 30);
+  // Handle duration picker confirmation
+  const handleDurationConfirm = (duration: number, endTime: Date) => {
+    if (!selectionStart || !onTimeSlotClick) return;
+
     const space = spaces.find(s => s.id === selectionStart.spaceId);
-
-    console.log('📅 Calling onTimeSlotClick with:', {
-      startTime,
-      endTime,
-      spaceId: selectionStart.spaceId,
-      spaceName: space?.name
-    });
-
-    onTimeSlotClick(startTime, endTime, selectionStart.spaceId, space?.name);
+    onTimeSlotClick(selectionStart.time, endTime, selectionStart.spaceId, space?.name);
     clearSelection();
   };
 
@@ -442,19 +508,21 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                     onMouseDown={(e) => {
                       e.preventDefault();
                       if (!isTouchDevice && isAvailable && !slotBooking) {
-                        setSelectionStart({
-                          time: slot,
-                          spaceId: space.id,
-                          slotIndex: slotIndex
-                        });
-                        setIsDragging(true);
+                        // Check if clicking on existing selection
+                        if (selectionStart && isSelected) {
+                          // Check if clicking near bottom edge (resize area)
+                          const rect = (e.target as HTMLElement).getBoundingClientRect();
+                          const clickY = e.clientY - rect.top;
+                          const isBottomEdge = clickY > rect.height * 0.7; // Bottom 30% is resize zone
 
-                        // Auto-select minimum 1 hour (next slot)
-                        if (slotIndex < timeSlots.length - 1) {
-                          setSelectionEnd({
-                            time: timeSlots[slotIndex + 1],
-                            slotIndex: slotIndex + 1
-                          });
+                          if (isSelectionEnd || isBottomEdge) {
+                            // Enter resize mode
+                            setIsResizing(true);
+                            setIsDragging(false);
+                          }
+                        } else {
+                          // New selection
+                          handleSlotSelection(slotIndex, space.id);
                         }
                       }
                     }}
@@ -479,7 +547,8 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                         setSelectionStart({
                           time: slot,
                           spaceId: space.id,
-                          slotIndex: slotIndex
+                          slotIndex: slotIndex,
+                          locked: false  // Will be locked after selection completes
                         });
                         setIsDragging(true);
 
@@ -493,14 +562,10 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                       }
                     }}
                     onMouseEnter={() => {
-                      if (!isTouchDevice && isDragging && selectionStart && selectionStart.spaceId === space.id) {
-                        // Check if we can extend to this slot
-                        const canExtend = checkCanExtendSelection(slotIndex, space.id);
-                        if (canExtend) {
-                          setSelectionEnd({
-                            time: slot,
-                            slotIndex: slotIndex
-                          });
+                      if (!isTouchDevice && isResizing && selectionStart && selectionStart.spaceId === space.id) {
+                        // Only allow resizing end time, not start time
+                        if (slotIndex >= selectionStart.slotIndex) {
+                          handleDurationResize(slotIndex);
                         }
                       }
                       setHoveredSlot({ slotIndex, spaceId: space.id });
@@ -537,8 +602,9 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                       }
                     }}
                     onMouseUp={() => {
-                      if (!isTouchDevice && selectionStart && isDragging) {
+                      if (!isTouchDevice && selectionStart && (isDragging || isResizing)) {
                         setIsDragging(false);
+                        setIsResizing(false);
                         // Selection is complete, ready for confirmation
                       }
                     }}
@@ -559,16 +625,40 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                       />
                     )}
                     {isSelected && !slotBooking && (
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                      <div className="absolute inset-0 overflow-hidden">
                         {/* Subtle gradient overlay with animation */}
-                        <div className="w-full h-full bg-gradient-to-b from-[var(--accent)]/[0.08] to-[var(--accent)]/[0.12] animate-pulse"></div>
+                        <div className="w-full h-full bg-gradient-to-b from-[var(--accent)]/[0.08] to-[var(--accent)]/[0.12]"></div>
                         {/* Selection border with visual hints */}
                         <div className="absolute inset-0 ring-1 ring-inset ring-[var(--accent)]/30 rounded-sm"></div>
-                        {/* Drag hint on edges */}
-                        {isSelectionEnd && (
-                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)]/40 flex items-center justify-center">
-                            <div className="w-8 h-0.5 bg-[var(--accent)] rounded-full"></div>
+
+                        {/* Lock icon on start slot */}
+                        {isSelectionStart && (
+                          <div className="absolute top-0 left-0 p-0.5">
+                            <Lock className="w-3 h-3 text-[var(--accent)] opacity-60" />
                           </div>
+                        )}
+
+                        {/* Resize handle on end slot */}
+                        {isSelectionEnd && (
+                          <div className="absolute bottom-0 left-0 right-0 h-2 bg-[var(--accent)]/20 cursor-ns-resize pointer-events-auto
+                                      hover:bg-[var(--accent)]/30 transition-colors flex items-center justify-center">
+                            <GripVertical className="w-3 h-2 text-[var(--accent)]" />
+                          </div>
+                        )}
+
+                        {/* Next booking indicator */}
+                        {nextBookingTime && isSelectionEnd && (
+                          (() => {
+                            const minutesUntilNext = differenceInMinutes(nextBookingTime, timeSlots[slotIndex]);
+                            if (minutesUntilNext <= 60 && minutesUntilNext > 0) {
+                              return (
+                                <div className="absolute top-0 right-0 p-0.5">
+                                  <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()
                         )}
                       </div>
                     )}
@@ -580,8 +670,8 @@ const DayGridComponent: React.FC<DayGridProps> = ({
         ))}
       </div>
 
-      {/* Enhanced live time display with visual hints */}
-      {selectionStart && !isDragging && (
+      {/* Enhanced live time display with locked start indicator */}
+      {selectionStart && !isDragging && !isResizing && (
         <div
           className="absolute z-30 pointer-events-none animate-in slide-in-from-bottom-2 fade-in duration-200"
           style={{
@@ -602,10 +692,10 @@ const DayGridComponent: React.FC<DayGridProps> = ({
           }}
         >
           <div className="bg-white dark:bg-gray-900 backdrop-blur-md px-4 py-2.5 rounded-lg shadow-lg border-2 border-[var(--accent)] relative">
-            {/* Drag indicator */}
+            {/* Resize indicator */}
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] text-[var(--accent)] font-medium bg-white dark:bg-gray-900 px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
-              <Move className="w-3 h-3" />
-              <span>Drag to extend</span>
+              <GripVertical className="w-3 h-3" />
+              <span>Drag bottom edge to adjust</span>
             </div>
 
             {/* Time display */}
@@ -708,6 +798,28 @@ const DayGridComponent: React.FC<DayGridProps> = ({
               Cancel
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Duration Picker Modal */}
+      {showDurationPicker && selectionStart && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn p-4">
+          <Suspense fallback={<LoadingSpinner />}>
+            <DurationPicker
+              locationId={locationId}
+              spaceId={selectionStart.spaceId}
+              spaceName={spaces.find(s => s.id === selectionStart.spaceId)?.name || 'Simulator'}
+              startTime={selectionStart.time}
+              initialDuration={selectionDuration ?
+                ((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30
+                : 60
+              }
+              onConfirm={handleDurationConfirm}
+              onCancel={() => setShowDurationPicker(false)}
+              hourlyRate={getHourlyRate()}
+              showPricing={true}
+            />
+          </Suspense>
         </div>
       )}
     </div>
