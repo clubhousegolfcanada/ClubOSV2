@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
-import { MessageSquare, Clock, Send, Phone, MapPin, Bot, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Clock, Send, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
@@ -33,22 +33,12 @@ interface Conversation {
   messageHistory?: MessageHistory[];
 }
 
-interface AiSuggestion {
-  text: string;
-  confidence: number;
-  patternId?: number;
-  queueId?: number;
-  canAutoApprove?: boolean;
-}
-
 export default function MessagesCardV3() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthState();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
-  const [aiSuggestions, setAiSuggestions] = useState<{ [key: string]: AiSuggestion }>({});
-  const [loadingAi, setLoadingAi] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [stopPolling, setStopPolling] = useState(false);
@@ -123,27 +113,8 @@ export default function MessagesCardV3() {
             messageHistory: conv.messageHistory || []
           };
         }) : [];
-        
-        // Clear AI suggestions for conversations that have new messages
-        setConversations(prevConvs => {
-          const updatedConvIds = new Set<string>();
-          convs.forEach((newConv: Conversation) => {
-            const oldConv = prevConvs.find(c => c.id === newConv.id);
-            if (oldConv && oldConv.lastMessage !== newConv.lastMessage) {
-              updatedConvIds.add(newConv.id);
-            }
-          });
-          
-          if (updatedConvIds.size > 0) {
-            setAiSuggestions(prev => {
-              const newSuggestions = { ...prev };
-              updatedConvIds.forEach(id => delete newSuggestions[id]);
-              return newSuggestions;
-            });
-          }
-          
-          return convs;
-        });
+
+        setConversations(convs);
       }
     } catch (error: any) {
       // Stop polling on authentication errors
@@ -158,116 +129,6 @@ export default function MessagesCardV3() {
 
   const handleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
-  };
-
-  const fetchAiSuggestion = async (conversationId: string) => {
-    const conv = conversations.find(c => c.id === conversationId);
-    if (!conv) return;
-
-    setLoadingAi({ ...loadingAi, [conversationId]: true });
-
-    try {
-      const token = tokenManager.getToken();
-      // Use V3-PLS pattern suggestions endpoint
-      const response = await http.post(
-        `patterns/suggest-for-conversation`,
-        {
-          conversationId,
-          customerMessage: conv.lastMessage,
-          customerName: conv.customerName,
-          phoneNumber: conv.phoneNumber,
-          location: conv.location,
-          bay: conv.bay
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.data.success && response.data.data?.suggestion) {
-        setAiSuggestions({
-          ...aiSuggestions,
-          [conversationId]: {
-            text: response.data.data.suggestion,
-            confidence: response.data.data.confidence || 0.8,
-            patternId: response.data.data.patternId,
-            queueId: response.data.data.queueId,
-            canAutoApprove: response.data.data.canAutoApprove
-          }
-        });
-      }
-    } catch (error) {
-      logger.error('Failed to get AI suggestion:', error);
-      toast.error('Failed to get AI suggestion');
-    } finally {
-      setLoadingAi({ ...loadingAi, [conversationId]: false });
-    }
-  };
-
-  const handleApproveSuggestion = async (conv: Conversation, suggestion: AiSuggestion) => {
-    try {
-      // If there's a queueId, mark it as approved
-      if (suggestion.queueId) {
-        await http.post(`patterns/queue/${suggestion.queueId}/respond`, {
-          action: 'accept'
-        });
-      }
-      
-      // If there's a patternId, update its confidence
-      if (suggestion.patternId) {
-        await http.post(`patterns/${suggestion.patternId}/executed`, {
-          success: true,
-          conversationId: conv.id
-        });
-      }
-      
-      // Send the message
-      await handleSend(conv, suggestion.text);
-      
-      // Clear the suggestion
-      setAiSuggestions(prev => {
-        const newSuggestions = { ...prev };
-        delete newSuggestions[conv.id];
-        return newSuggestions;
-      });
-      
-      toast.success('Pattern approved and sent');
-    } catch (error) {
-      logger.error('Failed to approve suggestion:', error);
-      toast.error('Failed to approve suggestion');
-    }
-  };
-
-  const handleRejectSuggestion = async (conv: Conversation, suggestion: AiSuggestion) => {
-    try {
-      // If there's a queueId, mark it as rejected
-      if (suggestion.queueId) {
-        await http.post(`patterns/queue/${suggestion.queueId}/respond`, {
-          action: 'reject'
-        });
-      }
-      
-      // If there's a patternId, decrease its confidence
-      if (suggestion.patternId) {
-        await http.post(`patterns/${suggestion.patternId}/executed`, {
-          success: false,
-          conversationId: conv.id
-        });
-      }
-      
-      // Clear the suggestion
-      setAiSuggestions(prev => {
-        const newSuggestions = { ...prev };
-        delete newSuggestions[conv.id];
-        return newSuggestions;
-      });
-      
-      toast('Suggestion rejected');
-    } catch (error) {
-      logger.error('Failed to reject suggestion:', error);
-    }
   };
 
   const handleSend = async (conv: Conversation, customMessage?: string) => {
@@ -292,13 +153,8 @@ export default function MessagesCardV3() {
         }
       );
 
-      // Clear the reply text and AI suggestion
+      // Clear the reply text
       setReplyText({ ...replyText, [conv.id]: '' });
-      setAiSuggestions(prev => {
-        const newSuggestions = { ...prev };
-        delete newSuggestions[conv.id];
-        return newSuggestions;
-      });
       
       // Collapse the expanded section
       setExpandedId(null);
@@ -511,8 +367,6 @@ export default function MessagesCardV3() {
         <div className="divide-y divide-[var(--border-secondary)]">
           {conversations.map(conv => {
             const isExpanded = expandedId === conv.id;
-            const suggestion = aiSuggestions[conv.id];
-            const isLoadingAi = loadingAi[conv.id];
             const isSending = sending[conv.id];
             const reply = replyText[conv.id] || '';
 
@@ -617,79 +471,7 @@ export default function MessagesCardV3() {
                       </div>
                     )}
 
-                    {/* AI Suggestion Section - Above input field */}
-                    {!suggestion && !isLoadingAi ? (
-                      // Show Get AI Suggestion button
-                      <button
-                        onClick={() => fetchAiSuggestion(conv.id)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg hover:bg-[var(--bg-hover)] transition-colors"
-                       
-                      >
-                        <Bot className="w-3 h-3 text-[var(--status-info)]" />
-                        <span className="text-[var(--text-primary)]">Get AI Suggestion</span>
-                      </button>
-                    ) : isLoadingAi ? (
-                      // Loading state
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[var(--text-muted)]"></div>
-                        <span className="text-xs text-[var(--text-secondary)]">Getting AI suggestion...</span>
-                      </div>
-                    ) : suggestion ? (
-                      // Show AI Suggestion above input
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between p-2 bg-[var(--accent-light)] border border-[var(--accent)] rounded-lg">
-                          <div className="flex-1 flex items-center gap-2 min-w-0">
-                            <Bot className="w-3 h-3 text-[var(--accent)] flex-shrink-0" />
-                            <div className="flex-1">
-                              <p className="text-xs text-[var(--text-primary)] break-words">
-                                {suggestion.text}
-                              </p>
-                              <p className="text-xs text-[var(--text-secondary)] mt-1">
-                                Confidence: {Math.round(suggestion.confidence * 100)}%
-                                {suggestion.canAutoApprove && ' • Ready to auto-send'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                          <button
-                            onClick={() => handleApproveSuggestion(conv, suggestion)}
-                            disabled={isSending}
-                            className="px-2 py-0.5 bg-[var(--status-success)] text-white text-xs rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
-                           
-                            title="Use & Learn (increases confidence)"
-                          >
-                            Use
-                          </button>
-                          <button
-                            onClick={() => {
-                              // Send without learning
-                              handleSend(conv, suggestion.text);
-                              setAiSuggestions(prev => {
-                                const newSuggestions = { ...prev };
-                                delete newSuggestions[conv.id];
-                                return newSuggestions;
-                              });
-                            }}
-                            disabled={isSending}
-                            className="px-2 py-0.5 bg-[var(--accent)] text-white text-xs rounded hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
-                           
-                            title="Send without learning"
-                          >
-                            Send
-                          </button>
-                          <button
-                            onClick={() => handleRejectSuggestion(conv, suggestion)}
-                            className="p-0.5 text-[var(--text-muted)] hover:text-[var(--status-error)] transition-colors"
-                            title="Reject (decreases confidence)"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {/* Manual Reply Input - Always visible */}
+                    {/* Manual Reply Input */}
                     <div className="relative">
                       <input
                         type="text"

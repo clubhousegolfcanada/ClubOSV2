@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.17] - 2025-10-25
+
+### 🧹 Messages Card Simplification
+
+#### Removed AI Suggestion Feature
+- **Simplified UI**: Removed "Get AI Suggestion" button from messages card on dashboard
+- **Cleaner Code**: Removed all AI suggestion state management and API calls
+- **Reduced Complexity**: Eliminated pattern learning integration from dashboard card
+- **Maintained Features**: Message history display and manual reply functionality remain intact
+- **Result**: Cleaner, more focused messages card interface
+- **Impact**: Operators can still use AI features from the main messages page when needed
+
 ## [1.24.16] - 2025-10-24
 
 ### 🚀 Professional Booking Time Selection System
