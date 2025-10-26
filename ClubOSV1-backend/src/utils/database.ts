@@ -72,20 +72,9 @@ export interface DbFeedback {
   createdAt: Date;
 }
 
-export interface DbBooking {
-  id: string;
-  user_id: string;
-  simulator_id: string;
-  start_time: Date;
-  duration: number;
-  type: 'single' | 'recurring';
-  recurring_days?: number[];
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  cancelled_at?: Date;
-  metadata?: any;
-}
+// Import the centralized booking types
+// Note: DbBooking is now defined in types/booking.ts
+export { DbBooking } from '../types/booking';
 
 export interface DbTask {
   id: string;

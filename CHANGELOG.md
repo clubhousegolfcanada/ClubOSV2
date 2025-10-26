@@ -2,6 +2,42 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.27] - 2025-10-26
+
+### 🔧 Comprehensive Booking System Infrastructure
+
+#### Database & Type Safety
+- **Created centralized TypeScript types** (`/types/booking.ts`) - Single source of truth for all booking interfaces
+- **Fixed DbBooking interface** - Updated database.ts to use new centralized types
+- **Added defensive database operations** - BookingService checks column existence before queries
+- **Created comprehensive migrations** - Added missing columns and database functions
+
+#### New Services & Validation
+- **BookingValidationService** - Centralized business rule validation
+  - Duration validation (min/max, increments after first hour)
+  - Advance booking limits by customer tier
+  - Business hours enforcement
+  - Conflict detection and pricing validation
+
+- **BookingNotificationService** - Professional notification system
+  - Email confirmations with ICS calendar attachments
+  - SMS notifications via OpenPhone integration
+  - 24-hour automated reminders
+  - Staff alerts for high-value bookings
+  - Cancellation and modification confirmations
+
+#### Database Improvements
+- **Migration 340**: Added base_rate, is_admin_block, block_reason columns
+- **Migration 341**: Created booking audit tables and notification queue
+- **Audit logging**: Complete tracking of all booking changes
+- **Performance indexes**: Optimized for common query patterns
+
+#### Code Quality
+- **Type safety**: Comprehensive interfaces and enums
+- **Error handling**: Specific error codes for all failure scenarios
+- **Transaction safety**: Prevents double bookings with proper locking
+- **Logging**: Detailed logging throughout booking flow
+
 ## [1.24.26] - 2025-10-26
 
 ### 📍 Prominent Location Display in Booking Calendar

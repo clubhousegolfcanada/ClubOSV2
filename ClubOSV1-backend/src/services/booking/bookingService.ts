@@ -69,11 +69,39 @@ export class BookingService {
       }
 
       // Step 2: Check space-specific conflicts for multi-simulator bookings
-      // Use the database function to check all spaces at once
-      const spaceConflictCheck = await client.query(
-        `SELECT * FROM check_space_availability($1, $2, $3, $4)`,
-        [bookingData.locationId, bookingData.spaceIds, bookingData.startAt, bookingData.endAt]
+      // First check if the function exists
+      const functionCheck = await client.query(
+        `SELECT EXISTS (
+          SELECT 1 FROM pg_proc WHERE proname = 'check_space_availability'
+        ) as function_exists`
       );
+
+      let spaceConflictCheck = { rows: [] };
+
+      if (functionCheck.rows[0].function_exists) {
+        // Use the database function to check all spaces at once
+        spaceConflictCheck = await client.query(
+          `SELECT * FROM check_space_availability($1, $2, $3, $4)`,
+          [bookingData.locationId, bookingData.spaceIds, bookingData.startAt, bookingData.endAt]
+        );
+      } else {
+        // Fallback: Do a manual check if function doesn't exist
+        logger.warn('check_space_availability function not found, using fallback query');
+        spaceConflictCheck = await client.query(
+          `SELECT
+            UNNEST(space_ids) AS conflicting_space_id,
+            id AS conflicting_booking_id,
+            start_at AS conflict_start,
+            end_at AS conflict_end
+          FROM bookings
+          WHERE location_id = $1
+            AND status IN ('confirmed', 'pending')
+            AND space_ids && $2
+            AND tstzrange(start_at, end_at, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+          LIMIT 1`,
+          [bookingData.locationId, bookingData.spaceIds, bookingData.startAt, bookingData.endAt]
+        );
+      }
 
       if (spaceConflictCheck.rows.length > 0) {
         await client.query('ROLLBACK');
@@ -125,34 +153,81 @@ export class BookingService {
         ? JSON.stringify(adminNotesData)
         : bookingData.adminNotes || null;
 
-      // Step 4: Create the booking
+      // Step 4: Check which columns exist in the database (defensive for production)
+      const checkColumns = await client.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'bookings'
+      `);
+
+      const existingColumns = new Set(checkColumns.rows.map(row => row.column_name));
+
+      // Build INSERT query dynamically based on existing columns
+      const columns = ['location_id', 'space_ids', 'user_id'];
+      const values = [bookingData.locationId, bookingData.spaceIds, bookingData.userId || bookingData.customerId || null];
+      let paramIndex = 4;
+
+      // Add optional columns only if they exist
+      if (existingColumns.has('customer_tier_id')) {
+        columns.push('customer_tier_id');
+        values.push(bookingData.customerTierId);
+        paramIndex++;
+      }
+
+      columns.push('customer_name', 'customer_email', 'customer_phone', 'start_at', 'end_at');
+      values.push(
+        bookingData.customerName || null,
+        bookingData.customerEmail || null,
+        bookingData.customerPhone || null,
+        bookingData.startAt,
+        bookingData.endAt
+      );
+      paramIndex += 5;
+
+      if (existingColumns.has('base_rate')) {
+        columns.push('base_rate');
+        values.push(bookingData.baseRate);
+        paramIndex++;
+      }
+
+      columns.push('total_amount');
+      values.push(bookingData.totalAmount);
+      paramIndex++;
+
+      columns.push('promo_code');
+      values.push(bookingData.promoCode || null);
+      paramIndex++;
+
+      if (existingColumns.has('admin_notes')) {
+        columns.push('admin_notes');
+        values.push(adminNotesJson);
+        paramIndex++;
+      }
+
+      if (existingColumns.has('is_admin_block')) {
+        columns.push('is_admin_block');
+        values.push(bookingData.isAdminBlock || false);
+        paramIndex++;
+      }
+
+      if (existingColumns.has('block_reason')) {
+        columns.push('block_reason');
+        values.push(bookingData.blockReason || null);
+        paramIndex++;
+      }
+
+      columns.push('status', 'created_at');
+      values.push(bookingData.isAdminBlock ? 'confirmed' : 'pending');
+
+      // Build the query string
+      const columnList = columns.join(', ');
+      const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+
       const bookingResult = await client.query(
-        `INSERT INTO bookings (
-          location_id, space_ids, user_id, customer_tier_id,
-          customer_name, customer_email, customer_phone,
-          start_at, end_at, base_rate, total_amount,
-          promo_code, admin_notes, is_admin_block, block_reason,
-          status, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
-        RETURNING *`,
-        [
-          bookingData.locationId,
-          bookingData.spaceIds,
-          bookingData.userId || bookingData.customerId || null,
-          bookingData.customerTierId,
-          bookingData.customerName || null,
-          bookingData.customerEmail || null,
-          bookingData.customerPhone || null,
-          bookingData.startAt,
-          bookingData.endAt,
-          bookingData.baseRate,
-          bookingData.totalAmount,
-          bookingData.promoCode || null,
-          adminNotesJson,
-          bookingData.isAdminBlock || false,
-          bookingData.blockReason || null,
-          bookingData.isAdminBlock ? 'confirmed' : 'pending'
-        ]
+        `INSERT INTO bookings (${columnList})
+         VALUES (${placeholders}, NOW())
+         RETURNING *`,
+        values
       );
 
       const newBooking = bookingResult.rows[0];
