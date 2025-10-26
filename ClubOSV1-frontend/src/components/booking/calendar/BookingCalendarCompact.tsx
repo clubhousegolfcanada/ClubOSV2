@@ -13,6 +13,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Skeleton from '@/components/ui/Skeleton';
 import { CompactCalendarSkeleton } from './CalendarSkeleton';
 import WeekGridCompact from './WeekGridCompact';
+import logger from '@/utils/logger';
 import DayGrid from './DayGrid';
 // ColorLegend and AdminBlockOff removed - handled in parent
 import BoxInfoModal from '../BoxInfoModal';
@@ -93,7 +94,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
 
   // Debug effect to monitor modal state
   useEffect(() => {
-    console.log('🔍 Modal state changed:', {
+    logger.debug('Modal state changed', {
       showNewBookingModal,
       hasFormData: !!bookingFormData
     });
@@ -257,7 +258,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
 
   // Booking handlers
   const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => {
-    console.log('🎯 handleBookingCreate called:', {
+    logger.debug('Booking create initiated', {
       startTime,
       endTime,
       spaceId,
@@ -267,7 +268,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
     });
 
     if (!config) {
-      console.error('❌ No config available');
+      logger.error('No config available');
       return;
     }
 
@@ -275,7 +276,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
     const currentUserTier = customerTiers.find(t => t.id === 'new') || { id: 'new' } as CustomerTier;
     const tierType = currentUserTier.id as 'new' | 'member' | 'promo' | 'frequent';
 
-    console.log('👤 User tier:', tierType);
+    logger.debug('User tier identified', { tierType });
 
     // Validate booking
     const validation = TimeValidationService.validateBooking(
@@ -289,10 +290,10 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
       }
     );
 
-    console.log('✅ Validation result:', validation);
+    logger.debug('Validation completed', { isValid: validation.isValid });
 
     if (!validation.isValid) {
-      console.error('❌ Validation failed:', validation.error);
+      logger.error('Validation failed', { error: validation.error });
       notify('error', validation.error || 'Invalid booking time');
       if (validation.suggestion) {
         notify('info', validation.suggestion);
@@ -330,10 +331,10 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
         customerTier: currentUserTier
       };
 
-      console.log('📝 Setting booking form data:', formData);
+      logger.debug('Setting booking form data', { hasData: true });
       setBookingFormData(formData);
 
-      console.log('🔓 Opening modal - setting showNewBookingModal to true');
+      logger.debug('Opening booking modal');
       setShowNewBookingModal(true);
     }
   }, [config, selectedLocationId, spaces, notify, customerTiers, onBookingCreate]);

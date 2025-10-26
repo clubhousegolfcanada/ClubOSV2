@@ -8,6 +8,7 @@ import { Calendar, ExternalLink, X, Plus, Search, Ban, Wrench, List, MapPin, Che
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useNotifications } from '@/state/hooks';
+import logger from '@/utils/logger';
 import { BookingMode } from '@/components/booking/unified/UnifiedBookingCard';
 import SubNavigation, { SubNavTab, SubNavAction } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
@@ -79,7 +80,7 @@ export default function Bookings() {
         setSelectedLocationId(loadedLocations[0].id);
       }
     } catch (error) {
-      console.error('Failed to load booking data:', error);
+      logger.error('Failed to load booking data', error);
     }
   };
 

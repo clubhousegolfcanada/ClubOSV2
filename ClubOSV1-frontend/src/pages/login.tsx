@@ -39,24 +39,9 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Clear any stale authentication state before attempting login
-    if (typeof window !== 'undefined') {
-      // Clear old tokens and user data
-      tokenManager.clearToken();
-      localStorage.removeItem('clubos_user');
-      localStorage.removeItem('clubos_view_mode');
-      sessionStorage.clear();
-      
-      // Auth header cleanup now handled by http client
-    }
-
     try {
-      // Stop any existing token monitoring first
+      // Stop any existing token monitoring first (but don't clear token yet)
       tokenManager.stopTokenMonitoring();
-      
-      // Clear any stale auth data
-      tokenManager.clearToken();
-      localStorage.removeItem('clubos_user');
 
       let response;
       
@@ -104,11 +89,14 @@ const LoginPage = () => {
 
       if (response.data.success) {
         const { user, token } = response.data.data;
-        
-        // Set login timestamp for grace period
+
+        // Set login timestamp FIRST for grace period
         sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
-        
-        // Login user with real data
+
+        // Use atomic token update to prevent race condition
+        tokenManager.updateToken(token);
+
+        // Then update UI state
         login(user, token);
         
         // Set view mode based on user role or login mode

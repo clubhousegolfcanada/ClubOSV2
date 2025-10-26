@@ -1114,17 +1114,18 @@ export class AIAutomationService {
       );
       
       const config = featureResult.rows[0].config;
-      
-      // Store pending confirmation
+
+      // Store pending confirmation using cacheService with automatic TTL
       const confirmationKey = `${phoneNumber}_trackman_${Date.now()}`;
-      pendingConfirmations.set(confirmationKey, {
+      await cacheService.setConfirmation(phoneNumber, {
+        key: confirmationKey,
         featureKey: 'trackman_reset',
         phoneNumber,
-        action: async () => {
-          await this.executeTrackmanReset(bayNumber, conversationId);
-        },
+        bayNumber,
+        conversationId,
+        actionType: 'trackman_reset',
         expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
-      });
+      }, 300); // 5 minute TTL
       
       // Clean up old confirmations
       this.cleanupExpiredConfirmations();
@@ -1194,14 +1195,15 @@ export class AIAutomationService {
       const config = featureResult.rows[0].config;
       
       const confirmationKey = `${phoneNumber}_simulator_${Date.now()}`;
-      pendingConfirmations.set(confirmationKey, {
+      await cacheService.setConfirmation(phoneNumber, {
+        key: confirmationKey,
         featureKey: 'simulator_reboot',
         phoneNumber,
-        action: async () => {
-          await this.executeSimulatorReboot(bayNumber, conversationId);
-        },
+        bayNumber,
+        conversationId,
+        actionType: 'simulator_reboot',
         expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-      });
+      }, 300); // 5 minute TTL
       
       this.cleanupExpiredConfirmations();
       
@@ -1259,14 +1261,15 @@ export class AIAutomationService {
       const config = featureResult.rows[0].config;
       
       const confirmationKey = `${phoneNumber}_tv_${Date.now()}`;
-      pendingConfirmations.set(confirmationKey, {
+      await cacheService.setConfirmation(phoneNumber, {
+        key: confirmationKey,
         featureKey: 'tv_restart',
         phoneNumber,
-        action: async () => {
-          await this.executeTVRestart(bayNumber, conversationId);
-        },
+        bayNumber,
+        conversationId,
+        actionType: 'tv_restart',
         expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-      });
+      }, 300); // 5 minute TTL
       
       this.cleanupExpiredConfirmations();
       
@@ -1296,12 +1299,8 @@ export class AIAutomationService {
    * Check if phone number has pending confirmation
    */
   private async checkForPendingConfirmation(phoneNumber: string): Promise<boolean> {
-    for (const [_, confirmation] of pendingConfirmations.entries()) {
-      if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
-        return true;
-      }
-    }
-    return false;
+    const confirmations = await cacheService.getConfirmations(phoneNumber);
+    return confirmations.length > 0;
   }
 
   /**
@@ -1309,19 +1308,18 @@ export class AIAutomationService {
    */
   private async analyzeConfirmationIntent(message: string, phoneNumber: string): Promise<AutomationResponse> {
     try {
-      // Find the pending confirmation
-      let confirmationToExecute: PendingConfirmation | null = null;
-      let keyToDelete: string | null = null;
-      
-      for (const [key, confirmation] of pendingConfirmations.entries()) {
-        if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
-          confirmationToExecute = confirmation;
-          keyToDelete = key;
-          break;
-        }
+      // Find the pending confirmations for this phone number
+      const confirmations = await cacheService.getConfirmations(phoneNumber);
+
+      if (confirmations.length === 0) {
+        return { handled: false };
       }
-      
-      if (!confirmationToExecute || !keyToDelete) {
+
+      // Use the most recent confirmation
+      const confirmationData = confirmations[confirmations.length - 1];
+      const keyToDelete = confirmationData.key;
+
+      if (!confirmationData || !keyToDelete) {
         return { handled: false };
       }
 
@@ -1331,7 +1329,7 @@ export class AIAutomationService {
         // Fallback to basic pattern matching
         const lowerMessage = message.toLowerCase().trim();
         if (lowerMessage === 'yes' || lowerMessage === 'y') {
-          return this.executeConfirmation(confirmationToExecute, keyToDelete);
+          return this.executeConfirmation(confirmationData, keyToDelete);
         }
         return { handled: false };
       }
@@ -1366,14 +1364,14 @@ export class AIAutomationService {
         phoneNumber: phoneNumber.slice(-4),
         message,
         intent,
-        featureKey: confirmationToExecute.featureKey
+        featureKey: confirmationData.featureKey
       });
 
       if (intent === 'YES') {
-        return this.executeConfirmation(confirmationToExecute, keyToDelete);
+        return this.executeConfirmation(confirmationData, keyToDelete);
       } else if (intent === 'NO') {
         // Remove from pending and send cancellation message
-        pendingConfirmations.delete(keyToDelete);
+        await cacheService.deleteConfirmation(keyToDelete);
         return {
           handled: true,
           response: 'No problem! The reset has been cancelled. Let me know if you need anything else.'
@@ -1402,13 +1400,19 @@ export class AIAutomationService {
   /**
    * Execute a confirmed action
    */
-  private async executeConfirmation(confirmation: PendingConfirmation, key: string): Promise<AutomationResponse> {
+  private async executeConfirmation(confirmation: any, key: string): Promise<AutomationResponse> {
     // Remove from pending
-    pendingConfirmations.delete(key);
-    
+    await cacheService.deleteConfirmation(key);
+
     try {
-      // Execute the action
-      await confirmation.action();
+      // Execute the action based on type
+      if (confirmation.actionType === 'trackman_reset') {
+        await this.executeTrackmanReset(confirmation.bayNumber, confirmation.conversationId);
+      } else if (confirmation.actionType === 'simulator_reboot') {
+        await this.executeSimulatorReboot(confirmation.bayNumber, confirmation.conversationId);
+      } else if (confirmation.actionType === 'tv_restart') {
+        await this.executeTVRestart(confirmation.bayNumber, confirmation.conversationId);
+      }
       
       await logAutomationUsage(confirmation.featureKey, {
         triggerType: 'automatic',
@@ -1441,53 +1445,57 @@ export class AIAutomationService {
    * Handle confirmation responses (legacy fallback)
    */
   private async handleConfirmation(phoneNumber: string): Promise<AutomationResponse> {
-    // Find pending confirmation for this phone number
-    let confirmationToExecute: PendingConfirmation | null = null;
-    let keyToDelete: string | null = null;
-    
-    for (const [key, confirmation] of pendingConfirmations.entries()) {
-      if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
-        confirmationToExecute = confirmation;
-        keyToDelete = key;
-        break;
-      }
-    }
-    
-    if (!confirmationToExecute || !keyToDelete) {
+    // Find pending confirmations for this phone number
+    const confirmations = await cacheService.getConfirmations(phoneNumber);
+
+    if (confirmations.length === 0) {
       return { handled: false };
     }
-    
-    return this.executeConfirmation(confirmationToExecute, keyToDelete);
+
+    // Use the most recent confirmation
+    const confirmationData = confirmations[confirmations.length - 1];
+    const keyToDelete = confirmationData.key;
+
+    if (!confirmationData || !keyToDelete) {
+      return { handled: false };
+    }
+
+    return this.executeConfirmation(confirmationData, keyToDelete);
   }
 
   /**
    * Original handleConfirmation content moved here
    */
   private async handleConfirmationLegacy(phoneNumber: string): Promise<AutomationResponse> {
-    // Find pending confirmation for this phone number
-    let confirmationToExecute: PendingConfirmation | null = null;
-    let keyToDelete: string | null = null;
-    
-    for (const [key, confirmation] of pendingConfirmations.entries()) {
-      if (confirmation.phoneNumber === phoneNumber && confirmation.expiresAt > new Date()) {
-        confirmationToExecute = confirmation;
-        keyToDelete = key;
-        break;
-      }
-    }
-    
-    if (!confirmationToExecute || !keyToDelete) {
+    // Find pending confirmations for this phone number
+    const confirmations = await cacheService.getConfirmations(phoneNumber);
+
+    if (confirmations.length === 0) {
       return { handled: false };
     }
-    
+
+    // Use the most recent confirmation
+    const confirmationData = confirmations[confirmations.length - 1];
+    const keyToDelete = confirmationData.key;
+
+    if (!confirmationData || !keyToDelete) {
+      return { handled: false };
+    }
+
     // Remove from pending
-    pendingConfirmations.delete(keyToDelete);
+    await cacheService.deleteConfirmation(keyToDelete);
     
     try {
-      // Execute the action
-      await confirmationToExecute.action();
+      // Execute the action based on type
+      if (confirmationData.actionType === 'trackman_reset') {
+        await this.executeTrackmanReset(confirmationData.bayNumber, confirmationData.conversationId);
+      } else if (confirmationData.actionType === 'simulator_reboot') {
+        await this.executeSimulatorReboot(confirmationData.bayNumber, confirmationData.conversationId);
+      } else if (confirmationData.actionType === 'tv_restart') {
+        await this.executeTVRestart(confirmationData.bayNumber, confirmationData.conversationId);
+      }
       
-      await logAutomationUsage(confirmationToExecute.featureKey, {
+      await logAutomationUsage(confirmationData.featureKey, {
         triggerType: 'automatic',
         success: true,
         userConfirmed: true
@@ -1496,11 +1504,11 @@ export class AIAutomationService {
       // Customize confirmation response based on the action type
       let confirmationResponse = 'Action confirmed and initiated. I\'ll send you an update once it\'s complete.';
       
-      if (confirmationToExecute.featureKey === 'trackman_reset') {
+      if (confirmationData.featureKey === 'trackman_reset') {
         confirmationResponse = "Great! I'm resetting the Trackman system now. This should take about 2 minutes. Once it's back up, you can sign back in and use the 'My Activities' button to continue where you left off.";
-      } else if (confirmationToExecute.featureKey === 'simulator_reboot') {
+      } else if (confirmationData.featureKey === 'simulator_reboot') {
         confirmationResponse = "I'm rebooting the simulator PC now. This will take 5-7 minutes. I'll let you know when it's ready to use again.";
-      } else if (confirmationToExecute.featureKey === 'tv_restart') {
+      } else if (confirmationData.featureKey === 'tv_restart') {
         confirmationResponse = "I'm restarting the TV system now. The display should be back up in just a moment.";
       }
       
@@ -1511,7 +1519,7 @@ export class AIAutomationService {
     } catch (error) {
       logger.error('Failed to execute confirmed action:', error);
       
-      await logAutomationUsage(confirmationToExecute.featureKey, {
+      await logAutomationUsage(confirmationData.featureKey, {
         triggerType: 'automatic',
         success: false,
         userConfirmed: true,
@@ -1582,13 +1590,10 @@ export class AIAutomationService {
   /**
    * Clean up expired confirmations
    */
-  private cleanupExpiredConfirmations() {
-    const now = new Date();
-    for (const [key, confirmation] of pendingConfirmations.entries()) {
-      if (confirmation.expiresAt < now) {
-        pendingConfirmations.delete(key);
-      }
-    }
+  private async cleanupExpiredConfirmations() {
+    // This is now handled by the cacheService with automatic TTL
+    // Called periodically in the constructor
+    // The cacheService.cleanupExpiredConfirmations() method is called in the constructor
   }
   
   /**

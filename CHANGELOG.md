@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.24] - 2025-10-25
+
+### 🚨 Critical Production Fixes
+
+#### Fixed Memory Leak in AI Automation Service
+- **Issue**: Pending confirmations stored in memory Map never cleared, causing server crash risk
+- **Solution**: Migrated to Redis/cache with automatic 5-minute TTL
+- **Added**: `cacheService` confirmation methods with automatic cleanup
+- **Impact**: Zero memory leak, confirmations auto-expire, fallback to memory cache if Redis unavailable
+
+#### Fixed Production Data Leakage in Console Logs
+- **Issue**: 14 console.log statements exposing customer data (prices, tiers, booking times)
+- **Solution**: Created frontend logger utility that only logs in development
+- **Added**: `logger.ts` with automatic data sanitization for production
+- **Replaced**: All console statements in booking components with safe logger
+- **Impact**: No sensitive data exposed in production browser console
+
+#### Fixed Authentication Race Condition
+- **Issue**: "Keep me logged in" failing due to token clear/set gap causing logouts
+- **Solution**: Implemented atomic token operations and grace period check
+- **Added**: `updateToken()` method for atomic token replacement
+- **Fixed**: Grace period now checked BEFORE expiry validation
+- **Impact**: Smooth login experience without premature logouts
+
 ## [1.24.23] - 2025-10-26
 
 ### 📝 Booking UI Text Refinements

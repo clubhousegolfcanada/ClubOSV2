@@ -69,10 +69,23 @@ export class TokenManager {
    */
   isTokenExpired(token: string): boolean {
     if (!this.isValidTokenFormat(token)) return true;
-    
+
+    // Check grace period FIRST - prevents race condition during login
+    const loginTimestamp = typeof window !== 'undefined'
+      ? sessionStorage.getItem('clubos_login_timestamp')
+      : null;
+
+    if (loginTimestamp) {
+      const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
+      const gracePeriod = 5 * 60 * 1000; // 5 minutes
+      if (timeSinceLogin < gracePeriod) {
+        return false; // Still in grace period, token is valid
+      }
+    }
+
     const decoded = this.decodeToken(token);
     if (!decoded || !decoded.exp) return true;
-    
+
     // Check if expired (no buffer - was causing premature expiration)
     const now = Date.now() / 1000;
     return decoded.exp < now;
@@ -120,6 +133,26 @@ export class TokenManager {
   clearToken(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('clubos_token');
+  }
+
+  /**
+   * Atomic token update - prevents race conditions
+   * This ensures there's no gap between clearing and setting the token
+   */
+  updateToken(token: string | null): void {
+    if (typeof window === 'undefined') return;
+
+    if (token) {
+      // Set new token FIRST
+      localStorage.setItem('clubos_token', token);
+      // Then start monitoring AFTER token is set
+      this.startTokenMonitoring();
+    } else {
+      // Stop monitoring FIRST
+      this.stopTokenMonitoring();
+      // Then remove token
+      localStorage.removeItem('clubos_token');
+    }
   }
 
   /**
@@ -178,22 +211,9 @@ export class TokenManager {
         return;
       }
 
-      // Check if token is expired
+      // Check if token is expired (grace period is now checked inside isTokenExpired)
       if (this.isTokenExpired(currentToken)) {
-        // Check for grace period before handling expiration
-        const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
-        const gracePeriod = 5 * 60 * 1000; // 5 minutes
-
-        if (loginTimestamp) {
-          const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
-          if (timeSinceLogin < gracePeriod) {
-            // Still in grace period, don't expire yet
-            logger.debug('Token expired but within grace period, continuing');
-            return;
-          }
-        }
-
-        // Grace period exceeded or no timestamp, handle expiration
+        // Token is truly expired (grace period already checked)
         this.handleTokenExpiration();
       } else {
         // Token still valid, check if interval needs adjustment

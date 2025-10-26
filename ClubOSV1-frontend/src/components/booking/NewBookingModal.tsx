@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import Button from '@/components/ui/Button';
 import { http } from '@/api/http';
 import { useNotifications } from '@/state/hooks';
+import logger from '@/utils/logger';
 
 interface NewBookingModalProps {
   isOpen: boolean;
@@ -90,18 +91,18 @@ const NewBookingModal: React.FC<NewBookingModalProps> = ({
   };
 
   // Debug logging
-  console.log('🎭 NewBookingModal render:', {
+  logger.debug('NewBookingModal render', {
     isOpen,
     hasPrefilledData: !!prefilledData,
     formData: formData
   });
 
   if (!isOpen) {
-    console.log('❌ Modal not rendering - isOpen is false');
+    logger.debug('Modal not rendering - isOpen is false');
     return null;
   }
 
-  console.log('✅ Modal rendering - isOpen is true');
+  logger.debug('Modal rendering - isOpen is true');
 
   return (
     <>
