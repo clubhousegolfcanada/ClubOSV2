@@ -180,7 +180,8 @@ class Logger {
 const logger = new Logger();
 
 // Export the class for custom configurations if needed
-export { Logger, LoggerConfig };
+export { Logger };
+export type { LoggerConfig };
 
 // Export the singleton as default
 export default logger;
