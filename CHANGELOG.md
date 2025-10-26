@@ -2,6 +2,24 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.21] - 2025-10-25
+
+### 🧹 Major Code Cleanup: Booking System
+
+#### Removed 2000+ Lines of Dead Code
+- **Deleted Orphaned Components**: Removed 10 unused booking components
+  - `DayGridCompact.tsx` - Never used, DayGrid handles mobile
+  - `BookingCalendarV2.tsx` - Complete orphan, never integrated
+  - `ColorLegend.tsx` & `AdminBlockOff.tsx` - Deprecated functionality
+  - `DurationPicker.tsx` - Replaced with inline duration buttons
+  - Two duplicate `AdvanceBookingValidator.tsx` files
+  - `TieredBookingForm.tsx`, `BookingTerminalCard.tsx`, `GroupBookingCoordinator.tsx`
+- **Fixed Imports**: Removed references to deleted components
+- **Removed Deprecated Props**: Cleaned up `showColorLegend` and `allowAdminBlock`
+- **Standardized Breakpoints**: Mobile detection now consistent at 768px
+- **Result**: Cleaner, more maintainable codebase with no confusion
+- **Impact**: Faster bundle size, easier development, reduced complexity
+
 ## [1.24.20] - 2025-10-25
 
 ### 🎯 Booking UX Simplification

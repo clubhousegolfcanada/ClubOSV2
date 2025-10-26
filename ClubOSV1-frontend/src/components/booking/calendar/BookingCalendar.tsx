@@ -56,8 +56,6 @@ export interface BookingCalendarProps {
   viewMode?: 'day' | 'week'; // Controlled from parent
   onBookingCreate?: (booking: Partial<Booking>) => void;
   onBookingSelect?: (booking: Booking) => void;
-  showColorLegend?: boolean; // Deprecated - remove in next version
-  allowAdminBlock?: boolean; // Deprecated - handled in parent
 }
 
 type ViewMode = 'day' | 'week';
@@ -67,9 +65,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   date: propDate,
   viewMode: propViewMode = 'day',
   onBookingCreate,
-  onBookingSelect,
-  showColorLegend = false, // Deprecated
-  allowAdminBlock = false // Deprecated
+  onBookingSelect
 }) => {
   const { notify } = useNotifications();
   const { user } = useAuthState();

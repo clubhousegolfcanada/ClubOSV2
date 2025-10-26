@@ -12,7 +12,6 @@ import EmptyState from '@/components/ui/EmptyState';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Skeleton from '@/components/ui/Skeleton';
 import { CompactCalendarSkeleton } from './CalendarSkeleton';
-import DayGridCompact from './DayGridCompact';
 import WeekGridCompact from './WeekGridCompact';
 import DayGrid from './DayGrid';
 // ColorLegend and AdminBlockOff removed - handled in parent
@@ -60,8 +59,6 @@ export interface BookingCalendarCompactProps {
   viewMode?: 'day' | 'week'; // Controlled from parent
   onBookingCreate?: (booking: Partial<Booking>) => void;
   onBookingSelect?: (booking: Booking) => void;
-  showColorLegend?: boolean; // Deprecated
-  allowAdminBlock?: boolean; // Deprecated
 }
 
 type ViewMode = 'day' | 'week';
@@ -71,9 +68,7 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
   date: propDate,
   viewMode: propViewMode = 'day',
   onBookingCreate,
-  onBookingSelect,
-  showColorLegend = false, // Deprecated
-  allowAdminBlock = false // Deprecated
+  onBookingSelect
 }) => {
   const { notify } = useNotifications();
   const { user } = useAuthState();

@@ -382,7 +382,7 @@ const DayGridComponent: React.FC<DayGridProps> = ({
     return `repeat(${numSpaces}, minmax(100px, 1fr))`;
   };
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const minWidth = isMobile ? '320px' : '800px';
 
   return (
