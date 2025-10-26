@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.25] - 2025-10-26
+
+### 🚀 Professional Booking System Redesign
+- **NEW: ClubOSBookingModal** - Clean, focused booking confirmation modal
+- **NEW: CustomerQuickSearch** - Fast customer lookup with autocomplete for staff
+- **NEW: BookingPricingPanel** - Clear pricing breakdown with promo code support
+- **Removed UnifiedBookingCard** - Eliminated complex 5-mode component that was causing crashes
+- **Simplified Flow** - Select time on calendar → Confirm booking → Done
+- **Better UX** - Success animation, auto-close after 3 seconds
+- **Mobile Optimized** - Full-screen modal on mobile with large touch targets
+- **ClubOS Native** - Follows existing design patterns, no more bolt-on feel
+
 ## [1.24.24] - 2025-10-25
 
 ### 🚨 Critical Production Fixes

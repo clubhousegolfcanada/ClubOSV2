@@ -9,14 +9,13 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useNotifications } from '@/state/hooks';
 import logger from '@/utils/logger';
-import { BookingMode } from '@/components/booking/unified/UnifiedBookingCard';
 import SubNavigation, { SubNavTab, SubNavAction } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
 import { BookingConfigService } from '@/services/booking/bookingConfig';
 import { http } from '@/api/http';
+import ClubOSBookingModal from '@/components/booking/ClubOSBookingModal';
 
 // Lazy load modals for better performance
-const UnifiedBookingCard = lazy(() => import('@/components/booking/unified/UnifiedBookingCard'));
 const CustomerSearchModal = lazy(() => import('@/components/booking/CustomerSearchModal'));
 
 export default function Bookings() {
@@ -29,7 +28,6 @@ export default function Bookings() {
   const [showCreateBooking, setShowCreateBooking] = useState(false);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // For calendar refresh without page reload
-  const [bookingMode, setBookingMode] = useState<BookingMode>('booking'); // Track which mode to open
 
   // Location and tier state for SubNavigation
   const [locations, setLocations] = useState<any[]>([]);
@@ -44,6 +42,8 @@ export default function Bookings() {
     endTime?: Date;
     spaceId?: string;
     spaceName?: string;
+    locationId?: string;
+    locationName?: string;
   }>({});
 
   // Role-based checks
@@ -93,9 +93,10 @@ export default function Bookings() {
         startTime: bookingOrStartTime,
         endTime: endTime,
         spaceId: spaceId,
-        spaceName: spaceName
+        spaceName: spaceName,
+        locationId: selectedLocationId,
+        locationName: locations.find(l => l.id === selectedLocationId)?.name
       });
-      setBookingMode('booking'); // Default to booking mode when clicking time slot
       setShowCreateBooking(true);
     } else if (bookingOrStartTime && typeof bookingOrStartTime === 'object') {
       // This is from BookingCalendar - booking object
@@ -105,9 +106,10 @@ export default function Bookings() {
           startTime: bookingOrStartTime.startTime,
           endTime: bookingOrStartTime.endTime,
           spaceId: bookingOrStartTime.spaceId,
-          spaceName: bookingOrStartTime.spaceName
+          spaceName: bookingOrStartTime.spaceName,
+          locationId: bookingOrStartTime.locationId || selectedLocationId,
+          locationName: locations.find(l => l.id === (bookingOrStartTime.locationId || selectedLocationId))?.name
         });
-        setBookingMode('booking'); // Default to booking mode when clicking time slot
         setShowCreateBooking(true);
       } else if (bookingOrStartTime.id) {
         // This is an actual booking confirmation
@@ -160,8 +162,8 @@ export default function Bookings() {
       label: 'Create',
       icon: Plus,
       onClick: () => {
-        setBookingMode('booking');
-        setShowCreateBooking(true);
+        // Note: Create Booking now happens through calendar selection only
+        notify('info', 'Please select a time slot on the calendar to create a booking');
       },
       variant: 'primary',
       hideOnMobile: true
@@ -177,28 +179,6 @@ export default function Bookings() {
       onClick: () => setShowCustomerSearch(true),
       hideOnMobile: true
     },
-    ...(isAdmin ? [
-      {
-        id: 'block',
-        label: 'Block',
-        icon: Ban,
-        onClick: () => {
-          setBookingMode('block');
-          setShowCreateBooking(true);
-        },
-        hideOnMobile: true
-      },
-      {
-        id: 'maintenance',
-        label: 'Maintenance',
-        icon: Wrench,
-        onClick: () => {
-          setBookingMode('maintenance');
-          setShowCreateBooking(true);
-        },
-        hideOnMobile: true
-      }
-    ] as SubNavAction[] : [])
   ];
 
   // Simplified content - location selector and day/week toggle in main nav row
@@ -332,40 +312,28 @@ export default function Bookings() {
       )}
 
       {/* Modals */}
-      {showCreateBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn p-4">
-          <div className="max-h-[90vh] overflow-y-auto w-full max-w-5xl">
-            <Suspense fallback={<LoadingSpinner />}>
-              <UnifiedBookingCard
-                initialStartTime={selectedTimeSlot.startTime}
-                initialEndTime={selectedTimeSlot.endTime}
-                initialSpaceId={selectedTimeSlot.spaceId}
-                initialSpaceName={selectedTimeSlot.spaceName}
-                initialLocationId={selectedLocationId}
-                onSuccess={(result) => {
-                const successMessage = bookingMode === 'block'
-                  ? `Time blocked successfully!`
-                  : bookingMode === 'maintenance'
-                  ? `Maintenance scheduled successfully!`
-                  : `Booking created successfully! ID: ${result.id || 'New'}`;
-                notify('success', successMessage);
-                setShowCreateBooking(false);
-                setSelectedTimeSlot({}); // Clear selection after success
-                setBookingMode('booking'); // Reset to default mode
-                // Refresh the calendar without page reload
-                setRefreshKey(prev => prev + 1);
-              }}
-                onCancel={() => {
-                  setShowCreateBooking(false);
-                  setSelectedTimeSlot({}); // Clear selection on cancel
-                  setBookingMode('booking'); // Reset to default mode
-                }}
-                defaultMode={bookingMode}
-                allowModeSwitch={isStaff}
-              />
-            </Suspense>
-          </div>
-        </div>
+      {showCreateBooking && selectedTimeSlot.startTime && selectedTimeSlot.endTime && (
+        <ClubOSBookingModal
+          isOpen={showCreateBooking}
+          onClose={() => {
+            setShowCreateBooking(false);
+            setSelectedTimeSlot({}); // Clear selection on close
+          }}
+          bookingData={{
+            startTime: selectedTimeSlot.startTime,
+            endTime: selectedTimeSlot.endTime,
+            spaceId: selectedTimeSlot.spaceId || '',
+            spaceName: selectedTimeSlot.spaceName || '',
+            locationId: selectedTimeSlot.locationId || selectedLocationId,
+            locationName: selectedTimeSlot.locationName || locations.find(l => l.id === selectedLocationId)?.name
+          }}
+          onSuccess={(result) => {
+            setShowCreateBooking(false);
+            setSelectedTimeSlot({}); // Clear selection after success
+            // Refresh the calendar without page reload
+            setRefreshKey(prev => prev + 1);
+          }}
+        />
       )}
 
       {showCustomerSearch && (
