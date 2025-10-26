@@ -415,19 +415,19 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
               </button>
             </div>
 
+            {/* Location Display - inline in center */}
+            <div className="text-center flex-1 mx-2">
+              <span className="text-sm font-medium text-[var(--text-primary)]" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>
+                {locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}
+              </span>
+            </div>
+
             <div className="text-xs font-medium">
               {viewMode === 'week'
                 ? `${format(startOfWeek(selectedDate), 'MMM d')} - ${format(endOfWeek(selectedDate), 'MMM d, yyyy')}`
                 : format(selectedDate, 'EEEE, MMMM d, yyyy')
               }
             </div>
-          </div>
-
-          {/* Prominent Location Display */}
-          <div className="text-center mt-2">
-            <h2 className="text-xl lg:text-2xl font-semibold text-[var(--text-primary)]" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>
-              {locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}
-            </h2>
           </div>
         </div>
 
