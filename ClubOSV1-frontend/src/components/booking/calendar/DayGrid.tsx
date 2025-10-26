@@ -659,7 +659,7 @@ const DayGridComponent: React.FC<DayGridProps> = ({
             <div className="space-y-2">
               <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Select Duration</span>
               <div className="grid grid-cols-3 gap-2">
-                {[60, 90, 120, 180, 240, 300].map((minutes) => {
+                {[60, 90, 120, 180, 240].map((minutes) => {
                   const slots = Math.ceil(minutes / 30) - 1;
                   const endSlotIndex = selectionStart.slotIndex + slots;
                   const isAvailable = endSlotIndex < timeSlots.length &&
@@ -709,7 +709,7 @@ const DayGridComponent: React.FC<DayGridProps> = ({
             {/* Price estimate with visual emphasis */}
             <div className="bg-gradient-to-r from-[var(--accent)]/5 to-[var(--accent)]/10 rounded-lg p-3 border border-[var(--accent)]/20">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Estimated Price</span>
+                <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Est. Price</span>
                 <span className="text-lg font-bold text-[var(--accent)]">
                   ${(() => {
                     const duration = Math.abs((selectionEnd?.slotIndex ?? selectionStart.slotIndex + 1) - selectionStart.slotIndex + 1) * 30;
@@ -728,7 +728,7 @@ const DayGridComponent: React.FC<DayGridProps> = ({
               onClick={confirmSelection}
               className="flex-1 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white font-semibold"
             >
-              Continue to Booking
+              Continue
             </Button>
             <Button
               variant="ghost"

@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.23] - 2025-10-26
+
+### 📝 Booking UI Text Refinements
+
+#### Simplified Confirmation Panel
+- **Shortened button text**: "Continue to Booking" → "Continue" for cleaner mobile experience
+- **Abbreviated price label**: "Estimated Price" → "Est. Price" for more compact layout
+- **Removed 5hr duration option**: Streamlined duration selector to 1h, 1.5h, 2h, 3h, 4h
+- **Result**: More concise and mobile-friendly booking confirmation panel
+- **Impact**: Better usability on small screens, cleaner interface
+
 ## [1.24.22] - 2025-10-26
 
 ### 🔧 Critical Booking Flow Fix
