@@ -18,7 +18,6 @@ import DayGrid from './DayGrid';
 // ColorLegend and AdminBlockOff removed - handled in parent
 import BoxInfoModal from '../BoxInfoModal';
 import NewBookingModal from '../NewBookingModal';
-import logger from '@/services/logger';
 
 export interface Booking {
   id: string;
