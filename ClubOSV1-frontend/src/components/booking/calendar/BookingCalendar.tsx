@@ -453,6 +453,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             }
           </div>
         </div>
+
+        {/* Prominent Location Display */}
+        <div className="text-center mt-3">
+          <h2 className="text-2xl lg:text-3xl font-semibold text-[var(--text-primary)]" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>
+            {locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}
+          </h2>
+        </div>
       </div>
 
       {/* Calendar grid */}

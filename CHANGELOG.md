@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.26] - 2025-10-26
+
+### 📍 Prominent Location Display in Booking Calendar
+
+#### Added Clear Location Visibility
+- **Large location name display**: Added prominent location name between date navigation and date text
+- **Poppins font styling**: Uses Poppins font for better visual hierarchy
+- **Prevents wrong bookings**: Users now clearly see which location they're viewing (Dartmouth, Bedford, etc.)
+- **Responsive sizing**: Text scales appropriately on mobile (text-xl) and desktop (text-3xl)
+- **Result**: Significantly reduced chance of booking at wrong location
+- **Impact**: Better user experience and fewer booking mistakes
+
 ## [1.24.25] - 2025-10-26
 
 ### 🚀 Professional Booking System Redesign

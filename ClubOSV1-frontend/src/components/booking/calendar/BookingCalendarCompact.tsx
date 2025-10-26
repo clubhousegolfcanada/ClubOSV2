@@ -422,6 +422,13 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
               }
             </div>
           </div>
+
+          {/* Prominent Location Display */}
+          <div className="text-center mt-2">
+            <h2 className="text-xl lg:text-2xl font-semibold text-[var(--text-primary)]" style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}>
+              {locations.find(l => l.id === selectedLocationId)?.name || 'Select Location'}
+            </h2>
+          </div>
         </div>
 
 
