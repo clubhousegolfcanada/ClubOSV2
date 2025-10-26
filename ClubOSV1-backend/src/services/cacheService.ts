@@ -311,6 +311,127 @@ class CacheService {
   }
 
   /**
+   * Confirmation-specific methods for AI automation
+   * These handle pending confirmations with automatic expiry
+   */
+
+  /**
+   * Store a pending confirmation with TTL
+   */
+  async setConfirmation(phoneNumber: string, confirmation: any, ttl: number = 300): Promise<boolean> {
+    const key = `confirmation:${phoneNumber}:${Date.now()}`;
+    const confirmationData = {
+      ...confirmation,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + (ttl * 1000)
+    };
+
+    const success = await this.set(key, confirmationData, { ttl });
+    if (success) {
+      logger.info(`Stored confirmation for phone ${phoneNumber.slice(-4)} with ${ttl}s TTL`);
+    }
+    return success;
+  }
+
+  /**
+   * Get all pending confirmations for a phone number
+   */
+  async getConfirmations(phoneNumber: string): Promise<any[]> {
+    const confirmations: any[] = [];
+    const pattern = `confirmation:${phoneNumber}:*`;
+
+    try {
+      if (this.redis && this.isConnected) {
+        const keys = await this.redis.keys(pattern);
+        for (const key of keys) {
+          const value = await this.redis.get(key);
+          if (value) {
+            const confirmation = JSON.parse(value);
+            // Check if not expired
+            if (confirmation.expiresAt > Date.now()) {
+              confirmations.push({ key, ...confirmation });
+            } else {
+              // Clean up expired confirmation
+              await this.redis.del(key);
+            }
+          }
+        }
+      } else {
+        // Fallback to memory cache
+        for (const [key, item] of this.fallbackCache.entries()) {
+          if (key.startsWith(`confirmation:${phoneNumber}:`)) {
+            if (item.expiry > Date.now()) {
+              confirmations.push({ key, ...item.value });
+            } else {
+              this.fallbackCache.delete(key);
+            }
+          }
+        }
+      }
+
+      logger.debug(`Found ${confirmations.length} pending confirmations for ${phoneNumber.slice(-4)}`);
+      return confirmations;
+    } catch (error) {
+      logger.error('Error getting confirmations:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Delete a specific confirmation
+   */
+  async deleteConfirmation(key: string): Promise<boolean> {
+    return await this.delete(key);
+  }
+
+  /**
+   * Clear all confirmations for a phone number
+   */
+  async clearConfirmations(phoneNumber: string): Promise<number> {
+    return await this.clearPrefix(`confirmation:${phoneNumber}`);
+  }
+
+  /**
+   * Clean up all expired confirmations (maintenance task)
+   */
+  async cleanupExpiredConfirmations(): Promise<number> {
+    let cleaned = 0;
+    const pattern = 'confirmation:*';
+
+    try {
+      if (this.redis && this.isConnected) {
+        const keys = await this.redis.keys(pattern);
+        for (const key of keys) {
+          const value = await this.redis.get(key);
+          if (value) {
+            const confirmation = JSON.parse(value);
+            if (confirmation.expiresAt && confirmation.expiresAt < Date.now()) {
+              await this.redis.del(key);
+              cleaned++;
+            }
+          }
+        }
+      }
+
+      // Also clean memory cache
+      for (const [key, item] of this.fallbackCache.entries()) {
+        if (key.startsWith('confirmation:') && item.expiry < Date.now()) {
+          this.fallbackCache.delete(key);
+          cleaned++;
+        }
+      }
+
+      if (cleaned > 0) {
+        logger.info(`Cleaned up ${cleaned} expired confirmations`);
+      }
+      return cleaned;
+    } catch (error) {
+      logger.error('Error cleaning up confirmations:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Cache decorator for class methods
    */
   cache(options: CacheOptions = {}) {

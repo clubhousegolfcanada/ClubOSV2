@@ -115,6 +115,24 @@ export default function UnifiedBookingCard({
   const { user } = useAuthState();
   const { notify } = useNotifications();
 
+  // Log props for debugging
+  useEffect(() => {
+    logger.info('[UnifiedBookingCard] Mounted with props:', {
+      hasStartTime: !!initialStartTime,
+      hasEndTime: !!initialEndTime,
+      hasSpaceId: !!initialSpaceId,
+      hasSpaceName: !!initialSpaceName,
+      hasLocationId: !!initialLocationId,
+      locationId: initialLocationId,
+      defaultMode,
+      userRole: user?.role
+    });
+
+    if (!initialLocationId) {
+      logger.warn('[UnifiedBookingCard] Missing initialLocationId - form may not load properly');
+    }
+  }, []);
+
   // State management
   const [mode, setMode] = useState<BookingMode>(defaultMode);
   const [loading, setLoading] = useState(false);

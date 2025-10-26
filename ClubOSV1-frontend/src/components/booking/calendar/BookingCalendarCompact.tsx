@@ -262,7 +262,8 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
       endTime,
       spaceId,
       spaceName,
-      config: !!config
+      config: !!config,
+      hasParentCallback: !!onBookingCreate
     });
 
     if (!config) {
@@ -299,23 +300,43 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
       return;
     }
 
-    // Open booking modal with prefilled data
-    const formData = {
-      date: startTime,
-      startTime,
-      endTime,
-      spaceId,
-      spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
-      locationId: selectedLocationId,
-      customerTier: currentUserTier
-    };
+    // If parent provided a callback, use that instead of internal modal
+    if (onBookingCreate) {
+      console.log('📤 Calling parent onBookingCreate');
+      const bookingData: Partial<Booking> = {
+        startAt: startTime.toISOString(),
+        endAt: endTime.toISOString(),
+        spaceIds: spaceId ? [spaceId] : [],
+        locationId: selectedLocationId,
+        // Add extra fields for parent to use
+        customerTierId: currentUserTier.id,
+      };
+      // Add non-standard fields
+      (bookingData as any).startTime = startTime;
+      (bookingData as any).endTime = endTime;
+      (bookingData as any).spaceId = spaceId;
+      (bookingData as any).spaceName = spaceName || spaces.find(s => s.id === spaceId)?.name || '';
 
-    console.log('📝 Setting booking form data:', formData);
-    setBookingFormData(formData);
+      onBookingCreate(bookingData);
+    } else {
+      // Only use internal modal if no parent callback provided
+      const formData = {
+        date: startTime,
+        startTime,
+        endTime,
+        spaceId,
+        spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || '',
+        locationId: selectedLocationId,
+        customerTier: currentUserTier
+      };
 
-    console.log('🔓 Opening modal - setting showNewBookingModal to true');
-    setShowNewBookingModal(true);
-  }, [config, selectedLocationId, spaces, notify, customerTiers]);
+      console.log('📝 Setting booking form data:', formData);
+      setBookingFormData(formData);
+
+      console.log('🔓 Opening modal - setting showNewBookingModal to true');
+      setShowNewBookingModal(true);
+    }
+  }, [config, selectedLocationId, spaces, notify, customerTiers, onBookingCreate]);
 
   const handleAdminBlock = useCallback(async (blockData: {
     startAt: Date;
@@ -450,17 +471,17 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
         onClose={() => setShowBoxInfoModal(false)}
       />
 
-      <NewBookingModal
-        isOpen={showNewBookingModal}
-        onClose={() => setShowNewBookingModal(false)}
-        prefilledData={bookingFormData}
-        onSuccess={(booking) => {
-          if (onBookingCreate) {
-            onBookingCreate(booking);
-          }
-          loadBookings();
-        }}
-      />
+      {/* Only show internal modal if no parent callback provided */}
+      {!onBookingCreate && (
+        <NewBookingModal
+          isOpen={showNewBookingModal}
+          onClose={() => setShowNewBookingModal(false)}
+          prefilledData={bookingFormData}
+          onSuccess={(booking) => {
+            loadBookings();
+          }}
+        />
+      )}
     </>
   );
 };

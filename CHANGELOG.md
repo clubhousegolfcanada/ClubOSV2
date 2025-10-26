@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.22] - 2025-10-26
+
+### 🔧 Critical Booking Flow Fix
+- **Fixed "Continue to Booking" button not working** - Added missing locationId prop to UnifiedBookingCard
+- **Fixed UnifiedBookingCard failing for Booking/Event/Class modes** - Now properly loads locations and spaces
+- **Resolved modal conflict in BookingCalendarCompact** - Ensures parent callback is used when provided
+- **Added comprehensive error logging** - Better debugging for booking flow issues
+- **Cleaned up competing modal systems** - Single booking flow through UnifiedBookingCard
+
 ## [1.24.21] - 2025-10-25
 
 ### 🧹 Major Code Cleanup: Booking System

@@ -132,26 +132,33 @@ export default function SmartBookingForm({
 
   const loadLocations = async () => {
     try {
+      logger.info('[SmartBookingForm] Loading locations...');
       const response = await http.get('/bookings/locations');
-      setLocations(response.data.data || []);
+      const locationData = response.data.data || [];
+      logger.info(`[SmartBookingForm] Loaded ${locationData.length} locations`);
+      setLocations(locationData);
 
       // Auto-select if only one location
-      if (response.data.data?.length === 1) {
-        onChange({ ...formData, locationId: response.data.data[0].id });
+      if (locationData.length === 1) {
+        logger.info('[SmartBookingForm] Auto-selecting single location:', locationData[0].id);
+        onChange({ ...formData, locationId: locationData[0].id });
       }
     } catch (error) {
-      logger.error('Failed to load locations:', error);
+      logger.error('[SmartBookingForm] Failed to load locations:', error);
     }
   };
 
   const loadSpaces = async (locationId: string) => {
     try {
+      logger.info('[SmartBookingForm] Loading spaces for location:', locationId);
       const response = await http.get('/bookings/spaces', {
         params: { locationId }
       });
-      setSpaces(response.data.data || []);
+      const spaceData = response.data.data || [];
+      logger.info(`[SmartBookingForm] Loaded ${spaceData.length} spaces`);
+      setSpaces(spaceData);
     } catch (error) {
-      logger.error('Failed to load spaces:', error);
+      logger.error('[SmartBookingForm] Failed to load spaces:', error);
     }
   };
 

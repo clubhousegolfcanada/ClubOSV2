@@ -340,6 +340,7 @@ export default function Bookings() {
                 initialEndTime={selectedTimeSlot.endTime}
                 initialSpaceId={selectedTimeSlot.spaceId}
                 initialSpaceName={selectedTimeSlot.spaceName}
+                initialLocationId={selectedLocationId}
                 onSuccess={(result) => {
                 const successMessage = bookingMode === 'block'
                   ? `Time blocked successfully!`

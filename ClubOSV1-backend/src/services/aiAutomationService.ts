@@ -6,6 +6,7 @@ import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automation
 import { assistantService } from './assistantService';
 import { calculateConfidence, findBestAutomation } from './aiAutomationPatterns';
 import { patternSafetyService } from './patternSafetyService';
+import { cacheService } from './cacheService';
 import OpenAI from 'openai';
 
 interface AutomationResponse {
@@ -23,12 +24,12 @@ interface PendingConfirmation {
   expiresAt: Date;
 }
 
-// Store pending confirmations in memory (could be moved to Redis later)
-const pendingConfirmations = new Map<string, PendingConfirmation>();
+// REMOVED: In-memory confirmations map that caused memory leak
+// Now using cacheService with Redis/memory fallback and automatic TTL
 
 export class AIAutomationService {
   private openai: OpenAI | null = null;
-  
+
   constructor() {
     // Initialize OpenAI if API key exists
     if (process.env.OPENAI_API_KEY) {
@@ -38,6 +39,28 @@ export class AIAutomationService {
       logger.info('OpenAI initialized for AI Automation Service');
     } else {
       logger.warn('OpenAI API key not configured - confirmation analysis will use basic patterns');
+    }
+
+    // Clean up any stale confirmations on service restart
+    this.cleanupStaleConfirmations();
+
+    // Schedule periodic cleanup every 5 minutes
+    setInterval(() => {
+      this.cleanupStaleConfirmations();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Clean up stale confirmations on startup and periodically
+   */
+  private async cleanupStaleConfirmations(): Promise<void> {
+    try {
+      const cleaned = await cacheService.cleanupExpiredConfirmations();
+      if (cleaned > 0) {
+        logger.info(`Cleaned up ${cleaned} expired confirmations`);
+      }
+    } catch (error) {
+      logger.error('Error cleaning up stale confirmations:', error);
     }
   }
   
