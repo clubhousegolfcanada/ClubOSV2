@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.20] - 2025-10-25
+
+### 🎯 Booking UX Simplification
+
+#### Simplified Time Selection Interface
+- **Removed Non-Native UI**: Eliminated custom drag indicators, lock icons, and floating time displays
+- **Native Duration Selection**: Added duration buttons (1h, 1.5h, 2h, 3h, 4h, 5h) directly in confirmation panel
+- **Smart Conflict Detection**: Duration options automatically disable when conflicts exist
+- **ClubOS Design Consistency**: Uses existing panel structure and design patterns
+- **Cleaner Selection**: Simple gradient overlay for selected time blocks
+- **Single Confirmation Panel**: All booking details and actions in one native panel
+- **Result**: Professional booking flow that matches ClubOS design language
+- **Impact**: Better user experience with familiar interface patterns
+
 ## [1.24.19] - 2025-10-25
 
 ### 🔧 Critical Fix: Event and Class Booking Modes
