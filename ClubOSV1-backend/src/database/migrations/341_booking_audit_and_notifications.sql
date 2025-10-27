@@ -12,25 +12,25 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS booking_audit (
   id SERIAL PRIMARY KEY,
-  booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(id),
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
   action VARCHAR(50) NOT NULL,
   old_values JSONB,
   new_values JSONB,
   reason TEXT,
   ip_address INET,
   user_agent TEXT,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-  -- Indexes for performance
-  INDEX idx_booking_audit_booking_id (booking_id),
-  INDEX idx_booking_audit_user_id (user_id),
-  INDEX idx_booking_audit_action (action),
-  INDEX idx_booking_audit_created_at (created_at)
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Add comment
 COMMENT ON TABLE booking_audit IS 'Audit log for all booking changes including creation, updates, and cancellations';
+
+-- Create indexes separately
+CREATE INDEX idx_booking_audit_booking_id ON booking_audit(booking_id);
+CREATE INDEX idx_booking_audit_user_id ON booking_audit(user_id);
+CREATE INDEX idx_booking_audit_action ON booking_audit(action);
+CREATE INDEX idx_booking_audit_created_at ON booking_audit(created_at);
 
 -- ============================================
 -- 2. CREATE SCHEDULED NOTIFICATIONS TABLE
@@ -38,7 +38,7 @@ COMMENT ON TABLE booking_audit IS 'Audit log for all booking changes including c
 
 CREATE TABLE IF NOT EXISTS scheduled_notifications (
   id SERIAL PRIMARY KEY,
-  booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
+  booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
   type VARCHAR(50) NOT NULL, -- reminder, feedback, follow_up
   recipient_email VARCHAR(255),
   recipient_phone VARCHAR(50),
@@ -50,17 +50,17 @@ CREATE TABLE IF NOT EXISTS scheduled_notifications (
   sent_at TIMESTAMPTZ,
   error TEXT,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-  -- Indexes for performance
-  INDEX idx_scheduled_notifications_booking_id (booking_id),
-  INDEX idx_scheduled_notifications_status (status),
-  INDEX idx_scheduled_notifications_scheduled_for (scheduled_for),
-  INDEX idx_scheduled_notifications_type (type)
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Add comment
 COMMENT ON TABLE scheduled_notifications IS 'Queue for scheduled booking notifications like reminders and follow-ups';
+
+-- Create indexes separately
+CREATE INDEX idx_scheduled_notifications_booking_id ON scheduled_notifications(booking_id);
+CREATE INDEX idx_scheduled_notifications_status ON scheduled_notifications(status);
+CREATE INDEX idx_scheduled_notifications_scheduled_for ON scheduled_notifications(scheduled_for);
+CREATE INDEX idx_scheduled_notifications_type ON scheduled_notifications(type);
 
 -- ============================================
 -- 3. CREATE NOTIFICATION TEMPLATES TABLE
@@ -203,7 +203,7 @@ FOR EACH ROW EXECUTE FUNCTION audit_booking_changes();
 -- ============================================
 
 CREATE OR REPLACE FUNCTION schedule_booking_reminder(
-  p_booking_id INTEGER,
+  p_booking_id UUID,
   p_reminder_hours INTEGER DEFAULT 24
 )
 RETURNS void AS $$
@@ -273,8 +273,13 @@ LEFT JOIN bookings b ON ba.booking_id = b.id
 LEFT JOIN users u ON ba.user_id = u.id
 ORDER BY ba.created_at DESC;
 
--- Grant permissions
-GRANT SELECT ON booking_history TO authenticated;
+-- Grant permissions (skip if role doesn't exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    GRANT SELECT ON booking_history TO authenticated;
+  END IF;
+END $$;
 
 -- ============================================
 -- 8. CREATE INDEXES FOR PERFORMANCE

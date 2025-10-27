@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.28] - 2025-10-26
+
+### 🔧 Booking System Production Deployment
+
+#### Production Migrations Applied
+- **Migration 339**: Updated bookings table schema for new booking system
+  - Added location_id, space_ids columns for facility management
+  - Added customer fields (id, name, email, phone) for booking tracking
+  - Added pricing columns (total_amount, base_rate, payment fields)
+  - Added admin block functionality (is_admin_block, block_reason, admin_notes)
+  - Created performance indexes for all new columns
+
+- **Migration 341**: Added audit and notification infrastructure
+  - Created booking_audit table for complete change tracking
+  - Created scheduled_notifications table for reminder queue
+  - Added notification_templates with default email/SMS templates
+  - Implemented audit trigger for automatic change logging
+  - Fixed PostgreSQL 13 compatibility issues with INDEX syntax
+
+#### Results
+- **Booking system now fully operational** - All required database columns exist
+- **Audit trail enabled** - Every booking change is tracked automatically
+- **Notification system ready** - Templates and scheduling infrastructure in place
+- **Production verified** - Migrations successfully applied to Railway production database
+
 ## [1.24.27] - 2025-10-26
 
 ### 🔧 Comprehensive Booking System Infrastructure
