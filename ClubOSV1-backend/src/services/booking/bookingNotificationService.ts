@@ -15,13 +15,13 @@ import {
   CustomerTier
 } from '../../types/booking';
 import { format, addHours, addDays } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import * as nodemailer from 'nodemailer';
-import { OpenPhoneService } from '../openphone/openPhoneService';
+import { openPhoneService } from '../openphoneService';
 
 export class BookingNotificationService {
   private static emailTransporter: nodemailer.Transporter | null = null;
-  private static openPhoneService: typeof OpenPhoneService = OpenPhoneService;
+  private static openPhoneService = openPhoneService;
   private static readonly TIMEZONE = 'America/New_York';
 
   /**
@@ -75,8 +75,8 @@ export class BookingNotificationService {
       const spaces = spaceResult.rows;
 
       // Format booking details
-      const startTime = utcToZonedTime(booking.start_at, this.TIMEZONE);
-      const endTime = utcToZonedTime(booking.end_at, this.TIMEZONE);
+      const startTime = toZonedTime(booking.start_at, this.TIMEZONE);
+      const endTime = toZonedTime(booking.end_at, this.TIMEZONE);
 
       const templateData = {
         customerName: booking.customer_name || 'Valued Customer',
@@ -143,7 +143,7 @@ export class BookingNotificationService {
     try {
       logger.info('Sending booking reminder', { bookingId: booking.id });
 
-      const startTime = utcToZonedTime(booking.start_at, this.TIMEZONE);
+      const startTime = toZonedTime(booking.start_at, this.TIMEZONE);
       const reminderData = {
         customerName: booking.customer_name || 'Valued Customer',
         date: format(startTime, 'MMMM d'),
@@ -234,7 +234,7 @@ export class BookingNotificationService {
     try {
       logger.info('Sending modification confirmation', { bookingId: newBooking.id });
 
-      const newStartTime = utcToZonedTime(newBooking.start_at, this.TIMEZONE);
+      const newStartTime = toZonedTime(newBooking.start_at, this.TIMEZONE);
       const templateData = {
         customerName: newBooking.customer_name || 'Valued Customer',
         bookingId: newBooking.id.toString().slice(0, 8).toUpperCase(),
@@ -299,7 +299,7 @@ export class BookingNotificationService {
    * Generate staff alert message
    */
   private static getStaffAlertMessage(booking: DbBooking, alertType: string): string {
-    const startTime = format(utcToZonedTime(booking.start_at, this.TIMEZONE), 'MMM d, h:mm a');
+    const startTime = format(toZonedTime(booking.start_at, this.TIMEZONE), 'MMM d, h:mm a');
 
     switch (alertType) {
       case 'high_value_booking':
@@ -363,7 +363,8 @@ export class BookingNotificationService {
   private static async sendSMS(phone: string, message: string): Promise<void> {
     try {
       // Use OpenPhone service for SMS
-      await this.openPhoneService.sendSMS(phone, message);
+      const fromNumber = process.env.OPENPHONE_DEFAULT_NUMBER || '';
+      await this.openPhoneService.sendMessage(phone, fromNumber, message);
       logger.info('SMS sent successfully', { phone });
     } catch (error) {
       logger.error('Failed to send SMS:', error);

@@ -64,6 +64,13 @@ export default function Bookings() {
     }
   }, [user, router]);
 
+  // Debug: Log when state changes
+  useEffect(() => {
+    console.log('[State Update] showCreateBooking:', showCreateBooking);
+    console.log('[State Update] selectedTimeSlot:', selectedTimeSlot);
+    console.log('[State Update] Has keys?:', Object.keys(selectedTimeSlot).length > 0);
+  }, [showCreateBooking, selectedTimeSlot]);
+
   const loadInitialData = async () => {
     try {
       const [tiersData, locationsData] = await Promise.all([
@@ -86,30 +93,44 @@ export default function Bookings() {
 
   // Handle when a time slot is clicked on the calendar
   const handleTimeSlotClick = (bookingOrStartTime: any, endTime?: Date, spaceId?: string, spaceName?: string) => {
+    console.log('[handleTimeSlotClick] Called with:', {
+      bookingOrStartTime,
+      endTime,
+      spaceId,
+      spaceName,
+      isDate: bookingOrStartTime instanceof Date,
+      hasStartTime: bookingOrStartTime?.startTime,
+      hasEndTime: bookingOrStartTime?.endTime
+    });
+
     // Check if this is from DayGrid/WeekGrid (separate params) or BookingCalendar (booking object)
     if (bookingOrStartTime instanceof Date && endTime) {
       // This is from DayGrid/WeekGrid - time slot click with separate parameters
-      setSelectedTimeSlot({
+      const timeSlot = {
         startTime: bookingOrStartTime,
         endTime: endTime,
         spaceId: spaceId,
         spaceName: spaceName,
         locationId: selectedLocationId,
         locationName: locations.find(l => l.id === selectedLocationId)?.name
-      });
+      };
+      console.log('[handleTimeSlotClick] Setting time slot (Date params):', timeSlot);
+      setSelectedTimeSlot(timeSlot);
       setShowCreateBooking(true);
     } else if (bookingOrStartTime && typeof bookingOrStartTime === 'object') {
       // This is from BookingCalendar - booking object
       if (bookingOrStartTime.startTime && bookingOrStartTime.endTime) {
         // Time slot click from calendar
-        setSelectedTimeSlot({
+        const timeSlot = {
           startTime: bookingOrStartTime.startTime,
           endTime: bookingOrStartTime.endTime,
           spaceId: bookingOrStartTime.spaceId,
           spaceName: bookingOrStartTime.spaceName,
           locationId: bookingOrStartTime.locationId || selectedLocationId,
           locationName: locations.find(l => l.id === (bookingOrStartTime.locationId || selectedLocationId))?.name
-        });
+        };
+        console.log('[handleTimeSlotClick] Setting time slot (Object params):', timeSlot);
+        setSelectedTimeSlot(timeSlot);
         setShowCreateBooking(true);
       } else if (bookingOrStartTime.id) {
         // This is an actual booking confirmation
@@ -312,7 +333,7 @@ export default function Bookings() {
       )}
 
       {/* Modals */}
-      {showCreateBooking && selectedTimeSlot.startTime && selectedTimeSlot.endTime && (
+      {showCreateBooking && selectedTimeSlot && Object.keys(selectedTimeSlot).length > 0 && (
         <ClubOSBookingModal
           isOpen={showCreateBooking}
           onClose={() => {
@@ -320,8 +341,8 @@ export default function Bookings() {
             setSelectedTimeSlot({}); // Clear selection on close
           }}
           bookingData={{
-            startTime: selectedTimeSlot.startTime,
-            endTime: selectedTimeSlot.endTime,
+            startTime: selectedTimeSlot.startTime!,
+            endTime: selectedTimeSlot.endTime!,
             spaceId: selectedTimeSlot.spaceId || '',
             spaceName: selectedTimeSlot.spaceName || '',
             locationId: selectedTimeSlot.locationId || selectedLocationId,

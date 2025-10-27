@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.29] - 2025-10-26
+
+### 🔧 Fixed - Booking System TypeScript Build Errors
+
+#### Fixed Issues
+- **Fixed missing dependency**: Installed date-fns-tz for timezone handling in bookingNotificationService
+- **Fixed import paths**: Corrected OpenPhoneService import from class to singleton instance
+- **Fixed method calls**: Changed sendSMS to sendMessage with proper parameters (to, from, text)
+- **Fixed type mismatches**: Resolved DbBooking type issues across bookingService and database utilities
+- **Fixed export duplication**: Cleaned up DbBooking export/import pattern in database.ts
+- **Fixed field mappings**: Updated history.ts to use new booking schema fields (start_at, end_at, location_id)
+
+#### Results
+- ✅ Backend builds successfully with no TypeScript errors
+- ✅ Frontend builds successfully with no TypeScript errors
+- ✅ Booking modal now properly opens when clicking "Continue to Book" or "Create Booking"
+- ✅ Railway deployment pipeline restored to working state
+- ✅ SMS notifications properly configured with OpenPhone integration
+
 ## [1.24.28] - 2025-10-26
 
 ### 🔧 Booking System Production Deployment

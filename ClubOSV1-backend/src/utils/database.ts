@@ -5,9 +5,13 @@ import { createTablesSQL, createIndexesSQL } from './database-tables';
 import { runMigrations as runHardcodedMigrations } from './database-migrations';
 import { MigrationRunner } from './migrationRunner';
 import * as path from 'path';
+import { DbBooking } from '../types/booking';
 
 // Import the pool and query from db.ts
 import { pool, query } from './db';
+
+// Re-export DbBooking for compatibility
+export { DbBooking } from '../types/booking';
 
 // All database interfaces
 export interface DbUser {
@@ -73,8 +77,7 @@ export interface DbFeedback {
 }
 
 // Import the centralized booking types
-// Note: DbBooking is now defined in types/booking.ts
-export { DbBooking } from '../types/booking';
+// Note: DbBooking is now defined in types/booking.ts and exported at the top of this file
 
 export interface DbTask {
   id: string;
@@ -561,22 +564,24 @@ class DatabaseService {
   }
 
   // Booking operations
+  // NOTE: This function maps between old database schema and new DbBooking type
   async createBooking(booking: Omit<DbBooking, 'id' | 'created_at' | 'updated_at'>): Promise<DbBooking> {
     const id = uuidv4();
+    // Map new field names to old database columns
     const result = await query(
       `INSERT INTO bookings (
-        id, user_id, simulator_id, start_time, duration, type, 
+        id, user_id, simulator_id, start_time, duration, type,
         recurring_days, status, metadata
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         id,
         booking.user_id,
-        booking.simulator_id,
-        booking.start_time,
-        booking.duration,
-        booking.type,
-        booking.recurring_days,
+        booking.space_ids?.[0] || booking.location_id, // map space_ids to simulator_id
+        booking.start_at, // map start_at to start_time
+        Math.floor((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / 60000), // calculate duration in minutes
+        'regular', // default type
+        null, // recurring_days
         booking.status || 'confirmed',
         JSON.stringify(booking.metadata || {})
       ]

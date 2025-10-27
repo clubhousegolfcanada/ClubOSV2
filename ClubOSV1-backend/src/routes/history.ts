@@ -180,25 +180,25 @@ router.get('/bookings', authenticate, async (req, res) => {
     });
     
     // Sort by start time descending
-    const sorted = bookings.sort((a, b) => 
-      b.start_time.getTime() - a.start_time.getTime()
+    const sorted = bookings.sort((a, b) =>
+      new Date(b.start_at).getTime() - new Date(a.start_at).getTime()
     );
-    
+
     // Apply pagination
     const paginated = sorted.slice(Number(offset), Number(offset) + Number(limit));
-    
+
     res.json({
       success: true,
       data: paginated.map(b => ({
         id: b.id,
-        simulatorId: b.simulator_id,
-        startTime: b.start_time.toISOString(),
-        duration: b.duration,
-        type: b.type,
-        recurringDays: b.recurring_days,
+        simulatorId: b.location_id, // map location_id to simulatorId for backward compatibility
+        startTime: b.start_at,
+        duration: Math.floor((new Date(b.end_at).getTime() - new Date(b.start_at).getTime()) / 60000), // calculate duration
+        type: 'regular', // default type
+        recurringDays: null, // no recurring days in new schema
         status: b.status,
-        createdAt: b.createdAt.toISOString(),
-        cancelledAt: b.cancelled_at?.toISOString()
+        createdAt: b.created_at,
+        cancelledAt: b.cancelled_at
       })),
       pagination: {
         limit: Number(limit),

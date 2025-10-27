@@ -186,12 +186,12 @@ export class BookingService {
 
       if (existingColumns.has('base_rate')) {
         columns.push('base_rate');
-        values.push(bookingData.baseRate);
+        values.push(bookingData.baseRate as any);
         paramIndex++;
       }
 
       columns.push('total_amount');
-      values.push(bookingData.totalAmount);
+      values.push(bookingData.totalAmount as any);
       paramIndex++;
 
       columns.push('promo_code');
@@ -206,7 +206,7 @@ export class BookingService {
 
       if (existingColumns.has('is_admin_block')) {
         columns.push('is_admin_block');
-        values.push(bookingData.isAdminBlock || false);
+        values.push((bookingData.isAdminBlock || false) as any);
         paramIndex++;
       }
 
