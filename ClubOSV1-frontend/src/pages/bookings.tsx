@@ -23,7 +23,7 @@ export default function Bookings() {
   const { user } = useAuthState();
   const { notify } = useNotifications();
   const [loading, setLoading] = useState(true);
-  const [showLegacySystem, setShowLegacySystem] = useState(true);
+  const [showLegacySystem, setShowLegacySystem] = useState(false);
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showCreateBooking, setShowCreateBooking] = useState(false);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
@@ -183,8 +183,8 @@ export default function Bookings() {
       label: 'Create',
       icon: Plus,
       onClick: () => {
-        // Note: Create Booking now happens through calendar selection only
-        notify('info', 'Please select a time slot on the calendar to create a booking');
+        // Open booking modal directly with smart defaults
+        setShowCreateBooking(true);
       },
       variant: 'primary',
       hideOnMobile: true
@@ -333,7 +333,7 @@ export default function Bookings() {
       )}
 
       {/* Modals */}
-      {showCreateBooking && selectedTimeSlot && Object.keys(selectedTimeSlot).length > 0 && (
+      {showCreateBooking && (
         <ClubOSBookingModal
           isOpen={showCreateBooking}
           onClose={() => {
@@ -341,12 +341,23 @@ export default function Bookings() {
             setSelectedTimeSlot({}); // Clear selection on close
           }}
           bookingData={{
-            startTime: selectedTimeSlot.startTime!,
-            endTime: selectedTimeSlot.endTime!,
+            // Use selected time slot if available, otherwise use smart defaults
+            startTime: selectedTimeSlot.startTime || (() => {
+              const now = new Date();
+              const nextHour = new Date(now);
+              nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+              return nextHour;
+            })(),
+            endTime: selectedTimeSlot.endTime || (() => {
+              const now = new Date();
+              const nextHour = new Date(now);
+              nextHour.setHours(now.getHours() + 2, 0, 0, 0); // 1 hour duration default
+              return nextHour;
+            })(),
             spaceId: selectedTimeSlot.spaceId || '',
-            spaceName: selectedTimeSlot.spaceName || '',
+            spaceName: selectedTimeSlot.spaceName || 'Box 1',
             locationId: selectedTimeSlot.locationId || selectedLocationId,
-            locationName: selectedTimeSlot.locationName || locations.find(l => l.id === selectedLocationId)?.name
+            locationName: selectedTimeSlot.locationName || locations.find(l => l.id === selectedLocationId)?.name || 'Bedford'
           }}
           onSuccess={(result) => {
             setShowCreateBooking(false);

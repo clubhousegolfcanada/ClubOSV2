@@ -2,6 +2,33 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.31] - 2025-10-27
+
+### 🚀 Booking System - Create Button Now Fully Functional
+
+#### Issues Fixed
+- **Create Button Did Nothing**: The Create button in the booking navigation was completely unresponsive due to SSR bug
+- **SSR Window Access Error**: SubNavigation component was accessing `window.innerWidth` during server-side rendering
+- **Modal Required Selection**: Booking modal wouldn't open without a pre-selected time slot
+- **Default to Legacy**: System was defaulting to Skedda iframe instead of ClubOS native booking
+
+#### Implementation Changes
+- **Fixed SSR Bug**: SubNavigation now uses `isMobile` state instead of directly accessing `window` object (lines 122, 149)
+- **Create Button Handler**: Changed from showing notification to directly opening booking modal with `setShowCreateBooking(true)`
+- **Smart Defaults**: Modal now provides intelligent defaults when no time slot is selected:
+  - Start time: Next available hour
+  - Duration: 1 hour default
+  - Space: Box 1 (first simulator)
+  - Location: Currently selected location
+- **Default System**: Changed `showLegacySystem` from `true` to `false` to default to ClubOS
+
+#### Results
+- ✅ Create button immediately opens booking modal
+- ✅ Users can click Create OR drag on calendar to book
+- ✅ No more "button does nothing" confusion
+- ✅ Server-side rendering works properly
+- ✅ ClubOS booking system is now the default view
+
 ## [1.24.30] - 2025-10-27
 
 ### 🚨 Critical Fix - Backend TypeScript Compilation Failure

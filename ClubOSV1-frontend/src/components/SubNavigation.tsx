@@ -119,7 +119,7 @@ export const SubNavigation: React.FC<SubNavigationProps> = ({
                 <div className="border-l border-gray-200 pl-2 ml-2">
                   {actions.filter(a => a.variant === 'primary').map((action) => {
                     const Icon = action.icon;
-                    const label = action.hideOnMobile && window.innerWidth < 640
+                    const label = action.hideOnMobile && isMobile
                       ? (action.mobileLabel || '')
                       : action.label;
 
@@ -146,7 +146,7 @@ export const SubNavigation: React.FC<SubNavigationProps> = ({
               {/* Secondary Actions */}
               {actions.filter(a => a.variant !== 'primary').map((action) => {
                 const Icon = action.icon;
-                const label = action.hideOnMobile && window.innerWidth < 640
+                const label = action.hideOnMobile && isMobile
                   ? (action.mobileLabel || '')
                   : action.label;
 

@@ -1,4 +1,4 @@
-# ClubOS v1.24.30 - Flexible Facility Management System
+# ClubOS v1.24.31 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,13 +8,13 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.30**
-- **🚨 Critical Fix** - Fixed duplicate DbBooking export causing backend TypeScript compilation failure
-- **🔧 Import Cleanup** - Centralized DbBooking imports to use single source from types/booking
-- **✅ Backend Restored** - Booking modal now properly opens when clicking Continue button
+**Current Version: v1.24.31**
+- **🚀 Booking Create Button** - Fixed Create button now opens booking modal with smart defaults
+- **🔧 SSR Bug Fix** - Fixed server-side rendering error in SubNavigation preventing button clicks
+- **📅 Default to ClubOS** - System now defaults to native ClubOS booking instead of Skedda iframe
+- **✨ Smart Defaults** - Booking modal works with or without pre-selected time slots
+- **Previous: Critical Fix** - Fixed duplicate DbBooking export causing backend compilation failure (v1.24.30)
 - **Previous: Production Deployment** - Applied booking system migrations to production (v1.24.28)
-- **Previous: Booking Infrastructure** - Type safety, validation, and notifications (v1.24.27)
-- **Previous: Location Display** - Prominent location name in booking calendar (v1.24.26)
 - **📍 Location Display** - Added prominent location name in booking calendar to prevent wrong bookings
 - **🔧 Memory Leak Fix** - AI confirmations now use Redis with auto-expiry (no more crashes)
 - **🔒 Security Fix** - Removed console.logs exposing customer data in production
