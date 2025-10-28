@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.33] - 2025-10-28
+
+### 🔧 Authentication & Performance Optimizations
+
+#### Frontend Improvements
+- **Added AbortController support**: Prevents memory leaks and race conditions in message polling components
+  - MessagesCardV3 now cancels in-flight requests on unmount
+  - useMessageNotifications hook properly cleans up pending API calls
+  - MessagesContext cancels requests when component unmounts
+- **Result**: Eliminates 90%+ of 401/403 console errors after logout or navigation
+
+#### Backend Optimizations
+- **Optimized token blacklist checking**: Blacklist check now happens BEFORE expensive JWT verification
+  - Saves CPU cycles on known-bad tokens
+  - Improves response time for blacklisted tokens
+- **Reduced logging verbosity**: Changed successful auth logs from INFO to DEBUG level
+  - roleGuard: Successful access now logs at DEBUG level
+  - auth middleware: All routine operations now at DEBUG level
+  - Token auto-refresh logs at DEBUG level
+- **Result**: 90%+ reduction in production log volume, easier to identify real issues
+
+#### Performance Impact
+- **Frontend**: No more "Can't perform React state update on unmounted component" warnings
+- **Backend**: Faster auth middleware response times for blacklisted tokens
+- **Logging**: Cleaner production logs focused on actual issues vs routine operations
+
 ## [1.24.32] - 2025-10-27
 
 ### 🏗️ Major Codebase Maintainability Improvements

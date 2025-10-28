@@ -59,7 +59,8 @@ export const roleGuard = (allowedRoles: UserRole[]) => {
     }
 
     // User has permission, continue
-    logger.info('Role access granted', {
+    // Log at DEBUG level to reduce log volume - successful access is normal
+    logger.debug('Role access granted', {
       userId: req.user.id,
       role: userRole,
       path: req.path

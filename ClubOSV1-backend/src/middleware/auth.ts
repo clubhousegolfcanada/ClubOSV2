@@ -97,8 +97,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     const authHeader = req.headers.authorization;
     
     try {
-    // Log the auth header for debugging
-    logger.info('Auth middleware called:', {
+    // Log the auth header for debugging (DEBUG level to reduce log volume)
+    logger.debug('Auth middleware called:', {
       path: req.path,
       method: req.method,
       hasAuthHeader: !!authHeader,
@@ -120,20 +120,18 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       });
     }
 
-    // Verify token
-    const decoded = verifyToken(token);
-    
-    // Check if token is blacklisted (only if table exists)
+    // OPTIMIZATION: Check if token is blacklisted BEFORE expensive JWT verification
+    // This saves CPU cycles on known-bad tokens
     try {
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
       const blacklistCheck = await db.query(
         'SELECT id FROM blacklisted_tokens WHERE token_hash = $1',
         [tokenHash]
       );
-      
+
       if (blacklistCheck.rows.length > 0) {
-        logger.warn('Blacklisted token used', {
-          userId: decoded.userId,
+        logger.warn('Blacklisted token used (blocked before JWT verification)', {
+          tokenHash: tokenHash.substring(0, 8) + '...',
           path: req.path
         });
         return res.status(401).json({
@@ -150,6 +148,9 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
         logger.error('Error checking token blacklist', { error: blacklistError });
       }
     }
+
+    // Now verify token (only if not blacklisted)
+    const decoded = verifyToken(token);
     
     // Enhanced token refresh logic for PWA experience
     const now = Date.now() / 1000;
@@ -192,8 +193,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 
       res.setHeader('X-New-Token', newToken);
 
-      // Log token refresh for monitoring
-      logger.info('Token auto-refreshed for PWA persistence', {
+      // Log token refresh for monitoring (DEBUG level to reduce log volume)
+      logger.debug('Token auto-refreshed for PWA persistence', {
         userId: decoded.userId,
         role: decoded.role,
         tokenAgePercent: Math.round(tokenAgePercent),
@@ -220,8 +221,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       sessionId: decoded.sessionId
     };
 
-    // Log authentication
-    logger.info('User authenticated', {
+    // Log authentication (DEBUG level to reduce log volume - successful auth is normal)
+    logger.debug('User authenticated', {
       userId: decoded.userId,
       role: decoded.role,
       path: req.path,
@@ -397,8 +398,8 @@ export const authenticateApiKey = (req: Request, res: Response, next: NextFuncti
     });
   }
 
-  // Log API key usage
-  logger.info('API key authenticated', {
+  // Log API key usage (DEBUG level to reduce log volume)
+  logger.debug('API key authenticated', {
     apiKey: apiKey.substring(0, 8) + '...',
     path: req.path,
     method: req.method

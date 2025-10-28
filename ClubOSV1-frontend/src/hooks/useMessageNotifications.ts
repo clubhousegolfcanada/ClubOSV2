@@ -15,6 +15,7 @@ export function useMessageNotifications() {
   const previousUnreadCount = useRef(0);
   const isFirstLoad = useRef(true);
   const retryCount = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     // Don't start checking until auth is fully loaded
@@ -29,6 +30,10 @@ export function useMessageNotifications() {
       setUnreadCount(0);
       return;
     }
+
+    // Create a new AbortController for this effect
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     const checkUnreadMessages = async (isRetry = false) => {
       try {
@@ -46,7 +51,10 @@ export function useMessageNotifications() {
           return;
         }
 
-        const response = await http.get(`messages/unread-count`);
+        // Pass abort signal to the request
+        const response = await http.get(`messages/unread-count`, {
+          signal: abortController.signal
+        });
 
         if (response.data.success) {
           const newUnreadCount = response.data.data.totalUnread;
@@ -75,6 +83,11 @@ export function useMessageNotifications() {
           retryCount.current = 0;
         }
       } catch (error: any) {
+        // Ignore abort errors - these are intentional when component unmounts
+        if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+          return;
+        }
+
         // Handle 401 errors with retry logic
         if (error.response?.status === 401 && !isRetry && retryCount.current < 2) {
           logger.debug('Got 401 on unread check, will retry in 2 seconds');
@@ -102,11 +115,20 @@ export function useMessageNotifications() {
     }, 500); // 500ms delay on first check
 
     // Check every 30 seconds
-    const interval = setInterval(() => checkUnreadMessages(), 30000);
+    const interval = setInterval(() => {
+      if (!abortController.signal.aborted) {
+        checkUnreadMessages();
+      }
+    }, 30000);
 
     return () => {
       clearTimeout(initialTimer);
       clearInterval(interval);
+      // Abort any in-flight requests when hook unmounts or deps change
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
     };
   }, [user, isAuthLoading, notify, router.pathname]);
 

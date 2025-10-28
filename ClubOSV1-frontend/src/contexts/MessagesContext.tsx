@@ -33,6 +33,7 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const isFirstLoad = useRef(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const retryCount = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const refreshUnreadCount = useCallback(async (isRetry = false) => {
     // Skip if auth is still loading
@@ -64,7 +65,11 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      const response = await http.get(`messages/unread-count`);
+      // Pass abort signal to the request if available
+      const signal = abortControllerRef.current?.signal;
+      const response = await http.get(`messages/unread-count`, {
+        signal: signal
+      });
 
       if (response.data.success) {
         const newUnreadCount = response.data.data.totalUnread;
@@ -93,6 +98,11 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         retryCount.current = 0;
       }
     } catch (error: any) {
+      // Ignore abort errors - these are intentional when component unmounts
+      if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+        return;
+      }
+
       // Handle 401 errors with retry logic
       if (error.response?.status === 401 && !isRetry && retryCount.current < 2) {
         logger.debug('Got 401 on unread check in MessagesContext, will retry in 2 seconds');
@@ -127,9 +137,11 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const token = tokenManager.getToken();
       if (!token) return;
 
+      const signal = abortControllerRef.current?.signal;
       await http.put(
         `messages/conversations/${phoneNumber}/read`,
-        {}
+        {},
+        { signal: signal }
       );
 
       // Immediately refresh the unread count
@@ -150,19 +162,32 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    // Create a new AbortController for this effect
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     // Add a small delay on initial check to ensure auth is fully settled
     const initialTimer = setTimeout(() => {
       refreshUnreadCount();
     }, 500); // 500ms delay on first check
 
     // Check every 60 seconds (reduced frequency to prevent rate limiting)
-    intervalRef.current = setInterval(() => refreshUnreadCount(), 60000);
+    intervalRef.current = setInterval(() => {
+      if (!abortController.signal.aborted) {
+        refreshUnreadCount();
+      }
+    }, 60000);
 
     return () => {
       clearTimeout(initialTimer);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      // Abort any in-flight requests when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
       }
     };
   }, [user, isAuthLoading, refreshUnreadCount]);

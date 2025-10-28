@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { MessageSquare, Clock, Send, Phone, ChevronDown, ChevronUp } from 'lucide-react';
@@ -44,6 +44,9 @@ export default function MessagesCardV3() {
   const [stopPolling, setStopPolling] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // AbortController for cancelling in-flight requests on unmount
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Load saved collapsed state on mount
   useEffect(() => {
     const savedState = localStorage.getItem('messages-collapsed');
@@ -65,14 +68,26 @@ export default function MessagesCardV3() {
       return;
     }
 
+    // Create a new AbortController for this effect
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     fetchConversations();
     // Poll every 10 seconds for new messages, but stop if authentication fails
     const interval = setInterval(() => {
-      if (!stopPolling) {
+      if (!stopPolling && !abortController.signal.aborted) {
         fetchConversations();
       }
     }, 10000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      // Abort any in-flight requests when component unmounts or deps change
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [user, isAuthenticated, stopPolling]);
 
   const fetchConversations = async () => {
@@ -89,10 +104,14 @@ export default function MessagesCardV3() {
         return;
       }
 
+      // Check if we have an abort signal to use
+      const signal = abortControllerRef.current?.signal;
+
       const response = await http.get(`messages/conversations?limit=3`, {
         headers: {
           'Authorization': `Bearer ${token}`
-        }
+        },
+        signal: signal // Pass the abort signal to the request
       });
 
       if (response.data.success) {
@@ -117,6 +136,11 @@ export default function MessagesCardV3() {
         setConversations(convs);
       }
     } catch (error: any) {
+      // Ignore abort errors - these are intentional when component unmounts
+      if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+        return;
+      }
+
       // Stop polling on authentication errors
       if (error?.response?.status === 401) {
         setStopPolling(true);
@@ -139,6 +163,8 @@ export default function MessagesCardV3() {
 
     try {
       const token = tokenManager.getToken();
+      const signal = abortControllerRef.current?.signal;
+
       await http.post(
         `messages/send`,
         {
@@ -149,7 +175,8 @@ export default function MessagesCardV3() {
         {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          signal: signal // Pass the abort signal to the request
         }
       );
 
