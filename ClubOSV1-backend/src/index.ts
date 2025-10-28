@@ -43,37 +43,24 @@ import userSettingsRoutes from './routes/userSettings';
 import backupRoutes from './routes/backup';
 import accessRoutes from './routes/access';
 import historyRoutes from './routes/history';
-// import testCorsRoutes from './routes/test-cors'; // Removed during cleanup
 import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
-// import checklistsRoutes from './routes/checklists'; // Old hardcoded version
-// import checklistsRoutes from './routes/checklists-v2'; // Basic database version
-import checklistsRoutes from './routes/checklists-v2-enhanced'; // Enhanced version with supplies & photos
+import checklistsRoutes from './routes/checklists-v2-enhanced';
 import remoteActionsRoutes from './routes/remoteActions';
 import ninjaoneSyncRoutes from './routes/ninjaone-sync';
 import doorAccessRoutes from './routes/doorAccess';
-// import debugRoutes from './routes/debug'; // File doesn't exist
 import openphoneRoutes from './routes/openphone';
 import openphoneV3Routes from './routes/openphone-v3';
 import messagesRoutes from './routes/messages';
 import notificationsRoutes from './routes/notifications';
 import knowledgeRoutes from './routes/knowledge';
-// import sopMonitoringRoutes from './routes/sop-monitoring'; // SOP disabled
-// import adminKnowledgeRoutes from './routes/admin-knowledge'; // Disabled - not used
-// import knowledgeDebugRoutes from './routes/knowledge-debug'; // Disabled - not used
 import systemCheckRoutes from './routes/system-check';
 import assistantRoutes from './routes/assistant';
-import knowledgeStoreRoutes from './routes/knowledge-store'; // Used internally by knowledgeSearchService
-// SOP routes disabled - using OpenAI Assistants directly
-// import sopCheckRoutes from './routes/sop-check';
-// import sopDebugRoutes from './routes/sop-debug';
-// import sopDataCheckRoutes from './routes/sop-data-check';
-// import intelligentSearchRoutes from './routes/intelligent-search';
-// import knowledgeEnhanceRoutes from './routes/knowledge-enhance'; // Disabled - not used
-import knowledgeRouterRoutes from './routes/knowledge-router'; // Used by KnowledgeRouterPanel
-import knowledgeCorrectRoutes from './routes/knowledge-correct'; // Knowledge correction endpoint (old)
-import correctionsRoutes from './routes/corrections'; // New direct correction endpoint
-import debugKnowledgeRoutes from './routes/debug-knowledge'; // Debug knowledge search
+import knowledgeStoreRoutes from './routes/knowledge-store';
+import knowledgeRouterRoutes from './routes/knowledge-router';
+import knowledgeCorrectRoutes from './routes/knowledge-correct';
+import correctionsRoutes from './routes/corrections';
+import debugKnowledgeRoutes from './routes/debug-knowledge';
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
 import callTranscriptRoutes from './routes/call-transcripts';
@@ -85,7 +72,6 @@ import csrfRoutes from './routes/csrf';
 import aiAutomationsRoutes from './routes/ai-automations';
 import openphoneProcessingRoutes from './routes/openphone-processing';
 import integrationsRoutes from './routes/integrations';
-// Using consolidated enhanced patterns route only
 import enhancedPatternsRouter from './routes/enhanced-patterns';
 import unifiDoorsRoutes from './routes/unifi-doors';
 import whiteLabelPlannerRoutes from './routes/white-label-planner';
@@ -95,7 +81,6 @@ import boxManagementRoutes from './routes/boxManagement';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
-// V2 architecture routes removed - no longer needed
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
