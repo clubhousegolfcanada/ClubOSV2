@@ -2,6 +2,26 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.30] - 2025-10-27
+
+### 🚨 Critical Fix - Backend TypeScript Compilation Failure
+
+#### Issue Identified
+- **Duplicate Export Error**: The v1.24.29 commit still contained a duplicate DbBooking export in database.ts
+- **Impact**: Backend failed to compile with TypeScript error "Multiple exports with the same name 'DbBooking'"
+- **Root Cause**: Both importing and re-exporting DbBooking in the same file (database.ts lines 8 and 14)
+
+#### Fixed Issues
+- **Removed duplicate export**: Deleted the re-export of DbBooking from database.ts
+- **Updated imports**: Modified transformers.ts to import DbBooking directly from '../types/booking'
+- **Added clarifying comment**: Documented that DbBooking should be imported from types/booking
+
+#### Results
+- ✅ Backend compiles successfully with no TypeScript errors
+- ✅ Booking modal now opens when clicking "Continue" after selecting time slot
+- ✅ Production deployment will succeed without compilation errors
+- ✅ Centralized type imports prevent future duplication issues
+
 ## [1.24.29] - 2025-10-26
 
 ### 🔧 Fixed - Booking System TypeScript Build Errors

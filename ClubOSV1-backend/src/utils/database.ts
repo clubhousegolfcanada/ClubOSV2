@@ -10,8 +10,8 @@ import { DbBooking } from '../types/booking';
 // Import the pool and query from db.ts
 import { pool, query } from './db';
 
-// Re-export DbBooking for compatibility
-export { DbBooking } from '../types/booking';
+// DbBooking is imported above and available for use in this file
+// Other files should import directly from '../types/booking'
 
 // All database interfaces
 export interface DbUser {

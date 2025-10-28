@@ -1,4 +1,5 @@
-import { DbUser, DbTicket, DbFeedback, DbBooking } from './database';
+import { DbUser, DbTicket, DbFeedback } from './database';
+import { DbBooking } from '../types/booking';
 import { dbToApi, COMMON_DB_TO_API_OPTIONS } from './caseConverters';
 
 // Transform database user to API user format
