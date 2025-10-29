@@ -205,26 +205,13 @@ export default function Bookings() {
   // Simplified content - location selector and day/week toggle in main nav row
   const topRowContent = null; // Removed - everything in single row now
 
-  // For customers, just render the content directly without operator layout
-  if (isCustomer) {
-    return (
-      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
-        <main className="pb-24 lg:pb-8 lg:pt-14">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-            <CalendarComponent key={refreshKey} {...calendarProps} />
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <OperatorLayout
       title={isStaff ? 'Booking Management - ClubOS' : 'Book a Simulator - ClubOS'}
       description="Manage facility bookings and reservations"
       padding={showLegacySystem ? 'md' : 'none'} // No padding when using calendar for maximum space
       subNavigation={
-        isStaff ? (
+        (isStaff || isCustomer) ? (
           <SubNavigation
             tabs={tabs}
             activeTab={view}

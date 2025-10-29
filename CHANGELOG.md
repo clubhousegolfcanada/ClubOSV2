@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.35] - 2025-10-29
+
+### ✨ Customer Booking SubNavigation Restored
+
+#### The Issue
+- Customers were missing essential SubNavigation features on the booking page
+- No access to: Create button, List View toggle, Search, Location selector, Day/Week toggle
+- Operators had all these features but customers were bypassed entirely
+
+#### The Fix
+- **Removed customer bypass**: Deleted lines 209-219 that skipped SubNavigation for customers
+- **Included customers in SubNav**: Changed condition from `isStaff` to `(isStaff || isCustomer)`
+- **Unified experience**: Both operators and customers now use the same OperatorLayout with SubNavigation
+
+#### Impact
+- ✅ Customers can now use the Create button to make bookings
+- ✅ Customers can toggle between Calendar and List views
+- ✅ Customers can search for their bookings
+- ✅ Customers can switch between Bedford location (and others)
+- ✅ Customers can toggle between Day and Week views
+- ✅ Mobile-first design maintained with `compactMode={true}`
+
 ## [1.24.34] - 2025-10-29
 
 ### 🐛 Fixed Calendar Booking Flow

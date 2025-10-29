@@ -1,4 +1,4 @@
-# ClubOS v1.24.34 - Flexible Facility Management System
+# ClubOS v1.24.35 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.33**
-- **🔧 Auth Optimization** - Fixed 401/403 console errors with AbortController implementation
-- **⚡ Performance** - Blacklist check now happens before JWT verification (faster auth)
-- **📊 Reduced Logs** - 90%+ reduction in production log volume (DEBUG vs INFO)
-- **🚫 No Memory Leaks** - Polling components properly cancel requests on unmount
+**Current Version: v1.24.35**
+- **✨ Customer SubNav** - Restored SubNavigation for customers on booking page (Create, List View, Search, Location, Day/Week)
+- **🔧 Unified Experience** - Customers and operators now share the same navigation features
+- **📱 Mobile-First** - SubNavigation works perfectly on mobile with compact mode
+- **Previous: Calendar Fix** - Fixed calendar booking flow confirmation modal (v1.24.34)
+- **Previous: Auth Optimization** - Fixed 401/403 console errors with AbortController (v1.24.33)
 - **Previous: Critical Fix** - Fixed duplicate DbBooking export causing backend compilation failure (v1.24.30)
 - **Previous: Production Deployment** - Applied booking system migrations to production (v1.24.28)
 - **📍 Location Display** - Added prominent location name in booking calendar to prevent wrong bookings
