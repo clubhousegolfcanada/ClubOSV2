@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.36] - 2025-10-29
+
+### ✨ Enhanced Booking Duration Selection
+
+#### The Enhancement
+- Added 2.5 hour and 3.5 hour quick selection buttons to the booking interface
+- Customers now have all half-hour increments from 1 to 4 hours available
+
+#### What Changed
+- **Duration Options**: Now shows 7 buttons: 1h, 1.5h, 2h, **2.5h**, 3h, **3.5h**, 4h
+- **Responsive Layout**: Adjusted grid to display nicely on all screen sizes
+  - Desktop: All 7 buttons in a single row
+  - Mobile: 4-column grid for better touch targets
+
+#### Technical Details
+- Modified `DayGrid.tsx` line 669 to include 150 (2.5h) and 210 (3.5h) minute options
+- Updated grid layout from `grid-cols-3` to `grid-cols-4 sm:grid-cols-7` for optimal display
+- Existing formatting logic automatically handles fractional hours
+
+#### Impact
+- ✅ Complete duration coverage for standard booking needs
+- ✅ Reduced friction in booking flow - no manual adjustment needed
+- ✅ Better UX with all common duration options readily available
+
 ## [1.24.35] - 2025-10-29
 
 ### ✨ Customer Booking SubNavigation Restored

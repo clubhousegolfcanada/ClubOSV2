@@ -665,8 +665,8 @@ const DayGridComponent: React.FC<DayGridProps> = ({
             {/* Duration selector buttons */}
             <div className="space-y-2">
               <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Select Duration</span>
-              <div className="grid grid-cols-3 gap-2">
-                {[60, 90, 120, 180, 240].map((minutes) => {
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                {[60, 90, 120, 150, 180, 210, 240].map((minutes) => {
                   const slots = Math.ceil(minutes / 30) - 1;
                   const endSlotIndex = selectionStart.slotIndex + slots;
                   const isAvailable = endSlotIndex < timeSlots.length &&
