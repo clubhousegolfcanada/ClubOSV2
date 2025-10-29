@@ -292,6 +292,13 @@ const DayGridComponent: React.FC<DayGridProps> = ({
     const endTime = timeSlots[endIndex + 1] || addMinutes(timeSlots[endIndex], 30);
     const space = spaces.find(s => s.id === selectionStart.spaceId);
 
+    console.log('[DayGrid.confirmSelection] Calling onTimeSlotClick with:', {
+      startTime,
+      endTime,
+      spaceId: selectionStart.spaceId,
+      spaceName: space?.name
+    });
+
     onTimeSlotClick(startTime, endTime, selectionStart.spaceId, space?.name);
     clearSelection();
   };

@@ -103,24 +103,11 @@ export default function Bookings() {
       hasEndTime: bookingOrStartTime?.endTime
     });
 
-    // Check if this is from DayGrid/WeekGrid (separate params) or BookingCalendar (booking object)
-    if (bookingOrStartTime instanceof Date && endTime) {
-      // This is from DayGrid/WeekGrid - time slot click with separate parameters
-      const timeSlot = {
-        startTime: bookingOrStartTime,
-        endTime: endTime,
-        spaceId: spaceId,
-        spaceName: spaceName,
-        locationId: selectedLocationId,
-        locationName: locations.find(l => l.id === selectedLocationId)?.name
-      };
-      console.log('[handleTimeSlotClick] Setting time slot (Date params):', timeSlot);
-      setSelectedTimeSlot(timeSlot);
-      setShowCreateBooking(true);
-    } else if (bookingOrStartTime && typeof bookingOrStartTime === 'object') {
-      // This is from BookingCalendar - booking object
+    // First check if it's an object with startTime/endTime (from BookingCalendar)
+    // This must come before the Date check because BookingCalendar sends an object
+    if (bookingOrStartTime && typeof bookingOrStartTime === 'object' && !(bookingOrStartTime instanceof Date)) {
       if (bookingOrStartTime.startTime && bookingOrStartTime.endTime) {
-        // Time slot click from calendar
+        // Time slot click from BookingCalendar - it sends an object with Date properties
         const timeSlot = {
           startTime: bookingOrStartTime.startTime,
           endTime: bookingOrStartTime.endTime,
@@ -129,13 +116,26 @@ export default function Bookings() {
           locationId: bookingOrStartTime.locationId || selectedLocationId,
           locationName: locations.find(l => l.id === (bookingOrStartTime.locationId || selectedLocationId))?.name
         };
-        console.log('[handleTimeSlotClick] Setting time slot (Object params):', timeSlot);
+        console.log('[handleTimeSlotClick] Setting time slot (BookingCalendar object):', timeSlot);
         setSelectedTimeSlot(timeSlot);
         setShowCreateBooking(true);
       } else if (bookingOrStartTime.id) {
         // This is an actual booking confirmation
         notify('success', `Booking confirmed! ID: ${bookingOrStartTime.id}`);
       }
+    } else if (bookingOrStartTime instanceof Date && endTime) {
+      // This is from DayGrid/WeekGrid direct call - time slot click with separate Date parameters
+      const timeSlot = {
+        startTime: bookingOrStartTime,
+        endTime: endTime,
+        spaceId: spaceId,
+        spaceName: spaceName,
+        locationId: selectedLocationId,
+        locationName: locations.find(l => l.id === selectedLocationId)?.name
+      };
+      console.log('[handleTimeSlotClick] Setting time slot (Direct Date params):', timeSlot);
+      setSelectedTimeSlot(timeSlot);
+      setShowCreateBooking(true);
     }
   };
 

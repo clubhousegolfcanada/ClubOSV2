@@ -304,6 +304,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Booking handlers
   const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => {
+    console.log('[BookingCalendar.handleBookingCreate] Received from DayGrid:', {
+      startTime,
+      endTime,
+      spaceId,
+      spaceName,
+      hasOnBookingCreate: !!onBookingCreate
+    });
+
     if (!config) return;
 
     // Get current user's tier (default to 'new' if not logged in)
@@ -332,21 +340,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
     // Call parent's onBookingCreate callback if provided
     if (onBookingCreate) {
-      // Create a partial booking object with the available data
-      const partialBooking: Partial<Booking> = {
+      // Create a booking object that includes both the Booking interface fields
+      // and the additional Date objects that the parent component expects
+      const bookingData = {
+        // Standard Booking fields (for compatibility)
         startAt: startTime.toISOString(),
         endAt: endTime.toISOString(),
         spaceIds: spaceId ? [spaceId] : [],
         locationId: selectedLocationId,
-        status: 'pending'
+        status: 'pending' as const,
+        // Additional fields for the parent component
+        startTime: startTime,  // Date object
+        endTime: endTime,      // Date object
+        spaceId: spaceId,
+        spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || ''
       };
-      // Add extra data as properties for the parent to use
-      (partialBooking as any).startTime = startTime;
-      (partialBooking as any).endTime = endTime;
-      (partialBooking as any).spaceId = spaceId;
-      (partialBooking as any).spaceName = spaceName || spaces.find(s => s.id === spaceId)?.name || '';
 
-      onBookingCreate(partialBooking);
+      console.log('[BookingCalendar.handleBookingCreate] Sending to parent onBookingCreate:', bookingData);
+      onBookingCreate(bookingData as any);  // Cast once at the end instead of multiple times
     } else {
       // Fall back to internal modal if no parent callback
       setBookingFormData({

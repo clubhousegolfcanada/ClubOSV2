@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.34] - 2025-10-29
+
+### 🐛 Fixed Calendar Booking Flow
+
+#### The Issue
+- Calendar time selection → Continue button wasn't opening the booking confirmation modal
+- Only the Create button was working after v1.24.31 SSR fix
+- Root cause: Complex 3-component callback chain with type confusion
+
+#### The Fix
+- **Fixed handleTimeSlotClick type checking**: Reordered conditions to check for booking objects before Date instances
+- **Cleaned up BookingCalendar data transformation**: Removed unsafe `as any` casting, using explicit object structure
+- **Added debug logging**: Strategic console.logs to trace the callback chain for easier debugging
+
+#### Technical Details
+- The callback chain flows through: DayGrid → BookingCalendar → bookings.tsx
+- BookingCalendar was sending a hybrid object with both ISO strings and Date objects
+- handleTimeSlotClick was checking `instanceof Date` first, missing the booking object path
+- Fix ensures both Create button and Calendar selection paths work consistently
+
+#### Impact
+- ✅ Calendar time selection now properly opens confirmation modal
+- ✅ Both booking creation paths work as expected
+- ✅ Cleaner, more maintainable code without type confusion
+
 ## [1.24.33] - 2025-10-28
 
 ### 🔧 Authentication & Performance Optimizations
