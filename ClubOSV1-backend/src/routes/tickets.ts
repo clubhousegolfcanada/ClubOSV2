@@ -134,6 +134,45 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
+    // Define valid values for validation
+    const validLocations = ['Bedford', 'Dartmouth', 'Halifax', 'Bayers Lake', 'River Oaks', 'Stratford', 'Truro'];
+    const validCategories = ['facilities', 'tech'];
+    const validPriorities = ['low', 'medium', 'high', 'urgent'];
+
+    // Validate category
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Must be one of: ${validCategories.join(', ')}`
+      });
+    }
+
+    // Validate priority
+    if (!validPriorities.includes(priority)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid priority. Must be one of: ${validPriorities.join(', ')}`
+      });
+    }
+
+    // Validate and normalize location if provided (case-insensitive)
+    let normalizedLocation = location;
+    if (location) {
+      const matchedLocation = validLocations.find(
+        loc => loc.toLowerCase() === location.toLowerCase()
+      );
+
+      if (!matchedLocation) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid location. Must be one of: ${validLocations.join(', ')}`
+        });
+      }
+
+      // Use the properly capitalized version
+      normalizedLocation = matchedLocation;
+    }
+
     // Validate photo_urls if provided
     if (photo_urls) {
       if (!Array.isArray(photo_urls)) {
@@ -167,7 +206,7 @@ router.post('/', authenticate, async (req, res) => {
       category,
       status: 'open',
       priority,
-      location,
+      location: normalizedLocation,
       photo_urls: photo_urls || [],
       created_by_id: req.user!.id,
       created_by_name: req.user!.name || req.user!.email.split('@')[0],
@@ -287,8 +326,8 @@ router.patch('/:id', authenticate, async (req, res) => {
     const validStatuses = ['open', 'in-progress', 'resolved', 'closed', 'archived'];
     const validPriorities = ['low', 'medium', 'high', 'urgent'];
     const validCategories = ['facilities', 'tech'];
-    // Correct Clubhouse 24/7 locations
-    const validLocations = ['bedford', 'dartmouth', 'halifax', 'bayers-lake', 'river-oaks', 'stratford', 'truro'];
+    // Correct Clubhouse 24/7 locations - using proper capitalization with spaces
+    const validLocations = ['Bedford', 'Dartmouth', 'Halifax', 'Bayers Lake', 'River Oaks', 'Stratford', 'Truro'];
 
     if (updates.status && !validStatuses.includes(updates.status)) {
       return res.status(400).json({
@@ -311,11 +350,21 @@ router.patch('/:id', authenticate, async (req, res) => {
       });
     }
 
-    if (updates.location && !validLocations.includes(updates.location)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid location. Must be one of: ${validLocations.join(', ')}`
-      });
+    // Case-insensitive location validation
+    if (updates.location) {
+      const normalizedLocation = validLocations.find(
+        loc => loc.toLowerCase() === updates.location.toLowerCase()
+      );
+
+      if (!normalizedLocation) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid location. Must be one of: ${validLocations.join(', ')}`
+        });
+      }
+
+      // Normalize the location to proper capitalization
+      updates.location = normalizedLocation;
     }
 
     // Update the ticket

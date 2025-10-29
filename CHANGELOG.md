@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.37] - 2025-10-29
+
+### 🔧 Fixed Ticket Location Sorting & Display Issues
+
+#### Problem Fixed
+- **Dartmouth tickets not appearing** when filtering/sorting by location
+- **Location showing as lowercase** "dartmouth" instead of "Dartmouth"
+- **Case sensitivity mismatch** between frontend (capitalized) and backend (lowercase)
+- **Missing Halifax location** in ticket creation form
+
+#### Backend Improvements
+- **Standardized location format**: Now uses proper capitalization with spaces
+  - Updated valid locations: "Bedford", "Dartmouth", "Halifax", "Bayers Lake", "River Oaks", "Stratford", "Truro"
+- **Case-insensitive validation**: Backend accepts any case and normalizes to proper format
+- **Added validation to ticket creation**: Previously missing location validation on POST endpoint
+- **Database migration 342**: Standardizes all existing ticket locations to proper capitalization
+
+#### Frontend Improvements
+- **Added Halifax** to location dropdown in ticket creation form
+- **Alphabetized location list** for better user experience
+- **Case-insensitive filtering**: Location filters now work regardless of database casing
+- **Fixed province grouping**: Moved Truro from Ontario to Nova Scotia (where it belongs!)
+
+#### Impact
+- ✅ All tickets now appear correctly when filtering by location
+- ✅ Location names display with proper capitalization
+- ✅ Consistent location format across entire system
+- ✅ No more validation errors for location mismatches
+
 ## [1.24.36] - 2025-10-29
 
 ### ✨ Enhanced Booking Duration Selection

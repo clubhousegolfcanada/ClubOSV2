@@ -1112,7 +1112,7 @@ const RequestForm: React.FC = () => {
                     disabled={isSubmitting || demoMode}
                   >
                     <option value="">Select location</option>
-                    {['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'].map((loc) => (
+                    {['Bayers Lake', 'Bedford', 'Dartmouth', 'Halifax', 'River Oaks', 'Stratford', 'Truro'].map((loc) => (
                       <option key={loc} value={loc}>{loc}</option>
                     ))}
                   </select>

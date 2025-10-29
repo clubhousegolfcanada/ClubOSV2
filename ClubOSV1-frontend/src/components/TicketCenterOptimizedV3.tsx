@@ -49,9 +49,8 @@ interface Comment {
 
 // Province configuration for location grouping
 const LOCATION_CONFIG: Record<string, string[]> = {
-  'Nova Scotia': ['Bedford', 'Dartmouth', 'Halifax', 'Bayers Lake'],
+  'Nova Scotia': ['Bayers Lake', 'Bedford', 'Dartmouth', 'Halifax', 'Truro'],
   'Prince Edward Island': ['Stratford'],
-  'Ontario': ['Truro'],
   'New Brunswick': ['River Oaks']
 };
 
@@ -168,7 +167,10 @@ const TicketCenterOptimizedV3 = ({
   const locationCounts = useMemo(() => {
     const counts: Record<string, number> = { all: tickets.length };
     ALL_LOCATIONS.forEach(loc => {
-      counts[loc] = tickets.filter(t => t.location === loc).length;
+      // Case-insensitive location comparison
+      counts[loc] = tickets.filter(t =>
+        t.location && t.location.toLowerCase() === loc.toLowerCase()
+      ).length;
     });
     return counts;
   }, [tickets]);
@@ -290,7 +292,10 @@ const TicketCenterOptimizedV3 = ({
       Object.entries(LOCATION_CONFIG).forEach(([province, locations]) => {
         provinceGroups[province] = {};
         locations.forEach(location => {
-          const locationTickets = filteredTickets.filter(t => t.location === location);
+          // Case-insensitive location comparison
+          const locationTickets = filteredTickets.filter(t =>
+            t.location && t.location.toLowerCase() === location.toLowerCase()
+          );
           if (locationTickets.length > 0) {
             provinceGroups[province][location] = locationTickets.sort((a, b) =>
               new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
