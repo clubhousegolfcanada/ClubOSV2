@@ -15,6 +15,7 @@ import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { BookingConfigService } from '@/services/booking/bookingConfig';
 import { http } from '@/api/http';
 import ClubOSBookingModal from '@/components/booking/ClubOSBookingModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load modals for better performance
 const CustomerSearchModal = lazy(() => import('@/components/booking/CustomerSearchModal'));
@@ -311,15 +312,19 @@ export default function Bookings() {
             border: 'none',
             minHeight: '600px'
           }}
-          allow="payment; fullscreen; camera; microphone; geolocation"
+          allow="payment; fullscreen"
           sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-top-navigation"
         />
       ) : view === 'calendar' ? (
         /* ClubOS Booking System - Maximized calendar space */
-        <CalendarComponent key={refreshKey} {...calendarProps} />
+        <ErrorBoundary>
+          <CalendarComponent key={refreshKey} {...calendarProps} />
+        </ErrorBoundary>
       ) : (
         /* List view - Full booking management table */
-        <BookingListView />
+        <ErrorBoundary>
+          <BookingListView />
+        </ErrorBoundary>
       )}
 
       {/* Modals */}

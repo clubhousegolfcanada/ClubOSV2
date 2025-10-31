@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.41] - 2025-10-31
+
+### 🔧 Fixed Browser Permission Warnings and Added Error Boundaries
+
+#### Issues Addressed
+- **Browser console warnings** from Skedda iframe requesting unnecessary permissions
+- **Potential async response errors** in booking components
+- **Missing error boundaries** for graceful error handling
+
+#### Solutions Applied
+- **Removed unnecessary permissions** from Skedda iframe (`camera`, `microphone`, `geolocation`)
+- **Added ErrorBoundary component** to wrap booking calendar and list views
+- **Enhanced error logging** for better debugging of async issues
+
+#### Technical Changes
+- Modified `allow` attribute in bookings.tsx iframe from `"payment; fullscreen; camera; microphone; geolocation"` to `"payment; fullscreen"`
+- Imported and implemented ErrorBoundary component around calendar and list views
+- Error boundaries will catch and log any unhandled errors in booking components
+
+#### Impact
+- ✅ Clean browser console - no more permission policy violations
+- ✅ Booking functionality unchanged - Skedda works normally
+- ✅ Better error resilience - graceful handling of component errors
+- ✅ Improved debugging - errors are properly caught and logged
+
 ## [1.24.40] - 2025-10-30
 
 ### 🔧 Fixed V3-PLS Pattern Creation SQL Errors
