@@ -1366,7 +1366,7 @@ router.post('/',
             FROM decision_patterns
             WHERE embedding IS NOT NULL
               AND is_active = true
-            HAVING cosine_similarity(embedding, $1::float[]) > 0.85
+              AND cosine_similarity(embedding, $1::float[]) > 0.85
             ORDER BY similarity DESC
             LIMIT 3
           `, [`{${embedding.join(',')}}`]);
@@ -1409,7 +1409,7 @@ router.post('/',
           pattern_signature,
           embedding,
           created_by,
-          source
+          created_from
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
         ) RETURNING *

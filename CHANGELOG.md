@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.40] - 2025-10-30
+
+### 🔧 Fixed V3-PLS Pattern Creation SQL Errors
+
+#### Critical Production Issues Fixed
+- **Pattern creation completely blocked** due to SQL errors in production
+- **500 errors** when trying to create new patterns through the UI
+- **Database schema mismatch** preventing pattern storage
+
+#### Root Causes
+1. **Column name mismatch**: Code used 'source' but database had 'created_from'
+2. **Invalid SQL syntax**: HAVING clause used without GROUP BY
+3. **Schema drift**: Recent migrations not reflected in backend code
+
+#### Solutions Applied
+- **Changed 'source' to 'created_from'** in INSERT statement (line 1412)
+- **Fixed HAVING clause** by moving to WHERE clause (line 1369)
+- **No database migration needed** - only code fixes required
+
+#### Impact
+- ✅ Pattern creation restored immediately
+- ✅ V3-PLS learning system fully operational
+- ✅ AI can now learn and adapt from new patterns
+- ✅ No data loss - all existing patterns intact
+
 ## [1.24.39] - 2025-10-30
 
 ### 🔧 Fixed Customer Bottom Navigation on Booking Page

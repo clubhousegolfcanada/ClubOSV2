@@ -1,4 +1,4 @@
-# ClubOS v1.24.39 - Flexible Facility Management System
+# ClubOS v1.24.40 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.39**
-- **📱 Customer Nav Fix** - Restored bottom navigation bar on booking page for customers
-- **✨ Kept SubNav Features** - Customers retain SubNavigation from v1.24.35 plus bottom nav
-- **🔧 Conditional Wrapper** - CustomerNavigation wraps OperatorLayout for customers only
+**Current Version: v1.24.40**
+- **🔧 V3-PLS Pattern Fix** - Fixed critical SQL errors blocking pattern creation in production
+- **✅ Column Name Fix** - Changed 'source' to 'created_from' to match database schema
+- **✅ SQL Syntax Fix** - Fixed HAVING clause error by moving to WHERE clause
+- **Previous: Customer Nav Fix** - Restored bottom navigation bar on booking page (v1.24.39)
 - **Previous: V3-PLS Receipt Fix** - Receipt submissions no longer create patterns (v1.24.38)
 - **Previous: Location Fix** - Fixed Dartmouth tickets and proper location capitalization (v1.24.37)
 - **Previous: Calendar Fix** - Fixed calendar booking flow confirmation modal (v1.24.34)
