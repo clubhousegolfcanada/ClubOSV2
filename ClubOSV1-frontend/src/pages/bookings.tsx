@@ -373,4 +373,17 @@ export default function Bookings() {
       )}
     </OperatorLayout>
   );
+
+  // If customer, add CustomerNavigation for bottom nav bar
+  if (isCustomer) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] customer-app">
+        <CustomerNavigation />
+        {content}
+      </div>
+    );
+  }
+
+  // For staff, return the OperatorLayout directly
+  return content;
 }

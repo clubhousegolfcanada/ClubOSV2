@@ -2,6 +2,26 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.39] - 2025-10-30
+
+### 🔧 Fixed Customer Bottom Navigation on Booking Page
+
+#### The Issue
+- Customer bottom navigation bar was disappearing on the booking page
+- Caused by v1.24.35 change that unified customers into OperatorLayout
+- OperatorLayout doesn't include CustomerNavigation component
+
+#### The Fix
+- **Added CustomerNavigation import**: Now imported in bookings.tsx
+- **Conditional wrapper**: Customers get CustomerNavigation + OperatorLayout combo
+- **Staff unchanged**: Operators still use OperatorLayout directly
+
+#### Impact
+- ✅ Customer bottom navigation bar restored on booking page
+- ✅ Customers keep SubNavigation features from v1.24.35
+- ✅ Mobile navigation works correctly for all users
+- ✅ Consistent navigation across all customer pages
+
 ## [1.24.38] - 2025-10-30
 
 ### 🚫 Disabled V3-PLS Pattern Learning for Receipts
