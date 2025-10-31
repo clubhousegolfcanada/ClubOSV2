@@ -1,4 +1,4 @@
-# ClubOS v1.24.37 - Flexible Facility Management System
+# ClubOS v1.24.38 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.37**
-- **🔧 Location Sorting Fix** - Fixed Dartmouth tickets not appearing when sorting by location
-- **📍 Proper Capitalization** - All locations now display with correct case (Dartmouth, not dartmouth)
-- **✅ Added Halifax** - Halifax location now available in ticket creation form
-- **🎯 Case-Insensitive** - Location filtering works regardless of database casing
+**Current Version: v1.24.38**
+- **🚫 V3-PLS Receipt Fix** - Receipt submissions no longer create patterns in V3-PLS system
+- **📝 Pattern Protection** - Added skipPatternLearning flag for system messages
+- **🔍 Receipt Detection** - Automatically skips pattern learning for receipt-related conversations
+- **Previous: Location Fix** - Fixed Dartmouth tickets and proper location capitalization (v1.24.37)
 - **Previous: Calendar Fix** - Fixed calendar booking flow confirmation modal (v1.24.34)
 - **Previous: Auth Optimization** - Fixed 401/403 console errors with AbortController (v1.24.33)
 - **Previous: Critical Fix** - Fixed duplicate DbBooking export causing backend compilation failure (v1.24.30)

@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.38] - 2025-10-30
+
+### 🚫 Disabled V3-PLS Pattern Learning for Receipts
+
+#### Problem Fixed
+- **Receipt submissions creating unwanted patterns** in V3-PLS system
+- **Receipt-related conversations** were being learned as automated responses
+
+#### What Changed
+- **Added skipPatternLearning flag** to message sending endpoints
+- **Receipt keyword detection**: Automatically skips pattern learning for any conversation mentioning "receipt"
+- **System message protection**: Prevents all system-generated messages from creating patterns
+
+#### Technical Details
+- Modified `/api/messages/send` endpoint to accept `skipPatternLearning` parameter
+- Added receipt content detection in pattern learning logic (lines 591-624)
+- Added logging to track when patterns are skipped due to receipt content
+
+#### Impact
+- ✅ Receipt submissions no longer create V3-PLS patterns
+- ✅ Receipt-related conversations won't be auto-learned
+- ✅ Better control over what gets learned as patterns
+- ✅ Cleaner pattern database without receipt-specific noise
+
 ## [1.24.37] - 2025-10-29
 
 ### 🔧 Fixed Ticket Location Sorting & Display Issues

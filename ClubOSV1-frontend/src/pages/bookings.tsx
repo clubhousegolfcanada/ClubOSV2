@@ -11,6 +11,7 @@ import { useNotifications } from '@/state/hooks';
 import logger from '@/utils/logger';
 import SubNavigation, { SubNavTab, SubNavAction } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
+import CustomerNavigation from '@/components/customer/CustomerNavigation';
 import { BookingConfigService } from '@/services/booking/bookingConfig';
 import { http } from '@/api/http';
 import ClubOSBookingModal from '@/components/booking/ClubOSBookingModal';
@@ -205,7 +206,9 @@ export default function Bookings() {
   // Simplified content - location selector and day/week toggle in main nav row
   const topRowContent = null; // Removed - everything in single row now
 
-  return (
+  // For customers, wrap with CustomerNavigation for bottom nav
+  // For staff, use OperatorLayout directly
+  const content = (
     <OperatorLayout
       title={isStaff ? 'Booking Management - ClubOS' : 'Book a Simulator - ClubOS'}
       description="Manage facility bookings and reservations"

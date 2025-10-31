@@ -487,7 +487,7 @@ router.post('/send',
     body('from').optional().isMobilePhone('any')
   ]),
   async (req, res, next) => {
-    const { to, text, from, countryCode } = req.body;
+    const { to, text, from, countryCode, skipPatternLearning } = req.body;
     const fromNumber = from || process.env.OPENPHONE_DEFAULT_NUMBER;
     
     try {
@@ -588,7 +588,13 @@ router.post('/send',
               !m.body.toLowerCase().match(/^(sure|ok|okay|yes|no problem|you're welcome)\.?$/)
             ) || { body: text }; // Fallback to current message
             
-            if (firstQuestion && mainResponse) {
+            // Check if this is a receipt-related conversation
+            const isReceiptRelated = (firstQuestion?.body || '').toLowerCase().includes('receipt') ||
+                                    (mainResponse?.body || '').toLowerCase().includes('receipt') ||
+                                    (text || '').toLowerCase().includes('receipt');
+
+            // Only learn patterns if not explicitly skipped (e.g., for system messages, receipts)
+            if (firstQuestion && mainResponse && !skipPatternLearning && !isReceiptRelated) {
               // Use pattern learning with full context
               await patternLearningService.learnFromHumanResponse(
                 firstQuestion.body,     // The actual question
@@ -598,13 +604,23 @@ router.post('/send',
                 formattedTo,           // customer's number
                 req.user?.id?.toString()
               );
-              
+
               logger.info('[Pattern Learning] Created pattern from complete conversation', {
                 category: context.category,
                 intent: context.intent,
                 isComplete: context.isComplete,
                 questionPreview: firstQuestion.body.substring(0, 50),
                 answerPreview: mainResponse.body.substring(0, 50)
+              });
+            } else if (skipPatternLearning) {
+              logger.info('[Pattern Learning] Skipped pattern learning for system message', {
+                to: formattedTo,
+                reason: 'skipPatternLearning flag set'
+              });
+            } else if (isReceiptRelated) {
+              logger.info('[Pattern Learning] Skipped pattern learning for receipt-related conversation', {
+                to: formattedTo,
+                reason: 'Receipt-related content detected'
               });
             }
           } else {
