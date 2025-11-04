@@ -131,6 +131,23 @@ router.post('/save',
 
       // Step 2: Create or update pattern for future automation
       try {
+        // Check if this is a receipt-related correction
+        const isReceiptRelated =
+          (route && route.toLowerCase().includes('receipt')) ||
+          (originalQuery && originalQuery.toLowerCase().includes('receipt')) ||
+          (originalResponse && originalResponse.toLowerCase().includes('receipt')) ||
+          (correctedResponse && correctedResponse.toLowerCase().includes('receipt'));
+
+        if (isReceiptRelated) {
+          logger.info('[Pattern Learning] Skipped pattern learning for receipt correction', {
+            route,
+            reason: 'Receipt-related content detected',
+            originalQuery: originalQuery?.substring(0, 100)
+          });
+          // Skip pattern creation for receipt-related corrections
+          results.patternId = null;
+          results.patternCreated = false;
+        } else {
         // Generate pattern from the correction
         const patternSignature = patternLearningService.generateSignature(originalQuery);
 
@@ -249,6 +266,7 @@ router.post('/save',
           '', // phone number not applicable here
           results.patternId || undefined
         );
+        } // End of else block (non-receipt corrections)
       } catch (err) {
         logger.error('Failed to create/update pattern:', err);
         results.errors.push('Failed to create pattern');

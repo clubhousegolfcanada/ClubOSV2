@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.42] - 2025-11-04
+
+### 🔧 Fixed Receipt Editing Creating V3-PLS Patterns
+
+#### Issue Addressed
+- **Receipt edits creating unwanted patterns** - When operators edited receipts in the terminal, the system was incorrectly creating V3-PLS patterns
+- **Pattern database pollution** - Every receipt edit created a useless pattern that would never be automated
+- **Incomplete v1.24.38 fix** - Previous fix only addressed message sending, not receipt editing workflow
+
+#### Root Cause
+- The corrections endpoint (`/api/corrections/save`) lacked receipt detection logic
+- While v1.24.38 fixed pattern creation for receipt messages, it missed the receipt editing code path
+- Receipt edits use the corrections API which was designed to always create patterns
+
+#### Solution Applied
+- **Added receipt detection logic** to corrections endpoint (corrections.ts:134-150)
+- **Checks for "receipt" keyword** in route, original query, and responses
+- **Skips pattern creation** when receipt-related content is detected
+- **Logs skip reason** for debugging and monitoring
+
+#### Technical Changes
+- Modified `/ClubOSV1-backend/src/routes/corrections.ts` to add receipt detection
+- Pattern creation is now wrapped in conditional check for receipt content
+- Matches the implementation from v1.24.38 in messages.ts
+
+#### Impact
+- ✅ Receipt edits no longer create V3-PLS patterns
+- ✅ Non-receipt corrections still create patterns normally
+- ✅ Pattern database stays clean and focused on automatable responses
+- ✅ Consistent behavior across all receipt operations
+
 ## [1.24.41] - 2025-10-31
 
 ### 🔧 Fixed Browser Permission Warnings and Added Error Boundaries
