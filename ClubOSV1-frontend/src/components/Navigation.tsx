@@ -139,7 +139,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
     return (
       <>
         {/* Bottom Navigation Bar for Mobile Operators */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-30 shadow-lg pb-safe">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[var(--bg-primary)] border-t border-[var(--border-primary)] lg:hidden z-30 shadow-lg pb-safe">
           <div className="flex items-center justify-around h-16">
             {navItems.slice(0, 5).map((item) => {
               const isActive = router.pathname === item.href;
@@ -150,7 +150,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                   className={`relative flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors ${
                     isActive
                       ? 'text-[var(--accent)]'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   {/* Use icons for mobile bottom nav */}
@@ -160,7 +160,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     <div className="relative w-6 h-6 flex items-center justify-center">
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                       {unreadMessages > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-4 px-1 flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 bg-[var(--status-error)] text-white text-[10px] font-bold rounded-full min-w-[18px] h-4 px-1 flex items-center justify-center">
                           {unreadMessages}
                         </span>
                       )}
@@ -180,7 +180,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
             {/* More menu for additional items and user menu */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="relative flex flex-col items-center justify-center flex-1 h-full min-h-[44px] text-gray-600"
+              className="relative flex flex-col items-center justify-center flex-1 h-full min-h-[44px] text-[var(--text-secondary)]"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
@@ -191,7 +191,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                   sessionStatus === 'active'
                     ? 'bg-[var(--status-success)]'
                     : sessionStatus === 'warning'
-                    ? 'bg-yellow-500'
+                    ? 'bg-[var(--status-warning)]'
                     : 'bg-[var(--status-error)]'
                 }`}
               />
@@ -203,31 +203,31 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="fixed inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-            <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg animate-slideUp">
+            <div className="fixed bottom-16 left-0 right-0 bg-[var(--bg-primary)] border-t border-[var(--border-primary)] shadow-lg animate-slideUp">
               <div className="p-4">
                 {navItems.length > 5 && (
                   <>
                     <div className="mb-3">
-                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Additional Pages</p>
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Additional Pages</p>
                       {navItems.slice(5).map((item) => (
                         <Link
                           key={item.href}
                           href={item.href}
-                          className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+                          className="block px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-md"
                           onClick={() => setMobileMenuOpen(false)}
                         >
                           {item.label}
                         </Link>
                       ))}
                     </div>
-                    <div className="border-t border-gray-200 pt-3" />
+                    <div className="border-t border-[var(--border-primary)] pt-3" />
                   </>
                 )}
 
                 {/* User info and options */}
                 <div className="mb-3">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || user?.email?.split('@')[0]}</p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{user?.name || user?.email?.split('@')[0]}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{user?.email}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -236,7 +236,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                       router.push(user?.role === 'admin' ? '/settings' : '/profile');
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+                    className="w-full text-left px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-md"
                   >
                     {user?.role === 'admin' ? 'Settings' : 'Profile & Settings'}
                   </button>
@@ -246,7 +246,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                   </div>
 
                   {(user?.role === 'admin' || user?.role === 'operator') && (
-                    <div className="pt-2 pb-2 border-t border-gray-200">
+                    <div className="pt-2 pb-2 border-t border-[var(--border-primary)]">
                       <div className="px-2">
                         <ModeToggle />
                       </div>

@@ -73,7 +73,7 @@ export default function MessageCard({ conversation, onReply, onGetAiSuggestion }
                   {conversation.customer_name || 'Unknown'}
                 </h3>
                 {conversation.unread_count > 0 && (
-                  <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  <span className="bg-[var(--accent)] text-white text-xs px-2 py-0.5 rounded-full">
                     {conversation.unread_count}
                   </span>
                 )}
@@ -184,7 +184,7 @@ export default function MessageCard({ conversation, onReply, onGetAiSuggestion }
               <button
                 onClick={handleSend}
                 disabled={!replyText.trim() && (!aiSuggestion || !useAiMode)}
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm"
+                className="px-6 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm"
                 style={{ fontFamily: 'Poppins', fontWeight: 500 }}
               >
                 <Send className="w-4 h-4" />

@@ -186,7 +186,7 @@ const CustomerNavigation: React.FC = () => {
             <button className="relative p-1.5 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors">
               <Bell className="w-4 h-4 text-[var(--text-secondary)]" />
               {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[var(--status-error)] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                   {notificationCount}
                 </span>
               )}
@@ -251,10 +251,10 @@ const CustomerNavigation: React.FC = () => {
                     {/* Mode Toggle for Admin and Operator */}
                   </div>
                   
-                  <div className="border-t border-gray-200 py-1">
+                  <div className="border-t border-[var(--border-primary)] py-1">
                     <button
                       onClick={handleLogout}
-                      className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                      className="w-full px-4 py-2 text-sm text-[var(--status-error)] hover:bg-[var(--bg-hover)] flex items-center gap-2 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -271,13 +271,13 @@ const CustomerNavigation: React.FC = () => {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed top-14 left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-40">
+        <div className="lg:hidden fixed top-14 left-0 right-0 bg-[var(--bg-primary)] border-b border-[var(--border-primary)] shadow-lg z-40">
           <div className="p-4">
-            <div className="border-b border-gray-200 pb-3 mb-3">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="border-b border-[var(--border-primary)] pb-3 mb-3">
+              <p className="text-sm font-medium text-[var(--text-primary)]">
                 {user?.name || 'User'}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {user?.email}
               </p>
             </div>
@@ -288,7 +288,7 @@ const CustomerNavigation: React.FC = () => {
                   router.push('/customer/profile');
                   setMobileMenuOpen(false);
                 }}
-                className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center gap-2 transition-colors"
+                className="w-full px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-md flex items-center gap-2 transition-colors"
               >
                 <User className="w-4 h-4" />
                 Profile
@@ -299,7 +299,7 @@ const CustomerNavigation: React.FC = () => {
                   router.push('/customer/settings');
                   setMobileMenuOpen(false);
                 }}
-                className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center gap-2 transition-colors"
+                className="w-full px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-md flex items-center gap-2 transition-colors"
               >
                 <Settings className="w-4 h-4" />
                 Settings
@@ -312,7 +312,7 @@ const CustomerNavigation: React.FC = () => {
                   handleLogout();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md flex items-center gap-2 transition-colors mt-3 border-t border-gray-200 pt-3"
+                className="w-full px-3 py-2 text-sm text-[var(--status-error)] hover:bg-[var(--bg-hover)] rounded-md flex items-center gap-2 transition-colors mt-3 border-t border-[var(--border-primary)] pt-3"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out
@@ -323,7 +323,7 @@ const CustomerNavigation: React.FC = () => {
       )}
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden z-40 shadow-lg pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[var(--bg-primary)] border-t border-[var(--border-primary)] lg:hidden z-40 shadow-lg pb-safe">
         <div className="flex items-center justify-around h-16">
           {mainNavItems.map((item) => {
             const isActive = currentPath === item.path;
@@ -334,7 +334,7 @@ const CustomerNavigation: React.FC = () => {
                 className={`relative flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors ${
                   isActive
                     ? 'text-[var(--accent)]'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <item.icon className={`w-6 h-6 ${isActive ? 'transform scale-110' : ''}`} />

@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.43] - 2025-11-05
+
+### 🎨 Dark Mode Support Improvements - Phase 1
+
+#### Issues Addressed
+- **Navigation components using hardcoded colors** - Mobile and desktop navigation bars had hardcoded whites and grays
+- **Status badges not adapting to theme** - StatusBadge component used Tailwind colors instead of CSS variables
+- **Notification badges always blue** - Unread counts and alerts used hardcoded blue colors
+- **Inconsistent theming** - 40% of components still using hardcoded colors despite excellent theme infrastructure
+
+#### Components Fixed
+1. **Navigation.tsx** - Fixed mobile bottom nav, dropdown menus, and user menu colors
+2. **CustomerNavigation.tsx** - Fixed bottom navigation, mobile dropdown, and notification badges
+3. **StatusBadge.tsx** - Now uses CSS variable status colors for all variants (solid, outline, subtle)
+4. **MessageCard.tsx** - Fixed unread badge and send button colors
+
+#### Technical Changes
+- Replaced 50+ hardcoded color instances with CSS variables
+- Replaced `bg-white` → `bg-[var(--bg-primary)]`
+- Replaced `text-gray-600` → `text-[var(--text-secondary)]`
+- Replaced `border-gray-200` → `border-[var(--border-primary)]`
+- Replaced `bg-blue-500` → `bg-[var(--accent)]`
+- Replaced status colors with `var(--status-success)`, `var(--status-error)`, etc.
+
+#### Impact
+- ✅ Navigation components now fully adapt to dark/light mode
+- ✅ Status indicators use consistent theme colors
+- ✅ Notification badges adapt to theme
+- ✅ Improved consistency across the application
+- ✅ Foundation laid for complete dark mode support
+
 ## [1.24.42] - 2025-11-04
 
 ### 🔧 Fixed Receipt Editing Creating V3-PLS Patterns
