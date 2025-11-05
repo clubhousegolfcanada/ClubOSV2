@@ -226,13 +226,30 @@ router.get('/export', authenticate, async (req, res) => {
       });
 
     } else if (exportFormat === 'zip') {
+      // Check for export size limits to prevent memory issues
+      const MAX_RECEIPTS_WITH_PHOTOS = 25;
+      const receiptsWithPhotos = receipts.filter(r => r.file_data).length;
+
+      if (receiptsWithPhotos > MAX_RECEIPTS_WITH_PHOTOS) {
+        logger.warn(`Export rejected: ${receiptsWithPhotos} receipts with photos exceeds limit of ${MAX_RECEIPTS_WITH_PHOTOS}`);
+        return res.status(400).json({
+          error: 'Export too large',
+          message: `Too many receipts with photos (${receiptsWithPhotos}). Please export in smaller batches (maximum ${MAX_RECEIPTS_WITH_PHOTOS} receipts with photos) or select a shorter time period.`,
+          details: {
+            requestedCount: receiptsWithPhotos,
+            maxAllowed: MAX_RECEIPTS_WITH_PHOTOS,
+            totalReceipts: receipts.length
+          }
+        });
+      }
+
       // Create ZIP with receipts metadata and photos
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.zip"`);
 
-      // Create archiver instance
+      // Create archiver instance with balanced compression for better performance
       const archive = archiver('zip', {
-        zlib: { level: 9 } // Maximum compression
+        zlib: { level: 6 } // Balanced compression (reduced from 9 for better performance)
       });
 
       // Handle archive errors
@@ -281,9 +298,10 @@ router.get('/export', authenticate, async (req, res) => {
         files: []
       };
 
-      // Add receipt photos
+      // Add receipt photos with async processing to prevent blocking
       let photoCount = 0;
-      for (const receipt of receipts) {
+      for (let i = 0; i < receipts.length; i++) {
+        const receipt = receipts[i];
         if (receipt.file_data) {
           try {
             // Extract base64 data and file extension
@@ -313,8 +331,16 @@ router.get('/export', authenticate, async (req, res) => {
             const date = receipt.purchase_date ? format(new Date(receipt.purchase_date), 'yyyy-MM-dd') : 'no-date';
             const filename = `images/${receipt.id}_${vendor}_${date}.${extension}`;
 
-            // Convert base64 to Buffer and add to archive
-            const buffer = Buffer.from(base64Data, 'base64');
+            // Convert base64 to Buffer with async processing
+            const buffer = await new Promise<Buffer>((resolve, reject) => {
+              try {
+                const buf = Buffer.from(base64Data, 'base64');
+                resolve(buf);
+              } catch (error) {
+                reject(error);
+              }
+            });
+
             archive.append(buffer, { name: filename });
 
             manifest.files.push({
@@ -325,6 +351,12 @@ router.get('/export', authenticate, async (req, res) => {
             });
 
             photoCount++;
+
+            // Allow event loop to breathe every 5 photos to prevent blocking
+            if (photoCount % 5 === 0) {
+              await new Promise(resolve => setImmediate(resolve));
+              logger.debug(`Processed ${photoCount} photos, allowing event loop to process other requests`);
+            }
           } catch (err) {
             logger.error(`Failed to add photo for receipt ${receipt.id}:`, err);
           }

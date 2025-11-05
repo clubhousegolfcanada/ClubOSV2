@@ -38,7 +38,7 @@ const getBaseUrl = () => {
 
 // Create axios instance
 const client = axios.create({
-  timeout: 60000,
+  timeout: 120000, // Increased to 120 seconds for large receipt exports
   headers: {
     'Content-Type': 'application/json',
   },

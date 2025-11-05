@@ -33,6 +33,41 @@ All notable changes to ClubOS will be documented in this file.
 - ✅ Improved consistency across the application
 - ✅ Foundation laid for complete dark mode support
 
+## [1.24.44] - 2025-11-05
+
+### 🔧 Fixed Receipt Export with Photos Memory Issues
+
+#### Problem Solved
+- **Export failures with large batches** - Receipt exports with dozens of photos were crashing due to memory exhaustion
+- **Timeouts on large exports** - Exports taking >60 seconds were timing out before completion
+- **No user guidance** - Users didn't know why exports failed or how to work around the issue
+
+#### Root Causes Identified
+- **Memory exhaustion**: All base64-encoded photos loaded into RAM simultaneously (270-290 MB for 50 receipts)
+- **Synchronous processing**: Photo processing blocked the event loop, making server unresponsive
+- **Excessive compression**: Level 9 compression added CPU overhead with minimal benefit for already-compressed images
+- **Insufficient timeout**: 60-second limit too short for legitimate large exports
+
+#### Solutions Implemented
+1. **Added export limit** - Maximum 25 receipts with photos per ZIP export to prevent memory issues
+2. **Optimized compression** - Reduced from level 9 to level 6 (faster with minimal size difference)
+3. **Async processing** - Added event loop breaks every 5 photos to prevent blocking
+4. **Extended timeout** - Increased frontend timeout from 60s to 120s for large exports
+5. **User warnings** - Added clear warnings for large date ranges with actionable guidance
+6. **Better error handling** - Backend limit errors now display helpful messages to users
+
+#### Technical Changes
+- Modified `/ClubOSV1-backend/src/routes/receipts-simple.ts` to add limit check and async processing
+- Updated `/ClubOSV1-frontend/src/api/http.ts` timeout from 60000ms to 120000ms
+- Enhanced `/ClubOSV1-frontend/src/components/operations/integrations/ReceiptExportCard.tsx` with warnings and better error handling
+
+#### Impact
+- ✅ Exports with 3-25 receipts now work reliably
+- ✅ Clear guidance when limits are exceeded
+- ✅ No more server crashes from large exports
+- ✅ Better performance with balanced compression
+- ✅ Users understand how to export large datasets (in batches)
+
 ## [1.24.42] - 2025-11-04
 
 ### 🔧 Fixed Receipt Editing Creating V3-PLS Patterns

@@ -89,9 +89,29 @@ const ReceiptExportCard: React.FC = () => {
 
       // Refresh summary
       fetchSummary();
-    } catch (err) {
+    } catch (err: any) {
       logger.error('Failed to export receipts:', err);
-      setError('Failed to export receipts');
+
+      // Check if it's a response error with a message from backend
+      if (err.response?.data) {
+        // Handle different response types
+        if (err.response.data instanceof Blob) {
+          // If it's a blob, try to read it as text
+          try {
+            const text = await err.response.data.text();
+            const errorData = JSON.parse(text);
+            setError(errorData.message || 'Failed to export receipts');
+          } catch {
+            setError('Failed to export receipts. Please try a smaller date range.');
+          }
+        } else if (err.response.data.message) {
+          setError(err.response.data.message);
+        } else {
+          setError('Failed to export receipts. Please try again.');
+        }
+      } else {
+        setError('Failed to export receipts. Please check your connection and try again.');
+      }
     } finally {
       setExporting(false);
     }
@@ -199,6 +219,18 @@ const ReceiptExportCard: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {/* Warning for large exports with photos */}
+      {exportFormat === 'zip' && (period === 'all' || period === 'year') && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-yellow-800">
+            <strong>Note:</strong> ZIP exports with photos are limited to 25 receipts with photos to prevent timeouts.
+            {period === 'all' && ' For all-time exports, consider selecting a shorter period or using CSV/JSON format.'}
+            {period === 'year' && ' For yearly exports with many receipts, consider exporting by month instead.'}
+          </div>
+        </div>
+      )}
 
       <button
         onClick={handleExport}
