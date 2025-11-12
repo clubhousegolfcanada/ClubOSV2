@@ -81,6 +81,7 @@ import boxManagementRoutes from './routes/boxManagement';
 import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
+import golfTourRoutes from './routes/golf-tour';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -294,6 +295,7 @@ app.use('/api/seasons', require('./routes/seasons').default);
 app.use('/api/badges', require('./routes/badges').default);
 app.use('/api/achievements', require('./routes/achievements').default);
 app.use('/api/trackman', require('./routes/trackman').default);
+app.use('/api/golf', golfTourRoutes); // NS Senior Golf Tour scoring system
 app.use('/api/admin/cc-adjustments', require('./routes/admin/ccAdjustments').default);
 app.use('/api/admin/contractors', require('./routes/admin/contractors').default);
 app.use('/api/admin/performance', require('./routes/performance-monitor').default);

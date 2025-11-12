@@ -2,6 +2,46 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.0] - 2024-11-12
+
+### 🏌️ NS Senior Golf Tour Scoring System
+
+#### New Feature
+- **Complete tournament scoring solution** for outdoor Nova Scotia Senior Golf Tour
+- **Clubhouse 24/7 as main sponsor** with prominent branding throughout
+
+#### Key Capabilities
+1. **Public Scorecard** (`/golf/[event-code]`)
+   - Inline player registration (no separate signup)
+   - Hole-by-hole score entry with auto-save
+   - Session-based resume without authentication
+   - Mobile-optimized for seniors (extra large buttons)
+
+2. **Live Leaderboard** (`/golf/leaderboard`)
+   - Real-time updates (30-second refresh)
+   - Division filtering (Men's Championship, Senior, Super Senior, Ladies)
+   - Public access - no login required
+   - Position tracking with tie indicators
+
+3. **Admin Panel** (`/golf/admin`)
+   - Password-protected tournament management
+   - CSV/Excel export for all events
+   - Event statistics and player counts
+   - Bulk export functionality
+
+4. **Pre-configured Events**
+   - Glen Arbour Golf Club (June 15)
+   - Ashburn Golf Club (July 20)
+   - Links at Penn Hills (August 17)
+   - Avon Valley Golf & Country Club (September 21)
+
+#### Technical Implementation
+- 3 new database tables (events, scorecards, config)
+- RESTful API endpoints at `/api/golf/*`
+- Configuration-driven divisions and UI settings
+- Automatic score calculation with database triggers
+- Senior-friendly UX (20px+ fonts, 60px touch targets)
+
 ## [1.24.46] - 2025-11-12
 
 ### 🔧 Changed Booking Default to Skedda
