@@ -150,34 +150,34 @@ export default function ClubOSBookingModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
         <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
-        <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-8 animate-slideUp">
+        <div className="relative bg-[var(--bg-primary)] rounded-xl shadow-2xl max-w-md w-full p-8 animate-slideUp">
           <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-              <Check className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-[var(--status-success)]/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+              <Check className="w-8 h-8 text-[var(--status-success)]" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Booking Confirmed!</h2>
+            <p className="text-[var(--text-secondary)] mb-6">
               Your booking for {bookingData.spaceName} has been successfully created.
             </p>
-            <div className="bg-gray-50 rounded-lg p-4 text-left mb-6">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-4 text-left mb-6">
               <div className="text-sm space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Date:</span>
+                  <span className="text-[var(--text-muted)]">Date:</span>
                   <span className="font-medium">{format(bookingData.startTime, 'MMM d, yyyy')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Time:</span>
+                  <span className="text-[var(--text-muted)]">Time:</span>
                   <span className="font-medium">
                     {format(bookingData.startTime, 'h:mm a')} - {format(bookingData.endTime, 'h:mm a')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Duration:</span>
+                  <span className="text-[var(--text-muted)]">Duration:</span>
                   <span className="font-medium">{durationDisplay}</span>
                 </div>
                 {createdBooking?.id && (
                   <div className="flex justify-between pt-2 border-t">
-                    <span className="text-gray-500">Booking ID:</span>
+                    <span className="text-[var(--text-muted)]">Booking ID:</span>
                     <span className="font-mono font-medium">#{createdBooking.id.slice(0, 8)}</span>
                   </div>
                 )}
@@ -202,7 +202,7 @@ export default function ClubOSBookingModal({
       <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-slideUp">
+      <div className="relative bg-[var(--bg-primary)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-slideUp">
         {/* Header */}
         <div className="bg-gradient-to-r from-[var(--accent)] to-[#094A3F] text-white px-6 py-4">
           <div className="flex items-center justify-between">
@@ -221,29 +221,29 @@ export default function ClubOSBookingModal({
         <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-180px)]">
           {/* Booking Details */}
           <div className="p-6 border-b">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">BOOKING DETAILS</h3>
+            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">BOOKING DETAILS</h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-gray-400" />
+                <MapPin className="w-5 h-5 text-[var(--text-muted)]" />
                 <div>
                   <div className="font-medium">{bookingData.spaceName}</div>
-                  <div className="text-sm text-gray-500">{bookingData.locationName || 'Clubhouse 24/7'}</div>
+                  <div className="text-sm text-[var(--text-secondary)]">{bookingData.locationName || 'Clubhouse 24/7'}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
+                <Calendar className="w-5 h-5 text-[var(--text-muted)]" />
                 <div>
                   <div className="font-medium">{format(bookingData.startTime, 'EEEE, MMMM d, yyyy')}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[var(--text-secondary)]">
                     {format(bookingData.startTime, 'h:mm a')} - {format(bookingData.endTime, 'h:mm a')}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gray-400" />
+                <Clock className="w-5 h-5 text-[var(--text-muted)]" />
                 <div>
                   <div className="font-medium">{durationDisplay}</div>
-                  <div className="text-sm text-gray-500">Total duration</div>
+                  <div className="text-sm text-[var(--text-secondary)]">Total duration</div>
                 </div>
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function ClubOSBookingModal({
 
           {/* Customer Information */}
           <div className="p-6 border-b">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">CUSTOMER INFORMATION</h3>
+            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">CUSTOMER INFORMATION</h3>
 
             {isStaff ? (
               <CustomerQuickSearch
@@ -261,24 +261,24 @@ export default function ClubOSBookingModal({
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
-                    <User className="w-4 h-4 text-gray-400" />
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Name</label>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] rounded-lg">
+                    <User className="w-4 h-4 text-[var(--text-muted)]" />
                     <span>{customerData.customerName}</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
-                    <Mail className="w-4 h-4 text-gray-400" />
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Email</label>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] rounded-lg">
+                    <Mail className="w-4 h-4 text-[var(--text-muted)]" />
                     <span>{customerData.customerEmail}</span>
                   </div>
                 </div>
                 {customerData.customerPhone && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
-                      <Phone className="w-4 h-4 text-gray-400" />
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Phone</label>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] rounded-lg">
+                      <Phone className="w-4 h-4 text-[var(--text-muted)]" />
                       <span>{customerData.customerPhone}</span>
                     </div>
                   </div>
@@ -312,7 +312,7 @@ export default function ClubOSBookingModal({
         </form>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex gap-3 justify-end">
+        <div className="bg-[var(--bg-secondary)] px-6 py-4 flex gap-3 justify-end">
           <Button
             type="button"
             variant="secondary"

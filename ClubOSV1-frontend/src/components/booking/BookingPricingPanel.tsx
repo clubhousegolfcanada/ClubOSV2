@@ -99,22 +99,22 @@ export default function BookingPricingPanel({
 
   return (
     <div className="p-6 border-b">
-      <h3 className="text-sm font-medium text-gray-500 mb-3">PRICING</h3>
+      <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">PRICING</h3>
 
       {/* Promo Code Input */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Promo Code</label>
+        <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Promo Code</label>
         <div className="relative">
-          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
             value={promoCode}
             onChange={(e) => onPromoCodeChange(e.target.value.toUpperCase())}
             className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
               promoValid === true
-                ? 'border-green-500 focus:ring-green-500'
+                ? 'border-[var(--status-success)] focus:ring-[var(--status-success)]'
                 : promoValid === false
-                ? 'border-red-500 focus:ring-red-500'
+                ? 'border-[var(--status-error)] focus:ring-[var(--status-error)]'
                 : 'focus:ring-[var(--accent)]'
             }`}
             placeholder="Enter promo code"
@@ -125,60 +125,60 @@ export default function BookingPricingPanel({
             </div>
           )}
           {promoValid === true && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--status-success)]">
               ✓
             </div>
           )}
           {promoValid === false && promoCode.length >= 3 && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--status-error)]">
               ✗
             </div>
           )}
         </div>
         {promoValid === false && promoCode.length >= 3 && (
-          <p className="mt-1 text-sm text-red-600">Invalid promo code</p>
+          <p className="mt-1 text-sm text-[var(--status-error)]">Invalid promo code</p>
         )}
         {promoValid === true && (
-          <p className="mt-1 text-sm text-green-600">Promo code applied! -${promoDiscount}</p>
+          <p className="mt-1 text-sm text-[var(--status-success)]">Promo code applied! -${promoDiscount}</p>
         )}
       </div>
 
       {/* Price Breakdown */}
-      <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+      <div className="bg-[var(--bg-secondary)] rounded-lg p-4 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Base Price ({hours} hour{hours !== 1 ? 's' : ''})</span>
+          <span className="text-[var(--text-secondary)]">Base Price ({hours} hour{hours !== 1 ? 's' : ''})</span>
           <span className="font-medium">${basePrice.toFixed(2)}</span>
         </div>
 
         {tierDiscountAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 flex items-center gap-1">
+            <span className="text-[var(--text-secondary)] flex items-center gap-1">
               {customerTier.charAt(0).toUpperCase() + customerTier.slice(1)} Discount
-              <span className="text-xs text-gray-400">({(tierDiscountPercent * 100).toFixed(0)}%)</span>
+              <span className="text-xs text-[var(--text-muted)]">({(tierDiscountPercent * 100).toFixed(0)}%)</span>
             </span>
-            <span className="font-medium text-green-600">-${tierDiscountAmount.toFixed(2)}</span>
+            <span className="font-medium text-[var(--status-success)]">-${tierDiscountAmount.toFixed(2)}</span>
           </div>
         )}
 
         {promoDiscount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Promo Code</span>
-            <span className="font-medium text-green-600">-${promoDiscount.toFixed(2)}</span>
+            <span className="text-[var(--text-secondary)]">Promo Code</span>
+            <span className="font-medium text-[var(--status-success)]">-${promoDiscount.toFixed(2)}</span>
           </div>
         )}
 
         <div className="border-t pt-2 flex justify-between text-sm">
-          <span className="text-gray-600">Subtotal</span>
+          <span className="text-[var(--text-secondary)]">Subtotal</span>
           <span className="font-medium">${subtotal.toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Tax (13%)</span>
+          <span className="text-[var(--text-secondary)]">Tax (13%)</span>
           <span className="font-medium">${tax.toFixed(2)}</span>
         </div>
 
         <div className="border-t pt-2 flex justify-between">
-          <span className="font-semibold text-gray-900">Total</span>
+          <span className="font-semibold text-[var(--text-primary)]">Total</span>
           <span className="font-bold text-xl text-[var(--accent)]">${total.toFixed(2)}</span>
         </div>
       </div>

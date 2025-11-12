@@ -616,7 +616,7 @@ const DayGridComponent: React.FC<DayGridProps> = ({
       {selectionStart && !isDragging && (
         <div
           ref={buttonRef}
-          className="fixed z-50 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border-2 border-[var(--accent)]/20 max-w-sm animate-in slide-in-from-bottom-3 fade-in duration-200"
+          className="fixed z-50 bg-[var(--bg-primary)] rounded-xl shadow-2xl border-2 border-[var(--accent)]/20 max-w-sm animate-in slide-in-from-bottom-3 fade-in duration-200"
           style={buttonPosition}>
           {/* Header with visual indicator */}
           <div className="px-4 py-3 border-b border-[var(--border-primary)] bg-gradient-to-r from-[var(--accent)]/5 to-[var(--accent)]/10 rounded-t-xl">
@@ -701,8 +701,8 @@ const DayGridComponent: React.FC<DayGridProps> = ({
                         ${isSelected
                           ? 'bg-[var(--accent)] text-white'
                           : isAvailable
-                            ? 'bg-gray-100 dark:bg-gray-800 text-[var(--text-primary)] hover:bg-[var(--accent)]/10'
-                            : 'bg-gray-50 dark:bg-gray-900 text-gray-400 cursor-not-allowed'
+                            ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--accent)]/10'
+                            : 'bg-[var(--bg-secondary)] text-[var(--text-disabled)] cursor-not-allowed'
                         }
                       `}
                     >
@@ -729,7 +729,7 @@ const DayGridComponent: React.FC<DayGridProps> = ({
           </div>
 
           {/* Actions with better styling */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl border-t border-[var(--border-primary)] flex gap-2">
+          <div className="p-4 bg-[var(--bg-secondary)] rounded-b-xl border-t border-[var(--border-primary)] flex gap-2">
             <Button
               variant="primary"
               onClick={confirmSelection}

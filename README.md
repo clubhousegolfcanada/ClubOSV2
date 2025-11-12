@@ -1,4 +1,4 @@
-# ClubOS v1.24.44 - Flexible Facility Management System
+# ClubOS v1.24.45 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.24.44**
-- **🔧 Receipt Export Fix** - Fixed memory exhaustion and timeouts when exporting receipts with photos
-- **✅ Export Limit Added** - Maximum 25 receipts with photos per export to prevent crashes
-- **⚡ Performance Optimized** - Async processing and balanced compression for better performance
-- **📋 User Guidance** - Clear warnings and error messages guide users to export in batches
+**Current Version: v1.24.45**
+- **🎨 Dark Mode Phase 2** - Booking components now fully support dark/light themes
+- **📅 Booking Modal Fixed** - 29 hardcoded colors replaced with theme variables
+- **🗓️ Calendar Interface** - DayGrid adapts to theme with proper contrast
+- **💰 Pricing Panel** - Promo codes and price breakdowns visible in all themes
+- **Previous: Receipt Export Fix** - Fixed memory issues with photo exports (v1.24.44)
 - **Previous: Dark Mode Phase 1** - Navigation and status badges theme support (v1.24.43)
 - **Previous: Receipt Pattern Fix** - Fixed receipt editing creating V3-PLS patterns (v1.24.42)
 - **Previous: Browser Console Fix** - Removed unnecessary iframe permissions (v1.24.41)

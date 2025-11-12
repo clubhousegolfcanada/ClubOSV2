@@ -2,6 +2,49 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.45] - 2025-11-12
+
+### 🎨 Dark Mode Support Improvements - Phase 2: Booking Components
+
+#### Issues Addressed
+- **Booking modal with hardcoded whites** - ClubOSBookingModal had 29 hardcoded colors making it unreadable in dark mode
+- **Calendar interface visibility** - DayGrid component used fixed gray colors that didn't adapt to theme
+- **Pricing panel contrast issues** - BookingPricingPanel promo codes and pricing breakdown hard to read in dark mode
+
+#### Components Fixed
+1. **ClubOSBookingModal.tsx** - Fixed success modal, booking details, customer information sections (29 colors)
+2. **DayGrid.tsx** - Fixed modal backgrounds, duration buttons, disabled states (8 colors)
+3. **BookingPricingPanel.tsx** - Fixed promo code validation, price breakdown, discount displays (15 colors)
+
+#### Technical Changes
+- Replaced 52 hardcoded color instances across critical booking flow
+- Removed dark mode conditionals like `dark:bg-gray-900` in favor of CSS variables
+- Fixed info text from `text-gray-500` → `text-[var(--text-muted)]`
+- Fixed modal backgrounds from `bg-white` → `bg-[var(--bg-primary)]`
+- Fixed success/error states to use `var(--status-success)` and `var(--status-error)`
+
+#### Impact
+- ✅ Booking flow now fully supports dark mode
+- ✅ Pricing calculations visible in all themes
+- ✅ Success confirmations properly themed
+- ✅ Critical user journey now accessible in dark mode
+- ✅ Improved contrast and readability across themes
+
+## [1.24.44] - 2025-11-05
+
+### 🔧 Fixed Receipt Export with Photos Memory Issues
+
+#### Problem Solved
+- **Export failures with large batches** - Receipt exports with dozens of photos were crashing due to memory exhaustion
+- **Timeouts on large exports** - Exports taking >60 seconds were timing out before completion
+- **No user guidance** - Users didn't know why exports failed or how to work around the issue
+
+#### Root Causes Identified
+- **Memory exhaustion**: All base64-encoded photos loaded into RAM simultaneously (270-290 MB for 50 receipts)
+- **Synchronous processing**: Photo processing blocked the event loop, making server unresponsive
+- **Excessive compression**: Level 9 compression added CPU overhead with minimal benefit for already-compressed images
+- **Insufficient timeout**: 60-second limit too short for legitimate large exports
+
 ## [1.24.43] - 2025-11-05
 
 ### 🎨 Dark Mode Support Improvements - Phase 1
