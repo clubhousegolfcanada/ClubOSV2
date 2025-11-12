@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.24.46] - 2025-11-12
+
+### 🔧 Changed Booking Default to Skedda
+
+- Changed default booking view from ClubOS to Skedda iframe for all users
+- Provides stable booking experience while ClubOS native system continues development
+- Toggle button still available for users who want to try ClubOS booking
+
 ## [1.24.45] - 2025-11-12
 
 ### 🎨 Dark Mode Support Improvements - Phase 2: Booking Components
