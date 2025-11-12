@@ -332,7 +332,6 @@ const GolfScorecard = () => {
                 value={playerInfo.homeClub}
                 onChange={(e) => setPlayerInfo({ ...playerInfo, homeClub: e.target.value })}
                 className="text-lg"
-                icon={Home}
               />
               <Input
                 label="Email (Optional)"
