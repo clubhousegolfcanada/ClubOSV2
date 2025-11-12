@@ -26,7 +26,7 @@ const GolfAdmin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [stats, setStats] = useState<EventStats[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     // Check if already authenticated (stored in session)
@@ -41,7 +41,7 @@ const GolfAdmin = () => {
     if (password === 'NSGolf2024Admin') {
       setIsAuthenticated(true);
       sessionStorage.setItem('golf_admin_auth', 'true');
-      setError(null);
+      setError(undefined);
       loadStats();
     } else {
       setError('Invalid password');
