@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/Input';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { StatusBadge } from '../../components/ui/StatusBadge';
+import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
+import Input from '../../components/Input';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { Settings, Download, FileText, Users, Trophy, BarChart, Lock, Unlock } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

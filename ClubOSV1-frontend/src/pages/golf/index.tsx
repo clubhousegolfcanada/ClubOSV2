@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { Button } from '../../components/ui/Button';
-import { StatusBadge } from '../../components/ui/StatusBadge';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { EmptyState } from '../../components/ui/EmptyState';
+import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
+import StatusBadge from '../../components/ui/StatusBadge';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import EmptyState from '../../components/ui/EmptyState';
 import { Trophy, Calendar, MapPin, Users, ChevronRight, BarChart3, Shield } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
