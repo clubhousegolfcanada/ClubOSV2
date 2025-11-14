@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.1] - 2025-11-14
+
+### 🐛 Critical Bug Fixes
+
+#### Fixed
+- **Mobile Token Expiration Issue**: Fixed critical bug where mobile users were getting 403 errors on AI requests
+  - Changed grace period storage from sessionStorage to localStorage
+  - Mobile browsers were clearing sessionStorage when app was backgrounded
+  - Added more aggressive token refresh intervals for mobile devices
+  - This fixes the issue where the same user account worked on desktop but failed on mobile
+
+- **HubSpot Webhook 404 Errors**: Re-enabled HubSpot booking webhooks
+  - Uncommented webhook routes that were accidentally disabled
+  - Webhooks now properly receive booking-completed and booking-updated events
+  - Fixes constant 404 errors in production logs
+
+#### Improved
+- **Better Error Messages**: Added clear error messages for role-based access denial
+  - Users now see specific messages about required roles (operator/admin)
+  - Instructs users to contact administrator for access upgrades
+  - Prevents confusion when customers try to access operator features
+
 ## [1.25.0] - 2024-11-12
 
 ### 🏌️ NS Senior Golf Tour Scoring System

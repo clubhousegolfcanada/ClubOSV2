@@ -68,7 +68,25 @@ export const submitRequest = async (request: UserRequest): Promise<ApiResponse> 
         error: 'Authentication failed. Please login again.'
       };
     }
-    
+
+    // Handle 403 Forbidden - user doesn't have the required role
+    if (error.response?.status === 403) {
+      const requiredRoles = error.response?.data?.requiredRoles;
+      const userRole = error.response?.data?.userRole;
+
+      if (requiredRoles && userRole) {
+        return {
+          success: false,
+          error: `This feature requires ${requiredRoles.join(' or ')} access. Your current role is '${userRole}'. Please contact your administrator to upgrade your access level.`
+        };
+      }
+
+      return {
+        success: false,
+        error: 'You do not have permission to use this feature. This feature requires operator or admin access. Please contact your administrator.'
+      };
+    }
+
     return {
       success: false,
       error: errorMessage

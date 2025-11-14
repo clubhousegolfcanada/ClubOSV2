@@ -91,7 +91,9 @@ const LoginPage = () => {
         const { user, token } = response.data.data;
 
         // Set login timestamp FIRST for grace period
-        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
+        // CRITICAL FIX: Changed to localStorage from sessionStorage for mobile persistence
+        // Mobile browsers clear sessionStorage when app is backgrounded
+        localStorage.setItem('clubos_login_timestamp', Date.now().toString());
 
         // Use atomic token update to prevent race condition
         tokenManager.updateToken(token);

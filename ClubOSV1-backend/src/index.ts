@@ -82,6 +82,7 @@ import processKnowledgeRoutes from './routes/process-knowledge';
 import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
 import golfTourRoutes from './routes/golf-tour';
+import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -372,9 +373,7 @@ app.use('/api/process-knowledge', processKnowledgeRoutes);
 // app.use('/api/v2/users', usersRefactoredRoutes);
 
 // HubSpot webhook routes
-// TODO: Move this import to top of file
-// import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
-// app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
+app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
 
 // Root endpoint
 app.get('/', (req, res) => {

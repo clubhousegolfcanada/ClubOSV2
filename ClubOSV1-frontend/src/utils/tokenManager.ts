@@ -71,8 +71,10 @@ export class TokenManager {
     if (!this.isValidTokenFormat(token)) return true;
 
     // Check grace period FIRST - prevents race condition during login
+    // CRITICAL FIX: Changed from sessionStorage to localStorage for mobile persistence
+    // Mobile browsers clear sessionStorage when app is backgrounded, causing false token expiration
     const loginTimestamp = typeof window !== 'undefined'
-      ? sessionStorage.getItem('clubos_login_timestamp')
+      ? localStorage.getItem('clubos_login_timestamp')
       : null;
 
     if (loginTimestamp) {
@@ -133,6 +135,8 @@ export class TokenManager {
   clearToken(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('clubos_token');
+    // Also clear login timestamp when clearing token
+    localStorage.removeItem('clubos_login_timestamp');
   }
 
   /**
@@ -156,14 +160,37 @@ export class TokenManager {
   }
 
   /**
+   * Detect if running on mobile device
+   */
+  private isMobileDevice(): boolean {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }
+
+  /**
    * Get appropriate check interval based on token expiry time
    * Enhanced for operator-friendly PWA experience
    */
   private getCheckInterval(token: string): number {
     const timeUntilExpiry = this.getTimeUntilExpiration(token);
     const role = this.getUserRole(token);
+    const isMobile = this.isMobileDevice();
 
-    // Operators get more frequent checks for seamless experience
+    // Mobile devices need more aggressive checking due to app suspension
+    if (isMobile) {
+      // More frequent checks on mobile to handle background/resume
+      if (role === 'operator' || role === 'admin') {
+        if (timeUntilExpiry > 24 * 60 * 60 * 1000) { // > 1 day
+          return 15 * 60 * 1000; // Check every 15 minutes (was 30)
+        } else {
+          return 2 * 60 * 1000; // Check every 2 minutes when close
+        }
+      }
+      // Other roles on mobile
+      return Math.min(10 * 60 * 1000, timeUntilExpiry / 10); // Max 10 minutes
+    }
+
+    // Desktop operators get standard intervals
     if (role === 'operator' || role === 'admin') {
       if (timeUntilExpiry > 7 * 24 * 60 * 60 * 1000) { // > 7 days
         return 2 * 60 * 60 * 1000; // Check every 2 hours
@@ -244,14 +271,16 @@ export class TokenManager {
   clearAllTokens(): void {
     // Stop monitoring
     this.stopTokenMonitoring();
-    
+
     // Reset all flags
     this.interceptorSetup = false;
     this.isHandlingExpiration = false;
-    
+
     // Clear any cached token data
     if (typeof window !== 'undefined') {
       // Auth header cleanup now handled by http client
+      // Clear login timestamp as well
+      localStorage.removeItem('clubos_login_timestamp');
     }
   }
 
@@ -289,6 +318,7 @@ export class TokenManager {
     // Clear the token immediately to stop API calls
     this.clearToken();
     localStorage.removeItem('clubos_user');
+    localStorage.removeItem('clubos_login_timestamp');
     
     // Show notification only once
     toast.error('Your session has expired. Please log in again.');
