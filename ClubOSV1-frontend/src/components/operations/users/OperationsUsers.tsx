@@ -601,27 +601,27 @@ export const OperationsUsers: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Settings Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
+      <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)]">
+        <div className="px-6 py-4 border-b border-[var(--border-primary)]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Registration Settings</h2>
-              <p className="text-sm text-gray-500 mt-1">Configure how new accounts are handled</p>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Registration Settings</h2>
+              <p className="text-sm text-[var(--text-muted)] mt-1">Configure how new accounts are handled</p>
             </div>
           </div>
         </div>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm font-medium text-gray-700">Auto-approve Customer Accounts</label>
-              <p className="text-xs text-gray-500 mt-1">
+              <label className="text-sm font-medium text-[var(--text-secondary)]">Auto-approve Customer Accounts</label>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 When enabled, customer accounts are immediately active. When disabled, they require admin approval.
               </p>
             </div>
             <button
               onClick={() => updateAutoApproval(!autoApproveCustomers)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                autoApproveCustomers ? 'bg-primary' : 'bg-gray-200'
+                autoApproveCustomers ? 'bg-primary' : 'bg-[var(--bg-tertiary)]'
               }`}
             >
               <span
@@ -635,13 +635,13 @@ export const OperationsUsers: React.FC = () => {
       </div>
 
       {/* Operator Management Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
+      <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)]">
+        <div className="px-6 py-4 border-b border-[var(--border-primary)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-900">Operator Management</h2>
-              <span className="text-sm text-gray-500">({operators.length} operators)</span>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Operator Management</h2>
+              <span className="text-sm text-[var(--text-muted)]">({operators.length} operators)</span>
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -653,7 +653,7 @@ export const OperationsUsers: React.FC = () => {
               </button>
               <button
                 onClick={fetchUsers}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -666,7 +666,7 @@ export const OperationsUsers: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <tr className="text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                   <th className="pb-3">Name</th>
                   <th className="pb-3">Email</th>
                   <th className="pb-3">Role</th>
@@ -675,19 +675,19 @@ export const OperationsUsers: React.FC = () => {
                   <th className="pb-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-[var(--border-primary)]">
                 {operators.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-[var(--bg-hover)]">
                     <td className="py-3">
                       {editingUser === user.id ? (
                         <input
                           type="text"
                           value={editedUser.name || ''}
                           onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
-                          className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                          className="px-2 py-1 border border-[var(--border-primary)] rounded-lg text-sm"
                         />
                       ) : (
-                        <span className="text-sm font-medium text-gray-900">{user.name}</span>
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{user.name}</span>
                       )}
                     </td>
                     <td className="py-3">
@@ -696,10 +696,10 @@ export const OperationsUsers: React.FC = () => {
                           type="email"
                           value={editedUser.email || ''}
                           onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
-                          className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                          className="px-2 py-1 border border-[var(--border-primary)] rounded-lg text-sm"
                         />
                       ) : (
-                        <span className="text-sm text-gray-600">{user.email}</span>
+                        <span className="text-sm text-[var(--text-secondary)]">{user.email}</span>
                       )}
                     </td>
                     <td className="py-3">
@@ -707,7 +707,7 @@ export const OperationsUsers: React.FC = () => {
                         <select
                           value={editedUser.role || user.role}
                           onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as User['role'] })}
-                          className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                          className="px-2 py-1 border border-[var(--border-primary)] rounded-lg text-sm"
                         >
                           <option value="admin">Admin</option>
                           <option value="operator">Operator</option>
@@ -735,14 +735,14 @@ export const OperationsUsers: React.FC = () => {
                           type="tel"
                           value={editedUser.phone || ''}
                           onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })}
-                          className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                          className="px-2 py-1 border border-[var(--border-primary)] rounded-lg text-sm"
                         />
                       ) : (
-                        <span className="text-sm text-gray-600">{user.phone || '-'}</span>
+                        <span className="text-sm text-[var(--text-secondary)]">{user.phone || '-'}</span>
                       )}
                     </td>
                     <td className="py-3">
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-[var(--text-muted)]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </span>
                     </td>
@@ -752,14 +752,14 @@ export const OperationsUsers: React.FC = () => {
                           <>
                             <button
                               onClick={handleSaveUser}
-                              className="p-1 text-green-600 hover:text-green-700"
+                              className="p-1 text-[var(--status-success)] hover:opacity-80"
                               title="Save"
                             >
                               <Check className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setEditingUser(null)}
-                              className="p-1 text-gray-600 hover:text-gray-700"
+                              className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                               title="Cancel"
                             >
                               <X className="h-4 w-4" />
@@ -769,7 +769,7 @@ export const OperationsUsers: React.FC = () => {
                           <>
                             <button
                               onClick={() => handleEditUser(user)}
-                              className="p-1 text-gray-600 hover:text-gray-700"
+                              className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                               title="Edit"
                             >
                               <Edit2 className="h-4 w-4" />
@@ -779,14 +779,14 @@ export const OperationsUsers: React.FC = () => {
                                 setResetPasswordUserId(user.id);
                                 setShowResetPassword(true);
                               }}
-                              className="p-1 text-blue-600 hover:text-blue-700"
+                              className="p-1 text-[var(--status-info)] hover:opacity-80"
                               title="Reset Password"
                             >
                               <Key className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteUser(user.id)}
-                              className="p-1 text-red-600 hover:text-red-700"
+                              className="p-1 text-[var(--status-error)] hover:opacity-80"
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -837,7 +837,7 @@ export const OperationsUsers: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <tr className="text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                     <th className="pb-3">Name</th>
                     <th className="pb-3">Email</th>
                     <th className="pb-3">Phone</th>
@@ -847,7 +847,7 @@ export const OperationsUsers: React.FC = () => {
                     <th className="pb-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-[var(--border-primary)]">
                   {sortedCustomers.map((customer) => (
                     <tr key={customer.id} className={`hover:bg-gray-50 ${customer.status === 'pending_approval' ? 'bg-yellow-50' : ''}`}>
                       <td className="py-3">
@@ -883,7 +883,7 @@ export const OperationsUsers: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3">
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-[var(--text-muted)]">
                           {new Date(customer.signup_date || customer.createdAt).toLocaleDateString()}
                         </span>
                       </td>
@@ -922,7 +922,7 @@ export const OperationsUsers: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => openCCAdjustment(customer)}
-                                className="p-1 text-green-600 hover:text-green-700"
+                                className="p-1 text-[var(--status-success)] hover:opacity-80"
                                 title="Adjust CC Balance"
                               >
                                 <Coins className="h-4 w-4" />
@@ -936,7 +936,7 @@ export const OperationsUsers: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => handleEditUser(customer)}
-                                className="p-1 text-gray-600 hover:text-gray-700"
+                                className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                                 title="Edit"
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -946,14 +946,14 @@ export const OperationsUsers: React.FC = () => {
                                   setResetPasswordUserId(customer.id);
                                   setShowResetPassword(true);
                                 }}
-                                className="p-1 text-blue-600 hover:text-blue-700"
+                                className="p-1 text-[var(--status-info)] hover:opacity-80"
                                 title="Reset Password"
                               >
                                 <Key className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleDeleteUser(customer.id)}
-                                className="p-1 text-red-600 hover:text-red-700"
+                                className="p-1 text-[var(--status-error)] hover:opacity-80"
                                 title="Delete"
                               >
                                 <Trash2 className="h-4 w-4" />

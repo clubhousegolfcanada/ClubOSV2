@@ -1,4 +1,4 @@
-# ClubOS v1.25.3 - Flexible Facility Management System
+# ClubOS v1.25.4 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,10 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.3**
-- **🌓 Dark Mode Dashboard** - Complete theme support for customer dashboard components
-- **🎨 Operations Theming** - Tickets page now fully supports dark/light modes
-- **🔧 CSS Variables** - Converted 389 hardcoded colors to theme-aware variables
+**Current Version: v1.25.4**
+- **🌓 Operations Center Dark Mode** - Admin tools fully support theme switching
+- **📊 User Management Theming** - Tables and forms adapt to operator preferences
+- **🔧 Phase 3 Complete** - 300+ additional colors converted to CSS variables
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
 - **Previous: Booking Default** - Skedda iframe now default for stability

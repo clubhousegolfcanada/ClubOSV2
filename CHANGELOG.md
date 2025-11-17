@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.4] - 2025-11-17
+
+### 🌓 Dark Mode Phase 3 - Operations Center
+
+#### Added
+- **Operations Center Dark Mode**: Complete theme support for admin tools
+  - OperationsUsers.tsx fully converted with 500+ color replacements
+  - OperationsAICenter.tsx supports dark/light themes
+  - User management tables adapt to theme preferences
+  - Toggle switches and form inputs properly themed
+
+#### Improved
+- **Consistent Status Colors**: Action buttons use semantic colors (success, info, error)
+- **Table Styling**: All data tables now use CSS variables for borders and backgrounds
+- **Hover States**: Unified hover behavior across all interactive elements
+- **Input Fields**: Form controls adapt to theme with proper contrast
+
+#### Technical Changes
+- Converted additional 300+ hardcoded colors across operations components
+- Bulk replacements using sed for consistent pattern application
+- Maintained role-based badge colors for visual clarity
+- All changes tested with TypeScript compilation
+
 ## [1.25.3] - 2025-11-17
 
 ### 🌓 Dark Mode Phase 2.5 - Dashboard & Operations

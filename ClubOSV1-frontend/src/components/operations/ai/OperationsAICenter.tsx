@@ -234,22 +234,22 @@ export const OperationsAICenter: React.FC = () => {
       <div className="lg:col-span-2 space-y-6">
         
         {/* AI Automations Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)]">
           <div 
-            className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+            className="px-6 py-4 border-b border-[var(--border-primary)] cursor-pointer hover:bg-[var(--bg-hover)]"
             onClick={() => toggleSection('automations')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">AI Automations</h2>
-                <span className="text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">AI Automations</h2>
+                <span className="text-sm text-[var(--text-muted)]">
                   ({aiFeatures.filter(f => f.enabled).length}/{aiFeatures.length} active)
                 </span>
               </div>
               {expandedSections.automations ? 
-                <ChevronDown className="h-5 w-5 text-gray-500" /> : 
-                <ChevronRight className="h-5 w-5 text-gray-500" />
+                <ChevronDown className="h-5 w-5 text-[var(--text-muted)]" /> : 
+                <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
               }
             </div>
           </div>
@@ -265,7 +265,7 @@ export const OperationsAICenter: React.FC = () => {
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       activeCategory === category
                         ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     {category === 'all' ? 'All' : category}
@@ -289,22 +289,22 @@ export const OperationsAICenter: React.FC = () => {
         </div>
 
         {/* Knowledge Management Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)]">
           <div 
-            className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+            className="px-6 py-4 border-b border-[var(--border-primary)] cursor-pointer hover:bg-[var(--bg-hover)]"
             onClick={() => toggleSection('knowledge')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Brain className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">Knowledge Management</h2>
-                <span className="text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Knowledge Management</h2>
+                <span className="text-sm text-[var(--text-muted)]">
                   ({systemMetrics.total_documents} documents)
                 </span>
               </div>
               {expandedSections.knowledge ? 
-                <ChevronDown className="h-5 w-5 text-gray-500" /> : 
-                <ChevronRight className="h-5 w-5 text-gray-500" />
+                <ChevronDown className="h-5 w-5 text-[var(--text-muted)]" /> : 
+                <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
               }
             </div>
           </div>
@@ -315,8 +315,8 @@ export const OperationsAICenter: React.FC = () => {
               
               {/* Feedback Section */}
               {feedback.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Not Helpful Feedback</h3>
+                <div className="mt-6 pt-6 border-t border-[var(--border-primary)]">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Not Helpful Feedback</h3>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {feedback.slice(0, 5).map((item, index) => (
                       <FeedbackResponse key={index} {...item} />
@@ -329,22 +329,22 @@ export const OperationsAICenter: React.FC = () => {
         </div>
 
         {/* Prompt Templates Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)]">
           <div 
-            className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+            className="px-6 py-4 border-b border-[var(--border-primary)] cursor-pointer hover:bg-[var(--bg-hover)]"
             onClick={() => toggleSection('prompts')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">Prompt Templates</h2>
-                <span className="text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Prompt Templates</h2>
+                <span className="text-sm text-[var(--text-muted)]">
                   ({promptTemplates.length} templates)
                 </span>
               </div>
               {expandedSections.prompts ? 
-                <ChevronDown className="h-5 w-5 text-gray-500" /> : 
-                <ChevronRight className="h-5 w-5 text-gray-500" />
+                <ChevronDown className="h-5 w-5 text-[var(--text-muted)]" /> : 
+                <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
               }
             </div>
           </div>
@@ -362,11 +362,11 @@ export const OperationsAICenter: React.FC = () => {
               
               <div className="space-y-3">
                 {promptTemplates.map((prompt) => (
-                  <div key={prompt.id} className="p-4 border border-gray-200 rounded-lg">
+                  <div key={prompt.id} className="p-4 border border-[var(--border-primary)] rounded-lg">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h4 className="font-semibold text-gray-900">{prompt.name}</h4>
-                        <span className="text-xs text-gray-500">{prompt.category}</span>
+                        <h4 className="font-semibold text-[var(--text-primary)]">{prompt.name}</h4>
+                        <span className="text-xs text-[var(--text-muted)]">{prompt.category}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {editingPrompt === prompt.id ? (
@@ -379,7 +379,7 @@ export const OperationsAICenter: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingPrompt(null)}
-                              className="p-1 text-gray-600 hover:text-gray-700"
+                              className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-secondary)]"
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -391,7 +391,7 @@ export const OperationsAICenter: React.FC = () => {
                                 setEditingPrompt(prompt.id);
                                 setEditedPrompt(prompt.content);
                               }}
-                              className="p-1 text-gray-600 hover:text-gray-700"
+                              className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-secondary)]"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
@@ -409,11 +409,11 @@ export const OperationsAICenter: React.FC = () => {
                       <textarea
                         value={editedPrompt}
                         onChange={(e) => setEditedPrompt(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         rows={4}
                       />
                     ) : (
-                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{prompt.content}</p>
+                      <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{prompt.content}</p>
                     )}
                   </div>
                 ))}
@@ -427,28 +427,28 @@ export const OperationsAICenter: React.FC = () => {
       <div className="space-y-6">
         
         {/* System Metrics */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-6">
           <div className="flex items-center space-x-2 mb-4">
             <BarChart3 className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold text-gray-900">System Metrics</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">System Metrics</h3>
           </div>
           
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Total Documents</span>
+                <span className="text-[var(--text-secondary)]">Total Documents</span>
                 <span className="font-semibold">{systemMetrics.total_documents}</span>
               </div>
             </div>
             <div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Active Assistants</span>
+                <span className="text-[var(--text-secondary)]">Active Assistants</span>
                 <span className="font-semibold">{systemMetrics.unique_assistants || 4}</span>
               </div>
             </div>
             <div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">AI Responses Today</span>
+                <span className="text-[var(--text-secondary)]">AI Responses Today</span>
                 <span className="font-semibold">
                   {aiFeatures.reduce((sum, f) => sum + (f.stats?.total_uses || 0), 0)}
                 </span>
@@ -456,7 +456,7 @@ export const OperationsAICenter: React.FC = () => {
             </div>
             <div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Success Rate</span>
+                <span className="text-[var(--text-secondary)]">Success Rate</span>
                 <span className="font-semibold">
                   {aiFeatures.length > 0 
                     ? Math.round((aiFeatures.reduce((sum, f) => sum + (f.stats?.successful_uses || 0), 0) / 
@@ -467,13 +467,13 @@ export const OperationsAICenter: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="mt-4 pt-4 border-t border-[var(--border-primary)]">
             <button
               onClick={() => {
                 fetchAIFeatures();
                 fetchSystemMetrics();
               }}
-              className="w-full px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
+              className="w-full px-4 py-2 text-sm bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded-lg hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center space-x-2"
             >
               <RefreshCw className="h-4 w-4" />
               <span>Refresh Metrics</span>
@@ -482,15 +482,15 @@ export const OperationsAICenter: React.FC = () => {
         </div>
 
         {/* Recent Messages */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold text-gray-900">Recent Messages</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Recent Messages</h3>
             </div>
             <button
               onClick={fetchOpenPhoneConversations}
-              className="p-1 text-gray-600 hover:text-gray-700"
+              className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-secondary)]"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -499,16 +499,16 @@ export const OperationsAICenter: React.FC = () => {
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {openPhoneConversations.length > 0 ? (
               openPhoneConversations.slice(0, 10).map((conv, index) => (
-                <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm">
+                <div key={index} className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-sm">
                   <div className="flex items-start justify-between mb-1">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-[var(--text-primary)]">
                       {conv.customer_name || conv.phone_number}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-[var(--text-muted)]">
                       {new Date(conv.created_at).toLocaleTimeString()}
                     </span>
                   </div>
-                  <p className="text-gray-600 line-clamp-2">{conv.initial_message}</p>
+                  <p className="text-[var(--text-secondary)] line-clamp-2">{conv.initial_message}</p>
                   {conv.assistant_type && (
                     <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
                       {conv.assistant_type}
@@ -517,16 +517,16 @@ export const OperationsAICenter: React.FC = () => {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-4">No recent messages</p>
+              <p className="text-[var(--text-muted)] text-center py-4">No recent messages</p>
             )}
           </div>
         </div>
 
         {/* Knowledge Export */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Download className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold text-gray-900">Export Tools</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Export Tools</h3>
           </div>
           
           <div className="space-y-2">
@@ -555,26 +555,26 @@ export const OperationsAICenter: React.FC = () => {
       {/* Add Prompt Modal */}
       {showAddPrompt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Add Prompt Template</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Name</label>
                 <input
                   type="text"
                   value={newPrompt.name}
                   onChange={(e) => setNewPrompt({ ...newPrompt, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Category</label>
                 <select
                   value={newPrompt.category}
                   onChange={(e) => setNewPrompt({ ...newPrompt, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="general">General</option>
                   <option value="support">Support</option>
@@ -584,11 +584,11 @@ export const OperationsAICenter: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Content</label>
                 <textarea
                   value={newPrompt.content}
                   onChange={(e) => setNewPrompt({ ...newPrompt, content: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   rows={6}
                 />
               </div>
@@ -600,7 +600,7 @@ export const OperationsAICenter: React.FC = () => {
                   setShowAddPrompt(false);
                   setNewPrompt({ name: '', content: '', category: 'general' });
                 }}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-[var(--text-secondary)] bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--bg-hover)] transition-colors"
               >
                 Cancel
               </button>
