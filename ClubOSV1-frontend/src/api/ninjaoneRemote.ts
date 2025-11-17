@@ -50,8 +50,7 @@ class NinjaOneRemoteAPI {
       const response = await http.get(
         `ninjaone-remote/device-info`,
         {
-          params: { location, bayNumber },
-          headers: this.getAuthHeaders()
+          params: { location, bayNumber }
         }
       );
       

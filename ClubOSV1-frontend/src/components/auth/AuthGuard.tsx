@@ -45,9 +45,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   // Verify token with backend (optional, for critical operations)
   const verifyTokenWithBackend = async (token: string): Promise<boolean> => {
     try {
-      const response = await http.get('auth/verify', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await http.get('auth/verify');
       return response.data?.success === true;
     } catch (error) {
       secureLog('Token verification failed', { error: (error as any)?.message });

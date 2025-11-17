@@ -259,7 +259,7 @@ export const CustomerDashboard: React.FC = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-[var(--text-muted)]">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -268,7 +268,7 @@ export const CustomerDashboard: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Welcome Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-300 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export const CustomerDashboard: React.FC = () => {
                 quickStats.rank === 'Fescue' ? 'text-purple-600' :
                 quickStats.rank === 'Bent' ? 'text-blue-600' :
                 quickStats.rank === 'Bermuda' ? 'text-green-600' :
-                'text-gray-900'
+                'text-[var(--text-primary)]'
               }`}>
                 Welcome back, {firstName}
               </h1>
@@ -285,7 +285,7 @@ export const CustomerDashboard: React.FC = () => {
                 <Crown className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               )}
             </div>
-            <p className="text-sm text-gray-700 mt-0.5">
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
               {welcomeMessage}
             </p>
           </div>
@@ -298,7 +298,7 @@ export const CustomerDashboard: React.FC = () => {
         {quickActions.map((action, index) => (
           <div
             key={index}
-            className="group relative bg-white rounded-lg border border-gray-300 dark:border-gray-700 p-4 hover:shadow-md hover:border-[var(--accent)]/30 transition-all duration-200"
+            className="group relative bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-4 hover:shadow-md hover:border-[var(--accent)]/30 transition-all duration-200"
           >
             {/* Location selector for Book a Box card */}
             {action.hasLocationSelector && (
@@ -316,7 +316,7 @@ export const CustomerDashboard: React.FC = () => {
                 </button>
                 
                 {showLocationDropdown && (
-                  <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-40 min-w-[120px]">
+                  <div className="absolute top-full right-0 mt-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg shadow-lg z-40 min-w-[120px]">
                     {locations.map((location) => (
                       <button
                         key={location.id}
@@ -324,8 +324,8 @@ export const CustomerDashboard: React.FC = () => {
                           e.stopPropagation();
                           handleLocationChange(location);
                         }}
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                          selectedLocation?.id === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-gray-700'
+                        className={`w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                          selectedLocation?.id === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)]' : 'text-[var(--text-secondary)]'
                         }`}
                       >
                         <div className="font-medium text-xs">{location.name === 'All Locations' ? 'All' : location.name}</div>
@@ -345,7 +345,7 @@ export const CustomerDashboard: React.FC = () => {
             
             {/* Notification badge for pending friend requests */}
             {action.badge && (
-              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center shadow-lg animate-pulse">
+              <div className="absolute -top-1 -right-1 bg-[var(--status-error)] text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center shadow-lg animate-pulse">
                 {action.badge}
               </div>
             )}
@@ -379,8 +379,8 @@ export const CustomerDashboard: React.FC = () => {
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-800">{action.label}</h3>
-                <p className="text-xs text-gray-600 mt-0.5">{action.description}</p>
+                <h3 className="text-sm font-medium text-[var(--text-primary)]">{action.label}</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">{action.description}</p>
               </div>
             </button>
           </div>

@@ -106,20 +106,20 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
   return (
     <div 
       ref={cardRef}
-      className={`bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden ${className} ${
+      className={`bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] overflow-hidden ${className} ${
         isExpanded ? 'fixed inset-4 z-50 lg:relative lg:inset-auto' : ''
       }`}
     >
       {/* Header */}
-      <div className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={toggleMinimize}>
+      <div className="px-4 py-3 cursor-pointer hover:bg-[var(--bg-hover)] transition-colors" onClick={toggleMinimize}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-[var(--accent)]" />
-            <h2 className="text-sm font-semibold text-gray-900">Book a Box</h2>
-            
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Book a Box</h2>
+
             {/* Show location when minimized */}
             {isMinimized && selectedLocation && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-[var(--text-muted)]">
                 • {selectedLocation.name === 'All Locations' ? 'All' : selectedLocation.name}
               </span>
             )}
@@ -140,18 +140,18 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
               </button>
               
               {showLocationDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-40 min-w-[150px]">
+                <div className="absolute top-full left-0 mt-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg shadow-lg z-40 min-w-[150px]">
                   {locations.map((location) => (
                     <button
                       key={location.id}
                       onClick={() => handleLocationChange(location)}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                        selectedLocation?.id === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-medium' : 'text-gray-700'
+                      className={`w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                        selectedLocation?.id === location.id ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-medium' : 'text-[var(--text-secondary)]'
                       }`}
                     >
                       <div className="font-medium text-sm">{location.name}</div>
                       {location.city !== 'All' && (
-                        <div className="text-xs text-gray-500">{location.city}</div>
+                        <div className="text-xs text-[var(--text-muted)]">{location.city}</div>
                       )}
                     </button>
                   ))}
@@ -169,7 +169,7 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
                   e.stopPropagation();
                   handleExpand();
                 }}
-                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
                 title="Open full booking page"
               >
                 <ExternalLink className="w-4 h-4 text-[var(--accent)]" />
@@ -192,9 +192,9 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
             {/* Expand/Collapse Icon */}
             <div className="p-1">
               {isMinimized ? (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
               ) : (
-                <ChevronUp className="w-4 h-4 text-gray-400" />
+                <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
               )}
             </div>
           </div>
@@ -206,18 +206,18 @@ export const QuickBookCard: React.FC<QuickBookCardProps> = ({ className = '' }) 
         <div className={`relative overflow-hidden ${isExpanded ? 'h-[calc(100vh-8rem)]' : 'h-[600px] sm:h-[700px]'}`}>
         {/* Loading State */}
         {isLoading && (
-          <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
+          <div className="absolute inset-0 bg-[var(--bg-secondary)]/90 z-10 flex flex-col items-center justify-center">
             <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin mb-3" />
-            <p className="text-sm text-gray-600">Loading booking system...</p>
+            <p className="text-sm text-[var(--text-muted)]">Loading booking system...</p>
           </div>
         )}
 
         {/* Error State */}
         {hasError && (
-          <div className="absolute inset-0 bg-gray-50 z-10 flex flex-col items-center justify-center p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Unable to load booking system</h4>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="absolute inset-0 bg-[var(--bg-tertiary)] z-10 flex flex-col items-center justify-center p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-[var(--status-error)] mb-3" />
+            <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Unable to load booking system</h4>
+            <p className="text-sm text-[var(--text-muted)] mb-4">
               The booking system couldn't be loaded in this view. Please open it in a new tab for the best experience.
             </p>
             <button

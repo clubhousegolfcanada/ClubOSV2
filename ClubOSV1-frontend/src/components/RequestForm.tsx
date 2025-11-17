@@ -518,10 +518,6 @@ const RequestForm: React.FC = () => {
       const response = await http.post(`slack/reply`, {
         thread_ts: lastSlackThreadTs,
         text: replyText.trim()
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
       });
       
       if (response.data.success) {

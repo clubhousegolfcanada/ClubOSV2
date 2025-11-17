@@ -398,10 +398,6 @@ export default function Messages() {
       }
 
       const response = await http.get(`messages/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         params: { limit: 15 }  // Optimized: reduced from 25 to 15 for faster initial load
       });
 
@@ -583,8 +579,7 @@ export default function Messages() {
         if (token) {
           // Fetch complete history for this phone number
           const historyResponse = await http.get(
-            `messages/conversations/${conversation.phone_number}/full-history`,
-            { headers: { 'Authorization': `Bearer ${token}` } }
+            `messages/conversations/${conversation.phone_number}/full-history`
           );
 
           if (historyResponse.data.success) {
@@ -713,12 +708,6 @@ export default function Messages() {
         {
           to: selectedConversation.phone_number,
           text: messageText
-        },
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
         }
       );
       
@@ -778,13 +767,7 @@ export default function Messages() {
       
       const response = await http.post(
         `messages/conversations/${selectedConversation.phone_number}/suggest-response`,
-        {},
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
+        {}
       );
       
       if (response.data.success) {
@@ -811,13 +794,7 @@ export default function Messages() {
       
       const response = await http.post(
         `messages/suggestions/${suggestionId}/approve-and-send`,
-        { editedText },
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
+        { editedText }
       );
       
       if (response.data.success) {

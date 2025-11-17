@@ -107,9 +107,6 @@ const TicketCenterOptimizedV2 = () => {
       }
 
       const response = await http.get(`tickets?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
       });
 
       if (response.data.success) {
@@ -285,11 +282,6 @@ const TicketCenterOptimizedV2 = () => {
       const response = await http.patch(
         `tickets/${ticketId}/status`,
         { status: newStatus },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
       );
 
       if (response.data.success) {
@@ -320,11 +312,6 @@ const TicketCenterOptimizedV2 = () => {
       const response = await http.patch(
         `tickets/${ticketId}/status`,
         { status: 'archived' },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
       );
 
       if (response.data.success) {
@@ -348,11 +335,6 @@ const TicketCenterOptimizedV2 = () => {
       const response = await http.post(
         `tickets/${ticketId}/comments`,
         { text: newComment },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
       );
 
       if (response.data.success) {
@@ -675,11 +657,7 @@ const TicketCenterOptimizedV2 = () => {
                             // Load full ticket details with comments
                             try {
                               const token = tokenManager.getToken();
-                              const response = await http.get(`tickets/${ticket.id}`, {
-                                headers: {
-                                  Authorization: `Bearer ${token}`
-                                }
-                              });
+                              const response = await http.get(`tickets/${ticket.id}`);
 
                               if (response.data.success) {
                                 setSelectedTicket(response.data.data);

@@ -2,6 +2,46 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.3] - 2025-11-17
+
+### 🌓 Dark Mode Phase 2.5 - Dashboard & Operations
+
+#### Added
+- **Dashboard Dark Mode Support**: Complete theme conversion for customer dashboard
+  - CustomerDashboard.tsx now fully supports dark/light themes
+  - QuickBookCard.tsx converted with proper theme variables
+  - RecentChallenges.tsx updated with theme-aware colors
+  - All dashboard cards adapt to operator theme preferences
+
+#### Improved
+- **Tickets Page Theming**: Enhanced dark mode support for ticket management
+  - Location dropdown uses CSS variables for consistent theming
+  - Category filters adapt to theme with proper contrast
+  - All hover states use theme-aware background colors
+
+#### Technical Changes
+- Converted 389 hardcoded color instances to CSS variables across 5 key components
+- Replaced Tailwind utility colors (bg-white, text-gray-*) with CSS variables
+- Maintained semantic status colors for clarity (warning, error, success states)
+- All changes maintain mobile-first responsive design
+
+## [1.25.2] - 2025-11-14
+
+### 🐛 Critical Mobile Authentication Fix
+
+#### Fixed
+- **Duplicate Authorization Headers Breaking Mobile Auth**: Fixed critical issue causing 403 errors on mobile devices
+  - Removed 20+ manual Authorization header additions across 7 components
+  - Components were adding headers manually when axios interceptor already adds them automatically
+  - Mobile browsers (Safari/Chrome) handle duplicate headers poorly, causing auth failures
+  - Desktop browsers were more lenient, which is why the issue only affected mobile
+  - Added duplicate header detection in development mode to prevent future occurrences
+
+#### Technical Details
+- **Files Fixed**: messages.tsx, MessagesCardV3.tsx, TicketCenterOptimizedV3.tsx, TicketCenterOptimizedV2.tsx, RequestForm.tsx, AuthGuard.tsx, ninjaoneRemote.tsx
+- **Root Cause**: Manual `Authorization: Bearer ${token}` headers were being added when the http.ts axios interceptor already adds them
+- **Impact**: Mobile users can now successfully make AI requests and access all operator features
+
 ## [1.25.1] - 2025-11-14
 
 ### 🐛 Critical Bug Fixes

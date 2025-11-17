@@ -77,16 +77,16 @@ export default function TicketCenter() {
               <div className="relative location-dropdown">
                 <button
                   onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-                  className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-sm font-medium"
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded-md hover:bg-[var(--bg-hover)] transition-all text-sm font-medium"
                 >
                   <MapPin className="w-4 h-4" />
                   <span className="hidden sm:inline">{selectedLocation === 'all' ? 'All Locations' : selectedLocation}</span>
                 </button>
                 {showLocationDropdown && (
-                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                  <div className="absolute right-0 mt-1 w-48 bg-[var(--bg-secondary)] rounded-md shadow-lg z-50 border border-[var(--border-primary)]">
                     <button
                       onClick={() => { setSelectedLocation('all'); setShowLocationDropdown(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${selectedLocation === 'all' ? 'bg-gray-50 font-medium' : ''}`}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-hover)] ${selectedLocation === 'all' ? 'bg-[var(--bg-tertiary)] font-medium' : ''}`}
                     >
                       All Locations
                     </button>
@@ -94,7 +94,7 @@ export default function TicketCenter() {
                       <button
                         key={location}
                         onClick={() => { setSelectedLocation(location); setShowLocationDropdown(false); }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${selectedLocation === location ? 'bg-gray-50 font-medium' : ''}`}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-hover)] ${selectedLocation === location ? 'bg-[var(--bg-tertiary)] font-medium' : ''}`}
                       >
                         {location}
                       </button>
@@ -104,13 +104,13 @@ export default function TicketCenter() {
               </div>
 
               {/* Category Filter Buttons */}
-              <div className="flex items-center space-x-1 bg-gray-100 rounded-md p-0.5">
+              <div className="flex items-center space-x-1 bg-[var(--bg-tertiary)] rounded-md p-0.5">
                 <button
                   onClick={() => setCategoryFilter('all')}
                   className={`px-2.5 py-1 rounded text-sm font-medium transition-all ${
                         categoryFilter === 'all'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                 >
                   All
@@ -119,8 +119,8 @@ export default function TicketCenter() {
                   onClick={() => setCategoryFilter('facilities')}
                   className={`flex items-center space-x-1 px-2.5 py-1 rounded text-sm font-medium transition-all ${
                     categoryFilter === 'facilities'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   <Settings2 className="w-3.5 h-3.5" />
@@ -130,8 +130,8 @@ export default function TicketCenter() {
                   onClick={() => setCategoryFilter('tech')}
                   className={`flex items-center space-x-1 px-2.5 py-1 rounded text-sm font-medium transition-all ${
                     categoryFilter === 'tech'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   <Wrench className="w-3.5 h-3.5" />

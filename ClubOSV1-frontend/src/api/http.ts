@@ -65,6 +65,15 @@ client.interceptors.request.use(
     if (!skipAuth && typeof window !== 'undefined') {
       const token = tokenManager.getToken();
       if (token && config.headers) {
+        // Check for duplicate Authorization headers (development warning)
+        if (process.env.NODE_ENV === 'development' && config.headers.Authorization) {
+          logger.warn('[HTTP Client] DUPLICATE AUTHORIZATION HEADER DETECTED!', {
+            existingHeader: config.headers.Authorization ? '[REDACTED]' : undefined,
+            url: config.url,
+            method: config.method,
+            stack: new Error().stack
+          });
+        }
         config.headers.Authorization = `Bearer ${token}`;
       }
     }

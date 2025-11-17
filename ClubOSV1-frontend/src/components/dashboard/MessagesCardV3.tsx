@@ -108,9 +108,6 @@ export default function MessagesCardV3() {
       const signal = abortControllerRef.current?.signal;
 
       const response = await http.get(`messages/conversations?limit=3`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         signal: signal // Pass the abort signal to the request
       });
 
@@ -173,9 +170,6 @@ export default function MessagesCardV3() {
           conversationId: conv.id
         },
         {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
           signal: signal // Pass the abort signal to the request
         }
       );

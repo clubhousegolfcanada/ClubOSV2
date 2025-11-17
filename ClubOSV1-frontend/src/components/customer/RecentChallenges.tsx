@@ -78,12 +78,12 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-4">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-32 mb-3"></div>
+          <div className="h-4 bg-[var(--bg-tertiary)] rounded w-32 mb-3"></div>
           <div className="space-y-2">
-            <div className="h-12 bg-gray-100 rounded"></div>
-            <div className="h-12 bg-gray-100 rounded"></div>
+            <div className="h-12 bg-[var(--bg-tertiary)] rounded"></div>
+            <div className="h-12 bg-[var(--bg-tertiary)] rounded"></div>
           </div>
         </div>
       </div>
@@ -92,14 +92,14 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
 
   if (challenges.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-900">Active Challenges</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Active Challenges</h2>
           <Target className="w-4 h-4 text-[var(--accent)]" />
         </div>
         <div className="text-center py-6">
-          <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-xs text-gray-700">No active challenges</p>
+          <Target className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2" />
+          <p className="text-xs text-[var(--text-secondary)]">No active challenges</p>
           <button
             onClick={() => router.push('/customer/compete')}
             className="mt-3 px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-medium rounded-lg hover:bg-[#084a45] transition-colors"
@@ -112,9 +112,9 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+    <div className="bg-[var(--bg-secondary)] rounded-lg shadow-sm border border-[var(--border-primary)] p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-900">Active Challenges</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">Active Challenges</h2>
         <Target className="w-4 h-4 text-[var(--accent)]" />
       </div>
       
@@ -130,16 +130,16 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
             <button
               key={challenge.id}
               onClick={() => router.push(`/customer/challenges/${challenge.id}`)}
-              className="w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-between group text-left"
+              className="w-full p-3 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors flex items-center justify-between group text-left"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-gray-900 truncate">
+                  <span className="text-xs font-medium text-[var(--text-primary)] truncate">
                     vs {opponentName}
                   </span>
                   {getStatusBadge(challenge.status)}
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-gray-700">
+                <div className="flex items-center gap-3 text-[10px] text-[var(--text-secondary)]">
                   <span className="flex items-center gap-1">
                     <Coins className="w-3 h-3" />
                     {wagerAmount} CC
@@ -150,7 +150,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
                   </span>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-[var(--text-muted)] group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </button>
           );
         })}
@@ -158,7 +158,7 @@ export const RecentChallenges: React.FC<RecentChallengesProps> = ({ userId, user
       
       <button
         onClick={() => router.push('/customer/compete')}
-        className="w-full mt-3 p-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+        className="w-full mt-3 p-2 border border-[var(--border-primary)] rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-1"
       >
         <Users className="w-3.5 h-3.5" />
         View All Challenges
