@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.6] - 2025-11-18
+
+### Enhanced
+- **Operator Authentication UI**: Redesigned login experience with Google OAuth emphasis
+  - Google Sign-In now primary and prominent for operators
+  - Password login moved to "Emergency access" secondary option
+  - Added distinct visual separation between operator and customer modes
+  - Enhanced button styling with primary/secondary variants
+  - Auto-detection of @clubhouse247golf.com emails
+
+### Improved
+- **Mobile Authentication**: Additional blacklisted token cleanup
+- **UI Polish**: Added Shield icon and gradient backgrounds for operator section
+- **User Experience**: Clear messaging about recommended authentication methods
+
 ## [1.25.5] - 2025-11-18
 
 ### Fixed

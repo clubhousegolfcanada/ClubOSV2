@@ -8,12 +8,14 @@ interface GoogleSignInButtonProps {
   rememberMe: boolean;
   loginMode: 'operator' | 'customer';
   className?: string;
+  variant?: 'primary' | 'secondary';
 }
 
 const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   rememberMe,
   loginMode,
-  className = ''
+  className = '',
+  variant = 'secondary'
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,25 +58,34 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     return null;
   }
 
+  // Style based on variant
+  const isPrimary = variant === 'primary';
+
   // Show for both operator and customer modes
   return (
     <>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[var(--border-primary)]" />
+      {!isPrimary && (
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[var(--border-primary)]" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-[var(--bg-primary)] text-[var(--text-muted)]">
+              Or continue with
+            </span>
+          </div>
         </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-[var(--bg-primary)] text-[var(--text-muted)]">
-            Or continue with
-          </span>
-        </div>
-      </div>
+      )}
 
       <button
         type="button"
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        className={`w-full flex justify-center items-center gap-3 py-3 px-4 border border-[var(--border-primary)] rounded-md shadow-sm text-base font-medium text-[var(--text-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ${className}`}
+        className={`w-full flex justify-center items-center gap-3 ${
+          isPrimary
+            ? 'py-4 px-6 text-lg font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+            : 'py-3 px-4 text-base font-medium text-[var(--text-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+        } border border-[var(--border-primary)] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ${className}`}
       >
         {/* Google Icon */}
         <svg
