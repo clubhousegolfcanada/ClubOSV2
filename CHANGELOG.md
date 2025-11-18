@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.5] - 2025-11-18
+
+### Fixed
+- **Critical Authentication Fix**: Resolved mobile authentication blocking issues
+  - Cleared 14 stale blacklisted tokens for mike@clubhouse247golf.com
+  - Fixed blacklisted_tokens table schema (added missing columns: session_id, ip_address, user_agent)
+  - Removed expired blacklist entries preventing login
+  - Verified Google OAuth fully functional for @clubhouse247golf.com domain
+
+### Technical
+- Created migration 234_fix_blacklisted_tokens_schema.sql
+- Google Sign-In already present on login page for both operators and customers
+- Both authentication methods (password and Google OAuth) now working on mobile
+
 ## [1.25.4] - 2025-11-17
 
 ### 🌓 Dark Mode Phase 3 - Operations Center
