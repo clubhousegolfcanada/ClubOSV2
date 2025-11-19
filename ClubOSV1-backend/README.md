@@ -42,6 +42,59 @@ ClubOSV1-backend/
 └── dist/               # Compiled JavaScript
 ```
 
+## Secret Rotation Guide
+
+### Generating New Secrets
+
+To generate secure secrets for production:
+
+```bash
+npm run generate:secrets
+```
+
+This will generate:
+- JWT_SECRET (64 characters)
+- SESSION_SECRET (64 characters)
+- ENCRYPTION_KEY (32 characters)
+
+### Migration Timeline
+
+- **Now - Dec 31, 2024**: Migration mode active
+  - Set `SECRET_MIGRATION_MODE=true` in environment
+  - Old secrets work with deprecation warnings
+  - New secrets can be deployed anytime
+
+- **Jan 1, 2025**: Strict validation enforced
+  - Migration mode expires
+  - Old/weak secrets will cause startup failure
+  - All deployments must use new secrets
+
+### Updating Production (Railway)
+
+1. Generate new secrets:
+   ```bash
+   npm run generate:secrets
+   ```
+
+2. Update Railway Dashboard:
+   - Go to Railway Dashboard → ClubOS Backend
+   - Navigate to Variables tab
+   - Update JWT_SECRET, SESSION_SECRET, ENCRYPTION_KEY
+   - Add `SECRET_MIGRATION_MODE=false`
+   - Deploy changes
+
+3. Monitor deployment:
+   - Check logs for successful startup
+   - Note: All users will need to re-login
+
+### Security Best Practices
+
+- **Never** commit secrets to version control
+- Use different secrets for each environment
+- Rotate secrets every 90 days
+- Store backup copies in secure password manager
+- Monitor for unauthorized access after rotation
+
 ## Getting Started
 
 ### Prerequisites

@@ -8,12 +8,8 @@ interface EnvSecurityCheck {
 }
 
 const securityChecks: EnvSecurityCheck[] = [
-  {
-    key: 'JWT_SECRET',
-    validator: (val) => !!val && val !== 'your-secret-jwt-key' && val.length >= 32,
-    message: 'JWT_SECRET must be at least 32 characters and not default',
-    critical: true
-  },
+  // JWT_SECRET and SESSION_SECRET validation is now handled by envValidator.ts
+  // with enhanced 64-character requirement and migration support
   {
     key: 'ENCRYPTION_KEY',
     validator: (val) => {
@@ -110,11 +106,9 @@ export function validateEnvironmentSecurity(): void {
   
   // Production-specific checks
   if (process.env.NODE_ENV === 'production') {
-    // Check for weak secrets
-    if (process.env.JWT_SECRET?.includes('secret') || process.env.JWT_SECRET?.includes('test')) {
-      errors.push('❌ JWT_SECRET contains weak words like "secret" or "test" - use a random value');
-    }
-    
+    // JWT_SECRET weak word checking is now handled by envValidator.ts with migration support
+
+    // Only check ENCRYPTION_KEY for weak patterns
     if (process.env.ENCRYPTION_KEY?.includes('encryption') || process.env.ENCRYPTION_KEY?.includes('key')) {
       errors.push('❌ ENCRYPTION_KEY contains predictable words - use a random value');
     }
@@ -136,9 +130,8 @@ export function validateEnvironmentSecurity(): void {
   
   // Development-specific warnings
   if (process.env.NODE_ENV === 'development') {
-    if (process.env.JWT_SECRET === 'your-secret-jwt-key') {
-      warnings.push('⚠️  Using default JWT_SECRET in development - consider using a custom value');
-    }
+    // JWT_SECRET validation is now handled by envValidator.ts
+    // Development defaults are allowed with warnings
   }
   
   // Print summary

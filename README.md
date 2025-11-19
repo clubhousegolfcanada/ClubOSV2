@@ -1,4 +1,4 @@
-# ClubOS v1.25.8 - Flexible Facility Management System
+# ClubOS v1.25.9 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.8**
-- **🛡️ CRITICAL SECURITY FIXES** - Fixed SQL injection vulnerabilities in 4+ files
-- **🔒 CORS Security** - Unknown origins now properly rejected in production
-- **🔑 Enhanced JWT Security** - 64+ character secrets with entropy validation
-- **⚡ Rate Limiting Fixed** - Now works in all environments
+**Current Version: v1.25.9**
+- **🔧 Production Fix** - Resolved startup failure from conflicting validations
+- **🔄 Migration Mode** - Graceful transition for secret rotation (deadline: Jan 1, 2025)
+- **🔐 Secret Generator** - New `npm run generate:secrets` command
+- **📚 Enhanced Docs** - Complete secret rotation guide added
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
 - **Previous: Booking Default** - Skedda iframe now default for stability

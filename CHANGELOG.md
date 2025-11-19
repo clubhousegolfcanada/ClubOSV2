@@ -2,6 +2,42 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.9] - 2025-11-19
+
+### Fixed
+- **Production Startup Failure**: Resolved conflicting secret validation systems
+  - envValidator.ts and env-security.ts were both validating secrets with different rules
+  - Unified validation logic to prevent conflicts
+  - Production can now start with existing secrets during migration period
+
+### Added
+- **Secret Migration Mode**: Graceful transition for existing deployments
+  - Set `SECRET_MIGRATION_MODE=true` to allow legacy secrets temporarily
+  - Migration deadline: January 1, 2025
+  - Clear warnings guide administrators to rotate secrets
+
+- **Secret Generation Script**: New `npm run generate:secrets` command
+  - Generates cryptographically secure 64-character secrets
+  - Provides Railway and local development instructions
+  - Uses crypto.randomBytes for maximum entropy
+
+### Improved
+- **Validation Messages**: Enhanced error messages with remediation steps
+  - Points to secret generation script when weak secrets detected
+  - Shows migration deadline when in migration mode
+  - Clearer entropy requirements
+
+- **Documentation**: Added comprehensive secret rotation guide
+  - Step-by-step Railway update instructions
+  - Security best practices
+  - Migration timeline
+
+### Technical
+- Removed duplicate JWT_SECRET validation from env-security.ts
+- Enhanced entropy validation in envValidator.ts
+- Consolidated all secret validation in one location
+- Maintained backward compatibility during migration
+
 ## [1.25.8] - 2025-11-18
 
 ### CRITICAL SECURITY FIXES

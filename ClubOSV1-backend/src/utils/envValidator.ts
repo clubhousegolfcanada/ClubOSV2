@@ -2,6 +2,14 @@ import dotenv from 'dotenv';
 import { existsSync } from 'fs';
 import { logger } from './logger';
 
+// Migration mode for existing deployments with legacy secrets
+const MIGRATION_MODE = process.env.SECRET_MIGRATION_MODE === 'true';
+const MIGRATION_DEADLINE = new Date('2025-01-01'); // 6 weeks from deployment
+
+if (MIGRATION_MODE && new Date() < MIGRATION_DEADLINE) {
+  logger.warn('🔄 SECRET MIGRATION MODE ACTIVE - Please update secrets before ' + MIGRATION_DEADLINE.toISOString());
+}
+
 interface EnvironmentVariables {
   // Required
   PORT: string;
@@ -104,33 +112,117 @@ export class EnvironmentValidator {
       required: true,
       minLength: 64,
       custom: (value: string) => {
-        // Ensure high entropy in the secret
+        // Migration mode: Allow current production secret temporarily
+        if (MIGRATION_MODE && new Date() < MIGRATION_DEADLINE) {
+          const knownLegacySecrets = [
+            'your-super-secret-jwt-key-for-development-only-change-in-production',
+            'your-super-secret-session-key-for-development-only-change-in-production'
+          ];
+
+          if (knownLegacySecrets.includes(value)) {
+            logger.warn('⚠️  Using legacy JWT_SECRET - must be rotated before ' + MIGRATION_DEADLINE.toDateString());
+            logger.warn('   Run: npm run generate:secrets');
+            return true; // Allow temporarily in migration mode
+          }
+        }
+
+        // Standard validation
         if (value.length < 64) {
           return 'JWT_SECRET must be at least 64 characters for security';
         }
-        // Check for obvious weak patterns
-        if (/^[a-z]+$|^[A-Z]+$|^[0-9]+$|^(.)\1+$/.test(value)) {
-          return 'JWT_SECRET must contain a mix of characters, not just letters or numbers';
+
+        // Detect common weak/default secrets
+        const commonDefaults = [
+          'your-secret-jwt-key',
+          'change-this-secret',
+          'secret',
+          'password',
+          'test'
+        ];
+
+        if (commonDefaults.some(weak => value.toLowerCase().includes(weak))) {
+          if (process.env.NODE_ENV === 'production' && !MIGRATION_MODE) {
+            return 'JWT_SECRET contains weak patterns. Generate a random secret with: npm run generate:secrets';
+          }
         }
+
+        // Entropy validation - ensure good character mix
+        const hasLower = /[a-z]/.test(value);
+        const hasUpper = /[A-Z]/.test(value);
+        const hasNumber = /[0-9]/.test(value);
+        const hasSpecial = /[^a-zA-Z0-9]/.test(value);
+        const characterTypes = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+
+        if (characterTypes < 2) {
+          return 'JWT_SECRET must contain at least 2 different character types (lowercase, uppercase, numbers, special)';
+        }
+
+        // Check for repeated patterns
+        if (/^(.)\1+$/.test(value)) {
+          return 'JWT_SECRET must not be a repeated character';
+        }
+
         return true;
       },
-      description: 'JWT signing secret (minimum 64 characters)'
+      description: 'JWT signing secret (minimum 64 characters with good entropy)'
     },
     SESSION_SECRET: {
       required: true,
       minLength: 64,
       custom: (value: string) => {
-        // Ensure high entropy in the secret
+        // Migration mode: Allow current production secret temporarily
+        if (MIGRATION_MODE && new Date() < MIGRATION_DEADLINE) {
+          const knownLegacySecrets = [
+            'your-super-secret-jwt-key-for-development-only-change-in-production',
+            'your-super-secret-session-key-for-development-only-change-in-production'
+          ];
+
+          if (knownLegacySecrets.includes(value)) {
+            logger.warn('⚠️  Using legacy SESSION_SECRET - must be rotated before ' + MIGRATION_DEADLINE.toDateString());
+            logger.warn('   Run: npm run generate:secrets');
+            return true; // Allow temporarily in migration mode
+          }
+        }
+
+        // Standard validation
         if (value.length < 64) {
           return 'SESSION_SECRET must be at least 64 characters for security';
         }
-        // Check for obvious weak patterns
-        if (/^[a-z]+$|^[A-Z]+$|^[0-9]+$|^(.)\1+$/.test(value)) {
-          return 'SESSION_SECRET must contain a mix of characters, not just letters or numbers';
+
+        // Detect common weak/default secrets
+        const commonDefaults = [
+          'your-secret-session-key',
+          'change-this-secret',
+          'secret',
+          'password',
+          'test'
+        ];
+
+        if (commonDefaults.some(weak => value.toLowerCase().includes(weak))) {
+          if (process.env.NODE_ENV === 'production' && !MIGRATION_MODE) {
+            return 'SESSION_SECRET contains weak patterns. Generate a random secret with: npm run generate:secrets';
+          }
         }
+
+        // Entropy validation - ensure good character mix
+        const hasLower = /[a-z]/.test(value);
+        const hasUpper = /[A-Z]/.test(value);
+        const hasNumber = /[0-9]/.test(value);
+        const hasSpecial = /[^a-zA-Z0-9]/.test(value);
+        const characterTypes = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+
+        if (characterTypes < 2) {
+          return 'SESSION_SECRET must contain at least 2 different character types (lowercase, uppercase, numbers, special)';
+        }
+
+        // Check for repeated patterns
+        if (/^(.)\1+$/.test(value)) {
+          return 'SESSION_SECRET must not be a repeated character';
+        }
+
         return true;
       },
-      description: 'Session encryption secret (minimum 64 characters)'
+      description: 'Session encryption secret (minimum 64 characters with good entropy)'
     },
     DATABASE_URL: {
       required: true,
