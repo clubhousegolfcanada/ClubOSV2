@@ -102,13 +102,35 @@ export class EnvironmentValidator {
     },
     JWT_SECRET: {
       required: true,
-      minLength: 32,
-      description: 'JWT signing secret'
+      minLength: 64,
+      custom: (value: string) => {
+        // Ensure high entropy in the secret
+        if (value.length < 64) {
+          return 'JWT_SECRET must be at least 64 characters for security';
+        }
+        // Check for obvious weak patterns
+        if (/^[a-z]+$|^[A-Z]+$|^[0-9]+$|^(.)\1+$/.test(value)) {
+          return 'JWT_SECRET must contain a mix of characters, not just letters or numbers';
+        }
+        return true;
+      },
+      description: 'JWT signing secret (minimum 64 characters)'
     },
     SESSION_SECRET: {
       required: true,
-      minLength: 32,
-      description: 'Session encryption secret'
+      minLength: 64,
+      custom: (value: string) => {
+        // Ensure high entropy in the secret
+        if (value.length < 64) {
+          return 'SESSION_SECRET must be at least 64 characters for security';
+        }
+        // Check for obvious weak patterns
+        if (/^[a-z]+$|^[A-Z]+$|^[0-9]+$|^(.)\1+$/.test(value)) {
+          return 'SESSION_SECRET must contain a mix of characters, not just letters or numbers';
+        }
+        return true;
+      },
+      description: 'Session encryption secret (minimum 64 characters)'
     },
     DATABASE_URL: {
       required: true,
@@ -131,8 +153,8 @@ export class EnvironmentValidator {
           return true;
         }
         
-        // Log the key format for debugging (first 10 chars only for security)
-        logger.info(`Checking API key format: ${value.substring(0, 10)}...`);
+        // Log that we're checking API key format without exposing any part of it
+        logger.info('Validating OpenAI API key format');
         
         // Check for both old (sk-) and new (sk-proj-) OpenAI key formats
         // Updated patterns to be more flexible

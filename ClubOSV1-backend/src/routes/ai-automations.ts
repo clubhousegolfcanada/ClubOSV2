@@ -424,44 +424,50 @@ router.get('/:featureKey/patterns', authenticate, roleGuard(['admin']), async (r
 router.get('/conversation-stats', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     const { days = 30 } = req.query;
-    
+
+    // Validate and sanitize days parameter
+    const daysToQuery = Math.min(Math.max(parseInt(days as string) || 30, 1), 365);
+
     // Get conversation distribution by assistant type
-    const typeDistribution = await db.query(`
-      SELECT 
+    const typeDistribution = await db.query(
+      `SELECT
         COALESCE(assistant_type, 'Uncategorized') as assistant_type,
         COUNT(*) as conversation_count,
         COUNT(DISTINCT phone_number) as unique_customers,
         SUM(jsonb_array_length(messages)) as total_messages
       FROM openphone_conversations
-      WHERE created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      WHERE created_at > NOW() - INTERVAL '1 day' * $1
       GROUP BY assistant_type
-      ORDER BY conversation_count DESC
-    `);
-    
+      ORDER BY conversation_count DESC`,
+      [daysToQuery]
+    );
+
     // Get automation performance by assistant type
-    const automationStats = await db.query(`
-      SELECT 
+    const automationStats = await db.query(
+      `SELECT
         rule_data->>'assistantType' as assistant_type,
         COUNT(*) as missed_automations,
         COUNT(CASE WHEN rule_data->>'detectedFeature' IS NOT NULL THEN 1 END) as learned_patterns
       FROM ai_automation_rules
       WHERE rule_type = 'missed_automation'
-      AND created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
-      GROUP BY rule_data->>'assistantType'
-    `);
-    
+      AND created_at > NOW() - INTERVAL '1 day' * $1
+      GROUP BY rule_data->>'assistantType'`,
+      [daysToQuery]
+    );
+
     // Get daily trends
-    const dailyTrends = await db.query(`
-      SELECT 
+    const dailyTrends = await db.query(
+      `SELECT
         DATE(created_at) as date,
         assistant_type,
         COUNT(*) as conversations
       FROM openphone_conversations
-      WHERE created_at > NOW() - INTERVAL '${parseInt(days as string)} days'
+      WHERE created_at > NOW() - INTERVAL '1 day' * $1
       AND assistant_type IS NOT NULL
       GROUP BY DATE(created_at), assistant_type
-      ORDER BY date DESC, assistant_type
-    `);
+      ORDER BY date DESC, assistant_type`,
+      [daysToQuery]
+    );
     
     res.json({
       success: true,

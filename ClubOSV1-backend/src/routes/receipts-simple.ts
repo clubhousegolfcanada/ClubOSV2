@@ -28,8 +28,9 @@ router.get('/summary', authenticate, async (req, res) => {
   try {
     const { period = 'month' } = req.query;
 
-    // Build date filter based on period
+    // Build date filter based on period - using parameterized queries
     let dateFilter = '';
+    let queryParams: any[] = [];
     const now = new Date();
 
     switch (period) {
@@ -37,19 +38,23 @@ router.get('/summary', authenticate, async (req, res) => {
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
         weekStart.setHours(0, 0, 0, 0);
-        dateFilter = `WHERE created_at >= '${weekStart.toISOString()}'`;
+        dateFilter = 'WHERE created_at >= $1';
+        queryParams = [weekStart.toISOString()];
         break;
       case 'month':
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        dateFilter = `WHERE created_at >= '${monthStart.toISOString()}'`;
+        dateFilter = 'WHERE created_at >= $1';
+        queryParams = [monthStart.toISOString()];
         break;
       case 'year':
         const yearStart = new Date(now.getFullYear(), 0, 1);
-        dateFilter = `WHERE created_at >= '${yearStart.toISOString()}'`;
+        dateFilter = 'WHERE created_at >= $1';
+        queryParams = [yearStart.toISOString()];
         break;
       case 'all':
       default:
         dateFilter = '';
+        queryParams = [];
         break;
     }
 
@@ -65,7 +70,7 @@ router.get('/summary', authenticate, async (req, res) => {
       ${dateFilter}
     `;
 
-    const summary = await db.query(summaryQuery);
+    const summary = await db.query(summaryQuery, queryParams);
     const result = summary.rows[0] || {
       total_receipts: 0,
       total_amount_cents: 0,
@@ -111,8 +116,9 @@ router.get('/export', authenticate, async (req, res) => {
       includePhotos
     } = req.query;
 
-    // Build date filter
+    // Build date filter with parameterized queries to prevent SQL injection
     let dateFilter = '';
+    let queryParams: any[] = [];
     const now = new Date();
     let periodLabel = '';
 
@@ -121,7 +127,8 @@ router.get('/export', authenticate, async (req, res) => {
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        dateFilter = `WHERE r.created_at >= '${weekStart.toISOString()}'`;
+        dateFilter = 'WHERE r.created_at >= $1';
+        queryParams = [weekStart.toISOString()];
         periodLabel = `week_of_${format(weekStart, 'yyyy_MM_dd')}`;
         break;
 
@@ -129,11 +136,13 @@ router.get('/export', authenticate, async (req, res) => {
         if (year && month) {
           const customMonthStart = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
           const customMonthEnd = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
-          dateFilter = `WHERE r.created_at >= '${customMonthStart.toISOString()}' AND r.created_at <= '${customMonthEnd.toISOString()}'`;
+          dateFilter = 'WHERE r.created_at >= $1 AND r.created_at <= $2';
+          queryParams = [customMonthStart.toISOString(), customMonthEnd.toISOString()];
           periodLabel = `${year}_${String(month).padStart(2, '0')}`;
         } else {
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          dateFilter = `WHERE r.created_at >= '${monthStart.toISOString()}'`;
+          dateFilter = 'WHERE r.created_at >= $1';
+          queryParams = [monthStart.toISOString()];
           periodLabel = format(now, 'yyyy_MM');
         }
         break;
@@ -142,11 +151,13 @@ router.get('/export', authenticate, async (req, res) => {
         if (year) {
           const customYearStart = new Date(parseInt(year as string), 0, 1);
           const customYearEnd = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
-          dateFilter = `WHERE r.created_at >= '${customYearStart.toISOString()}' AND r.created_at <= '${customYearEnd.toISOString()}'`;
+          dateFilter = 'WHERE r.created_at >= $1 AND r.created_at <= $2';
+          queryParams = [customYearStart.toISOString(), customYearEnd.toISOString()];
           periodLabel = year as string;
         } else {
           const yearStart = new Date(now.getFullYear(), 0, 1);
-          dateFilter = `WHERE r.created_at >= '${yearStart.toISOString()}'`;
+          dateFilter = 'WHERE r.created_at >= $1';
+          queryParams = [yearStart.toISOString()];
           periodLabel = String(now.getFullYear());
         }
         break;
@@ -154,11 +165,12 @@ router.get('/export', authenticate, async (req, res) => {
       case 'all':
       default:
         dateFilter = '';
+        queryParams = [];
         periodLabel = 'all_time';
         break;
     }
 
-    // Fetch receipts
+    // Fetch receipts using parameterized query
     const receiptsQuery = `
       SELECT
         r.*,
@@ -170,7 +182,7 @@ router.get('/export', authenticate, async (req, res) => {
       ORDER BY r.created_at DESC
     `;
 
-    const receiptsResult = await db.query(receiptsQuery);
+    const receiptsResult = await db.query(receiptsQuery, queryParams);
     const receipts = receiptsResult.rows;
 
     // Format based on export type

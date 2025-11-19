@@ -45,7 +45,7 @@ pool.on('connect', (client) => {
 pool.on('acquire', () => {
   const activeCount = pool.totalCount - pool.idleCount;
   const waitingCount = pool.waitingCount;
-  const maxConnections = 20; // Our configured max
+  const maxConnections = 30; // Our configured max (matches pool config)
   
   // Log warning if we have waiting connections
   if (waitingCount > 0 && pool.totalCount < maxConnections) {

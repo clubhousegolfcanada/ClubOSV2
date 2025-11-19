@@ -152,10 +152,15 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      // Log unknown origins but still allow them for now
-      logger.warn('CORS request from unknown origin:', origin);
-      // Always allow to prevent CORS blocking in production
-      callback(null, true);
+      // In development, warn but allow for testing
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn('CORS request from unknown origin (allowed in dev):', origin);
+        callback(null, true);
+      } else {
+        // In production, reject unknown origins for security
+        logger.error('CORS request blocked from unknown origin:', origin);
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
     }
   },
   credentials: true,

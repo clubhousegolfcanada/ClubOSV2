@@ -64,16 +64,19 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction) 
 
 // Rate limiting configurations
 export const createRateLimiter = (windowMs: number, max: number, message: string) => {
+  // Use relaxed limits in development but never disable completely
+  const isDevelopment = config.NODE_ENV === 'development';
+  const adjustedMax = isDevelopment ? max * 10 : max; // 10x more permissive in dev
+
   return rateLimit({
     windowMs,
-    max,
+    max: adjustedMax,
     message,
     standardHeaders: true,
     legacyHeaders: false,
     // Skip problematic headers
     skip: (req) => {
-      // Skip rate limiting in development
-      if (config.NODE_ENV === 'development') return true;
+      // Never completely skip rate limiting - use relaxed limits in development
       return false;
     },
     keyGenerator: (req) => {

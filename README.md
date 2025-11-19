@@ -1,4 +1,4 @@
-# ClubOS v1.25.7 - Flexible Facility Management System
+# ClubOS v1.25.8 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.7**
-- **🔐 Critical Auth Fixes** - Fixed account switching cache contamination
-- **📱 Mobile Persistence** - Fixed sessionStorage causing logout on app backgrounding
-- **💰 OAuth ClubCoin Parity** - Google signups now receive 100 CC welcome bonus
-- **🔍 Enhanced Debug Logging** - Comprehensive auth state change tracking
+**Current Version: v1.25.8**
+- **🛡️ CRITICAL SECURITY FIXES** - Fixed SQL injection vulnerabilities in 4+ files
+- **🔒 CORS Security** - Unknown origins now properly rejected in production
+- **🔑 Enhanced JWT Security** - 64+ character secrets with entropy validation
+- **⚡ Rate Limiting Fixed** - Now works in all environments
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
 - **Previous: Booking Default** - Skedda iframe now default for stability

@@ -438,13 +438,17 @@ router.post('/apply-optimization', authenticate, roleGuard(['admin']), async (re
 router.delete('/clear-old-data', authenticate, roleGuard(['admin']), async (req, res) => {
   try {
     const { days = 30 } = req.query;
-    
-    // Delete customer interactions older than specified days
-    const deleteResult = await db.query(`
-      DELETE FROM customer_interactions 
-      WHERE "createdAt" < CURRENT_DATE - INTERVAL '${parseInt(days as string)} days'
-      RETURNING id
-    `);
+
+    // Validate and sanitize days parameter
+    const daysToDelete = Math.min(Math.max(parseInt(days as string) || 30, 1), 365);
+
+    // Delete customer interactions older than specified days - using parameterized query
+    const deleteResult = await db.query(
+      `DELETE FROM customer_interactions
+       WHERE "createdAt" < CURRENT_DATE - INTERVAL '1 day' * $1
+       RETURNING id`,
+      [daysToDelete]
+    );
     
     const deletedCount = deleteResult.rows.length;
     

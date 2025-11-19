@@ -2,6 +2,44 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.8] - 2025-11-18
+
+### CRITICAL SECURITY FIXES
+- **SQL Injection Prevention**: Fixed dangerous template literal SQL queries in 4+ files
+  - receipts-simple.ts: Fixed date filter injections in export and summary endpoints
+  - analytics.ts: Fixed INTERVAL clause injection vulnerability
+  - ai-automations.ts: Fixed multiple INTERVAL injections
+  - All queries now use parameterized statements with proper escaping
+
+- **CORS Security**: Fixed critical vulnerability allowing all origins
+  - Unknown origins now properly rejected in production
+  - Development mode allows with warning for testing
+  - Prevents CSRF attacks from malicious domains
+
+- **Secret Exposure**: Removed API key logging
+  - envValidator.ts no longer logs partial API keys
+  - Prevents pattern recognition attacks on secrets
+
+### Security Enhancements
+- **JWT Security**: Increased minimum secret length from 32 to 64 characters
+  - Added entropy validation to prevent weak patterns
+  - SESSION_SECRET also requires 64+ characters
+  - Better protection against GPU-based attacks
+
+- **Rate Limiting**: Fixed complete bypass in development
+  - Now uses relaxed limits (10x) in dev instead of disabling
+  - Prevents brute force attacks in all environments
+  - Maintains security while allowing development testing
+
+- **Database**: Fixed connection pool monitoring
+  - Corrected max connections tracking (30 connections)
+  - Better pool saturation warnings
+
+### Technical
+- All TypeScript compilation checks pass
+- Zero errors in both frontend and backend
+- Production-ready security hardening
+
 ## [1.25.7] - 2025-11-18
 
 ### Fixed
