@@ -33,18 +33,52 @@ const AuthSuccessPage = () => {
         // Parse user data
         const user = JSON.parse(userJson as string);
 
+        // Log which account is being authenticated
+        logger.info(`OAuth login for user: ${user.email}`);
+
         // Stop any existing token monitoring
         tokenManager.stopTokenMonitoring();
 
-        // Clear any stale auth data
-        tokenManager.clearToken();
-        localStorage.removeItem('clubos_user');
+        // COMPREHENSIVE AUTH DATA CLEARING - Clear ALL stale auth data before setting new
+        const authKeys = [
+          'clubos_token',
+          'clubos_user',
+          'clubos_view_mode',
+          'clubos_login_timestamp',
+          'clubos_user_role',
+          'clubos-auth', // Zustand persistence key
+          'remoteActionsExpanded',
+          'token',
+          'user',
+          'auth',
+          'authToken',
+          'userToken'
+        ];
 
-        // Set login timestamp for grace period
-        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
+        authKeys.forEach(key => {
+          localStorage.removeItem(key);
+        });
+
+        // Clear tokenManager
+        tokenManager.clearToken();
+
+        // Clear ALL sessionStorage to ensure no stale data
+        sessionStorage.clear();
+
+        // Force clear Zustand persisted state
+        localStorage.removeItem('clubos-auth');
+        localStorage.removeItem('clubos-settings');
+
+        logger.info('Cleared all stale auth data before OAuth login');
+
+        // Set login timestamp for grace period - use localStorage for persistence
+        localStorage.setItem('clubos_login_timestamp', Date.now().toString());
 
         // Login user with Google auth data
         login(user, token as string);
+
+        // Verify the logged-in user matches what we expected
+        logger.info(`OAuth login successful for: ${user.email}`);
 
         // Set view mode based on user role
         if (user.role === 'customer') {

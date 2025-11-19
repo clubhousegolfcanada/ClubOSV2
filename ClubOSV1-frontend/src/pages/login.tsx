@@ -26,16 +26,41 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(true); // Default to true for PWA experience
   const [showOperatorPasswordForm, setShowOperatorPasswordForm] = useState(false); // For emergency access
 
-  // Stop token monitoring when login page loads (only for unauthenticated users)
+  // Clean up auth data when login page loads (only for unauthenticated users)
   useEffect(() => {
-    // Only stop monitoring if user is not authenticated
-    // This prevents issues when authenticated users visit login page
+    // Check if user is already authenticated
     const token = tokenManager.getToken();
-    if (!token) {
-      tokenManager.stopTokenMonitoring();
-    }
+    const currentUser = useAuthState.getState().user;
 
-    // Auto-detect operator mode if email ends with clubhouse domain
+    if (!token) {
+      // Not authenticated - ensure clean slate for login
+      logger.info('Login page mounted - clearing any stale auth data');
+
+      // Use the comprehensive clear to ensure no stale data remains
+      tokenManager.clearAllAuth();
+
+      // Also ensure Zustand state is clear
+      const authKeys = ['clubos-auth', 'clubos-settings'];
+      authKeys.forEach(key => localStorage.removeItem(key));
+
+      logger.debug('Login page ready with clean auth state');
+    } else if (currentUser) {
+      // User is authenticated - redirect them away from login
+      logger.info(`User ${currentUser.email} already authenticated, redirecting...`);
+
+      // Navigate based on user role
+      const targetPath = currentUser.role === 'customer'
+        ? '/customer/'
+        : currentUser.role === 'contractor'
+        ? '/checklists'
+        : '/';
+
+      router.push(targetPath);
+    }
+  }, []); // Run only once on mount
+
+  // Auto-detect operator mode based on email domain
+  useEffect(() => {
     if (email && email.endsWith('@clubhouse247golf.com')) {
       setLoginMode('operator');
     }

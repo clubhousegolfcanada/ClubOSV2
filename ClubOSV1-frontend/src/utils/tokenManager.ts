@@ -140,6 +140,51 @@ export class TokenManager {
   }
 
   /**
+   * Comprehensive auth clearing - removes ALL auth-related data atomically
+   * This prevents any race conditions or stale data issues
+   */
+  clearAllAuth(): void {
+    if (typeof window === 'undefined') return;
+
+    logger.info('TokenManager: Clearing all auth data');
+
+    // Stop token monitoring first
+    this.stopTokenMonitoring();
+
+    // Clear all possible auth-related localStorage keys
+    const authKeys = [
+      'clubos_token',
+      'clubos_user',
+      'clubos_view_mode',
+      'clubos_login_timestamp',
+      'clubos_user_role',
+      'clubos-auth', // Zustand persistence key
+      'clubos-settings', // Zustand settings
+      'remoteActionsExpanded',
+      // Add any potential variations
+      'token',
+      'user',
+      'auth',
+      'authToken',
+      'userToken'
+    ];
+
+    authKeys.forEach(key => {
+      localStorage.removeItem(key);
+      logger.debug(`Cleared localStorage: ${key}`);
+    });
+
+    // Clear ALL sessionStorage
+    sessionStorage.clear();
+
+    // Reset all internal flags
+    this.interceptorSetup = false;
+    this.isHandlingExpiration = false;
+
+    logger.info('TokenManager: All auth data cleared');
+  }
+
+  /**
    * Atomic token update - prevents race conditions
    * This ensures there's no gap between clearing and setting the token
    */
@@ -267,21 +312,11 @@ export class TokenManager {
 
   /**
    * Clear all token references and reset state
+   * Now delegates to the comprehensive clearAllAuth method
    */
   clearAllTokens(): void {
-    // Stop monitoring
-    this.stopTokenMonitoring();
-
-    // Reset all flags
-    this.interceptorSetup = false;
-    this.isHandlingExpiration = false;
-
-    // Clear any cached token data
-    if (typeof window !== 'undefined') {
-      // Auth header cleanup now handled by http client
-      // Clear login timestamp as well
-      localStorage.removeItem('clubos_login_timestamp');
-    }
+    // Use the comprehensive clear method
+    this.clearAllAuth();
   }
 
   /**

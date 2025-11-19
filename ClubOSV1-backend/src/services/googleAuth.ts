@@ -271,7 +271,7 @@ export const findOrCreateGoogleUser = async (googleUser: GoogleUserInfo, userTyp
             true, // Show stats
             250, // Max friends
             5, // Max teams
-            0, // Starting CC balance
+            100, // Starting CC balance - FIXED: Match standard signup bonus of 100 CC
             100, // Starting credibility
             'house', // Starting rank
             'house', // Highest rank
@@ -279,6 +279,24 @@ export const findOrCreateGoogleUser = async (googleUser: GoogleUserInfo, userTyp
             0 // Challenges won
           ]
         );
+
+        // Initialize ClubCoins with 100 CC signup bonus - same as standard signup
+        try {
+          const { clubCoinService } = await import('./clubCoinService');
+          await clubCoinService.initializeUser(userId, 100);
+          logger.info('Initialized ClubCoins for new Google OAuth customer:', {
+            userId,
+            email: googleUser.email,
+            initialBalance: 100
+          });
+        } catch (ccError) {
+          logger.error('Failed to initialize ClubCoins for Google user:', {
+            userId,
+            email: googleUser.email,
+            error: ccError
+          });
+          // Don't fail the whole signup if CC initialization fails
+        }
 
         logger.info('Created customer profile for Google user:', {
           userId,

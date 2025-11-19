@@ -79,8 +79,9 @@ export const enforceOperatorRouteGuard = (
   allowedRoles: UserRole[] = ['admin', 'operator', 'support']
 ): void => {
   // Check for recent login grace period (2 seconds)
-  const loginTimestamp = typeof window !== 'undefined' 
-    ? sessionStorage.getItem('clubos_login_timestamp') 
+  // Using localStorage for mobile persistence - sessionStorage gets cleared when app is backgrounded
+  const loginTimestamp = typeof window !== 'undefined'
+    ? localStorage.getItem('clubos_login_timestamp')
     : null;
   
   if (loginTimestamp) {

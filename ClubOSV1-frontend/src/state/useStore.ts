@@ -124,8 +124,8 @@ export const useAuthState = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
-        // Store login timestamp for grace period FIRST
-        sessionStorage.setItem('clubos_login_timestamp', Date.now().toString());
+        // Store login timestamp for grace period FIRST - use localStorage for persistence
+        localStorage.setItem('clubos_login_timestamp', Date.now().toString());
 
         // Set new auth data atomically without clearing first
         // This prevents race conditions where token is null
@@ -167,6 +167,10 @@ export const useAuthState = create<AuthState>()(
         set({ user, isAuthenticated: !!user });
       },
       logout: async () => {
+        // Log which user is logging out for debugging
+        const currentUser = useAuthState.getState().user;
+        logger.info(`Logging out user: ${currentUser?.email || 'unknown'}`);
+
         // First, try to invalidate token on server
         if (typeof window !== 'undefined') {
           const token = tokenManager.getToken();
@@ -175,7 +179,7 @@ export const useAuthState = create<AuthState>()(
               // Call server logout endpoint to invalidate token
               // Using dynamic import to avoid circular dependency
               const { http } = await import('@/api/http');
-              await http.post('auth/logout', {}, { 
+              await http.post('auth/logout', {}, {
                 timeout: 5000 // 5 second timeout for logout
               });
             } catch (error) {
@@ -184,43 +188,75 @@ export const useAuthState = create<AuthState>()(
               logger.error('Server logout failed:', error);
             }
           }
-          
-          // Clear axios authorization header
-          // Auth header cleanup now handled by http client
-          
-          // Clear all localStorage items
-          tokenManager.clearToken();
-          localStorage.removeItem('clubos_user');
-          localStorage.removeItem('clubos_view_mode');
-          // Clear RemoteActionsBar state to prevent auto-expansion issues
-          localStorage.removeItem('remoteActionsExpanded');
 
-          // Clear any other auth-related items
+          // COMPREHENSIVE AUTH DATA CLEARING
+          // Clear all possible auth-related localStorage keys
+          const authKeys = [
+            'clubos_token',
+            'clubos_user',
+            'clubos_view_mode',
+            'clubos_login_timestamp',
+            'clubos_user_role',
+            'clubos-auth', // Zustand persistence key
+            'remoteActionsExpanded',
+            // Add any potential variations
+            'token',
+            'user',
+            'auth',
+            'authToken',
+            'userToken'
+          ];
+
+          authKeys.forEach(key => {
+            localStorage.removeItem(key);
+            logger.debug(`Cleared localStorage: ${key}`);
+          });
+
+          // Clear tokenManager explicitly
+          tokenManager.clearToken();
+
+          // Clear any other auth-related items that might exist
           const keysToRemove = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && (key.startsWith('clubos_') || key.includes('auth'))) {
+            if (key && (
+              key.startsWith('clubos_') ||
+              key.startsWith('clubos-') ||
+              key.includes('auth') ||
+              key.includes('token') ||
+              key.includes('user')
+            )) {
               keysToRemove.push(key);
             }
           }
-          keysToRemove.forEach(key => localStorage.removeItem(key));
-          
-          // Clear session storage as well
+          keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            logger.debug(`Cleared additional localStorage: ${key}`);
+          });
+
+          // Clear ALL session storage
           sessionStorage.clear();
+          logger.debug('Cleared all sessionStorage');
+
+          // Force clear Zustand persisted state
+          localStorage.removeItem('clubos-auth');
+          localStorage.removeItem('clubos-settings');
         }
-        
+
         // Complete state reset - clear auth state completely
-        set({ 
-          user: null, 
-          isAuthenticated: false, 
-          isLoading: false 
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false
         });
-        
+
         // Also reset app state that might contain user-specific data
         const state = useStore.getState();
         state.clearRequests?.();
         state.setViewMode?.('operator'); // Reset to default view mode
-        
+
+        logger.info('Logout complete - all auth data cleared');
+
         // Small delay to ensure state is cleared before navigation
         setTimeout(() => {
           if (typeof window !== 'undefined') {

@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.7] - 2025-11-18
+
+### Fixed
+- **Critical Account Switching Issue**: Fixed cache contamination when switching between accounts
+  - Enhanced logout to comprehensively clear ALL auth-related localStorage and sessionStorage
+  - OAuth success page now clears all stale auth data before setting new tokens
+  - Login page clears auth data on mount to ensure clean slate
+  - Added tokenManager.clearAllAuth() method for atomic auth data clearing
+
+- **Mobile Session Persistence**: Fixed premature logout on mobile devices
+  - Changed all auth timestamp storage from sessionStorage to localStorage
+  - Mobile browsers no longer lose auth when app is backgrounded
+  - Fixed grace period checks to use persistent storage
+
+- **Google OAuth ClubCoin Parity**: Fixed missing welcome bonus for Google signups
+  - Google OAuth customers now receive 100 CC signup bonus (same as standard signup)
+  - Added proper clubCoinService initialization for OAuth flow
+  - Ensures fair experience for all signup methods
+
+### Enhanced
+- **Debug Logging**: Added comprehensive auth state change logging
+  - Tracks which user is logging in/out
+  - Monitors auth data clearing operations
+  - Helps diagnose any remaining auth issues
+
+### Technical
+- Fixed 3 sessionStorage → localStorage inconsistencies across components
+- Added 15+ explicit localStorage key removals on logout
+- Ensured Zustand persisted state is properly cleared
+- All TypeScript checks pass with no errors
+
 ## [1.25.6] - 2025-11-18
 
 ### Enhanced
