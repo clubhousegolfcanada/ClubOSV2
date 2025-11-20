@@ -9,12 +9,14 @@ All notable changes to ClubOS will be documented in this file.
   - envValidator.ts and env-security.ts were both validating secrets with different rules
   - Unified validation logic to prevent conflicts
   - Production can now start with existing secrets during migration period
+  - **DEPLOYED**: Migration mode active in production with `SECRET_MIGRATION_MODE=true`
 
 ### Added
 - **Secret Migration Mode**: Graceful transition for existing deployments
   - Set `SECRET_MIGRATION_MODE=true` to allow legacy secrets temporarily
   - Migration deadline: January 1, 2025
   - Clear warnings guide administrators to rotate secrets
+  - **STATUS**: Currently active in production environment
 
 - **Secret Generation Script**: New `npm run generate:secrets` command
   - Generates cryptographically secure 64-character secrets
@@ -31,12 +33,19 @@ All notable changes to ClubOS will be documented in this file.
   - Step-by-step Railway update instructions
   - Security best practices
   - Migration timeline
+  - Added RAILWAY_ENV_UPDATE.md with deployment fix instructions
 
 ### Technical
 - Removed duplicate JWT_SECRET validation from env-security.ts
 - Enhanced entropy validation in envValidator.ts
 - Consolidated all secret validation in one location
 - Maintained backward compatibility during migration
+
+### Deployment Notes
+- Railway deployment triggered via GitHub push
+- `SECRET_MIGRATION_MODE=true` set in Railway environment
+- Production monitoring shows repeated restart attempts
+- Awaiting successful deployment with migration mode code
 
 ## [1.25.8] - 2025-11-18
 
