@@ -10,9 +10,10 @@ See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
 **Current Version: v1.25.9**
 - **🔧 Production Fix** - Resolved startup failure from conflicting validations
-- **🔄 Migration Mode** - Graceful transition for secret rotation (deadline: Jan 1, 2025)
+- **🔄 Migration Mode Active** - `SECRET_MIGRATION_MODE=true` enabled in production
 - **🔐 Secret Generator** - New `npm run generate:secrets` command
 - **📚 Enhanced Docs** - Complete secret rotation guide added
+- **⚠️ Action Required** - Rotate secrets before January 1, 2025
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
 - **Previous: Booking Default** - Skedda iframe now default for stability
@@ -203,6 +204,18 @@ npx tsc --noEmit                     # TypeScript error check
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
 - [CLAUDE.md](./CLAUDE.md) - AI assistant context
 - [/docs](./docs/) - Technical documentation
+
+## ⚠️ URGENT: Secret Rotation Required
+
+**Migration Mode is currently active in production.** The system is running with legacy secrets that will stop working on January 1, 2025.
+
+### Required Actions Before Jan 1, 2025:
+1. Generate new secrets: `npm run generate:secrets`
+2. Update Railway environment variables with new values
+3. Remove `SECRET_MIGRATION_MODE` environment variable
+4. Deploy changes (all users will need to re-login)
+
+See [Backend README](./ClubOSV1-backend/README.md#secret-rotation-guide) for detailed instructions.
 
 ## 🆘 Support
 
