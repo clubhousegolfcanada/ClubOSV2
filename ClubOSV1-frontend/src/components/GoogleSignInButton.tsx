@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import logger from '@/services/logger';
@@ -19,12 +19,7 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isInIframe, setIsInIframe] = useState(false);
-
-  useEffect(() => {
-    // Check if we're in an iframe
-    setIsInIframe(window.self !== window.top);
-  }, []);
+  // Removed iframe detection - was causing false positives and hiding login button
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -52,11 +47,6 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       setIsLoading(false);
     }
   };
-
-  // Don't show if in iframe
-  if (isInIframe) {
-    return null;
-  }
 
   // Style based on variant
   const isPrimary = variant === 'primary';

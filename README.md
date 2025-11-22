@@ -1,4 +1,4 @@
-# ClubOS v1.25.9 - Flexible Facility Management System
+# ClubOS v1.25.10 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.9**
-- **🔧 Production Fix** - Resolved startup failure from conflicting validations
-- **🔄 Migration Mode Active** - `SECRET_MIGRATION_MODE=true` enabled in production
-- **🔐 Secret Generator** - New `npm run generate:secrets` command
-- **📚 Enhanced Docs** - Complete secret rotation guide added
-- **⚠️ Action Required** - Rotate secrets before January 1, 2025
+**Current Version: v1.25.10**
+- **🚨 CRITICAL FIX** - Google Sign-In button now visible again (was completely hidden)
+- **🔧 Login Restored** - Removed faulty iframe detection blocking authentication
+- **✅ Backend Fixed** - Production running with new 64-character secrets
+- **🔐 Security Enhanced** - Cryptographically secure secrets deployed
+- **📝 Previous** - Secret rotation completed, all users must re-login
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
 - **Previous: Booking Default** - Skedda iframe now default for stability

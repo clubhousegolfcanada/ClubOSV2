@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.10] - 2025-11-22
+
+### Critical Fix
+- **Google Sign-In Button Missing**: Fixed critical login issue where Google Sign-In button was completely invisible
+  - Removed faulty iframe detection that was causing false positives
+  - The iframe check (window.self !== window.top) was incorrectly hiding the button in production
+  - All operators can now see and use the Google Sign-In button again
+
+### Technical
+- Removed `isInIframe` state and `useEffect` from GoogleSignInButton component
+- Simplified component by removing unnecessary iframe detection logic
+- This fixes the regression introduced in commit ec54072
+
 ## [1.25.9] - 2025-11-19
 
 ### Fixed
