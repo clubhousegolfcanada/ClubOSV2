@@ -23,29 +23,17 @@ const LoginPage = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true); // Default to true for PWA experience
-  const [showOperatorPasswordForm, setShowOperatorPasswordForm] = useState(false); // For emergency access
+  const [rememberMe, setRememberMe] = useState(true); // Default to true for 30-day login
 
-  // Clean up auth data when login page loads (only for unauthenticated users)
+  // Redirect authenticated users away from login page
   useEffect(() => {
     // Check if user is already authenticated
     const token = tokenManager.getToken();
     const currentUser = useAuthState.getState().user;
 
-    if (!token) {
-      // Not authenticated - ensure clean slate for login
-      logger.info('Login page mounted - clearing any stale auth data');
-
-      // Use the comprehensive clear to ensure no stale data remains
-      tokenManager.clearAllAuth();
-
-      // Also ensure Zustand state is clear
-      const authKeys = ['clubos-auth', 'clubos-settings'];
-      authKeys.forEach(key => localStorage.removeItem(key));
-
-      logger.debug('Login page ready with clean auth state');
-    } else if (currentUser) {
-      // User is authenticated - redirect them away from login
+    // Only redirect if we have both token AND user data
+    // This prevents redirect during initial auth setup
+    if (token && currentUser) {
       logger.info(`User ${currentUser.email} already authenticated, redirecting...`);
 
       // Navigate based on user role
@@ -57,6 +45,8 @@ const LoginPage = () => {
 
       router.push(targetPath);
     }
+    // Note: We do NOT clear auth data here anymore.
+    // Auth should only be cleared on explicit logout action.
   }, []); // Run only once on mount
 
   // Auto-detect operator mode based on email domain
@@ -71,8 +61,9 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // Stop any existing token monitoring first (but don't clear token yet)
-      tokenManager.stopTokenMonitoring();
+      // Clear any existing auth before attempting new login
+      // This ensures a clean state for the new authentication
+      tokenManager.clearAllAuth();
 
       let response;
 
@@ -122,11 +113,7 @@ const LoginPage = () => {
         const { user, token } = response.data.data;
 
         // Set login timestamp FIRST for grace period
-        // CRITICAL FIX: Changed to localStorage from sessionStorage for mobile persistence
-        // Mobile browsers clear sessionStorage when app is backgrounded
-        localStorage.setItem('clubos_login_timestamp', Date.now().toString());
-
-        // Use atomic token update to prevent race condition
+        // Use atomic token update to ensure clean auth state
         tokenManager.updateToken(token);
 
         // Then update UI state
@@ -228,7 +215,6 @@ const LoginPage = () => {
             onClick={() => {
               setLoginMode('operator');
               setIsSignup(false);
-              setShowOperatorPasswordForm(false);
             }}
             className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md transition-all ${
               loginMode === 'operator'
@@ -243,7 +229,6 @@ const LoginPage = () => {
             type="button"
             onClick={() => {
               setLoginMode('customer');
-              setShowOperatorPasswordForm(false);
             }}
             className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md transition-all ${
               loginMode === 'customer'
@@ -256,73 +241,10 @@ const LoginPage = () => {
           </button>
         </div>
 
-        {/* OPERATOR MODE - Google OAuth Primary */}
-        {loginMode === 'operator' && !showOperatorPasswordForm && (
-          <div className="space-y-6">
-            {/* Prominent Google Sign-In Section */}
-            <div className="bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] rounded-xl p-6 border border-[var(--border-primary)] shadow-lg">
-              <div className="flex items-center justify-center mb-4">
-                <Shield className="w-8 h-8 text-[var(--accent)]" />
-              </div>
-              <h3 className="text-center text-lg font-semibold text-[var(--text-primary)] mb-2">
-                Secure Operator Access
-              </h3>
-              <p className="text-center text-sm text-[var(--text-secondary)] mb-6">
-                Sign in with your Clubhouse Google account for seamless and secure access
-              </p>
-
-              {/* Primary Google Sign-In Button */}
-              <GoogleSignInButton
-                rememberMe={rememberMe}
-                loginMode="operator"
-                variant="primary"
-              />
-
-              <div className="mt-4 text-center">
-                <span className="text-xs text-[var(--text-muted)]">
-                  @clubhouse247golf.com accounts only
-                </span>
-              </div>
-            </div>
-
-            {/* Emergency Access Section */}
-            <div className="border-t border-[var(--border-primary)] pt-4">
-              <button
-                type="button"
-                onClick={() => setShowOperatorPasswordForm(true)}
-                className="flex items-center justify-center w-full text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                <KeyRound className="w-4 h-4 mr-2" />
-                Emergency access with password
-              </button>
-            </div>
-
-            {/* Remember Me for Google OAuth */}
-            <div className="flex items-center justify-center">
-              <input
-                id="google-remember-me"
-                name="google-remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
-              />
-              <label htmlFor="google-remember-me" className="ml-2 text-sm text-[var(--text-secondary)]">
-                Keep me signed in for 30 days
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* OPERATOR MODE - Emergency Password Form (Hidden by default) */}
-        {loginMode === 'operator' && showOperatorPasswordForm && (
+        {/* OPERATOR MODE - Simple with both options */}
+        {loginMode === 'operator' && (
           <div className="space-y-4">
-            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
-              <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                ⚠️ Emergency access only. Please use Google Sign-In for normal access.
-              </p>
-            </div>
-
+            {/* Password Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="operator-email" className="block text-sm font-medium text-[var(--text-secondary)]">
@@ -382,7 +304,7 @@ const LoginPage = () => {
                     className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
                   />
                   <label htmlFor="operator-remember-me" className="ml-2 text-sm text-[var(--text-secondary)]">
-                    Remember for 30 days
+                    Keep me signed in for 30 days
                   </label>
                 </div>
 
@@ -400,17 +322,17 @@ const LoginPage = () => {
                 disabled={isLoading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
-                {isLoading ? 'Signing in...' : 'Sign In with Password'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
 
-            <button
-              type="button"
-              onClick={() => setShowOperatorPasswordForm(false)}
-              className="w-full text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            >
-              ← Back to Google Sign-In
-            </button>
+            {/* Google Sign-In Option */}
+            <div className="mt-6">
+              <GoogleSignInButton
+                rememberMe={rememberMe}
+                loginMode="operator"
+              />
+            </div>
           </div>
         )}
 

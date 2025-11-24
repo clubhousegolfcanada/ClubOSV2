@@ -2,6 +2,29 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.11] - 2025-11-24
+
+### Fixed
+- **Simplified Authentication System**: Major cleanup to make login "work and be easy"
+  - Operator login now shows password form by default (not hidden)
+  - Removed complex "Emergency access" messaging and patterns
+  - Fixed aggressive auth clearing that happened on every login page visit
+  - Removed grace period logic that was causing token validation issues
+  - Cleaned up login timestamp tracking throughout the codebase
+
+### Improved
+- **Login Page UX**: Both password and Google Sign-In options now equally visible for operators
+  - No more hidden password forms requiring extra clicks
+  - Cleaner, simpler interface matching user expectations
+  - "Keep me logged in" now works reliably without race conditions
+
+### Technical
+- Removed `showOperatorPasswordForm` state variable from login.tsx
+- Fixed auth clearing to only happen on explicit logout, not page mount
+- Removed 5-minute grace period workaround from tokenManager
+- Removed all `clubos_login_timestamp` localStorage tracking
+- Simplified token expiration checks to use actual JWT expiry time
+
 ## [1.25.10] - 2025-11-22
 
 ### Critical Fix

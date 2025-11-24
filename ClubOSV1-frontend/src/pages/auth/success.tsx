@@ -71,9 +71,6 @@ const AuthSuccessPage = () => {
 
         logger.info('Cleared all stale auth data before OAuth login');
 
-        // Set login timestamp for grace period - use localStorage for persistence
-        localStorage.setItem('clubos_login_timestamp', Date.now().toString());
-
         // Login user with Google auth data
         login(user, token as string);
 

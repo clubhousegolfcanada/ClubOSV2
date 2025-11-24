@@ -124,9 +124,6 @@ export const useAuthState = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false, // Default to false to prevent stuck loading states
       login: (user, token) => {
-        // Store login timestamp for grace period FIRST - use localStorage for persistence
-        localStorage.setItem('clubos_login_timestamp', Date.now().toString());
-
         // Set new auth data atomically without clearing first
         // This prevents race conditions where token is null
         const oldToken = tokenManager.getToken();

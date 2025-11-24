@@ -70,21 +70,6 @@ export class TokenManager {
   isTokenExpired(token: string): boolean {
     if (!this.isValidTokenFormat(token)) return true;
 
-    // Check grace period FIRST - prevents race condition during login
-    // CRITICAL FIX: Changed from sessionStorage to localStorage for mobile persistence
-    // Mobile browsers clear sessionStorage when app is backgrounded, causing false token expiration
-    const loginTimestamp = typeof window !== 'undefined'
-      ? localStorage.getItem('clubos_login_timestamp')
-      : null;
-
-    if (loginTimestamp) {
-      const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
-      const gracePeriod = 5 * 60 * 1000; // 5 minutes
-      if (timeSinceLogin < gracePeriod) {
-        return false; // Still in grace period, token is valid
-      }
-    }
-
     const decoded = this.decodeToken(token);
     if (!decoded || !decoded.exp) return true;
 
@@ -135,8 +120,6 @@ export class TokenManager {
   clearToken(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('clubos_token');
-    // Also clear login timestamp when clearing token
-    localStorage.removeItem('clubos_login_timestamp');
   }
 
   /**
@@ -156,7 +139,6 @@ export class TokenManager {
       'clubos_token',
       'clubos_user',
       'clubos_view_mode',
-      'clubos_login_timestamp',
       'clubos_user_role',
       'clubos-auth', // Zustand persistence key
       'clubos-settings', // Zustand settings
