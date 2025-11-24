@@ -1,4 +1,4 @@
-# ClubOS v1.25.14 - Flexible Facility Management System
+# ClubOS v1.25.15 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.14**
-- **🔧 Pattern Creation Fix** - Patterns now auto-extract keywords (always matchable)
-- **✅ Test Button Works** - Added `/patterns/test` endpoint for pre-creation testing
-- **🔄 Embedding Retry** - Failed embeddings now retry in background
-- **📜 Migration Script** - `fix-broken-patterns.ts` to repair existing patterns
-- **Previous: V3-PLS Fix** - Knowledge edits no longer create customer response patterns (v1.25.13)
+**Current Version: v1.25.15**
+- **🚀 Auto-Execute Works!** - Patterns with auto-execute ON now respond immediately
+- **✅ No More Hidden Thresholds** - If you enable auto-execute, it executes
+- **🔧 Database Fix** - Added missing `assistant_type` columns
+- **Previous: Pattern Creation Fix** - Auto-extract keywords, test button works (v1.25.14)
 - **⚠️ Known Issue** - Password reset is non-functional (separate task needed)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)

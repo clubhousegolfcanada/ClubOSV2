@@ -247,11 +247,7 @@ export class PatternLearningService {
       );
       
       // Log pattern match with the actual response
-      const willAutoExecute = bestMatch.is_active && (
-        bestMatch.auto_executable ? 
-        bestMatch.confidence_score >= this.config.autoExecuteThreshold : 
-        true
-      );
+      const willAutoExecute = bestMatch.is_active && bestMatch.auto_executable;
       await this.logPatternMatch(
         bestMatch, 
         message, 
@@ -261,13 +257,11 @@ export class PatternLearningService {
         willAutoExecute
       );
       
-      // Apply confidence-based automation with reasoning
-      // Pattern must be BOTH active AND auto_executable to auto-execute
+      // Apply automation based on operator's explicit settings
+      // If operator enabled auto_executable, trust their judgment and execute
       // is_active = pattern is enabled for suggestions
-      // auto_executable = pattern is approved for automatic responses
-      const shouldAutoExecute = bestMatch.is_active &&
-        bestMatch.auto_executable &&
-        bestMatch.confidence_score >= this.config.autoExecuteThreshold;
+      // auto_executable = operator explicitly approved automatic responses
+      const shouldAutoExecute = bestMatch.is_active && bestMatch.auto_executable;
       
       if (shouldAutoExecute) {
         return {

@@ -2,6 +2,23 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.15] - 2025-11-24
+
+### Fixed
+- **Auto-Execute Patterns Work Immediately**: Patterns with auto-execute enabled now respond instantly
+  - Previously required confidence >= 0.85 even when explicitly enabled by operator
+  - Now trusts operator intent - if auto-execute toggle is ON, pattern executes
+  - No more "suggestion only" when you want automatic responses
+
+- **Database Schema**: Added missing `assistant_type` columns to conversations table
+  - Fixes error: `column "assistant_type" does not exist`
+  - Prevents pattern execution from failing on column update
+
+### Technical
+- Simplified `shouldAutoExecute` logic in `patternLearningService.ts`
+- Removed confidence threshold gate for explicitly-enabled patterns
+- Confidence score now only affects pattern learning/promotion, not execution
+
 ## [1.25.14] - 2025-11-24
 
 ### Fixed
