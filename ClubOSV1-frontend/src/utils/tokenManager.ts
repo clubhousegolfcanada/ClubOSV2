@@ -2,6 +2,7 @@ import { useAuthState } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { sessionExpiryManager } from './sessionExpiryManager';
 import logger from '@/services/logger';
+import { clearAllAuthData } from './authClearingUtils';
 
 interface DecodedToken {
   exp: number;
@@ -134,30 +135,8 @@ export class TokenManager {
     // Stop token monitoring first
     this.stopTokenMonitoring();
 
-    // Clear all possible auth-related localStorage keys
-    const authKeys = [
-      'clubos_token',
-      'clubos_user',
-      'clubos_view_mode',
-      'clubos_user_role',
-      'clubos-auth', // Zustand persistence key
-      'clubos-settings', // Zustand settings
-      'remoteActionsExpanded',
-      // Add any potential variations
-      'token',
-      'user',
-      'auth',
-      'authToken',
-      'userToken'
-    ];
-
-    authKeys.forEach(key => {
-      localStorage.removeItem(key);
-      logger.debug(`Cleared localStorage: ${key}`);
-    });
-
-    // Clear ALL sessionStorage
-    sessionStorage.clear();
+    // Use consolidated auth clearing utility
+    clearAllAuthData();
 
     // Reset all internal flags
     this.interceptorSetup = false;
@@ -335,7 +314,6 @@ export class TokenManager {
     // Clear the token immediately to stop API calls
     this.clearToken();
     localStorage.removeItem('clubos_user');
-    localStorage.removeItem('clubos_login_timestamp');
     
     // Show notification only once
     toast.error('Your session has expired. Please log in again.');

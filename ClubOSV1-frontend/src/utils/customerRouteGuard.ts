@@ -78,20 +78,6 @@ export const enforceOperatorRouteGuard = (
   router: NextRouter,
   allowedRoles: UserRole[] = ['admin', 'operator', 'support']
 ): void => {
-  // Check for recent login grace period (2 seconds)
-  // Using localStorage for mobile persistence - sessionStorage gets cleared when app is backgrounded
-  const loginTimestamp = typeof window !== 'undefined'
-    ? localStorage.getItem('clubos_login_timestamp')
-    : null;
-  
-  if (loginTimestamp) {
-    const timeSinceLogin = Date.now() - parseInt(loginTimestamp);
-    if (timeSinceLogin < 2000) {
-      // Within grace period, don't redirect yet
-      return;
-    }
-  }
-  
   if (!user) {
     // Don't redirect if we're already on login page
     if (router.pathname !== '/login') {

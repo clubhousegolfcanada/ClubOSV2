@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.12] - 2025-11-24
+
+### Fixed
+- **Authentication Cleanup**: Comprehensive cleanup of auth system inconsistencies
+  - Removed all stale login timestamp references that were never being set
+  - Cleaned up 6 unused auth-related localStorage keys
+  - Consolidated duplicated auth clearing logic into single utility function
+  - Fixed inconsistency between localStorage and sessionStorage usage
+
+### Improved
+- **Code Consolidation**: Reduced code duplication by ~50 lines
+  - Created `authClearingUtils.ts` for centralized auth data clearing
+  - Replaced 3 duplicated implementations with single function call
+  - Easier maintenance and prevents drift between implementations
+
+### Technical
+- Documented sophisticated token refresh strategy in backend
+- Backend proactively refreshes tokens before expiry (70% for operators, 50% for customers)
+- This eliminates need for frontend grace periods or workarounds
+- Added comprehensive documentation explaining the approach
+
+### Known Issue
+- Password reset endpoint is non-functional (just returns success without action)
+- This needs to be addressed as a separate critical task
+
 ## [1.25.11] - 2025-11-24
 
 ### Fixed

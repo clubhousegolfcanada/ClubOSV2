@@ -152,13 +152,28 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     // Now verify token (only if not blacklisted)
     const decoded = verifyToken(token);
     
-    // Enhanced token refresh logic for PWA experience
+    /**
+     * TOKEN REFRESH STRATEGY
+     *
+     * This sophisticated token refresh logic replaces the old frontend grace period approach.
+     * Instead of allowing expired tokens for 5 minutes after login (which was a security risk),
+     * we now proactively refresh tokens BEFORE they expire based on role-specific thresholds.
+     *
+     * Refresh Thresholds by Role:
+     * - Operators/Admins: Refresh at 70% of token lifetime (most aggressive)
+     * - Customers: Refresh at 50% of token lifetime (moderate)
+     * - Others: Refresh at 80% of token lifetime (conservative)
+     * - All roles: Force refresh when less than 2 days remain
+     *
+     * This ensures tokens never expire during active use, eliminating the need for
+     * grace periods or complex frontend workarounds. The backend handles everything
+     * transparently via the X-New-Token response header.
+     */
     const now = Date.now() / 1000;
     const timeUntilExpiry = (decoded.exp || 0) - now;
     const totalTokenLife = (decoded.exp || 0) - (decoded.iat || 0);
     const tokenAgePercent = ((totalTokenLife - timeUntilExpiry) / totalTokenLife) * 100;
 
-    // Aggressive refresh for operators - refresh early and often
     let shouldRefresh = false;
 
     if (decoded.role === 'operator' || decoded.role === 'admin') {

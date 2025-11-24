@@ -4,6 +4,7 @@ import type { RequestRoute } from '@/types/request';
 import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/iframeStorage';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import { clearAllAuthData } from '@/utils/authClearingUtils';
 
 // Export UserRole type
 export type UserRole = 'admin' | 'operator' | 'support' | 'kiosk' | 'customer' | 'contractor';
@@ -187,57 +188,11 @@ export const useAuthState = create<AuthState>()(
           }
 
           // COMPREHENSIVE AUTH DATA CLEARING
-          // Clear all possible auth-related localStorage keys
-          const authKeys = [
-            'clubos_token',
-            'clubos_user',
-            'clubos_view_mode',
-            'clubos_login_timestamp',
-            'clubos_user_role',
-            'clubos-auth', // Zustand persistence key
-            'remoteActionsExpanded',
-            // Add any potential variations
-            'token',
-            'user',
-            'auth',
-            'authToken',
-            'userToken'
-          ];
+          // Use consolidated auth clearing utility
+          clearAllAuthData();
 
-          authKeys.forEach(key => {
-            localStorage.removeItem(key);
-            logger.debug(`Cleared localStorage: ${key}`);
-          });
-
-          // Clear tokenManager explicitly
-          tokenManager.clearToken();
-
-          // Clear any other auth-related items that might exist
-          const keysToRemove = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (
-              key.startsWith('clubos_') ||
-              key.startsWith('clubos-') ||
-              key.includes('auth') ||
-              key.includes('token') ||
-              key.includes('user')
-            )) {
-              keysToRemove.push(key);
-            }
-          }
-          keysToRemove.forEach(key => {
-            localStorage.removeItem(key);
-            logger.debug(`Cleared additional localStorage: ${key}`);
-          });
-
-          // Clear ALL session storage
-          sessionStorage.clear();
-          logger.debug('Cleared all sessionStorage');
-
-          // Force clear Zustand persisted state
-          localStorage.removeItem('clubos-auth');
-          localStorage.removeItem('clubos-settings');
+          // Also need to explicitly clear token manager state
+          tokenManager.stopTokenMonitoring();
         }
 
         // Complete state reset - clear auth state completely

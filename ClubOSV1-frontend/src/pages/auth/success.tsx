@@ -4,6 +4,7 @@ import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
+import { clearAllAuthData } from '@/utils/authClearingUtils';
 
 const AuthSuccessPage = () => {
   const router = useRouter();
@@ -40,34 +41,7 @@ const AuthSuccessPage = () => {
         tokenManager.stopTokenMonitoring();
 
         // COMPREHENSIVE AUTH DATA CLEARING - Clear ALL stale auth data before setting new
-        const authKeys = [
-          'clubos_token',
-          'clubos_user',
-          'clubos_view_mode',
-          'clubos_login_timestamp',
-          'clubos_user_role',
-          'clubos-auth', // Zustand persistence key
-          'remoteActionsExpanded',
-          'token',
-          'user',
-          'auth',
-          'authToken',
-          'userToken'
-        ];
-
-        authKeys.forEach(key => {
-          localStorage.removeItem(key);
-        });
-
-        // Clear tokenManager
-        tokenManager.clearToken();
-
-        // Clear ALL sessionStorage to ensure no stale data
-        sessionStorage.clear();
-
-        // Force clear Zustand persisted state
-        localStorage.removeItem('clubos-auth');
-        localStorage.removeItem('clubos-settings');
+        clearAllAuthData();
 
         logger.info('Cleared all stale auth data before OAuth login');
 

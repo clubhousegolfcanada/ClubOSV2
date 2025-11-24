@@ -73,14 +73,7 @@ export default function Home() {
         });
         return;
       }
-      
-      // Check if we just logged in - if so, wait a bit
-      const loginTimestamp = sessionStorage.getItem('clubos_login_timestamp');
-      if (loginTimestamp && (Date.now() - parseInt(loginTimestamp) < 1000)) {
-        // Wait 500ms more if we just logged in
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
+
       try {
         // For 24h period, get yesterday's data
         const yesterday = new Date();
