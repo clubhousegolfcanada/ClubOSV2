@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.13] - 2025-11-24
+
+### Fixed
+- **V3-PLS Pattern Creation Bug**: Fixed knowledge edits incorrectly creating customer response patterns
+  - Knowledge store edits (like updating team members) no longer trigger pattern learning
+  - Removed `recordOperatorResponse()` call from corrections endpoint
+  - Pattern learning now only occurs from actual customer conversations
+  - Existing knowledge update functionality remains intact
+  - This was causing V3-PLS cards to appear when editing knowledge base data
+
+### Technical
+- Removed lines 262-268 from `corrections.ts` that were incorrectly treating knowledge updates as operator responses
+- Pattern creation from OpenPhone webhooks and message endpoints continues working normally
+- Knowledge corrections still update the knowledge store and can create tracking patterns, just not learning patterns
+
 ## [1.25.12] - 2025-11-24
 
 ### Fixed

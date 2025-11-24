@@ -259,13 +259,9 @@ router.post('/save',
           }
         }
 
-        // Record this as an operator response for pattern learning
-        await patternLearningService.recordOperatorResponse(
-          originalQuery,
-          correctedResponse,
-          '', // phone number not applicable here
-          results.patternId || undefined
-        );
+        // NOTE: Removed recordOperatorResponse call here (v1.25.13)
+        // Knowledge corrections should not trigger pattern learning
+        // as they are data updates, not customer conversation responses
         } // End of else block (non-receipt corrections)
       } catch (err) {
         logger.error('Failed to create/update pattern:', err);

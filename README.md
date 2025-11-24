@@ -1,4 +1,4 @@
-# ClubOS v1.25.12 - Flexible Facility Management System
+# ClubOS v1.25.13 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,11 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.12**
-- **🧹 Auth Cleanup** - Fixed inconsistencies and consolidated duplicated code
-- **📦 Code Reduction** - Removed ~50 lines of duplicated auth clearing logic
-- **🔧 Better Maintenance** - Single utility function for all auth clearing
-- **📝 Documented** - Clear explanation of token refresh strategy
+**Current Version: v1.25.13**
+- **🔧 V3-PLS Fix** - Knowledge edits no longer create customer response patterns
+- **✅ Pattern Learning** - Now only triggers from actual customer conversations
+- **📝 Clean Separation** - Knowledge updates and pattern learning properly isolated
+- **Previous: Auth Cleanup** - Fixed inconsistencies and consolidated duplicated code (v1.25.12)
 - **⚠️ Known Issue** - Password reset is non-functional (separate task needed)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
