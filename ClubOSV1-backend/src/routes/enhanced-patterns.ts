@@ -202,6 +202,55 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+/**
+ * Extract meaningful keywords from trigger examples
+ * Used for fallback keyword matching when semantic search fails
+ */
+function extractKeywords(triggers: string[]): string[] {
+  const stopWords = new Set([
+    'do', 'you', 'have', 'is', 'are', 'the', 'a', 'an', 'i', 'can', 'what',
+    'how', 'where', 'when', 'why', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'must', 'there', 'here', 'this', 'that', 'it',
+    'my', 'your', 'our', 'their', 'to', 'for', 'of', 'in', 'on', 'at', 'by',
+    'with', 'about', 'just', 'get', 'any', 'some'
+  ]);
+
+  const keywords = new Set<string>();
+
+  triggers.forEach(trigger => {
+    trigger.toLowerCase()
+      .replace(/[?.,!'"]/g, '')
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .forEach(word => keywords.add(word));
+  });
+
+  return Array.from(keywords);
+}
+
+/**
+ * Regenerate embedding for a pattern (used for retry mechanism)
+ */
+async function regenerateEmbedding(patternId: number, triggers: string[]): Promise<void> {
+  if (!openai) return;
+
+  try {
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: triggers.join(' ')
+    });
+
+    await db.query(
+      'UPDATE decision_patterns SET embedding = $1 WHERE id = $2',
+      [`{${embeddingResponse.data[0].embedding.join(',')}}`, patternId]
+    );
+
+    logger.info('[Patterns] Successfully regenerated embedding', { patternId });
+  } catch (error) {
+    logger.error('[Patterns] Failed to regenerate embedding:', error);
+  }
+}
+
 // ============================================
 // MAIN ROUTES (from patterns.ts)
 // ============================================
@@ -470,6 +519,74 @@ router.put('/:id/enhanced',
         success: false,
         error: 'Failed to update pattern'
       });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/test
+ * Test if a message would match pattern trigger examples BEFORE saving
+ * Used by PatternCreationModal to preview matching before creation
+ */
+router.post('/test',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const { message, trigger_examples, response_template, semantic_search_enabled } = req.body;
+
+      if (!message?.trim()) {
+        return res.status(400).json({ success: false, error: 'Test message is required' });
+      }
+      if (!trigger_examples?.length) {
+        return res.status(400).json({ success: false, error: 'Trigger examples are required' });
+      }
+
+      const keywords = extractKeywords(trigger_examples);
+      const messageLower = message.toLowerCase();
+
+      // Keyword matching (always available)
+      const matchedKeywords = keywords.filter(kw => messageLower.includes(kw));
+      const keywordMatch = matchedKeywords.length > 0;
+
+      // Semantic matching (if OpenAI available)
+      let semanticMatch = false;
+      let semanticSimilarity = 0;
+
+      if (semantic_search_enabled && openai) {
+        try {
+          const [msgEmbed, triggerEmbed] = await Promise.all([
+            openai.embeddings.create({ model: 'text-embedding-3-small', input: message }),
+            openai.embeddings.create({ model: 'text-embedding-3-small', input: trigger_examples.join(' ') })
+          ]);
+
+          semanticSimilarity = cosineSimilarity(
+            msgEmbed.data[0].embedding,
+            triggerEmbed.data[0].embedding
+          );
+          semanticMatch = semanticSimilarity >= 0.75;
+        } catch (err) {
+          logger.warn('[Patterns] Semantic test failed, using keyword-only:', err);
+        }
+      }
+
+      const wouldMatch = keywordMatch || semanticMatch;
+
+      res.json({
+        success: true,
+        wouldMatch,
+        matchMethod: semanticMatch ? 'semantic' : (keywordMatch ? 'keyword' : 'none'),
+        confidence: semanticMatch ? Math.round(semanticSimilarity * 100) : (keywordMatch ? 70 : 0),
+        keywordMatch,
+        matchedKeywords,
+        semanticMatch,
+        semanticSimilarity: Math.round(semanticSimilarity * 100),
+        extractedKeywords: keywords,
+        preview: response_template || ''
+      });
+    } catch (error) {
+      logger.error('[Patterns] Test failed:', error);
+      res.status(500).json({ success: false, error: 'Failed to test pattern' });
     }
   }
 );
@@ -1326,6 +1443,18 @@ router.post('/',
         semantic_search_enabled = true
       } = req.body;
 
+      // Auto-extract keywords from trigger examples (fallback for keyword matching)
+      const extractedKeywords = extractKeywords(trigger_examples);
+      const finalKeywords = (trigger_keywords?.length > 0) ? trigger_keywords : extractedKeywords;
+
+      logger.info('[Patterns] Creating pattern', {
+        type: pattern_type,
+        triggerCount: trigger_examples.length,
+        keywordCount: finalKeywords.length,
+        keywords: finalKeywords.slice(0, 5),
+        semanticEnabled: semantic_search_enabled
+      });
+
       // Generate pattern signature from first trigger example
       const pattern_signature = crypto.createHash('md5')
         .update(trigger_examples[0].toLowerCase())
@@ -1417,7 +1546,7 @@ router.post('/',
         pattern_type,
         trigger_examples[0], // Use first example as trigger_text
         trigger_examples,
-        trigger_keywords || [],
+        finalKeywords, // Auto-extracted from trigger_examples if not provided
         response_template,
         confidence_score,
         auto_executable,
@@ -1428,15 +1557,29 @@ router.post('/',
         'manual'
       ]);
 
+      const createdPattern = result.rows[0];
+
       logger.info('[Enhanced Patterns API] Pattern created', {
-        patternId: result.rows[0].id,
+        patternId: createdPattern.id,
         pattern_type,
         createdBy: req.user?.email
       });
 
+      // If embedding failed but semantic search is enabled, queue for retry
+      if (semantic_search_enabled && !createdPattern.embedding) {
+        logger.warn('[Patterns] Embedding generation failed, queuing for retry', {
+          patternId: createdPattern.id
+        });
+
+        // Queue async retry (don't block the response)
+        regenerateEmbedding(createdPattern.id, trigger_examples).catch(err => {
+          logger.error('[Patterns] Background embedding retry failed:', err);
+        });
+      }
+
       res.status(201).json({
         success: true,
-        pattern: result.rows[0]
+        pattern: createdPattern
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to create pattern', error);

@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.14] - 2025-11-24
+
+### Fixed
+- **Pattern Creation**: Patterns now auto-extract keywords from trigger examples
+  - New patterns are always matchable (keyword fallback even if semantic search fails)
+  - Previously, patterns created without keywords AND failed embeddings couldn't match anything
+  - The "rental clubs" pattern and similar issues are now prevented
+
+- **Pattern Test Button**: Added missing `/patterns/test` endpoint
+  - Frontend PatternCreationModal can now test patterns before saving
+  - Shows keyword matches, semantic similarity, and predicted confidence
+  - No more "Failed to test pattern" errors
+
+- **Embedding Failures**: Added retry mechanism for OpenAI embedding generation
+  - If embedding fails during creation, it's retried in the background
+  - Pattern is still created with keyword fallback (no blocking failures)
+
+### Added
+- **Migration Script**: `scripts/fix-broken-patterns.ts`
+  - Fixes all existing patterns missing keywords/embeddings
+  - Run with: `npx tsx scripts/fix-broken-patterns.ts`
+  - Safe to run multiple times (idempotent)
+
+### Technical
+- New `extractKeywords()` utility for consistent keyword extraction from triggers
+- New `regenerateEmbedding()` for background embedding retries
+- Patterns now always have dual matching: keywords (fallback) + semantic (when available)
+- ~120 lines of code changes in `enhanced-patterns.ts`
+
 ## [1.25.13] - 2025-11-24
 
 ### Fixed
