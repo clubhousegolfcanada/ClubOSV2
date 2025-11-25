@@ -40,6 +40,7 @@ interface PatternResult {
   pattern?: Pattern;
   patternId?: number;
   response?: string;
+  suggestedResponse?: string; // For escalation messages
   actions?: any[];
   confidence?: number;
   reason?: string;
@@ -187,6 +188,41 @@ export class PatternLearningService {
 
       // Get the best matching pattern
       let bestMatch = patterns[0];
+
+      // Check if this pattern was already used in the conversation recently
+      if (bestMatch && conversationId) {
+        try {
+          const duplicateCheck = await db.query(`
+            SELECT id FROM pattern_execution_history
+            WHERE conversation_id = $1
+              AND pattern_id = $2
+              AND created_at > NOW() - INTERVAL '2 hours'
+              AND execution_status IN ('success', 'auto_execute')
+            LIMIT 1
+          `, [conversationId, bestMatch.id]);
+
+          if (duplicateCheck.rows.length > 0) {
+            logger.info('[PatternLearning] Pattern already used in conversation, escalating', {
+              patternId: bestMatch.id,
+              conversationId,
+              message: message.substring(0, 50)
+            });
+
+            return {
+              action: 'escalate',
+              reason: 'pattern_already_used',
+              suggestedResponse: "I see you're still having trouble. Let me connect you with one of our team members who can help you directly. Someone will be with you shortly.\n\n- ClubAI",
+              learnFromResponse: false
+            };
+          }
+        } catch (error) {
+          logger.warn('[PatternLearning] Failed to check duplicate pattern usage', {
+            error,
+            patternId: bestMatch.id
+          });
+          // Continue without duplicate check if query fails
+        }
+      }
 
       // Skip validation for operator-approved auto-executable patterns
       // If an operator explicitly enabled auto_executable, trust their judgment

@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.17] - 2025-11-25
+
+### Added
+- **Complete Duplicate Response Prevention System**: Connected existing safeguards to prevent repeat patterns
+  - Patterns can only be used once per conversation (2-hour window)
+  - Negative sentiment detection triggers escalation ("still not working", "doesn't help")
+  - AI response limit enforced (max 3 responses before human takeover)
+  - All using EXISTING infrastructure - no new tables or configs needed
+
+### Fixed
+- **"I can't login" Loop**: Fixed issue where same pattern would respond multiple times
+  - Now detects when pattern was already used and escalates to human
+  - Customer saying "still can't" or similar triggers immediate escalation
+  - Uses existing patternSafetyService for sentiment detection
+
+### Technical
+- Added pattern duplicate check querying pattern_execution_history
+- Integrated existing patternSafetyService.checkMessageSafety() before pattern execution
+- Connected existing ai_response_count limit (already configured as 3)
+- All escalation messages use existing templates from negative_sentiment_patterns table
+- ~40 lines of code connecting existing systems - no new infrastructure
+
 ## [1.25.16] - 2025-11-25
 
 ### Fixed
