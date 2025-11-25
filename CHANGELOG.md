@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.16] - 2025-11-25
+
+### Fixed
+- **AI Validation Override for Auto-Executable Patterns**: Fixed overly-strict AI blocking operator-approved patterns
+  - When operators enable "Auto-Response" on a pattern, it now executes without AI second-guessing
+  - Previously, GPT-4o would reject valid patterns as "out of context" (e.g., Guest mode for login issues)
+  - AI validation now only applies to non-approved patterns (suggestions)
+  - Trusts operator expertise when they explicitly enable auto-execution
+  - Example: "I can't login" → "Try Guest mode" now works when Auto-Response is ON
+
+### Technical
+- Modified `patternLearningService.ts` to check `auto_executable` flag before AI validation
+- Operator-approved patterns skip `validatePatternMatch()` GPT-4o evaluation
+- Preserves AI safety for suggested patterns while respecting operator overrides
+
 ## [1.25.15] - 2025-11-24
 
 ### Fixed

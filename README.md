@@ -1,4 +1,4 @@
-# ClubOS v1.25.15 - Flexible Facility Management System
+# ClubOS v1.25.16 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.15**
-- **🚀 Auto-Execute Works!** - Patterns with auto-execute ON now respond immediately
-- **✅ No More Hidden Thresholds** - If you enable auto-execute, it executes
-- **🔧 Database Fix** - Added missing `assistant_type` columns
+**Current Version: v1.25.16**
+- **🤖 AI No Longer Overrides You** - Auto-Response patterns execute without AI second-guessing
+- **✅ Trust Operator Judgment** - When you enable Auto-Response, it actually auto-responds
+- **🎯 Fixed "I can't login"** - Guest mode suggestion now works as intended
+- **Previous: Auto-Execute Works** - Patterns respond immediately (v1.25.15)
 - **Previous: Pattern Creation Fix** - Auto-extract keywords, test button works (v1.25.14)
 - **⚠️ Known Issue** - Password reset is non-functional (separate task needed)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)

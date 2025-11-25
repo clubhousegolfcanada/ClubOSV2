@@ -187,9 +187,18 @@ export class PatternLearningService {
 
       // Get the best matching pattern
       let bestMatch = patterns[0];
-      
-      // Validate the match with GPT-4o to prevent nonsensical responses
-      if (this.openai && bestMatch) {
+
+      // Skip validation for operator-approved auto-executable patterns
+      // If an operator explicitly enabled auto_executable, trust their judgment
+      const isOperatorApproved = bestMatch && bestMatch.is_active && bestMatch.auto_executable;
+
+      if (isOperatorApproved) {
+        logger.info('[PatternLearning] Skipping validation for operator-approved auto-executable pattern', {
+          patternId: bestMatch.id,
+          message: message.substring(0, 50)
+        });
+      } else if (this.openai && bestMatch) {
+        // Validate the match with GPT-4o only for non-approved patterns
         const isValidMatch = await this.validatePatternMatch(message, bestMatch, customerName, conversationHistory);
         if (!isValidMatch) {
           logger.info('[PatternLearning] GPT-4o rejected pattern match as inappropriate', {
@@ -197,7 +206,7 @@ export class PatternLearningService {
             patternId: bestMatch.id,
             patternResponse: bestMatch.response_template.substring(0, 50)
           });
-          
+
           // Try the next best pattern or escalate
           if (patterns.length > 1) {
             bestMatch = patterns[1];
