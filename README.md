@@ -1,4 +1,4 @@
-# ClubOS v1.25.17 - Flexible Facility Management System
+# ClubOS v1.25.18 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,12 +8,12 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.17**
-- **🔁 No More Pattern Loops** - Same pattern won't respond twice in conversation
-- **😤 Detects Frustration** - "Still not working" triggers human escalation
-- **3️⃣ Response Limit** - Max 3 AI responses before human takeover
-- **🔗 All Existing Code** - Connected safeguards that were already built
-- **Previous: AI Override Fix** - Auto-Response patterns work immediately (v1.25.16)
+**Current Version: v1.25.18**
+- **🧠 Semantic Category Matching** - AI validates patterns using category logic
+- **🍸 Smart Matching** - "can I drink vodka" → Food & Beverage pattern
+- **💻 Tech Understanding** - "can't login to TrackMan" → Login Issues pattern
+- **✅ Re-enabled AI Validation** - All patterns validated with permissive prompt
+- **Previous: No More Pattern Loops** - Same pattern won't repeat (v1.25.17)
 - **⚠️ Known Issue** - Password reset is non-functional (separate task needed)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)

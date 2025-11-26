@@ -224,23 +224,28 @@ export class PatternLearningService {
         }
       }
 
-      // Skip validation for operator-approved auto-executable patterns
-      // If an operator explicitly enabled auto_executable, trust their judgment
-      const isOperatorApproved = bestMatch && bestMatch.is_active && bestMatch.auto_executable;
-
-      if (isOperatorApproved) {
-        logger.info('[PatternLearning] Skipping validation for operator-approved auto-executable pattern', {
+      // Always validate with AI - prompt uses semantic category matching
+      // Only rejects when message category is completely unrelated to pattern
+      if (this.openai && bestMatch) {
+        logger.info('[PatternLearning] Running semantic category validation', {
           patternId: bestMatch.id,
+          patternTrigger: bestMatch.trigger_text?.substring(0, 30),
           message: message.substring(0, 50)
         });
-      } else if (this.openai && bestMatch) {
-        // Validate the match with GPT-4o only for non-approved patterns
+
         const isValidMatch = await this.validatePatternMatch(message, bestMatch, customerName, conversationHistory);
+
+        logger.info('[PatternLearning] Validation result', {
+          patternId: bestMatch.id,
+          isValid: isValidMatch,
+          message: message.substring(0, 30)
+        });
+
         if (!isValidMatch) {
-          logger.info('[PatternLearning] GPT-4o rejected pattern match as inappropriate', {
+          logger.info('[PatternLearning] Category mismatch - pattern rejected', {
             message: message.substring(0, 50),
             patternId: bestMatch.id,
-            patternResponse: bestMatch.response_template.substring(0, 50)
+            patternTrigger: bestMatch.trigger_text?.substring(0, 30)
           });
 
           // Try the next best pattern or escalate
@@ -1230,22 +1235,35 @@ export class PatternLearningService {
         ? `\nRecent Conversation:\n${conversationHistory.slice(-3).map(h => `${h.sender}: ${h.message}`).join('\n')}\n`
         : '';
       
-      const prompt = `You are evaluating if a customer service response template is appropriate for a customer message.
+      const prompt = `You are a semantic category matcher for a customer service system.
+
+YOUR TASK: Determine if the customer's message belongs to the SAME SEMANTIC CATEGORY as the pattern's trigger.
+
+HOW TO THINK ABOUT THIS:
+1. Look at the pattern trigger to understand what CATEGORY of question it handles
+2. Look at the customer message and identify what CATEGORY it belongs to
+3. Specific items belong to general categories (e.g., "vodka" → beverages, "TrackMan" → tech/systems, "slice" → golf technique)
+4. APPROVE if both are in the same or closely related category
+
+EXAMPLES OF CATEGORY REASONING:
+- Pattern trigger: "can't login" | Message: "can't login to TrackMan" → SAME CATEGORY (both about login/access issues)
+- Pattern trigger: "food and drinks" | Message: "can I drink vodka" → SAME CATEGORY (vodka is a specific drink)
+- Pattern trigger: "booking help" | Message: "how do I cancel" → SAME CATEGORY (cancellation is booking management)
+- Pattern trigger: "hours" | Message: "refund policy" → DIFFERENT CATEGORY (hours ≠ refunds)
 ${contextString}
-Current Customer Message: "${message}"
-Customer Name: ${customerName || 'Unknown'}
+Customer Message: "${message}"
+Pattern Trigger: "${pattern.trigger_text || 'N/A'}"
+Pattern Category: ${pattern.pattern_type}
+Proposed Response: "${pattern.response_template}"
 
-Proposed Response Template: "${pattern.response_template}"
-Pattern Type: ${pattern.pattern_type}
-Pattern Trigger: ${pattern.trigger_text || 'N/A'}
+Think step by step:
+1. What category is the pattern trigger about?
+2. What category is the customer message about?
+3. Are they the same or closely related categories?
 
-Is this response appropriate and contextually relevant for this message?
-Consider:
-1. Does the response make logical sense as a reply to the message?
-2. Is the tone and content appropriate?
-3. Would this response seem random or out of context?
+APPROVE unless the categories are completely unrelated.
 
-Respond with a JSON object: { "appropriate": true/false, "reason": "brief explanation" }`;
+Respond with JSON: { "appropriate": true/false, "reason": "Category X vs Category Y - same/different" }`;
 
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o',

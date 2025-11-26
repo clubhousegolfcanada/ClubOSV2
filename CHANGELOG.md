@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.18] - 2025-11-25
+
+### Fixed
+- **Re-enabled AI Validation with Semantic Category Matching**
+  - AI now validates ALL patterns (including auto-executable)
+  - New prompt understands semantic categories (vodka → beverages, TrackMan → tech)
+  - "can't login to TrackMan" correctly matches Login Issues pattern
+  - "can I drink vodka" correctly matches Food & Beverage pattern
+  - Only rejects when message category is completely unrelated to pattern
+
+### Technical
+- Updated prompt in `validatePatternMatch()` to focus on category matching
+- Removed bypass for auto-executable patterns (all patterns now validated)
+- Added validation result logging for debugging (`[PatternLearning] Validation result`)
+- ~30 lines modified in `patternLearningService.ts`
+
 ## [1.25.17] - 2025-11-25
 
 ### Added
