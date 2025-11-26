@@ -281,8 +281,5 @@ ON CONFLICT (config_key) DO NOTHING;
 -- ============================================
 
 -- BREADCRUMB: Migration created successfully
--- TODO: Run this migration in development first: npm run db:migrate
--- TODO: Verify tables created: SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE '%pattern%';
--- TODO: Check configuration: SELECT * FROM pattern_learning_config;
--- NEXT: Create PatternLearningService.ts in services folder
+-- Migration has been run in production - V3-PLS is active
 -- NOTE: System starts in shadow_mode = true, so it won't affect production until we're ready

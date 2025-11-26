@@ -66,13 +66,6 @@ export default function Bookings() {
     }
   }, [user, router]);
 
-  // Debug: Log when state changes
-  useEffect(() => {
-    console.log('[State Update] showCreateBooking:', showCreateBooking);
-    console.log('[State Update] selectedTimeSlot:', selectedTimeSlot);
-    console.log('[State Update] Has keys?:', Object.keys(selectedTimeSlot).length > 0);
-  }, [showCreateBooking, selectedTimeSlot]);
-
   const loadInitialData = async () => {
     try {
       const [tiersData, locationsData] = await Promise.all([
@@ -95,16 +88,6 @@ export default function Bookings() {
 
   // Handle when a time slot is clicked on the calendar
   const handleTimeSlotClick = (bookingOrStartTime: any, endTime?: Date, spaceId?: string, spaceName?: string) => {
-    console.log('[handleTimeSlotClick] Called with:', {
-      bookingOrStartTime,
-      endTime,
-      spaceId,
-      spaceName,
-      isDate: bookingOrStartTime instanceof Date,
-      hasStartTime: bookingOrStartTime?.startTime,
-      hasEndTime: bookingOrStartTime?.endTime
-    });
-
     // First check if it's an object with startTime/endTime (from BookingCalendar)
     // This must come before the Date check because BookingCalendar sends an object
     if (bookingOrStartTime && typeof bookingOrStartTime === 'object' && !(bookingOrStartTime instanceof Date)) {
@@ -118,7 +101,6 @@ export default function Bookings() {
           locationId: bookingOrStartTime.locationId || selectedLocationId,
           locationName: locations.find(l => l.id === (bookingOrStartTime.locationId || selectedLocationId))?.name
         };
-        console.log('[handleTimeSlotClick] Setting time slot (BookingCalendar object):', timeSlot);
         setSelectedTimeSlot(timeSlot);
         setShowCreateBooking(true);
       } else if (bookingOrStartTime.id) {
@@ -135,7 +117,6 @@ export default function Bookings() {
         locationId: selectedLocationId,
         locationName: locations.find(l => l.id === selectedLocationId)?.name
       };
-      console.log('[handleTimeSlotClick] Setting time slot (Direct Date params):', timeSlot);
       setSelectedTimeSlot(timeSlot);
       setShowCreateBooking(true);
     }

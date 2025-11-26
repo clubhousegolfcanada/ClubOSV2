@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.19] - 2025-11-25
+
+### Maintenance
+- **Codebase Cleanup**: Removed dead code and debug statements
+  - Deleted unused `TicketCenterOptimized.tsx` and `TicketCenterOptimizedV2.tsx` (-1,732 lines)
+  - Removed 6 debug console.logs from `bookings.tsx`
+  - Updated stale TODOs in migration file (already run in production)
+
+### Added
+- **TODO Audit Documentation**: Created `docs/TODO-AUDIT.md`
+  - Categorized all 41 TODOs in codebase
+  - Identified 7 that can be removed (stale/completed)
+  - Documented 15 feature requests for future GitHub issues
+  - Noted 3 known issues already tracked
+
 ## [1.25.18] - 2025-11-25
 
 ### Fixed
