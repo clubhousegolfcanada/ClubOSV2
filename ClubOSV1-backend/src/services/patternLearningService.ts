@@ -40,7 +40,6 @@ interface PatternResult {
   pattern?: Pattern;
   patternId?: number;
   response?: string;
-  suggestedResponse?: string; // For escalation messages
   actions?: any[];
   confidence?: number;
   reason?: string;
@@ -188,66 +187,17 @@ export class PatternLearningService {
 
       // Get the best matching pattern
       let bestMatch = patterns[0];
-
-      // Check if this pattern was already used in the conversation recently
-      if (bestMatch && conversationId) {
-        try {
-          const duplicateCheck = await db.query(`
-            SELECT id FROM pattern_execution_history
-            WHERE conversation_id = $1
-              AND pattern_id = $2
-              AND created_at > NOW() - INTERVAL '2 hours'
-              AND execution_status IN ('success', 'auto_execute')
-            LIMIT 1
-          `, [conversationId, bestMatch.id]);
-
-          if (duplicateCheck.rows.length > 0) {
-            logger.info('[PatternLearning] Pattern already used in conversation, escalating', {
-              patternId: bestMatch.id,
-              conversationId,
-              message: message.substring(0, 50)
-            });
-
-            return {
-              action: 'escalate',
-              reason: 'pattern_already_used',
-              suggestedResponse: "I see you're still having trouble. Let me connect you with one of our team members who can help you directly. Someone will be with you shortly.\n\n- ClubAI",
-              learnFromResponse: false
-            };
-          }
-        } catch (error) {
-          logger.warn('[PatternLearning] Failed to check duplicate pattern usage', {
-            error,
-            patternId: bestMatch.id
-          });
-          // Continue without duplicate check if query fails
-        }
-      }
-
-      // Always validate with AI - prompt uses semantic category matching
-      // Only rejects when message category is completely unrelated to pattern
+      
+      // Validate the match with GPT-4o to prevent nonsensical responses
       if (this.openai && bestMatch) {
-        logger.info('[PatternLearning] Running semantic category validation', {
-          patternId: bestMatch.id,
-          patternTrigger: bestMatch.trigger_text?.substring(0, 30),
-          message: message.substring(0, 50)
-        });
-
         const isValidMatch = await this.validatePatternMatch(message, bestMatch, customerName, conversationHistory);
-
-        logger.info('[PatternLearning] Validation result', {
-          patternId: bestMatch.id,
-          isValid: isValidMatch,
-          message: message.substring(0, 30)
-        });
-
         if (!isValidMatch) {
-          logger.info('[PatternLearning] Category mismatch - pattern rejected', {
+          logger.info('[PatternLearning] GPT-4o rejected pattern match as inappropriate', {
             message: message.substring(0, 50),
             patternId: bestMatch.id,
-            patternTrigger: bestMatch.trigger_text?.substring(0, 30)
+            patternResponse: bestMatch.response_template.substring(0, 50)
           });
-
+          
           // Try the next best pattern or escalate
           if (patterns.length > 1) {
             bestMatch = patterns[1];
@@ -297,7 +247,11 @@ export class PatternLearningService {
       );
       
       // Log pattern match with the actual response
-      const willAutoExecute = bestMatch.is_active && bestMatch.auto_executable;
+      const willAutoExecute = bestMatch.is_active && (
+        bestMatch.auto_executable ? 
+        bestMatch.confidence_score >= this.config.autoExecuteThreshold : 
+        true
+      );
       await this.logPatternMatch(
         bestMatch, 
         message, 
@@ -307,11 +261,13 @@ export class PatternLearningService {
         willAutoExecute
       );
       
-      // Apply automation based on operator's explicit settings
-      // If operator enabled auto_executable, trust their judgment and execute
+      // Apply confidence-based automation with reasoning
+      // Pattern must be BOTH active AND auto_executable to auto-execute
       // is_active = pattern is enabled for suggestions
-      // auto_executable = operator explicitly approved automatic responses
-      const shouldAutoExecute = bestMatch.is_active && bestMatch.auto_executable;
+      // auto_executable = pattern is approved for automatic responses
+      const shouldAutoExecute = bestMatch.is_active &&
+        bestMatch.auto_executable &&
+        bestMatch.confidence_score >= this.config.autoExecuteThreshold;
       
       if (shouldAutoExecute) {
         return {
@@ -1235,35 +1191,22 @@ export class PatternLearningService {
         ? `\nRecent Conversation:\n${conversationHistory.slice(-3).map(h => `${h.sender}: ${h.message}`).join('\n')}\n`
         : '';
       
-      const prompt = `You are a semantic category matcher for a customer service system.
-
-YOUR TASK: Determine if the customer's message belongs to the SAME SEMANTIC CATEGORY as the pattern's trigger.
-
-HOW TO THINK ABOUT THIS:
-1. Look at the pattern trigger to understand what CATEGORY of question it handles
-2. Look at the customer message and identify what CATEGORY it belongs to
-3. Specific items belong to general categories (e.g., "vodka" → beverages, "TrackMan" → tech/systems, "slice" → golf technique)
-4. APPROVE if both are in the same or closely related category
-
-EXAMPLES OF CATEGORY REASONING:
-- Pattern trigger: "can't login" | Message: "can't login to TrackMan" → SAME CATEGORY (both about login/access issues)
-- Pattern trigger: "food and drinks" | Message: "can I drink vodka" → SAME CATEGORY (vodka is a specific drink)
-- Pattern trigger: "booking help" | Message: "how do I cancel" → SAME CATEGORY (cancellation is booking management)
-- Pattern trigger: "hours" | Message: "refund policy" → DIFFERENT CATEGORY (hours ≠ refunds)
+      const prompt = `You are evaluating if a customer service response template is appropriate for a customer message.
 ${contextString}
-Customer Message: "${message}"
-Pattern Trigger: "${pattern.trigger_text || 'N/A'}"
-Pattern Category: ${pattern.pattern_type}
-Proposed Response: "${pattern.response_template}"
+Current Customer Message: "${message}"
+Customer Name: ${customerName || 'Unknown'}
 
-Think step by step:
-1. What category is the pattern trigger about?
-2. What category is the customer message about?
-3. Are they the same or closely related categories?
+Proposed Response Template: "${pattern.response_template}"
+Pattern Type: ${pattern.pattern_type}
+Pattern Trigger: ${pattern.trigger_text || 'N/A'}
 
-APPROVE unless the categories are completely unrelated.
+Is this response appropriate and contextually relevant for this message?
+Consider:
+1. Does the response make logical sense as a reply to the message?
+2. Is the tone and content appropriate?
+3. Would this response seem random or out of context?
 
-Respond with JSON: { "appropriate": true/false, "reason": "Category X vs Category Y - same/different" }`;
+Respond with a JSON object: { "appropriate": true/false, "reason": "brief explanation" }`;
 
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o',

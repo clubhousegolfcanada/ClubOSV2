@@ -12,7 +12,6 @@ import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../uti
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
 import { patternLearningService } from '../services/patternLearningService';
-import { patternSafetyService } from '../services/patternSafetyService';
 
 const router = Router();
 
@@ -700,35 +699,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, message: 'Operator handling conversation' });
               }
 
-              // SAFEGUARD: Check if AI response limit reached (config set to 3)
-              if (existingConv.rows[0].ai_response_count && existingConv.rows[0].ai_response_count >= 3) {
-                logger.info('[Safeguard] Max AI responses reached, escalating to human', {
-                  phoneNumber,
-                  responseCount: existingConv.rows[0].ai_response_count
-                });
-
-                // Send escalation message using existing text from patternSafetyService
-                const escalationMsg = "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI";
-                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-
-                if (defaultNumber) {
-                  await openPhoneService.sendMessage(
-                    phoneNumber,
-                    defaultNumber,
-                    escalationMsg
-                  );
-                }
-
-                // Lock conversation to prevent further AI responses
-                await db.query(`
-                  UPDATE openphone_conversations
-                  SET conversation_locked = true,
-                      customer_sentiment = 'escalated'
-                  WHERE id = $1`, [existingConv.rows[0].id]);
-
-                return res.json({ success: true, escalated: true, reason: 'max_responses_reached' });
-              }
-
               // SAFEGUARD: Detect rapid messages - ONLY count CUSTOMER messages
               // FIX: Count only inbound messages (customer), never our AI responses
               const recentCustomerMessages = updatedMessages.filter((m: any) =>
@@ -768,39 +738,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
               // Process with V3-PLS FIRST (unified pattern system), then AI automations as fallback
               const messageText = messageData.body || messageData.text || '';
-
-              // SAFEGUARD: Check for negative sentiment BEFORE pattern processing
-              const safetyCheck = await patternSafetyService.checkMessageSafety(
-                messageText,
-                existingConv.rows[0].id,
-                phoneNumber
-              );
-
-              if (!safetyCheck.safe && safetyCheck.alertType === 'escalation') {
-                logger.info('[Safeguard] Negative sentiment detected, escalating to human', {
-                  phoneNumber,
-                  triggeredKeywords: safetyCheck.triggeredKeywords
-                });
-
-                // Use the suggested response from safety service
-                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                if (defaultNumber && safetyCheck.suggestedResponse) {
-                  await openPhoneService.sendMessage(
-                    phoneNumber,
-                    defaultNumber,
-                    safetyCheck.suggestedResponse
-                  );
-                }
-
-                // Lock conversation to prevent further AI responses
-                await db.query(`
-                  UPDATE openphone_conversations
-                  SET conversation_locked = true,
-                      customer_sentiment = 'escalated'
-                  WHERE id = $1`, [existingConv.rows[0].id]);
-
-                return res.json({ success: true, escalated: true, reason: 'negative_sentiment' });
-              }
 
               // FIRST: Try V3-PLS Pattern Learning System
               try {
@@ -888,33 +825,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     });
                     // Don't fail the webhook - just log the error
                   }
-                } else if (patternResult.action === 'escalate') {
-                  // Handle escalation from pattern learning (e.g., pattern already used)
-                  logger.info('[Pattern Learning] Escalating to human', {
-                    reason: patternResult.reason,
-                    phoneNumber
-                  });
-
-                  // Send escalation message
-                  const escalationMsg = patternResult.suggestedResponse ||
-                    "I see you're still having trouble. Let me connect you with one of our team members who can help you directly. Someone will be with you shortly.\n\n- ClubAI";
-                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-
-                  if (defaultNumber) {
-                    await openPhoneService.sendMessage(
-                      phoneNumber,
-                      defaultNumber,
-                      escalationMsg
-                    );
-                  }
-
-                  // Lock conversation to prevent further AI responses
-                  await db.query(`
-                    UPDATE openphone_conversations
-                    SET conversation_locked = true,
-                        customer_sentiment = 'escalated'
-                    WHERE id = $1`, [existingConv.rows[0].id]);
-
                 } else {
                   logger.info('[Pattern Learning] Result:', {
                     action: patternResult.action,

@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.20] - 2025-11-27
+
+### Fixed
+- **CRITICAL: Reverted Pattern Learning to v1.25.14 State**: AI auto-responses now send to OpenPhone correctly
+  - Messages were showing in ClubOS UI but not being delivered to customers via SMS
+  - Root cause: Changes in v1.25.15-v1.25.18 blocked pattern execution
+  - Removed duplicate pattern check that could block valid responses
+  - Removed semantic category validation that was rejecting operator-approved patterns
+  - Removed safeguard checks (max AI responses, rapid messages, negative sentiment) that were preventing message delivery
+  - This reverts pattern learning changes from v1.25.15-v1.25.18
+
 ## [1.25.19] - 2025-11-25
 
 ### Maintenance
