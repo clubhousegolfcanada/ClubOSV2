@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.21] - 2025-12-02
+
+### Added
+- **Restored Safety Features**: Re-added v1.25.17 safeguards that were accidentally removed in v1.25.20 revert
+  - Max AI response limit (3) - escalates to human after 3 AI responses
+  - Negative sentiment detection - auto-escalates frustrated customers ("still not working", "waste of time", etc.)
+  - Escalation handler - properly handles V3-PLS escalate decisions
+  - Uses existing patternSafetyService for sentiment detection (no new dependencies)
+
+### Technical
+- Added import for `patternSafetyService` in openphone.ts
+- Inserted 3 safeguard blocks in webhook handler (~60 lines)
+- All escalations lock conversation and set `customer_sentiment = 'escalated'`
+
 ## [1.25.20] - 2025-11-27
 
 ### Fixed

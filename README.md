@@ -1,4 +1,4 @@
-# ClubOS v1.25.20 - Flexible Facility Management System
+# ClubOS v1.25.21 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.20**
-- **🔧 CRITICAL FIX** - AI auto-responses now send to OpenPhone correctly
-- **📱 Messages Delivered** - Reverted pattern learning to v1.25.14 state
-- **🔄 Pattern System Restored** - Removed changes from v1.25.15-v1.25.18 that blocked message delivery
+**Current Version: v1.25.21**
+- **🛡️ Safety Features Restored** - Re-added v1.25.17 safeguards removed in revert
+- **📊 Max AI Limit** - Escalates to human after 3 AI responses
+- **😤 Sentiment Detection** - Auto-escalates frustrated customers
+- **🔄 Escalation Handler** - Properly handles V3-PLS escalate decisions
 - **⚠️ Known Issue** - Password reset is non-functional (separate task needed)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
