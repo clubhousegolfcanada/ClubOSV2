@@ -150,17 +150,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
     setAuthInitialized(true);
   }, []); // Remove dependencies to run only once
 
-  useEffect(() => {
-    // Auth interceptor now handled by http client
-    if (isAuthenticated && router.pathname !== '/login') {
-      tokenManager.setupAxiosInterceptor();
-    }
-    
-    // Don't monitor tokens - let backend handle expiry
-    return () => {
-      // Cleanup if needed
-    };
-  }, [isAuthenticated, router.pathname]);
+  // Auth interceptor is now handled by http client - no manual setup needed
 
   useEffect(() => {
     // Hide HubSpot navigation on mobile when embedded

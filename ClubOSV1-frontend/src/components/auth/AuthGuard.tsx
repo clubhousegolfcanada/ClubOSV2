@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
 import { tokenManager } from '@/utils/tokenManager';
 import { getStorageItem } from '@/utils/iframeStorage';
-import { http } from '@/api/http';
 import logger from '@/services/logger';
 
 interface AuthGuardProps {
@@ -41,17 +40,6 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   };
 
   // Token validation is now centralized in tokenManager
-
-  // Verify token with backend (optional, for critical operations)
-  const verifyTokenWithBackend = async (token: string): Promise<boolean> => {
-    try {
-      const response = await http.get('auth/verify');
-      return response.data?.success === true;
-    } catch (error) {
-      secureLog('Token verification failed', { error: (error as any)?.message });
-      return false;
-    }
-  };
 
   useEffect(() => {
     // Only run on initial mount
@@ -120,27 +108,15 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
             return;
           }
 
-          // Check if token is expired (tokenManager.isTokenExpired already checks grace period from localStorage)
+          // Check if token is expired
           if (tokenManager.isTokenExpired(storedToken)) {
-            // Token is expired and not within grace period
             secureLog('Token expired');
             setAuthError('Session has expired');
             tokenManager.clearToken();
             router.push('/login');
             return;
           }
-          
-          // For critical operations, verify with backend
-          // Uncomment if backend supports /auth/verify endpoint
-          // const isValid = await verifyTokenWithBackend(storedToken);
-          // if (!isValid) {
-          //   secureLog('Backend token verification failed');
-          //   setAuthError('Authentication verification failed');
-          //   tokenManager.clearToken();
-          //   router.push('/login');
-          //   return;
-          // }
-          
+
           if (!user) {
             try {
               const parsedUser = JSON.parse(storedUser);

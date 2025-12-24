@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.22] - 2025-12-23
+
+### Improved
+- **Authentication Simplification**: Consolidated and streamlined auth system
+  - Unified auth clearing to use single consolidated function everywhere (fixes stale Zustand state on 401)
+  - Centralized non-critical endpoint list (was hardcoded in http.ts, now in authClearingUtils.ts)
+  - Simplified token monitoring intervals from 15+ paths to 3-tier system (mobile/desktop/close-to-expiry)
+  - Fixed login viewMode logic to trust actual user role (not UI loginMode state)
+  - Removed dead code: empty `setupAxiosInterceptor()` and duplicate `clearAllTokens()`
+
+### Fixed
+- **Password Reset Honesty**: Now returns 501 with helpful message instead of false success
+  - Previously returned `success: true` but did nothing (TODO code)
+  - Now honestly tells users to contact support@clubhouse247golf.com
+  - Prevents user frustration from waiting for emails that never arrive
+
+### Technical
+- http.ts now uses `clearAllAuthData()` from authClearingUtils.ts (clears all 6 storage keys including Zustand)
+- NON_CRITICAL_AUTH_ENDPOINTS exported from authClearingUtils.ts for centralized management
+- tokenManager.ts: Simplified getCheckInterval() - backend handles proactive refresh at 70%/50%
+- AuthGuard.tsx: Removed unused verifyTokenWithBackend function and dead code
+- _app.tsx: Removed call to removed setupAxiosInterceptor()
+- All TypeScript checks pass
+
 ## [1.25.21] - 2025-12-02
 
 ### Added

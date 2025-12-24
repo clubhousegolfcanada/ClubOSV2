@@ -3,6 +3,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 /* eslint-enable no-restricted-imports */
 import { tokenManager } from '@/utils/tokenManager';
 import { addCSRFToRequest } from '@/utils/csrf';
+import { clearAllAuthData, NON_CRITICAL_AUTH_ENDPOINTS } from '@/utils/authClearingUtils';
 import logger from '@/services/logger';
 
 // API Error type - using type instead of interface for proper extension
@@ -118,28 +119,8 @@ client.interceptors.response.use(
       const currentPath = window.location.pathname;
       const requestUrl = error.config?.url || '';
 
-      // List of non-critical endpoints that shouldn't trigger logout
-      const nonCriticalEndpoints = [
-        '/api/ninjaone/',
-        '/ninjaone/',
-        '/api/system/check',
-        '/system/check',
-        '/api/door-access/',
-        '/door-access/',
-        '/api/remote-actions/',
-        '/remote-actions/',
-        '/api/performance',
-        '/performance',
-        '/api/devices',
-        '/devices',
-        '/api/scripts',
-        '/scripts',
-        '/api/status/',
-        '/status/'
-      ];
-
-      // Check if this is a non-critical endpoint
-      const isNonCritical = nonCriticalEndpoints.some(endpoint =>
+      // Check if this is a non-critical endpoint (uses centralized constant)
+      const isNonCritical = NON_CRITICAL_AUTH_ENDPOINTS.some(endpoint =>
         requestUrl.includes(endpoint)
       );
 
@@ -150,11 +131,9 @@ client.interceptors.response.use(
 
       // Don't redirect if already on login or if it's an auth endpoint
       if (currentPath !== '/login' && !currentPath.startsWith('/auth/')) {
-        // Clear auth and redirect to login
-        tokenManager.clearToken();
-        localStorage.removeItem('clubos_user');
-        localStorage.removeItem('clubos_view_mode');
-        localStorage.removeItem('remoteActionsExpanded'); // Clear RemoteActionsBar state
+        // Clear ALL auth data using consolidated utility (includes Zustand persistence)
+        clearAllAuthData();
+        tokenManager.stopTokenMonitoring();
 
         // Only redirect once, prevent loops
         if (!sessionStorage.getItem('redirecting_to_login')) {

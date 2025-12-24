@@ -222,6 +222,8 @@ router.post('/signup',
 );
 
 // Request password reset
+// NOTE: This feature is NOT IMPLEMENTED - returns honest error to prevent user frustration
+// TODO: Implement full password reset flow with email tokens
 router.post('/forgot-password',
   validate([
     body('email').isEmail().withMessage('Valid email required')
@@ -229,28 +231,17 @@ router.post('/forgot-password',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email } = req.body;
-      
-      // Check if user exists
-      const user = await db.findUserByEmail(email.toLowerCase());
-      
-      // Always return success to prevent email enumeration
-      // In production, this would send an email if user exists
-      if (user) {
-        // TODO: Generate reset token and send email
-        logger.info('Password reset requested:', { email });
-        
-        // In a real implementation:
-        // 1. Generate a secure reset token
-        // 2. Store token with expiration in database
-        // 3. Send email with reset link
-        // 4. Create a reset page that accepts the token
-      }
-      
-      res.json({
-        success: true,
-        message: 'If an account exists with this email, you will receive password reset instructions.'
+
+      // Log the attempt for future implementation
+      logger.info('Password reset requested (feature not implemented):', { email });
+
+      // Return honest error - feature not implemented
+      // Using 501 to be transparent while not revealing if email exists
+      res.status(501).json({
+        success: false,
+        message: 'Password reset is temporarily unavailable. Please contact support at support@clubhouse247golf.com to reset your password.'
       });
-      
+
     } catch (error) {
       next(error);
     }

@@ -175,47 +175,20 @@ export class TokenManager {
 
   /**
    * Get appropriate check interval based on token expiry time
-   * Enhanced for operator-friendly PWA experience
+   * Simplified 3-tier system - backend handles proactive refresh at 70%/50%
+   * Frontend just needs to catch truly expired tokens
    */
   private getCheckInterval(token: string): number {
     const timeUntilExpiry = this.getTimeUntilExpiration(token);
-    const role = this.getUserRole(token);
     const isMobile = this.isMobileDevice();
 
-    // Mobile devices need more aggressive checking due to app suspension
-    if (isMobile) {
-      // More frequent checks on mobile to handle background/resume
-      if (role === 'operator' || role === 'admin') {
-        if (timeUntilExpiry > 24 * 60 * 60 * 1000) { // > 1 day
-          return 15 * 60 * 1000; // Check every 15 minutes (was 30)
-        } else {
-          return 2 * 60 * 1000; // Check every 2 minutes when close
-        }
-      }
-      // Other roles on mobile
-      return Math.min(10 * 60 * 1000, timeUntilExpiry / 10); // Max 10 minutes
-    }
-
-    // Desktop operators get standard intervals
-    if (role === 'operator' || role === 'admin') {
-      if (timeUntilExpiry > 7 * 24 * 60 * 60 * 1000) { // > 7 days
-        return 2 * 60 * 60 * 1000; // Check every 2 hours
-      } else if (timeUntilExpiry > 24 * 60 * 60 * 1000) { // > 1 day
-        return 30 * 60 * 1000; // Check every 30 minutes
-      } else {
-        return 5 * 60 * 1000; // Check every 5 minutes when close to expiry
-      }
-    }
-
-    // Other roles with standard intervals
-    if (timeUntilExpiry <= 8 * 60 * 60 * 1000) { // 8 hours or less
-      return 15 * 60 * 1000; // 15 minutes
-    } else if (timeUntilExpiry <= 24 * 60 * 60 * 1000) { // 24 hours or less
-      return 30 * 60 * 1000; // 30 minutes
-    } else if (timeUntilExpiry <= 7 * 24 * 60 * 60 * 1000) { // 7 days or less
-      return 2 * 60 * 60 * 1000; // 2 hours
+    // Simple 3-tier system (mobile gets slightly more aggressive checks)
+    if (timeUntilExpiry > 24 * 60 * 60 * 1000) { // > 1 day
+      return isMobile ? 30 * 60 * 1000 : 60 * 60 * 1000; // 30min / 1hr
+    } else if (timeUntilExpiry > 2 * 60 * 60 * 1000) { // > 2 hours
+      return isMobile ? 10 * 60 * 1000 : 15 * 60 * 1000; // 10min / 15min
     } else {
-      return 4 * 60 * 60 * 1000; // 4 hours for very long tokens
+      return 5 * 60 * 1000; // 5min for everyone when close to expiry
     }
   }
 
@@ -271,14 +244,6 @@ export class TokenManager {
     this.interceptorSetup = false;
   }
 
-  /**
-   * Clear all token references and reset state
-   * Now delegates to the comprehensive clearAllAuth method
-   */
-  clearAllTokens(): void {
-    // Use the comprehensive clear method
-    this.clearAllAuth();
-  }
 
   /**
    * Handle token expiration
@@ -335,15 +300,6 @@ export class TokenManager {
     }
   }
 
-  /**
-   * Set up response interceptor to handle new tokens from backend
-   * Note: This is now handled by the http client
-   */
-  setupAxiosInterceptor(): void {
-    // This functionality is now handled by the http client
-    // Keeping method for backwards compatibility
-    return;
-  }
 }
 
 // Export singleton instance

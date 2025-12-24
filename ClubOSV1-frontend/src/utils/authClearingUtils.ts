@@ -16,6 +16,22 @@ const AUTH_STORAGE_KEYS = [
 ] as const;
 
 /**
+ * Endpoints that should NOT trigger logout on 401
+ * These are non-critical features where auth failure can be handled gracefully
+ * Centralized here to prevent drift between components
+ */
+export const NON_CRITICAL_AUTH_ENDPOINTS = [
+  '/ninjaone/',
+  '/system/check',
+  '/door-access/',
+  '/remote-actions/',
+  '/performance',
+  '/devices',
+  '/scripts',
+  '/status/'
+] as const;
+
+/**
  * Clear all authentication-related data from browser storage
  * This is the single consolidated method for auth clearing
  */

@@ -112,26 +112,21 @@ const LoginPage = () => {
       if (response.data.success) {
         const { user, token } = response.data.data;
 
-        // Set login timestamp FIRST for grace period
         // Use atomic token update to ensure clean auth state
         tokenManager.updateToken(token);
 
-        // Then update UI state
+        // Update auth state (also sets viewMode in localStorage)
         login(user, token);
 
-        // Set view mode based on user role or login mode
-        if (user.role === 'customer' || loginMode === 'customer') {
-          setViewMode('customer');
-        } else {
-          setViewMode('operator');
-        }
+        // Set view mode based on actual user role (not login mode UI state)
+        // This ensures operators who accidentally use customer form still get operator view
+        setViewMode(user.role === 'customer' ? 'customer' : 'operator');
 
         // Show success message immediately
         toast.success(`Welcome ${isSignup ? '' : 'back'}, ${user.name}!`);
 
-        // Navigate based on user role with proper promise handling
-        // This ensures navigation completes properly without arbitrary delays
-        const targetPath = user.role === 'customer' || loginMode === 'customer'
+        // Navigate based on actual user role
+        const targetPath = user.role === 'customer'
           ? '/customer/'
           : user.role === 'contractor'
           ? '/checklists'
