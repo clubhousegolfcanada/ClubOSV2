@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.25] - 2025-12-28
+
+### Fixed
+- **Knowledge Retrieval**: Fresh knowledge uploads now immediately available to AI terminal
+  - Lowered semantic search threshold from 0.7 to 0.5 (new entries were being filtered out)
+  - Added cache invalidation when knowledge is stored (stale results no longer persist)
+  - Added ILIKE fallback for proper nouns like location names (e.g., "Truro")
+  - Search now checks recent uploads FIRST (last 10 minutes) before older data
+
+### Technical
+- knowledgeSearchService.ts: Added `searchRecentAuditLog()` method for priority 1 search
+- knowledgeSearchService.ts: Added ILIKE fallback in `searchKnowledgeStore()` when full-text fails
+- knowledgeStore.ts: Cache invalidation on `set()` clears `knowledge:search:*` and `knowledge:*`
+- Semantic search `minRelevance` changed from 0.7 to 0.5 for better fresh content discovery
+
 ## [1.25.24] - 2025-12-28
 
 ### Removed

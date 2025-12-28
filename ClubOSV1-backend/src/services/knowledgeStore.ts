@@ -6,6 +6,7 @@
 import { query, pool } from '../utils/db';
 import { logger } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { cacheService } from './cacheService';
 
 export interface KnowledgeEntry {
   id?: string;
@@ -74,11 +75,21 @@ export class KnowledgeStore {
         options?.created_by || null
       ]);
 
-      logger.info('Knowledge stored', { 
-        key, 
+      logger.info('Knowledge stored', {
+        key,
         id: result.rows[0].id,
-        confidence: options?.confidence 
+        confidence: options?.confidence
       });
+
+      // Invalidate knowledge search caches so new data is immediately available
+      try {
+        await cacheService.invalidatePattern('knowledge:search:*');
+        await cacheService.invalidatePattern('knowledge:*');
+        logger.debug('Knowledge cache invalidated after store', { key });
+      } catch (cacheError) {
+        // Don't fail the store if cache invalidation fails
+        logger.warn('Failed to invalidate knowledge cache', { key, error: cacheError });
+      }
 
       return result.rows[0].id;
     } catch (error) {

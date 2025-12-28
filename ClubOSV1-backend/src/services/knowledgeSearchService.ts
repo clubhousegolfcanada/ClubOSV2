@@ -35,7 +35,7 @@ export class KnowledgeSearchService {
         try {
           const semanticResults = await semanticSearch.searchKnowledge(query, {
             limit: limit * 2, // Get more results to filter
-            minRelevance: 0.7,
+            minRelevance: 0.5, // Lowered from 0.7 to include fresh knowledge with less usage history
             includeAllCategories: !assistantType,
             category: assistantType
           });
@@ -71,7 +71,7 @@ export class KnowledgeSearchService {
       
       // Fallback to intelligent keyword search
       const intelligentAnalysis = intelligentSearchService.intelligentSearch(query, userRole);
-      
+
       // Log the intelligent analysis for debugging
       logger.info('Intelligent search analysis', {
         originalQuery: query,
@@ -79,27 +79,35 @@ export class KnowledgeSearchService {
         intents: intelligentAnalysis.intents,
         priority: intelligentAnalysis.priority
       });
-      
+
+      // PRIORITY 1: Check knowledge_audit_log FIRST for very recent uploads (last 10 minutes)
+      // This ensures freshly added knowledge is immediately available
+      const recentAuditResults = await this.searchRecentAuditLog(query, assistantType, 3);
+      if (recentAuditResults.length > 0) {
+        logger.info('Found recent knowledge uploads:', recentAuditResults.length);
+        results.push(...recentAuditResults);
+      }
+
       // Search with expanded queries for better matching
       const searchQueries = [query, ...intelligentAnalysis.expandedQueries.slice(0, 3)];
-      
+
       for (const searchQuery of searchQueries) {
         if (results.length >= limit) break;
-        
-        // 1. Search knowledge_store with full-text search
+
+        // 2. Search knowledge_store with full-text search
         const knowledgeStoreResults = await this.searchKnowledgeStore(searchQuery, assistantType, limit - results.length);
         results.push(...knowledgeStoreResults);
       }
 
       // Search additional tables if knowledge_store doesn't have enough results
       if (results.length < limit) {
-        // 2. Search SOP embeddings (379 operational procedures)
+        // 3. Search SOP embeddings (379 operational procedures)
         const sopResults = await this.searchSopEmbeddings(query, assistantType, limit - results.length);
         results.push(...sopResults);
       }
 
       if (results.length < limit) {
-        // 3. Search knowledge_audit_log (recent uploads)
+        // 4. Search knowledge_audit_log (older entries)
         const auditResults = await this.searchKnowledgeAuditLog(query, assistantType, limit - results.length);
         results.push(...auditResults);
       }
@@ -171,11 +179,56 @@ export class KnowledgeSearchService {
 
       const result = await db.query(sql, params);
 
-      return result.rows.map((row: any) => ({
+      // If full-text search found results, return them
+      if (result.rows.length > 0) {
+        return result.rows.map((row: any) => ({
+          key: row.key,
+          value: row.value,
+          confidence: row.confidence || 0.5,
+          relevance: row.relevance || 0,
+          source: 'knowledge_store'
+        }));
+      }
+
+      // ILIKE fallback for proper nouns and location names that full-text search may miss
+      logger.info('Full-text search found nothing, trying ILIKE fallback for:', searchQuery);
+
+      let ilikeSql = `
+        SELECT
+          key,
+          value,
+          confidence,
+          0.5 as relevance
+        FROM knowledge_store
+        WHERE
+          (key ILIKE $1 OR value::text ILIKE $1)
+          AND superseded_by IS NULL
+      `;
+
+      const ilikeParams: any[] = [`%${searchQuery}%`];
+
+      if (assistantType) {
+        ilikeSql += ` AND (key LIKE $2 || '%' OR value->>'assistant' = $2)`;
+        ilikeParams.push(assistantType.toLowerCase());
+      }
+
+      ilikeSql += `
+        ORDER BY updated_at DESC, confidence DESC
+        LIMIT $${ilikeParams.length + 1}
+      `;
+      ilikeParams.push(limit);
+
+      const ilikeResult = await db.query(ilikeSql, ilikeParams);
+
+      if (ilikeResult.rows.length > 0) {
+        logger.info('ILIKE fallback found', ilikeResult.rows.length, 'results');
+      }
+
+      return ilikeResult.rows.map((row: any) => ({
         key: row.key,
         value: row.value,
         confidence: row.confidence || 0.5,
-        relevance: row.relevance || 0,
+        relevance: row.relevance || 0.5,
         source: 'knowledge_store'
       }));
     } catch (error) {
@@ -259,6 +312,71 @@ export class KnowledgeSearchService {
       });
     } catch (error) {
       logger.error('Error searching sop_embeddings:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search for VERY RECENT uploads in audit log (last 10 minutes)
+   * This ensures freshly added knowledge is immediately available
+   */
+  private async searchRecentAuditLog(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
+    try {
+      const searchTerms = query.toLowerCase()
+        .replace(/[?!.,;:]/g, '')
+        .split(' ')
+        .filter(term => term.length > 2);
+
+      // Search for entries uploaded in the last 10 minutes
+      let sql = `
+        SELECT
+          action,
+          category,
+          key,
+          new_value,
+          assistant_target,
+          timestamp
+        FROM knowledge_audit_log
+        WHERE timestamp > NOW() - INTERVAL '10 minutes'
+      `;
+
+      const params: any[] = [];
+
+      // Add search conditions
+      if (searchTerms.length > 0) {
+        const searchConditions = searchTerms.map((term) => {
+          params.push(`%${term}%`);
+          return `(LOWER(new_value) ILIKE $${params.length} OR LOWER(key) ILIKE $${params.length} OR LOWER(category) ILIKE $${params.length})`;
+        });
+        sql += ` AND (${searchConditions.join(' OR ')})`;
+      }
+
+      sql += ` ORDER BY timestamp DESC LIMIT $${params.length + 1}`;
+      params.push(limit);
+
+      const result = await db.query(sql, params);
+
+      return result.rows.map((row: any) => {
+        const contentLower = `${row.new_value} ${row.key || ''} ${row.category}`.toLowerCase();
+        const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
+        const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.8;
+
+        return {
+          key: `recent.${row.assistant_target}.${row.category}`,
+          value: {
+            content: row.new_value,
+            category: row.category,
+            action: row.action,
+            key: row.key,
+            isRecent: true
+          },
+          confidence: 0.95, // High confidence for very recent uploads
+          relevance: Math.max(relevance, 0.8), // Boost relevance for recent entries
+          source: 'recent_audit_log'
+        };
+      });
+    } catch (error) {
+      logger.error('Error searching recent audit log:', error);
       return [];
     }
   }

@@ -1,4 +1,4 @@
-# ClubOS v1.25.24 - Flexible Facility Management System
+# ClubOS v1.25.25 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.24**
-- **🔧 Password Reset Removed** - Removed non-functional password reset (admins can still reset via user management)
+**Current Version: v1.25.25**
+- **🧠 Knowledge Retrieval Fix** - Fresh knowledge uploads now immediately available to AI terminal
+- **Previous: Password Reset Removed** - Removed non-functional password reset (v1.25.24)
 - **Previous: SECURITY CVE-2025-66478** - Updated Next.js 15.5.9 + React 19.1.4 (CRITICAL RCE fix)
 - **Previous: Auth Simplification** - Consolidated auth clearing, simplified token monitoring (v1.25.22)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
