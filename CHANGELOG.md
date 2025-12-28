@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.24] - 2025-12-28
+
+### Removed
+- **Password Reset Feature**: Removed non-functional password reset from login page
+  - Removed "Forgot password?" links from both operator and customer login forms
+  - Removed password reset modal and related state/functions from frontend
+  - Removed `/auth/forgot-password` backend endpoint
+  - Admin password reset via user management still works (only admins can reset passwords now)
+  - Contact support at support@clubhouse247golf.com for password resets
+
+### Technical
+- Cleaned up unused imports (ArrowRight, Shield, KeyRound) from login.tsx
+- Removed ~70 lines of dead code from frontend
+
 ## [1.25.23] - 2025-12-28
 
 ### Security

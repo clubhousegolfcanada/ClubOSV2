@@ -20,9 +20,6 @@ const LoginPage = () => {
   const [isSignup, setIsSignup] = useState(false); // Toggle between login and signup for customers
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [isResetting, setIsResetting] = useState(false);
   const [rememberMe, setRememberMe] = useState(true); // Default to true for 30-day login
 
   // Redirect authenticated users away from login page
@@ -162,29 +159,6 @@ const LoginPage = () => {
       toast.error(message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsResetting(true);
-
-    try {
-      const response = await http.post('auth/forgot-password', {
-        email: resetEmail
-      }, { auth: false } as any);
-
-      if (response.data.success) {
-        toast.success(response.data.message);
-        setShowResetModal(false);
-        setResetEmail('');
-      }
-    } catch (error: any) {
-      logger.error('Password reset error:', error);
-      const message = error.response?.data?.message || 'Failed to send reset email. Please try again.';
-      toast.error(message);
-    } finally {
-      setIsResetting(false);
     }
   };
 
