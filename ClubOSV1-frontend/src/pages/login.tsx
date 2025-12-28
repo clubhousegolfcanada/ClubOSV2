@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuthState, useStore } from '@/state/useStore';
 import toast from 'react-hot-toast';
 import { http } from '@/api/http';
-import { Eye, EyeOff, Users, User, ArrowRight, Shield, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Users, User } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
@@ -288,28 +288,18 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="operator-remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
-                  />
-                  <label htmlFor="operator-remember-me" className="ml-2 text-sm text-[var(--text-secondary)]">
-                    Keep me signed in for 30 days
-                  </label>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowResetModal(true)}
-                  className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
-                >
-                  Forgot password?
-                </button>
+              <div className="flex items-center">
+                <input
+                  id="operator-remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
+                />
+                <label htmlFor="operator-remember-me" className="ml-2 text-sm text-[var(--text-secondary)]">
+                  Keep me signed in for 30 days
+                </label>
               </div>
 
               <button
@@ -429,30 +419,18 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <input
-                    id="customer-remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
-                  />
-                  <label htmlFor="customer-remember-me" className="ml-2 block text-sm text-[var(--text-secondary)]">
-                    Keep me signed in (90 days)
-                  </label>
-                </div>
-
-                <div className="text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setShowResetModal(true)}
-                    className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+              <div className="flex items-center mb-4">
+                <input
+                  id="customer-remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-[var(--accent)] focus:ring-[var(--accent)] border-[var(--border-primary)] rounded"
+                />
+                <label htmlFor="customer-remember-me" className="ml-2 block text-sm text-[var(--text-secondary)]">
+                  Keep me signed in (90 days)
+                </label>
               </div>
 
               <div>
@@ -493,57 +471,6 @@ const LoginPage = () => {
           </>
         )}
       </div>
-
-      {/* Password Reset Modal */}
-      {showResetModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-secondary)] rounded-lg p-4 sm:p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-              Reset Password
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Enter your email address and we&apos;ll send you instructions to reset your password.
-            </p>
-
-            <form onSubmit={handlePasswordReset}>
-              <div className="mb-4">
-                <label htmlFor="reset-email" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  Email address
-                </label>
-                <input
-                  id="reset-email"
-                  type="email"
-                  className="w-full px-3 py-2.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-md text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent text-base"
-                  placeholder="email@example.com"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowResetModal(false);
-                    setResetEmail('');
-                  }}
-                  className="flex-1 px-4 py-2.5 border border-[var(--border-primary)] rounded-md text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isResetting}
-                  className="flex-1 px-4 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded-md text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isResetting ? 'Sending...' : 'Send Reset Email'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

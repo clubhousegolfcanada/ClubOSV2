@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.23] - 2025-12-28
+
+### Security
+- **CRITICAL: CVE-2025-66478 Fix**: Updated Next.js to 15.5.9 (from 15.4.5)
+  - Addresses CVSS 10.0 Remote Code Execution vulnerability
+  - Updated React to 19.1.4 (patched version)
+  - All production deployments should update immediately
+  - See: https://nextjs.org/blog/CVE-2025-66478
+
 ## [1.25.22] - 2025-12-23
 
 ### Improved

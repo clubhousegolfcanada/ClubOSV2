@@ -1,4 +1,4 @@
-# ClubOS v1.25.22 - Flexible Facility Management System
+# ClubOS v1.25.23 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.22**
-- **🔐 Auth Simplification** - Consolidated auth clearing, simplified token monitoring
-- **💬 Password Reset Honesty** - Now returns helpful error instead of false success
-- **🧹 Code Cleanup** - Removed dead code, centralized constants
+**Current Version: v1.25.23**
+- **🔒 SECURITY: CVE-2025-66478** - Updated Next.js 15.5.9 + React 19.1.4 (CRITICAL RCE fix)
+- **Previous: Auth Simplification** - Consolidated auth clearing, simplified token monitoring (v1.25.22)
 - **Previous: Safety Features** - Max AI limit, sentiment detection, escalation handler (v1.25.21)
 - **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
 - **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
