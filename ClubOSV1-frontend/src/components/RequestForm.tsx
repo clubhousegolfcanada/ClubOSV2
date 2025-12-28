@@ -360,27 +360,25 @@ const RequestForm: React.FC = () => {
               response: ocrResult.response,
               confidence: ocrResult.confidence || 1.0,
               route: 'Receipt OCR',
-              status: 'completed',
+              status: ocrResult.isDuplicate ? 'duplicate' : 'completed',
               dataSource: 'OpenAI Vision'
             },
-            status: 'completed',
+            status: ocrResult.isDuplicate ? 'duplicate' : 'completed',
             botRoute: 'Receipt OCR'
           } as any);
 
           setShowResponse(true);
           setIsNewSubmission(true);
 
-          notify('success', 'Receipt scanned successfully!');
-
-          // Save to database with required fields
-          if (ocrResult.extractedData) {
-            await http.post('receipts/upload', {
-              ...ocrResult.extractedData,
-              file_data: photoAttachments[0] || '', // Use the uploaded receipt image
-              file_name: 'receipt-ocr.jpg',
-              mime_type: 'image/jpeg'
-            });
+          // Show appropriate notification based on duplicate status
+          if (ocrResult.isDuplicate) {
+            notify('warning', 'This receipt was already uploaded!');
+          } else {
+            notify('success', 'Receipt scanned successfully!');
           }
+
+          // NOTE: Receipt is already saved to database by the LLM route (llm.ts:199-242)
+          // The receiptId is returned in ocrResult.receiptId - no need to save again
         } else {
           notify('error', response.data.error || 'Failed to scan receipt');
         }

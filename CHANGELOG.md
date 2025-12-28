@@ -2,6 +2,37 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.26] - 2025-12-28
+
+### Fixed
+- **Receipt Double-Insertion Bug**: Fixed issue where receipts were being saved twice to database
+  - LLM route was saving receipt, then frontend was calling receipts/upload again
+  - Removed redundant save call from RequestForm.tsx
+  - Added content hash (SHA-256) to detect and prevent duplicate uploads
+
+### Added
+- **Duplicate Receipt Detection**: New database-level duplicate prevention
+  - SHA-256 content hash calculated on upload
+  - Unique index on content_hash prevents same file from being uploaded twice
+  - Returns 409 Conflict with details of existing receipt if duplicate detected
+  - Frontend shows warning notification for duplicates
+
+- **Streaming Receipt Export**: Removed 25 receipt limit on ZIP exports
+  - Batch processing (10 photos at a time) prevents memory exhaustion
+  - Can now export 200+ receipts with photos
+  - Event loop breathing prevents blocking on large exports
+
+- **Async Export Jobs Infrastructure**: Added tables and endpoints for future large exports
+  - New migration: 351_export_jobs.sql
+  - POST /api/receipts/export-async endpoint
+  - GET /api/receipts/export-status/:jobId endpoint
+
+### Technical
+- Added migration 350_receipt_content_hash.sql for content_hash column
+- Updated receipts-simple.ts with hash import and duplicate detection
+- Updated llm.ts to add content_hash when saving OCR receipts
+- Frontend ReceiptExportCard updated to show info message instead of limit warning
+
 ## [1.25.25] - 2025-12-28
 
 ### Fixed

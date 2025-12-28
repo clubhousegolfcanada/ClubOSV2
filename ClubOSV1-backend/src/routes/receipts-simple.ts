@@ -8,6 +8,7 @@ import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/rece
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
 import archiver from 'archiver';
+import { hash } from '../utils/encryption';
 
 const router = express.Router();
 
@@ -238,22 +239,11 @@ router.get('/export', authenticate, async (req, res) => {
       });
 
     } else if (exportFormat === 'zip') {
-      // Check for export size limits to prevent memory issues
-      const MAX_RECEIPTS_WITH_PHOTOS = 25;
-      const receiptsWithPhotos = receipts.filter(r => r.file_data).length;
+      // STREAMING EXPORT: Process photos in batches to handle 200+ receipts
+      // No hard limit - uses batch processing to manage memory
+      const BATCH_SIZE = 10; // Process 10 photos at a time to manage memory
 
-      if (receiptsWithPhotos > MAX_RECEIPTS_WITH_PHOTOS) {
-        logger.warn(`Export rejected: ${receiptsWithPhotos} receipts with photos exceeds limit of ${MAX_RECEIPTS_WITH_PHOTOS}`);
-        return res.status(400).json({
-          error: 'Export too large',
-          message: `Too many receipts with photos (${receiptsWithPhotos}). Please export in smaller batches (maximum ${MAX_RECEIPTS_WITH_PHOTOS} receipts with photos) or select a shorter time period.`,
-          details: {
-            requestedCount: receiptsWithPhotos,
-            maxAllowed: MAX_RECEIPTS_WITH_PHOTOS,
-            totalReceipts: receipts.length
-          }
-        });
-      }
+      logger.info(`Starting streaming ZIP export for ${receipts.length} receipts`);
 
       // Create ZIP with receipts metadata and photos
       res.setHeader('Content-Type', 'application/zip');
@@ -261,19 +251,26 @@ router.get('/export', authenticate, async (req, res) => {
 
       // Create archiver instance with balanced compression for better performance
       const archive = archiver('zip', {
-        zlib: { level: 6 } // Balanced compression (reduced from 9 for better performance)
+        zlib: { level: 5 } // Slightly lower compression for faster streaming
       });
 
       // Handle archive errors
       archive.on('error', (err) => {
         logger.error('Archive creation error:', err);
-        res.status(500).json({ error: 'Failed to create archive' });
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to create archive' });
+        }
       });
 
       // Pipe archive data to response
       archive.pipe(res);
 
-      // Add CSV metadata file
+      // Get receipt IDs that have photos for batch processing
+      const receiptIdsWithPhotos = receipts
+        .filter(r => r.file_data)
+        .map(r => r.id);
+
+      // Add CSV metadata file (without file_data - already excluded in main query for CSV/JSON)
       const csvData = receipts.map(receipt => ({
         'ID': receipt.id,
         'Date': format(new Date(receipt.purchase_date || receipt.created_at), 'yyyy-MM-dd'),
@@ -287,7 +284,7 @@ router.get('/export', authenticate, async (req, res) => {
         'Notes': receipt.notes || '',
         'Uploaded By': receipt.uploader_name || '',
         'Upload Date': format(new Date(receipt.created_at), 'yyyy-MM-dd HH:mm'),
-        'Has Photo': receipt.file_data ? 'Yes' : 'No'
+        'Has Photo': receiptIdsWithPhotos.includes(receipt.id) ? 'Yes' : 'No'
       }));
 
       const json2csvParser = new Parser({
@@ -300,21 +297,43 @@ router.get('/export', authenticate, async (req, res) => {
       const csv = json2csvParser.parse(csvData);
       archive.append(csv, { name: 'receipts_metadata.csv' });
 
-      // Add manifest JSON
-      const manifest = {
+      // Add manifest JSON (will be updated with file info)
+      const manifest: {
+        exportDate: string;
+        period: any;
+        periodLabel: string;
+        totalReceipts: number;
+        receiptsWithPhotos: number;
+        files: Array<{ receiptId: string; filename: string; size: number; mimeType: string }>;
+      } = {
         exportDate: now.toISOString(),
         period: period,
         periodLabel: periodLabel,
         totalReceipts: receipts.length,
-        receiptsWithPhotos: receipts.filter(r => r.file_data).length,
+        receiptsWithPhotos: receiptIdsWithPhotos.length,
         files: []
       };
 
-      // Add receipt photos with async processing to prevent blocking
+      // Process photos in batches using LIMIT/OFFSET queries
       let photoCount = 0;
-      for (let i = 0; i < receipts.length; i++) {
-        const receipt = receipts[i];
-        if (receipt.file_data) {
+      const totalPhotos = receiptIdsWithPhotos.length;
+
+      for (let offset = 0; offset < totalPhotos; offset += BATCH_SIZE) {
+        // Fetch batch of photos from database
+        const batchIds = receiptIdsWithPhotos.slice(offset, offset + BATCH_SIZE);
+
+        if (batchIds.length === 0) break;
+
+        // Query only file_data for this batch (reduces memory per query)
+        const batchQuery = `
+          SELECT id, file_data, mime_type, vendor, purchase_date
+          FROM receipts
+          WHERE id = ANY($1) AND file_data IS NOT NULL
+        `;
+        const batchResult = await db.query(batchQuery, [batchIds]);
+
+        // Process each receipt in the batch
+        for (const receipt of batchResult.rows) {
           try {
             // Extract base64 data and file extension
             let base64Data = receipt.file_data;
@@ -343,15 +362,8 @@ router.get('/export', authenticate, async (req, res) => {
             const date = receipt.purchase_date ? format(new Date(receipt.purchase_date), 'yyyy-MM-dd') : 'no-date';
             const filename = `images/${receipt.id}_${vendor}_${date}.${extension}`;
 
-            // Convert base64 to Buffer with async processing
-            const buffer = await new Promise<Buffer>((resolve, reject) => {
-              try {
-                const buf = Buffer.from(base64Data, 'base64');
-                resolve(buf);
-              } catch (error) {
-                reject(error);
-              }
-            });
+            // Convert base64 to Buffer
+            const buffer = Buffer.from(base64Data, 'base64');
 
             archive.append(buffer, { name: filename });
 
@@ -463,6 +475,34 @@ router.post('/upload',
         });
       }
 
+      // Generate content hash for duplicate detection
+      const contentHash = hash(file_data);
+
+      // Check for existing receipt with same content
+      const existingReceipt = await db.query(
+        'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
+        [contentHash]
+      );
+
+      if (existingReceipt.rows.length > 0) {
+        const existing = existingReceipt.rows[0];
+        logger.warn('Duplicate receipt detected', {
+          existingId: existing.id,
+          vendor: existing.vendor,
+          uploadedAt: existing.created_at
+        });
+        return res.status(409).json({
+          success: false,
+          error: 'Duplicate receipt detected',
+          message: `This receipt was already uploaded on ${new Date(existing.created_at).toLocaleDateString()}`,
+          existingReceipt: {
+            id: existing.id,
+            vendor: existing.vendor,
+            uploadedAt: existing.created_at
+          }
+        });
+      }
+
       logger.info(`Receipt upload started by user ${user.id}`, {
         fileName: file_name,
         vendor,
@@ -498,7 +538,7 @@ router.post('/upload',
         });
       }
 
-      // Create database record with OCR data
+      // Create database record with OCR data and content hash
       const insertResult = await db.query(`
         INSERT INTO receipts (
           file_data,
@@ -517,8 +557,9 @@ router.post('/upload',
           ocr_status,
           ocr_text,
           ocr_json,
-          is_personal_card
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          is_personal_card,
+          content_hash
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
       `, [
         file_data,
@@ -537,7 +578,8 @@ router.post('/upload',
         ocrResult ? 'completed' : 'manual',
         ocrResult?.rawText || null,
         ocrResult ? JSON.stringify(ocrResult) : null,
-        is_personal_card || false
+        is_personal_card || false,
+        contentHash
       ]);
 
       const receipt = insertResult.rows[0];
@@ -1003,6 +1045,116 @@ router.post('/reconcile',
       res.status(500).json({
         success: false,
         error: 'Failed to reconcile receipts'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/receipts/export-async
+ * Start an async export job for large exports
+ */
+router.post('/export-async',
+  authenticate,
+  [
+    body('period').optional().isIn(['week', 'month', 'year', 'all']),
+    body('format').optional().isIn(['csv', 'json', 'zip'])
+  ],
+  async (req, res) => {
+    try {
+      const { user } = req as any;
+      const { period = 'month', format: exportFormat = 'zip' } = req.body;
+
+      // Check user role
+      if (!['admin', 'staff', 'operator'].includes(user.role)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Insufficient permissions'
+        });
+      }
+
+      // Create export job record
+      const jobResult = await db.query(`
+        INSERT INTO export_jobs (user_id, export_type, filters, status)
+        VALUES ($1, 'receipts', $2, 'pending')
+        RETURNING id
+      `, [user.id, JSON.stringify({ period, format: exportFormat })]);
+
+      const jobId = jobResult.rows[0].id;
+
+      // Start background processing (non-blocking)
+      // For now, we use the sync export since our streaming already handles large exports
+      // This endpoint is a future-proofing placeholder for truly massive exports
+      logger.info(`Export job ${jobId} created for ${exportFormat} export`);
+
+      res.json({
+        success: true,
+        data: {
+          jobId,
+          status: 'pending',
+          message: 'For large exports, use the standard export endpoint which now supports streaming.'
+        }
+      });
+
+    } catch (error) {
+      logger.error('Create export job error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create export job'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/receipts/export-status/:jobId
+ * Check the status of an export job
+ */
+router.get('/export-status/:jobId',
+  authenticate,
+  async (req, res) => {
+    try {
+      const { user } = req as any;
+      const { jobId } = req.params;
+
+      const result = await db.query(`
+        SELECT id, status, total_items, processed_items, file_size, error_message,
+               created_at, completed_at
+        FROM export_jobs
+        WHERE id = $1 AND user_id = $2
+      `, [jobId, user.id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Export job not found'
+        });
+      }
+
+      const job = result.rows[0];
+
+      res.json({
+        success: true,
+        data: {
+          jobId: job.id,
+          status: job.status,
+          progress: job.total_items > 0
+            ? Math.round((job.processed_items / job.total_items) * 100)
+            : 0,
+          totalItems: job.total_items,
+          processedItems: job.processed_items,
+          fileSize: job.file_size,
+          errorMessage: job.error_message,
+          createdAt: job.created_at,
+          completedAt: job.completed_at
+        }
+      });
+
+    } catch (error) {
+      logger.error('Get export status error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get export status'
       });
     }
   }

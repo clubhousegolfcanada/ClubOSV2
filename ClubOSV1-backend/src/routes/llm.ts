@@ -15,6 +15,7 @@ import { authenticate } from '../middleware/auth';
 import { roleGuard, adminOrOperator } from '../middleware/roleGuard';
 import { llmRateLimiter } from '../middleware/rateLimiter';
 import OpenAI from 'openai';
+import { hash } from '../utils/encryption';
 
 // Only initialize OpenAI if API key is present
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -198,46 +199,70 @@ router.post('/request',
 
           // Save to database if extraction was successful
           let savedReceiptId = null;
+          let isDuplicate = false;
           if (ocrResult.vendor || ocrResult.totalAmount) {
             const { db } = await import('../utils/database');
-            const insertResult = await db.query(`
-              INSERT INTO receipts (
-                vendor,
-                amount_cents,
-                tax_cents,
-                purchase_date,
-                category,
-                payment_method,
-                uploader_user_id,
-                ocr_status,
-                ocr_text,
-                ocr_json,
-                ocr_confidence,
-                line_items,
-                file_data,
-                is_personal_card
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-              RETURNING id
-            `, [
-              ocrResult.vendor || null,
-              ocrResult.totalAmount ? Math.round(ocrResult.totalAmount * 100) : null,
-              ocrResult.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
-              ocrResult.purchaseDate || null,
-              ocrResult.category || null,
-              ocrResult.paymentMethod || null,
-              req.user?.id,
-              'completed',
-              ocrResult.rawText || null,
-              JSON.stringify(ocrResult),
-              ocrResult.confidence,
-              ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
-              imageData,
-              req.body.isPersonalCard || false  // Add personal card flag from request
-            ]);
 
-            if (insertResult.rows.length > 0) {
-              savedReceiptId = insertResult.rows[0].id;
-              logger.info('Receipt saved to database:', { receiptId: savedReceiptId });
+            // Generate content hash for duplicate detection
+            const contentHash = hash(imageData);
+
+            // Check for existing receipt with same content
+            const existingReceipt = await db.query(
+              'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
+              [contentHash]
+            );
+
+            if (existingReceipt.rows.length > 0) {
+              // Duplicate found - return existing receipt instead of creating new
+              savedReceiptId = existingReceipt.rows[0].id;
+              isDuplicate = true;
+              logger.warn('Duplicate receipt detected during OCR', {
+                existingId: savedReceiptId,
+                vendor: existingReceipt.rows[0].vendor
+              });
+            } else {
+              // No duplicate - insert new receipt
+              const insertResult = await db.query(`
+                INSERT INTO receipts (
+                  vendor,
+                  amount_cents,
+                  tax_cents,
+                  purchase_date,
+                  category,
+                  payment_method,
+                  uploader_user_id,
+                  ocr_status,
+                  ocr_text,
+                  ocr_json,
+                  ocr_confidence,
+                  line_items,
+                  file_data,
+                  is_personal_card,
+                  content_hash
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                RETURNING id
+              `, [
+                ocrResult.vendor || null,
+                ocrResult.totalAmount ? Math.round(ocrResult.totalAmount * 100) : null,
+                ocrResult.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+                ocrResult.purchaseDate || null,
+                ocrResult.category || null,
+                ocrResult.paymentMethod || null,
+                req.user?.id,
+                'completed',
+                ocrResult.rawText || null,
+                JSON.stringify(ocrResult),
+                ocrResult.confidence,
+                ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
+                imageData,
+                req.body.isPersonalCard || false,
+                contentHash
+              ]);
+
+              if (insertResult.rows.length > 0) {
+                savedReceiptId = insertResult.rows[0].id;
+                logger.info('Receipt saved to database:', { receiptId: savedReceiptId });
+              }
             }
           }
 
@@ -245,7 +270,9 @@ router.post('/request',
             success: true,
             data: {
               requestId,
-              response: ocrDisplayText,
+              response: isDuplicate
+                ? `⚠️ This receipt was already uploaded.\n\n${ocrDisplayText}`
+                : ocrDisplayText,
               confidence: ocrResult.confidence,
               extractedData: {
                 vendor: ocrResult.vendor,
@@ -257,7 +284,8 @@ router.post('/request',
                 lineItems: ocrResult.lineItems
               },
               receiptId: savedReceiptId,
-              status: 'completed'
+              isDuplicate,
+              status: isDuplicate ? 'duplicate' : 'completed'
             }
           });
         } catch (ocrError) {

@@ -220,14 +220,12 @@ const ReceiptExportCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Warning for large exports with photos */}
-      {exportFormat === 'zip' && (period === 'all' || period === 'year') && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-yellow-800">
-            <strong>Note:</strong> ZIP exports with photos are limited to 25 receipts with photos to prevent timeouts.
-            {period === 'all' && ' For all-time exports, consider selecting a shorter period or using CSV/JSON format.'}
-            {period === 'year' && ' For yearly exports with many receipts, consider exporting by month instead.'}
+      {/* Info for large exports with photos */}
+      {exportFormat === 'zip' && (period === 'all' || period === 'year') && summary.totalReceipts > 50 && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <strong>Large Export:</strong> Exporting {summary.totalReceipts} receipts with photos. This may take a moment to process.
           </div>
         </div>
       )}
