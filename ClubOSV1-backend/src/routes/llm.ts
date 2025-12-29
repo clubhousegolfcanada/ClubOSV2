@@ -203,65 +203,123 @@ router.post('/request',
           if (ocrResult.vendor || ocrResult.totalAmount) {
             const { db } = await import('../utils/database');
 
-            // Generate content hash for duplicate detection
-            const contentHash = hash(imageData);
+            // Generate content hash for duplicate detection (defensive - column may not exist)
+            let contentHash: string | null = null;
+            try {
+              contentHash = hash(imageData);
 
-            // Check for existing receipt with same content
-            const existingReceipt = await db.query(
-              'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
-              [contentHash]
-            );
+              // Check for existing receipt with same content
+              const existingReceipt = await db.query(
+                'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
+                [contentHash]
+              );
 
-            if (existingReceipt.rows.length > 0) {
-              // Duplicate found - return existing receipt instead of creating new
-              savedReceiptId = existingReceipt.rows[0].id;
-              isDuplicate = true;
-              logger.warn('Duplicate receipt detected during OCR', {
-                existingId: savedReceiptId,
-                vendor: existingReceipt.rows[0].vendor
-              });
-            } else {
-              // No duplicate - insert new receipt
-              const insertResult = await db.query(`
-                INSERT INTO receipts (
-                  vendor,
-                  amount_cents,
-                  tax_cents,
-                  purchase_date,
-                  category,
-                  payment_method,
-                  uploader_user_id,
-                  ocr_status,
-                  ocr_text,
-                  ocr_json,
-                  ocr_confidence,
-                  line_items,
-                  file_data,
-                  is_personal_card,
-                  content_hash
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-                RETURNING id
-              `, [
-                ocrResult.vendor || null,
-                ocrResult.totalAmount ? Math.round(ocrResult.totalAmount * 100) : null,
-                ocrResult.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
-                ocrResult.purchaseDate || null,
-                ocrResult.category || null,
-                ocrResult.paymentMethod || null,
-                req.user?.id,
-                'completed',
-                ocrResult.rawText || null,
-                JSON.stringify(ocrResult),
-                ocrResult.confidence,
-                ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
-                imageData,
-                req.body.isPersonalCard || false,
-                contentHash
-              ]);
+              if (existingReceipt.rows.length > 0) {
+                // Duplicate found - return existing receipt instead of creating new
+                savedReceiptId = existingReceipt.rows[0].id;
+                isDuplicate = true;
+                logger.warn('Duplicate receipt detected during OCR', {
+                  existingId: savedReceiptId,
+                  vendor: existingReceipt.rows[0].vendor
+                });
+              }
+            } catch (hashErr) {
+              // content_hash column may not exist yet - continue without duplicate detection
+              logger.warn('Duplicate detection skipped - content_hash column may not exist yet');
+              contentHash = null;
+            }
 
-              if (insertResult.rows.length > 0) {
-                savedReceiptId = insertResult.rows[0].id;
-                logger.info('Receipt saved to database:', { receiptId: savedReceiptId });
+            // Only insert if not a duplicate
+            if (!isDuplicate) {
+              // Try insert with content_hash first, fall back to without if column doesn't exist
+              try {
+                const insertResult = await db.query(`
+                  INSERT INTO receipts (
+                    vendor,
+                    amount_cents,
+                    tax_cents,
+                    purchase_date,
+                    category,
+                    payment_method,
+                    uploader_user_id,
+                    ocr_status,
+                    ocr_text,
+                    ocr_json,
+                    ocr_confidence,
+                    line_items,
+                    file_data,
+                    is_personal_card,
+                    content_hash
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                  RETURNING id
+                `, [
+                  ocrResult.vendor || null,
+                  ocrResult.totalAmount ? Math.round(ocrResult.totalAmount * 100) : null,
+                  ocrResult.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+                  ocrResult.purchaseDate || null,
+                  ocrResult.category || null,
+                  ocrResult.paymentMethod || null,
+                  req.user?.id,
+                  'completed',
+                  ocrResult.rawText || null,
+                  JSON.stringify(ocrResult),
+                  ocrResult.confidence,
+                  ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
+                  imageData,
+                  req.body.isPersonalCard || false,
+                  contentHash
+                ]);
+
+                if (insertResult.rows.length > 0) {
+                  savedReceiptId = insertResult.rows[0].id;
+                  logger.info('Receipt saved to database:', { receiptId: savedReceiptId });
+                }
+              } catch (insertErr: any) {
+                // If content_hash column doesn't exist, try without it
+                if (insertErr.message?.includes('content_hash')) {
+                  logger.warn('Retrying insert without content_hash column');
+                  const insertResult = await db.query(`
+                    INSERT INTO receipts (
+                      vendor,
+                      amount_cents,
+                      tax_cents,
+                      purchase_date,
+                      category,
+                      payment_method,
+                      uploader_user_id,
+                      ocr_status,
+                      ocr_text,
+                      ocr_json,
+                      ocr_confidence,
+                      line_items,
+                      file_data,
+                      is_personal_card
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    RETURNING id
+                  `, [
+                    ocrResult.vendor || null,
+                    ocrResult.totalAmount ? Math.round(ocrResult.totalAmount * 100) : null,
+                    ocrResult.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+                    ocrResult.purchaseDate || null,
+                    ocrResult.category || null,
+                    ocrResult.paymentMethod || null,
+                    req.user?.id,
+                    'completed',
+                    ocrResult.rawText || null,
+                    JSON.stringify(ocrResult),
+                    ocrResult.confidence,
+                    ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
+                    imageData,
+                    req.body.isPersonalCard || false
+                  ]);
+
+                  if (insertResult.rows.length > 0) {
+                    savedReceiptId = insertResult.rows[0].id;
+                    logger.info('Receipt saved to database (without content_hash):', { receiptId: savedReceiptId });
+                  }
+                } else {
+                  throw insertErr;
+                }
               }
             }
           }

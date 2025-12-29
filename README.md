@@ -1,4 +1,4 @@
-# ClubOS v1.25.26 - Flexible Facility Management System
+# ClubOS v1.25.27 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.26**
-- **🧾 Receipt System Improvements** - Fixed duplicate insertion bug, removed 25 receipt export limit
+**Current Version: v1.25.27**
+- **🛠️ HOTFIX: Receipt Upload** - Fixed receipt upload broken after v1.25.26 (defensive code for missing column)
+- **Previous: Receipt System Improvements** - Fixed duplicate insertion bug, removed 25 receipt export limit (v1.25.26)
 - **Previous: Knowledge Retrieval Fix** - Fresh knowledge uploads now immediately available (v1.25.25)
 - **Previous: Password Reset Removed** - Removed non-functional password reset (v1.25.24)
 - **Previous: SECURITY CVE-2025-66478** - Updated Next.js 15.5.9 + React 19.1.4 (CRITICAL RCE fix)

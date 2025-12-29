@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.27] - 2025-12-29
+
+### Fixed
+- **HOTFIX: Receipt Upload Broken**: Fixed receipt upload failing after v1.25.26 deployment
+  - Code was querying `content_hash` column that doesn't exist in production yet
+  - Made duplicate detection defensive with try-catch - continues without dedup if column missing
+  - Made INSERT defensive with fallback - retries without content_hash if first attempt fails
+  - Receipt upload now works whether migration has run or not
+
+### Technical
+- llm.ts: Wrapped content_hash query and INSERT in try-catch with fallbacks
+- receipts-simple.ts: Same defensive pattern for upload endpoint
+
 ## [1.25.26] - 2025-12-28
 
 ### Fixed

@@ -475,32 +475,39 @@ router.post('/upload',
         });
       }
 
-      // Generate content hash for duplicate detection
-      const contentHash = hash(file_data);
+      // Generate content hash for duplicate detection (defensive - column may not exist yet)
+      let contentHash: string | null = null;
+      try {
+        contentHash = hash(file_data);
 
-      // Check for existing receipt with same content
-      const existingReceipt = await db.query(
-        'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
-        [contentHash]
-      );
+        // Check for existing receipt with same content
+        const existingReceipt = await db.query(
+          'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
+          [contentHash]
+        );
 
-      if (existingReceipt.rows.length > 0) {
-        const existing = existingReceipt.rows[0];
-        logger.warn('Duplicate receipt detected', {
-          existingId: existing.id,
-          vendor: existing.vendor,
-          uploadedAt: existing.created_at
-        });
-        return res.status(409).json({
-          success: false,
-          error: 'Duplicate receipt detected',
-          message: `This receipt was already uploaded on ${new Date(existing.created_at).toLocaleDateString()}`,
-          existingReceipt: {
-            id: existing.id,
+        if (existingReceipt.rows.length > 0) {
+          const existing = existingReceipt.rows[0];
+          logger.warn('Duplicate receipt detected', {
+            existingId: existing.id,
             vendor: existing.vendor,
             uploadedAt: existing.created_at
-          }
-        });
+          });
+          return res.status(409).json({
+            success: false,
+            error: 'Duplicate receipt detected',
+            message: `This receipt was already uploaded on ${new Date(existing.created_at).toLocaleDateString()}`,
+            existingReceipt: {
+              id: existing.id,
+              vendor: existing.vendor,
+              uploadedAt: existing.created_at
+            }
+          });
+        }
+      } catch (hashErr) {
+        // content_hash column may not exist yet - continue without duplicate detection
+        logger.warn('Duplicate detection skipped - content_hash column may not exist yet');
+        contentHash = null;
       }
 
       logger.info(`Receipt upload started by user ${user.id}`, {
@@ -538,49 +545,95 @@ router.post('/upload',
         });
       }
 
-      // Create database record with OCR data and content hash
-      const insertResult = await db.query(`
-        INSERT INTO receipts (
+      // Create database record with OCR data and content hash (defensive - column may not exist)
+      let insertResult;
+      try {
+        insertResult = await db.query(`
+          INSERT INTO receipts (
+            file_data,
+            file_name,
+            file_size,
+            mime_type,
+            vendor,
+            amount_cents,
+            tax_cents,
+            purchase_date,
+            club_location,
+            category,
+            payment_method,
+            notes,
+            uploader_user_id,
+            ocr_status,
+            ocr_text,
+            ocr_json,
+            is_personal_card,
+            content_hash
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+          RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
+        `, [
           file_data,
           file_name,
-          file_size,
-          mime_type,
-          vendor,
-          amount_cents,
-          tax_cents,
-          purchase_date,
-          club_location,
-          category,
-          payment_method,
-          notes,
-          uploader_user_id,
-          ocr_status,
-          ocr_text,
-          ocr_json,
-          is_personal_card,
-          content_hash
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-        RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
-      `, [
-        file_data,
-        file_name,
-        file_size || null,
-        mime_type || 'application/pdf',
-        vendor || null,
-        amount_cents ? parseInt(amount_cents.toString()) : null,
-        ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
-        purchase_date || null,
-        club_location || null,
-        ocrResult?.category || null,
-        ocrResult?.paymentMethod || null,
-        notes || null,
-        user.id,
-        ocrResult ? 'completed' : 'manual',
-        ocrResult?.rawText || null,
-        ocrResult ? JSON.stringify(ocrResult) : null,
-        is_personal_card || false,
-        contentHash
-      ]);
+          file_size || null,
+          mime_type || 'application/pdf',
+          vendor || null,
+          amount_cents ? parseInt(amount_cents.toString()) : null,
+          ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+          purchase_date || null,
+          club_location || null,
+          ocrResult?.category || null,
+          ocrResult?.paymentMethod || null,
+          notes || null,
+          user.id,
+          ocrResult ? 'completed' : 'manual',
+          ocrResult?.rawText || null,
+          ocrResult ? JSON.stringify(ocrResult) : null,
+          is_personal_card || false,
+          contentHash
+        ]);
+      } catch (insertErr) {
+        // content_hash column may not exist - try without it
+        logger.warn('INSERT with content_hash failed, retrying without it');
+        insertResult = await db.query(`
+          INSERT INTO receipts (
+            file_data,
+            file_name,
+            file_size,
+            mime_type,
+            vendor,
+            amount_cents,
+            tax_cents,
+            purchase_date,
+            club_location,
+            category,
+            payment_method,
+            notes,
+            uploader_user_id,
+            ocr_status,
+            ocr_text,
+            ocr_json,
+            is_personal_card
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
+        `, [
+          file_data,
+          file_name,
+          file_size || null,
+          mime_type || 'application/pdf',
+          vendor || null,
+          amount_cents ? parseInt(amount_cents.toString()) : null,
+          ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+          purchase_date || null,
+          club_location || null,
+          ocrResult?.category || null,
+          ocrResult?.paymentMethod || null,
+          notes || null,
+          user.id,
+          ocrResult ? 'completed' : 'manual',
+          ocrResult?.rawText || null,
+          ocrResult ? JSON.stringify(ocrResult) : null,
+          is_personal_card || false
+        ]);
+      }
 
       const receipt = insertResult.rows[0];
 
