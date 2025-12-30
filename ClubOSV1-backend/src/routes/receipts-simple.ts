@@ -27,7 +27,7 @@ const uploadLimiter = rateLimit({
  */
 router.get('/summary', authenticate, async (req, res) => {
   try {
-    const { period = 'month' } = req.query;
+    const { period = 'month', year, month } = req.query;
 
     // Build date filter based on period - using parameterized queries
     let dateFilter = '';
@@ -43,9 +43,17 @@ router.get('/summary', authenticate, async (req, res) => {
         queryParams = [weekStart.toISOString()];
         break;
       case 'month':
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        dateFilter = 'WHERE created_at >= $1';
-        queryParams = [monthStart.toISOString()];
+        // Support custom month selection via year and month params
+        if (year && month) {
+          const customMonthStart = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
+          const customMonthEnd = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
+          dateFilter = 'WHERE created_at >= $1 AND created_at <= $2';
+          queryParams = [customMonthStart.toISOString(), customMonthEnd.toISOString()];
+        } else {
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          dateFilter = 'WHERE created_at >= $1';
+          queryParams = [monthStart.toISOString()];
+        }
         break;
       case 'year':
         const yearStart = new Date(now.getFullYear(), 0, 1);

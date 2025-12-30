@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.28] - 2025-12-30
+
+### Added
+- **Month-Based Receipt Export**: Can now export receipts by specific month
+  - New month picker dropdown when "By Month" period is selected
+  - Shows last 12 months (e.g., "December 2024", "November 2024", etc.)
+  - Summary updates to show receipt count/total for selected month
+  - All export formats (CSV, JSON, ZIP) support month selection
+  - Handles 50+ receipts per month with streaming export
+
+### Technical
+- Backend `/summary` endpoint now accepts `year` and `month` query params
+- Frontend ReceiptExportCard adds `selectedYear`/`selectedMonth` state
+- API calls include year/month params when exporting by month
+
 ## [1.25.27] - 2025-12-29
 
 ### Fixed

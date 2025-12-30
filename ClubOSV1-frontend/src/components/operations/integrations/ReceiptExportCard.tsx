@@ -24,6 +24,8 @@ const ReceiptExportCard: React.FC = () => {
   });
   const [period, setPeriod] = useState<'all' | 'year' | 'month' | 'week'>('month');
   const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'pdf' | 'zip'>('csv');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,16 +33,37 @@ const ReceiptExportCard: React.FC = () => {
     localStorage.getItem('lastReceiptExport')
   );
 
-  // Fetch summary on mount and when period changes
+  // Generate last 12 months for the month picker
+  const getMonthOptions = () => {
+    const options = [];
+    const now = new Date();
+
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      options.push({
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        label: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      });
+    }
+    return options;
+  };
+
+  // Fetch summary on mount and when period/month changes
   useEffect(() => {
     fetchSummary();
-  }, [period]);
+  }, [period, selectedYear, selectedMonth]);
 
   const fetchSummary = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await http.get(`receipts/summary?period=${period}`);
+      let url = `receipts/summary?period=${period}`;
+      // Include year/month for custom month selection
+      if (period === 'month') {
+        url += `&year=${selectedYear}&month=${selectedMonth}`;
+      }
+      const response = await http.get(url);
       setSummary(response.data);
     } catch (err) {
       logger.error('Failed to fetch receipt summary:', err);
@@ -59,6 +82,12 @@ const ReceiptExportCard: React.FC = () => {
         period,
         format: exportFormat
       });
+
+      // Include year/month for custom month selection
+      if (period === 'month') {
+        params.append('year', String(selectedYear));
+        params.append('month', String(selectedMonth));
+      }
 
       // Use http client to get the export data as blob
       const response = await http.get(`receipts/export?${params.toString()}`, {
@@ -196,11 +225,36 @@ const ReceiptExportCard: React.FC = () => {
             disabled={exporting}
           >
             <option value="week">This Week</option>
-            <option value="month">This Month</option>
+            <option value="month">By Month</option>
             <option value="year">This Year</option>
             <option value="all">All Time</option>
           </select>
         </div>
+
+        {/* Month picker - appears when "By Month" is selected */}
+        {period === 'month' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select Month
+            </label>
+            <select
+              value={`${selectedYear}-${selectedMonth}`}
+              onChange={(e) => {
+                const [y, m] = e.target.value.split('-');
+                setSelectedYear(parseInt(y));
+                setSelectedMonth(parseInt(m));
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={exporting}
+            >
+              {getMonthOptions().map(opt => (
+                <option key={`${opt.year}-${opt.month}`} value={`${opt.year}-${opt.month}`}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
