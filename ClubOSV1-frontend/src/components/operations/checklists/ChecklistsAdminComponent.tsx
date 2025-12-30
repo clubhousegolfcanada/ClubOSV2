@@ -120,6 +120,9 @@ export function ChecklistsAdminComponent() {
   const [editingPerson, setEditingPerson] = useState<string | null>(null);
   const [showNewPersonModal, setShowNewPersonModal] = useState(false);
   const [showAddPersonTaskModal, setShowAddPersonTaskModal] = useState<string | null>(null);
+  const [showBulkImportModal, setShowBulkImportModal] = useState<string | null>(null);
+  const [bulkImportText, setBulkImportText] = useState('');
+  const [bulkImportLoading, setBulkImportLoading] = useState(false);
   const [newPersonForm, setNewPersonForm] = useState({ name: '', description: '' });
   const [newPersonTaskForm, setNewPersonTaskForm] = useState({ task_text: '', day_of_week: 'monday' });
   const [loadingPeople, setLoadingPeople] = useState(false);
@@ -240,6 +243,112 @@ export function ChecklistsAdminComponent() {
       loadPersonTasks(personId);
     } catch (error) {
       toast.error('Failed to delete task');
+    }
+  };
+
+  // Parse bulk import text into tasks organized by day
+  const parseBulkImportText = (text: string): { day: string; tasks: string[] }[] => {
+    const dayMap: Record<string, string> = {
+      'monday': 'monday',
+      'tuesday': 'tuesday',
+      'wednesday': 'wednesday',
+      'thursday': 'thursday',
+      'friday': 'friday',
+      'saturday': 'saturday',
+      'sunday': 'sunday',
+    };
+
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const result: { day: string; tasks: string[] }[] = [];
+    let currentDay = 'monday'; // default
+    let currentTasks: string[] = [];
+
+    for (const line of lines) {
+      // Check if this line is a day header (e.g., "Monday - Location Visits")
+      const lowerLine = line.toLowerCase();
+      let foundDay: string | null = null;
+
+      for (const [dayName, dayValue] of Object.entries(dayMap)) {
+        if (lowerLine.startsWith(dayName)) {
+          foundDay = dayValue;
+          break;
+        }
+      }
+
+      if (foundDay) {
+        // Save previous day's tasks if any
+        if (currentTasks.length > 0) {
+          result.push({ day: currentDay, tasks: currentTasks });
+        }
+        currentDay = foundDay;
+        currentTasks = [];
+      } else {
+        // Clean up the task text - remove checkbox symbols and "Admin" headers
+        let taskText = line
+          .replace(/^☐\s*/, '')
+          .replace(/^-\s*/, '')
+          .replace(/^\*\s*/, '')
+          .replace(/^•\s*/, '')
+          .trim();
+
+        // Skip empty lines, section headers like "Admin", and lines that are just whitespace
+        if (taskText &&
+            taskText.toLowerCase() !== 'admin' &&
+            !taskText.toLowerCase().startsWith('admin')) {
+          currentTasks.push(taskText);
+        }
+      }
+    }
+
+    // Don't forget the last day's tasks
+    if (currentTasks.length > 0) {
+      result.push({ day: currentDay, tasks: currentTasks });
+    }
+
+    return result;
+  };
+
+  const handleBulkImport = async (personId: string) => {
+    const parsed = parseBulkImportText(bulkImportText);
+
+    if (parsed.length === 0) {
+      toast.error('No tasks found. Make sure to include day headers like "Monday -"');
+      return;
+    }
+
+    setBulkImportLoading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const dayGroup of parsed) {
+        for (const taskText of dayGroup.tasks) {
+          try {
+            await http.post(`/checklists-people/persons/${personId}/tasks`, {
+              task_text: taskText,
+              day_of_week: dayGroup.day
+            });
+            successCount++;
+          } catch {
+            errorCount++;
+          }
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Imported ${successCount} task${successCount !== 1 ? 's' : ''}`);
+        loadPersonTasks(personId);
+      }
+      if (errorCount > 0) {
+        toast.error(`${errorCount} task${errorCount !== 1 ? 's' : ''} failed to import`);
+      }
+
+      setShowBulkImportModal(null);
+      setBulkImportText('');
+    } catch (error) {
+      toast.error('Bulk import failed');
+    } finally {
+      setBulkImportLoading(false);
     }
   };
 
@@ -1440,13 +1549,22 @@ export function ChecklistsAdminComponent() {
                       <div className="border-t border-[var(--border-primary)] p-4">
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="font-medium text-[var(--text-primary)]">Weekly Tasks</h4>
-                          <button
-                            onClick={() => setShowAddPersonTaskModal(person.id)}
-                            className="px-3 py-1 text-sm bg-[var(--accent)] text-white rounded hover:opacity-90 flex items-center gap-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            Add Task
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setShowBulkImportModal(person.id)}
+                              className="px-3 py-1 text-sm bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)] rounded hover:bg-[var(--bg-primary)] flex items-center gap-1"
+                            >
+                              <Upload className="w-3 h-3" />
+                              Bulk Import
+                            </button>
+                            <button
+                              onClick={() => setShowAddPersonTaskModal(person.id)}
+                              className="px-3 py-1 text-sm bg-[var(--accent)] text-white rounded hover:opacity-90 flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Add Task
+                            </button>
+                          </div>
                         </div>
 
                         {/* Tasks grouped by day */}
@@ -1581,6 +1699,95 @@ export function ChecklistsAdminComponent() {
                     className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90"
                   >
                     Add Task
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Import Tasks Modal */}
+        {showBulkImportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Bulk Import Tasks</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
+                Paste a task list with day headers. The parser will detect days (Monday, Tuesday, etc.) and tasks automatically.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Task List</label>
+                  <textarea
+                    value={bulkImportText}
+                    onChange={(e) => setBulkImportText(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)] font-mono text-sm"
+                    placeholder={`Monday - Location Visits
+☐ Visit each location (Bedford, Dartmouth, etc.)
+☐ Calibrate each TrackMan
+☐ Check bathrooms
+
+Tuesday - Task Day
+☐ Work through ClubOS task list
+
+Friday - Phone Coverage
+☐ Cover phone lines`}
+                    rows={12}
+                  />
+                </div>
+
+                {/* Preview */}
+                {bulkImportText && (
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-[var(--text-primary)] mb-2">Preview</h4>
+                    <div className="space-y-2 text-sm">
+                      {parseBulkImportText(bulkImportText).map((dayGroup, idx) => (
+                        <div key={idx}>
+                          <span className="font-medium text-[var(--accent)] capitalize">{dayGroup.day}</span>
+                          <span className="text-[var(--text-secondary)]"> ({dayGroup.tasks.length} task{dayGroup.tasks.length !== 1 ? 's' : ''})</span>
+                          <ul className="ml-4 text-[var(--text-muted)]">
+                            {dayGroup.tasks.slice(0, 3).map((task, tIdx) => (
+                              <li key={tIdx}>• {task}</li>
+                            ))}
+                            {dayGroup.tasks.length > 3 && (
+                              <li className="italic">...and {dayGroup.tasks.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      ))}
+                      {parseBulkImportText(bulkImportText).length === 0 && (
+                        <p className="text-[var(--text-muted)] italic">No tasks detected. Include day headers like &quot;Monday -&quot;</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowBulkImportModal(null);
+                      setBulkImportText('');
+                    }}
+                    className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    disabled={bulkImportLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleBulkImport(showBulkImportModal)}
+                    disabled={bulkImportLoading || !bulkImportText.trim()}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {bulkImportLoading ? (
+                      <>
+                        <span className="animate-spin">⏳</span>
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Import Tasks
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

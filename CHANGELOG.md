@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.30] - 2025-12-30
+
+### Added
+- **Bulk Task Import**: Quickly add multiple tasks to People Checklists at once
+  - New "Bulk Import" button in People admin
+  - Paste full task lists with day headers (Monday, Tuesday, etc.)
+  - Smart parser detects day sections and task lines
+  - Removes checkbox symbols (☐, •, -) automatically
+  - Live preview shows parsed days and task counts
+  - Import progress indicator with success/error counts
+
 ## [1.25.29] - 2025-12-30
 
 ### Added

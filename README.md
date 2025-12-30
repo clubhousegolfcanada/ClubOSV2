@@ -1,4 +1,4 @@
-# ClubOS v1.25.29 - Flexible Facility Management System
+# ClubOS v1.25.30 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.29**
-- **👥 People Checklists** - New category for weekly staff task lists organized by day of week
+**Current Version: v1.25.30**
+- **📋 Bulk Task Import** - Paste full task lists with day headers for quick People Checklist setup
+- **Previous: People Checklists** - New category for weekly staff task lists organized by day of week (v1.25.29)
 - **Previous: Month-Based Receipt Export** - Export receipts by specific month (v1.25.28)
 - **Previous: HOTFIX Receipt Upload** - Fixed receipt upload broken after v1.25.26 (v1.25.27)
 - **Previous: Receipt System Improvements** - Fixed duplicate insertion bug, removed 25 receipt export limit (v1.25.26)
