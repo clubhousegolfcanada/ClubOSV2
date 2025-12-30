@@ -46,13 +46,61 @@ interface SupplyItem {
   urgency: 'low' | 'medium' | 'high';
 }
 
+// People category interfaces
+interface Person {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  active: boolean;
+}
+
+interface WeeklyTask {
+  id: string;
+  task_text: string;
+  day_of_week: string;
+  position: number;
+  is_required: boolean;
+  isCompleted: boolean;
+  completedAt?: string;
+}
+
+interface WeeklyTaskGroup {
+  dayOfWeek: string;
+  dayLabel: string;
+  tasks: WeeklyTask[];
+  completedCount: number;
+  totalCount: number;
+}
+
+interface WeeklySubmission {
+  id: string;
+  person_id: string;
+  week_start: string;
+  week_end: string;
+  status: string;
+  started_at?: string;
+  submitted_at?: string;
+  comments?: string;
+}
+
+interface PeopleWeeklyData {
+  person: Person;
+  weekStart: string;
+  weekEnd: string;
+  submission: WeeklySubmission | null;
+  tasksByDay: WeeklyTaskGroup[];
+  totalTasks: number;
+  completedTasks: number;
+  progress: number;
+}
 
 interface ChecklistSystemProps {
   activeTab?: 'checklist' | 'tracker';
 }
 
 export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'checklist' }) => {
-  const [activeCategory, setActiveCategory] = useState<'cleaning' | 'tech'>('cleaning');
+  const [activeCategory, setActiveCategory] = useState<'cleaning' | 'tech' | 'people'>('cleaning');
   const [activeType, setActiveType] = useState<'daily' | 'weekly' | 'quarterly'>('daily');
   const [selectedLocation, setSelectedLocation] = useState('Bedford');
   const [currentTemplate, setCurrentTemplate] = useState<ChecklistTemplate | null>(null);
@@ -74,21 +122,31 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
   const [newSupplyName, setNewSupplyName] = useState('');
   const [newSupplyQuantity, setNewSupplyQuantity] = useState('');
   const [newSupplyUrgency, setNewSupplyUrgency] = useState<'low' | 'medium' | 'high'>('medium');
-  
+
   // Session management states
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isStarting, setIsStarting] = useState(false);
-  
+
+  // People category states
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
+  const [peopleWeeklyData, setPeopleWeeklyData] = useState<PeopleWeeklyData | null>(null);
+  const [loadingPeople, setLoadingPeople] = useState(false);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']));
+  const [peopleComments, setPeopleComments] = useState('');
+
   const { user } = useAuthState();
   const isAdmin = user?.role === 'admin';
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
 
-  // Load checklist template
+  // Load checklist template (skip for people category)
   useEffect(() => {
-    loadTemplate();
+    if (activeCategory !== 'people') {
+      loadTemplate();
+    }
   }, [activeCategory, activeType]);
 
   // Load submissions when tracker tab is active or filters change
@@ -98,9 +156,123 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
       loadSubmissions();
     }
   }, [activeTab, trackerLocation, trackerPeriod]);
-  
+
+  // Load persons when People category is selected
+  useEffect(() => {
+    if (activeCategory === 'people') {
+      loadPersons();
+    }
+  }, [activeCategory]);
+
+  // Load weekly data when a person is selected
+  useEffect(() => {
+    if (activeCategory === 'people' && selectedPerson) {
+      loadPeopleWeeklyData(selectedPerson);
+    }
+  }, [selectedPerson, activeCategory]);
+
   // Timer tracking removed - duration is calculated on backend for admin view only
 
+  // ===== PEOPLE CATEGORY FUNCTIONS =====
+
+  const loadPersons = async () => {
+    try {
+      const token = tokenManager.getToken();
+      if (!token) return;
+
+      setLoadingPeople(true);
+      const response = await http.get('checklists-people/persons?active=true');
+
+      if (response.data.success) {
+        setPersons(response.data.data);
+        // Auto-select first person if none selected
+        if (response.data.data.length > 0 && !selectedPerson) {
+          setSelectedPerson(response.data.data[0].id);
+        }
+      }
+    } catch (error: any) {
+      logger.error('Failed to load persons:', error);
+      toast.error('Failed to load people list');
+    } finally {
+      setLoadingPeople(false);
+    }
+  };
+
+  const loadPeopleWeeklyData = async (personId: string) => {
+    try {
+      const token = tokenManager.getToken();
+      if (!token) return;
+
+      setLoadingPeople(true);
+      const response = await http.get(`checklists-people/weekly/${personId}`);
+
+      if (response.data.success) {
+        setPeopleWeeklyData(response.data.data);
+        setPeopleComments(response.data.data.submission?.comments || '');
+      }
+    } catch (error: any) {
+      logger.error('Failed to load weekly data:', error);
+      toast.error('Failed to load weekly tasks');
+    } finally {
+      setLoadingPeople(false);
+    }
+  };
+
+  const handlePeopleTaskToggle = async (taskId: string, isCompleted: boolean) => {
+    if (!selectedPerson || !peopleWeeklyData) return;
+
+    try {
+      if (isCompleted) {
+        // Unmark task
+        await http.delete(`checklists-people/weekly/${selectedPerson}/task/${taskId}/complete`);
+      } else {
+        // Mark task complete
+        await http.post(`checklists-people/weekly/${selectedPerson}/task/${taskId}/complete`);
+      }
+
+      // Reload data to get updated state
+      await loadPeopleWeeklyData(selectedPerson);
+    } catch (error: any) {
+      logger.error('Failed to toggle task:', error);
+      toast.error('Failed to update task');
+    }
+  };
+
+  const handleSubmitPeopleWeek = async () => {
+    if (!selectedPerson) return;
+
+    try {
+      setIsSubmitting(true);
+      await http.post(`checklists-people/weekly/${selectedPerson}/submit`, {
+        comments: peopleComments
+      });
+
+      toast.success('Week submitted successfully!');
+      await loadPeopleWeeklyData(selectedPerson);
+    } catch (error: any) {
+      logger.error('Failed to submit week:', error);
+      toast.error(error.response?.data?.error || 'Failed to submit week');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleDayExpanded = (day: string) => {
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(day)) {
+        newSet.delete(day);
+      } else {
+        newSet.add(day);
+      }
+      return newSet;
+    });
+  };
+
+  const getTodayDayOfWeek = (): string => {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[new Date().getDay()];
+  };
 
   const loadTemplate = async () => {
     try {
@@ -596,10 +768,22 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                   >
                     Tech
                   </button>
+                  <button
+                    onClick={() => setActiveCategory('people')}
+                    className={`flex-1 px-3 py-1.5 rounded-md font-medium text-sm transition-all ${
+                      activeCategory === 'people'
+                        ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <User className="w-4 h-4 inline mr-1" />
+                    People
+                  </button>
                 </div>
               </div>
 
-              {/* Type Selection */}
+              {/* Type Selection - Hidden for People category */}
+              {activeCategory !== 'people' && (
               <div>
                 <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Type</label>
                 <div className="flex gap-2">
@@ -637,8 +821,10 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                   </button>
                 </div>
               </div>
+              )}
 
-              {/* Location Selection */}
+              {/* Location Selection - Hidden for People category */}
+              {activeCategory !== 'people' && (
               <div>
                 <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Location</label>
                 <select
@@ -651,11 +837,210 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                   ))}
                 </select>
               </div>
+              )}
+
+              {/* Person Selection - Only for People category */}
+              {activeCategory === 'people' && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-3 text-[var(--text-secondary)]">Person</label>
+                {loadingPeople ? (
+                  <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--accent)] border-t-transparent" />
+                    Loading...
+                  </div>
+                ) : persons.length === 0 ? (
+                  <p className="text-sm text-[var(--text-muted)]">No people configured. Add people in admin settings.</p>
+                ) : (
+                  <select
+                    value={selectedPerson || ''}
+                    onChange={(e) => setSelectedPerson(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-md text-[var(--text-primary)] text-sm"
+                  >
+                    {persons.map(person => (
+                      <option key={person.id} value={person.id}>{person.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              )}
             </div>
           </div>
 
-          {/* Start Session / Timer Card */}
-          {currentTemplate && !isSessionActive && (
+          {/* People Category Weekly View */}
+          {activeCategory === 'people' && selectedPerson && peopleWeeklyData && (
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
+              {/* Header with week info */}
+              <div className="mb-4 pb-3 border-b border-[var(--border-secondary)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                      Weekly Tasks - {peopleWeeklyData.person.name}
+                    </h3>
+                    <p className="text-sm text-[var(--text-muted)]">
+                      Week of {new Date(peopleWeeklyData.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(peopleWeeklyData.weekEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[var(--accent)]">{peopleWeeklyData.progress}%</div>
+                    <div className="text-xs text-[var(--text-muted)]">{peopleWeeklyData.completedTasks}/{peopleWeeklyData.totalTasks} tasks</div>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div className="mt-3 w-full bg-[var(--bg-tertiary)] rounded-full h-2">
+                  <div
+                    className="bg-[var(--accent)] h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${peopleWeeklyData.progress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Day-by-day task list */}
+              <div className="space-y-3">
+                {peopleWeeklyData.tasksByDay.map((dayGroup) => {
+                  const isToday = dayGroup.dayOfWeek === getTodayDayOfWeek();
+                  const isExpanded = expandedDays.has(dayGroup.dayOfWeek);
+                  const allCompleted = dayGroup.completedCount === dayGroup.totalCount;
+
+                  return (
+                    <div
+                      key={dayGroup.dayOfWeek}
+                      className={`border rounded-lg overflow-hidden ${
+                        isToday
+                          ? 'border-[var(--accent)] bg-[var(--accent)]/5'
+                          : allCompleted
+                          ? 'border-green-500/30 bg-green-500/5'
+                          : 'border-[var(--border-secondary)]'
+                      }`}
+                    >
+                      {/* Day header */}
+                      <button
+                        onClick={() => toggleDayExpanded(dayGroup.dayOfWeek)}
+                        className="w-full p-3 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+                          )}
+                          <span className={`font-medium ${isToday ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}>
+                            {dayGroup.dayLabel}
+                          </span>
+                          {isToday && (
+                            <span className="text-xs bg-[var(--accent)] text-white px-2 py-0.5 rounded-full">
+                              Today
+                            </span>
+                          )}
+                          {allCompleted && (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          )}
+                        </div>
+                        <span className="text-sm text-[var(--text-muted)]">
+                          {dayGroup.completedCount}/{dayGroup.totalCount}
+                        </span>
+                      </button>
+
+                      {/* Day tasks */}
+                      {isExpanded && (
+                        <div className="px-3 pb-3 space-y-2">
+                          {dayGroup.tasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className={`p-2 rounded flex items-center gap-3 transition-all ${
+                                task.isCompleted
+                                  ? 'bg-green-500/10'
+                                  : 'bg-[var(--bg-tertiary)]'
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${
+                                  task.isCompleted
+                                    ? 'bg-green-500 border-green-500'
+                                    : 'border-[var(--border-primary)] hover:border-[var(--accent)]'
+                                }`}
+                                onClick={() => handlePeopleTaskToggle(task.id, task.isCompleted)}
+                              >
+                                {task.isCompleted && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                              <span
+                                className={`flex-1 text-sm cursor-pointer ${
+                                  task.isCompleted
+                                    ? 'text-[var(--text-muted)] line-through'
+                                    : 'text-[var(--text-primary)]'
+                                }`}
+                                onClick={() => handlePeopleTaskToggle(task.id, task.isCompleted)}
+                              >
+                                {task.task_text}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Submit section */}
+              {peopleWeeklyData.submission?.status !== 'completed' && (
+                <div className="mt-4 pt-4 border-t border-[var(--border-secondary)]">
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium mb-1.5 text-[var(--text-muted)] uppercase tracking-wider">
+                      Comments (Optional)
+                    </label>
+                    <textarea
+                      value={peopleComments}
+                      onChange={(e) => setPeopleComments(e.target.value)}
+                      placeholder="Add notes about this week..."
+                      className="w-full px-3 py-2 rounded bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none transition-colors resize-none text-sm"
+                      rows={2}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSubmitPeopleWeek}
+                    disabled={isSubmitting || peopleWeeklyData.completedTasks === 0}
+                    className="w-full py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        Submit Week
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Already submitted message */}
+              {peopleWeeklyData.submission?.status === 'completed' && (
+                <div className="mt-4 pt-4 border-t border-[var(--border-secondary)]">
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-center">
+                    <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-1" />
+                    <p className="text-sm font-medium text-green-600">Week Submitted</p>
+                    <p className="text-xs text-green-500">
+                      Submitted on {new Date(peopleWeeklyData.submission.submitted_at!).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* People category - No person selected or loading */}
+          {activeCategory === 'people' && !peopleWeeklyData && !loadingPeople && selectedPerson && (
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-8 text-center">
+              <Calendar className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Loading Tasks...</h3>
+            </div>
+          )}
+
+          {/* Start Session / Timer Card - Hidden for People category */}
+          {activeCategory !== 'people' && currentTemplate && !isSessionActive && (
             <div className="bg-gradient-to-r from-[var(--accent)] to-[#0a4a45] rounded-lg p-4 mb-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -684,9 +1069,9 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
               </div>
             </div>
           )}
-          
-          {/* Active Session Status (no timer for contractors) */}
-          {isSessionActive && (
+
+          {/* Active Session Status (no timer for contractors) - Hidden for People category */}
+          {activeCategory !== 'people' && isSessionActive && (
             <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -702,8 +1087,8 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
           )}
 
 
-          {/* Message when checklist not started */}
-          {currentTemplate && !isSessionActive && (
+          {/* Message when checklist not started - Hidden for People category */}
+          {activeCategory !== 'people' && currentTemplate && !isSessionActive && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-8 mb-4 text-center">
               <Clipboard className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
@@ -718,8 +1103,8 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
             </div>
           )}
 
-          {/* Checklist Tasks - Only show after session starts */}
-          {currentTemplate && isSessionActive && (
+          {/* Checklist Tasks - Only show after session starts, hidden for People category */}
+          {activeCategory !== 'people' && currentTemplate && isSessionActive && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
               <div className="mb-3">
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">

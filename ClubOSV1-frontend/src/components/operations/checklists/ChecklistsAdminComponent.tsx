@@ -54,8 +54,28 @@ interface CompletionStats {
   topPerformer?: { name: string; count: number };
 }
 
+// People category interfaces
+interface Person {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  active: boolean;
+  created_at: string;
+}
+
+interface PersonTask {
+  id: string;
+  person_id: string;
+  task_text: string;
+  day_of_week: string;
+  position: number;
+  is_required: boolean;
+  active: boolean;
+}
+
 export function ChecklistsAdminComponent() {
-  const [activeTab, setActiveTab] = useState<'templates' | 'performance' | 'tools' | 'settings'>('templates');
+  const [activeTab, setActiveTab] = useState<'templates' | 'performance' | 'tools' | 'settings' | 'people'>('templates');
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
@@ -93,13 +113,36 @@ export function ChecklistsAdminComponent() {
     max_duration_minutes: null as number | null
   });
 
+  // People management state
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [personTasks, setPersonTasks] = useState<Record<string, PersonTask[]>>({});
+  const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
+  const [editingPerson, setEditingPerson] = useState<string | null>(null);
+  const [showNewPersonModal, setShowNewPersonModal] = useState(false);
+  const [showAddPersonTaskModal, setShowAddPersonTaskModal] = useState<string | null>(null);
+  const [newPersonForm, setNewPersonForm] = useState({ name: '', description: '' });
+  const [newPersonTaskForm, setNewPersonTaskForm] = useState({ task_text: '', day_of_week: 'monday' });
+  const [loadingPeople, setLoadingPeople] = useState(false);
+
   const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
+  const daysOfWeek = [
+    { value: 'monday', label: 'Monday' },
+    { value: 'tuesday', label: 'Tuesday' },
+    { value: 'wednesday', label: 'Wednesday' },
+    { value: 'thursday', label: 'Thursday' },
+    { value: 'friday', label: 'Friday' },
+    { value: 'saturday', label: 'Saturday' },
+    { value: 'sunday', label: 'Sunday' },
+  ];
 
   useEffect(() => {
     loadTemplates();
     if (activeTab === 'performance') {
       loadPerformanceMetrics();
       loadCompletionStats();
+    }
+    if (activeTab === 'people') {
+      loadPersons();
     }
   }, [activeTab, selectedLocation]);
 
@@ -115,6 +158,104 @@ export function ChecklistsAdminComponent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ===== PEOPLE MANAGEMENT FUNCTIONS =====
+
+  const loadPersons = async () => {
+    setLoadingPeople(true);
+    try {
+      const response = await http.get('/checklists-people/persons');
+      if (response.data.success) {
+        setPersons(response.data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load persons');
+    } finally {
+      setLoadingPeople(false);
+    }
+  };
+
+  const loadPersonTasks = async (personId: string) => {
+    try {
+      const response = await http.get(`/checklists-people/persons/${personId}/tasks`);
+      if (response.data.success) {
+        setPersonTasks(prev => ({ ...prev, [personId]: response.data.data }));
+      }
+    } catch (error) {
+      toast.error('Failed to load tasks');
+    }
+  };
+
+  const handleCreatePerson = async () => {
+    if (!newPersonForm.name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+    try {
+      const response = await http.post('/checklists-people/persons', newPersonForm);
+      if (response.data.success) {
+        toast.success('Person created');
+        setShowNewPersonModal(false);
+        setNewPersonForm({ name: '', description: '' });
+        loadPersons();
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to create person');
+    }
+  };
+
+  const handleDeletePerson = async (personId: string) => {
+    try {
+      await http.delete(`/checklists-people/persons/${personId}`);
+      toast.success('Person deactivated');
+      loadPersons();
+    } catch (error) {
+      toast.error('Failed to delete person');
+    }
+  };
+
+  const handleCreatePersonTask = async (personId: string) => {
+    if (!newPersonTaskForm.task_text.trim()) {
+      toast.error('Task text is required');
+      return;
+    }
+    try {
+      const response = await http.post(`/checklists-people/persons/${personId}/tasks`, newPersonTaskForm);
+      if (response.data.success) {
+        toast.success('Task added');
+        setShowAddPersonTaskModal(null);
+        setNewPersonTaskForm({ task_text: '', day_of_week: 'monday' });
+        loadPersonTasks(personId);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to add task');
+    }
+  };
+
+  const handleDeletePersonTask = async (taskId: string, personId: string) => {
+    try {
+      await http.delete(`/checklists-people/tasks/${taskId}`);
+      toast.success('Task deleted');
+      loadPersonTasks(personId);
+    } catch (error) {
+      toast.error('Failed to delete task');
+    }
+  };
+
+  const groupTasksByDay = (tasks: PersonTask[]): Record<string, PersonTask[]> => {
+    const grouped: Record<string, PersonTask[]> = {};
+    for (const task of tasks) {
+      if (!grouped[task.day_of_week]) {
+        grouped[task.day_of_week] = [];
+      }
+      grouped[task.day_of_week].push(task);
+    }
+    // Sort tasks within each day by position
+    for (const day of Object.keys(grouped)) {
+      grouped[day].sort((a, b) => a.position - b.position);
+    }
+    return grouped;
   };
 
   const loadPerformanceMetrics = async () => {
@@ -498,6 +639,19 @@ export function ChecklistsAdminComponent() {
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
                 Settings
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('people')}
+              className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                activeTab === 'people'
+                  ? 'text-[var(--accent)] border-[var(--accent)]'
+                  : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                People
               </div>
             </button>
           </div>
@@ -1206,7 +1360,233 @@ export function ChecklistsAdminComponent() {
               </div>
             </div>
           )}
+
+          {/* People Tab */}
+          {activeTab === 'people' && (
+            <div className="space-y-4">
+              {/* Header with Add Button */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Manage weekly task lists for staff members
+                </p>
+                <button
+                  onClick={() => setShowNewPersonModal(true)}
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Person
+                </button>
+              </div>
+
+              {/* People List */}
+              {loadingPeople ? (
+                <div className="text-center py-8 text-[var(--text-secondary)]">
+                  Loading people...
+                </div>
+              ) : persons.length === 0 ? (
+                <div className="text-center py-8 text-[var(--text-secondary)]">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No people configured yet</p>
+                  <p className="text-sm">Add a person to create their weekly task list</p>
+                </div>
+              ) : (
+                persons.map(person => (
+                  <div key={person.id} className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)]">
+                    {/* Person Header */}
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              if (expandedPerson === person.id) {
+                                setExpandedPerson(null);
+                              } else {
+                                setExpandedPerson(person.id);
+                                loadPersonTasks(person.id);
+                              }
+                            }}
+                            className="text-[var(--text-primary)]"
+                          >
+                            {expandedPerson === person.id ? (
+                              <ChevronDown className="w-5 h-5" />
+                            ) : (
+                              <ChevronRight className="w-5 h-5" />
+                            )}
+                          </button>
+                          <div>
+                            <h3 className="font-semibold text-[var(--text-primary)]">{person.name}</h3>
+                            {person.description && (
+                              <p className="text-sm text-[var(--text-secondary)]">{person.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs rounded ${person.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {person.active ? 'Active' : 'Inactive'}
+                          </span>
+                          <button
+                            onClick={() => handleDeletePerson(person.id)}
+                            className="p-1 text-red-500 hover:text-red-400"
+                            title="Deactivate"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded Person Tasks */}
+                    {expandedPerson === person.id && (
+                      <div className="border-t border-[var(--border-primary)] p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-[var(--text-primary)]">Weekly Tasks</h4>
+                          <button
+                            onClick={() => setShowAddPersonTaskModal(person.id)}
+                            className="px-3 py-1 text-sm bg-[var(--accent)] text-white rounded hover:opacity-90 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add Task
+                          </button>
+                        </div>
+
+                        {/* Tasks grouped by day */}
+                        {personTasks[person.id] && personTasks[person.id].length > 0 ? (
+                          <div className="space-y-3">
+                            {daysOfWeek.map(day => {
+                              const dayTasks = groupTasksByDay(personTasks[person.id])[day.value] || [];
+                              if (dayTasks.length === 0) return null;
+
+                              return (
+                                <div key={day.value} className="bg-[var(--bg-tertiary)] rounded p-3">
+                                  <h5 className="font-medium text-sm text-[var(--accent)] mb-2">{day.label}</h5>
+                                  <div className="space-y-1">
+                                    {dayTasks.map(task => (
+                                      <div key={task.id} className="flex items-center justify-between bg-[var(--bg-primary)] rounded px-3 py-2">
+                                        <span className="text-sm text-[var(--text-primary)]">{task.task_text}</span>
+                                        <button
+                                          onClick={() => handleDeletePersonTask(task.id, person.id)}
+                                          className="p-1 text-red-500 hover:text-red-400"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-[var(--text-muted)] text-center py-4">
+                            No tasks yet. Add tasks for each day of the week.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
+
+        {/* New Person Modal */}
+        {showNewPersonModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Add New Person</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={newPersonForm.name}
+                    onChange={(e) => setNewPersonForm({ ...newPersonForm, name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                    placeholder="e.g., Jamie"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Description (optional)</label>
+                  <input
+                    type="text"
+                    value={newPersonForm.description}
+                    onChange={(e) => setNewPersonForm({ ...newPersonForm, description: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                    placeholder="e.g., Location visits and phone coverage"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowNewPersonModal(false);
+                      setNewPersonForm({ name: '', description: '' });
+                    }}
+                    className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreatePerson}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90"
+                  >
+                    Create Person
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Person Task Modal */}
+        {showAddPersonTaskModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Add Task</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Day of Week</label>
+                  <select
+                    value={newPersonTaskForm.day_of_week}
+                    onChange={(e) => setNewPersonTaskForm({ ...newPersonTaskForm, day_of_week: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                  >
+                    {daysOfWeek.map(day => (
+                      <option key={day.value} value={day.value}>{day.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Task</label>
+                  <input
+                    type="text"
+                    value={newPersonTaskForm.task_text}
+                    onChange={(e) => setNewPersonTaskForm({ ...newPersonTaskForm, task_text: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                    placeholder="e.g., Visit each location"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowAddPersonTaskModal(null);
+                      setNewPersonTaskForm({ task_text: '', day_of_week: 'monday' });
+                    }}
+                    className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleCreatePersonTask(showAddPersonTaskModal)}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* New Template Modal */}
         {showNewTemplateModal && (

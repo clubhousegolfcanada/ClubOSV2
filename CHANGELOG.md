@@ -2,6 +2,31 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.29] - 2025-12-30
+
+### Added
+- **People Checklists**: New "People" category for managing weekly staff task lists
+  - Add named staff members with descriptions (not tied to system users)
+  - Create tasks organized by day of week (Monday-Sunday)
+  - Weekly rolling view - check off tasks throughout the week
+  - Submit completed week with optional comments
+  - "Today" badge highlights current day's tasks
+  - Progress bar shows weekly completion percentage
+  - Day sections are collapsible for easy navigation
+
+### Admin Features
+- New "People" tab in Checklists Admin
+  - Create/manage named persons
+  - Add/remove tasks for each person by day
+  - Tasks grouped by day with visual organization
+  - Quick add task modal with day selector
+
+### Technical
+- New database tables: `checklist_persons`, `checklist_person_tasks`, `checklist_person_weekly_submissions`, `checklist_person_task_completions`
+- New API route: `/api/checklists-people` with 15 endpoints for CRUD operations
+- Frontend: Extended ChecklistSystem.tsx with People category and weekly view
+- Frontend: Extended ChecklistsAdminComponent.tsx with People management UI
+
 ## [1.25.28] - 2025-12-30
 
 ### Added

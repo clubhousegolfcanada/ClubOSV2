@@ -83,6 +83,7 @@ import friendsRoutes from './routes/friends';
 import logsRoutes from './routes/logs';
 import golfTourRoutes from './routes/golf-tour';
 import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
+import checklistsPeopleRoutes from './routes/checklists-people';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -314,6 +315,7 @@ app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/checklists', checklistsRoutes); // Keep old path for backward compatibility
 app.use('/api/checklists-v2', checklistsRoutes); // New path for v2 frontend
+app.use('/api/checklists-people', checklistsPeopleRoutes); // People category - weekly task management
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
 app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);
