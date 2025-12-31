@@ -597,36 +597,21 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
         hasToken: !!token
       });
       
-      let response;
-      
-      if (sessionId && isSessionActive) {
-        // Use the complete endpoint for an active session
-        response = await http.patch(
-          `checklists-v2/complete/${sessionId}`,
-          {
-            completedTasks: completedTaskIds,
-            comments: comments.trim(),
-            supplies: supplies,
-            photos: photoAttachments
-          }
-        );
-      } else {
-        // Use the legacy submit endpoint
-        response = await http.post(
-          `checklists-v2/submit`,
-          {
-            templateId: currentTemplate.templateId || '',
-            category: activeCategory,
-            type: activeType,
-            location: selectedLocation,
-            completedTasks: completedTaskIds,
-            comments: comments.trim(),
-            createTicket: createTicket && comments.trim().length > 0,
-            supplies: supplies,
-            photoUrls: photoAttachments
-          }
-        );
-      }
+      // Always use the submit endpoint (no session required)
+      const response = await http.post(
+        `checklists-v2/submit`,
+        {
+          templateId: currentTemplate.templateId || '',
+          category: activeCategory,
+          type: activeType,
+          location: selectedLocation,
+          completedTasks: completedTaskIds,
+          comments: comments.trim(),
+          createTicket: createTicket && comments.trim().length > 0,
+          supplies: supplies,
+          photoUrls: photoAttachments
+        }
+      );
       
       if (response.data.success) {
         toast.success(`${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} checklist submitted successfully!`);
@@ -1039,81 +1024,19 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
             </div>
           )}
 
-          {/* Start Session / Timer Card - Hidden for People category */}
-          {activeCategory !== 'people' && currentTemplate && !isSessionActive && (
-            <div className="bg-gradient-to-r from-[var(--accent)] to-[#0a4a45] rounded-lg p-4 mb-4 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Ready to Begin?</h3>
-                  <p className="text-sm text-white/80">
-                    Starting the checklist will unlock the door at {selectedLocation}
-                  </p>
-                </div>
-                <button
-                  onClick={handleStartChecklist}
-                  disabled={isStarting || !currentTemplate}
-                  className="px-6 py-3 bg-[var(--bg-secondary)] text-[var(--accent)] rounded-lg font-semibold hover:bg-[var(--bg-hover)] transition-all flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isStarting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--accent)] border-t-transparent" />
-                      Starting...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5" />
-                      Start Checklist
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Start Session / Timer Card - REMOVED: Tasks are now immediately checkable */}
 
-          {/* Active Session Status (no timer for contractors) - Hidden for People category */}
-          {activeCategory !== 'people' && isSessionActive && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-green-600">Checklist In Progress</p>
-                  <p className="text-xs text-green-500">Complete all tasks below and submit when finished</p>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Session status banners REMOVED - tasks are now immediately checkable */}
 
-
-          {/* Message when checklist not started - Hidden for People category */}
-          {activeCategory !== 'people' && currentTemplate && !isSessionActive && (
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-8 mb-4 text-center">
-              <Clipboard className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-                Ready to Begin {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)] mb-1">
-                {getTypeLabel(activeType)} checklist for {selectedLocation}
-              </p>
-              <p className="text-xs text-[var(--text-muted)]">
-                Click "Start Checklist" above to unlock the door and begin
-              </p>
-            </div>
-          )}
-
-          {/* Checklist Tasks - Only show after session starts, hidden for People category */}
-          {activeCategory !== 'people' && currentTemplate && isSessionActive && (
+          {/* Checklist Tasks - Show immediately when template loads, hidden for People category */}
+          {activeCategory !== 'people' && currentTemplate && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-lg p-4 mb-4">
               <div className="mb-3">
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
                   {activeCategory === 'cleaning' ? 'Cleaning' : 'Tech'} Checklist - {getTypeLabel(activeType)}
                 </h3>
                 <p className="text-sm text-[var(--text-muted)]">
-                  {!isSessionActive 
-                    ? 'Start the checklist to unlock the door and begin tracking time.'
-                    : 'Complete all tasks below and submit when finished.'}
+                  Complete all tasks below and submit when finished.
                 </p>
               </div>
 
@@ -1128,15 +1051,13 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                     } ${editingTaskId === task.id ? '' : 'hover:bg-[var(--bg-primary)]'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <div 
-                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                          isSessionActive ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
-                        } ${
+                      <div
+                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${
                           completedTasks[task.id]
                             ? 'bg-green-500 border-green-500'
-                            : 'border-[var(--border-primary)]'
+                            : 'border-[var(--border-primary)] hover:border-[var(--accent)]'
                         }`}
-                        onClick={() => isSessionActive && handleTaskToggle(task.id)}
+                        onClick={() => handleTaskToggle(task.id)}
                       >
                         {completedTasks[task.id] && <Check className="w-4 h-4 text-white" />}
                       </div>
@@ -1364,8 +1285,16 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                     </div>
                   </div>
                   
-                  {/* Create ticket checkbox */}
-                  {(comments.trim() || supplies.length > 0 || photoAttachments.length > 0) && (
+                  {/* Auto-ticket message for supplies */}
+                  {supplies.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded">
+                      <CheckCircle className="w-3 h-3" />
+                      An order ticket will be created automatically for these supplies
+                    </div>
+                  )}
+
+                  {/* Create ticket checkbox - only for comments/issues (supplies auto-create) */}
+                  {(comments.trim() || photoAttachments.length > 0) && (
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -1375,7 +1304,7 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                         className="w-3 h-3 text-[var(--accent)] bg-[var(--bg-tertiary)] border-[var(--border-secondary)] rounded focus:ring-[var(--accent)]"
                       />
                       <label htmlFor="create-ticket" className="text-xs text-[var(--text-secondary)] cursor-pointer">
-                        Create a support ticket for issues and supplies needed
+                        Create a support ticket for these issues
                       </label>
                     </div>
                   )}
@@ -1400,14 +1329,14 @@ export const ChecklistSystem: React.FC<ChecklistSystemProps> = ({ activeTab = 'c
                   </div>
                   <button
                     onClick={handleSubmit}
-                    disabled={!isSessionActive || !isAllTasksCompleted() || isSubmitting}
+                    disabled={!isAllTasksCompleted() || isSubmitting}
                     className={`px-4 py-2 rounded text-xs font-medium transition-all ${
-                      isSessionActive && isAllTasksCompleted() && !isSubmitting
+                      isAllTasksCompleted() && !isSubmitting
                         ? 'bg-green-500 text-white hover:bg-green-600'
                         : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed'
                     }`}
                   >
-                    {!isSessionActive ? 'Start Checklist First' : isSubmitting ? 'Submitting...' : 'Submit Checklist'}
+                    {isSubmitting ? 'Submitting...' : 'Submit Checklist'}
                   </button>
                 </div>
               </div>

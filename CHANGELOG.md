@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.31] - 2025-12-30
+
+### Changed
+- **Removed Start Checklist Button**: Tasks are now immediately checkable when checklist loads
+  - No longer need to click "Start Checklist" to begin
+  - Tasks are active as soon as template loads
+  - Simpler, faster workflow for cleaning and tech checklists
+  - Door unlock functionality removed (can be added back later)
+
+### Added
+- **Auto Orders Ticket from Supplies**: Supplies now automatically create an "orders" ticket
+  - New "orders" ticket category added to system
+  - When supplies are submitted, an order ticket is created automatically
+  - Ticket title: "Supplies Order - [Location]"
+  - Priority based on highest urgency supply
+  - No checkbox needed - supplies always create orders
+  - Comments still require manual ticket checkbox
+
+### Technical
+- Added 'orders' to valid ticket categories in backend
+- Updated TypeScript types for ticket category
+- Created migration 346_add_orders_ticket_category.sql
+- Modified submit/complete endpoints to auto-create orders tickets
+
 ## [1.25.30] - 2025-12-30
 
 ### Added

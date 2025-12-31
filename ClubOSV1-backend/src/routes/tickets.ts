@@ -71,7 +71,8 @@ router.get('/stats', authenticate, async (req, res) => {
       },
       byCategory: {
         facilities: tickets.filter(t => t.category === 'facilities').length,
-        tech: tickets.filter(t => t.category === 'tech').length
+        tech: tickets.filter(t => t.category === 'tech').length,
+        orders: tickets.filter(t => t.category === 'orders').length
       },
       byPriority: {
         low: tickets.filter(t => t.priority === 'low').length,
@@ -136,7 +137,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // Define valid values for validation
     const validLocations = ['Bedford', 'Dartmouth', 'Halifax', 'Bayers Lake', 'River Oaks', 'Stratford', 'Truro'];
-    const validCategories = ['facilities', 'tech'];
+    const validCategories = ['facilities', 'tech', 'orders'];
     const validPriorities = ['low', 'medium', 'high', 'urgent'];
 
     // Validate category
@@ -325,7 +326,7 @@ router.patch('/:id', authenticate, async (req, res) => {
     // Validate field values
     const validStatuses = ['open', 'in-progress', 'resolved', 'closed', 'archived'];
     const validPriorities = ['low', 'medium', 'high', 'urgent'];
-    const validCategories = ['facilities', 'tech'];
+    const validCategories = ['facilities', 'tech', 'orders'];
     // Correct Clubhouse 24/7 locations - using proper capitalization with spaces
     const validLocations = ['Bedford', 'Dartmouth', 'Halifax', 'Bayers Lake', 'River Oaks', 'Stratford', 'Truro'];
 

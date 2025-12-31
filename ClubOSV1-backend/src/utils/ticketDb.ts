@@ -6,7 +6,7 @@ export interface Ticket {
   id: string;
   title: string;
   description: string;
-  category: 'facilities' | 'tech';
+  category: 'facilities' | 'tech' | 'orders';
   status: 'open' | 'in-progress' | 'resolved' | 'closed' | 'archived';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   location?: string;

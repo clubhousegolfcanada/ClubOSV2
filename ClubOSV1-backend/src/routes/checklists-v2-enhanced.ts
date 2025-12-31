@@ -553,7 +553,7 @@ router.post('/submit',
         try {
           for (const supply of supplies) {
             await db.query(
-              `INSERT INTO checklist_supplies_requests 
+              `INSERT INTO checklist_supplies_requests
                (submission_id, task_id, supplies_description, urgency, requested_by)
                VALUES ($1, $2, $3, $4, $5)`,
               [submissionId, supply.taskId || null, supply.name, supply.urgency || 'medium', userId]
@@ -565,20 +565,52 @@ router.post('/submit',
           }
           logger.debug('Supplies table not found, skipping supplies tracking');
         }
+
+        // Auto-create "orders" ticket for supplies
+        try {
+          const supplyList = supplies.map((s: any) =>
+            `• ${s.name}${s.quantity ? ` (${s.quantity})` : ''} - ${s.urgency} urgency`
+          ).join('\n');
+
+          const highestUrgency = supplies.some((s: any) => s.urgency === 'high') ? 'high'
+            : supplies.some((s: any) => s.urgency === 'medium') ? 'medium' : 'low';
+
+          await db.query(
+            `INSERT INTO tickets
+             (title, description, category, priority, location, created_by, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'open')`,
+            [
+              `Supplies Order - ${location}`,
+              `Supplies needed from ${category} ${type} checklist:\n\n${supplyList}`,
+              'orders',
+              highestUrgency,
+              location,
+              userId
+            ]
+          );
+
+          logger.info('Created orders ticket for supplies', {
+            submissionId,
+            location,
+            suppliesCount: supplies.length
+          });
+        } catch (ticketError) {
+          logger.error('Failed to create orders ticket', ticketError);
+        }
       }
-      
-      // Create ticket if requested
+
+      // Create issue ticket if requested (for comments/issues, separate from supplies)
       let ticketId = null;
       if (createTicket && comments) {
         const ticketResult = await db.query(
-          `INSERT INTO tickets 
-           (title, description, category, priority, location, user_id, status)
+          `INSERT INTO tickets
+           (title, description, category, priority, location, created_by, status)
            VALUES ($1, $2, $3, $4, $5, $6, 'open')
            RETURNING id`,
-          [`Checklist Issue - ${location}`, comments, 'facilities', 'normal', location, userId]
+          [`Checklist Issue - ${location}`, comments, 'facilities', 'medium', location, userId]
         );
         ticketId = ticketResult.rows[0].id;
-        
+
         // Update submission with ticket ID
         await db.query(
           'UPDATE checklist_submissions SET ticket_created = true, ticket_id = $1 WHERE id = $2',
@@ -1009,32 +1041,62 @@ router.patch('/complete/:id',
       
       const submission = result.rows[0];
       
-      // Create ticket if there are issues
-      if ((comments && comments.trim()) || (supplies && supplies.length > 0)) {
-        const ticketData = {
-          title: `Checklist Issues - ${submission.location}`,
-          description: comments || 'Supplies needed',
-          priority: supplies?.some((s: any) => s.urgency === 'high') ? 'high' : 'medium',
-          location: submission.location,
-          category: submission.category,
-          supplies_needed: supplies,
-          photo_urls: photos
-        };
-        
+      // Auto-create "orders" ticket for supplies
+      if (supplies && supplies.length > 0) {
+        try {
+          const supplyList = supplies.map((s: any) =>
+            `• ${s.name}${s.quantity ? ` (${s.quantity})` : ''} - ${s.urgency} urgency`
+          ).join('\n');
+
+          const highestUrgency = supplies.some((s: any) => s.urgency === 'high') ? 'high'
+            : supplies.some((s: any) => s.urgency === 'medium') ? 'medium' : 'low';
+
+          await db.query(
+            `INSERT INTO tickets (title, description, category, priority, status, location, created_by)
+             VALUES ($1, $2, $3, $4, 'open', $5, $6)`,
+            [
+              `Supplies Order - ${submission.location}`,
+              `Supplies needed from ${submission.category} checklist:\n\n${supplyList}`,
+              'orders',
+              highestUrgency,
+              submission.location,
+              userId
+            ]
+          );
+
+          logger.info('Created orders ticket for supplies', {
+            submissionId: id,
+            location: submission.location,
+            suppliesCount: supplies.length
+          });
+        } catch (ticketError) {
+          logger.error('Failed to create orders ticket', ticketError);
+        }
+      }
+
+      // Create issue ticket if there are comments (separate from supplies)
+      if (comments && comments.trim()) {
         try {
           await db.query(
-            `INSERT INTO tickets (title, description, priority, status, location, created_by, metadata)
-             VALUES ($1, $2, $3, 'open', $4, $5, $6)`,
-            [ticketData.title, ticketData.description, ticketData.priority, 
-             ticketData.location, userId, JSON.stringify({ supplies, photos })]
+            `INSERT INTO tickets (title, description, category, priority, status, location, created_by, metadata)
+             VALUES ($1, $2, $3, $4, 'open', $5, $6, $7)`,
+            [
+              `Checklist Issue - ${submission.location}`,
+              comments,
+              submission.category === 'tech' ? 'tech' : 'facilities',
+              'medium',
+              submission.location,
+              userId,
+              photos && photos.length > 0 ? JSON.stringify({ photos }) : null
+            ]
           );
-          
-          logger.info('Ticket created from checklist', {
+
+          logger.info('Issue ticket created from checklist', {
             submissionId: id,
             location: submission.location
           });
         } catch (ticketError) {
-          logger.error('Failed to create ticket from checklist', ticketError);
+          logger.error('Failed to create issue ticket from checklist', ticketError);
         }
       }
       
