@@ -304,14 +304,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Booking handlers
   const handleBookingCreate = useCallback((startTime: Date, endTime: Date, spaceId?: string, spaceName?: string) => {
-    console.log('[BookingCalendar.handleBookingCreate] Received from DayGrid:', {
-      startTime,
-      endTime,
-      spaceId,
-      spaceName,
-      hasOnBookingCreate: !!onBookingCreate
-    });
-
     if (!config) return;
 
     // Get current user's tier (default to 'new' if not logged in)
@@ -356,7 +348,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         spaceName: spaceName || spaces.find(s => s.id === spaceId)?.name || ''
       };
 
-      console.log('[BookingCalendar.handleBookingCreate] Sending to parent onBookingCreate:', bookingData);
       onBookingCreate(bookingData as any);  // Cast once at the end instead of multiple times
     } else {
       // Fall back to internal modal if no parent callback

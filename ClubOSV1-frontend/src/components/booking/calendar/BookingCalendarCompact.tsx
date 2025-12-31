@@ -302,7 +302,6 @@ const BookingCalendarCompact: React.FC<BookingCalendarCompactProps> = ({
 
     // If parent provided a callback, use that instead of internal modal
     if (onBookingCreate) {
-      console.log('📤 Calling parent onBookingCreate');
       const bookingData: Partial<Booking> = {
         startAt: startTime.toISOString(),
         endAt: endTime.toISOString(),
