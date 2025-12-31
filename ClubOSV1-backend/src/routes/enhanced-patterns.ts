@@ -1414,6 +1414,46 @@ router.put('/config',
 );
 
 // ============================================
+// SAFETY SETTINGS ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/patterns/safety-settings
+ * Get pattern safety settings
+ */
+router.get('/safety-settings',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const settings = await patternSafetyService.getSettings();
+      res.json(settings);
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get safety settings', error);
+      res.status(500).json({ success: false, error: 'Failed to get safety settings' });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/safety-settings
+ * Update pattern safety settings
+ */
+router.put('/safety-settings',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      await patternSafetyService.updateSettings(req.body);
+      res.json({ success: true, message: 'Safety settings updated' });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to update safety settings', error);
+      res.status(500).json({ success: false, error: 'Failed to update safety settings' });
+    }
+  }
+);
+
+// ============================================
 // STANDARD CRUD ENDPOINTS (MISSING FROM CONSOLIDATION)
 // ============================================
 

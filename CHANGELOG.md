@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.33] - 2025-12-31
+
+### Fixed
+- **V3-PLS Safety Settings Endpoint**: Re-added missing `/patterns/safety-settings` API endpoint
+  - Endpoint was accidentally removed during route consolidation
+  - Fixes 400 error when saving V3-PLS settings from UI
+  - OpenPhone automation toggle now saves correctly
+
+### Technical
+- Added GET/PUT `/api/patterns/safety-settings` endpoints to enhanced-patterns.ts
+- Uses existing `patternSafetyService.getSettings()` and `updateSettings()` methods
+- Cleared test conversation locks that were blocking AI responses during testing
+
 ## [1.25.32] - 2025-12-31
 
 ### Fixed

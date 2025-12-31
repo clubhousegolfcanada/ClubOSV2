@@ -1,4 +1,4 @@
-# ClubOS v1.25.32 - Flexible Facility Management System
+# ClubOS v1.25.33 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,8 +8,9 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.32**
-- **📱 iOS Photo Library Fix** - Receipt uploads from iPhone photo library now work correctly
+**Current Version: v1.25.33**
+- **🔧 V3-PLS Settings Fix** - OpenPhone automation toggle now saves correctly
+- **Previous: iOS Photo Library Fix** - Receipt uploads from iPhone photo library now work correctly
 - **Previous: Streamlined Checklists** - Removed Start button, tasks are now immediately checkable (v1.25.31)
 - **Previous: Auto Orders Tickets** - Supplies now automatically create "orders" tickets with location (v1.25.31)
 - **Previous: Bulk Task Import** - Paste full task lists for quick People Checklist setup (v1.25.30)
