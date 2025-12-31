@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.36] - 2025-12-31
+
+### Fixed
+- **AI Auto-Response Database Error**: Fixed missing column error in pattern learning
+  - Changed `u.phone_number` to `u.phone` (users table has `phone` not `phone_number`)
+  - Error was: PostgreSQL 42703 "column does not exist"
+
+### Changed
+- **Lowered Auto-Execute Threshold**: Reduced from 0.85 to 0.65
+  - Patterns with 65%+ confidence now auto-respond instead of suggesting
+  - Allows faster iteration on pattern testing
+
+### Technical
+- Fixed patternLearningService.ts lines 773, 781 column reference
+- Changed autoExecuteThreshold from 0.85 to 0.65 (line 83)
+
 ## [1.25.35] - 2025-12-31
 
 ### Fixed

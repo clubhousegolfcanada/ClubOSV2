@@ -80,7 +80,7 @@ export class PatternLearningService {
       enabled: false, // Disabled by default
       shadowMode: true, // Shadow mode by default
       openphoneEnabled: false, // OpenPhone automation disabled by default
-      autoExecuteThreshold: 0.85, // Lowered from 0.95 for faster auto-execution
+      autoExecuteThreshold: 0.65, // Lowered from 0.85 to allow patterns with 65%+ confidence to auto-execute
       suggestThreshold: 0.60, // Lowered from 0.75 to show suggestions earlier
       queueThreshold: 0.40, // Lowered from 0.50 to capture more patterns
       confidenceIncreaseSuccess: 0.15, // Increased from 0.05 - reach auto threshold after ~3 approvals
@@ -770,7 +770,7 @@ export class PatternLearningService {
             u.email,
             u.name,
             u.role,
-            u.phone_number,
+            u.phone,
             cp.total_rounds,
             cp.handicap,
             cp.home_location,
@@ -778,7 +778,7 @@ export class PatternLearningService {
             cp.preferred_bay_type
           FROM users u
           LEFT JOIN customer_profiles cp ON cp.user_id = u.id
-          WHERE u.phone_number = $1
+          WHERE u.phone = $1
           LIMIT 1
         `, [baseContext.phoneNumber]);
         
