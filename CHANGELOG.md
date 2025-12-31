@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.35] - 2025-12-31
+
+### Fixed
+- **OpenAI JSON Format Error**: Fixed GPT response generation failing with JSON format requirement
+  - Error: `'messages' must contain the word 'json' in some form, to use 'response_format' of type 'json_object'`
+  - Added "Please respond in JSON format with:" to the GPT prompt in `generateReasonedResponse`
+  - AI responses should now work correctly for test phone whitelist
+
+### Technical
+- OpenAI API requires the word "json" in prompt when using `response_format: { type: "json_object" }`
+- File: `ClubOSV1-backend/src/services/patternLearningService.ts` line 1318
+
 ## [1.25.34] - 2025-12-31
 
 ### Added

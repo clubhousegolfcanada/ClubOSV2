@@ -1315,12 +1315,15 @@ ${conversationHistory.map(h => `${h.sender}: ${h.message}`).join('\n') || 'No pr
 Context Variables:
 ${JSON.stringify(context, null, 2)}
 
-Please provide:
-1. An adapted, natural response for this specific customer and situation
-2. A list of actions to take (if any)
-3. Your reasoning process
-4. Any clarifying questions you would ask
-5. Next steps in the conversation`;
+Please respond in JSON format with:
+{
+  "response": "Your adapted, natural response for this customer",
+  "actions": ["list of actions to take"],
+  "reasoning": "Your thought process",
+  "clarifying_questions": ["questions you would ask"],
+  "next_steps": ["next steps in the conversation"],
+  "confidence_explanation": "why you're confident in this response"
+}`;
 
       // Use GPT-4o for advanced reasoning
       const completion = await this.openai.chat.completions.create({
