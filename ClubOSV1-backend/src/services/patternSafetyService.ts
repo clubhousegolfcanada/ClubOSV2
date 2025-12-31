@@ -462,10 +462,10 @@ A member of our team will respond as soon as possible.
       if (update.value !== undefined) {
         // Use UPSERT to handle missing config rows
         await db.query(`
-          INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
-          VALUES ($1, $2, NOW())
-          ON CONFLICT (config_key) 
-          DO UPDATE SET config_value = $2, updated_at = NOW()
+          INSERT INTO pattern_learning_config (config_key, config_value)
+          VALUES ($1, $2)
+          ON CONFLICT (config_key)
+          DO UPDATE SET config_value = $2
         `, [update.key, update.value]);
       }
     }

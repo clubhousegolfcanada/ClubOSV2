@@ -718,6 +718,154 @@ router.get('/stats',
   }
 );
 
+// ============================================
+// CONFIG & SAFETY SETTINGS (MUST BE BEFORE /:id)
+// ============================================
+
+/**
+ * GET /api/patterns/config
+ * Get pattern learning configuration
+ */
+router.get('/config',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      // Get configuration from pattern_learning_config table
+      const result = await db.query(`
+        SELECT config_key, config_value
+        FROM pattern_learning_config
+      `);
+
+      // Transform to object format
+      const config: any = {};
+      result.rows.forEach(row => {
+        const value = row.config_value;
+        // Convert string values to appropriate types
+        if (value === 'true') config[row.config_key] = true;
+        else if (value === 'false') config[row.config_key] = false;
+        else if (!isNaN(Number(value))) config[row.config_key] = Number(value);
+        else config[row.config_key] = value;
+      });
+
+      // Ensure openphone_enabled has a default if not set
+      if (config.openphone_enabled === undefined) {
+        config.openphone_enabled = false; // Default to OFF for safety
+      }
+
+      res.json(config);
+    } catch (error) {
+      logger.error('[Pattern Config] Failed to get configuration', error);
+      // Return default config if table doesn't exist
+      res.json({
+        enabled: false,
+        shadow_mode: true,
+        openphone_enabled: false, // Default to OFF for safety
+        min_confidence_to_suggest: 0.60,
+        min_confidence_to_act: 0.85,
+        min_occurrences_to_learn: 1
+      });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/config
+ * Update pattern learning configuration
+ */
+router.put('/config',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        enabled,
+        shadow_mode,
+        openphone_enabled,
+        min_confidence_to_suggest,
+        min_confidence_to_act,
+        min_occurrences_to_learn
+      } = req.body;
+
+      // Update each config value if provided
+      const updates = [
+        { key: 'enabled', value: enabled },
+        { key: 'shadow_mode', value: shadow_mode },
+        { key: 'openphone_enabled', value: openphone_enabled },
+        { key: 'suggest_threshold', value: min_confidence_to_suggest },
+        { key: 'auto_execute_threshold', value: min_confidence_to_act },
+        { key: 'min_executions_for_auto', value: min_occurrences_to_learn }
+      ];
+
+      for (const update of updates) {
+        if (update.value !== undefined) {
+          // Use UPSERT to handle new keys that don't exist yet
+          await db.query(`
+            INSERT INTO pattern_learning_config (config_key, config_value)
+            VALUES ($1, $2)
+            ON CONFLICT (config_key) DO UPDATE
+            SET config_value = $2
+          `, [update.key, String(update.value)]);
+        }
+      }
+
+      // Log configuration change
+      logger.info('[Pattern Config] Configuration updated', {
+        enabled,
+        shadow_mode,
+        updatedBy: req.user!.email
+      });
+
+      res.json({
+        success: true,
+        message: 'Pattern learning configuration updated'
+      });
+    } catch (error) {
+      logger.error('[Pattern Config] Failed to update configuration', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update configuration'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/safety-settings
+ * Get pattern safety settings
+ */
+router.get('/safety-settings',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const settings = await patternSafetyService.getSettings();
+      res.json(settings);
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get safety settings', error);
+      res.status(500).json({ success: false, error: 'Failed to get safety settings' });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/safety-settings
+ * Update pattern safety settings
+ */
+router.put('/safety-settings',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      await patternSafetyService.updateSettings(req.body);
+      res.json({ success: true, message: 'Safety settings updated' });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to update safety settings', error);
+      res.status(500).json({ success: false, error: 'Failed to update safety settings' });
+    }
+  }
+);
+
 /**
  * GET /api/patterns/:id
  * Get a specific pattern with full details
@@ -1301,154 +1449,6 @@ router.put('/import/staging/:id',
         success: false,
         error: 'Failed to edit pattern'
       });
-    }
-  }
-);
-
-/**
- * GET /api/patterns/config
- * Get pattern learning configuration
- */
-router.get('/config',
-  authenticate,
-  roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
-    try {
-      // Get configuration from pattern_learning_config table
-      const result = await db.query(`
-        SELECT config_key, config_value 
-        FROM pattern_learning_config
-      `);
-      
-      // Transform to object format
-      const config: any = {};
-      result.rows.forEach(row => {
-        const value = row.config_value;
-        // Convert string values to appropriate types
-        if (value === 'true') config[row.config_key] = true;
-        else if (value === 'false') config[row.config_key] = false;
-        else if (!isNaN(Number(value))) config[row.config_key] = Number(value);
-        else config[row.config_key] = value;
-      });
-      
-      // Ensure openphone_enabled has a default if not set
-      if (config.openphone_enabled === undefined) {
-        config.openphone_enabled = false; // Default to OFF for safety
-      }
-
-      res.json(config);
-    } catch (error) {
-      logger.error('[Pattern Config] Failed to get configuration', error);
-      // Return default config if table doesn't exist
-      res.json({
-        enabled: false,
-        shadow_mode: true,
-        openphone_enabled: false, // Default to OFF for safety
-        min_confidence_to_suggest: 0.60,
-        min_confidence_to_act: 0.85,
-        min_occurrences_to_learn: 1
-      });
-    }
-  }
-);
-
-/**
- * PUT /api/patterns/config
- * Update pattern learning configuration
- */
-router.put('/config',
-  authenticate,
-  roleGuard(['admin']),
-  async (req: Request, res: Response) => {
-    try {
-      const {
-        enabled,
-        shadow_mode,
-        openphone_enabled,
-        min_confidence_to_suggest,
-        min_confidence_to_act,
-        min_occurrences_to_learn
-      } = req.body;
-
-      // Update each config value if provided
-      const updates = [
-        { key: 'enabled', value: enabled },
-        { key: 'shadow_mode', value: shadow_mode },
-        { key: 'openphone_enabled', value: openphone_enabled },
-        { key: 'suggest_threshold', value: min_confidence_to_suggest },
-        { key: 'auto_execute_threshold', value: min_confidence_to_act },
-        { key: 'min_executions_for_auto', value: min_occurrences_to_learn }
-      ];
-
-      for (const update of updates) {
-        if (update.value !== undefined) {
-          // Use UPSERT to handle new keys that don't exist yet
-          await db.query(`
-            INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
-            VALUES ($1, $2, NOW())
-            ON CONFLICT (config_key) DO UPDATE
-            SET config_value = $2, updated_at = NOW()
-          `, [update.key, String(update.value)]);
-        }
-      }
-      
-      // Log configuration change
-      logger.info('[Pattern Config] Configuration updated', {
-        enabled,
-        shadow_mode,
-        updatedBy: req.user!.email
-      });
-      
-      res.json({
-        success: true,
-        message: 'Pattern learning configuration updated'
-      });
-    } catch (error) {
-      logger.error('[Pattern Config] Failed to update configuration', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to update configuration'
-      });
-    }
-  }
-);
-
-// ============================================
-// SAFETY SETTINGS ENDPOINTS
-// ============================================
-
-/**
- * GET /api/patterns/safety-settings
- * Get pattern safety settings
- */
-router.get('/safety-settings',
-  authenticate,
-  roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
-    try {
-      const settings = await patternSafetyService.getSettings();
-      res.json(settings);
-    } catch (error) {
-      logger.error('[Patterns API] Failed to get safety settings', error);
-      res.status(500).json({ success: false, error: 'Failed to get safety settings' });
-    }
-  }
-);
-
-/**
- * PUT /api/patterns/safety-settings
- * Update pattern safety settings
- */
-router.put('/safety-settings',
-  authenticate,
-  roleGuard(['admin']),
-  async (req: Request, res: Response) => {
-    try {
-      await patternSafetyService.updateSettings(req.body);
-      res.json({ success: true, message: 'Safety settings updated' });
-    } catch (error) {
-      logger.error('[Patterns API] Failed to update safety settings', error);
-      res.status(500).json({ success: false, error: 'Failed to update safety settings' });
     }
   }
 );

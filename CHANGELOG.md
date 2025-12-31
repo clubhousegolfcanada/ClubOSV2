@@ -5,14 +5,15 @@ All notable changes to ClubOS will be documented in this file.
 ## [1.25.33] - 2025-12-31
 
 ### Fixed
-- **V3-PLS Safety Settings Endpoint**: Re-added missing `/patterns/safety-settings` API endpoint
-  - Endpoint was accidentally removed during route consolidation
-  - Fixes 400 error when saving V3-PLS settings from UI
-  - OpenPhone automation toggle now saves correctly
+- **V3-PLS Settings Routes**: Fixed route ordering and database column issues
+  - Moved `/config` and `/safety-settings` routes BEFORE `/:id` wildcard route
+  - Fixed "invalid input syntax for type integer: config" error
+  - Removed non-existent `updated_at` column references from queries
+  - OpenPhone automation toggle now saves and loads correctly
 
 ### Technical
-- Added GET/PUT `/api/patterns/safety-settings` endpoints to enhanced-patterns.ts
-- Uses existing `patternSafetyService.getSettings()` and `updateSettings()` methods
+- Routes must be defined before wildcard `:id` routes in Express
+- Removed `updated_at` from `pattern_learning_config` UPSERT queries
 - Cleared test conversation locks that were blocking AI responses during testing
 
 ## [1.25.32] - 2025-12-31
