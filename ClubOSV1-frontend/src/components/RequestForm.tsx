@@ -98,23 +98,72 @@ const RequestForm: React.FC = () => {
   const requestDescription = watch('requestDescription');
   const toneConversion = watch('toneConversion');
 
-  // Photo management functions
+  // Photo management functions - iOS compatible with canvas compression
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Convert to base64 data URL
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const url = event.target?.result as string;
-      // Check size limit (5MB)
-      if (url.length > 5_000_000) {
-        notify('error', 'Photo size exceeds 5MB limit');
+    // Check raw file size before processing (allow larger files, we'll compress)
+    const maxFileSizeMB = 15;
+    if (file.size > maxFileSizeMB * 1024 * 1024) {
+      notify('error', `Photo too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${maxFileSizeMB}MB.`);
+      return;
+    }
+
+    // Show processing feedback
+    notify('info', 'Processing image...');
+
+    // Use createObjectURL + Image + Canvas for iOS HEIC compatibility
+    // This approach converts HEIC to JPEG and compresses large images
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      // Calculate dimensions (max 2000px on longest side for receipt readability)
+      const maxDimension = 2000;
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height / width) * maxDimension);
+          width = maxDimension;
+        } else {
+          width = Math.round((width / height) * maxDimension);
+          height = maxDimension;
+        }
+      }
+
+      // Draw to canvas and compress as JPEG
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        notify('error', 'Failed to process image');
         return;
       }
-      setPhotoAttachments([...photoAttachments, url]);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert to JPEG with 80% quality (good balance for OCR)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+      // Check compressed size (5MB base64 limit)
+      if (dataUrl.length > 5_000_000) {
+        notify('error', 'Photo still too large after compression. Please use camera instead.');
+        return;
+      }
+
+      setPhotoAttachments([...photoAttachments, dataUrl]);
+      notify('success', 'Photo ready!');
     };
-    reader.readAsDataURL(file);
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      notify('error', 'Failed to load image. Try using the camera instead.');
+    };
+
+    img.src = objectUrl;
   };
 
   const removePhoto = (index: number) => {

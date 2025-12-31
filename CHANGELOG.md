@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.32] - 2025-12-31
+
+### Fixed
+- **iOS Photo Library Receipt Upload**: Fixed silent failure when uploading receipt photos from iOS photo library
+  - Issue: Photos selected from iPhone library (HEIC format) would fail silently
+  - Camera-captured photos still worked because iOS auto-converts them to JPEG
+  - Solution: Replaced FileReader with Canvas API for iOS HEIC compatibility
+  - Added automatic image compression (max 2000px, 80% JPEG quality)
+  - Added proper error handling with user feedback
+  - Now shows "Processing image..." while compressing large photos
+  - Supports files up to 15MB raw (compressed before upload)
+
 ## [1.25.31] - 2025-12-30
 
 ### Changed
