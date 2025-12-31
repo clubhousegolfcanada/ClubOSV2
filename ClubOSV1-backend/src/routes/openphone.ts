@@ -16,6 +16,10 @@ import { patternSafetyService } from '../services/patternSafetyService';
 
 const router = Router();
 
+// Test phone numbers that bypass ALL safeguards (for testing AI responses)
+// These numbers skip: conversation locking, operator_active, rapid message escalation, AI response limits
+const TEST_PHONE_WHITELIST = ['+19024783209'];
+
 // Verify OpenPhone webhook signature
 function verifyOpenPhoneSignature(payload: string, signature: string, secret: string): boolean {
   try {
@@ -685,10 +689,25 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 userCount: userIds.length
               });
 
-              // SAFEGUARD: Check if operator is active or conversation is locked
-              if (existingConv.rows[0].operator_active ||
+              // TEST MODE: Bypass ALL safeguards for whitelisted test numbers
+              const isTestNumber = TEST_PHONE_WHITELIST.includes(phoneNumber);
+              if (isTestNumber) {
+                logger.info('[Test Mode] Bypassing safeguards for whitelisted test number', { phoneNumber });
+                // Clear any existing locks so AI can respond
+                await db.query(`
+                  UPDATE openphone_conversations
+                  SET operator_active = false,
+                      conversation_locked = false,
+                      lockout_until = NULL,
+                      ai_response_count = 0
+                  WHERE phone_number = $1
+                `, [phoneNumber]);
+              }
+
+              // SAFEGUARD: Check if operator is active or conversation is locked (skip for test numbers)
+              if (!isTestNumber && (existingConv.rows[0].operator_active ||
                   existingConv.rows[0].conversation_locked ||
-                  (existingConv.rows[0].lockout_until && new Date(existingConv.rows[0].lockout_until) > new Date())) {
+                  (existingConv.rows[0].lockout_until && new Date(existingConv.rows[0].lockout_until) > new Date()))) {
 
                 logger.info('[Safeguard] Skipping AI - operator is active or conversation locked', {
                   phoneNumber,
@@ -700,8 +719,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, message: 'Operator handling conversation' });
               }
 
-              // SAFEGUARD: Check if AI response limit reached (max 3)
-              if (existingConv.rows[0].ai_response_count && existingConv.rows[0].ai_response_count >= 3) {
+              // SAFEGUARD: Check if AI response limit reached (max 3) - skip for test numbers
+              if (!isTestNumber && existingConv.rows[0].ai_response_count && existingConv.rows[0].ai_response_count >= 3) {
                 logger.info('[Safeguard] Max AI responses reached, escalating to human', {
                   phoneNumber,
                   responseCount: existingConv.rows[0].ai_response_count
@@ -729,8 +748,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 new Date(m.createdAt) > new Date(Date.now() - 60000) // Last 60 seconds
               );
 
-              // If 3+ rapid customer messages, escalate (conversation lock above prevents duplicates)
-              if (recentCustomerMessages.length >= 3) {
+              // If 3+ rapid customer messages, escalate (skip for test numbers)
+              if (!isTestNumber && recentCustomerMessages.length >= 3) {
                 logger.warn('[Safeguard] Multiple rapid CUSTOMER messages detected - escalating', {
                   phoneNumber,
                   customerMessageCount: recentCustomerMessages.length
@@ -769,7 +788,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 phoneNumber
               );
 
-              if (!safetyCheck.safe && safetyCheck.alertType === 'escalation') {
+              if (!isTestNumber && !safetyCheck.safe && safetyCheck.alertType === 'escalation') {
                 logger.info('[Safeguard] Negative sentiment detected, escalating to human', {
                   phoneNumber,
                   triggeredKeywords: safetyCheck.triggeredKeywords

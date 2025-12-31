@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.34] - 2025-12-31
+
+### Added
+- **Test Phone Whitelist**: Added whitelist for test phone numbers that bypass ALL safeguards
+  - Test number `+19024783209` bypasses conversation locking, operator blocking, rapid message escalation
+  - Allows testing AI responses without safeguards getting in the way
+  - Whitelist defined in `TEST_PHONE_WHITELIST` constant in openphone.ts
+
+### Technical
+- Safeguards now check `!isTestNumber` before blocking AI responses
+- Test numbers auto-clear locks on each incoming message
+
 ## [1.25.33] - 2025-12-31
 
 ### Fixed
