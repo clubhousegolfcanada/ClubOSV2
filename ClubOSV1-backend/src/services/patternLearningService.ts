@@ -55,6 +55,7 @@ interface PatternResult {
 interface LearningConfig {
   enabled: boolean;
   shadowMode: boolean;
+  openphoneEnabled: boolean; // Separate toggle for OpenPhone automation
   autoExecuteThreshold: number;
   suggestThreshold: number;
   queueThreshold: number;
@@ -78,6 +79,7 @@ export class PatternLearningService {
     this.config = {
       enabled: false, // Disabled by default
       shadowMode: true, // Shadow mode by default
+      openphoneEnabled: false, // OpenPhone automation disabled by default
       autoExecuteThreshold: 0.85, // Lowered from 0.95 for faster auto-execution
       suggestThreshold: 0.60, // Lowered from 0.75 to show suggestions earlier
       queueThreshold: 0.40, // Lowered from 0.50 to capture more patterns
@@ -154,9 +156,19 @@ export class PatternLearningService {
 
       // Check if pattern learning is enabled
       if (!this.config.enabled) {
-        return { 
-          action: 'escalate', 
-          reason: 'pattern_learning_disabled' 
+        return {
+          action: 'escalate',
+          reason: 'pattern_learning_disabled'
+        };
+      }
+
+      // Check if OpenPhone automation is specifically enabled
+      // This allows the main pattern system to stay on while disabling OpenPhone auto-responses
+      if (!this.config.openphoneEnabled) {
+        logger.debug('[PatternLearning] OpenPhone automation disabled - escalating');
+        return {
+          action: 'escalate',
+          reason: 'openphone_automation_disabled'
         };
       }
 

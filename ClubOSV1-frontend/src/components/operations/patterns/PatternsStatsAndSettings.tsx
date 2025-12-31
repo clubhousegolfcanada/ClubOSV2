@@ -43,6 +43,7 @@ interface SafetySettings {
 interface PatternLearningConfig {
   enabled: boolean;
   shadowMode: boolean;
+  openphoneEnabled: boolean; // OpenPhone automation toggle
   minConfidenceToSuggest: number;
   minConfidenceToAct: number;
   minOccurrencesToLearn: number;
@@ -74,6 +75,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const [patternConfig, setPatternConfig] = useState<PatternLearningConfig>({
     enabled: false,
     shadowMode: false,
+    openphoneEnabled: false, // OpenPhone automation OFF by default
     minConfidenceToSuggest: 0.60,
     minConfidenceToAct: 0.85,
     minOccurrencesToLearn: 1
@@ -147,6 +149,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
           setPatternConfig({
             enabled: configResponse.data.enabled || false,
             shadowMode: configResponse.data.shadow_mode || false,
+            openphoneEnabled: configResponse.data.openphone_enabled || false,
             minConfidenceToSuggest: configResponse.data.min_confidence_to_suggest || 0.60,
             minConfidenceToAct: configResponse.data.min_confidence_to_act || 0.85,
             minOccurrencesToLearn: configResponse.data.min_occurrences_to_learn || 1
@@ -173,6 +176,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
       await apiClient.put('/patterns/config', {
         enabled: patternConfig.enabled,
         shadow_mode: patternConfig.shadowMode,
+        openphone_enabled: patternConfig.openphoneEnabled,
         min_confidence_to_suggest: patternConfig.minConfidenceToSuggest,
         min_confidence_to_act: patternConfig.minConfidenceToAct,
         min_occurrences_to_learn: patternConfig.minOccurrencesToLearn
@@ -203,6 +207,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
         setPatternConfig({
           enabled: configResponse.data.enabled || false,
           shadowMode: configResponse.data.shadow_mode || false,
+          openphoneEnabled: configResponse.data.openphone_enabled || false,
           minConfidenceToSuggest: configResponse.data.min_confidence_to_suggest || 0.60,
           minConfidenceToAct: configResponse.data.min_confidence_to_act || 0.85,
           minOccurrencesToLearn: configResponse.data.min_occurrences_to_learn || 1
@@ -745,6 +750,28 @@ export const PatternsStatsAndSettings: React.FC = () => {
                     disabled={!patternConfig.enabled}
                   />
                 </label>
+              </div>
+
+              {/* OpenPhone Automation Toggle */}
+              <div className="pt-2 border-t border-dashed">
+                <label className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">OpenPhone Automation</span>
+                    <p className="text-xs text-[var(--text-muted)]">Allow patterns to auto-respond to OpenPhone messages</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={patternConfig.openphoneEnabled}
+                    onChange={(e) => updatePatternConfig('openphoneEnabled', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                    disabled={!patternConfig.enabled}
+                  />
+                </label>
+                {!patternConfig.openphoneEnabled && patternConfig.enabled && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <span>⚠️</span> OpenPhone messages will be escalated to operators
+                  </p>
+                )}
               </div>
 
               {/* Confidence Thresholds */}

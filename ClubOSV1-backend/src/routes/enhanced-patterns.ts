@@ -1331,6 +1331,11 @@ router.get('/config',
         else config[row.config_key] = value;
       });
       
+      // Ensure openphone_enabled has a default if not set
+      if (config.openphone_enabled === undefined) {
+        config.openphone_enabled = false; // Default to OFF for safety
+      }
+
       res.json(config);
     } catch (error) {
       logger.error('[Pattern Config] Failed to get configuration', error);
@@ -1338,6 +1343,7 @@ router.get('/config',
       res.json({
         enabled: false,
         shadow_mode: true,
+        openphone_enabled: false, // Default to OFF for safety
         min_confidence_to_suggest: 0.60,
         min_confidence_to_act: 0.85,
         min_occurrences_to_learn: 1
@@ -1358,27 +1364,31 @@ router.put('/config',
       const {
         enabled,
         shadow_mode,
+        openphone_enabled,
         min_confidence_to_suggest,
         min_confidence_to_act,
         min_occurrences_to_learn
       } = req.body;
-      
+
       // Update each config value if provided
       const updates = [
         { key: 'enabled', value: enabled },
         { key: 'shadow_mode', value: shadow_mode },
+        { key: 'openphone_enabled', value: openphone_enabled },
         { key: 'suggest_threshold', value: min_confidence_to_suggest },
         { key: 'auto_execute_threshold', value: min_confidence_to_act },
         { key: 'min_executions_for_auto', value: min_occurrences_to_learn }
       ];
-      
+
       for (const update of updates) {
         if (update.value !== undefined) {
+          // Use UPSERT to handle new keys that don't exist yet
           await db.query(`
-            UPDATE pattern_learning_config 
-            SET config_value = $1, updated_at = NOW()
-            WHERE config_key = $2
-          `, [String(update.value), update.key]);
+            INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (config_key) DO UPDATE
+            SET config_value = $2, updated_at = NOW()
+          `, [update.key, String(update.value)]);
         }
       }
       

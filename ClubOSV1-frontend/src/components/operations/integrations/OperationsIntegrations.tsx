@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
-import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube, Zap, Monitor, Edit2, Power, Save } from 'lucide-react';
+import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube, Zap, Monitor, Edit2, Power, Save, Send } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 import ReceiptExportCard from './ReceiptExportCard';
@@ -85,7 +85,16 @@ export const OperationsIntegrations: React.FC = () => {
   const [editingScript, setEditingScript] = useState<any>(null);
   const [syncing, setSyncing] = useState(false);
   const [showNinjaOneManagement, setShowNinjaOneManagement] = useState(false);
-  
+
+  // Test SMS state
+  const [testSmsNumber, setTestSmsNumber] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('clubos_test_sms_number') || '';
+    }
+    return '';
+  });
+  const [sendingTestSms, setSendingTestSms] = useState(false);
+
   const { user } = useAuthState();
   const token = user?.token || tokenManager.getToken();
 
@@ -266,6 +275,36 @@ export const OperationsIntegrations: React.FC = () => {
       toast.error('Failed to save OpenPhone configuration');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Send test SMS to verify OpenPhone integration
+  const handleSendTestSms = async () => {
+    if (!testSmsNumber.trim()) {
+      toast.error('Please enter a test phone number');
+      return;
+    }
+
+    setSendingTestSms(true);
+    try {
+      // Save the number to localStorage for convenience
+      localStorage.setItem('clubos_test_sms_number', testSmsNumber);
+
+      const response = await http.post('openphone/test-sms', {
+        testNumber: testSmsNumber
+      });
+
+      if (response.data?.success) {
+        toast.success(`Test SMS sent to ${response.data.data?.to || testSmsNumber}! Check your phone.`);
+      } else {
+        toast.error(response.data?.error || 'Failed to send test SMS');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to send test SMS';
+      logger.error('Error sending test SMS:', error);
+      toast.error(errorMessage);
+    } finally {
+      setSendingTestSms(false);
     }
   };
 
@@ -564,7 +603,34 @@ export const OperationsIntegrations: React.FC = () => {
                   }`} />
                 </button>
               </div>
-              
+
+              {/* Test SMS Section */}
+              <div className="pt-3 mt-3 border-t border-gray-200">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Test SMS</label>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    value={testSmsNumber}
+                    onChange={(e) => setTestSmsNumber(e.target.value)}
+                    placeholder="+1 902-478-3209"
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    onClick={handleSendTestSms}
+                    disabled={sendingTestSms || !testSmsNumber.trim()}
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    {sendingTestSms ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    <span>Send</span>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Send a test message to verify OpenPhone is working</p>
+              </div>
+
               {integrations.find(i => i.service === 'OpenPhone')?.lastSync && (
                 <div className="text-xs text-gray-500">
                   Last sync: {new Date(integrations.find(i => i.service === 'OpenPhone')!.lastSync!).toLocaleTimeString()}

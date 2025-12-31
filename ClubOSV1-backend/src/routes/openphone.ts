@@ -1542,6 +1542,102 @@ router.get('/test-connection', authenticate, roleGuard(['admin']), async (req: R
   }
 });
 
+// Rate limiter for test SMS (1 per minute)
+const testSmsLastSent: { [userId: string]: number } = {};
+
+// Send test SMS to verify OpenPhone integration (admin only)
+router.post('/test-sms', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+  try {
+    const { testNumber } = req.body;
+    const userId = (req as any).user?.id || 'unknown';
+
+    // Validate test number
+    if (!testNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'Test phone number is required'
+      });
+    }
+
+    // Validate phone number format (basic E.164 check)
+    const cleanNumber = testNumber.replace(/\D/g, '');
+    if (cleanNumber.length < 10 || cleanNumber.length > 15) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format. Please use format: +1XXXXXXXXXX'
+      });
+    }
+
+    // Rate limiting: 1 test per minute per user
+    const lastSent = testSmsLastSent[userId];
+    const now = Date.now();
+    if (lastSent && (now - lastSent) < 60000) {
+      const waitSeconds = Math.ceil((60000 - (now - lastSent)) / 1000);
+      return res.status(429).json({
+        success: false,
+        error: `Rate limited. Please wait ${waitSeconds} seconds before sending another test.`
+      });
+    }
+
+    // Get default sender number from settings
+    const settingsResult = await db.query(
+      `SELECT value FROM system_settings WHERE key = 'openphone_default_number'`
+    );
+    const fromNumber = settingsResult.rows[0]?.value || process.env.OPENPHONE_DEFAULT_NUMBER;
+
+    if (!fromNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'No default OpenPhone number configured. Please set it in the configuration above.'
+      });
+    }
+
+    // Format the test number with +1 if needed
+    const formattedNumber = cleanNumber.startsWith('1') ? `+${cleanNumber}` : `+1${cleanNumber}`;
+
+    // Send the test message
+    const testMessage = 'ClubOS Test - OpenPhone integration working! 🎯';
+
+    logger.info('Sending OpenPhone test SMS', {
+      to: formattedNumber,
+      from: fromNumber,
+      userId
+    });
+
+    const result = await openPhoneService.sendMessage(
+      formattedNumber,
+      fromNumber,
+      testMessage,
+      { setInboxStatus: 'done' } // Mark as done so it doesn't clutter inbox
+    );
+
+    // Update rate limit tracker
+    testSmsLastSent[userId] = now;
+
+    logger.info('OpenPhone test SMS sent successfully', {
+      to: formattedNumber,
+      messageId: result?.data?.id
+    });
+
+    res.json({
+      success: true,
+      message: `Test SMS sent to ${formattedNumber}`,
+      data: {
+        messageId: result?.data?.id,
+        to: formattedNumber,
+        from: fromNumber
+      }
+    });
+
+  } catch (error: any) {
+    logger.error('Failed to send OpenPhone test SMS:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to send test SMS. Check OpenPhone configuration.'
+    });
+  }
+});
+
 // Import historical conversations (admin only)
 router.post('/import-history', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
   try {
