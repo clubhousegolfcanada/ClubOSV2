@@ -2,6 +2,32 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.37] - 2026-01-02
+
+### Added
+- **Configurable Escalation Thresholds**: All safety escalation settings now configurable via UI
+  - **Rapid Message Detection**: Adjustable threshold (default 3) and time window (default 60 sec)
+  - **AI Response Limit**: Configurable max responses before escalation (default 3)
+  - **Operator Lockout Duration**: Adjustable hours to block AI after operator responds (default 4)
+  - **Negative Sentiment Patterns**: Fully editable regex patterns with severity levels
+  - **Custom Escalation Messages**: Edit the escalation message text sent to customers
+  - Toggle to enable/disable each safety feature independently
+
+### Fixed
+- **AI Response Counter Bug**: Fixed `ai_response_count` never being incremented
+  - Counter now properly tracks AI responses in conversations
+  - AI response limit safeguard now actually works as intended
+
+### Technical
+- New database migration: `352_add_safety_thresholds_config.sql`
+- New API endpoints: `/patterns/safety-thresholds`, `/patterns/sentiment-patterns/reset`
+- New UI section in V3-PLS Settings: "Escalation Thresholds" card
+- Updated files:
+  - `patternSafetyService.ts`: Load/save configurable thresholds
+  - `openphone.ts`: Use database values instead of hardcoded thresholds
+  - `enhanced-patterns.ts`: New API routes
+  - `PatternsStatsAndSettings.tsx`: New UI controls
+
 ## [1.25.36] - 2025-12-31
 
 ### Fixed

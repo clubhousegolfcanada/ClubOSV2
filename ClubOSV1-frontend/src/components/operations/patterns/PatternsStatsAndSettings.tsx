@@ -49,6 +49,26 @@ interface PatternLearningConfig {
   minOccurrencesToLearn: number;
 }
 
+interface SentimentPattern {
+  pattern: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
+interface SafetyThresholds {
+  rapidMessageThreshold: number;
+  rapidMessageWindowSeconds: number;
+  rapidMessageEnabled: boolean;
+  aiResponseLimit: number;
+  aiResponseLimitEnabled: boolean;
+  operatorLockoutHours: number;
+  escalationMessage: string;
+  negativeSentimentEnabled: boolean;
+  negativeSentimentPatterns: SentimentPattern[];
+  rapidMessageEscalationText: string;
+  aiLimitEscalationText: string;
+  sentimentEscalationText: string;
+}
+
 export const PatternsStatsAndSettings: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'stats' | 'settings' | 'import'>('stats');
   const [stats, setStats] = useState<OperatorStats | null>(null);
@@ -79,6 +99,22 @@ export const PatternsStatsAndSettings: React.FC = () => {
     minConfidenceToSuggest: 0.60,
     minConfidenceToAct: 0.85,
     minOccurrencesToLearn: 1
+  });
+
+  // Safety thresholds for escalation control
+  const [safetyThresholds, setSafetyThresholds] = useState<SafetyThresholds>({
+    rapidMessageThreshold: 3,
+    rapidMessageWindowSeconds: 60,
+    rapidMessageEnabled: true,
+    aiResponseLimit: 3,
+    aiResponseLimitEnabled: true,
+    operatorLockoutHours: 4,
+    escalationMessage: "I see you're still having trouble. Let me connect you with one of our team members who can help you directly. Someone will be with you shortly.\n\n- ClubAI",
+    negativeSentimentEnabled: true,
+    negativeSentimentPatterns: [],
+    rapidMessageEscalationText: "I notice you've sent multiple messages. Let me connect you with a human operator who can better assist you.\n\nOur team will respond shortly.\n\n- ClubAI",
+    aiLimitEscalationText: "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI",
+    sentimentEscalationText: "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI"
   });
 
   useEffect(() => {
@@ -158,6 +194,16 @@ export const PatternsStatsAndSettings: React.FC = () => {
       } catch (error) {
         logger.error('Failed to fetch pattern config:', error);
       }
+
+      // Fetch safety thresholds
+      try {
+        const thresholdsResponse = await apiClient.get('/patterns/safety-thresholds');
+        if (thresholdsResponse.data?.thresholds) {
+          setSafetyThresholds(thresholdsResponse.data.thresholds);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch safety thresholds:', error);
+      }
     } catch (error) {
       logger.error('Failed to fetch data:', error);
     } finally {
@@ -168,10 +214,10 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      
+
       // Save safety settings
       await apiClient.put('/patterns/safety-settings', settings);
-      
+
       // Save pattern learning config
       await apiClient.put('/patterns/config', {
         enabled: patternConfig.enabled,
@@ -181,9 +227,12 @@ export const PatternsStatsAndSettings: React.FC = () => {
         min_confidence_to_act: patternConfig.minConfidenceToAct,
         min_occurrences_to_learn: patternConfig.minOccurrencesToLearn
       });
-      
+
+      // Save safety thresholds
+      await apiClient.put('/patterns/safety-thresholds', safetyThresholds);
+
       setHasChanges(false);
-      
+
       // Reload settings to confirm they were saved
       const response = await apiClient.get('/patterns/safety-settings');
       if (response.data) {
@@ -200,7 +249,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
         };
         setSettings(loadedSettings);
       }
-      
+
       // Reload pattern config
       const configResponse = await apiClient.get('/patterns/config');
       if (configResponse.data) {
@@ -213,11 +262,17 @@ export const PatternsStatsAndSettings: React.FC = () => {
           minOccurrencesToLearn: configResponse.data.min_occurrences_to_learn || 1
         });
       }
-      
+
+      // Reload safety thresholds
+      const thresholdsResponse = await apiClient.get('/patterns/safety-thresholds');
+      if (thresholdsResponse.data?.thresholds) {
+        setSafetyThresholds(thresholdsResponse.data.thresholds);
+      }
+
       // Show success feedback
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
+
       logger.info('Settings saved successfully');
     } catch (error) {
       logger.error('Failed to save settings:', error);
@@ -234,6 +289,51 @@ export const PatternsStatsAndSettings: React.FC = () => {
   const updatePatternConfig = (key: keyof PatternLearningConfig, value: any) => {
     setPatternConfig(prev => ({ ...prev, [key]: value }));
     setHasChanges(true);
+  };
+
+  const updateThreshold = (key: keyof SafetyThresholds, value: any) => {
+    setSafetyThresholds(prev => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
+
+  const updateSentimentPattern = (index: number, field: 'pattern' | 'severity', value: string) => {
+    setSafetyThresholds(prev => {
+      const newPatterns = [...prev.negativeSentimentPatterns];
+      newPatterns[index] = { ...newPatterns[index], [field]: value };
+      return { ...prev, negativeSentimentPatterns: newPatterns };
+    });
+    setHasChanges(true);
+  };
+
+  const addSentimentPattern = () => {
+    setSafetyThresholds(prev => ({
+      ...prev,
+      negativeSentimentPatterns: [...prev.negativeSentimentPatterns, { pattern: '', severity: 'medium' }]
+    }));
+    setHasChanges(true);
+  };
+
+  const removeSentimentPattern = (index: number) => {
+    setSafetyThresholds(prev => ({
+      ...prev,
+      negativeSentimentPatterns: prev.negativeSentimentPatterns.filter((_, i) => i !== index)
+    }));
+    setHasChanges(true);
+  };
+
+  const resetSentimentPatterns = async () => {
+    try {
+      const response = await apiClient.post('/patterns/sentiment-patterns/reset');
+      if (response.data?.patterns) {
+        setSafetyThresholds(prev => ({
+          ...prev,
+          negativeSentimentPatterns: response.data.patterns
+        }));
+        setHasChanges(true);
+      }
+    } catch (error) {
+      logger.error('Failed to reset sentiment patterns:', error);
+    }
   };
 
   const addKeyword = (type: 'blacklist' | 'escalation', keyword: string) => {
@@ -855,6 +955,197 @@ export const PatternsStatsAndSettings: React.FC = () => {
                     <p>Enable pattern learning to automatically create patterns from operator responses</p>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Escalation Thresholds */}
+          <div className="bg-white rounded-lg shadow-sm border border-[var(--border-secondary)] p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Escalation Thresholds</h3>
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">Safety Controls</span>
+            </div>
+
+            <div className="space-y-6">
+              {/* Rapid Message Detection */}
+              <div className="border-b pb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Rapid Message Detection</span>
+                    <p className="text-xs text-[var(--text-muted)]">Escalate when customer sends multiple messages quickly</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={safetyThresholds.rapidMessageEnabled}
+                    onChange={(e) => updateThreshold('rapidMessageEnabled', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                  />
+                </div>
+                {safetyThresholds.rapidMessageEnabled && (
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                        Message Threshold
+                      </label>
+                      <input
+                        type="number"
+                        min="2"
+                        max="10"
+                        value={safetyThresholds.rapidMessageThreshold}
+                        onChange={(e) => updateThreshold('rapidMessageThreshold', parseInt(e.target.value))}
+                        className="w-full px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
+                      />
+                      <p className="text-xs text-[var(--text-muted)] mt-1">Messages needed to trigger</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                        Time Window (seconds)
+                      </label>
+                      <input
+                        type="number"
+                        min="30"
+                        max="300"
+                        value={safetyThresholds.rapidMessageWindowSeconds}
+                        onChange={(e) => updateThreshold('rapidMessageWindowSeconds', parseInt(e.target.value))}
+                        className="w-full px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
+                      />
+                      <p className="text-xs text-[var(--text-muted)] mt-1">Time window for counting</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Response Limit */}
+              <div className="border-b pb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">AI Response Limit</span>
+                    <p className="text-xs text-[var(--text-muted)]">Escalate after AI sends too many responses</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={safetyThresholds.aiResponseLimitEnabled}
+                    onChange={(e) => updateThreshold('aiResponseLimitEnabled', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                  />
+                </div>
+                {safetyThresholds.aiResponseLimitEnabled && (
+                  <div>
+                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                      Max AI Responses
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={safetyThresholds.aiResponseLimit}
+                      onChange={(e) => updateThreshold('aiResponseLimit', parseInt(e.target.value))}
+                      className="w-24 px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
+                    />
+                    <p className="text-xs text-[var(--text-muted)] mt-1">Max responses before escalating to human</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Operator Lockout Duration */}
+              <div className="border-b pb-4">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                  Operator Lockout Duration
+                </label>
+                <p className="text-xs text-[var(--text-muted)] mb-2">Hours to block AI after operator responds</p>
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={safetyThresholds.operatorLockoutHours}
+                  onChange={(e) => updateThreshold('operatorLockoutHours', parseInt(e.target.value))}
+                  className="w-24 px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
+                />
+                <span className="ml-2 text-sm text-[var(--text-secondary)]">hours</span>
+              </div>
+
+              {/* Negative Sentiment Detection */}
+              <div className="border-b pb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Negative Sentiment Detection</span>
+                    <p className="text-xs text-[var(--text-muted)]">Escalate when customer shows frustration</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={safetyThresholds.negativeSentimentEnabled}
+                    onChange={(e) => updateThreshold('negativeSentimentEnabled', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                  />
+                </div>
+                {safetyThresholds.negativeSentimentEnabled && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">Sentiment Patterns (regex)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={resetSentimentPatterns}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Reset to defaults
+                        </button>
+                        <button
+                          onClick={addSentimentPattern}
+                          className="text-xs text-green-600 hover:text-green-800"
+                        >
+                          + Add pattern
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {safetyThresholds.negativeSentimentPatterns.map((pattern, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            value={pattern.pattern}
+                            onChange={(e) => updateSentimentPattern(index, 'pattern', e.target.value)}
+                            placeholder="regex pattern"
+                            className="flex-1 px-2 py-1 border border-[var(--border-primary)] rounded text-xs font-mono"
+                          />
+                          <select
+                            value={pattern.severity}
+                            onChange={(e) => updateSentimentPattern(index, 'severity', e.target.value)}
+                            className="px-2 py-1 border border-[var(--border-primary)] rounded text-xs"
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                          </select>
+                          <button
+                            onClick={() => removeSentimentPattern(index)}
+                            className="text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      {safetyThresholds.negativeSentimentPatterns.length === 0 && (
+                        <p className="text-xs text-[var(--text-muted)] italic">No patterns configured. Click "Reset to defaults" to load default patterns.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Escalation Message */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                  Default Escalation Message
+                </label>
+                <p className="text-xs text-[var(--text-muted)] mb-2">Message sent when escalating to human operator</p>
+                <textarea
+                  value={safetyThresholds.escalationMessage}
+                  onChange={(e) => updateThreshold('escalationMessage', e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded-md text-sm"
+                  rows={4}
+                  placeholder="Enter escalation message..."
+                />
               </div>
             </div>
           </div>

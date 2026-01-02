@@ -867,6 +867,98 @@ router.put('/safety-settings',
 );
 
 /**
+ * GET /api/patterns/safety-thresholds
+ * Get configurable safety thresholds (rapid message, AI limit, sentiment, escalation messages)
+ */
+router.get('/safety-thresholds',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const thresholds = await patternSafetyService.getSafetyThresholds();
+      res.json({
+        success: true,
+        thresholds
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get safety thresholds', error);
+      res.status(500).json({ success: false, error: 'Failed to get safety thresholds' });
+    }
+  }
+);
+
+/**
+ * PUT /api/patterns/safety-thresholds
+ * Update safety thresholds
+ */
+router.put('/safety-thresholds',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      await patternSafetyService.updateSafetyThresholds(req.body);
+
+      // Return updated thresholds
+      const updatedThresholds = await patternSafetyService.getSafetyThresholds();
+
+      res.json({
+        success: true,
+        message: 'Safety thresholds updated',
+        thresholds: updatedThresholds
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to update safety thresholds', error);
+      res.status(500).json({ success: false, error: 'Failed to update safety thresholds' });
+    }
+  }
+);
+
+/**
+ * POST /api/patterns/sentiment-patterns/reset
+ * Reset sentiment patterns to defaults
+ */
+router.post('/sentiment-patterns/reset',
+  authenticate,
+  roleGuard(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      await patternSafetyService.resetSentimentPatterns();
+      const thresholds = await patternSafetyService.getSafetyThresholds();
+
+      res.json({
+        success: true,
+        message: 'Sentiment patterns reset to defaults',
+        patterns: thresholds.negativeSentimentPatterns
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to reset sentiment patterns', error);
+      res.status(500).json({ success: false, error: 'Failed to reset sentiment patterns' });
+    }
+  }
+);
+
+/**
+ * GET /api/patterns/sentiment-patterns/defaults
+ * Get default sentiment patterns
+ */
+router.get('/sentiment-patterns/defaults',
+  authenticate,
+  roleGuard(['admin', 'operator']),
+  async (req: Request, res: Response) => {
+    try {
+      const defaults = patternSafetyService.getDefaultSentimentPatterns();
+      res.json({
+        success: true,
+        patterns: defaults
+      });
+    } catch (error) {
+      logger.error('[Patterns API] Failed to get default sentiment patterns', error);
+      res.status(500).json({ success: false, error: 'Failed to get default patterns' });
+    }
+  }
+);
+
+/**
  * GET /api/patterns/:id
  * Get a specific pattern with full details
  */

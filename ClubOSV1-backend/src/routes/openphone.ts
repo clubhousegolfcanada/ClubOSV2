@@ -490,13 +490,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
             messagePreview: newMessage.text.substring(0, 50)
           });
 
+          // Get configurable lockout duration
+          const safetyThresholds = await patternSafetyService.getSafetyThresholds();
+          const lockoutHours = safetyThresholds.operatorLockoutHours || 4;
+
           // Mark operator as active in conversation
           await db.query(`
             UPDATE openphone_conversations
             SET operator_active = true,
                 operator_last_message = NOW(),
                 conversation_locked = true,
-                lockout_until = NOW() + INTERVAL '4 hours'
+                lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
             WHERE phone_number = $1`,
             [phoneNumber]
           );
@@ -719,14 +723,22 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, message: 'Operator handling conversation' });
               }
 
-              // SAFEGUARD: Check if AI response limit reached (max 3) - skip for test numbers
-              if (!isTestNumber && existingConv.rows[0].ai_response_count && existingConv.rows[0].ai_response_count >= 3) {
+              // Load configurable safety thresholds
+              const safetyThresholds = await patternSafetyService.getSafetyThresholds();
+
+              // SAFEGUARD: Check if AI response limit reached - skip for test numbers
+              // Only check if AI response limit feature is enabled
+              if (safetyThresholds.aiResponseLimitEnabled &&
+                  !isTestNumber &&
+                  existingConv.rows[0].ai_response_count &&
+                  existingConv.rows[0].ai_response_count >= safetyThresholds.aiResponseLimit) {
                 logger.info('[Safeguard] Max AI responses reached, escalating to human', {
                   phoneNumber,
-                  responseCount: existingConv.rows[0].ai_response_count
+                  responseCount: existingConv.rows[0].ai_response_count,
+                  limit: safetyThresholds.aiResponseLimit
                 });
 
-                const escalationMsg = "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI";
+                const escalationMsg = safetyThresholds.aiLimitEscalationText;
                 const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
 
                 if (defaultNumber) {
@@ -742,40 +754,45 @@ router.post('/webhook', async (req: Request, res: Response) => {
               }
 
               // SAFEGUARD: Detect rapid messages - ONLY count CUSTOMER messages
-              // FIX: Count only inbound messages (customer), never our AI responses
-              const recentCustomerMessages = updatedMessages.filter((m: any) =>
-                m.direction === 'inbound' && // Only customer messages
-                new Date(m.createdAt) > new Date(Date.now() - 60000) // Last 60 seconds
-              );
-
-              // If 3+ rapid customer messages, escalate (skip for test numbers)
-              if (!isTestNumber && recentCustomerMessages.length >= 3) {
-                logger.warn('[Safeguard] Multiple rapid CUSTOMER messages detected - escalating', {
-                  phoneNumber,
-                  customerMessageCount: recentCustomerMessages.length
-                });
-
-                // Send escalation message
-                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                if (defaultNumber) {
-                  await openPhoneService.sendMessage(
-                    phoneNumber,
-                    defaultNumber,
-                    `I notice you've sent multiple messages. Let me connect you with a human operator who can better assist you.\n\nOur team will respond shortly.\n\n- ClubAI`
-                  );
-                }
-
-                // Lock conversation to prevent any further AI responses
-                await db.query(`
-                  UPDATE openphone_conversations
-                  SET conversation_locked = true,
-                      customer_sentiment = 'escalated',
-                      rapid_message_count = $2
-                  WHERE id = $1`,
-                  [existingConv.rows[0].id, recentCustomerMessages.length]
+              // Only check if rapid message detection is enabled
+              if (safetyThresholds.rapidMessageEnabled) {
+                const rapidWindowMs = safetyThresholds.rapidMessageWindowSeconds * 1000;
+                const recentCustomerMessages = updatedMessages.filter((m: any) =>
+                  m.direction === 'inbound' && // Only customer messages
+                  new Date(m.createdAt) > new Date(Date.now() - rapidWindowMs)
                 );
 
-                return res.json({ success: true, message: 'Escalated due to rapid messages' });
+                // If threshold+ rapid customer messages, escalate (skip for test numbers)
+                if (!isTestNumber && recentCustomerMessages.length >= safetyThresholds.rapidMessageThreshold) {
+                  logger.warn('[Safeguard] Multiple rapid CUSTOMER messages detected - escalating', {
+                    phoneNumber,
+                    customerMessageCount: recentCustomerMessages.length,
+                    threshold: safetyThresholds.rapidMessageThreshold,
+                    windowSeconds: safetyThresholds.rapidMessageWindowSeconds
+                  });
+
+                  // Send escalation message
+                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                  if (defaultNumber) {
+                    await openPhoneService.sendMessage(
+                      phoneNumber,
+                      defaultNumber,
+                      safetyThresholds.rapidMessageEscalationText
+                    );
+                  }
+
+                  // Lock conversation to prevent any further AI responses
+                  await db.query(`
+                    UPDATE openphone_conversations
+                    SET conversation_locked = true,
+                        customer_sentiment = 'escalated',
+                        rapid_message_count = $2
+                    WHERE id = $1`,
+                    [existingConv.rows[0].id, recentCustomerMessages.length]
+                  );
+
+                  return res.json({ success: true, message: 'Escalated due to rapid messages' });
+                }
               }
 
               // Process with V3-PLS FIRST (unified pattern system), then AI automations as fallback
@@ -853,6 +870,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       (conversation_id, sender_type, message_text, pattern_id)
                       VALUES ($1, 'ai', $2, $3)
                     `, [existingConv.rows[0].id, patternResult.response, patternResult.patternId]);
+
+                    // FIX: Increment AI response counter (was never being incremented)
+                    await db.query(`
+                      UPDATE openphone_conversations
+                      SET ai_response_count = COALESCE(ai_response_count, 0) + 1
+                      WHERE id = $1
+                    `, [existingConv.rows[0].id]);
                   }
 
                   // Pattern handled it, we're done
@@ -900,7 +924,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     phoneNumber
                   });
 
-                  const escalationMsg = "I see you're still having trouble. Let me connect you with one of our team members who can help you directly. Someone will be with you shortly.\n\n- ClubAI";
+                  // Use configurable escalation message
+                  const escalationMsg = safetyThresholds.escalationMessage;
                   const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
 
                   if (defaultNumber) {
@@ -957,6 +982,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       defaultNumber,
                       automationResponse.response
                     );
+
+                    // FIX: Increment AI response counter for fallback responses too
+                    await db.query(`
+                      UPDATE openphone_conversations
+                      SET ai_response_count = COALESCE(ai_response_count, 0) + 1
+                      WHERE id = $1
+                    `, [existingConv.rows[0].id]);
                   }
 
                   // AI automation handled it as fallback
