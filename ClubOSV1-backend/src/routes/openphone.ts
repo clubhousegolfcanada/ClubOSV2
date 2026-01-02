@@ -13,6 +13,7 @@ import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
 import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
+import { detectMessageTopic, getTopicLabel } from '../utils/topicDetection';
 
 const router = Router();
 
@@ -485,25 +486,62 @@ router.post('/webhook', async (req: Request, res: Response) => {
             !newMessage.text.includes('- ClubAI') &&
             !newMessage.text.includes('-ClubAI')) {
 
-          logger.info('[Operator] Detected operator message, marking conversation as operator-handled', {
-            phoneNumber,
-            messagePreview: newMessage.text.substring(0, 50)
-          });
-
-          // Get configurable lockout duration
+          // Get configurable lockout duration and topic lockout settings
           const safetyThresholds = await patternSafetyService.getSafetyThresholds();
           const lockoutHours = safetyThresholds.operatorLockoutHours || 4;
+          const globalCooldownMinutes = safetyThresholds.globalCooldownMinutes || 60;
+          const topicLockoutEnabled = safetyThresholds.topicLockoutEnabled !== false;
 
-          // Mark operator as active in conversation
-          await db.query(`
-            UPDATE openphone_conversations
-            SET operator_active = true,
-                operator_last_message = NOW(),
-                conversation_locked = true,
-                lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
-            WHERE phone_number = $1`,
-            [phoneNumber]
-          );
+          // Detect what topic the operator is responding to
+          // Look at the last customer message to determine the topic
+          const lastCustomerMsgForTopic = await db.query(`
+            SELECT message_text FROM conversation_messages
+            WHERE conversation_id = $1
+            AND sender_type = 'customer'
+            ORDER BY created_at DESC
+            LIMIT 1
+          `, [conversationId]);
+
+          const operatorTopic = lastCustomerMsgForTopic.rows.length > 0
+            ? detectMessageTopic(lastCustomerMsgForTopic.rows[0].message_text)
+            : 'general';
+
+          logger.info('[Operator] Detected operator message, marking conversation as operator-handled', {
+            phoneNumber,
+            messagePreview: newMessage.text.substring(0, 50),
+            detectedTopic: operatorTopic,
+            topicLabel: getTopicLabel(operatorTopic),
+            topicLockoutEnabled,
+            globalCooldownMinutes,
+            lockoutHours
+          });
+
+          // Mark operator as active with topic-aware lockouts
+          if (topicLockoutEnabled) {
+            // Topic-aware mode: set global cooldown AND topic-specific lockout
+            await db.query(`
+              UPDATE openphone_conversations
+              SET operator_active = true,
+                  operator_last_message = NOW(),
+                  conversation_locked = false,
+                  last_operator_topic = $2,
+                  global_cooldown_until = NOW() + INTERVAL '${globalCooldownMinutes} minutes',
+                  topic_lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
+              WHERE phone_number = $1`,
+              [phoneNumber, operatorTopic]
+            );
+          } else {
+            // Legacy blanket lockout mode
+            await db.query(`
+              UPDATE openphone_conversations
+              SET operator_active = true,
+                  operator_last_message = NOW(),
+                  conversation_locked = true,
+                  lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
+              WHERE phone_number = $1`,
+              [phoneNumber]
+            );
+          }
 
           // Track operator intervention (skip if table doesn't exist)
           try {
@@ -572,6 +610,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           SELECT id, messages, conversation_id, created_at, updated_at,
             operator_active, operator_last_message, conversation_locked, lockout_until,
             rapid_message_count, ai_response_count,
+            last_operator_topic, topic_lockout_until, global_cooldown_until,
             CASE
               WHEN jsonb_array_length(messages) > 0
               THEN EXTRACT(EPOCH FROM (NOW() - (messages->-1->>'createdAt')::timestamp)) / 60
@@ -708,19 +747,70 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 `, [phoneNumber]);
               }
 
-              // SAFEGUARD: Check if operator is active or conversation is locked (skip for test numbers)
-              if (!isTestNumber && (existingConv.rows[0].operator_active ||
-                  existingConv.rows[0].conversation_locked ||
-                  (existingConv.rows[0].lockout_until && new Date(existingConv.rows[0].lockout_until) > new Date()))) {
+              // SAFEGUARD: Topic-aware operator lockout check (v1.25.38)
+              // Load safety thresholds to check if topic lockout is enabled
+              const safetyThresholdsForCheck = await patternSafetyService.getSafetyThresholds();
+              const topicLockoutEnabledForCheck = safetyThresholdsForCheck.topicLockoutEnabled !== false;
 
-                logger.info('[Safeguard] Skipping AI - operator is active or conversation locked', {
-                  phoneNumber,
-                  operatorActive: existingConv.rows[0].operator_active,
-                  conversationLocked: existingConv.rows[0].conversation_locked,
-                  lockoutUntil: existingConv.rows[0].lockout_until
-                });
+              if (!isTestNumber && topicLockoutEnabledForCheck) {
+                // TOPIC-AWARE MODE: Check global cooldown, then topic-specific lockout
+                const messageTextForTopic = messageData.body || messageData.text || '';
+                const incomingTopic = detectMessageTopic(messageTextForTopic);
 
-                return res.json({ success: true, message: 'Operator handling conversation' });
+                // Check 1: Global cooldown (no AI at all for X minutes after operator)
+                if (existingConv.rows[0].global_cooldown_until &&
+                    new Date(existingConv.rows[0].global_cooldown_until) > new Date()) {
+                  logger.info('[Safeguard] Global cooldown active - skipping AI', {
+                    phoneNumber,
+                    cooldownUntil: existingConv.rows[0].global_cooldown_until,
+                    incomingTopic,
+                    topicLabel: getTopicLabel(incomingTopic)
+                  });
+                  return res.json({ success: true, message: 'Global cooldown active' });
+                }
+
+                // Check 2: Same topic as operator - still locked
+                if (existingConv.rows[0].last_operator_topic === incomingTopic &&
+                    existingConv.rows[0].topic_lockout_until &&
+                    new Date(existingConv.rows[0].topic_lockout_until) > new Date()) {
+                  logger.info('[Safeguard] Same topic as operator - skipping AI', {
+                    phoneNumber,
+                    topic: incomingTopic,
+                    topicLabel: getTopicLabel(incomingTopic),
+                    lockoutUntil: existingConv.rows[0].topic_lockout_until
+                  });
+                  return res.json({ success: true, message: 'Topic locked by operator' });
+                }
+
+                // Check 3: Different topic AND past cooldown - AI CAN respond!
+                if (existingConv.rows[0].operator_active &&
+                    incomingTopic !== existingConv.rows[0].last_operator_topic) {
+                  logger.info('[AI] Different topic from operator - AI can respond', {
+                    phoneNumber,
+                    incomingTopic,
+                    incomingTopicLabel: getTopicLabel(incomingTopic),
+                    operatorTopic: existingConv.rows[0].last_operator_topic,
+                    operatorTopicLabel: existingConv.rows[0].last_operator_topic
+                      ? getTopicLabel(existingConv.rows[0].last_operator_topic)
+                      : 'none'
+                  });
+                  // Continue to AI processing - different topic is allowed!
+                }
+              } else if (!isTestNumber) {
+                // LEGACY MODE: Blanket lockout check
+                if (existingConv.rows[0].operator_active ||
+                    existingConv.rows[0].conversation_locked ||
+                    (existingConv.rows[0].lockout_until && new Date(existingConv.rows[0].lockout_until) > new Date())) {
+
+                  logger.info('[Safeguard] Skipping AI - operator is active or conversation locked (legacy mode)', {
+                    phoneNumber,
+                    operatorActive: existingConv.rows[0].operator_active,
+                    conversationLocked: existingConv.rows[0].conversation_locked,
+                    lockoutUntil: existingConv.rows[0].lockout_until
+                  });
+
+                  return res.json({ success: true, message: 'Operator handling conversation' });
+                }
               }
 
               // Load configurable safety thresholds

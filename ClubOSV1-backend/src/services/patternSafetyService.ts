@@ -39,6 +39,9 @@ export interface SafetyThresholds {
   rapidMessageEscalationText: string;
   aiLimitEscalationText: string;
   sentimentEscalationText: string;
+  // Topic-aware lockout settings (v1.25.38)
+  topicLockoutEnabled: boolean;
+  globalCooldownMinutes: number;
 }
 
 class PatternSafetyService {
@@ -64,6 +67,10 @@ class PatternSafetyService {
   private rapidMessageEscalationText: string = "I notice you've sent multiple messages. Let me connect you with a human operator who can better assist you.\n\nOur team will respond shortly.\n\n- ClubAI";
   private aiLimitEscalationText: string = "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI";
   private sentimentEscalationText: string = "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI";
+
+  // Topic-aware lockout settings (v1.25.38)
+  private topicLockoutEnabled: boolean = true;
+  private globalCooldownMinutes: number = 60;
 
   // Default sentiment patterns (used if database doesn't have any)
   private defaultSentimentPatterns: SentimentPattern[] = [
@@ -98,7 +105,8 @@ class PatternSafetyService {
           'ai_response_limit', 'ai_response_limit_enabled',
           'operator_lockout_hours', 'escalation_message',
           'negative_sentiment_enabled', 'negative_sentiment_patterns',
-          'rapid_message_escalation_text', 'ai_limit_escalation_text', 'sentiment_escalation_text'
+          'rapid_message_escalation_text', 'ai_limit_escalation_text', 'sentiment_escalation_text',
+          'topic_lockout_enabled', 'global_cooldown_minutes'
         )
       `);
 
@@ -171,6 +179,13 @@ class PatternSafetyService {
             break;
           case 'sentiment_escalation_text':
             this.sentimentEscalationText = row.config_value || this.sentimentEscalationText;
+            break;
+          // Topic-aware lockout settings (v1.25.38)
+          case 'topic_lockout_enabled':
+            this.topicLockoutEnabled = row.config_value !== 'false';
+            break;
+          case 'global_cooldown_minutes':
+            this.globalCooldownMinutes = parseInt(row.config_value) || 60;
             break;
         }
       });
@@ -600,7 +615,10 @@ class PatternSafetyService {
       negativeSentimentPatterns: this.negativeSentimentPatterns,
       rapidMessageEscalationText: this.rapidMessageEscalationText,
       aiLimitEscalationText: this.aiLimitEscalationText,
-      sentimentEscalationText: this.sentimentEscalationText
+      sentimentEscalationText: this.sentimentEscalationText,
+      // Topic-aware lockout settings (v1.25.38)
+      topicLockoutEnabled: this.topicLockoutEnabled,
+      globalCooldownMinutes: this.globalCooldownMinutes
     };
   }
 
@@ -645,6 +663,13 @@ class PatternSafetyService {
     }
     if (thresholds.sentimentEscalationText !== undefined) {
       updates.push({ key: 'sentiment_escalation_text', value: thresholds.sentimentEscalationText });
+    }
+    // Topic-aware lockout settings (v1.25.38)
+    if (thresholds.topicLockoutEnabled !== undefined) {
+      updates.push({ key: 'topic_lockout_enabled', value: String(thresholds.topicLockoutEnabled) });
+    }
+    if (thresholds.globalCooldownMinutes !== undefined) {
+      updates.push({ key: 'global_cooldown_minutes', value: String(thresholds.globalCooldownMinutes) });
     }
 
     for (const update of updates) {

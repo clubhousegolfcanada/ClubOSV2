@@ -2,6 +2,30 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.38] - 2026-01-02
+
+### Added
+- **Topic-Aware Operator Lockouts**: AI can now respond to DIFFERENT topics while operator handles another
+  - **Global Cooldown**: 1-hour cooldown after operator responds (configurable 15-180 min)
+  - **Topic Detection**: Automatically detects booking, tech_support, access, gift_cards, hours, pricing, membership topics
+  - **Smart Lockouts**: Same topic stays locked for full duration (4 hours), different topics unlocked after cooldown
+  - **Legacy Mode**: Toggle to use old blanket lockout behavior if preferred
+
+### Example Flow
+- Customer asks about booking → Operator responds → Booking locked for 4 hours
+- After 1 hour, customer asks about TrackMan issue → AI CAN respond (different topic)
+- Customer asks another booking question → AI BLOCKED (same topic still locked)
+
+### Technical
+- New database migration: `353_add_topic_aware_lockouts.sql`
+  - Added `last_operator_topic`, `topic_lockout_until`, `global_cooldown_until` columns
+  - New config keys: `topic_lockout_enabled`, `global_cooldown_minutes`
+- New utility: `topicDetection.ts` - Detects message topics from content using regex patterns
+- Updated files:
+  - `patternSafetyService.ts`: Load/save topic lockout settings
+  - `openphone.ts`: Topic-aware lockout check logic
+  - `PatternsStatsAndSettings.tsx`: New UI controls in Escalation Thresholds
+
 ## [1.25.37] - 2026-01-02
 
 ### Added

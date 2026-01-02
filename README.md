@@ -1,4 +1,4 @@
-# ClubOS v1.25.37 - Flexible Facility Management System
+# ClubOS v1.25.38 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.37**
-- **⚙️ Configurable Escalation Thresholds** - All safety settings now adjustable in V3-PLS Settings
-- **🔧 AI Response Counter Fix** - Fixed counter that wasn't incrementing (limit now works)
-- **Previous: AI Database Fix** - Fixed missing column error blocking AI auto-responses
+**Current Version: v1.25.38**
+- **🎯 Topic-Aware Operator Lockouts** - AI can respond to different topics while operator handles another
+- **⏱️ Global Cooldown** - 1 hour cooldown after operator responds before AI handles new topics
+- **🏷️ Smart Topic Detection** - Detects booking, tech support, access, gift cards, hours, pricing topics
+- **Previous: Configurable Escalation Thresholds** - All safety settings now adjustable in V3-PLS Settings
 - **Previous: Threshold Lowered** - Patterns with 65%+ confidence now auto-respond (was 85%)
 - **Previous: Test Phone Whitelist** - Test number bypasses all AI safeguards for testing
 - **Previous: iOS Photo Library Fix** - Receipt uploads from iPhone photo library now work correctly

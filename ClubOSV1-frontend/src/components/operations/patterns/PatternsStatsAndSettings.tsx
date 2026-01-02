@@ -67,6 +67,9 @@ interface SafetyThresholds {
   rapidMessageEscalationText: string;
   aiLimitEscalationText: string;
   sentimentEscalationText: string;
+  // Topic-aware lockout settings (v1.25.38)
+  topicLockoutEnabled: boolean;
+  globalCooldownMinutes: number;
 }
 
 export const PatternsStatsAndSettings: React.FC = () => {
@@ -114,7 +117,10 @@ export const PatternsStatsAndSettings: React.FC = () => {
     negativeSentimentPatterns: [],
     rapidMessageEscalationText: "I notice you've sent multiple messages. Let me connect you with a human operator who can better assist you.\n\nOur team will respond shortly.\n\n- ClubAI",
     aiLimitEscalationText: "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI",
-    sentimentEscalationText: "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI"
+    sentimentEscalationText: "I understand you need more help than I can provide. I'm connecting you with a human operator who will assist you shortly.\n\nA member of our team will respond as soon as possible.\n\n- ClubAI",
+    // Topic-aware lockout settings (v1.25.38)
+    topicLockoutEnabled: true,
+    globalCooldownMinutes: 60
   });
 
   useEffect(() => {
@@ -1052,7 +1058,7 @@ export const PatternsStatsAndSettings: React.FC = () => {
                 <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Operator Lockout Duration
                 </label>
-                <p className="text-xs text-[var(--text-muted)] mb-2">Hours to block AI after operator responds</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">Hours to block AI on the SAME topic after operator responds</p>
                 <input
                   type="number"
                   min="1"
@@ -1062,6 +1068,55 @@ export const PatternsStatsAndSettings: React.FC = () => {
                   className="w-24 px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
                 />
                 <span className="ml-2 text-sm text-[var(--text-secondary)]">hours</span>
+              </div>
+
+              {/* Topic-Aware Lockouts */}
+              <div className="border-b pb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Topic-Aware Lockouts</span>
+                    <p className="text-xs text-[var(--text-muted)]">AI can respond to different topics after cooldown</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={safetyThresholds.topicLockoutEnabled}
+                    onChange={(e) => updateThreshold('topicLockoutEnabled', e.target.checked)}
+                    className="h-5 w-5 text-primary rounded"
+                  />
+                </div>
+                {safetyThresholds.topicLockoutEnabled && (
+                  <div className="mt-2 bg-blue-50 rounded-lg p-3">
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                        Global Cooldown (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        min="15"
+                        max="180"
+                        value={safetyThresholds.globalCooldownMinutes}
+                        onChange={(e) => updateThreshold('globalCooldownMinutes', parseInt(e.target.value))}
+                        className="w-24 px-3 py-1 border border-[var(--border-primary)] rounded-md text-sm"
+                      />
+                      <p className="text-xs text-[var(--text-muted)] mt-1">AI waits this long before responding to ANY topic after operator</p>
+                    </div>
+                    <div className="text-xs text-blue-700 space-y-1">
+                      <p><strong>How it works:</strong></p>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        <li>Operator responds to booking question → booking topic locked for {safetyThresholds.operatorLockoutHours} hours</li>
+                        <li>During first {safetyThresholds.globalCooldownMinutes} minutes: AI won't respond to ANY topic</li>
+                        <li>After {safetyThresholds.globalCooldownMinutes} min: AI can respond to different topics (tech support, etc.)</li>
+                        <li>Same topic (booking) stays locked for full {safetyThresholds.operatorLockoutHours} hours</li>
+                      </ul>
+                      <p className="mt-2">Topics: Booking, Tech Support, Access, Gift Cards, Hours, Pricing, Membership</p>
+                    </div>
+                  </div>
+                )}
+                {!safetyThresholds.topicLockoutEnabled && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <span>⚠️</span> Legacy mode: AI blocked for ALL topics for {safetyThresholds.operatorLockoutHours} hours
+                  </p>
+                )}
               </div>
 
               {/* Negative Sentiment Detection */}
