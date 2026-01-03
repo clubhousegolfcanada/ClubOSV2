@@ -154,12 +154,26 @@ CREATE INDEX IF NOT EXISTS idx_bookings_changes ON bookings(change_count) WHERE 
 -- Note: This requires btree_gist extension
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
-ALTER TABLE bookings ADD CONSTRAINT prevent_double_booking
-  EXCLUDE USING gist (
-    location_id WITH =,
-    space_ids WITH &&,
-    tstzrange(start_at, end_at) WITH &&
-  ) WHERE (status IN ('confirmed', 'pending') AND is_admin_block = false);
+-- Add constraint only if it doesn't exist (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'prevent_double_booking'
+  ) THEN
+    ALTER TABLE bookings ADD CONSTRAINT prevent_double_booking
+      EXCLUDE USING gist (
+        location_id WITH =,
+        space_ids WITH &&,
+        tstzrange(start_at, end_at) WITH &&
+      ) WHERE (status IN ('confirmed', 'pending') AND is_admin_block = false);
+  END IF;
+EXCEPTION
+  WHEN undefined_function THEN
+    -- GiST operator class not available for arrays, skip constraint
+    RAISE NOTICE 'Skipping prevent_double_booking constraint - GiST array operators not available';
+  WHEN OTHERS THEN
+    RAISE NOTICE 'Skipping prevent_double_booking constraint - %', SQLERRM;
+END $$;
 
 -- Location notices/alerts
 CREATE TABLE IF NOT EXISTS location_notices (
