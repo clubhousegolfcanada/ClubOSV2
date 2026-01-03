@@ -191,11 +191,19 @@ export class MigrationRunner {
       logger.debug(`⚙️  Executing migration ${migration.name}...`);
       await client.query(migration.upSql);
 
-      // Record successful migration
+      // Record successful migration (handles re-running previously failed migrations)
       const executionTime = Date.now() - startTime;
       await client.query(
         `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms, success, rollback_sql)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (version) DO UPDATE SET
+           name = $2,
+           checksum = $3,
+           execution_time_ms = $4,
+           success = $5,
+           rollback_sql = $6,
+           executed_at = CURRENT_TIMESTAMP,
+           error_message = NULL`,
         [migration.version, migration.name, migration.checksum, executionTime, true, migration.downSql]
       );
 

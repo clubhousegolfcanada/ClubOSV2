@@ -11,12 +11,16 @@ All notable changes to ClubOS will be documented in this file.
   - Added `DROP TRIGGER IF EXISTS` before 5 `CREATE TRIGGER` statements (trigger already exists error)
   - This was preventing v1.25.37 and v1.25.38 database migrations from running
   - After this deploy, migrations 352 and 353 will finally apply
+- **Migration Runner Fix**: Fixed primary key violation when re-running previously failed migrations
+  - Success INSERT now uses `ON CONFLICT DO UPDATE` to handle migrations that failed before but succeed now
+  - This prevents "duplicate key value violates unique constraint schema_migrations_pkey" errors
 
 ### Technical
 - Migration 015 is now fully idempotent (safe to re-run multiple times):
   - Lines 147-151: `CREATE INDEX IF NOT EXISTS`
   - Lines 157-176: Constraint wrapped in DO block with exception handler
   - Lines 263-281: `DROP TRIGGER IF EXISTS` before each `CREATE TRIGGER`
+- `migrationRunner.ts`: Added `ON CONFLICT` handling to success path at line 196-208
 
 ## [1.25.38] - 2026-01-02
 
