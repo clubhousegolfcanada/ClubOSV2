@@ -143,12 +143,12 @@ CREATE TABLE IF NOT EXISTS bookings (
   completed_at TIMESTAMPTZ
 );
 
--- Create indexes for performance
-CREATE INDEX idx_bookings_user_tier ON bookings(user_id, customer_tier_id);
-CREATE INDEX idx_bookings_dates ON bookings(start_at, end_at);
-CREATE INDEX idx_bookings_location ON bookings(location_id);
-CREATE INDEX idx_bookings_status ON bookings(status);
-CREATE INDEX idx_bookings_changes ON bookings(change_count) WHERE flagged_for_changes = true;
+-- Create indexes for performance (IF NOT EXISTS for idempotency)
+CREATE INDEX IF NOT EXISTS idx_bookings_user_tier ON bookings(user_id, customer_tier_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_dates ON bookings(start_at, end_at);
+CREATE INDEX IF NOT EXISTS idx_bookings_location ON bookings(location_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_changes ON bookings(change_count) WHERE flagged_for_changes = true;
 
 -- Prevent double bookings using exclusion constraint
 -- Note: This requires btree_gist extension

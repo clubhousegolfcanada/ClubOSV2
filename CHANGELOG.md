@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.39] - 2026-01-02
+
+### Fixed
+- **Migration Blocker Resolved**: Fixed migration 015_booking_system.sql blocking all pending migrations
+  - Added `IF NOT EXISTS` to 5 `CREATE INDEX` statements that were failing on production
+  - This was preventing v1.25.37 and v1.25.38 database migrations from running
+  - After this deploy, migrations 352 and 353 will finally apply
+
+### Technical
+- Migration 015 line 147-151: Changed `CREATE INDEX` to `CREATE INDEX IF NOT EXISTS`
+- This makes the migration idempotent (safe to re-run)
+
 ## [1.25.38] - 2026-01-02
 
 ### Added
