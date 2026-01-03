@@ -260,17 +260,22 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_customer_tiers_updated_at ON customer_tiers;
 CREATE TRIGGER update_customer_tiers_updated_at BEFORE UPDATE ON customer_tiers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_booking_locations_updated_at ON booking_locations;
 CREATE TRIGGER update_booking_locations_updated_at BEFORE UPDATE ON booking_locations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_location_notices_updated_at ON location_notices;
 CREATE TRIGGER update_location_notices_updated_at BEFORE UPDATE ON location_notices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_loyalty_tracking_updated_at ON loyalty_tracking;
 CREATE TRIGGER update_loyalty_tracking_updated_at BEFORE UPDATE ON loyalty_tracking
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
