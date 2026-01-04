@@ -6,6 +6,7 @@ import { ticketDb } from '../utils/ticketDb';
 import { slackFallback } from '../services/slackFallback';
 import { v4 as uuidv4 } from 'uuid';
 import { transformTicket } from '../utils/transformers';
+import { actionEventService } from '../services/actionEventService';
 
 const router = Router();
 
@@ -221,7 +222,23 @@ router.post('/', authenticate, async (req, res) => {
       priority: newTicket.priority,
       createdBy: req.user!.email
     });
-    
+
+    // Emit action event for V3-PLS learning correlation
+    actionEventService.emitAction({
+      actionType: 'ticket_create',
+      actionSource: 'tickets',
+      operatorId: req.user!.id,
+      operatorName: req.user!.name || req.user!.email.split('@')[0],
+      actionParams: {
+        ticketId: newTicket.id,
+        category: newTicket.category,
+        priority: newTicket.priority,
+        location: normalizedLocation,
+        title: newTicket.title
+      },
+      success: true
+    }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
     // Send Slack notification if enabled
     try {
       if (slackFallback.isEnabled()) {
@@ -278,7 +295,23 @@ router.patch('/:id/status', authenticate, async (req, res) => {
       newStatus: status,
       updatedBy: req.user!.email
     });
-    
+
+    // Emit action event for V3-PLS learning correlation
+    const actionType = status === 'closed' || status === 'resolved' ? 'ticket_close' : 'ticket_update';
+    actionEventService.emitAction({
+      actionType,
+      actionSource: 'tickets',
+      operatorId: req.user!.id,
+      operatorName: req.user!.name || req.user!.email.split('@')[0],
+      actionParams: {
+        ticketId: id,
+        newStatus: status,
+        category: updatedTicket.category,
+        location: updatedTicket.location
+      },
+      success: true
+    }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
     res.json({
       success: true,
       data: {
@@ -383,6 +416,22 @@ router.patch('/:id', authenticate, async (req, res) => {
       updates,
       updatedBy: req.user!.email
     });
+
+    // Emit action event for V3-PLS learning correlation
+    const actionType = (updates.status === 'closed' || updates.status === 'resolved') ? 'ticket_close' : 'ticket_update';
+    actionEventService.emitAction({
+      actionType,
+      actionSource: 'tickets',
+      operatorId: req.user!.id,
+      operatorName: req.user!.name || req.user!.email.split('@')[0],
+      actionParams: {
+        ticketId: id,
+        updates,
+        category: updatedTicket.category,
+        location: updatedTicket.location
+      },
+      success: true
+    }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
 
     res.json({
       success: true,

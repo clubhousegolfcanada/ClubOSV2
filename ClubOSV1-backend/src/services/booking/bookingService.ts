@@ -1,5 +1,6 @@
 import { db, pool } from '../../utils/database';
 import { logger } from '../../utils/logger';
+import { actionEventService } from '../actionEventService';
 
 interface BookingData {
   locationId: string;
@@ -346,6 +347,25 @@ export class BookingService {
       await client.query('COMMIT');
       logger.info('Booking transaction committed successfully:', newBooking.id);
 
+      // Emit action event for V3-PLS learning correlation
+      actionEventService.emitAction({
+        actionType: 'booking_create',
+        actionSource: 'booking',
+        operatorId: bookingData.userId,
+        phoneNumber: bookingData.customerPhone,
+        actionParams: {
+          bookingId: newBooking.id,
+          locationId: bookingData.locationId,
+          spaceIds: bookingData.spaceIds,
+          startAt: bookingData.startAt,
+          endAt: bookingData.endAt,
+          totalAmount: bookingData.totalAmount,
+          customerName: bookingData.customerName,
+          isAdminBlock: bookingData.isAdminBlock
+        },
+        success: true
+      }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
       return {
         success: true,
         data: newBooking
@@ -462,6 +482,22 @@ export class BookingService {
       await client.query('COMMIT');
       logger.info('Booking cancelled successfully:', bookingId);
 
+      // Emit action event for V3-PLS learning correlation
+      actionEventService.emitAction({
+        actionType: 'booking_cancel',
+        actionSource: 'booking',
+        operatorId: userId,
+        phoneNumber: booking.rows[0]?.customer_phone,
+        actionParams: {
+          bookingId,
+          reason,
+          locationId: booking.rows[0]?.location_id,
+          startAt: booking.rows[0]?.start_at,
+          customerName: booking.rows[0]?.customer_name
+        },
+        success: true
+      }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
       return { success: true };
     } catch (error) {
       await client.query('ROLLBACK');
@@ -549,6 +585,24 @@ export class BookingService {
 
       await client.query('COMMIT');
       logger.info('Booking rescheduled successfully:', bookingId);
+
+      // Emit action event for V3-PLS learning correlation
+      actionEventService.emitAction({
+        actionType: 'booking_update',
+        actionSource: 'booking',
+        operatorId: userId,
+        phoneNumber: booking.customer_phone,
+        actionParams: {
+          bookingId,
+          oldStartAt: booking.start_at,
+          oldEndAt: booking.end_at,
+          newStartAt,
+          newEndAt,
+          locationId: booking.location_id,
+          customerName: booking.customer_name
+        },
+        success: true
+      }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
 
       return {
         success: true,

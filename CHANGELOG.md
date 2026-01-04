@@ -2,6 +2,35 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.40] - 2026-01-04
+
+### Added
+- **V3-PLS Action Event System (Phase 1)**: Foundation for situation-based AI learning
+  - **ActionEventService**: Unified action tracking service for correlating operator actions with conversations
+  - **New Migration 354**: `action_events` table for capturing all operator actions
+  - Door unlocks via UniFi now emit `door_unlock` action events
+  - Remote sessions via NinjaOne/Splashtop now emit `device_session` action events
+  - Ticket create/update/close operations now emit corresponding action events
+  - Booking create/cancel/reschedule operations now emit corresponding action events
+
+### Why This Matters
+- Previously V3-PLS only learned from message → response pairs
+- Now we can correlate: "Customer asked about door code" + "Operator unlocked door" = learned pattern
+- Future phases will use this data for situation-based pattern matching (60% cost reduction)
+
+### Technical
+- New database migration: `354_action_events_table.sql`
+  - Action types: door_unlock, device_session, ticket_create/update/close, booking_create/update/cancel
+  - Action sources: unifi, ninjaone, splashtop, tickets, booking, openphone
+  - Phone number correlation for linking to conversations
+  - Indexed for efficient time-window queries
+- New service: `actionEventService.ts` - Singleton service following existing cacheService pattern
+- Modified files:
+  - `routes/unifi-doors.ts`: Added action event after door unlock
+  - `routes/ninjaone-remote.ts`: Added action events for session creation
+  - `routes/tickets.ts`: Added action events for ticket CRUD
+  - `services/booking/bookingService.ts`: Added action events for booking transactions
+
 ## [1.25.39] - 2026-01-02
 
 ### Fixed

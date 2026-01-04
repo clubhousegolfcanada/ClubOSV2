@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 import fetch from 'node-fetch';
 import https from 'https';
 import { db } from '../utils/database';
+import { actionEventService } from '../services/actionEventService';
 
 const router = Router();
 
@@ -220,7 +221,23 @@ router.post('/doors/:location/:doorKey/unlock',
           logger.error('Failed to log door access:', logError);
           // Don't fail the request if logging fails
         }
-        
+
+        // Emit action event for V3-PLS learning correlation
+        actionEventService.emitAction({
+          actionType: 'door_unlock',
+          actionSource: 'unifi',
+          operatorId: userId,
+          operatorName: username,
+          actionParams: {
+            location,
+            doorKey,
+            doorId: (doorConfig as any).id,
+            doorName: (doorConfig as any).name,
+            duration
+          },
+          success: true
+        }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
         res.json({
           success: true,
           message: `${(doorConfig as any).name} unlocked for ${duration} seconds`,

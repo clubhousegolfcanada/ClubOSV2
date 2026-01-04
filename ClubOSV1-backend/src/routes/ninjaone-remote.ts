@@ -4,6 +4,7 @@ import { roleGuard } from '../middleware/roleGuard';
 import { DEVICE_REGISTRY } from '../config/ninjaDevices';
 import axios from 'axios';
 import { logger } from '../utils/logger';
+import { actionEventService } from '../services/actionEventService';
 
 const router = express.Router();
 
@@ -103,6 +104,28 @@ router.post('/session', authenticate, roleGuard(['operator', 'admin']), async (r
         }
       );
 
+      // Emit action event for V3-PLS learning correlation
+      const operatorId = (req as any).user?.id;
+      const operatorName = (req as any).user?.username || 'Unknown';
+      actionEventService.emitAction({
+        actionType: 'device_session',
+        actionSource: 'ninjaone',
+        operatorId,
+        operatorName,
+        actionParams: {
+          location,
+          bayNumber,
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          sessionType: 'ninjaone'
+        },
+        actionResult: {
+          sessionUrl: sessionResponse.data.sessionUrl,
+          sessionId: sessionResponse.data.sessionId
+        },
+        success: true
+      }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
       // Return the session URL or connection details
       return res.json({
         success: true,
@@ -117,7 +140,29 @@ router.post('/session', authenticate, roleGuard(['operator', 'admin']), async (r
 
     } catch (ninjaError: any) {
       logger.error('NinjaOne remote session error:', ninjaError.response?.data || ninjaError.message);
-      
+
+      // Emit action event for fallback session
+      const operatorId = (req as any).user?.id;
+      const operatorName = (req as any).user?.username || 'Unknown';
+      actionEventService.emitAction({
+        actionType: 'device_session',
+        actionSource: 'splashtop',
+        operatorId,
+        operatorName,
+        actionParams: {
+          location,
+          bayNumber,
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          sessionType: 'fallback'
+        },
+        actionResult: {
+          fallbackUrl: 'https://my.splashtop.com/computers',
+          ninjaConsoleUrl: `https://app.ninjarmm.com/#/deviceDashboard/${device.deviceId}/overview`
+        },
+        success: true
+      }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
+
       // Fallback to alternative method
       return res.json({
         success: true,
