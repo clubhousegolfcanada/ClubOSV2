@@ -141,6 +141,19 @@ export class PatternLearningService {
   }
 
   /**
+   * Get current configuration state (for external use)
+   * Used by openphone.ts to check if system is disabled before processing
+   */
+  async getConfig(): Promise<{ enabled: boolean; openphoneEnabled: boolean; shadowMode: boolean }> {
+    await this.loadConfiguration();
+    return {
+      enabled: this.config.enabled,
+      openphoneEnabled: this.config.openphoneEnabled,
+      shadowMode: this.config.shadowMode
+    };
+  }
+
+  /**
    * Main entry point - process a message through pattern learning
    * BREADCRUMB: This is called from aiAutomationService.processOpenPhoneMessage
    */

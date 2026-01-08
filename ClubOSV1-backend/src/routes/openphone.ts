@@ -816,6 +816,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
               // Load configurable safety thresholds
               const safetyThresholds = await patternSafetyService.getSafetyThresholds();
 
+              // MASTER KILL SWITCH: If V3-PLS is completely disabled, skip ALL AI processing
+              // This ensures no automated messages are sent when system is disabled
+              const plsConfig = await patternLearningService.getConfig();
+              if (!plsConfig.enabled && !plsConfig.openphoneEnabled) {
+                logger.info('[V3-PLS] System completely disabled - skipping all AI processing', {
+                  phoneNumber,
+                  enabled: plsConfig.enabled,
+                  openphoneEnabled: plsConfig.openphoneEnabled
+                });
+                return res.json({ success: true, message: 'AI system disabled' });
+              }
+
               // SAFEGUARD: Check if AI response limit reached - skip for test numbers
               // Only check if AI response limit feature is enabled
               if (safetyThresholds.aiResponseLimitEnabled &&
@@ -1008,7 +1020,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     // Don't fail the webhook - just log the error
                   }
                 } else if (patternResult.action === 'escalate') {
-                  // Handle escalation from pattern learning
+                  // DEFENSE IN DEPTH: Don't send escalation message if system is simply disabled
+                  // This is a backup check in case the master kill switch is bypassed
+                  const silentReasons = ['pattern_learning_disabled', 'openphone_automation_disabled'];
+
+                  if (silentReasons.includes(patternResult.reason || '')) {
+                    logger.info('[Pattern Learning] System disabled - no escalation message sent', {
+                      reason: patternResult.reason,
+                      phoneNumber
+                    });
+                    // Return early without sending any message to customer
+                    return res.json({ success: true, message: 'System disabled, no AI response' });
+                  }
+
+                  // Handle actual safety-related escalations (send message to customer)
                   logger.info('[Pattern Learning] Escalating to human', {
                     reason: patternResult.reason,
                     phoneNumber
@@ -1051,41 +1076,44 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
               // FALLBACK: If V3-PLS didn't auto-execute, try AI Automation Service
               // This preserves existing working patterns (gift cards, trackman) while we migrate
-              try {
-                const automationResponse = await aiAutomationService.processMessage(
-                  phoneNumber,
-                  messageText,
-                  existingConv.rows[0].id,
-                  false // Not initial message
-                );
-
-                if (automationResponse.handled && automationResponse.response) {
-                  logger.info('[AI Automation] Fallback response for existing conversation', {
+              // DEFENSE IN DEPTH: Only run fallback if V3-PLS is not completely disabled
+              if (plsConfig.enabled || plsConfig.openphoneEnabled) {
+                try {
+                  const automationResponse = await aiAutomationService.processMessage(
                     phoneNumber,
-                    response: automationResponse.response.substring(0, 100)
-                  });
+                    messageText,
+                    existingConv.rows[0].id,
+                    false // Not initial message
+                  );
 
-                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                  if (defaultNumber) {
-                    await openPhoneService.sendMessage(
+                  if (automationResponse.handled && automationResponse.response) {
+                    logger.info('[AI Automation] Fallback response for existing conversation', {
                       phoneNumber,
-                      defaultNumber,
-                      automationResponse.response
-                    );
+                      response: automationResponse.response.substring(0, 100)
+                    });
 
-                    // FIX: Increment AI response counter for fallback responses too
-                    await db.query(`
-                      UPDATE openphone_conversations
-                      SET ai_response_count = COALESCE(ai_response_count, 0) + 1
-                      WHERE id = $1
-                    `, [existingConv.rows[0].id]);
+                    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                    if (defaultNumber) {
+                      await openPhoneService.sendMessage(
+                        phoneNumber,
+                        defaultNumber,
+                        automationResponse.response
+                      );
+
+                      // FIX: Increment AI response counter for fallback responses too
+                      await db.query(`
+                        UPDATE openphone_conversations
+                        SET ai_response_count = COALESCE(ai_response_count, 0) + 1
+                        WHERE id = $1
+                      `, [existingConv.rows[0].id]);
+                    }
+
+                    // AI automation handled it as fallback
+                    return res.json({ success: true, message: 'AI automation fallback handled' });
                   }
-
-                  // AI automation handled it as fallback
-                  return res.json({ success: true, message: 'AI automation fallback handled' });
+                } catch (automationError) {
+                  logger.error('AI automation fallback error:', automationError);
                 }
-              } catch (automationError) {
-                logger.error('AI automation fallback error:', automationError);
               }
             } catch (notifError) {
               // Don't fail webhook if notification fails

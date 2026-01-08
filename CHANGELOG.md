@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.41] - 2026-01-08
+
+### Fixed
+- **V3-PLS Disable Bug**: Disabling V3-PLS now correctly silences all AI responses
+  - **Root Cause**: When `enabled=false` or `openphone_enabled=false`, the system was returning `action: 'escalate'` which triggered escalation messages to be sent to customers
+  - **The Message**: Customers were receiving "Let me connect you with one of our team members..." even with system disabled
+  - **Fix**: Added master kill switch check that exits early when system is disabled
+  - **Defense in Depth**: Added reason check to escalation handler to prevent messages when disabled
+  - **Fallback Protection**: Wrapped AI automation fallback to also respect disabled state
+
+### Technical
+- New method: `patternLearningService.getConfig()` - Exposes config state for external checks
+- Modified files:
+  - `routes/openphone.ts`: Added master kill switch at line ~819, fixed escalation handler at line ~1022, wrapped fallback at line ~1077
+  - `services/patternLearningService.ts`: Added `getConfig()` method at line ~147
+
 ## [1.25.40] - 2026-01-04
 
 ### Added

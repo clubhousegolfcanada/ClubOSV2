@@ -1,4 +1,4 @@
-# ClubOS v1.25.40 - Flexible Facility Management System
+# ClubOS v1.25.41 - Flexible Facility Management System
 
 Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,10 +8,11 @@ Production system for Clubhouse 24/7 - managing golf simulators, pickleball cour
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.25.40**
-- **🧠 V3-PLS Action Events (Phase 1)** - Foundation for situation-based AI learning
-- **📊 ActionEventService** - Unified action tracking across door unlocks, device sessions, tickets, and bookings
-- **🔗 Conversation Correlation** - Actions now linked to customer conversations for smarter pattern learning
+**Current Version: v1.25.41**
+- **🔇 V3-PLS Disable Fix** - Disabling V3-PLS now correctly silences all AI responses (was sending escalation messages)
+- **🛡️ Master Kill Switch** - Added early exit check that stops ALL AI processing when system is disabled
+- **Previous: V3-PLS Action Events (Phase 1)** - Foundation for situation-based AI learning
+- **Previous: ActionEventService** - Unified action tracking across door unlocks, device sessions, tickets, and bookings
 - **Previous: Migration Fix** - Fixed migration blocker preventing v1.25.37/v1.25.38 database changes from applying
 - **Previous: Topic-Aware Operator Lockouts** - AI can respond to different topics while operator handles another
 - **⏱️ Global Cooldown** - 1 hour cooldown after operator responds before AI handles new topics
