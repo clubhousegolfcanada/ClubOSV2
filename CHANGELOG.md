@@ -2,6 +2,39 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.42] - 2026-01-08
+
+### Security
+- **CRITICAL: Re-enabled Webhook Signature Verification** - Webhook signatures are now properly validated
+  - Was disabled for debugging, allowing any POST to `/webhook` endpoint
+  - Now rejects requests with invalid or missing signatures when secret is configured
+- **Removed `/webhook-debug` endpoint** - Was exposing raw webhook data without authentication
+- **Test phone whitelist moved to environment variable** - Set `V3PLS_TEST_PHONES` (comma-separated)
+  - Previously hardcoded, which was a security risk
+
+### Added
+- **Safety Trigger Analytics** (Phase 1 of V3-PLS Refactor)
+  - New migration 355: `safety_trigger_analytics` table
+  - Logs all safety check triggers to understand which features are actually being used
+  - Includes daily and hourly summary views for dashboards
+  - Data will inform which safety features to keep/remove in Phase 4
+
+### Technical
+- New database migration: `355_safety_trigger_analytics.sql`
+- Added `logSafetyTrigger()` helper function in openphone.ts
+- All 8 safety checks now log to analytics:
+  - `test_bypass` - Test phone whitelist bypass
+  - `global_cooldown` - Global cooldown after operator
+  - `topic_lockout` - Same topic as operator lockout
+  - `legacy_lock` - Legacy blanket conversation lock
+  - `master_kill_switch` - V3-PLS disabled
+  - `ai_response_limit` - Max AI responses reached
+  - `rapid_messages` - Multiple rapid messages detected
+  - `negative_sentiment` - Negative sentiment escalation
+
+### Environment Variables
+- `V3PLS_TEST_PHONES` (NEW) - Comma-separated list of test phone numbers that bypass safety checks
+
 ## [1.25.41] - 2026-01-08
 
 ### Fixed

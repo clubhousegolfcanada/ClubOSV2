@@ -19,7 +19,37 @@ const router = Router();
 
 // Test phone numbers that bypass ALL safeguards (for testing AI responses)
 // These numbers skip: conversation locking, operator_active, rapid message escalation, AI response limits
-const TEST_PHONE_WHITELIST = ['+19024783209'];
+// SECURITY: Moved to environment variable - set V3PLS_TEST_PHONES as comma-separated phone numbers
+const TEST_PHONE_WHITELIST = (process.env.V3PLS_TEST_PHONES || '').split(',').filter(p => p.trim());
+
+// Safety trigger analytics logging (v1.25.42)
+// Logs all safety check triggers to help understand which features are actually being used
+async function logSafetyTrigger(
+  triggerType: string,
+  actionTaken: string,
+  phoneNumber?: string,
+  conversationId?: number,
+  messagePreview?: string,
+  details?: Record<string, any>
+): Promise<void> {
+  try {
+    await db.query(`
+      INSERT INTO safety_trigger_analytics
+      (trigger_type, action_taken, phone_number, conversation_id, message_preview, trigger_details)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [
+      triggerType,
+      actionTaken,
+      phoneNumber || null,
+      conversationId || null,
+      messagePreview ? messagePreview.substring(0, 100) : null,
+      details ? JSON.stringify(details) : '{}'
+    ]);
+  } catch (err) {
+    // Don't fail message processing if analytics logging fails
+    logger.warn('[SafetyAnalytics] Failed to log trigger', { triggerType, error: err });
+  }
+}
 
 // Verify OpenPhone webhook signature
 function verifyOpenPhoneSignature(payload: string, signature: string, secret: string): boolean {
@@ -76,19 +106,7 @@ function verifyOpenPhoneSignature(payload: string, signature: string, secret: st
   }
 }
 
-// Debug endpoint to capture raw webhook data
-router.post('/webhook-debug', async (req: Request, res: Response) => {
-  logger.info('=== RAW OPENPHONE WEBHOOK DEBUG ===', {
-    headers: req.headers,
-    bodyKeys: Object.keys(req.body || {}),
-    body: JSON.stringify(req.body, null, 2).substring(0, 3000)
-  });
-  
-  logger.debug('=== RAW WEBHOOK BODY ===');
-  logger.debug(JSON.stringify(req.body, null, 2));
-  
-  res.status(200).json({ received: true, debug: true });
-});
+// SECURITY: Removed /webhook-debug endpoint (v1.25.42) - was exposing raw webhook data without auth
 
 // Handle GET requests for webhook verification
 router.get('/webhook', async (req: Request, res: Response) => {
@@ -124,25 +142,27 @@ router.post('/webhook', async (req: Request, res: Response) => {
     if (webhookSecret && signature) {
       const isValid = verifyOpenPhoneSignature(rawBody, signature, webhookSecret);
       if (!isValid) {
-        logger.warn('Invalid OpenPhone webhook signature - ALLOWING FOR DEBUG', {
+        logger.error('Invalid OpenPhone webhook signature - REJECTING', {
           hasRawBody: !!rawBody,
           rawBodyLength: rawBody?.length,
           signatureLength: signature?.length,
           webhookSecretLength: webhookSecret?.length,
-          secretFormat: webhookSecret?.match(/^[A-Za-z0-9+/]+=*$/) ? 'base64' : 'plain',
-          headers: req.headers,
-          bodyPreview: JSON.stringify(req.body).substring(0, 200)
+          secretFormat: webhookSecret?.match(/^[A-Za-z0-9+/]+=*$/) ? 'base64' : 'plain'
         });
-        // TEMPORARILY DISABLED for debugging - OpenPhone might not be sending signatures correctly
-        // return res.status(401).json({ error: 'Invalid signature' });
+        // SECURITY: Re-enabled signature verification (v1.25.42)
+        return res.status(401).json({ error: 'Invalid signature' });
       }
     } else {
-      logger.info('OpenPhone webhook NO SIGNATURE - allowing for debug', {
-        hasWebhookSecret: !!webhookSecret,
-        hasSignature: !!signature,
-        headers: req.headers,
-        bodyPreview: JSON.stringify(req.body).substring(0, 200)
-      });
+      // Allow requests without signature only if webhook secret is not configured
+      // This supports initial setup before OpenPhone is fully configured
+      if (webhookSecret) {
+        logger.error('OpenPhone webhook missing signature - REJECTING', {
+          hasWebhookSecret: true,
+          hasSignature: false
+        });
+        return res.status(401).json({ error: 'Missing signature' });
+      }
+      logger.warn('OpenPhone webhook secret not configured - allowing unsigned request');
     }
 
     // CRITICAL FIX: Handle wrapped webhook structure from OpenPhone v3
@@ -736,6 +756,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
               const isTestNumber = TEST_PHONE_WHITELIST.includes(phoneNumber);
               if (isTestNumber) {
                 logger.info('[Test Mode] Bypassing safeguards for whitelisted test number', { phoneNumber });
+                await logSafetyTrigger('test_bypass', 'bypassed', phoneNumber, existingConv.rows[0].id);
                 // Clear any existing locks so AI can respond
                 await db.query(`
                   UPDATE openphone_conversations
@@ -766,6 +787,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     incomingTopic,
                     topicLabel: getTopicLabel(incomingTopic)
                   });
+                  await logSafetyTrigger('global_cooldown', 'blocked', phoneNumber, existingConv.rows[0].id, messageTextForTopic, {
+                    cooldownUntil: existingConv.rows[0].global_cooldown_until,
+                    incomingTopic
+                  });
                   return res.json({ success: true, message: 'Global cooldown active' });
                 }
 
@@ -777,6 +802,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     phoneNumber,
                     topic: incomingTopic,
                     topicLabel: getTopicLabel(incomingTopic),
+                    lockoutUntil: existingConv.rows[0].topic_lockout_until
+                  });
+                  await logSafetyTrigger('topic_lockout', 'blocked', phoneNumber, existingConv.rows[0].id, messageTextForTopic, {
+                    topic: incomingTopic,
+                    operatorTopic: existingConv.rows[0].last_operator_topic,
                     lockoutUntil: existingConv.rows[0].topic_lockout_until
                   });
                   return res.json({ success: true, message: 'Topic locked by operator' });
@@ -808,6 +838,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     conversationLocked: existingConv.rows[0].conversation_locked,
                     lockoutUntil: existingConv.rows[0].lockout_until
                   });
+                  await logSafetyTrigger('legacy_lock', 'blocked', phoneNumber, existingConv.rows[0].id, undefined, {
+                    operatorActive: existingConv.rows[0].operator_active,
+                    conversationLocked: existingConv.rows[0].conversation_locked,
+                    lockoutUntil: existingConv.rows[0].lockout_until
+                  });
 
                   return res.json({ success: true, message: 'Operator handling conversation' });
                 }
@@ -825,6 +860,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   enabled: plsConfig.enabled,
                   openphoneEnabled: plsConfig.openphoneEnabled
                 });
+                await logSafetyTrigger('master_kill_switch', 'blocked', phoneNumber, existingConv.rows[0].id, undefined, {
+                  enabled: plsConfig.enabled,
+                  openphoneEnabled: plsConfig.openphoneEnabled
+                });
                 return res.json({ success: true, message: 'AI system disabled' });
               }
 
@@ -836,6 +875,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   existingConv.rows[0].ai_response_count >= safetyThresholds.aiResponseLimit) {
                 logger.info('[Safeguard] Max AI responses reached, escalating to human', {
                   phoneNumber,
+                  responseCount: existingConv.rows[0].ai_response_count,
+                  limit: safetyThresholds.aiResponseLimit
+                });
+                await logSafetyTrigger('ai_response_limit', 'escalated', phoneNumber, existingConv.rows[0].id, undefined, {
                   responseCount: existingConv.rows[0].ai_response_count,
                   limit: safetyThresholds.aiResponseLimit
                 });
@@ -869,6 +912,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   logger.warn('[Safeguard] Multiple rapid CUSTOMER messages detected - escalating', {
                     phoneNumber,
                     customerMessageCount: recentCustomerMessages.length,
+                    threshold: safetyThresholds.rapidMessageThreshold,
+                    windowSeconds: safetyThresholds.rapidMessageWindowSeconds
+                  });
+                  await logSafetyTrigger('rapid_messages', 'escalated', phoneNumber, existingConv.rows[0].id, undefined, {
+                    messageCount: recentCustomerMessages.length,
                     threshold: safetyThresholds.rapidMessageThreshold,
                     windowSeconds: safetyThresholds.rapidMessageWindowSeconds
                   });
@@ -911,6 +959,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 logger.info('[Safeguard] Negative sentiment detected, escalating to human', {
                   phoneNumber,
                   triggeredKeywords: safetyCheck.triggeredKeywords
+                });
+                await logSafetyTrigger('negative_sentiment', 'escalated', phoneNumber, existingConv.rows[0].id, messageText, {
+                  triggeredKeywords: safetyCheck.triggeredKeywords,
+                  alertType: safetyCheck.alertType
                 });
 
                 const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
