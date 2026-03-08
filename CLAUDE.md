@@ -108,7 +108,7 @@
 5. Test locally (frontend + backend if needed)
 6. Update CHANGELOG.md with version bump
 7. Update README.md version number to match
-8. Commit with descriptive message and push
+8. Commit with descriptive message and **always push** (auto-deploys to production)
 
 ## COMMANDS
 
