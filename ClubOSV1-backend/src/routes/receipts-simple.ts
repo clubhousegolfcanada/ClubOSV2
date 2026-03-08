@@ -5,6 +5,7 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
 import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
+import { convertImageToPdf } from '../services/receipt/imageToPdf';
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
 import archiver from 'archiver';
@@ -555,6 +556,28 @@ router.post('/upload',
         });
       }
 
+      // Convert image to PDF for storage (OCR already ran on the original image)
+      // Content hash was computed on the original file_data above — do not recompute
+      let storageData = file_data;
+      let storageMimeType = mime_type || 'application/pdf';
+      let storageFileName = file_name;
+
+      if (mime_type && mime_type.startsWith('image/')) {
+        try {
+          logger.info('Converting receipt image to PDF for storage');
+          storageData = await convertImageToPdf(file_data);
+          storageMimeType = 'application/pdf';
+          storageFileName = file_name.replace(/\.(jpe?g|png|heic|webp)$/i, '.pdf');
+          if (!storageFileName.endsWith('.pdf')) {
+            storageFileName += '.pdf';
+          }
+          logger.info('Image converted to PDF successfully');
+        } catch (convError) {
+          logger.warn('PDF conversion failed, storing as original image:', convError);
+          // Fall back to storing the original image — don't block the upload
+        }
+      }
+
       // Create database record with OCR data and content hash (defensive - column may not exist)
       let insertResult;
       try {
@@ -585,10 +608,10 @@ router.post('/upload',
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
-          file_data,
-          file_name,
+          storageData,
+          storageFileName,
           file_size || null,
-          mime_type || 'application/pdf',
+          storageMimeType,
           vendor || null,
           amount_cents ? parseInt(amount_cents.toString()) : null,
           ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
@@ -637,10 +660,10 @@ router.post('/upload',
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
-          file_data,
-          file_name,
+          storageData,
+          storageFileName,
           file_size || null,
-          mime_type || 'application/pdf',
+          storageMimeType,
           vendor || null,
           amount_cents ? parseInt(amount_cents.toString()) : null,
           ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,

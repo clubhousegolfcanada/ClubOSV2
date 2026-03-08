@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.45] - 2026-03-08
+
+### Added
+- **JPEG → PDF conversion on receipt upload** - Receipt images are now automatically converted to single-page PDFs server-side before storage, matching accounting standards
+- **New service**: `src/services/receipt/imageToPdf.ts` using pdfkit
+- **New dependency**: `pdfkit` for image-to-PDF conversion
+
+### Changed
+- Both upload paths (dashboard via `llm.ts` and direct via `receipts-simple.ts`) now convert images to PDF
+- OCR still runs on the original image (GPT-4o needs image input), then the PDF is stored
+- Content hash computed on original image data for consistent duplicate detection
+- Dashboard upload path (`llm.ts`) now stores `mime_type` column (was previously missing)
+- ZIP exports will now contain `.pdf` files instead of `.jpg` for newly uploaded receipts
+- Existing JPEG receipts remain unchanged — no backfill required
+- If PDF conversion fails, the original image is stored as fallback (no upload blocked)
+
 ## [1.25.44] - 2026-03-08
 
 ### Added

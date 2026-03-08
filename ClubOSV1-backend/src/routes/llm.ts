@@ -231,6 +231,21 @@ router.post('/request',
 
             // Only insert if not a duplicate
             if (!isDuplicate) {
+              // Convert image to PDF for storage (OCR already ran on the original image)
+              // Content hash was computed on original imageData above — do not recompute
+              const { convertImageToPdf } = await import('../services/receipt/imageToPdf');
+              let storageData = imageData;
+              let storageMimeType = 'application/pdf';
+
+              try {
+                logger.info('Converting receipt image to PDF for storage');
+                storageData = await convertImageToPdf(imageData);
+                logger.info('Image converted to PDF successfully');
+              } catch (convError) {
+                logger.warn('PDF conversion failed, storing as original image:', convError);
+                storageMimeType = 'image/jpeg';
+              }
+
               // Try insert with content_hash first, fall back to without if column doesn't exist
               try {
                 const insertResult = await db.query(`
@@ -250,9 +265,10 @@ router.post('/request',
                     ocr_confidence,
                     line_items,
                     file_data,
+                    mime_type,
                     is_personal_card,
                     content_hash
-                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
                   RETURNING id
                 `, [
                   ocrResult.vendor || null,
@@ -269,7 +285,8 @@ router.post('/request',
                   JSON.stringify(ocrResult),
                   ocrResult.confidence,
                   ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
-                  imageData,
+                  storageData,
+                  storageMimeType,
                   req.body.isPersonalCard || false,
                   contentHash
                 ]);
@@ -299,8 +316,9 @@ router.post('/request',
                       ocr_confidence,
                       line_items,
                       file_data,
+                      mime_type,
                       is_personal_card
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
                     RETURNING id
                   `, [
                     ocrResult.vendor || null,
@@ -317,7 +335,8 @@ router.post('/request',
                     JSON.stringify(ocrResult),
                     ocrResult.confidence,
                     ocrResult.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
-                    imageData,
+                    storageData,
+                    storageMimeType,
                     req.body.isPersonalCard || false
                   ]);
 
