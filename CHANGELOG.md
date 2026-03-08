@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.46] - 2026-03-08
+
+### Added
+- **Gmail auto-scanning for receipts** — Automated scanning of Gmail inbox for vendor receipts with attachment extraction
+- **New service**: `src/services/gmail/gmailReceiptScanner.ts` — OAuth2 Gmail API, vendor keyword queries, attachment + HTML body parsing
+- **New route**: `src/routes/gmail-scan.ts` — Admin-only manual scan trigger (`POST /api/gmail/scan`) and stats endpoint (`GET /api/gmail/status`)
+- **New job**: `src/jobs/gmailScan.ts` — Daily cron at 6 AM Atlantic, gated by `GMAIL_SCAN_ENABLED=true`
+- **New migration**: `357_gmail_receipt_scanning.sql` — `gmail_scanned_messages` tracking table + receipt source columns
+- **New dependency**: `googleapis` for Gmail API access
+- **Idempotent scanning** — Messages tracked by Gmail message ID to prevent duplicate processing
+- **Content hash dedup** — Receipts deduplicated via existing content_hash mechanism
+- **Source tracking** — Receipts now tagged with `source` (terminal/gmail/email), `gmail_message_id`, `source_email`
+
 ## [1.25.45] - 2026-03-08
 
 ### Added

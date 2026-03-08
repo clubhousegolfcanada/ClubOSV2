@@ -84,6 +84,7 @@ import logsRoutes from './routes/logs';
 import golfTourRoutes from './routes/golf-tour';
 import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
 import checklistsPeopleRoutes from './routes/checklists-people';
+import gmailScanRoutes from './routes/gmail-scan';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -381,6 +382,9 @@ app.use('/api/process-knowledge', processKnowledgeRoutes);
 
 // HubSpot webhook routes
 app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
+
+// Gmail receipt scanning
+app.use('/api/gmail', gmailScanRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -732,11 +736,15 @@ async function startServer() {
     const { startBookingRewardsJob } = await import('./jobs/bookingRewards');
     startBookingRewardsJob();
     logger.info('✅ Booking rewards job started');
-    
+
     // Start token cleanup job
     const { tokenCleanupJob } = await import('./jobs/tokenCleanup');
     tokenCleanupJob.start();
     logger.info('✅ Token cleanup job started');
+
+    // Start Gmail receipt scan job (daily at 6 AM Atlantic, gated by GMAIL_SCAN_ENABLED)
+    const gmailScanJob = await import('./jobs/gmailScan');
+    gmailScanJob.default.start();
     
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
