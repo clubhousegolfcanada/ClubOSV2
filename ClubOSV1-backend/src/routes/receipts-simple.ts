@@ -74,6 +74,8 @@ router.get('/summary', authenticate, async (req, res) => {
         COUNT(*) as total_receipts,
         COALESCE(SUM(amount_cents), 0) as total_amount_cents,
         COALESCE(SUM(tax_cents), 0) as total_tax_cents,
+        COALESCE(SUM(hst_cents), 0) as total_hst_cents,
+        COUNT(*) FILTER (WHERE reconciled = false OR reconciled IS NULL) as unreconciled_count,
         MIN(created_at) as earliest_receipt,
         MAX(created_at) as latest_receipt
       FROM receipts
@@ -85,17 +87,37 @@ router.get('/summary', authenticate, async (req, res) => {
       total_receipts: 0,
       total_amount_cents: 0,
       total_tax_cents: 0,
+      total_hst_cents: 0,
+      unreconciled_count: 0,
       earliest_receipt: null,
       latest_receipt: null
     };
 
-    // Get last export timestamp from a tracking table or localStorage
-    // For now, we'll return null and track this client-side
+    // Get category breakdown
+    const categoryQuery = `
+      SELECT
+        COALESCE(category, 'Uncategorized') as category,
+        COUNT(*) as count,
+        COALESCE(SUM(amount_cents), 0) as total_cents
+      FROM receipts
+      ${dateFilter}
+      GROUP BY category
+      ORDER BY total_cents DESC
+      LIMIT 10
+    `;
+    const categoryResult = await db.query(categoryQuery, queryParams);
 
     res.json({
       totalReceipts: parseInt(result.total_receipts) || 0,
       totalAmount: (parseInt(result.total_amount_cents) || 0) / 100,
       totalTax: (parseInt(result.total_tax_cents) || 0) / 100,
+      totalHst: (parseInt(result.total_hst_cents) || 0) / 100,
+      unreconciled: parseInt(result.unreconciled_count) || 0,
+      categories: categoryResult.rows.map((row: any) => ({
+        category: row.category,
+        count: parseInt(row.count) || 0,
+        total: (parseInt(row.total_cents) || 0) / 100
+      })),
       dateRange: {
         from: result.earliest_receipt,
         to: result.latest_receipt
@@ -739,6 +761,10 @@ router.get('/search',
         date_to,
         location,
         reconciled,
+        source,
+        category,
+        sort = 'created_at',
+        dir = 'desc',
         page = 1,
         limit = 20
       } = req.query;
@@ -762,6 +788,11 @@ router.get('/search',
           r.ocr_status,
           r.reconciled,
           r.created_at,
+          r.source,
+          r.hst_cents,
+          r.tax_cents,
+          r.category,
+          r.is_personal_card,
           u.name as uploader_name
         FROM receipts r
         LEFT JOIN users u ON r.uploader_user_id = u.id
@@ -816,8 +847,30 @@ router.get('/search',
         paramIndex++;
       }
 
-      // Add ordering and pagination
-      queryStr += ` ORDER BY r.created_at DESC`;
+      // Source filter
+      if (source) {
+        queryStr += ` AND r.source = $${paramIndex}`;
+        params.push(source);
+        paramIndex++;
+      }
+
+      // Category filter
+      if (category) {
+        queryStr += ` AND r.category = $${paramIndex}`;
+        params.push(category);
+        paramIndex++;
+      }
+
+      // Add ordering with validated sort column (prevent SQL injection)
+      const allowedSorts: Record<string, string> = {
+        'created_at': 'r.created_at',
+        'purchase_date': 'r.purchase_date',
+        'vendor': 'r.vendor',
+        'amount_cents': 'r.amount_cents',
+      };
+      const sortColumn = allowedSorts[sort as string] || 'r.created_at';
+      const sortDirection = (dir as string)?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+      queryStr += ` ORDER BY ${sortColumn} ${sortDirection}`;
 
       const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
       queryStr += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;

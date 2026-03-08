@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.48] - 2026-03-08
+
+### Added
+- **Receipts Dashboard** — Full receipts management interface in Operations > Receipts tab replacing single export card
+- **Month navigation** — Browse receipts by month with prev/next arrows
+- **Monthly summary card** — Totals, HST, tax, unreconciled count, and category breakdown with percentage bars
+- **Receipt table** — Sortable, filterable, paginated table with checkboxes for bulk selection (Date, Vendor, Amount, HST, Category, Location, Source, Status)
+- **Filters** — Category, location, source (terminal/gmail), and reconciliation status dropdowns
+- **Bulk reconcile** — Select multiple receipts and mark as reconciled in one click
+- **Export from dashboard** — CSV and ZIP export buttons for the selected month
+- **Gmail scan card** — Trigger Gmail inbox scan for selected month, shows scan stats
+- **Backend enhancements** — Summary endpoint now returns HST total, unreconciled count, and category breakdown; search endpoint now returns source, hst_cents, tax_cents, category, is_personal_card columns with sort and source/category filter support
+
+### New Files
+- `ClubOSV1-frontend/src/components/operations/receipts/ReceiptFilters.tsx` — Filter dropdowns
+- `ClubOSV1-frontend/src/components/operations/receipts/ReceiptTable.tsx` — Sortable paginated table
+- `ClubOSV1-frontend/src/components/operations/receipts/MonthlySummaryCard.tsx` — Summary stats + category bars
+- `ClubOSV1-frontend/src/components/operations/receipts/GmailScanCard.tsx` — Gmail scan trigger + status
+
 ## [1.25.47] - 2026-03-08
 
 ### Fixed
