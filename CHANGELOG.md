@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.43] - 2026-03-08
+
+### Changed
+- **Receipts moved to own Operations tab** - Receipt export is now a dedicated "Receipts" submenu tab instead of being buried at the bottom of Integrations & AI
+- **Restructured CLAUDE.md** - Dense technical context map with full architecture, file map, database schema, V3-PLS details, and integration references
+- **Restructured README.md** - Clean human-facing overview, removed 80+ lines of changelog entries and stale secret rotation warning
+
+### Fixed
+- Updated customer count from 10,000+ to 5,000 (actual)
+
 ## [1.25.42] - 2026-01-08
 
 ### Security

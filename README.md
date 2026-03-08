@@ -1,214 +1,92 @@
-# ClubOS v1.25.42 - Flexible Facility Management System
+# ClubOS v1.25.43 - Facility Management System
 
-Production system for Clubhouse 24/7 - managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
+Production system for Clubhouse 24/7 — managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
 **Production URL**: https://club-osv-2-owqx.vercel.app
 
-## 🎯 Latest Updates
+## Tech Stack
 
-See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
-
-**Current Version: v1.25.42**
-- **🔒 SECURITY: Webhook Signature Verification Re-enabled** - Critical security fix
-- **📊 Safety Trigger Analytics** - Phase 1 of V3-PLS refactor, tracking which safety features are used
-- **🗑️ Removed Debug Endpoint** - `/webhook-debug` removed for security
-- **⚙️ Test Phone Configurable** - Now uses `V3PLS_TEST_PHONES` environment variable
-- **Previous: V3-PLS Disable Fix** - Disabling V3-PLS now correctly silences all AI responses
-- **Previous: V3-PLS Action Events (Phase 1)** - Foundation for situation-based AI learning
-- **Previous: Migration Fix** - Fixed migration blocker preventing v1.25.37/v1.25.38 database changes from applying
-- **Previous: Topic-Aware Operator Lockouts** - AI can respond to different topics while operator handles another
-- **⏱️ Global Cooldown** - 1 hour cooldown after operator responds before AI handles new topics
-- **🏷️ Smart Topic Detection** - Detects booking, tech support, access, gift cards, hours, pricing topics
-- **Previous: Configurable Escalation Thresholds** - All safety settings now adjustable in V3-PLS Settings
-- **Previous: Threshold Lowered** - Patterns with 65%+ confidence now auto-respond (was 85%)
-- **Previous: Test Phone Whitelist** - Test number bypasses all AI safeguards for testing
-- **Previous: iOS Photo Library Fix** - Receipt uploads from iPhone photo library now work correctly
-- **Previous: Streamlined Checklists** - Removed Start button, tasks are now immediately checkable (v1.25.31)
-- **Previous: Auto Orders Tickets** - Supplies now automatically create "orders" tickets with location (v1.25.31)
-- **Previous: Bulk Task Import** - Paste full task lists for quick People Checklist setup (v1.25.30)
-- **Previous: People Checklists** - New category for weekly staff task lists (v1.25.29)
-- **Previous: Month-Based Receipt Export** - Export receipts by specific month (v1.25.28)
-- **Previous: HOTFIX Receipt Upload** - Fixed receipt upload broken after v1.25.26 (v1.25.27)
-- **Previous: Receipt System Improvements** - Fixed duplicate insertion bug, removed 25 receipt export limit (v1.25.26)
-- **Previous: Knowledge Retrieval Fix** - Fresh knowledge uploads now immediately available (v1.25.25)
-- **Previous: Password Reset Removed** - Removed non-functional password reset (v1.25.24)
-- **Previous: SECURITY CVE-2025-66478** - Updated Next.js 15.5.9 + React 19.1.4 (CRITICAL RCE fix)
-- **Previous: Auth Simplification** - Consolidated auth clearing, simplified token monitoring (v1.25.22)
-- **Previous: Mobile Token Fix** - Fixed sessionStorage issue on mobile browsers (v1.25.1)
-- **Previous: HubSpot Webhooks** - Re-enabled booking webhook endpoints (v1.25.1)
-- **Previous: Booking Default** - Skedda iframe now default for stability
-- **✅ Stable Experience** - Reliable booking system while ClubOS develops
-- **🔄 Toggle Available** - Users can still switch to ClubOS booking if needed
-- **Previous: Dark Mode Phase 2** - Booking components theme support (v1.24.45)
-- **Previous: Receipt Export Fix** - Fixed memory issues with photo exports (v1.24.44)
-- **Previous: Dark Mode Phase 1** - Navigation and status badges theme support (v1.24.43)
-- **Previous: Receipt Pattern Fix** - Fixed receipt editing creating V3-PLS patterns (v1.24.42)
-- **Previous: Browser Console Fix** - Removed unnecessary iframe permissions (v1.24.41)
-- **Previous: Error Boundaries** - Added error boundaries to booking components (v1.24.41)
-- **Previous: V3-PLS Pattern Fix** - Fixed critical SQL errors blocking pattern creation (v1.24.40)
-- **Previous: Customer Nav Fix** - Restored bottom navigation bar on booking page (v1.24.39)
-- **Previous: V3-PLS Receipt Fix** - Receipt submissions no longer create patterns (v1.24.38)
-- **Previous: Location Fix** - Fixed Dartmouth tickets and proper location capitalization (v1.24.37)
-- **Previous: Calendar Fix** - Fixed calendar booking flow confirmation modal (v1.24.34)
-- **Previous: Auth Optimization** - Fixed 401/403 console errors with AbortController (v1.24.33)
-- **Previous: Critical Fix** - Fixed duplicate DbBooking export causing backend compilation failure (v1.24.30)
-- **Previous: Production Deployment** - Applied booking system migrations to production (v1.24.28)
-- **📍 Location Display** - Added prominent location name in booking calendar to prevent wrong bookings
-- **🔧 Memory Leak Fix** - AI confirmations now use Redis with auto-expiry (no more crashes)
-- **🔒 Security Fix** - Removed console.logs exposing customer data in production
-- **🔑 Auth Fix** - "Keep me logged in" now works reliably without race conditions
-- **📝 Previous: UI Refinement** - Simplified booking confirmation panel text
-- **💬 Previous: Enhanced Messages Card** - Shows last 3 messages with smart timestamps when expanded
-- **🔧 Previous: Booking Fix** - Fixed "Something went wrong" error when clicking Create Booking
-- **🔧 Previous: Booking Fix** - Fixed Create Booking button showing blank page
-- **🔧 Previous: Login Fix** - Fixed "Keep me logged in" checkbox kicking users out
-- **🎨 Previous: Booking Cleanup** - Complete control consolidation, single toggle button
-- **🔧 Previous: Messages Fix** - Proper solution for PostgreSQL compatibility issues
-- **🚀 Previous: Booking Optimization** - 42% more calendar visible, 40% faster performance
-- **🚨 HOTFIX** - Fixed PostgreSQL 13 compatibility for messages page
-- **⚡ Previous: Messages Performance** - 70% faster loading with query optimization & caching
-- **🔧 Previous: Booking Fix** - Fixed "Something went wrong" error with null safety
-- **🎨 Previous: Mobile Layout** - Dynamic column widths, better than Skedda's layout
-- **🔧 Previous: Customer Login Fix** - Fixed token authentication issue causing redirect loops
-- **🔧 Previous: Booking Debug** - Fixed ORDER BY bug, added comprehensive logging (v1.24.3)
-- **🎨 Previous: Design Polish** - Compact slots, ClubOS green selection (v1.24.2)
-- **🚨 Previous: Emergency Hotfix** - Fixed booking view crash by handling old date column names (v1.24.1)
-- **📱 Previous: Calendar** - Polished sliding time selection with 30-min precision (v1.24.0)
-- **🔧 Previous: Booking Hotfix** - Fixed 500 error on booking view with comprehensive defensive code (v1.23.10)
-- **🚀 Previous: Migration System** - Enabled existing migration runner, booking fix pending (v1.23.9)
-- **🔒 Previous: Security** - Stronger passwords, email verification, rate limiting (v1.23.8)
-- **🎨 Previous: UI Improvements** - Tickets filters in sub-nav, navigation restored (v1.23.7)
-- **🎯 Previous: UI Optimization** - Maximized booking window space (v1.23.6)
-- **🎨 Previous: UI Enhancement** - Moved booking action buttons into sub-nav bar (v1.23.4)
-- **🔄 Previous: Booking Default** - Page defaults to Skedda iframe for stability (v1.23.3)
-- **🚀 Performance** - 500+ customer optimization with Redis caching (v1.23.0)
-- **🔧 Previous: Unified Booking** - Consolidated all booking modals (v1.22.11)
-
-## 🏗️ System Architecture
-
-### Tech Stack
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS → Vercel
-- **Backend**: Node.js, Express, PostgreSQL → Railway
-- **AI**: OpenAI GPT-4, Pattern Learning System
+- **Backend**: Node.js, Express, PostgreSQL, Redis → Railway
+- **AI**: OpenAI GPT-4 Assistants, V3-PLS Pattern Learning System
 - **Integrations**: OpenPhone, Slack, NinjaOne, HubSpot, UniFi
 
-## 🚀 Core Features
+## Core Features
 
 ### AI & Automation
-- **V3-PLS Pattern Learning**: Auto-learns from operator responses, 95% accuracy
-- **GPT-4 Assistant Routing**: Emergency, Booking, Tech Support, Brand Tone
-- **Automated Responses**: Configurable rules with confidence thresholds
+- **V3-PLS Pattern Learning**: Auto-learns from operator responses with configurable confidence thresholds
+- **GPT-4 Assistant Routing**: Emergency, Booking, Tech Support, Brand Tone assistants
+- **Topic-Aware Responses**: Smart detection of booking, tech support, access, gift cards, hours, pricing
 - **Knowledge Management**: Natural language updates, searchable archive
-
-#### Activating V3-PLS (Pattern Learning System)
-```bash
-# Step 1: Deploy to run migration (auto-deploys)
-git push
-
-# Step 2: Enable V3-PLS in production
-railway run psql $DATABASE_URL < scripts/enable-v3-pls-production.sql
-
-# Step 3: Use UI to enable patterns
-# Go to Operations > V3-PLS Patterns
-# Toggle ON trusted patterns (gift cards, etc.)
-```
 
 ### Operations Management
 - **Tickets**: Location-based tracking, photo attachments, priority workflow
-- **Checklists**: Supplies tracking, QR codes, performance metrics
-- **Remote Control**: NinjaOne devices, UniFi door access
-- **Messages**: Two-way SMS, push notifications, AI suggestions
-
-### Customer Experience
-- **ClubCoin Economy**: Virtual currency for challenges and rewards
-- **Head-to-Head Challenges**: Wagering system with tier progression
-- **Leaderboards**: Seasonal competitions with achievements
-- **TrackMan Integration**: Round verification, settings catalog
+- **Checklists**: Supplies tracking, people task lists, QR codes, performance metrics
+- **Remote Control**: NinjaOne device management, UniFi door access (6 locations)
+- **Messages**: Two-way SMS via OpenPhone, AI suggestions, operator lockouts
 
 ### User Roles
+
 | Role | Access Level | Primary Functions |
 |------|-------------|-------------------|
 | Admin | Full | System configuration, analytics |
 | Operator | Operations | Tickets, messages, patterns |
 | Support | Limited | Customer support, ClubOS Boy |
-| Customer | Portal | Profile, challenges, bookings |
+| Customer | Portal | Profile, bookings |
 | Contractor | Checklists | Cleaning tasks, door access |
 | Kiosk | Public | ClubOS Boy interface |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ClubOSV1/
-├── ClubOSV1-frontend/       # Next.js application
-├── ClubOSV1-backend/        # Express API server
-├── scripts/                 # Deployment & utilities
-├── docs/                    # Documentation
-├── CLAUDE.md                # AI assistant context
-├── QUICKSTART.md            # Setup guide
-├── ENVIRONMENT.md           # Environment variables
+├── ClubOSV1-frontend/       # Next.js application (Vercel)
+├── ClubOSV1-backend/        # Express API server (Railway)
+├── scripts/                 # Deployment, migration, and utility scripts
+├── docs/                    # Technical documentation
+├── config/                  # Environment templates
+├── CLAUDE.md                # AI assistant context (technical map)
 ├── CHANGELOG.md             # Version history
 └── README.md                # This file
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 See [QUICKSTART.md](./QUICKSTART.md) for detailed setup instructions.
 
 ```bash
 # Local Development
-cd ClubOSV1-backend && npm run dev   # Terminal 1
-cd ClubOSV1-frontend && npm run dev  # Terminal 2
+cd ClubOSV1-backend && npm run dev   # Terminal 1 (port 3000)
+cd ClubOSV1-frontend && npm run dev  # Terminal 2 (port 3001)
 
-# Deploy to Production
+# Deploy to Production (auto-deploys on push)
 git add -A && git commit -m "feat: description" && git push
 ```
 
-## ⚡ Environment Setup
+## Common Commands
 
-See [ENVIRONMENT.md](./ENVIRONMENT.md) for complete configuration guide.
-
-## 🔧 Quick Reference
-
-### Common Commands
 ```bash
-# Start development
+# Development
 cd ClubOSV1-frontend && npm run dev  # Frontend (port 3001)
 cd ClubOSV1-backend && npm run dev   # Backend (port 3000)
 
-# Database operations
+# Type checking
+npx tsc --noEmit                     # Check TypeScript errors
+
+# Database
 npm run db:migrate                   # Run pending migrations
 npm run db:rollback                  # Rollback last migration
-railway run npm run db:migrate       # Run migration in production
+railway run npm run db:migrate       # Production migration
 
-# Deployment (auto-deploys to production)
-git add -A && git commit -m "fix: description" && git push
-
-# Check logs
+# Logs
 railway logs                         # Backend production logs
-npx tsc --noEmit                     # TypeScript error check
 ```
 
-### Important File Locations
-| What | Where |
-|------|-------|
-| API Routes | `/ClubOSV1-backend/src/routes/` |
-| React Components | `/ClubOSV1-frontend/src/components/` |
-| Database Migrations | `/ClubOSV1-backend/src/database/migrations/` |
-| Pattern Learning (V3-PLS) | `/ClubOSV1-backend/src/services/patterns/` |
-| Message Handling | `/ClubOSV1-backend/src/services/openphone/` |
-| Auth & Tokens | `/ClubOSV1-frontend/src/utils/tokenManager.ts` |
+## Environment Setup
 
-### Troubleshooting
-| Issue | Solution |
-|-------|----------|
-| 401 Unauthorized | Check token in localStorage, may need fresh login |
-| TypeScript errors | Run `npx tsc --noEmit` to see all errors |
-| Database connection | Verify DATABASE_URL in .env files |
-| Port already in use | `lsof -i:3000` then `kill -9 <PID>` |
-| Module not found | Run `npm install` in the affected directory |
-| Migration needed | Check if recent changes need `npm run db:migrate` |
+See [ENVIRONMENT.md](./ENVIRONMENT.md) for complete configuration guide.
 
-## 🔐 Security
+## Security
 
 - **Authentication**: JWT-based with role permissions
 - **Encryption**: AES-256-GCM for sensitive data
@@ -217,32 +95,30 @@ npx tsc --noEmit                     # TypeScript error check
 - **CSRF Protection**: Token validation
 - **Security Headers**: CSP, HSTS, X-Frame-Options
 
-## 📚 Documentation
+## Documentation
 
 - [QUICKSTART.md](./QUICKSTART.md) - Setup and deployment guide
 - [ENVIRONMENT.md](./ENVIRONMENT.md) - Environment variables reference
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture details
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
-- [CLAUDE.md](./CLAUDE.md) - AI assistant context
-- [/docs](./docs/) - Technical documentation
+- [CLAUDE.md](./CLAUDE.md) - AI assistant technical context
+- [/docs](./docs/) - Full technical documentation
 
-## ⚠️ URGENT: Secret Rotation Required
+## Troubleshooting
 
-**Migration Mode is currently active in production.** The system is running with legacy secrets that will stop working on January 1, 2025.
+| Issue | Solution |
+|-------|----------|
+| 401 Unauthorized | Check token in localStorage, may need fresh login |
+| TypeScript errors | Run `npx tsc --noEmit` to see all errors |
+| Database connection | Verify DATABASE_URL in .env files |
+| Port already in use | `lsof -i:3000` then `kill -9 <PID>` |
+| Module not found | Run `npm install` in the affected directory |
 
-### Required Actions Before Jan 1, 2025:
-1. Generate new secrets: `npm run generate:secrets`
-2. Update Railway environment variables with new values
-3. Remove `SECRET_MIGRATION_MODE` environment variable
-4. Deploy changes (all users will need to re-login)
+## Support
 
-See [Backend README](./ClubOSV1-backend/README.md#secret-rotation-guide) for detailed instructions.
-
-## 🆘 Support
-
-- **Issues**: Report at [GitHub Issues](https://github.com/anthropics/claude-code/issues)
 - **Logs**: Backend `railway logs`, Frontend Vercel dashboard
 - **Monitoring**: Sentry for errors, Railway for metrics
 
 ---
 
-**Remember**: Always commit and push when done - this auto-deploys to production.
+**Remember**: All commits auto-deploy to production. Test locally first.

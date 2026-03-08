@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import { MessageSquare, Phone, Bell, Building2, Wifi, Shield, RefreshCw, Check, X, AlertCircle, TestTube, Zap, Monitor, Edit2, Power, Save, Send } from 'lucide-react';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
-import ReceiptExportCard from './ReceiptExportCard';
 
 
 
@@ -847,10 +846,6 @@ export const OperationsIntegrations: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Receipt Export Card */}
-          <ReceiptExportCard />
-        </div>
       </div>
 
       {/* NinjaOne Management Section */}
