@@ -202,6 +202,8 @@ router.get('/export', authenticate, async (req, res) => {
         'Vendor': receipt.vendor || '',
         'Amount': receipt.amount_cents ? (receipt.amount_cents / 100).toFixed(2) : '0.00',
         'Tax': receipt.tax_cents ? (receipt.tax_cents / 100).toFixed(2) : '0.00',
+        'HST': receipt.hst_cents ? (receipt.hst_cents / 100).toFixed(2) : '',
+        'HST Reg#': receipt.hst_reg_number || '',
         'Subtotal': receipt.subtotal_cents ? (receipt.subtotal_cents / 100).toFixed(2) : '0.00',
         'Category': receipt.category || '',
         'Payment Method': receipt.payment_method || '',
@@ -216,7 +218,7 @@ router.get('/export', authenticate, async (req, res) => {
       // Convert to CSV
       const json2csvParser = new Parser({
         fields: [
-          'Date', 'Vendor', 'Amount', 'Tax', 'Subtotal',
+          'Date', 'Vendor', 'Amount', 'Tax', 'HST', 'HST Reg#', 'Subtotal',
           'Category', 'Payment Method', 'Location', 'Personal Card', 'Notes',
           'Uploaded By', 'Upload Date', 'Reconciled'
         ]
@@ -565,6 +567,8 @@ router.post('/upload',
             vendor,
             amount_cents,
             tax_cents,
+            hst_cents,
+            hst_reg_number,
             purchase_date,
             club_location,
             category,
@@ -574,9 +578,11 @@ router.post('/upload',
             ocr_status,
             ocr_text,
             ocr_json,
+            ocr_confidence,
+            line_items,
             is_personal_card,
             content_hash
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
           file_data,
@@ -586,6 +592,8 @@ router.post('/upload',
           vendor || null,
           amount_cents ? parseInt(amount_cents.toString()) : null,
           ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+          ocrResult?.hstAmount ? Math.round(ocrResult.hstAmount * 100) : null,
+          ocrResult?.hstRegNumber || null,
           purchase_date || null,
           club_location || null,
           ocrResult?.category || null,
@@ -595,6 +603,8 @@ router.post('/upload',
           ocrResult ? 'completed' : 'manual',
           ocrResult?.rawText || null,
           ocrResult ? JSON.stringify(ocrResult) : null,
+          ocrResult?.confidence || 0,
+          ocrResult?.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
           is_personal_card || false,
           contentHash
         ]);
@@ -610,6 +620,8 @@ router.post('/upload',
             vendor,
             amount_cents,
             tax_cents,
+            hst_cents,
+            hst_reg_number,
             purchase_date,
             club_location,
             category,
@@ -619,8 +631,10 @@ router.post('/upload',
             ocr_status,
             ocr_text,
             ocr_json,
+            ocr_confidence,
+            line_items,
             is_personal_card
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
           file_data,
@@ -630,6 +644,8 @@ router.post('/upload',
           vendor || null,
           amount_cents ? parseInt(amount_cents.toString()) : null,
           ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
+          ocrResult?.hstAmount ? Math.round(ocrResult.hstAmount * 100) : null,
+          ocrResult?.hstRegNumber || null,
           purchase_date || null,
           club_location || null,
           ocrResult?.category || null,
@@ -639,6 +655,8 @@ router.post('/upload',
           ocrResult ? 'completed' : 'manual',
           ocrResult?.rawText || null,
           ocrResult ? JSON.stringify(ocrResult) : null,
+          ocrResult?.confidence || 0,
+          ocrResult?.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
           is_personal_card || false
         ]);
       }

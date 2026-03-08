@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.44] - 2026-03-08
+
+### Added
+- **Enhanced OCR with HST extraction** - Receipt OCR now extracts HST/GST amounts and vendor HST registration numbers for Canadian tax accounting
+- **New database columns**: `hst_cents` and `hst_reg_number` on receipts table (migration 356)
+- **HST in CSV exports** - Receipt exports now include HST amount and HST Reg# columns
+- **Expanded category list** - Added Fuel, Software, Advertising, Insurance, Rent, Maintenance, Professional Fees, Shipping
+
+### Fixed
+- **receipts-simple.ts missing fields** - Upload endpoint now saves `ocr_confidence` and `line_items` (was only saved via dashboard upload, not direct upload)
+- **OCR prompt upgraded** - Now Canadian-specific (Nova Scotia context), searches for HST registration numbers, and uses improved extraction rules
+
 ## [1.25.43] - 2026-03-08
 
 ### Changed
