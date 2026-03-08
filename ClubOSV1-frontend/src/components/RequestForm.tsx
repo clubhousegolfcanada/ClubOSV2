@@ -403,6 +403,18 @@ const RequestForm: React.FC = () => {
         if (response.data.success) {
           const ocrResult = response.data.data;
 
+          // Build receipts array so ReceiptDisplay renders with edit/reconcile/delete
+          const receiptsArray = ocrResult.receiptId ? [{
+            id: ocrResult.receiptId,
+            vendor: ocrResult.extractedData?.vendor || null,
+            amount: ocrResult.extractedData?.totalAmount || null,
+            date: ocrResult.extractedData?.purchaseDate || null,
+            category: ocrResult.extractedData?.category || null,
+            location: null,
+            hasPhoto: true,
+            reconciled: false,
+          }] : undefined;
+
           // Show the extracted receipt data
           setLastResponse({
             llmResponse: {
@@ -412,6 +424,7 @@ const RequestForm: React.FC = () => {
               status: ocrResult.isDuplicate ? 'duplicate' : 'completed',
               dataSource: 'OpenAI Vision'
             },
+            receipts: receiptsArray,
             status: ocrResult.isDuplicate ? 'duplicate' : 'completed',
             botRoute: 'Receipt OCR'
           } as any);

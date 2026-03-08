@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.47] - 2026-03-08
+
+### Fixed
+- **Receipt edits not saving after scan** — ReceiptDisplay component never rendered because scan response was missing `receipts` array; user was unknowingly editing knowledge store text instead of the actual receipt record
+- **Reconcile button 404** — Frontend called non-existent `POST /receipts/:id/reconcile`; now correctly uses bulk `POST /receipts/reconcile` endpoint
+- **Operators blocked from editing/reconciling receipts** — PATCH and reconcile endpoints checked for non-existent `'staff'` role instead of `'operator'`
+- **UI not updating after receipt edit** — Prop mutation didn't trigger React re-render; now uses proper local state
+- **NaN amount on empty field** — Empty amount field produced `NaN` in `amount_cents`; now validated before PATCH
+- **Cannot clear receipt fields** — Empty values were silently dropped from PATCH payload; now sends `null` to explicitly clear fields
+- **Generic text edit shown on receipts** — Hid the knowledge-store correction pencil icon when receipt edit cards are visible
+
 ## [1.25.46] - 2026-03-08
 
 ### Added

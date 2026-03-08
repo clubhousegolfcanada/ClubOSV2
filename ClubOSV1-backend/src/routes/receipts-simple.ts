@@ -928,7 +928,7 @@ router.patch('/:id',
       const updates = req.body;
 
       // Check user role
-      if (!['admin', 'staff'].includes(user.role)) {
+      if (!['admin', 'operator'].includes(user.role)) {
         return res.status(403).json({
           success: false,
           error: 'Insufficient permissions to update receipts'
@@ -1095,7 +1095,7 @@ router.post('/reconcile',
       const { receiptIds } = req.body;
 
       // Check user role
-      if (!['admin', 'staff'].includes(user.role)) {
+      if (!['admin', 'operator'].includes(user.role)) {
         return res.status(403).json({
           success: false,
           error: 'Insufficient permissions'

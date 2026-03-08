@@ -167,7 +167,8 @@ const formatStructuredContent = (text: string): React.ReactNode => {
 };
 
 // Component to render receipt data in a formatted way
-const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }> = ({ receipts, summary, actions }) => {
+const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }> = ({ receipts: initialReceipts, summary, actions }) => {
+  const [localReceipts, setLocalReceipts] = useState<any[]>(initialReceipts);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [editingReceipt, setEditingReceipt] = useState<string | null>(null);
   const [editedFields, setEditedFields] = useState<any>({});
@@ -180,13 +181,20 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
 
       switch (action) {
         case 'reconcile':
-          result = await http.post(`receipts/${receiptId}/reconcile`, { reconciled: true });
+          // Use bulk reconcile endpoint with single-item array
+          result = await http.post('receipts/reconcile', { receiptIds: [receiptId] });
+          // Update local state to reflect reconciled status
+          setLocalReceipts(prev => prev.map(r =>
+            r.id === receiptId ? { ...r, reconciled: true } : r
+          ));
           toast.success('Receipt marked as reconciled');
           break;
 
         case 'delete':
           if (confirm('Are you sure you want to delete this receipt?')) {
             result = await http.delete(`receipts/${receiptId}`);
+            // Remove from local state
+            setLocalReceipts(prev => prev.filter(r => r.id !== receiptId));
             toast.success('Receipt deleted successfully');
           }
           break;
@@ -194,11 +202,12 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
         case 'edit':
           // Enter edit mode for this receipt
           setEditingReceipt(receiptId);
+          const receipt = localReceipts.find(r => r.id === receiptId);
           setEditedFields({
-            vendor: receipts.find(r => r.id === receiptId)?.vendor || '',
-            amount: receipts.find(r => r.id === receiptId)?.amount || '',
-            category: receipts.find(r => r.id === receiptId)?.category || '',
-            location: receipts.find(r => r.id === receiptId)?.location || ''
+            vendor: receipt?.vendor || '',
+            amount: receipt?.amount || '',
+            category: receipt?.category || '',
+            location: receipt?.location || ''
           });
           break;
 
@@ -207,7 +216,7 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
       }
     } catch (error: any) {
       logger.error('Receipt action error:', error);
-      toast.error(error.response?.data?.message || 'Action failed');
+      toast.error(error.response?.data?.message || error.response?.data?.error || 'Action failed');
     } finally {
       setProcessingAction(null);
     }
@@ -218,33 +227,47 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
 
     try {
       // Get original receipt data for correction tracking
-      const originalReceipt = receipts.find(r => r.id === receiptId);
+      const originalReceipt = localReceipts.find(r => r.id === receiptId);
       if (!originalReceipt) {
         throw new Error('Receipt not found');
       }
 
-      // Convert amount to cents for backend (database stores in cents)
-      const updateData: any = {
-        vendor: editedFields.vendor,
-        amount_cents: Math.round(parseFloat(editedFields.amount) * 100), // Convert dollars to cents
-        category: editedFields.category || null,
-        club_location: editedFields.location || null // Use correct field name
-      };
+      // Build update payload — send null to clear fields, skip undefined only
+      const updateData: any = {};
 
-      // Remove null/undefined fields
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === null || updateData[key] === undefined || updateData[key] === '') {
-          delete updateData[key];
+      // Vendor: send value or null to clear
+      if (editedFields.vendor !== undefined) {
+        updateData.vendor = editedFields.vendor || null;
+      }
+
+      // Amount: validate before sending to prevent NaN
+      if (editedFields.amount !== undefined && editedFields.amount !== '') {
+        const parsedAmount = parseFloat(editedFields.amount);
+        if (!isNaN(parsedAmount)) {
+          updateData.amount_cents = Math.round(parsedAmount * 100);
         }
-      });
+      }
+
+      // Category and location: send value or null to clear
+      if (editedFields.category !== undefined) {
+        updateData.category = editedFields.category || null;
+      }
+      if (editedFields.location !== undefined) {
+        updateData.club_location = editedFields.location || null;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        toast.error('No changes to save');
+        setEditingReceipt(null);
+        return;
+      }
 
       const result = await http.patch(`receipts/${receiptId}`, updateData);
 
-      // Update the local receipt data
-      const index = receipts.findIndex(r => r.id === receiptId);
-      if (index > -1) {
-        receipts[index] = { ...receipts[index], ...editedFields };
-      }
+      // Update local state properly (triggers React re-render)
+      setLocalReceipts(prev => prev.map(r =>
+        r.id === receiptId ? { ...r, ...editedFields } : r
+      ));
 
       // Track this edit as a correction for AI learning
       try {
@@ -273,7 +296,7 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
       setEditedFields({});
     } catch (error: any) {
       logger.error('Failed to save receipt:', error);
-      toast.error(error.response?.data?.message || 'Failed to save changes');
+      toast.error(error.response?.data?.message || error.response?.data?.error || 'Failed to save changes');
     } finally {
       setProcessingAction(null);
     }
@@ -286,7 +309,7 @@ const ReceiptDisplay: React.FC<{ receipts: any[], summary?: any, actions?: any }
 
   return (
     <div className="space-y-3">
-      {receipts.map((receipt, index) => (
+      {localReceipts.map((receipt, index) => (
         <div
           key={receipt.id || index}
           className="p-3 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-secondary)] hover:border-[var(--accent)] transition-colors"
@@ -574,7 +597,7 @@ export const ResponseDisplaySimple: React.FC<Props> = ({ response, route, photos
       <div className="border-l-2 border-[var(--border-secondary)] pl-4">
         <div className="mb-2 flex items-center justify-between">
           <strong className="text-sm font-semibold text-[var(--text-primary)]">Response:</strong>
-          {!isEditing && (
+          {!isEditing && !hasReceipts && (
             <button
               onClick={() => setIsEditing(true)}
               className="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
