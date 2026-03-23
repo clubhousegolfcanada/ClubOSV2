@@ -41,8 +41,10 @@ export async function processReceiptWithOCR(base64Image: string): Promise<Receip
 
     // Prepare the image for OpenAI (ensure it has the right format)
     let imageData = base64Image;
-    if (!imageData.startsWith('data:image')) {
-      // Add data URL prefix if missing
+    if (imageData.startsWith('data:application/pdf')) {
+      // GPT-4o supports PDF input — leave as-is
+    } else if (!imageData.startsWith('data:')) {
+      // Add data URL prefix for raw base64 image data
       imageData = `data:image/jpeg;base64,${imageData}`;
     }
 
@@ -228,7 +230,7 @@ function categorizeByVendor(vendor: string | null): string {
     return 'Food';
   }
   if (vendorLower.includes('gas') || vendorLower.includes('shell') || vendorLower.includes('esso')) {
-    return 'Transportation';
+    return 'Fuel';
   }
   if (vendorLower.includes('bell') || vendorLower.includes('rogers') || vendorLower.includes('telus')) {
     return 'Utilities';

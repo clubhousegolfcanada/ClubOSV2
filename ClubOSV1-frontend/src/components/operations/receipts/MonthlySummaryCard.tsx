@@ -42,15 +42,15 @@ export const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ summary,
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase">Total</p>
-              <p className="text-xl font-bold text-gray-900">${summary.totalAmount.toFixed(2)}</p>
+              <p className="text-xl font-bold text-gray-900">${(summary.totalAmount ?? 0).toFixed(2)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase">Tax</p>
-              <p className="text-lg font-semibold text-gray-700">${summary.totalTax.toFixed(2)}</p>
+              <p className="text-lg font-semibold text-gray-700">${(summary.totalTax ?? 0).toFixed(2)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase">HST</p>
-              <p className="text-lg font-semibold text-gray-700">${summary.totalHst.toFixed(2)}</p>
+              <p className="text-lg font-semibold text-gray-700">${(summary.totalHst ?? 0).toFixed(2)}</p>
             </div>
           </div>
 

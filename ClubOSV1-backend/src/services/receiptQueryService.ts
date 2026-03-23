@@ -1,6 +1,6 @@
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
-import { format, subDays, subWeeks, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays, subWeeks, subMonths, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 
 interface ReceiptQuery {
   text: string;
@@ -388,14 +388,14 @@ export class ReceiptQueryService {
     if (text.includes('today')) {
       const today = new Date();
       params.dateRange = {
-        from: startOfWeek(today).toISOString(),
-        to: endOfWeek(today).toISOString()
+        from: startOfDay(today).toISOString(),
+        to: endOfDay(today).toISOString()
       };
     } else if (text.includes('yesterday')) {
       const yesterday = subDays(new Date(), 1);
       params.dateRange = {
-        from: startOfWeek(yesterday).toISOString(),
-        to: endOfWeek(yesterday).toISOString()
+        from: startOfDay(yesterday).toISOString(),
+        to: endOfDay(yesterday).toISOString()
       };
     } else if (text.includes('this week') || text.includes('last week')) {
       const weeksAgo = text.includes('last') ? 1 : 0;
@@ -491,16 +491,7 @@ export class ReceiptQueryService {
       return uuidMatch[0];
     }
 
-    // Try to find receipt number reference
-    const numberMatch = text.match(/#?(\d+)/);
-    if (numberMatch) {
-      // This would need to look up the actual receipt by some reference
-      return numberMatch[1];
-    }
-
-    // Try to identify by description
-    // This would need more sophisticated parsing and database lookup
-
+    // Receipt IDs are UUIDs — numeric references are not valid
     return null;
   }
 }

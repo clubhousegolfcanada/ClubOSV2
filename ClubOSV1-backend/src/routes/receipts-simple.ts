@@ -13,13 +13,16 @@ import { hash } from '../utils/encryption';
 
 const router = express.Router();
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Rate limiter for upload endpoint (10 uploads per minute per user)
 const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10,
   message: 'Too many uploads. Please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: (req: any) => req.user?.id || req.ip
 });
 
 /**
@@ -40,7 +43,7 @@ router.get('/summary', authenticate, async (req, res) => {
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
         weekStart.setHours(0, 0, 0, 0);
-        dateFilter = 'WHERE created_at >= $1';
+        dateFilter = 'WHERE COALESCE(purchase_date, created_at::date) >= $1';
         queryParams = [weekStart.toISOString()];
         break;
       case 'month':
@@ -48,17 +51,17 @@ router.get('/summary', authenticate, async (req, res) => {
         if (year && month) {
           const customMonthStart = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
           const customMonthEnd = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
-          dateFilter = 'WHERE created_at >= $1 AND created_at <= $2';
+          dateFilter = 'WHERE COALESCE(purchase_date, created_at::date) >= $1 AND COALESCE(purchase_date, created_at::date) <= $2';
           queryParams = [customMonthStart.toISOString(), customMonthEnd.toISOString()];
         } else {
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          dateFilter = 'WHERE created_at >= $1';
+          dateFilter = 'WHERE COALESCE(purchase_date, created_at::date) >= $1';
           queryParams = [monthStart.toISOString()];
         }
         break;
       case 'year':
         const yearStart = new Date(now.getFullYear(), 0, 1);
-        dateFilter = 'WHERE created_at >= $1';
+        dateFilter = 'WHERE COALESCE(purchase_date, created_at::date) >= $1';
         queryParams = [yearStart.toISOString()];
         break;
       case 'all':
@@ -140,6 +143,13 @@ router.get('/summary', authenticate, async (req, res) => {
  */
 router.get('/export', authenticate, async (req, res) => {
   try {
+    const { user } = req as any;
+
+    // Role check — only admin, staff, operator can export receipts
+    if (!['admin', 'staff', 'operator'].includes(user.role)) {
+      return res.status(403).json({ success: false, error: 'Insufficient permissions' });
+    }
+
     const {
       period = 'month',
       format: exportFormat = 'csv',
@@ -202,10 +212,14 @@ router.get('/export', authenticate, async (req, res) => {
         break;
     }
 
-    // Fetch receipts using parameterized query
+    // Fetch receipts using parameterized query (exclude file_data to avoid memory issues)
     const receiptsQuery = `
       SELECT
-        r.*,
+        r.id, r.file_name, r.file_size, r.mime_type, r.vendor, r.amount_cents, r.tax_cents,
+        r.hst_cents, r.hst_reg_number, r.purchase_date, r.club_location, r.category,
+        r.payment_method, r.notes, r.ocr_status, r.reconciled, r.reconciled_at,
+        r.reconciled_by, r.uploader_user_id, r.created_at, r.updated_at, r.source,
+        r.is_personal_card, r.content_hash,
         u.name as uploader_name,
         u.email as uploader_email
       FROM receipts r
@@ -500,47 +514,40 @@ router.post('/upload',
         is_personal_card
       } = req.body;
 
-      // Validate file size (5MB limit for base64, similar to ticket photos)
-      if (file_data && file_data.length > 5_000_000) {
+      // Validate file size (5MB decoded limit — base64 inflates ~33%, so check at 7MB)
+      if (file_data && file_data.length > 7_000_000) {
         return res.status(400).json({
           success: false,
           error: 'File size exceeds 5MB limit'
         });
       }
 
-      // Generate content hash for duplicate detection (defensive - column may not exist yet)
-      let contentHash: string | null = null;
-      try {
-        contentHash = hash(file_data);
+      // Generate content hash for duplicate detection
+      const contentHash = hash(file_data);
 
-        // Check for existing receipt with same content
-        const existingReceipt = await db.query(
-          'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
-          [contentHash]
-        );
+      // Check for existing receipt with same content
+      const existingReceipt = await db.query(
+        'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
+        [contentHash]
+      );
 
-        if (existingReceipt.rows.length > 0) {
-          const existing = existingReceipt.rows[0];
-          logger.warn('Duplicate receipt detected', {
-            existingId: existing.id,
+      if (existingReceipt.rows.length > 0) {
+        const existing = existingReceipt.rows[0];
+        logger.warn('Duplicate receipt detected', {
+          existingId: existing.id,
+          vendor: existing.vendor,
+          uploadedAt: existing.created_at
+        });
+        return res.status(409).json({
+          success: false,
+          error: 'Duplicate receipt detected',
+          message: `This receipt was already uploaded on ${new Date(existing.created_at).toLocaleDateString()}`,
+          existingReceipt: {
+            id: existing.id,
             vendor: existing.vendor,
             uploadedAt: existing.created_at
-          });
-          return res.status(409).json({
-            success: false,
-            error: 'Duplicate receipt detected',
-            message: `This receipt was already uploaded on ${new Date(existing.created_at).toLocaleDateString()}`,
-            existingReceipt: {
-              id: existing.id,
-              vendor: existing.vendor,
-              uploadedAt: existing.created_at
-            }
-          });
-        }
-      } catch (hashErr) {
-        // content_hash column may not exist yet - continue without duplicate detection
-        logger.warn('Duplicate detection skipped - content_hash column may not exist yet');
-        contentHash = null;
+          }
+        });
       }
 
       logger.info(`Receipt upload started by user ${user.id}`, {
@@ -600,10 +607,8 @@ router.post('/upload',
         }
       }
 
-      // Create database record with OCR data and content hash (defensive - column may not exist)
-      let insertResult;
-      try {
-        insertResult = await db.query(`
+      // Create database record with OCR data and content hash
+      const insertResult = await db.query(`
           INSERT INTO receipts (
             file_data,
             file_name,
@@ -653,58 +658,6 @@ router.post('/upload',
           is_personal_card || false,
           contentHash
         ]);
-      } catch (insertErr) {
-        // content_hash column may not exist - try without it
-        logger.warn('INSERT with content_hash failed, retrying without it');
-        insertResult = await db.query(`
-          INSERT INTO receipts (
-            file_data,
-            file_name,
-            file_size,
-            mime_type,
-            vendor,
-            amount_cents,
-            tax_cents,
-            hst_cents,
-            hst_reg_number,
-            purchase_date,
-            club_location,
-            category,
-            payment_method,
-            notes,
-            uploader_user_id,
-            ocr_status,
-            ocr_text,
-            ocr_json,
-            ocr_confidence,
-            line_items,
-            is_personal_card
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-          RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
-        `, [
-          storageData,
-          storageFileName,
-          file_size || null,
-          storageMimeType,
-          vendor || null,
-          amount_cents ? parseInt(amount_cents.toString()) : null,
-          ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
-          ocrResult?.hstAmount ? Math.round(ocrResult.hstAmount * 100) : null,
-          ocrResult?.hstRegNumber || null,
-          purchase_date || null,
-          club_location || null,
-          ocrResult?.category || null,
-          ocrResult?.paymentMethod || null,
-          notes || null,
-          user.id,
-          ocrResult ? 'completed' : 'manual',
-          ocrResult?.rawText || null,
-          ocrResult ? JSON.stringify(ocrResult) : null,
-          ocrResult?.confidence || 0,
-          ocrResult?.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
-          is_personal_card || false
-        ]);
-      }
 
       const receipt = insertResult.rows[0];
 
@@ -847,10 +800,15 @@ router.get('/search',
         paramIndex++;
       }
 
-      // Source filter
+      // Source filter (gmail matches gmail_attachment and gmail_body via prefix)
       if (source) {
-        queryStr += ` AND r.source = $${paramIndex}`;
-        params.push(source);
+        if (source === 'gmail') {
+          queryStr += ` AND r.source LIKE $${paramIndex}`;
+          params.push('gmail%');
+        } else {
+          queryStr += ` AND r.source = $${paramIndex}`;
+          params.push(source);
+        }
         paramIndex++;
       }
 
@@ -860,6 +818,10 @@ router.get('/search',
         params.push(category);
         paramIndex++;
       }
+
+      // Save WHERE clause for count query before adding ORDER BY / LIMIT
+      const whereClause = queryStr.substring(queryStr.indexOf('WHERE'));
+      const countParams = [...params];
 
       // Add ordering with validated sort column (prevent SQL injection)
       const allowedSorts: Record<string, string> = {
@@ -878,13 +840,8 @@ router.get('/search',
 
       const result = await db.query(queryStr, params);
 
-      // Get total count
-      const countQuery = queryStr.replace(
-        /SELECT[\s\S]*?FROM/,
-        'SELECT COUNT(*) as total FROM'
-      ).replace(/ORDER BY[\s\S]*$/, '');
-
-      const countParams = params.slice(0, -2); // Remove limit and offset
+      // Get total count using the saved WHERE clause
+      const countQuery = `SELECT COUNT(*) as total FROM receipts r LEFT JOIN users u ON r.uploader_user_id = u.id ${whereClause}`;
       const countResult = await db.query(countQuery, countParams);
 
       res.json({
@@ -923,6 +880,10 @@ router.get('/:id',
     try {
       const { user } = req as any;
       const { id } = req.params;
+
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({ success: false, error: 'Invalid receipt ID format' });
+      }
 
       // Check user role
       if (!['admin', 'staff', 'operator'].includes(user.role)) {
@@ -980,6 +941,10 @@ router.patch('/:id',
       const { id } = req.params;
       const updates = req.body;
 
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({ success: false, error: 'Invalid receipt ID format' });
+      }
+
       // Check user role
       if (!['admin', 'operator'].includes(user.role)) {
         return res.status(403).json({
@@ -1027,6 +992,9 @@ router.patch('/:id',
         updateFields.push(`reconciled_by = $${paramIndex}`);
         params.push(user.id);
         paramIndex++;
+      } else if (updates.reconciled === false) {
+        updateFields.push('reconciled_at = NULL');
+        updateFields.push('reconciled_by = NULL');
       }
 
       // Add receipt ID for WHERE clause
@@ -1083,6 +1051,10 @@ router.delete('/:id',
       const { user } = req as any;
       const { id } = req.params;
 
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({ success: false, error: 'Invalid receipt ID format' });
+      }
+
       // Only admin can delete
       if (user.role !== 'admin') {
         return res.status(403).json({
@@ -1091,12 +1063,7 @@ router.delete('/:id',
         });
       }
 
-      // Log before deletion
-      await db.query(`
-        INSERT INTO receipt_audit_log (receipt_id, action, user_id)
-        VALUES ($1, 'delete', $2)
-      `, [id, user.id]);
-
+      // Delete first, then log only if receipt existed
       const result = await db.query(
         'DELETE FROM receipts WHERE id = $1 RETURNING id',
         [id]
@@ -1108,6 +1075,12 @@ router.delete('/:id',
           error: 'Receipt not found'
         });
       }
+
+      // Log after confirmed deletion
+      await db.query(`
+        INSERT INTO receipt_audit_log (receipt_id, action, user_id)
+        VALUES ($1, 'delete', $2)
+      `, [id, user.id]);
 
       res.json({
         success: true,
@@ -1163,7 +1136,7 @@ router.post('/reconcile',
       }
 
       // Update all receipts
-      const placeholders = receiptIds.map((_: any, i: number) => `$${i + 3}`).join(', ');
+      const placeholders = receiptIds.map((_: any, i: number) => `$${i + 2}`).join(', ');
       const queryStr = `
         UPDATE receipts
         SET
@@ -1200,116 +1173,6 @@ router.post('/reconcile',
       res.status(500).json({
         success: false,
         error: 'Failed to reconcile receipts'
-      });
-    }
-  }
-);
-
-/**
- * POST /api/receipts/export-async
- * Start an async export job for large exports
- */
-router.post('/export-async',
-  authenticate,
-  [
-    body('period').optional().isIn(['week', 'month', 'year', 'all']),
-    body('format').optional().isIn(['csv', 'json', 'zip'])
-  ],
-  async (req, res) => {
-    try {
-      const { user } = req as any;
-      const { period = 'month', format: exportFormat = 'zip' } = req.body;
-
-      // Check user role
-      if (!['admin', 'staff', 'operator'].includes(user.role)) {
-        return res.status(403).json({
-          success: false,
-          error: 'Insufficient permissions'
-        });
-      }
-
-      // Create export job record
-      const jobResult = await db.query(`
-        INSERT INTO export_jobs (user_id, export_type, filters, status)
-        VALUES ($1, 'receipts', $2, 'pending')
-        RETURNING id
-      `, [user.id, JSON.stringify({ period, format: exportFormat })]);
-
-      const jobId = jobResult.rows[0].id;
-
-      // Start background processing (non-blocking)
-      // For now, we use the sync export since our streaming already handles large exports
-      // This endpoint is a future-proofing placeholder for truly massive exports
-      logger.info(`Export job ${jobId} created for ${exportFormat} export`);
-
-      res.json({
-        success: true,
-        data: {
-          jobId,
-          status: 'pending',
-          message: 'For large exports, use the standard export endpoint which now supports streaming.'
-        }
-      });
-
-    } catch (error) {
-      logger.error('Create export job error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to create export job'
-      });
-    }
-  }
-);
-
-/**
- * GET /api/receipts/export-status/:jobId
- * Check the status of an export job
- */
-router.get('/export-status/:jobId',
-  authenticate,
-  async (req, res) => {
-    try {
-      const { user } = req as any;
-      const { jobId } = req.params;
-
-      const result = await db.query(`
-        SELECT id, status, total_items, processed_items, file_size, error_message,
-               created_at, completed_at
-        FROM export_jobs
-        WHERE id = $1 AND user_id = $2
-      `, [jobId, user.id]);
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Export job not found'
-        });
-      }
-
-      const job = result.rows[0];
-
-      res.json({
-        success: true,
-        data: {
-          jobId: job.id,
-          status: job.status,
-          progress: job.total_items > 0
-            ? Math.round((job.processed_items / job.total_items) * 100)
-            : 0,
-          totalItems: job.total_items,
-          processedItems: job.processed_items,
-          fileSize: job.file_size,
-          errorMessage: job.error_message,
-          createdAt: job.created_at,
-          completedAt: job.completed_at
-        }
-      });
-
-    } catch (error) {
-      logger.error('Get export status error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to get export status'
       });
     }
   }

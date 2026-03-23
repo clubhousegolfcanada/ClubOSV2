@@ -160,8 +160,8 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
                   {r.club_location ? LOCATION_ABBR[r.club_location] || r.club_location : '—'}
                 </td>
                 <td className="px-3 py-2.5">
-                  <span title={r.source === 'gmail' ? 'Gmail' : 'Terminal'}>
-                    {r.source === 'gmail' ? (
+                  <span title={r.source?.startsWith('gmail') ? 'Gmail' : 'Terminal'}>
+                    {r.source?.startsWith('gmail') ? (
                       <Mail className="w-4 h-4 text-blue-500" />
                     ) : (
                       <Smartphone className="w-4 h-4 text-gray-400" />

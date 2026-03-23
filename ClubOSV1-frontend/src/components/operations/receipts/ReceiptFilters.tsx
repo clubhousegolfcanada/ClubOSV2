@@ -10,7 +10,7 @@ interface ReceiptFiltersProps {
   onChange: (filters: ReceiptFiltersProps['filters']) => void;
 }
 
-const CATEGORIES = ['Supplies', 'Equipment', 'Services', 'Food', 'Office', 'Utilities', 'Fuel', 'Software', 'Other'];
+const CATEGORIES = ['Supplies', 'Equipment', 'Services', 'Food', 'Office', 'Utilities', 'Fuel', 'Software', 'Advertising', 'Insurance', 'Rent', 'Maintenance', 'Professional Fees', 'Shipping', 'Other'];
 const LOCATIONS = ['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'];
 
 const selectClass = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';

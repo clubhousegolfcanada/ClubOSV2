@@ -393,13 +393,8 @@ async function processMessage(
     // Convert from URL-safe base64 to standard base64
     const base64Data = attData.data.data.replace(/-/g, '+').replace(/_/g, '/');
 
-    // Check for duplicate via content hash
+    // Content hash for dedup — INSERT ON CONFLICT handles atomically
     const contentHash = hash(base64Data);
-    const dupCheck = await db.query(
-      'SELECT id FROM receipts WHERE content_hash = $1',
-      [contentHash]
-    );
-    if (dupCheck.rows.length > 0) continue;
 
     let fileData: string;
     let mimeType: string;
@@ -461,26 +456,21 @@ async function processMessage(
         if (ocrResult && (ocrResult.totalAmount || ocrResult.vendor)) {
           const contentHash = hash(textContent);
 
-          const dupCheck = await db.query(
-            'SELECT id FROM receipts WHERE content_hash = $1',
-            [contentHash]
-          );
-          if (dupCheck.rows.length === 0) {
-            const fileData = await textToPdf(textContent, subject, fromHeader, emailDate);
+          // INSERT ON CONFLICT handles dedup atomically
+          const fileData = await textToPdf(textContent, subject, fromHeader, emailDate);
 
-            const receiptId = await insertGmailReceipt({
-              fileData,
-              fileName: `${sanitizeFilename(subject)}.pdf`,
-              mimeType: 'application/pdf',
-              contentHash,
-              ocrResult,
-              source: 'gmail_body',
-              gmailMessageId: messageId,
-              sourceEmail: fromHeader,
-              emailDate,
-            });
-            if (receiptId) receiptsCreated++;
-          }
+          const receiptId = await insertGmailReceipt({
+            fileData,
+            fileName: `${sanitizeFilename(subject)}.pdf`,
+            mimeType: 'application/pdf',
+            contentHash,
+            ocrResult,
+            source: 'gmail_body',
+            gmailMessageId: messageId,
+            sourceEmail: fromHeader,
+            emailDate,
+          });
+          if (receiptId) receiptsCreated++;
         }
       }
     }
@@ -523,7 +513,11 @@ export async function runGmailScan(startDate?: string): Promise<{
     return { emailsScanned: 0, receiptsCreated: 0, duplicatesSkipped: 0 };
   }
 
-  const dateFilter = startDate || 'after:2025/06/01';
+  // Default to last 30 days if no startDate provided
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const defaultDate = `after:${thirtyDaysAgo.getFullYear()}/${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}/${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
+  const dateFilter = startDate || defaultDate;
 
   // Collect unique message IDs from all queries
   const allMessageIds = new Set<string>();

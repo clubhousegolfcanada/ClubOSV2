@@ -2,6 +2,34 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.25.49] - 2026-03-23
+
+### Fixed
+- **Reconcile off-by-one** — Bulk reconcile was silently skipping the first receipt due to placeholder misalignment
+- **Export security** — Added role check to export endpoint (was accessible to any authenticated user)
+- **Export memory** — Excluded file_data from export query to prevent loading all images into memory
+- **Count query** — Replaced fragile regex-based count query with proper WHERE clause extraction
+- **File size validation** — Adjusted base64 threshold to correctly allow 5MB decoded files
+- **Un-reconcile metadata** — Clearing reconciled_at and reconciled_by when un-reconciling a receipt
+- **Summary/search date mismatch** — Summary now uses purchase_date (via COALESCE) to match search endpoint
+- **Gmail source filter** — Frontend now matches gmail_attachment/gmail_body sources; backend uses prefix matching
+- **"Today" query** — receiptQueryService now returns actual day, not the whole week
+- **UUID validation** — Added UUID format validation on GET/PATCH/DELETE :id endpoints (400 instead of 500)
+- **Delete audit log order** — Audit log now created after DELETE confirms receipt existed
+- **OCR PDF handling** — PDFs no longer get incorrect image/jpeg MIME prefix
+- **Gmail fallback date** — Changed hardcoded 2025/06/01 to dynamic 30-day lookback
+- **Duplicate detection** — Removed redundant SELECT before INSERT ON CONFLICT in Gmail scanner
+- **Category mismatch** — categorizeByVendor now returns "Fuel" instead of non-existent "Transportation"
+- **Filter categories** — Added missing categories (Advertising, Insurance, Rent, Maintenance, Professional Fees, Shipping)
+- **Null safety** — MonthlySummaryCard .toFixed() calls now handle null values
+- **Rate limiter** — Upload rate limiter now keys by user ID instead of IP address
+- **extractReceiptId** — Removed invalid numeric string fallback (receipt IDs are UUIDs)
+
+### Removed
+- Placeholder export-async and export-status endpoints (referenced non-existent export_jobs table)
+- Defensive content_hash fallback code (column has existed since initial migrations)
+- Dead ReceiptUploadModalSimple.tsx component (documented as unused)
+
 ## [1.25.48] - 2026-03-08
 
 ### Added
