@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.6] - 2026-03-23
+
+### Added
+- **Knowledge Base Management** — Add manual Q&A entries directly from the ClubAI page. Select intent type, enter the customer question, and the team response. Entry gets embedded and added to the RAG search index immediately.
+- **RAG Test Search** — Type any customer message to see exactly what knowledge ClubAI would find. Shows source type, intent, similarity score, and matched content. Useful for verifying ClubAI has the right info before going live.
+- **Knowledge import complete** — 6,000 past conversation Q&A pairs + 18 website content sections loaded into production with embeddings.
+
 ## [1.27.5] - 2026-03-23
 
 ### Added

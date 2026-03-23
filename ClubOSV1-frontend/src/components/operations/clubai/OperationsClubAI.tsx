@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Search, Filter } from 'lucide-react';
+import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Search, Filter, Plus, Send } from 'lucide-react';
 import apiClient from '@/api/http';
 
 // ============================================
@@ -80,6 +80,17 @@ export const OperationsClubAI: React.FC = () => {
   const [expandedConvo, setExpandedConvo] = useState<string | null>(null);
   const [convoLoading, setConvoLoading] = useState(false);
 
+  // Knowledge management
+  const [showAddKnowledge, setShowAddKnowledge] = useState(false);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [newAnswer, setNewAnswer] = useState('');
+  const [newIntent, setNewIntent] = useState('general_inquiry');
+  const [addingKnowledge, setAddingKnowledge] = useState(false);
+  const [testQuery, setTestQuery] = useState('');
+  const [testResults, setTestResults] = useState<Array<{ knowledge_id: number; source_type: string; intent: string; customer_message: string; team_response: string; page_section: string; similarity: number }> | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [showKnowledgePanel, setShowKnowledgePanel] = useState(false);
+
   // UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -159,6 +170,35 @@ export const OperationsClubAI: React.FC = () => {
     try {
       await apiClient.post('/api/patterns/clubai-feedback', { searchLogId, quality });
     } catch { /* non-critical */ }
+  };
+
+  const addKnowledgeEntry = async () => {
+    if (!newQuestion.trim() || !newAnswer.trim()) return;
+    setAddingKnowledge(true);
+    try {
+      await apiClient.post('/api/patterns/clubai-knowledge-manual', {
+        intent: newIntent,
+        customerQuestion: newQuestion.trim(),
+        teamResponse: newAnswer.trim(),
+      });
+      setNewQuestion('');
+      setNewAnswer('');
+      setShowAddKnowledge(false);
+      // Refresh stats
+      const kRes = await apiClient.get('/api/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
+      if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
+    } catch { /* */ }
+    setAddingKnowledge(false);
+  };
+
+  const runTestSearch = async () => {
+    if (!testQuery.trim()) return;
+    setTesting(true);
+    try {
+      const res = await apiClient.post('/api/patterns/clubai-knowledge-search', { query: testQuery.trim() });
+      if (res.data?.data) setTestResults(res.data.data);
+    } catch { setTestResults([]); }
+    setTesting(false);
   };
 
   // ============================================
@@ -313,9 +353,119 @@ export const OperationsClubAI: React.FC = () => {
               <p className="text-lg font-bold text-[var(--text-primary)]">{(knowledgeStats.avgConfidence * 100).toFixed(0)}%</p>
             </div>
           </div>
-          <p className="text-xs text-[var(--text-secondary)] mt-2">
-            {knowledgeStats.total} total entries with embeddings. ClubAI searches these to find relevant context for each customer message.
-          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={() => setShowAddKnowledge(!showAddKnowledge)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Add Entry
+            </button>
+            <button
+              onClick={() => setShowKnowledgePanel(!showKnowledgePanel)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
+            >
+              <Search className="w-3 h-3" /> Test Search
+            </button>
+          </div>
+
+          {/* Add Manual Knowledge Entry */}
+          {showAddKnowledge && (
+            <div className="mt-3 p-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] space-y-2">
+              <p className="text-xs font-medium text-[var(--text-primary)]">Add Knowledge Entry</p>
+              <select
+                value={newIntent}
+                onChange={(e) => setNewIntent(e.target.value)}
+                className="w-full text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+              >
+                {['general_inquiry', 'sim_frozen', 'pricing', 'door_access', 'booking_change', 'club_rental', 'wifi', 'side_screens', 'ball_not_registering', 'login_qr_issue', 'refund_request', 'gift_card', 'food_drink', 'how_long_18'].map(i => (
+                  <option key={i} value={i}>{i.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+              <input
+                value={newQuestion}
+                onChange={(e) => setNewQuestion(e.target.value)}
+                placeholder="Customer question (e.g. 'How much does it cost?')"
+                className="w-full text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+              />
+              <textarea
+                value={newAnswer}
+                onChange={(e) => setNewAnswer(e.target.value)}
+                placeholder="Team response (e.g. 'It's $35/hr standard, $25/hr mornings...')"
+                rows={3}
+                className="w-full text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)] resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowAddKnowledge(false)}
+                  className="px-3 py-1.5 text-xs rounded border border-[var(--border-primary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addKnowledgeEntry}
+                  disabled={addingKnowledge || !newQuestion.trim() || !newAnswer.trim()}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  <Plus className="w-3 h-3" /> {addingKnowledge ? 'Adding...' : 'Add Entry'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Test Search */}
+          {showKnowledgePanel && (
+            <div className="mt-3 p-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] space-y-2">
+              <p className="text-xs font-medium text-[var(--text-primary)]">Test RAG Search</p>
+              <p className="text-[10px] text-[var(--text-secondary)]">Type a customer message to see what knowledge ClubAI would find</p>
+              <div className="flex gap-2">
+                <input
+                  value={testQuery}
+                  onChange={(e) => setTestQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && runTestSearch()}
+                  placeholder="e.g. 'how much does it cost' or 'screen is frozen'"
+                  className="flex-1 text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                />
+                <button
+                  onClick={runTestSearch}
+                  disabled={testing || !testQuery.trim()}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  <Send className="w-3 h-3" /> {testing ? '...' : 'Search'}
+                </button>
+              </div>
+              {testResults && (
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {testResults.length === 0 ? (
+                    <p className="text-xs text-[var(--text-secondary)] py-2 text-center">No matches found</p>
+                  ) : (
+                    testResults.map((r, i) => (
+                      <div key={r.knowledge_id} className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            r.source_type === 'conversation' ? 'bg-blue-100 text-blue-700' :
+                            r.source_type === 'website' ? 'bg-purple-100 text-purple-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {r.source_type}{r.intent ? ` / ${r.intent}` : ''}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-secondary)]">
+                            {(r.similarity * 100).toFixed(0)}% match
+                          </span>
+                        </div>
+                        {r.customer_message && (
+                          <p className="text-[10px] text-[var(--text-secondary)] mb-0.5">Q: {r.customer_message.substring(0, 100)}</p>
+                        )}
+                        {r.page_section && (
+                          <p className="text-[10px] text-[var(--text-secondary)] mb-0.5">[{r.page_section}]</p>
+                        )}
+                        <p className="text-xs text-[var(--text-primary)]">{r.team_response.substring(0, 200)}{r.team_response.length > 200 ? '...' : ''}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
