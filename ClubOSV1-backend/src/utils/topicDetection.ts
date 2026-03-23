@@ -167,3 +167,29 @@ export function getTopicLabel(topic: MessageTopic): string {
 
   return labels[topic] || 'General Inquiry';
 }
+
+/**
+ * Check if a customer message indicates the issue is still unresolved after troubleshooting.
+ */
+export function isEscalationMessage(message: string): boolean {
+  return /still\s+(broken|not\s+working|frozen|stuck|doesn'?t\s+work)|didn'?t\s+(work|help|fix)|same\s+(problem|issue|thing)|nothing\s+(changed|happened|works)|give\s+up|can\s+(someone|i)\s+(call|help)|tried\s+that/i.test(message);
+}
+
+/**
+ * Check if a customer message indicates the issue is resolved.
+ */
+export function isSuccessMessage(message: string): boolean {
+  return /work(s|ed|ing)?!?\s*$|fixed|all\s+good|perfect|thanks|thank\s+you|got\s+it|that\s+did\s+it|back\s+up|awesome|great|nice/i.test(message);
+}
+
+/**
+ * Extract location and box number from a customer message.
+ */
+export function extractLocationAndBox(message: string): { location?: string; box?: string } {
+  const locationMatch = message.match(/\b(bedford|dartmouth|bayers?\s*lake|truro|stratford|river\s*oaks)\b/i);
+  const boxMatch = message.match(/\bbox\s*(\d+)\b/i);
+  return {
+    location: locationMatch?.[1],
+    box: boxMatch?.[1]
+  };
+}

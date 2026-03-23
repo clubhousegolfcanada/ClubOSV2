@@ -14,6 +14,7 @@ import { aiAutomationService } from '../services/aiAutomationService';
 import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { detectMessageTopic, getTopicLabel } from '../utils/topicDetection';
+import { clubaiService } from '../services/clubaiService';
 
 const router = Router();
 
@@ -536,7 +537,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
             lockoutHours
           });
 
-          // Mark operator as active with topic-aware lockouts
+          // Mark operator as active with topic-aware lockouts + deactivate ClubAI
           if (topicLockoutEnabled) {
             // Topic-aware mode: set global cooldown AND topic-specific lockout
             await db.query(`
@@ -544,6 +545,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
               SET operator_active = true,
                   operator_last_message = NOW(),
                   conversation_locked = false,
+                  clubai_active = false,
                   last_operator_topic = $2,
                   global_cooldown_until = NOW() + INTERVAL '${globalCooldownMinutes} minutes',
                   topic_lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
@@ -551,12 +553,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
               [phoneNumber, operatorTopic]
             );
           } else {
-            // Legacy blanket lockout mode
+            // Legacy blanket lockout mode + deactivate ClubAI
             await db.query(`
               UPDATE openphone_conversations
               SET operator_active = true,
                   operator_last_message = NOW(),
                   conversation_locked = true,
+                  clubai_active = false,
                   lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
               WHERE phone_number = $1`,
               [phoneNumber]
@@ -978,7 +981,85 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, escalated: true, reason: 'negative_sentiment' });
               }
 
-              // FIRST: Try V3-PLS Pattern Learning System
+              // ===== ClubAI Conversational Response =====
+              const clubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
+              const clubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
+              const convId = existingConv.rows[0].id;
+
+              if (clubaiEnabled) {
+                const clubaiDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                try {
+                  // Store customer message first
+                  await db.query(`
+                    INSERT INTO conversation_messages
+                    (conversation_id, sender_type, message_text)
+                    VALUES ($1, 'customer', $2)
+                  `, [convId, messageText]);
+
+                  const clubaiResult = await clubaiService.generateResponse(
+                    phoneNumber, messageText, convId
+                  );
+
+                  if (clubaiShadow) {
+                    logger.info('[ClubAI SHADOW]', {
+                      phoneNumber,
+                      message: messageText,
+                      wouldSend: clubaiResult.response,
+                      escalate: clubaiResult.escalate,
+                      confidence: clubaiResult.confidence
+                    });
+                  } else if (clubaiResult.response && !clubaiResult.escalate) {
+                    // Send ClubAI response
+                    const responseWithSignature = clubaiResult.response + ' - ClubAI';
+                    await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, responseWithSignature);
+
+                    // Store AI message for operator visibility
+                    await clubaiService.storeClubAIMessage(convId, responseWithSignature, clubaiResult.confidence);
+
+                    // Update conversation tracking
+                    await db.query(`
+                      UPDATE openphone_conversations SET
+                        clubai_active = true,
+                        clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1,
+                        ai_response_count = COALESCE(ai_response_count, 0) + 1
+                      WHERE id = $1
+                    `, [convId]);
+
+                    return res.json({ success: true, message: 'ClubAI responded' });
+
+                  } else if (clubaiResult.escalate) {
+                    // Send customer-facing escalation message if provided
+                    if (clubaiResult.response) {
+                      const escalateMsg = clubaiResult.response + ' - ClubAI';
+                      await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, escalateMsg);
+                      await clubaiService.storeClubAIMessage(convId, escalateMsg, clubaiResult.confidence);
+                    }
+
+                    // Lock conversation for operator
+                    await db.query(`
+                      UPDATE openphone_conversations SET
+                        clubai_escalated = true,
+                        clubai_escalation_reason = $2,
+                        conversation_locked = true,
+                        customer_sentiment = 'needs_attention'
+                      WHERE id = $1
+                    `, [convId, clubaiResult.escalationSummary || 'ClubAI escalated']);
+
+                    logger.info('[ClubAI ESCALATED]', {
+                      phoneNumber,
+                      reason: clubaiResult.escalationSummary
+                    });
+
+                    return res.json({ success: true, message: 'Escalated to operator' });
+                  }
+                  // If ClubAI returned null response (no match), fall through to V3-PLS
+                } catch (clubaiError) {
+                  logger.error('[ClubAI] Error in response generation, falling through to V3-PLS:', clubaiError);
+                  // Fall through to V3-PLS on error
+                }
+              }
+
+              // FALLBACK: Try V3-PLS Pattern Learning System
               try {
                 const patternResult = await patternLearningService.processMessage(
                   messageText,
@@ -986,20 +1067,22 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   existingConv.rows[0].id,
                   customerName
                 );
-                
-                // Store message in conversation history
-                await db.query(`
-                  INSERT INTO conversation_messages 
-                  (conversation_id, sender_type, message_text, pattern_id, pattern_confidence, ai_reasoning)
-                  VALUES ($1, $2, $3, $4, $5, $6)
-                `, [
-                  existingConv.rows[0].id,
-                  'customer',
-                  messageText,
-                  patternResult.patternId || null,
-                  patternResult.confidence || null,
-                  patternResult.reasoning ? JSON.stringify(patternResult.reasoning) : null
-                ]);
+
+                // Store message in conversation history (skip if ClubAI already stored it)
+                if (!clubaiEnabled) {
+                  await db.query(`
+                    INSERT INTO conversation_messages
+                    (conversation_id, sender_type, message_text, pattern_id, pattern_confidence, ai_reasoning)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                  `, [
+                    existingConv.rows[0].id,
+                    'customer',
+                    messageText,
+                    patternResult.patternId || null,
+                    patternResult.confidence || null,
+                    patternResult.reasoning ? JSON.stringify(patternResult.reasoning) : null
+                  ]);
+                }
                 
                 // Handle pattern result based on action
                 if (patternResult.action === 'auto_execute' && patternResult.response) {

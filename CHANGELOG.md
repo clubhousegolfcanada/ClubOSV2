@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.0] - 2026-03-23
+
+### Added
+- **ClubAI Conversational Support** — GPT-4o powered SMS support that responds like the Clubhouse team
+  - Natural, conversational troubleshooting (walks customers through fixes step-by-step)
+  - Knowledge base with troubleshooting steps, pricing, policies, FAQs, and 95 gold-standard conversation examples
+  - Automatic escalation to human operators when self-service fails or refunds/actions are needed
+  - All AI messages stored in database for operator visibility
+  - Iron-clad operator override: when a human texts, ClubAI permanently deactivates for that conversation
+  - Shadow mode for safe testing (logs what it would send without actually sending)
+  - Environment controls: CLUBAI_ENABLED, CLUBAI_SHADOW_MODE, CLUBAI_MAX_MESSAGES
+- **Topic detection helpers** — escalation message detection, success message detection, location/box extraction
+- **Database migration** — ClubAI tracking columns on openphone_conversations (clubai_active, clubai_messages_sent, clubai_escalated, clubai_escalation_reason)
+
 ## [1.25.49] - 2026-03-23
 
 ### Fixed
