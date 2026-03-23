@@ -497,6 +497,34 @@ async function startServer() {
       const { initializeWhiteLabelData } = await import('./scripts/initialize-white-label-data');
       await initializeWhiteLabelData();
       
+      // Ensure Gmail scanning tables exist
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS gmail_scanned_messages (
+            id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            message_id      TEXT UNIQUE NOT NULL,
+            thread_id       TEXT,
+            from_address    TEXT,
+            subject         TEXT,
+            email_date      TIMESTAMPTZ,
+            attachment_count INTEGER DEFAULT 0,
+            receipts_created INTEGER DEFAULT 0,
+            skipped_reason  TEXT,
+            processed_at    TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_gmail_scanned_date ON gmail_scanned_messages(email_date)`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_gmail_scanned_msg_id ON gmail_scanned_messages(message_id)`);
+        await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'terminal'`);
+        await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS gmail_message_id TEXT`);
+        await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS source_email TEXT`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_source ON receipts(source)`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_gmail_msg ON receipts(gmail_message_id)`);
+        logger.info('✅ Gmail scanning tables ready');
+      } catch (gmailError) {
+        logger.debug('Gmail table migration:', gmailError);
+      }
+
       // DISABLED: Pattern cleanup was too aggressive, deleting active patterns
       // To re-enable: Set CLEANUP_PATTERNS_ON_STARTUP=true in environment
       if (process.env.CLEANUP_PATTERNS_ON_STARTUP === 'true') {
