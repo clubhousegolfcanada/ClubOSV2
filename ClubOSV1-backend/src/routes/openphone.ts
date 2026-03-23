@@ -1160,108 +1160,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
               userCount: userIds.length
             });
             
-            // Process AI automations for new inbound conversation
-            const messageText = messageData.body || messageData.text || '';
-            const automationResponse = await aiAutomationService.processMessage(
-              phoneNumber, 
-              messageText,
-              newConversationId,
-              true // This is an initial message
-            );
-            
-            // PATTERN LEARNING: Process new conversation message
-            try {
-              const patternResult = await patternLearningService.processMessage(
-                messageText,
-                phoneNumber,
-                newConversationId,
-                customerName
-              );
-              
-              // Handle pattern result based on action
-              if (patternResult.action === 'auto_execute' && patternResult.response) {
-                logger.info('[Pattern Learning] AUTO-EXECUTING (new conv)', {
-                  confidence: patternResult.confidence,
-                  pattern: patternResult.pattern?.pattern_type
-                });
-                
-                // Send automated response
-                const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                if (defaultNumber) {
-                  await openPhoneService.sendMessage(
-                    phoneNumber,
-                    defaultNumber,
-                    patternResult.response
-                  );
-                }
-              } else if (patternResult.action === 'suggest' || patternResult.action === 'queue') {
-                logger.info('[Pattern Learning] SUGGESTION READY (new conv)', {
-                  action: patternResult.action,
-                  confidence: patternResult.confidence,
-                  pattern: patternResult.pattern?.pattern_type
-                });
-                
-                // Store suggestion for operator review
-                try {
-                  await db.query(`
-                    INSERT INTO pattern_suggestions_queue 
-                    (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
-                     confidence_score, reasoning, phone_number, status, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
-                  `, [
-                    newConversationId,
-                    patternResult.patternId || null,  // Add null safety
-                    patternResult.pattern?.pattern_type || 'general',
-                    messageText,
-                    patternResult.response || '',  // Ensure response is not null
-                    patternResult.confidence || 0,
-                    JSON.stringify(patternResult.reasoning || {}),
-                    phoneNumber
-                  ]);
-                  logger.info('[Pattern Learning] Suggestion queued successfully (new conv)', {
-                    conversationId: newConversationId,
-                    patternId: patternResult.patternId
-                  });
-                } catch (queueError) {
-                  logger.error('[Pattern Learning] Failed to queue suggestion (new conv)', {
-                    error: queueError,
-                    conversationId: newConversationId,
-                    patternId: patternResult.patternId
-                  });
-                  // Don't fail the webhook - just log the error
-                }
-              } else if (patternResult.action === 'shadow') {
-                logger.info('[Pattern Learning] SHADOW MODE (new conv)', {
-                  confidence: patternResult.confidence,
-                  pattern: patternResult.pattern?.pattern_type
-                });
-              } else {
-                logger.info('[Pattern Learning] Result (new conv):', {
-                  action: patternResult.action,
-                  confidence: patternResult.confidence,
-                  reason: patternResult.reason
-                });
-              }
-            } catch (err) {
-              logger.error('[Pattern Learning] Error (new conv):', err);
-            }
-            
-            if (automationResponse.handled && automationResponse.response) {
-              // Send automated response
-              logger.info('Sending automated response for new conversation', {
-                phoneNumber,
-                response: automationResponse.response.substring(0, 100)
-              });
-              
-              const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-              if (defaultNumber) {
-                await openPhoneService.sendMessage(
-                  phoneNumber,
-                  defaultNumber,
-                  automationResponse.response
-                );
-              }
-            }
+            // V3-PLS and AI Automation Service are DISABLED for new conversations.
+            // ClubAI RAG handles conversations via the existing conversation path.
+            // For the very first message, the operator sees it in the inbox.
+            // On the next inbound message, it hits the existing-conversation ClubAI path.
+            void (messageData.body || messageData.text || ''); // messageText consumed by removed V3-PLS code
           } catch (notifError) {
             logger.error('Failed to send push notification:', notifError);
           }
