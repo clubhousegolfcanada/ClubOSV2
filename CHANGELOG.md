@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.6] - 2026-03-23
+
+### Fixed
+- **"Receipts found" count wrong** — Was showing cumulative `SUM(receipts_created)` from `gmail_scanned_messages` (included failed inserts). Now counts actual receipts in `receipts` table with `source LIKE 'gmail%'`.
+- **Missing Gmail receipts** — Messages marked as processed during the content_hash bug had `receipts_created > 0` but no actual receipts in DB. Added reset-stale endpoint to clear these records so they can be re-scanned.
+
+### Added
+- **Reset & Re-scan button** — Rotate icon button on Gmail Scanner card. Clears stale processed records (from before the content_hash fix) and auto-triggers a fresh scan.
+- **POST /api/gmail/reset-stale** — Admin endpoint to delete `gmail_scanned_messages` records where receipts were claimed but don't exist in the receipts table.
+
 ## [1.26.5] - 2026-03-23
 
 ### Fixed

@@ -21,10 +21,10 @@ router.post('/scan', authenticate, async (req, res) => {
 
   try {
     const result = await runGmailScan(startDate);
-    res.json({ success: true, data: result });
+    return res.json({ success: true, data: result });
   } catch (error) {
     logger.error('Gmail scan failed:', error);
-    res.status(500).json({ error: 'Gmail scan failed' });
+    return res.status(500).json({ error: 'Gmail scan failed' });
   }
 });
 
@@ -39,10 +39,11 @@ router.get('/status', authenticate, async (req, res) => {
   }
 
   try {
+    // Count actual receipts in the receipts table (not gmail_scanned_messages which can be stale)
+    const receiptCount = await db.query(`SELECT COUNT(*) as count FROM receipts WHERE source LIKE 'gmail%'`);
     const stats = await db.query(`
       SELECT
         COUNT(*) as total_scanned,
-        COALESCE(SUM(receipts_created), 0) as total_receipts_created,
         MAX(processed_at) as last_scan_at,
         COUNT(DISTINCT from_address) as unique_senders
       FROM gmail_scanned_messages
@@ -58,24 +59,74 @@ router.get('/status', authenticate, async (req, res) => {
     `);
 
     const row = stats.rows[0];
-    res.json({
+    return res.json({
       success: true,
       data: {
-        // camelCase for frontend compatibility
         totalScanned: parseInt(row.total_scanned || '0'),
-        totalReceipts: parseInt(row.total_receipts_created || '0'),
+        totalReceipts: parseInt(receiptCount.rows[0]?.count || '0'),
         lastScanTime: row.last_scan_at,
         uniqueSenders: parseInt(row.unique_senders || '0'),
         ocrProvider: isVeryfiConfigured() ? 'veryfi' : 'gpt-4o',
         gmailEnabled: process.env.GMAIL_SCAN_ENABLED === 'true',
-        // also keep raw for any other consumers
-        ...row,
         topSenders: recentSenders.rows,
       }
     });
   } catch (error) {
     logger.error('Gmail status error:', error);
-    res.status(500).json({ error: 'Failed to get Gmail status' });
+    return res.status(500).json({ error: 'Failed to get Gmail status' });
+  }
+});
+
+/**
+ * POST /api/gmail/reset-stale
+ * Reset messages that were marked processed but have no actual receipts in DB.
+ * This allows re-scanning of messages that failed during the content_hash bug.
+ */
+router.post('/reset-stale', authenticate, async (req, res) => {
+  const { user } = req as any;
+  if (user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  try {
+    // Find messages marked as processed with receipts_created > 0
+    // but that don't have matching receipts in the receipts table
+    const result = await db.query(`
+      DELETE FROM gmail_scanned_messages gsm
+      WHERE gsm.receipts_created > 0
+      AND NOT EXISTS (
+        SELECT 1 FROM receipts r WHERE r.gmail_message_id = gsm.message_id
+      )
+      RETURNING gsm.message_id, gsm.subject
+    `);
+
+    // Also delete messages with receipts_created = 0 that might have had processable content
+    // (from before the insertsAttempted fix)
+    const result2 = await db.query(`
+      DELETE FROM gmail_scanned_messages gsm
+      WHERE gsm.receipts_created = 0
+      AND gsm.attachment_count > 0
+      RETURNING gsm.message_id
+    `);
+
+    const resetCount = result.rows.length + result2.rows.length;
+    logger.info(`Reset ${resetCount} stale gmail_scanned_messages records`, {
+      falsePositives: result.rows.length,
+      zeroWithAttachments: result2.rows.length,
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        resetCount,
+        falsePositives: result.rows.length,
+        zeroWithAttachments: result2.rows.length,
+        message: `Reset ${resetCount} stale records. Run a scan to re-process them.`
+      }
+    });
+  } catch (error) {
+    logger.error('Reset stale failed:', error);
+    return res.status(500).json({ error: 'Failed to reset stale records' });
   }
 });
 

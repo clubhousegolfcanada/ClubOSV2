@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, RefreshCw, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react';
 import { http } from '@/api/http';
 import logger from '@/services/logger';
 
@@ -21,6 +21,7 @@ export const GmailScanCard: React.FC<GmailScanCardProps> = ({ year, month, onSca
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ found: number } | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetchStatus();
@@ -118,27 +119,62 @@ export const GmailScanCard: React.FC<GmailScanCardProps> = ({ year, month, onSca
             </div>
           )}
 
-          <button
-            onClick={handleScan}
-            disabled={scanning}
-            className={`w-full py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-              scanning
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {scanning ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Scanning...
-              </>
-            ) : (
-              <>
-                <Mail className="w-4 h-4" />
-                Scan {monthLabel}
-              </>
-            )}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleScan}
+              disabled={scanning || resetting}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                scanning || resetting
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {scanning ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Scanning...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Scan {monthLabel}
+                </>
+              )}
+            </button>
+            <button
+              onClick={async () => {
+                setResetting(true);
+                setError(null);
+                try {
+                  const resp = await http.post('gmail/reset-stale');
+                  const count = resp.data?.data?.resetCount || 0;
+                  if (count > 0) {
+                    setResult({ found: 0 });
+                    setError(null);
+                    // Auto-trigger scan after reset
+                    fetchStatus();
+                    handleScan();
+                  } else {
+                    setError('No stale records found to reset.');
+                  }
+                } catch (err: any) {
+                  setError('Reset failed. Try again.');
+                  logger.error('Reset stale failed:', err);
+                } finally {
+                  setResetting(false);
+                }
+              }}
+              disabled={scanning || resetting}
+              title="Reset failed scans and re-process"
+              className={`py-2 px-3 rounded-lg font-medium flex items-center justify-center gap-1 transition-colors ${
+                scanning || resetting
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
+              }`}
+            >
+              <RotateCcw className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </>
       )}
     </div>
