@@ -2233,7 +2233,7 @@ router.get('/clubai-config', authenticate, async (_req: Request, res: Response) 
   try {
     const result = await db.query(`
       SELECT config_key, config_value FROM pattern_learning_config
-      WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_max_messages')
+      WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_approval_mode', 'clubai_max_messages')
     `);
 
     const config: Record<string, string> = {};
@@ -2246,6 +2246,7 @@ router.get('/clubai-config', authenticate, async (_req: Request, res: Response) 
       data: {
         enabled: config.clubai_enabled === 'true',
         shadowMode: config.clubai_shadow_mode !== 'false',
+        approvalMode: config.clubai_approval_mode === 'true',
         maxMessages: parseInt(config.clubai_max_messages || '5')
       }
     });
@@ -2266,11 +2267,12 @@ router.put('/clubai-config', authenticate, async (req: Request, res: Response) =
       return res.status(403).json({ success: false, error: 'Admin only' });
     }
 
-    const { enabled, shadowMode, maxMessages } = req.body;
+    const { enabled, shadowMode, approvalMode, maxMessages } = req.body;
 
     const updates: Array<{ key: string; value: string }> = [];
     if (enabled !== undefined) updates.push({ key: 'clubai_enabled', value: String(enabled) });
     if (shadowMode !== undefined) updates.push({ key: 'clubai_shadow_mode', value: String(shadowMode) });
+    if (approvalMode !== undefined) updates.push({ key: 'clubai_approval_mode', value: String(approvalMode) });
     if (maxMessages !== undefined) updates.push({ key: 'clubai_max_messages', value: String(maxMessages) });
 
     for (const { key, value } of updates) {
@@ -2546,6 +2548,169 @@ router.post('/clubai-feedback', authenticate, async (req: Request, res: Response
   } catch (error) {
     logger.error('[ClubAI Feedback] Error:', error);
     return res.status(500).json({ success: false, error: 'Failed to submit feedback' });
+  }
+});
+
+// ============================================
+// CLUBAI DRAFT / APPROVAL MODE ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/patterns/clubai-drafts
+ * List pending draft responses for operator review
+ */
+router.get('/clubai-drafts', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { status = 'pending', limit = '20' } = req.query;
+    const result = await db.query(`
+      SELECT * FROM clubai_draft_responses
+      WHERE status = $1
+      ORDER BY created_at DESC
+      LIMIT $2
+    `, [status, parseInt(limit as string) || 20]);
+
+    const countResult = await db.query(`
+      SELECT COUNT(*) FROM clubai_draft_responses WHERE status = 'pending'
+    `);
+
+    return res.json({
+      success: true,
+      data: result.rows,
+      pendingCount: parseInt(countResult.rows[0].count),
+    });
+  } catch (error) {
+    logger.error('[ClubAI Drafts] List error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get drafts' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-drafts/:id/approve
+ * Approve a draft and send it to the customer
+ */
+router.post('/clubai-drafts/:id/approve', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id || null;
+
+    // Get the draft
+    const draftResult = await db.query(`
+      SELECT * FROM clubai_draft_responses WHERE id = $1 AND status = 'pending'
+    `, [id]);
+
+    if (draftResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Draft not found or already reviewed' });
+    }
+
+    const draft = draftResult.rows[0];
+
+    // Send the response via OpenPhone
+    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+    if (defaultNumber) {
+      const { openPhoneService } = await import('../services/openphoneService');
+      const responseWithSignature = draft.ai_response + ' - ClubAI';
+      await openPhoneService.sendMessage(draft.phone_number, defaultNumber, responseWithSignature);
+
+      // Store the sent message
+      const { storeClubAIMessage } = await import('../services/clubaiService');
+      await storeClubAIMessage(draft.conversation_id, responseWithSignature, draft.confidence);
+
+      // Update conversation tracking
+      try {
+        await db.query(`
+          UPDATE openphone_conversations SET
+            clubai_active = true,
+            clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1
+          WHERE id = $1
+        `, [draft.conversation_id]);
+      } catch { /* columns may not exist */ }
+    }
+
+    // Mark draft as approved
+    await db.query(`
+      UPDATE clubai_draft_responses
+      SET status = 'approved', reviewed_by = $2, reviewed_at = NOW()
+      WHERE id = $1
+    `, [id, userId]);
+
+    return res.json({ success: true, message: 'Draft approved and sent' });
+  } catch (error) {
+    logger.error('[ClubAI Drafts] Approve error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to approve draft' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-drafts/:id/edit
+ * Edit a draft and send the edited version
+ */
+router.post('/clubai-drafts/:id/edit', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { editedResponse } = req.body;
+    const userId = (req as any).user?.id || null;
+
+    if (!editedResponse?.trim()) {
+      return res.status(400).json({ success: false, error: 'editedResponse is required' });
+    }
+
+    const draftResult = await db.query(`
+      SELECT * FROM clubai_draft_responses WHERE id = $1 AND status = 'pending'
+    `, [id]);
+
+    if (draftResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Draft not found or already reviewed' });
+    }
+
+    const draft = draftResult.rows[0];
+
+    // Send the edited response
+    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+    if (defaultNumber) {
+      const { openPhoneService } = await import('../services/openphoneService');
+      await openPhoneService.sendMessage(draft.phone_number, defaultNumber, editedResponse.trim());
+
+      // Store as operator message (not AI — since it was edited)
+      await db.query(`
+        INSERT INTO conversation_messages
+        (conversation_id, sender_type, message_text)
+        VALUES ($1, 'operator', $2)
+      `, [draft.conversation_id, editedResponse.trim()]);
+    }
+
+    // Mark draft as edited, store the correction for learning
+    await db.query(`
+      UPDATE clubai_draft_responses
+      SET status = 'edited', operator_response = $2, reviewed_by = $3, reviewed_at = NOW()
+      WHERE id = $1
+    `, [id, editedResponse.trim(), userId]);
+
+    return res.json({ success: true, message: 'Edited response sent' });
+  } catch (error) {
+    logger.error('[ClubAI Drafts] Edit error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to edit draft' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-drafts/:id/reject
+ * Reject a draft (operator will handle manually)
+ */
+router.post('/clubai-drafts/:id/reject', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id || null;
+
+    await db.query(`
+      UPDATE clubai_draft_responses
+      SET status = 'rejected', reviewed_by = $2, reviewed_at = NOW()
+      WHERE id = $1
+    `, [id, userId]);
+
+    return res.json({ success: true, message: 'Draft rejected' });
+  } catch (error) {
+    logger.error('[ClubAI Drafts] Reject error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reject draft' });
   }
 });
 

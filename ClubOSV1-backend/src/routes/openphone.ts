@@ -924,17 +924,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
               // Read config from DB (what the frontend toggle controls), with env var as fallback
               let clubaiEnabled = false;
               let clubaiShadow = false;
+              let clubaiApprovalMode = false;
               try {
                 const configResult = await db.query(`
                   SELECT config_key, config_value FROM pattern_learning_config
-                  WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode')
+                  WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_approval_mode')
                 `);
                 for (const row of configResult.rows) {
                   if (row.config_key === 'clubai_enabled') clubaiEnabled = row.config_value === 'true';
                   if (row.config_key === 'clubai_shadow_mode') clubaiShadow = row.config_value === 'true';
+                  if (row.config_key === 'clubai_approval_mode') clubaiApprovalMode = row.config_value === 'true';
                 }
               } catch {
-                // Fallback to env vars if DB config doesn't exist yet
                 clubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
                 clubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
               }
@@ -978,6 +979,26 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       escalate: clubaiResult.escalate,
                       confidence: clubaiResult.confidence
                     });
+                  } else if (clubaiApprovalMode && clubaiResult.response) {
+                    // APPROVAL MODE: Store as draft for operator review
+                    try {
+                      await db.query(`
+                        INSERT INTO clubai_draft_responses
+                        (conversation_id, phone_number, customer_name, customer_message, ai_response,
+                         confidence, escalate, escalation_summary)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                      `, [
+                        convId, phoneNumber, customerName || null, messageText,
+                        clubaiResult.response, clubaiResult.confidence,
+                        clubaiResult.escalate, clubaiResult.escalationSummary || null
+                      ]);
+                      logger.info('[ClubAI APPROVAL] Draft stored for review', {
+                        phoneNumber, confidence: clubaiResult.confidence
+                      });
+                    } catch (draftErr) {
+                      logger.error('[ClubAI APPROVAL] Failed to store draft:', draftErr);
+                    }
+                    return res.json({ success: true, message: 'ClubAI draft stored for approval' });
                   } else if (clubaiResult.response && !clubaiResult.escalate) {
                     // Send ClubAI response
                     const responseWithSignature = clubaiResult.response + ' - ClubAI';

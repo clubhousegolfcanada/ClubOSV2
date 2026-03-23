@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Search, Filter, Plus, Send } from 'lucide-react';
+import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Search, Filter, Plus, Send, Check, X, Edit3, Clock } from 'lucide-react';
 import apiClient from '@/api/http';
 
 // ============================================
@@ -9,7 +9,21 @@ import apiClient from '@/api/http';
 interface ClubAIConfig {
   enabled: boolean;
   shadowMode: boolean;
+  approvalMode: boolean;
   maxMessages: number;
+}
+
+interface DraftResponse {
+  id: number;
+  conversation_id: string;
+  phone_number: string;
+  customer_name: string | null;
+  customer_message: string;
+  ai_response: string;
+  confidence: number;
+  escalate: boolean;
+  status: string;
+  created_at: string;
 }
 
 interface ClubAIStats {
@@ -65,7 +79,13 @@ interface ClubAIConversation {
 
 export const OperationsClubAI: React.FC = () => {
   // Config & stats
-  const [config, setConfig] = useState<ClubAIConfig>({ enabled: false, shadowMode: true, maxMessages: 5 });
+  const [config, setConfig] = useState<ClubAIConfig>({ enabled: false, shadowMode: true, approvalMode: false, maxMessages: 5 });
+
+  // Drafts (approval mode)
+  const [drafts, setDrafts] = useState<DraftResponse[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [editingDraft, setEditingDraft] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
   const [stats, setStats] = useState<ClubAIStats>({ conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0 });
   const [safety, setSafety] = useState<SafetyThresholds>({
     rapidMessageThreshold: 3, rapidMessageWindowSeconds: 60, rapidMessageEnabled: true,
@@ -129,8 +149,18 @@ export const OperationsClubAI: React.FC = () => {
     setConvoLoading(false);
   }, [convoFilter]);
 
+  const fetchDrafts = useCallback(async () => {
+    setDraftsLoading(true);
+    try {
+      const res = await apiClient.get('/api/patterns/clubai-drafts?status=pending');
+      if (res.data?.data) setDrafts(res.data.data);
+    } catch { /* */ }
+    setDraftsLoading(false);
+  }, []);
+
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
+  useEffect(() => { if (config.approvalMode) fetchDrafts(); }, [config.approvalMode, fetchDrafts]);
 
   // ============================================
   // ACTIONS
@@ -189,6 +219,30 @@ export const OperationsClubAI: React.FC = () => {
       if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
     } catch { /* */ }
     setAddingKnowledge(false);
+  };
+
+  const approveDraft = async (id: number) => {
+    try {
+      await apiClient.post(`/api/patterns/clubai-drafts/${id}/approve`);
+      setDrafts(prev => prev.filter(d => d.id !== id));
+    } catch { /* */ }
+  };
+
+  const rejectDraft = async (id: number) => {
+    try {
+      await apiClient.post(`/api/patterns/clubai-drafts/${id}/reject`);
+      setDrafts(prev => prev.filter(d => d.id !== id));
+    } catch { /* */ }
+  };
+
+  const editDraft = async (id: number) => {
+    if (!editText.trim()) return;
+    try {
+      await apiClient.post(`/api/patterns/clubai-drafts/${id}/edit`, { editedResponse: editText.trim() });
+      setDrafts(prev => prev.filter(d => d.id !== id));
+      setEditingDraft(null);
+      setEditText('');
+    } catch { /* */ }
   };
 
   const runTestSearch = async () => {
@@ -253,9 +307,10 @@ export const OperationsClubAI: React.FC = () => {
         <div className={`px-3 py-1 rounded-full text-xs font-medium ${
           !config.enabled ? 'bg-gray-100 text-gray-600' :
           config.shadowMode ? 'bg-yellow-100 text-yellow-700' :
+          config.approvalMode ? 'bg-blue-100 text-blue-700' :
           'bg-green-100 text-green-700'
         }`}>
-          {!config.enabled ? 'Disabled' : config.shadowMode ? 'Shadow Mode' : 'Live'}
+          {!config.enabled ? 'Disabled' : config.shadowMode ? 'Shadow Mode' : config.approvalMode ? 'Approval Mode' : 'Live'}
         </div>
       </div>
 
@@ -279,18 +334,38 @@ export const OperationsClubAI: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">Shadow Mode</p>
-              <p className="text-xs text-[var(--text-secondary)]">Log what ClubAI would send without actually sending</p>
+          {/* Mode selector: Shadow / Approval / Auto */}
+          <div>
+            <p className="text-sm font-medium text-[var(--text-primary)] mb-2">Response Mode</p>
+            <div className="flex rounded-lg border border-[var(--border-primary)] overflow-hidden text-xs">
+              {([
+                { key: 'shadow', label: 'Shadow', desc: 'Log only, don\'t send', color: 'bg-yellow-500' },
+                { key: 'approval', label: 'Approval', desc: 'Draft + operator reviews', color: 'bg-blue-500' },
+                { key: 'auto', label: 'Auto-Send', desc: 'Send immediately', color: 'bg-green-500' },
+              ] as const).map(mode => {
+                const isActive =
+                  (mode.key === 'shadow' && config.shadowMode && !config.approvalMode) ||
+                  (mode.key === 'approval' && config.approvalMode && !config.shadowMode) ||
+                  (mode.key === 'auto' && !config.shadowMode && !config.approvalMode);
+                return (
+                  <button
+                    key={mode.key}
+                    onClick={() => {
+                      if (mode.key === 'shadow') saveConfig({ shadowMode: true, approvalMode: false });
+                      else if (mode.key === 'approval') saveConfig({ shadowMode: false, approvalMode: true });
+                      else saveConfig({ shadowMode: false, approvalMode: false });
+                    }}
+                    disabled={saving}
+                    className={`flex-1 px-3 py-2 text-center transition-colors ${
+                      isActive ? `${mode.color} text-white` : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                    }`}
+                  >
+                    <p className="font-medium">{mode.label}</p>
+                    <p className="text-[10px] opacity-80">{mode.desc}</p>
+                  </button>
+                );
+              })}
             </div>
-            <button
-              onClick={() => saveConfig({ shadowMode: !config.shadowMode })}
-              className={`relative w-11 h-6 rounded-full transition-colors ${config.shadowMode ? 'bg-yellow-500' : 'bg-gray-300'}`}
-              disabled={saving}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${config.shadowMode ? 'translate-x-5' : ''}`} />
-            </button>
           </div>
 
           <div className="flex items-center justify-between">
@@ -328,6 +403,93 @@ export const OperationsClubAI: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Draft Review Queue (approval mode) */}
+      {config.approvalMode && drafts.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-500" /> Pending Drafts
+              <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-[10px]">{drafts.length}</span>
+            </h3>
+            <button onClick={fetchDrafts} className="p-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+              <RefreshCw className={`w-4 h-4 text-blue-500 ${draftsLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          <div className="space-y-3">
+            {drafts.map(draft => (
+              <div key={draft.id} className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-medium text-[var(--text-primary)]">
+                      {draft.customer_name || formatPhone(draft.phone_number)}
+                    </p>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{formatTime(draft.created_at)}</span>
+                    {draft.escalate && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-700">ESCALATION</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-[var(--text-secondary)]">
+                    {(draft.confidence * 100).toFixed(0)}% confidence
+                  </span>
+                </div>
+
+                {/* Customer message */}
+                <div className="bg-gray-100 dark:bg-gray-800 rounded px-3 py-2 mb-2">
+                  <p className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase mb-0.5">Customer</p>
+                  <p className="text-xs text-[var(--text-primary)]">{draft.customer_message}</p>
+                </div>
+
+                {/* AI draft */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded px-3 py-2 mb-3">
+                  <p className="text-[10px] font-semibold text-blue-600 uppercase mb-0.5">ClubAI Draft</p>
+                  <p className="text-xs text-[var(--text-primary)]">{draft.ai_response}</p>
+                </div>
+
+                {/* Edit mode */}
+                {editingDraft === draft.id ? (
+                  <div className="space-y-2 mb-3">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={3}
+                      className="w-full text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)] resize-none"
+                      placeholder="Type your edited response..."
+                      autoFocus
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => { setEditingDraft(null); setEditText(''); }} className="px-2 py-1 text-xs rounded border border-[var(--border-primary)] text-[var(--text-secondary)]">Cancel</button>
+                      <button onClick={() => editDraft(draft.id)} className="px-2 py-1 text-xs rounded bg-blue-500 text-white">Send Edited</button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Action buttons */
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => approveDraft(draft.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-green-500 text-white hover:bg-green-600 transition-colors"
+                    >
+                      <Check className="w-3 h-3" /> Approve & Send
+                    </button>
+                    <button
+                      onClick={() => { setEditingDraft(draft.id); setEditText(draft.ai_response); }}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs rounded border border-[var(--border-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+                    >
+                      <Edit3 className="w-3 h-3" /> Edit
+                    </button>
+                    <button
+                      onClick={() => rejectDraft(draft.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <X className="w-3 h-3" /> Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Knowledge Base Stats */}
       {knowledgeStats && (

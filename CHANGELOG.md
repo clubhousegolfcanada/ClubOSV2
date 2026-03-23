@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.8] - 2026-03-23
+
+### Added
+- **Approval Mode** — New middle ground between Shadow and Auto-Send. ClubAI generates a response but holds it as a draft. Operators see a review queue with Approve, Edit, or Reject buttons.
+- **3-mode selector** — Shadow / Approval / Auto-Send button group replaces confusing dual toggles.
+- **Draft Review Queue** — Pending drafts at top of ClubAI page with customer message, AI draft, confidence, and action buttons.
+- **Draft API endpoints** — list, approve, edit, reject under `/api/patterns/clubai-drafts`
+- **Migration 361** — `clubai_draft_responses` table
+
 ## [1.27.7] - 2026-03-23
 
 ### Added
