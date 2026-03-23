@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.7] - 2026-03-23
+
+### Added
+- **Bank statement import** — Upload RBC chequing or Visa statement PDFs directly on the Receipts page. Parsed by the proven clubhouse-finance Python pipeline via FastAPI microservice.
+- **Bank Statement card** — New purple card on Receipts tab. Upload PDF → preview transactions → confirm import. Shows matched receipts inline.
+- **Auto-matching** — Imported bank transactions automatically matched against existing receipts by amount (±$0.50) and date (±3 days).
+- **bank_transactions table** — New PostgreSQL table stores imported transactions with txn_id, account, date, description, debit/credit, matched_receipt_id.
+- **Three bank statement API endpoints**:
+  - `POST /api/bank-statements/parse` — Upload + parse, returns preview
+  - `POST /api/bank-statements/import` — Confirm import to database
+  - `GET /api/bank-statements/transactions` — Query imported transactions
+- **FastAPI wrapper** — `api.py` in clubhouse-finance exposes the RBC parsers as an HTTP service. Auto-detects account type from filename.
+- **Idempotent imports** — Same statement PDF cannot be imported twice (file hash check). Same transaction ID skipped on re-import (ON CONFLICT DO NOTHING).
+
 ## [1.27.6] - 2026-03-23
 
 ### Added

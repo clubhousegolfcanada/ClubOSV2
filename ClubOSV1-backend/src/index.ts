@@ -84,6 +84,7 @@ import golfTourRoutes from './routes/golf-tour';
 import hubspotBookingWebhook from './routes/webhooks/hubspotBookings';
 import checklistsPeopleRoutes from './routes/checklists-people';
 import gmailScanRoutes from './routes/gmail-scan';
+import bankStatementRoutes from './routes/bank-statements';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -384,6 +385,7 @@ app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
 
 // Gmail receipt scanning
 app.use('/api/gmail', gmailScanRoutes);
+app.use('/api/bank-statements', bankStatementRoutes);
 
 // Root endpoint
 app.get('/', (_req, res) => {
@@ -535,9 +537,22 @@ async function startServer() {
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_content_hash ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
         await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS fuzzy_duplicate_of UUID`);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_fuzzy_duplicate ON receipts(fuzzy_duplicate_of) WHERE fuzzy_duplicate_of IS NOT NULL`);
-        logger.info('✅ Gmail scanning tables ready');
+        // Bank transactions table
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS bank_transactions (
+            txn_id TEXT PRIMARY KEY, account TEXT NOT NULL, card TEXT,
+            txn_date DATE NOT NULL, posting_date DATE, description TEXT NOT NULL,
+            debit INTEGER, credit INTEGER, balance INTEGER,
+            currency TEXT DEFAULT 'CAD', fx_rate REAL, cad_amount INTEGER, visa_ref TEXT,
+            source_pdf_hash TEXT, category TEXT,
+            matched_receipt_id UUID, imported_at TIMESTAMPTZ DEFAULT NOW(), imported_by UUID
+          )
+        `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_bank_txn_date ON bank_transactions(txn_date)`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_bank_txn_account ON bank_transactions(account)`);
+        logger.info('✅ Gmail scanning + bank transactions tables ready');
       } catch (gmailError) {
-        logger.debug('Gmail table migration:', gmailError);
+        logger.debug('Gmail/bank table migration:', gmailError);
       }
 
       // DISABLED: Pattern cleanup was too aggressive, deleting active patterns
