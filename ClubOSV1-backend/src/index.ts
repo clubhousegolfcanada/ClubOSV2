@@ -520,8 +520,18 @@ async function startServer() {
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_source ON receipts(source)`);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_gmail_msg ON receipts(gmail_message_id)`);
         await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64)`);
-        await db.query(`DROP INDEX IF EXISTS idx_receipts_content_hash_unique`);
-        await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique ON receipts(content_hash)`);
+        // Ensure non-partial unique index exists for ON CONFLICT (content_hash)
+        // Check if the existing index is partial (has a WHERE clause) and replace if so
+        const idxCheck = await db.query(`
+          SELECT indexdef FROM pg_indexes
+          WHERE indexname = 'idx_receipts_content_hash_unique'
+        `);
+        const existingDef = idxCheck.rows[0]?.indexdef || '';
+        if (existingDef.includes('WHERE') || !existingDef) {
+          // Index is partial or doesn't exist — recreate as non-partial
+          await db.query(`DROP INDEX IF EXISTS idx_receipts_content_hash_unique`);
+          await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique ON receipts(content_hash)`);
+        }
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_content_hash ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
         logger.info('✅ Gmail scanning tables ready');
       } catch (gmailError) {

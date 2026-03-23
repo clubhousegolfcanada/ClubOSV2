@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.3] - 2026-03-23
+
+### Fixed
+- **Startup index race condition** — DROP INDEX ran while server was already accepting requests, causing 500s during deploy. Now checks index definition before dropping, only recreates if partial.
+- **Upload duplicate race condition** — Manual upload used SELECT-then-INSERT for dedup (race condition). Added ON CONFLICT (content_hash) DO NOTHING to INSERT.
+- **Permanent receipt data loss on insert failure** — Gmail scanner marked messages as "processed" even when all receipt INSERTs failed, preventing retry on next scan. Now only marks processed on success or when no receipt content exists.
+- **OCR amount parsing NaN** — `parseFloat("abc") || null` returns NaN, not null. Added `safeFloat()` helper that properly returns null for non-numeric values.
+
 ## [1.26.2] - 2026-03-23
 
 ### Fixed

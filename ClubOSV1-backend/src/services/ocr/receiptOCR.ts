@@ -147,14 +147,21 @@ RULES:
       extractedData = extractBasicInfo(content);
     }
 
+    // Safe parseFloat that returns null instead of NaN
+    const safeFloat = (val: any): number | null => {
+      if (val === null || val === undefined) return null;
+      const n = parseFloat(val);
+      return isNaN(n) ? null : n;
+    };
+
     // Build the result with validation
     const result: ReceiptOCRResult = {
       vendor: extractedData.vendor || null,
-      totalAmount: parseFloat(extractedData.totalAmount) || null,
-      taxAmount: parseFloat(extractedData.taxAmount) || null,
-      hstAmount: parseFloat(extractedData.hstAmount) || null,
+      totalAmount: safeFloat(extractedData.totalAmount),
+      taxAmount: safeFloat(extractedData.taxAmount),
+      hstAmount: safeFloat(extractedData.hstAmount),
       hstRegNumber: extractedData.hstRegNumber || null,
-      subtotal: parseFloat(extractedData.subtotal) || null,
+      subtotal: safeFloat(extractedData.subtotal),
       purchaseDate: extractedData.purchaseDate || null,
       paymentMethod: extractedData.paymentMethod || null,
       lineItems: Array.isArray(extractedData.lineItems) ? extractedData.lineItems : [],

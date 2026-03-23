@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import rateLimit from 'express-rate-limit';
 import { db } from '../utils/database';
@@ -29,7 +29,7 @@ const uploadLimiter = rateLimit({
  * GET /api/receipts/summary
  * Get receipt summary statistics
  */
-router.get('/summary', authenticate, async (req, res) => {
+router.get('/summary', authenticate, async (req: Request, res: Response) => {
   try {
     const { period = 'month', year, month } = req.query;
 
@@ -141,7 +141,7 @@ router.get('/summary', authenticate, async (req, res) => {
  * GET /api/receipts/export
  * Export receipts with filtering
  */
-router.get('/export', authenticate, async (req, res) => {
+router.get('/export', authenticate, async (req: Request, res: Response) => {
   try {
     const { user } = req as any;
 
@@ -234,7 +234,7 @@ router.get('/export', authenticate, async (req, res) => {
     // Format based on export type
     if (exportFormat === 'csv') {
       // Prepare data for CSV
-      const csvData = receipts.map(receipt => ({
+      const csvData = receipts.map((receipt: any) => ({
         'Date': format(new Date(receipt.purchase_date || receipt.created_at), 'yyyy-MM-dd'),
         'Vendor': receipt.vendor || '',
         'Amount': receipt.amount_cents ? (receipt.amount_cents / 100).toFixed(2) : '0.00',
@@ -278,7 +278,7 @@ router.get('/export', authenticate, async (req, res) => {
         period: period,
         periodLabel: periodLabel,
         totalReceipts: receipts.length,
-        receipts: receipts.map(r => ({
+        receipts: receipts.map((r: any) => ({
           ...r,
           // Include or exclude image data based on parameter
           file_data: includePhotos === 'true' ? r.file_data : (r.file_data ? '[IMAGE DATA EXCLUDED]' : null)
@@ -314,11 +314,11 @@ router.get('/export', authenticate, async (req, res) => {
 
       // Get receipt IDs that have photos for batch processing
       const receiptIdsWithPhotos = receipts
-        .filter(r => r.file_data)
-        .map(r => r.id);
+        .filter((r: any) => r.file_data)
+        .map((r: any) => r.id);
 
       // Add CSV metadata file (without file_data - already excluded in main query for CSV/JSON)
-      const csvData = receipts.map(receipt => ({
+      const csvData = receipts.map((receipt: any) => ({
         'ID': receipt.id,
         'Date': format(new Date(receipt.purchase_date || receipt.created_at), 'yyyy-MM-dd'),
         'Vendor': receipt.vendor || '',
@@ -481,7 +481,7 @@ router.post('/upload',
     body('club_location').optional().isIn(['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks']),
     body('is_personal_card').optional().isBoolean()
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -633,6 +633,7 @@ router.post('/upload',
             is_personal_card,
             content_hash
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+          ON CONFLICT (content_hash) DO NOTHING
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
           storageData,
@@ -660,6 +661,15 @@ router.post('/upload',
         ]);
 
       const receipt = insertResult.rows[0];
+
+      // ON CONFLICT returns no rows if duplicate slipped past the SELECT check
+      if (!receipt) {
+        return res.status(409).json({
+          success: false,
+          error: 'Duplicate receipt detected',
+          message: 'This receipt was already uploaded'
+        });
+      }
 
       logger.info(`Receipt uploaded successfully`, {
         receiptId: receipt.id,
@@ -704,7 +714,7 @@ router.get('/search',
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 100 })
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       const {
@@ -847,7 +857,7 @@ router.get('/search',
       res.json({
         success: true,
         data: {
-          receipts: result.rows.map(row => ({
+          receipts: result.rows.map((row: any) => ({
             ...row,
             amount: row.amount_cents ? row.amount_cents / 100 : null
           })),
@@ -876,7 +886,7 @@ router.get('/search',
  */
 router.get('/:id',
   authenticate,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       const { id } = req.params;
@@ -935,7 +945,7 @@ router.get('/:id',
  */
 router.patch('/:id',
   authenticate,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       const { id } = req.params;
@@ -1046,7 +1056,7 @@ router.patch('/:id',
  */
 router.delete('/:id',
   authenticate,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       const { id } = req.params;
@@ -1107,7 +1117,7 @@ router.post('/reconcile',
     body('receiptIds').isArray().withMessage('Receipt IDs must be an array'),
     body('receiptIds.*').isUUID().withMessage('Invalid receipt ID')
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {

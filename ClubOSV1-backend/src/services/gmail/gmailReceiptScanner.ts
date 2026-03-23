@@ -13,7 +13,6 @@ import { google, gmail_v1 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { db } from '../../utils/database';
 import { logger } from '../../utils/logger';
-import { processReceiptWithOCR } from '../ocr/receiptOCR';
 import { processReceiptSmart } from '../ocr/veryfiOCR';
 import { convertImageToPdf } from '../receipt/imageToPdf';
 import { hash } from '../../utils/encryption';
@@ -100,7 +99,7 @@ async function getGmailService(): Promise<gmail_v1.Gmail | null> {
       });
 
       // Log token refreshes
-      oauth2Client.on('tokens', (newTokens) => {
+      oauth2Client.on('tokens', (_newTokens) => {
         logger.info('Gmail OAuth token refreshed via env-var flow');
       });
 
@@ -435,6 +434,7 @@ async function processMessage(
   const emailDate = dateHeader ? new Date(dateHeader) : new Date();
 
   let receiptsCreated = 0;
+  let insertsAttempted = 0;
 
   // --- Process attachments ---
   const attachments = extractAttachments(msg.data.payload);
@@ -479,6 +479,7 @@ async function processMessage(
       // Use Veryfi if configured, otherwise GPT-4o
       const ocrResult = await processReceiptSmart(fileData);
 
+      insertsAttempted++;
       const receiptId = await insertGmailReceipt({
         fileData, fileName, mimeType, contentHash, ocrResult,
         source: 'gmail_attachment',
@@ -503,6 +504,7 @@ async function processMessage(
       mimeType = 'application/pdf';
       fileName = att.filename.replace(/\.[^.]+$/, '.pdf');
 
+      insertsAttempted++;
       const receiptId = await insertGmailReceipt({
         fileData, fileName, mimeType, contentHash, ocrResult,
         source: 'gmail_attachment',
@@ -530,6 +532,7 @@ async function processMessage(
           // INSERT ON CONFLICT handles dedup atomically
           const fileData = await textToPdf(textContent, subject, fromHeader, emailDate);
 
+          insertsAttempted++;
           const receiptId = await insertGmailReceipt({
             fileData,
             fileName: `${sanitizeFilename(subject)}.pdf`,
@@ -547,22 +550,29 @@ async function processMessage(
     }
   }
 
-  // Record that we processed this message
-  await db.query(`
-    INSERT INTO gmail_scanned_messages
-      (message_id, thread_id, from_address, subject, email_date,
-       attachment_count, receipts_created)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    ON CONFLICT (message_id) DO NOTHING
-  `, [
-    messageId,
-    msg.data.threadId,
-    fromHeader,
-    subject,
-    emailDate.toISOString(),
-    attachments.length,
-    receiptsCreated,
-  ]);
+  // Only mark as processed if:
+  // 1. We created receipts (success), OR
+  // 2. We had nothing to process (no processable attachments/body — not a receipt email)
+  // Do NOT mark if we attempted inserts but all failed (allows retry on next scan)
+  if (receiptsCreated > 0 || insertsAttempted === 0) {
+    await db.query(`
+      INSERT INTO gmail_scanned_messages
+        (message_id, thread_id, from_address, subject, email_date,
+         attachment_count, receipts_created)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (message_id) DO NOTHING
+    `, [
+      messageId,
+      msg.data.threadId,
+      fromHeader,
+      subject,
+      emailDate.toISOString(),
+      attachments.length,
+      receiptsCreated,
+    ]);
+  } else {
+    logger.warn(`Skipping processed mark for message ${messageId}: ${insertsAttempted} inserts attempted, 0 succeeded`);
+  }
 
   return { receiptsCreated, skippedReason: null };
 }
