@@ -296,7 +296,8 @@ If a field cannot be determined, use null.`
     const content = response.choices[0]?.message?.content || '{}';
     const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     return JSON.parse(jsonStr);
-  } catch {
+  } catch (err) {
+    logger.warn('extractFromText failed:', { error: (err as any)?.message || 'Unknown error', from, subject: subject.slice(0, 80) });
     return null;
   }
 }
@@ -498,7 +499,8 @@ async function processMessage(
       // Convert to PDF for storage
       try {
         fileData = await convertImageToPdf(imageDataUrl);
-      } catch {
+      } catch (convErr) {
+        logger.warn('Image-to-PDF conversion failed, storing as original image:', { filename: att.filename, error: (convErr as any)?.message });
         fileData = imageDataUrl; // Fallback to original image
       }
       mimeType = 'application/pdf';

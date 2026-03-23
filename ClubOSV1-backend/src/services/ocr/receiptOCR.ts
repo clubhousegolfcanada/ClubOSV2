@@ -70,41 +70,24 @@ RULES:
 - For dates: prefer the transaction date over the print date
 - For HST reg number: this is critical for tax purposes — search carefully`;
 
-    // Build messages — PDFs use the file type input, images use image_url
-    let userContent: any[];
-    if (isPdf) {
-      // GPT-4o supports PDF via file input type (not image_url)
-      const base64Only = imageData.replace(/^data:application\/pdf;base64,/, '');
-      userContent = [
-        {
-          type: "text",
-          text: "Extract the transaction data from this receipt PDF. Return ONLY valid JSON."
-        },
-        {
-          type: "file",
-          file: {
-            filename: "receipt.pdf",
-            file_data: `data:application/pdf;base64,${base64Only}`,
-          }
+    // Build messages — both PDFs and images use image_url with data URL
+    const userContent: any[] = [
+      {
+        type: "text",
+        text: isPdf
+          ? "Extract the transaction data from this receipt PDF. Return ONLY valid JSON."
+          : "Extract the transaction data from this receipt. Return ONLY valid JSON."
+      },
+      {
+        type: "image_url",
+        image_url: {
+          url: imageData,
+          detail: "high"
         }
-      ];
-    } else {
-      userContent = [
-        {
-          type: "text",
-          text: "Extract the transaction data from this receipt. Return ONLY valid JSON."
-        },
-        {
-          type: "image_url",
-          image_url: {
-            url: imageData,
-            detail: "high"
-          }
-        }
-      ];
-    }
+      }
+    ];
 
-    // Call OpenAI Vision API
+    // Call OpenAI Vision API with 60s timeout
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -119,7 +102,7 @@ RULES:
       ],
       max_tokens: 1000,
       temperature: 0.1 // Low temperature for consistent extraction
-    });
+    }, { timeout: 60000 });
 
     const content = response.choices[0]?.message?.content || '{}';
 
@@ -147,11 +130,11 @@ RULES:
       extractedData = extractBasicInfo(content);
     }
 
-    // Safe parseFloat that returns null instead of NaN
+    // Safe parseFloat that returns null instead of NaN or Infinity
     const safeFloat = (val: any): number | null => {
       if (val === null || val === undefined) return null;
       const n = parseFloat(val);
-      return isNaN(n) ? null : n;
+      return isNaN(n) || !isFinite(n) ? null : n;
     };
 
     // Build the result with validation

@@ -32,6 +32,11 @@ const uploadLimiter = rateLimit({
  */
 router.get('/summary', authenticate, async (req: Request, res: Response) => {
   try {
+    const { user } = req as any;
+    if (!['admin', 'staff', 'operator'].includes(user.role)) {
+      return res.status(403).json({ success: false, error: 'Insufficient permissions' });
+    }
+
     const { period = 'month', year, month } = req.query;
 
     // Build date filter based on period - using parameterized queries
@@ -261,11 +266,12 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
           'Uploaded By', 'Upload Date', 'Reconciled'
         ]
       });
-      const csv = json2csvParser.parse(csvData);
+      // Add UTF-8 BOM so Excel correctly handles non-ASCII characters (accented vendor names, etc.)
+      const csv = '\uFEFF' + json2csvParser.parse(csvData);
 
       // Set headers for download
       const filename = `receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.csv`;
-      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.send(csv);
 

@@ -155,7 +155,7 @@ export default function BulkUploadCard({ onUploadComplete }: BulkUploadCardProps
       setFiles(prev => prev.map((f, idx) => idx === i ? { ...f, status: 'uploading' } : f));
 
       try {
-        const base64 = await fileToBase64(item.file);
+        let base64: string | null = await fileToBase64(item.file);
         const isPdf = item.type === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf');
 
         const response = await http.post('receipts/upload', {
@@ -164,6 +164,9 @@ export default function BulkUploadCard({ onUploadComplete }: BulkUploadCardProps
           file_size: item.size,
           mime_type: isPdf ? 'application/pdf' : 'image/jpeg',
         });
+
+        // Free memory immediately after upload
+        base64 = null;
 
         if (response.data.success) {
           setFiles(prev => prev.map((f, idx) => idx === i ? {

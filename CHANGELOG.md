@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.5] - 2026-03-23
+
+### Fixed
+- **PDF OCR format corrected** — Changed from undocumented `type: "file"` to standard `type: "image_url"` with PDF data URL for reliable OpenAI Vision processing.
+- **CSV export Excel encoding** — Added UTF-8 BOM prefix so Excel correctly handles accented vendor names and special characters.
+- **Summary endpoint authorization** — GET /summary now requires admin/staff/operator role (was accessible to any authenticated user).
+- **OCR timeout** — Added 60s timeout to OpenAI Vision API calls to prevent indefinite request blocking.
+- **safeFloat infinity check** — `parseFloat("Infinity")` no longer passes validation; returns null.
+- **Silent error logging** — `extractFromText` and `convertImageToPdf` catch blocks now log errors instead of silently swallowing them.
+- **Bulk upload memory** — Base64 strings freed immediately after each file upload completes.
+
 ## [1.26.4] - 2026-03-23
 
 ### Added
