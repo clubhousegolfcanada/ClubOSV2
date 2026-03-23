@@ -979,6 +979,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
               const clubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
               const convId = existingConv.rows[0].id;
 
+              logger.info('[ClubAI] Checkpoint reached', {
+                clubaiEnabled,
+                clubaiShadow,
+                convId,
+                phoneNumber,
+                messageText: messageText?.substring(0, 50),
+                hasDefaultNumber: !!process.env.OPENPHONE_DEFAULT_NUMBER
+              });
+
               if (clubaiEnabled) {
                 const clubaiDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
                 try {
@@ -992,6 +1001,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   const clubaiResult = await clubaiService.generateResponse(
                     phoneNumber, messageText, convId
                   );
+
+                  logger.info('[ClubAI] generateResponse returned', {
+                    hasResponse: !!clubaiResult.response,
+                    responsePreview: clubaiResult.response?.substring(0, 80),
+                    escalate: clubaiResult.escalate,
+                    confidence: clubaiResult.confidence
+                  });
 
                   if (clubaiShadow) {
                     logger.info('[ClubAI SHADOW]', {
