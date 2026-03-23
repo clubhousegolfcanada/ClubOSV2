@@ -2,6 +2,33 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.3] - 2026-03-23
+
+### Added
+- **Fuzzy duplicate persistence** — `fuzzy_duplicate_of` UUID column on receipts table. Populated during upload when a potential duplicate is detected (same vendor + amount ±$0.50 + date ±3 days).
+- **Duplicate badge in table** — Orange "Dupe?" pill badge next to vendor name for receipts flagged as potential duplicates.
+- **Duplicate warning in modal** — Orange banner at top of receipt detail modal with "View Original" link that opens the matched receipt.
+- **Needs Review filter** — Toggle button in filters bar that shows receipts with low OCR confidence OR fuzzy duplicate flags. Orange count badge shows how many need attention at a glance.
+- **`needsReview` count in summary** — Summary endpoint now returns count of receipts needing review for the selected month.
+- **`needs_review` search parameter** — Backend search endpoint supports filtering by `needs_review=true`.
+
+## [1.27.2] - 2026-03-23
+
+### Fixed
+- **V3-PLS kill switch was blocking ClubAI** — The V3-PLS "master kill switch" (line 835 in openphone.ts) returned early before ClubAI code was reached. Removed — ClubAI now has its own enable/disable path.
+- **Config dual-source resolved** — Frontend toggle wrote to database, but webhook handler read from env var. Now webhook reads from `pattern_learning_config` table (same source the frontend writes to), with env var as fallback.
+- **Wrong $39.95 pricing in system prompt** — Removed hardcoded pricing from `clubai-system-prompt.md`. ClubAI now pulls correct tiered pricing ($35/$25/$15) from RAG website content.
+- **3x embedding API calls per message** — `getRAGContext()` was generating a separate embedding for each of 3 searches. Now generates one embedding and reuses it, cutting latency by ~2 seconds.
+
+### Changed
+- **V3-PLS disabled** — Pattern Learning System is fully bypassed. Code and tables preserved but inactive:
+  - Startup script (`enable-v3pls-startup.ts`) no longer runs — was re-enabling V3-PLS on every deploy
+  - V3-PLS fallback in webhook handler removed — ClubAI RAG is the only response system
+  - AI Automation Service fallback removed — no dual routing
+  - V3-PLS operator response learning disabled — no longer feeds `patternLearningService.recordOperatorResponse()`
+  - V3-PLS `learnFromHumanResponse()` on outbound messages disabled
+- **Single response path** — Inbound SMS now has exactly one response system: ClubAI RAG. No fallbacks, no dual routing, no race conditions.
+
 ## [1.27.1] - 2026-03-23
 
 ### Added

@@ -533,6 +533,8 @@ async function startServer() {
           await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique ON receipts(content_hash)`);
         }
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_content_hash ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
+        await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS fuzzy_duplicate_of UUID`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_fuzzy_duplicate ON receipts(fuzzy_duplicate_of) WHERE fuzzy_duplicate_of IS NOT NULL`);
         logger.info('✅ Gmail scanning tables ready');
       } catch (gmailError) {
         logger.debug('Gmail table migration:', gmailError);
@@ -730,14 +732,10 @@ async function startServer() {
       // Don't fail startup - log and continue
     }
 
-    // Enable V3-PLS if not already enabled
-    try {
-      const { enableV3PLSOnStartup } = await import('./scripts/enable-v3pls-startup');
-      await enableV3PLSOnStartup();
-    } catch (error) {
-      logger.error('V3-PLS enablement error:', error);
-      // Continue - don't fail startup
-    }
+    // V3-PLS is DISABLED — ClubAI RAG is the sole response system.
+    // The startup script that auto-enabled V3-PLS is bypassed.
+    // V3-PLS code and tables are preserved but inactive.
+    logger.info('[Startup] V3-PLS disabled — ClubAI RAG is active');
     
     // Ensure critical tables exist
     const { ensureCriticalTables } = await import('./utils/ensure-critical-tables');

@@ -102,13 +102,27 @@ export async function searchKnowledge(
     sourceType?: 'conversation' | 'website' | 'manual' | null;
   } = {}
 ): Promise<KnowledgeMatch[]> {
-  const { limit = 8, threshold = 0.65, sourceType = null } = options;
-
   const queryEmbedding = await generateEmbedding(query);
   if (!queryEmbedding) {
     logger.warn('[ClubAI-Knowledge] Could not generate query embedding, falling back to empty results');
     return [];
   }
+  return searchKnowledgeWithEmbedding(queryEmbedding, options);
+}
+
+/**
+ * Search the knowledge base using a pre-computed embedding vector.
+ * Use this when you need to run multiple searches with the same query.
+ */
+async function searchKnowledgeWithEmbedding(
+  queryEmbedding: number[],
+  options: {
+    limit?: number;
+    threshold?: number;
+    sourceType?: 'conversation' | 'website' | 'manual' | null;
+  } = {}
+): Promise<KnowledgeMatch[]> {
+  const { limit = 8, threshold = 0.65, sourceType = null } = options;
 
   try {
     const result = await db.query(`
@@ -125,6 +139,7 @@ export async function searchKnowledge(
 /**
  * Search and format results specifically for the ClubAI prompt.
  * Returns past conversations and website content as formatted context strings.
+ * Generates the embedding ONCE and reuses it for all three searches.
  */
 export async function getRAGContext(customerMessage: string): Promise<{
   conversationExamples: string;
@@ -132,26 +147,19 @@ export async function getRAGContext(customerMessage: string): Promise<{
   knowledgeIds: number[];
   similarityScores: number[];
 }> {
-  // Search past conversations (top 5)
-  const conversations = await searchKnowledge(customerMessage, {
-    limit: 5,
-    threshold: 0.65,
-    sourceType: 'conversation',
-  });
+  // Generate embedding ONCE for all searches
+  const queryEmbedding = await generateEmbedding(customerMessage);
+  if (!queryEmbedding) {
+    logger.warn('[ClubAI-Knowledge] Could not generate query embedding for RAG context');
+    return { conversationExamples: '', websiteContent: '', knowledgeIds: [], similarityScores: [] };
+  }
 
-  // Search website content (top 3)
-  const website = await searchKnowledge(customerMessage, {
-    limit: 3,
-    threshold: 0.6,
-    sourceType: 'website',
-  });
-
-  // Also get manual entries
-  const manual = await searchKnowledge(customerMessage, {
-    limit: 2,
-    threshold: 0.6,
-    sourceType: 'manual',
-  });
+  // Run all three searches in parallel using the same embedding
+  const [conversations, website, manual] = await Promise.all([
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.65, sourceType: 'conversation' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 3, threshold: 0.6, sourceType: 'website' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 2, threshold: 0.6, sourceType: 'manual' }),
+  ]);
 
   // Format conversation examples
   let conversationExamples = '';

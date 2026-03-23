@@ -127,11 +127,12 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
             {receipts.map((r) => {
               const needsReview = r.ocr_confidence != null && r.ocr_confidence < 0.7;
               const suspiciousDate = r.purchase_date && parseInt(r.purchase_date.slice(0, 4)) < 2020;
+              const hasFuzzyDupe = !!r.fuzzy_duplicate_of;
               return (
               <tr
                 key={r.id}
                 onClick={() => onRowClick(r.id)}
-                className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.has(r.id) ? 'bg-blue-50' : ''} ${needsReview || suspiciousDate ? 'bg-yellow-50/50' : ''}`}
+                className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.has(r.id) ? 'bg-blue-50' : ''} ${needsReview || suspiciousDate || hasFuzzyDupe ? 'bg-yellow-50/50' : ''}`}
               >
                 <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
                   <input
@@ -147,11 +148,16 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
                     {suspiciousDate && <span title="Date before 2020 — verify"><AlertTriangle className="w-3 h-3 text-yellow-500" /></span>}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-sm max-w-[200px] truncate" title={r.vendor || ''}>
-                  <span className="flex items-center gap-1">
-                    {r.vendor || <span className="text-gray-400 italic">Unknown</span>}
+                <td className="px-3 py-2.5 text-sm max-w-[250px]" title={r.vendor || ''}>
+                  <div className="flex items-center gap-1">
+                    <span className="truncate">{r.vendor || <span className="text-gray-400 italic">Unknown</span>}</span>
                     {needsReview && <span title="Low OCR confidence — click to review"><AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0" /></span>}
-                  </span>
+                    {hasFuzzyDupe && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-700 rounded-full whitespace-nowrap flex-shrink-0" title="Possible duplicate — click to review">
+                        Dupe?
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2.5 text-sm font-medium whitespace-nowrap">
                   {formatCents(r.amount_cents)}

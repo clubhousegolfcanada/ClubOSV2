@@ -134,6 +134,30 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptI
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
+            {/* Fuzzy duplicate warning banner */}
+            {receipt?.fuzzy_duplicate_of && (
+              <div className="mx-6 mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                  <p className="text-sm text-orange-700">
+                    Possible duplicate of another receipt.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    onClose();
+                    // Small delay to allow modal to close, then open the original
+                    setTimeout(() => {
+                      const event = new CustomEvent('openReceipt', { detail: receipt.fuzzy_duplicate_of });
+                      window.dispatchEvent(event);
+                    }, 100);
+                  }}
+                  className="text-sm text-orange-700 font-medium hover:text-orange-900 underline whitespace-nowrap"
+                >
+                  View Original
+                </button>
+              </div>
+            )}
             <div className="flex flex-col lg:flex-row">
               {/* Left: Image/PDF viewer */}
               <div className="lg:w-1/2 p-6 border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50 flex items-center justify-center min-h-[300px]">

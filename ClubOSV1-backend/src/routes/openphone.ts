@@ -1,14 +1,13 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
-import { AppError } from '../middleware/errorHandler';
 import crypto from 'crypto';
 import { authenticate, authorize } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { openPhoneService } from '../services/openphoneService';
 import { notificationService } from '../services/notificationService';
 import { ensureOpenPhoneColumns } from '../utils/database-helpers';
-import { insertOpenPhoneConversation, updateOpenPhoneConversation } from '../utils/openphone-db-helpers';
+import { insertOpenPhoneConversation } from '../utils/openphone-db-helpers';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
 import { patternLearningService } from '../services/patternLearningService';
@@ -114,7 +113,7 @@ router.get('/webhook', async (req: Request, res: Response) => {
   }
 
   // Default response for GET requests
-  res.status(200).json({
+  return res.status(200).json({
     status: 'ok',
     message: 'OpenPhone webhook endpoint ready'
   });
@@ -175,7 +174,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
     
     // Handle OpenPhone v3 webhook structure
     // The entire webhook is wrapped in an "object" field
-    let webhookData = req.body;
     let type, data;
 
     // Check if this is the v3 wrapped format with triple nesting
@@ -576,50 +574,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
             }
           }
 
-          // LEARNING: Capture operator response as a learning example
-          // Look for the last customer message to learn from
-          const lastCustomerMessage = await db.query(`
-            SELECT message_text, pattern_id
-            FROM conversation_messages
-            WHERE conversation_id = $1
-            AND sender_type = 'customer'
-            ORDER BY created_at DESC
-            LIMIT 1`,
-            [conversationId]
-          );
-
-          if (lastCustomerMessage.rows.length > 0) {
-            const customerMsg = lastCustomerMessage.rows[0].message_text;
-            const patternId = lastCustomerMessage.rows[0].pattern_id;
-
-            // Store this as a learning example
-            await patternLearningService.recordOperatorResponse(
-              customerMsg,
-              newMessage.text,
-              phoneNumber,
-              patternId
-            );
-
-            logger.info('[Learning] Captured operator response for pattern learning', {
-              customerMessage: customerMsg.substring(0, 50),
-              operatorResponse: newMessage.text.substring(0, 50),
-              patternId
-            });
-          }
+          // V3-PLS pattern learning is DISABLED.
+          // Operator responses are still stored in conversation_messages by the
+          // existing message storage code above — available for ClubAI continuous learning later.
         }
-
-        // Determine conversation window based on message content
-        const getConversationWindow = (text: string): number => {
-          if (/book|reservation|tee\s+time|schedule|appointment/i.test(text)) {
-            return 240; // 4 hours for bookings
-          }
-          if (/broken|stuck|frozen|not\s+working|issue|problem|help/i.test(text)) {
-            return 120; // 2 hours for tech support
-          }
-          return 60; // 1 hour default
-        };
-
-        const conversationWindowMinutes = getConversationWindow(newMessage.text);
 
         // Check if we have an existing conversation for this phone number
         const existingConv = await db.query(`
@@ -646,7 +604,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const existingMessages = existingConv.rows[0].messages || [];
           
           // Enhanced deduplication: Check by ID or by content+timestamp for recently sent messages
-          const messageAlreadyExists = existingMessages.some(msg => {
+          const messageAlreadyExists = existingMessages.some((msg: any) => {
             // Check by ID first (most reliable)
             if (msg.id && messageData.id && msg.id === messageData.id) {
               return true;
@@ -718,7 +676,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                  AND is_active = true`
               );
 
-              const userIds = users.rows.map(u => u.id);
+              const userIds = users.rows.map((u: any) => u.id);
 
               // Send notification to all eligible users
               await notificationService.sendToUsers(userIds, {
@@ -847,21 +805,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
               // Load configurable safety thresholds
               const safetyThresholds = await patternSafetyService.getSafetyThresholds();
 
-              // MASTER KILL SWITCH: If V3-PLS is completely disabled, skip ALL AI processing
-              // This ensures no automated messages are sent when system is disabled
-              const plsConfig = await patternLearningService.getConfig();
-              if (!plsConfig.enabled && !plsConfig.openphoneEnabled) {
-                logger.info('[V3-PLS] System completely disabled - skipping all AI processing', {
-                  phoneNumber,
-                  enabled: plsConfig.enabled,
-                  openphoneEnabled: plsConfig.openphoneEnabled
-                });
-                await logSafetyTrigger('master_kill_switch', 'blocked', phoneNumber, existingConv.rows[0].id, undefined, {
-                  enabled: plsConfig.enabled,
-                  openphoneEnabled: plsConfig.openphoneEnabled
-                });
-                return res.json({ success: true, message: 'AI system disabled' });
-              }
+              // V3-PLS is DISABLED — ClubAI RAG is the only response system.
+              // Load V3-PLS config only for reference (not used for routing)
+              await patternLearningService.getConfig();
 
               // SAFEGUARD: Check if AI response limit reached - skip for test numbers
               // Only check if AI response limit feature is enabled
@@ -974,9 +920,24 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 return res.json({ success: true, escalated: true, reason: 'negative_sentiment' });
               }
 
-              // ===== ClubAI Conversational Response =====
-              const clubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
-              const clubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
+              // ===== ClubAI Conversational Response (single source of truth: database) =====
+              // Read config from DB (what the frontend toggle controls), with env var as fallback
+              let clubaiEnabled = false;
+              let clubaiShadow = false;
+              try {
+                const configResult = await db.query(`
+                  SELECT config_key, config_value FROM pattern_learning_config
+                  WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode')
+                `);
+                for (const row of configResult.rows) {
+                  if (row.config_key === 'clubai_enabled') clubaiEnabled = row.config_value === 'true';
+                  if (row.config_key === 'clubai_shadow_mode') clubaiShadow = row.config_value === 'true';
+                }
+              } catch {
+                // Fallback to env vars if DB config doesn't exist yet
+                clubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
+                clubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
+              }
               const convId = existingConv.rows[0].id;
 
               logger.info('[ClubAI] Checkpoint reached', {
@@ -1068,243 +1029,34 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
                     return res.json({ success: true, message: 'Escalated to operator' });
                   }
-                  // If ClubAI returned null response (no match), fall through to V3-PLS
+                  // ClubAI returned null response — no match found in knowledge base
+                  // With V3-PLS disabled, no fallback. Message goes unhandled (operator will see it).
+                  logger.info('[ClubAI] No response generated, leaving for operator', { phoneNumber });
                 } catch (clubaiError) {
-                  logger.error('[ClubAI] Error in response generation, falling through to V3-PLS:', clubaiError);
-                  // Fall through to V3-PLS on error
+                  logger.error('[ClubAI] Error in response generation:', clubaiError);
+                  // No fallback — operator handles it
                 }
               }
 
-              // FALLBACK: Try V3-PLS Pattern Learning System
-              try {
-                const patternResult = await patternLearningService.processMessage(
-                  messageText,
-                  phoneNumber,
-                  existingConv.rows[0].id,
-                  customerName
-                );
-
-                // Store message in conversation history (skip if ClubAI already stored it)
-                if (!clubaiEnabled) {
-                  await db.query(`
-                    INSERT INTO conversation_messages
-                    (conversation_id, sender_type, message_text, pattern_id, pattern_confidence, ai_reasoning)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                  `, [
-                    existingConv.rows[0].id,
-                    'customer',
-                    messageText,
-                    patternResult.patternId || null,
-                    patternResult.confidence || null,
-                    patternResult.reasoning ? JSON.stringify(patternResult.reasoning) : null
-                  ]);
-                }
-                
-                // Handle pattern result based on action
-                if (patternResult.action === 'auto_execute' && patternResult.response) {
-                  logger.info('[Pattern Learning] AUTO-EXECUTING', {
-                    confidence: patternResult.confidence,
-                    pattern: patternResult.pattern?.pattern_type,
-                    reasoning: patternResult.reasoning?.thought_process
-                  });
-
-                  // Send automated response
-                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                  if (defaultNumber) {
-                    await openPhoneService.sendMessage(
-                      phoneNumber,
-                      defaultNumber,
-                      patternResult.response
-                    );
-
-                    // Store AI response in history
-                    await db.query(`
-                      INSERT INTO conversation_messages
-                      (conversation_id, sender_type, message_text, pattern_id)
-                      VALUES ($1, 'ai', $2, $3)
-                    `, [existingConv.rows[0].id, patternResult.response, patternResult.patternId]);
-
-                    // FIX: Increment AI response counter (was never being incremented)
-                    await db.query(`
-                      UPDATE openphone_conversations
-                      SET ai_response_count = COALESCE(ai_response_count, 0) + 1
-                      WHERE id = $1
-                    `, [existingConv.rows[0].id]);
-                  }
-
-                  // Pattern handled it, we're done
-                  return res.json({ success: true, message: 'V3-PLS pattern handled' });
-                } else if (patternResult.action === 'suggest' || patternResult.action === 'queue') {
-                  logger.info('[Pattern Learning] SUGGESTION READY', {
-                    action: patternResult.action,
-                    confidence: patternResult.confidence,
-                    pattern: patternResult.pattern?.pattern_type
-                  });
-                  
-                  // Store suggestion for operator review (both 'suggest' and 'queue' actions)
-                  try {
-                    await db.query(`
-                      INSERT INTO pattern_suggestions_queue 
-                      (conversation_id, approved_pattern_id, pattern_type, trigger_text, suggested_response, 
-                       confidence_score, reasoning, phone_number, status, created_at)
-                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
-                    `, [
-                      existingConv.rows[0].id,
-                      patternResult.patternId || null,  // Add null safety
-                      patternResult.pattern?.pattern_type || 'general',
-                      messageText,
-                      patternResult.response || '',  // Ensure response is not null
-                      patternResult.confidence || 0,
-                      JSON.stringify(patternResult.reasoning || {}),
-                      phoneNumber
-                    ]);
-                    logger.info('[Pattern Learning] Suggestion queued successfully', {
-                      conversationId: existingConv.rows[0].id,
-                      patternId: patternResult.patternId
-                    });
-                  } catch (queueError) {
-                    logger.error('[Pattern Learning] Failed to queue suggestion', {
-                      error: queueError,
-                      conversationId: existingConv.rows[0].id,
-                      patternId: patternResult.patternId
-                    });
-                    // Don't fail the webhook - just log the error
-                  }
-                } else if (patternResult.action === 'escalate') {
-                  // DEFENSE IN DEPTH: Don't send escalation message if system is simply disabled
-                  // This is a backup check in case the master kill switch is bypassed
-                  const silentReasons = ['pattern_learning_disabled', 'openphone_automation_disabled'];
-
-                  if (silentReasons.includes(patternResult.reason || '')) {
-                    logger.info('[Pattern Learning] System disabled - no escalation message sent', {
-                      reason: patternResult.reason,
-                      phoneNumber
-                    });
-                    // Return early without sending any message to customer
-                    return res.json({ success: true, message: 'System disabled, no AI response' });
-                  }
-
-                  // Handle actual safety-related escalations (send message to customer)
-                  logger.info('[Pattern Learning] Escalating to human', {
-                    reason: patternResult.reason,
-                    phoneNumber
-                  });
-
-                  // Use configurable escalation message
-                  const escalationMsg = safetyThresholds.escalationMessage;
-                  const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-
-                  if (defaultNumber) {
-                    await openPhoneService.sendMessage(phoneNumber, defaultNumber, escalationMsg);
-                  }
-
-                  await db.query(`
-                    UPDATE openphone_conversations
-                    SET conversation_locked = true, customer_sentiment = 'escalated'
-                    WHERE id = $1`, [existingConv.rows[0].id]);
-
-                  return res.json({ success: true, escalated: true, reason: patternResult.reason });
-                } else {
-                  logger.info('[Pattern Learning] Result:', {
-                    action: patternResult.action,
-                    confidence: patternResult.confidence,
-                    reason: patternResult.reason
-                  });
-                }
-                
-                // Update conversation with pattern info
-                const assistantType = patternResult.pattern?.pattern_type || 'general';
-                await db.query(`
-                  UPDATE openphone_conversations
-                  SET last_assistant_type = $1,
-                      assistant_type = COALESCE(assistant_type, $1)
-                  WHERE id = $2
-                `, [assistantType, existingConv.rows[0].id]);
-                
-              } catch (err) {
-                logger.error('[Pattern Learning] Error:', err);
-              }
-
-              // FALLBACK: If V3-PLS didn't auto-execute, try AI Automation Service
-              // This preserves existing working patterns (gift cards, trackman) while we migrate
-              // DEFENSE IN DEPTH: Only run fallback if V3-PLS is not completely disabled
-              if (plsConfig.enabled || plsConfig.openphoneEnabled) {
-                try {
-                  const automationResponse = await aiAutomationService.processMessage(
-                    phoneNumber,
-                    messageText,
-                    existingConv.rows[0].id,
-                    false // Not initial message
-                  );
-
-                  if (automationResponse.handled && automationResponse.response) {
-                    logger.info('[AI Automation] Fallback response for existing conversation', {
-                      phoneNumber,
-                      response: automationResponse.response.substring(0, 100)
-                    });
-
-                    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                    if (defaultNumber) {
-                      await openPhoneService.sendMessage(
-                        phoneNumber,
-                        defaultNumber,
-                        automationResponse.response
-                      );
-
-                      // FIX: Increment AI response counter for fallback responses too
-                      await db.query(`
-                        UPDATE openphone_conversations
-                        SET ai_response_count = COALESCE(ai_response_count, 0) + 1
-                        WHERE id = $1
-                      `, [existingConv.rows[0].id]);
-                    }
-
-                    // AI automation handled it as fallback
-                    return res.json({ success: true, message: 'AI automation fallback handled' });
-                  }
-                } catch (automationError) {
-                  logger.error('AI automation fallback error:', automationError);
-                }
-              }
+              // V3-PLS and AI Automation Service are DISABLED.
+              // ClubAI RAG is the only automated response system.
+              // If ClubAI didn't respond, the message waits for an operator.
             } catch (notifError) {
               // Don't fail webhook if notification fails
               logger.error('Failed to send push notification:', notifError);
             }
           } else if (messageDirection === 'outbound') {
-            // PATTERN LEARNING: Learn from operator responses
-            try {
-              // Get the last inbound message to learn the pattern
-              const lastInboundMsg = updatedMessages
-                .filter(msg => msg.direction === 'inbound')
-                .slice(-1)[0];
-              
-              if (lastInboundMsg) {
-                const operatorResponse = messageData.body || messageData.text || '';
-                
-                // Only learn if this appears to be a human operator response
-                // (not an automated response from ClubOS)
-                const isHumanResponse = !operatorResponse.includes('[Automated Response]') &&
-                                       !operatorResponse.includes('🤖');
-                
-                if (isHumanResponse) {
-                  await patternLearningService.learnFromHumanResponse(
-                    lastInboundMsg.text || lastInboundMsg.body,
-                    operatorResponse,
-                    [], // TODO: Extract any actions taken
-                    existingConv.rows[0].id,
-                    phoneNumber,
-                    undefined // We don't know which operator sent via OpenPhone
-                  );
-                  
-                  logger.info('[Pattern Learning] Learned from OpenPhone operator response', {
-                    conversationId: existingConv.rows[0].id,
-                    phoneNumber,
-                    responseLength: operatorResponse.length
-                  });
-                }
-              }
-            } catch (learningError) {
-              logger.error('[Pattern Learning] Failed to learn from outbound message:', learningError);
+            // V3-PLS pattern learning is DISABLED.
+            // Operator outbound messages are tracked by conversation_messages table
+            // for future ClubAI continuous learning (task 8-10).
+            const operatorResponse = messageData.body || messageData.text || '';
+            if (operatorResponse &&
+                !operatorResponse.includes('- ClubAI') &&
+                !operatorResponse.includes('[Automated Response]')) {
+              // Deactivate ClubAI for this conversation when operator takes over
+              try {
+                await clubaiService.deactivateForConversation(existingConv.rows[0].id);
+              } catch { /* non-critical */ }
             }
           }
           
@@ -1316,7 +1068,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // (in case of webhook retries that arrive after the 1-hour window)
         if (existingConv.rows.length > 0) {
           const existingMessages = existingConv.rows[0].messages || [];
-          const messageAlreadyExists = existingMessages.some(msg => msg.id === messageData.id);
+          const messageAlreadyExists = existingMessages.some((msg: any) => msg.id === messageData.id);
           
           if (messageAlreadyExists) {
             logger.info('Duplicate message detected in recent conversation, skipping', {
@@ -1379,8 +1131,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
                AND is_active = true`
             );
             
-            const userIds = users.rows.map(u => u.id);
-            
+            const userIds = users.rows.map((u: any) => u.id);
+
             await notificationService.sendToUsers(userIds, {
               title: `New conversation from ${customerName}`,
               body: (messageData.body || messageData.text || '').substring(0, 100) + 
@@ -1656,15 +1408,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
     }
     
     // Always respond quickly to webhooks
-    res.json({ received: true });
-    
+    return res.json({ received: true });
+
   } catch (error) {
     logger.error('OpenPhone webhook error:', error);
-    
+
     // Still respond with 200 to prevent retries
-    res.json({ 
-      received: true, 
-      error: 'Processing error - logged for review' 
+    return res.json({
+      received: true,
+      error: 'Processing error - logged for review'
     });
   }
 });
@@ -1715,22 +1467,22 @@ router.put('/conversations/:id/processed', async (req: Request, res: Response) =
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0]
     });
-    
+
   } catch (error) {
     logger.error('Failed to mark conversation as processed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      error: 'Failed to update conversation' 
+      error: 'Failed to update conversation'
     });
   }
 });
 
 // Health check endpoint (no auth required for debugging)
-router.get('/health', async (req: Request, res: Response) => {
+router.get('/health', async (_req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'OpenPhone routes are working',
@@ -1783,7 +1535,7 @@ router.post('/webhook-test', async (req: Request, res: Response) => {
 });
 
 // Debug endpoint to check all OpenPhone data (no auth for debugging)
-router.get('/debug/all', async (req: Request, res: Response) => {
+router.get('/debug/all', async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT 
@@ -1818,7 +1570,7 @@ router.get('/debug/all', async (req: Request, res: Response) => {
         totalRecords: count.rows[0].total_records || 0,
         totalMessages: count.rows[0].total_messages || 0
       },
-      conversations: result.rows.map(row => ({
+      conversations: result.rows.map((row: any) => ({
         ...row,
         messages: row.messages || []
       })),
@@ -1830,13 +1582,13 @@ router.get('/debug/all', async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to retrieve debug data',
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });
 
 // Test OpenPhone connection
-router.get('/test-connection', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+router.get('/test-connection', authenticate, roleGuard(['admin']), async (_req: Request, res: Response) => {
   try {
     const connected = await openPhoneService.testConnection();
     const phoneNumbers = await openPhoneService.getPhoneNumbers();
@@ -1939,7 +1691,7 @@ router.post('/test-sms', authenticate, roleGuard(['admin']), async (req: Request
       messageId: result?.data?.id
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: `Test SMS sent to ${formattedNumber}`,
       data: {
@@ -1951,7 +1703,7 @@ router.post('/test-sms', authenticate, roleGuard(['admin']), async (req: Request
 
   } catch (error: any) {
     logger.error('Failed to send OpenPhone test SMS:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message || 'Failed to send test SMS. Check OpenPhone configuration.'
     });
@@ -1983,7 +1735,7 @@ router.post('/import-history', authenticate, roleGuard(['admin']), async (req: R
 });
 
 // Get conversation statistics
-router.get('/stats', async (req: Request, res: Response) => {
+router.get('/stats', async (_req: Request, res: Response) => {
   try {
     const stats = await db.query(`
       SELECT 
@@ -2097,13 +1849,13 @@ router.get('/debug/recent', async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to retrieve recent conversations',
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });
 
 // Get conversation count for display
-router.get('/conversations/count', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+router.get('/conversations/count', authenticate, roleGuard(['admin']), async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT 
@@ -2156,7 +1908,7 @@ router.get('/export/all', authenticate, roleGuard(['admin']), async (req: Reques
     
     if (format === 'llm') {
       // Format optimized for LLM processing
-      const formattedData = result.rows.map(conv => ({
+      const formattedData = result.rows.map((conv: any) => ({
         conversationId: conv.conversation_id,
         customer: {
           phone: conv.phone_number,
@@ -2204,7 +1956,7 @@ router.get('/export/all', authenticate, roleGuard(['admin']), async (req: Reques
 });
 
 // Export as CSV for spreadsheet analysis
-router.get('/export/csv', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
+router.get('/export/csv', authenticate, roleGuard(['admin']), async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT 
@@ -2224,7 +1976,7 @@ router.get('/export/csv', authenticate, roleGuard(['admin']), async (req: Reques
     let csv = 'Conversation ID,Phone Number,Customer Name,Employee Name,Message Count,First Contact,Last Contact,Processed\n';
     
     // Add data rows
-    result.rows.forEach(row => {
+    result.rows.forEach((row: any) => {
       csv += `"${row.conversation_id}","${row.phone_number}","${row.customer_name}","${row.employee_name}",${row.message_count},"${row.created_at}","${row.updated_at}",${row.processed}\n`;
     });
     

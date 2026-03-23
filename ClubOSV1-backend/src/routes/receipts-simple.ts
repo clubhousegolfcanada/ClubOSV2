@@ -117,12 +117,20 @@ router.get('/summary', authenticate, async (req: Request, res: Response) => {
     `;
     const categoryResult = await db.query(categoryQuery, queryParams);
 
+    // Count receipts needing review (low confidence or fuzzy duplicate)
+    const reviewQuery = `
+      SELECT COUNT(*) as count FROM receipts
+      ${dateFilter ? dateFilter.replace('WHERE', 'WHERE (r.ocr_confidence < 0.7 OR r.fuzzy_duplicate_of IS NOT NULL) AND').replace(/\br\./g, '') : 'WHERE ocr_confidence < 0.7 OR fuzzy_duplicate_of IS NOT NULL'}
+    `;
+    const reviewResult = await db.query(reviewQuery, queryParams);
+
     return res.json({
       totalReceipts: parseInt(result.total_receipts) || 0,
       totalAmount: (parseInt(result.total_amount_cents) || 0) / 100,
       totalTax: (parseInt(result.total_tax_cents) || 0) / 100,
       totalHst: (parseInt(result.total_hst_cents) || 0) / 100,
       unreconciled: parseInt(result.unreconciled_count) || 0,
+      needsReview: parseInt(reviewResult.rows[0]?.count) || 0,
       categories: categoryResult.rows.map((row: any) => ({
         category: row.category,
         count: parseInt(row.count) || 0,
@@ -592,8 +600,8 @@ router.post('/upload',
             vendor, amount_cents, tax_cents, hst_cents, hst_reg_number,
             purchase_date, club_location, category, payment_method, notes,
             uploader_user_id, ocr_status, ocr_text, ocr_json, ocr_confidence,
-            line_items, is_personal_card, content_hash
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+            line_items, is_personal_card, content_hash, fuzzy_duplicate_of
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
           ON CONFLICT (content_hash) DO NOTHING
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
@@ -615,7 +623,8 @@ router.post('/upload',
           ocrResult?.confidence || 0,
           ocrResult?.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
           is_personal_card || false,
-          pageContentHash
+          pageContentHash,
+          fuzzyMatch?.id || null
         ]);
 
         const receipt = insertResult.rows[0];
@@ -761,6 +770,7 @@ router.get('/search',
         reconciled,
         source,
         category,
+        needs_review,
         sort = 'created_at',
         dir = 'desc',
         page = 1,
@@ -791,6 +801,8 @@ router.get('/search',
           r.tax_cents,
           r.category,
           r.is_personal_card,
+          r.ocr_confidence,
+          r.fuzzy_duplicate_of,
           u.name as uploader_name
         FROM receipts r
         LEFT JOIN users u ON r.uploader_user_id = u.id
@@ -862,6 +874,11 @@ router.get('/search',
         queryStr += ` AND r.category = $${paramIndex}`;
         params.push(category);
         paramIndex++;
+      }
+
+      // Needs review filter (low confidence OR fuzzy duplicate)
+      if (needs_review === 'true') {
+        queryStr += ` AND (r.ocr_confidence < 0.7 OR r.fuzzy_duplicate_of IS NOT NULL)`;
       }
 
       // Save WHERE clause for count query before adding ORDER BY / LIMIT

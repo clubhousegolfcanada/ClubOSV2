@@ -26,7 +26,7 @@ export const OperationsReceipts: React.FC = () => {
   const [sortBy, setSortBy] = useState('purchase_date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState({ category: '', location: '', source: '', reconciled: '' });
+  const [filters, setFilters] = useState({ category: '', location: '', source: '', reconciled: '', needs_review: '' });
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -34,6 +34,16 @@ export const OperationsReceipts: React.FC = () => {
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
 
   const monthLabel = `${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
+
+  // Listen for openReceipt events from the detail modal "View Original" link
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const id = (e as CustomEvent).detail;
+      if (id) setSelectedReceiptId(id);
+    };
+    window.addEventListener('openReceipt', handler);
+    return () => window.removeEventListener('openReceipt', handler);
+  }, []);
 
   const fetchReceipts = useCallback(async () => {
     setLoadingReceipts(true);
@@ -54,6 +64,7 @@ export const OperationsReceipts: React.FC = () => {
       if (filters.location) params.append('location', filters.location);
       if (filters.source) params.append('source', filters.source);
       if (filters.reconciled) params.append('reconciled', filters.reconciled);
+      if (filters.needs_review) params.append('needs_review', filters.needs_review);
 
       const response = await http.get(`receipts/search?${params}`);
       const data = response.data?.data || response.data;
@@ -223,7 +234,7 @@ export const OperationsReceipts: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <ReceiptFilters filters={filters} onChange={setFilters} />
+      <ReceiptFilters filters={filters} onChange={setFilters} needsReviewCount={summary?.needsReview || 0} />
 
       {/* Receipt Table */}
       <ReceiptTable

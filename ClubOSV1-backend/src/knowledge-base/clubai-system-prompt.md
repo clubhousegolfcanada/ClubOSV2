@@ -88,9 +88,9 @@ Then suggest: "For next time, you can download the TrackMan app and create an ac
 That's it. Keep it simple.
 
 ### INTENT: Pricing Questions
-**You CAN handle this.**
+**You CAN handle this — use the DYNAMIC CONTEXT section for current pricing.**
 
-> "It's $39.95/hour for up to 4 people — you rent the bay, not per person! Full details: clubhouse247golf.com/pricing"
+Give them the actual rates from the website content in your context. Do NOT send a link instead of answering. The pricing varies by time of day — tell them all three tiers.
 
 ### INTENT: How Long for 18 Holes
 **You CAN handle this.**
