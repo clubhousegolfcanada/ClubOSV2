@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.4] - 2026-03-23
+
+### Added
+- **Bulk receipt upload** — New drag-and-drop upload card on Receipts tab supporting 20-50 files at once (JPEG, PNG, WebP, PDF). Sequential processing with per-file progress, vendor/amount extraction, duplicate detection, and stop button.
+- **PDF OCR on manual upload** — Upload endpoint now runs OCR on PDFs via Veryfi/GPT-4o (previously only images got OCR).
+
+### Changed
+- **Upload rate limit** — Bumped from 10/min to 50/min per user to support bulk upload.
+- **Cards layout** — Receipts tab cards row changed from 2-col to 3-col (Bulk Upload + Gmail Scanner + Monthly Summary).
+
 ## [1.26.3] - 2026-03-23
 
 ### Fixed

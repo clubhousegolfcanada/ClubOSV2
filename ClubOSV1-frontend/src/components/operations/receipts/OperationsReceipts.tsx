@@ -6,6 +6,7 @@ import { ReceiptFilters } from './ReceiptFilters';
 import { ReceiptTable } from './ReceiptTable';
 import { MonthlySummaryCard } from './MonthlySummaryCard';
 import { GmailScanCard } from './GmailScanCard';
+import BulkUploadCard from './BulkUploadCard';
 
 const MONTH_NAMES = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -209,7 +210,8 @@ export const OperationsReceipts: React.FC = () => {
       </div>
 
       {/* Cards Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <BulkUploadCard onUploadComplete={() => { fetchReceipts(); fetchSummary(); }} />
         <GmailScanCard
           year={selectedYear}
           month={selectedMonth}

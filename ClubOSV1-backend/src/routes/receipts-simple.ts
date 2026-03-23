@@ -5,6 +5,7 @@ import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
 import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
+import { processReceiptSmart } from '../services/ocr/veryfiOCR';
 import { convertImageToPdf } from '../services/receipt/imageToPdf';
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
@@ -15,10 +16,10 @@ const router = express.Router();
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Rate limiter for upload endpoint (10 uploads per minute per user)
+// Rate limiter for upload endpoint (50 uploads per minute per user — supports bulk upload)
 const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10,
+  max: 50,
   message: 'Too many uploads. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -556,15 +557,19 @@ router.post('/upload',
         location: club_location
       });
 
-      // First, run OCR on the image if it's an image file
+      // Run OCR on images and PDFs
       let ocrResult = null;
       let ocrDisplayText = '';
+      const isImage = mime_type && mime_type.startsWith('image/');
+      const isPdf = mime_type === 'application/pdf' || file_name?.toLowerCase().endsWith('.pdf');
 
-      if (mime_type && mime_type.startsWith('image/')) {
-        logger.info('Running OCR on receipt image');
+      if (isImage || isPdf) {
+        logger.info(`Running OCR on receipt ${isPdf ? 'PDF' : 'image'}`);
 
-        // Process with OCR
-        ocrResult = await processReceiptWithOCR(file_data);
+        // Use processReceiptSmart for PDFs (Veryfi/GPT-4o), processReceiptWithOCR for images
+        ocrResult = isPdf
+          ? await processReceiptSmart(file_data)
+          : await processReceiptWithOCR(file_data);
         ocrDisplayText = formatOCRForDisplay(ocrResult);
 
         // Use OCR data if manual data not provided
@@ -585,13 +590,13 @@ router.post('/upload',
         });
       }
 
-      // Convert image to PDF for storage (OCR already ran on the original image)
+      // Convert image to PDF for storage (OCR already ran on the original)
       // Content hash was computed on the original file_data above — do not recompute
       let storageData = file_data;
       let storageMimeType = mime_type || 'application/pdf';
       let storageFileName = file_name;
 
-      if (mime_type && mime_type.startsWith('image/')) {
+      if (isImage) {
         try {
           logger.info('Converting receipt image to PDF for storage');
           storageData = await convertImageToPdf(file_data);
