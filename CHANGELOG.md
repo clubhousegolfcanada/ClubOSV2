@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.5] - 2026-03-23
+
+### Added
+- **ClubAI Conversation Monitor** — New section on the ClubAI page showing all ClubAI conversations with full message threads. Filter by today/all/escalated/active. Click to expand and see customer messages, AI responses with confidence scores, and operator replies. Escalated conversations highlighted in orange.
+- **Knowledge Base Stats** — Shows count of past conversations, website pages, manual entries, and average confidence score on the ClubAI page. Replaces the old static knowledge base viewer.
+- **Conversation API endpoint** — `GET /api/patterns/clubai-conversations` returns ClubAI conversations with messages and search logs. Supports filter, limit, offset.
+- **Feedback endpoint** — `POST /api/patterns/clubai-feedback` for thumbs up/down on AI responses. Updates knowledge entry confidence scores.
+- **Debounced max messages slider** — No longer fires API calls on every pixel of drag. Waits 500ms after last change.
+
+### Changed
+- **Safety settings collapsible** — Moved behind a collapsible section to reduce clutter. Conversation monitor is now the primary focus.
+
 ## [1.27.4] - 2026-03-23
 
 ### Fixed

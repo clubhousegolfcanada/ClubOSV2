@@ -2439,5 +2439,115 @@ router.get('/clubai-search-log', authenticate, async (req: Request, res: Respons
   }
 });
 
+/**
+ * GET /api/patterns/clubai-conversations
+ * Returns recent ClubAI conversations with messages for the operator monitor
+ */
+router.get('/clubai-conversations', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { filter = 'all', limit = '20', offset = '0' } = req.query;
+
+    // Get conversations where ClubAI was involved
+    let whereClause = `WHERE oc.clubai_messages_sent > 0 OR oc.clubai_active = true OR oc.clubai_escalated = true`;
+    if (filter === 'escalated') {
+      whereClause += ` AND oc.clubai_escalated = true`;
+    } else if (filter === 'active') {
+      whereClause += ` AND oc.clubai_active = true AND oc.clubai_escalated = false`;
+    } else if (filter === 'today') {
+      whereClause += ` AND oc.updated_at >= CURRENT_DATE`;
+    }
+
+    const result = await db.query(`
+      SELECT
+        oc.id,
+        oc.phone_number,
+        oc.customer_name,
+        oc.clubai_active,
+        oc.clubai_messages_sent,
+        oc.clubai_escalated,
+        oc.clubai_escalation_reason,
+        oc.updated_at,
+        oc.created_at,
+        (
+          SELECT json_agg(sub ORDER BY sub.created_at ASC)
+          FROM (
+            SELECT cm.sender_type, cm.message_text, cm.pattern_confidence, cm.created_at
+            FROM conversation_messages cm
+            WHERE cm.conversation_id = oc.id::text
+            ORDER BY cm.created_at ASC
+            LIMIT 30
+          ) sub
+        ) as messages,
+        (
+          SELECT json_agg(json_build_object(
+            'knowledge_ids', sl.knowledge_ids,
+            'similarity_scores', sl.similarity_scores,
+            'response_quality', sl.response_quality,
+            'created_at', sl.created_at
+          ) ORDER BY sl.created_at DESC)
+          FROM clubai_knowledge_search_log sl
+          WHERE sl.conversation_id = oc.id::text
+        ) as search_logs
+      FROM openphone_conversations oc
+      ${whereClause}
+      ORDER BY oc.updated_at DESC
+      LIMIT $1 OFFSET $2
+    `, [parseInt(limit as string) || 20, parseInt(offset as string) || 0]);
+
+    // Get total count
+    const countResult = await db.query(`
+      SELECT COUNT(*) FROM openphone_conversations oc ${whereClause}
+    `);
+
+    return res.json({
+      success: true,
+      data: result.rows,
+      total: parseInt(countResult.rows[0].count),
+    });
+  } catch (error) {
+    logger.error('[ClubAI Conversations] Error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get conversations' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-feedback
+ * Submit thumbs up/down feedback on a ClubAI search log entry
+ */
+router.post('/clubai-feedback', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { searchLogId, quality } = req.body;
+    if (!searchLogId || !['good', 'bad'].includes(quality)) {
+      return res.status(400).json({ success: false, error: 'searchLogId and quality (good/bad) required' });
+    }
+
+    // Update search log quality
+    await db.query(`
+      UPDATE clubai_knowledge_search_log
+      SET response_quality = $1
+      WHERE id = $2
+    `, [quality, searchLogId]);
+
+    // Update knowledge entry feedback counts
+    const logResult = await db.query(`
+      SELECT knowledge_ids FROM clubai_knowledge_search_log WHERE id = $1
+    `, [searchLogId]);
+
+    if (logResult.rows.length > 0 && logResult.rows[0].knowledge_ids) {
+      const column = quality === 'good' ? 'feedback_up' : 'feedback_down';
+      await db.query(`
+        UPDATE clubai_knowledge
+        SET ${column} = ${column} + 1, updated_at = NOW()
+        WHERE id = ANY($1)
+      `, [logResult.rows[0].knowledge_ids]);
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error('[ClubAI Feedback] Error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to submit feedback' });
+  }
+});
+
 // Export the router
 export default router;
