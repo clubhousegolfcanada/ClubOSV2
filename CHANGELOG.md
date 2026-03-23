@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.9] - 2026-03-23
+
+### Changed
+- **Bank statement parser embedded** — Python RBC parsers (extract_chequing.py, extract_visa.py) now live inside ClubOS backend at `src/services/bank-parser/`. Called via child_process — no separate Python server or setup needed.
+- **Removed FastAPI dependency** — Bank statement route calls Python directly instead of HTTP. Faster, simpler, one fewer service to manage.
+- **Parser status endpoint** — `GET /api/bank-statements/parser-status` checks if Python + pdfplumber are available.
+
 ## [1.27.8] - 2026-03-23
 
 ### Added

@@ -1,18 +1,17 @@
 /**
  * Bank Statement Import Routes
  *
- * Upload RBC bank statement PDFs, parse via the Python clubhouse-finance
- * microservice, and import transactions into ClubOS.
+ * Upload RBC bank statement PDFs, parse via the embedded Python parsers
+ * (called via child_process), and import transactions into ClubOS.
  */
 
 import express, { Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
+import { parseBankStatement, checkParserAvailability } from '../services/bank-parser/bankStatementParser';
 
 const router = express.Router();
-
-const FINANCE_API_URL = process.env.FINANCE_API_URL || 'http://localhost:8100';
 
 const ACCOUNT_LABELS: Record<string, string> = {
   'chequing_1908': 'General Account (1908)',
@@ -60,27 +59,19 @@ router.post('/parse', authenticate, async (req: Request, res: Response) => {
       });
     }
 
-    // Call the Python finance API
+    // Parse via embedded Python parser (no external service needed)
     logger.info(`Parsing bank statement: ${file_name}`);
-    const response = await fetch(`${FINANCE_API_URL}/parse-statement`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file_data, file_name, account }),
-    });
+    const result = await parseBankStatement(file_data, file_name, account || undefined);
 
-    if (!response.ok) {
-      const errBody: any = await response.json().catch(() => ({ detail: 'Parser unavailable' }));
-      logger.error('Finance API error:', errBody);
-      return res.status(response.status === 422 ? 422 : 500).json({
+    if (!result.success) {
+      return res.status(422).json({
         success: false,
-        error: errBody.detail || 'Failed to parse statement'
+        error: result.error || 'Failed to parse statement'
       });
     }
 
-    const result: any = await response.json();
-
     // Auto-match transactions against existing receipts
-    const transactions = result.transactions || [];
+    const transactions: any[] = result.transactions || [];
     for (const txn of transactions) {
       // Try to find a receipt with same amount and date (within 3 days)
       const amount = txn.debit ? Math.round(txn.debit * 100) : null;
@@ -258,6 +249,15 @@ router.get('/transactions', authenticate, async (req: Request, res: Response) =>
     logger.error('Bank transactions query error:', error);
     return res.status(500).json({ success: false, error: 'Failed to fetch transactions' });
   }
+});
+
+/**
+ * GET /api/bank-statements/parser-status
+ * Check if the Python parser is available on this system.
+ */
+router.get('/parser-status', authenticate, async (_req: Request, res: Response) => {
+  const status = await checkParserAvailability();
+  return res.json({ success: true, data: status });
 });
 
 export default router;
