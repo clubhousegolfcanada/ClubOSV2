@@ -3,6 +3,7 @@ import { join } from 'path';
 import { getOpenAIClient } from '../utils/openaiClient';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
+import { getRAGContext, logSearch } from './clubaiKnowledgeService';
 
 interface ClubAIResponse {
   response: string | null;
@@ -17,14 +18,12 @@ interface ConversationMessage {
   created_at: string;
 }
 
-// Cache loaded knowledge files in memory
+// Cache the system prompt (tone/rules only — knowledge comes from RAG now)
 let systemPrompt: string | null = null;
-let knowledgeBase: string | null = null;
 
-function loadKnowledgeFiles(): void {
-  if (systemPrompt && knowledgeBase) return;
+function loadSystemPrompt(): void {
+  if (systemPrompt) return;
 
-  // Try multiple paths — handles both dev (src/) and production (dist/)
   const possiblePaths = [
     join(__dirname, '..', 'knowledge-base'),
     join(process.cwd(), 'src', 'knowledge-base'),
@@ -34,23 +33,16 @@ function loadKnowledgeFiles(): void {
   for (const basePath of possiblePaths) {
     try {
       const promptPath = join(basePath, 'clubai-system-prompt.md');
-      const kbPath = join(basePath, 'clubai-knowledge-base.md');
       systemPrompt = readFileSync(promptPath, 'utf-8');
-      knowledgeBase = readFileSync(kbPath, 'utf-8');
-      logger.info('[ClubAI] Knowledge files loaded successfully from: ' + basePath);
+      logger.info('[ClubAI] System prompt loaded from: ' + basePath);
       return;
     } catch {
       // Try next path
     }
   }
 
-  logger.error('[ClubAI] Failed to load knowledge files from any path', {
-    tried: possiblePaths,
-    cwd: process.cwd(),
-    dirname: __dirname
-  });
+  logger.error('[ClubAI] Failed to load system prompt from any path');
   systemPrompt = null;
-  knowledgeBase = null;
 }
 
 /**
@@ -75,7 +67,9 @@ async function getConversationHistory(conversationId: string, limit: number = 10
 }
 
 /**
- * Generate a conversational response using GPT-4o with the ClubAI system prompt and knowledge base
+ * Generate a conversational response using GPT-4o with RAG-powered knowledge.
+ * Instead of a static knowledge base file, this searches past conversations and
+ * website content to find the most relevant context for each customer message.
  */
 export async function generateResponse(
   phoneNumber: string,
@@ -84,10 +78,10 @@ export async function generateResponse(
 ): Promise<ClubAIResponse> {
   logger.info('[ClubAI] generateResponse called', { phoneNumber, messageText: messageText.substring(0, 50), conversationId });
 
-  loadKnowledgeFiles();
+  loadSystemPrompt();
 
-  if (!systemPrompt || !knowledgeBase) {
-    logger.error('[ClubAI] Knowledge files not loaded, cannot generate response');
+  if (!systemPrompt) {
+    logger.error('[ClubAI] System prompt not loaded, cannot generate response');
     return { response: null, escalate: false, confidence: 0 };
   }
 
@@ -113,18 +107,46 @@ export async function generateResponse(
     };
   }
 
-  // Build messages array for GPT-4o
-  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-    {
-      role: 'system',
-      content: systemPrompt + '\n\n---\n\nKNOWLEDGE BASE:\n' + knowledgeBase +
-        '\n\n---\n\nIMPORTANT RESPONSE RULES:\n' +
-        '- If you need to escalate to a human, include [ESCALATE TO HUMAN] at the END of your message, followed by a summary line.\n' +
-        '- Format: [ESCALATE TO HUMAN] Location: X, Box: Y, Issue: Z, Tried: W\n' +
-        '- Do NOT include the escalation tag in the message the customer sees.\n' +
-        '- Keep responses SHORT — this is SMS. 1-3 sentences max.\n' +
-        '- Do NOT sign your messages with "- ClubAI" — that is added automatically.'
+  // RAG: Search for relevant past conversations and website content
+  let ragContext = { conversationExamples: '', websiteContent: '', knowledgeIds: [] as number[], similarityScores: [] as number[] };
+  try {
+    ragContext = await getRAGContext(messageText);
+    logger.info('[ClubAI] RAG context retrieved', {
+      conversationMatches: ragContext.knowledgeIds.length,
+      topSimilarity: ragContext.similarityScores[0] || 0,
+    });
+  } catch (error) {
+    logger.warn('[ClubAI] RAG search failed, proceeding with system prompt only:', error);
+  }
+
+  // Build the system message: tone/rules + dynamic RAG context
+  let systemContent = systemPrompt;
+
+  // Inject RAG context (past conversations and website content)
+  if (ragContext.conversationExamples || ragContext.websiteContent) {
+    systemContent += '\n\n---\n\nDYNAMIC CONTEXT (retrieved for this specific message):\n\n';
+
+    if (ragContext.conversationExamples) {
+      systemContent += ragContext.conversationExamples;
+      systemContent += 'Use these real examples to match the team\'s tone and approach. Do NOT copy them word-for-word — adapt them to the current situation.\n\n';
     }
+
+    if (ragContext.websiteContent) {
+      systemContent += ragContext.websiteContent;
+      systemContent += 'Use this information to answer the customer directly. Do NOT send them a link — give them the actual info.\n\n';
+    }
+  }
+
+  systemContent += '\n\n---\n\nIMPORTANT RESPONSE RULES:\n' +
+    '- If you need to escalate to a human, include [ESCALATE TO HUMAN] at the END of your message, followed by a summary line.\n' +
+    '- Format: [ESCALATE TO HUMAN] Location: X, Box: Y, Issue: Z, Tried: W\n' +
+    '- Do NOT include the escalation tag in the message the customer sees.\n' +
+    '- Keep responses SHORT — this is SMS. 1-3 sentences max.\n' +
+    '- Do NOT sign your messages with "- ClubAI" — that is added automatically.\n' +
+    '- Give the customer the actual information (pricing, steps, etc.) — do NOT send links instead of answering.';
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: systemContent }
   ];
 
   // Add conversation history
@@ -132,7 +154,6 @@ export async function generateResponse(
     if (msg.sender_type === 'customer') {
       messages.push({ role: 'user', content: msg.message_text });
     } else if (msg.sender_type === 'ai' || msg.sender_type === 'operator') {
-      // Remove "- ClubAI" suffix from previous AI messages so GPT doesn't keep adding it
       const cleanText = msg.message_text.replace(/\s*-\s*ClubAI\s*$/i, '');
       messages.push({ role: 'assistant', content: cleanText });
     }
@@ -159,9 +180,11 @@ export async function generateResponse(
     // Check for escalation signal
     const escalationMatch = rawResponse.match(/\[ESCALATE TO HUMAN\]\s*(.*)/s);
     if (escalationMatch) {
-      // Extract the customer-facing part (everything before the tag)
       const customerMessage = rawResponse.replace(/\[ESCALATE TO HUMAN\][\s\S]*$/, '').trim();
       const escalationSummary = escalationMatch[1]?.trim() || 'AI requested escalation';
+
+      // Log the search context for this escalation
+      logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, customerMessage || '[escalated]').catch(() => {});
 
       return {
         response: customerMessage || null,
@@ -171,19 +194,28 @@ export async function generateResponse(
       };
     }
 
-    // Clean up the response — remove any accidental signature
+    // Clean up the response
     let cleanResponse = rawResponse.replace(/\s*-\s*ClubAI\s*$/i, '').trim();
 
-    // Safety: don't send empty or very short responses
     if (cleanResponse.length < 3) {
       logger.warn('[ClubAI] Response too short, skipping', { response: cleanResponse });
       return { response: null, escalate: false, confidence: 0 };
     }
 
-    // Estimate confidence based on response characteristics
-    let confidence = 0.75;
+    // Dynamic confidence scoring based on RAG quality
+    let confidence = 0.6; // Base confidence (lower than before since we can now measure quality)
+    if (ragContext.similarityScores.length > 0) {
+      const topSimilarity = ragContext.similarityScores[0];
+      if (topSimilarity >= 0.85) confidence += 0.25; // Strong match to past conversation
+      else if (topSimilarity >= 0.75) confidence += 0.15; // Good match
+      else if (topSimilarity >= 0.65) confidence += 0.08; // Moderate match
+    }
+    if (ragContext.knowledgeIds.length >= 3) confidence += 0.05; // Multiple sources agree
     if (cleanResponse.length > 500) confidence -= 0.1; // Too long for SMS
-    if (cleanResponse.includes('?') && !history.length) confidence += 0.05; // Asking clarifying Q is good
+    if (cleanResponse.includes('?') && !history.length) confidence += 0.05;
+
+    // Log what knowledge was used for this response
+    logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, cleanResponse).catch(() => {});
 
     return {
       response: cleanResponse,

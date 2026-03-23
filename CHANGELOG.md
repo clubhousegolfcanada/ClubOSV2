@@ -2,6 +2,22 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.0] - 2026-03-23
+
+### Added
+- **ClubAI RAG knowledge base** — Replaced static 135-line knowledge file with dynamic Retrieval-Augmented Generation system. ClubAI now searches past conversations and website content to find relevant context before answering customers.
+- **Past conversation search** — 1,614 Quo conversations parsed into searchable Q&A pairs with OpenAI embeddings (text-embedding-3-small). When a customer texts in, ClubAI finds similar past interactions and uses the team's actual responses as examples.
+- **Website content integration** — How-to page, pricing ($35/$25/$15 tiers), coaching info, and FAQ from clubhouse247golf.com stored with embeddings. ClubAI gives customers the actual info instead of sending links.
+- **Knowledge service** (`clubaiKnowledgeService.ts`) — Embedding generation, semantic search, batch import, manual knowledge entry, and search logging.
+- **Import script** (`import-clubai-knowledge.ts`) — Parses conversations_cleaned.json and website content, generates embeddings, bulk-loads into database.
+- **Knowledge API endpoints** — Stats, entries list, semantic search test, manual entry, and search log endpoints under `/api/patterns/clubai-knowledge-*`.
+- **Search logging** — Every ClubAI response logs which knowledge entries were used and their similarity scores for debugging and improvement.
+- **Dynamic confidence scoring** — ClubAI confidence now reflects RAG match quality (high similarity = high confidence) instead of a static 0.75.
+- **Migration 360** — `clubai_knowledge` table with embeddings, `cosine_similarity` function, `find_similar_knowledge` search function, and `clubai_knowledge_search_log` table.
+
+### Fixed
+- **Wrong pricing in ClubAI** — Knowledge base had outdated $39.95/hr. Now pulls correct tiered pricing ($35/$25/$15) from website content.
+
 ## [1.26.7] - 2026-03-23
 
 ### Added

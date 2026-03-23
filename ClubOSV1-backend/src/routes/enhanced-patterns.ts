@@ -25,9 +25,7 @@ import { authenticate } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
-import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
-import { patternOptimizer } from '../services/patternOptimizer';
 import { csvImportService } from '../services/csvImportService';
 import { openPhoneService } from '../services/openphoneService';
 import { sanitizePatternTemplate, sanitizeText } from '../utils/sanitizer';
@@ -313,14 +311,14 @@ router.get('/',
       
       logger.info(`[Enhanced Patterns API] Fetched ${result.rows.length} patterns`);
       
-      res.json({
+      return res.json({
         success: true,
         patterns: result.rows,
         count: result.rows.length
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Error fetching patterns:', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to fetch patterns' 
       });
@@ -335,7 +333,7 @@ router.get('/',
 router.get('/deleted',
   authenticate,
   roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       const result = await db.query(`
         SELECT 
@@ -363,14 +361,14 @@ router.get('/deleted',
         LIMIT 50
       `);
 
-      res.json({
+      return res.json({
         success: true,
         patterns: result.rows,
         total: result.rows.length
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to get deleted patterns', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to get deleted patterns' 
       });
@@ -410,13 +408,13 @@ router.post('/:id/restore',
       
       logger.info(`[Enhanced Patterns API] Pattern ${id} restored by user ${req.user?.id}`);
       
-      res.json({
+      return res.json({
         success: true,
         pattern: result.rows[0]
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Error restoring pattern:', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to restore pattern' 
       });
@@ -509,13 +507,13 @@ router.put('/:id/enhanced',
 
       logger.info(`[Enhanced Patterns API] Pattern ${id} updated with GPT-4o enhancements`);
 
-      res.json({
+      return res.json({
         success: true,
         pattern: result.rows[0]
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Error updating pattern:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to update pattern'
       });
@@ -572,7 +570,7 @@ router.post('/test',
 
       const wouldMatch = keywordMatch || semanticMatch;
 
-      res.json({
+      return res.json({
         success: true,
         wouldMatch,
         matchMethod: semanticMatch ? 'semantic' : (keywordMatch ? 'keyword' : 'none'),
@@ -586,7 +584,7 @@ router.post('/test',
       });
     } catch (error) {
       logger.error('[Patterns] Test failed:', error);
-      res.status(500).json({ success: false, error: 'Failed to test pattern' });
+      return res.status(500).json({ success: false, error: 'Failed to test pattern' });
     }
   }
 );
@@ -627,7 +625,7 @@ router.post('/test-match',
       // Test matching with multiple methods
       const matchResult = await testPatternMatch(message, pattern);
       
-      res.json({
+      return res.json({
         success: true,
         pattern: {
           id: pattern.id,
@@ -639,7 +637,7 @@ router.post('/test-match',
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Error testing pattern match:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to test pattern match'
       });
@@ -654,7 +652,7 @@ router.post('/test-match',
 router.get('/stats',
   authenticate,
   roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       // Get overall stats
       const statsResult = await db.query(`
@@ -692,7 +690,7 @@ router.get('/stats',
         ? Math.round((stats.total_successes / stats.total_executions) * 100)
         : 0;
       
-      res.json({
+      return res.json({
         success: true,
         overview: {
           total_patterns: parseInt(stats.total_patterns),
@@ -710,7 +708,7 @@ router.get('/stats',
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to get statistics', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to get statistics' 
       });
@@ -729,7 +727,7 @@ router.get('/stats',
 router.get('/config',
   authenticate,
   roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       // Get configuration from pattern_learning_config table
       const result = await db.query(`
@@ -739,7 +737,7 @@ router.get('/config',
 
       // Transform to object format
       const config: any = {};
-      result.rows.forEach(row => {
+      result.rows.forEach((row: any) => {
         const value = row.config_value;
         // Convert string values to appropriate types
         if (value === 'true') config[row.config_key] = true;
@@ -753,11 +751,11 @@ router.get('/config',
         config.openphone_enabled = false; // Default to OFF for safety
       }
 
-      res.json(config);
+      return res.json(config);
     } catch (error) {
       logger.error('[Pattern Config] Failed to get configuration', error);
       // Return default config if table doesn't exist
-      res.json({
+      return res.json({
         enabled: false,
         shadow_mode: true,
         openphone_enabled: false, // Default to OFF for safety
@@ -816,13 +814,13 @@ router.put('/config',
         updatedBy: req.user!.email
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Pattern learning configuration updated'
       });
     } catch (error) {
       logger.error('[Pattern Config] Failed to update configuration', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to update configuration'
       });
@@ -837,13 +835,13 @@ router.put('/config',
 router.get('/safety-settings',
   authenticate,
   roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       const settings = await patternSafetyService.getSettings();
-      res.json(settings);
+      return res.json(settings);
     } catch (error) {
       logger.error('[Patterns API] Failed to get safety settings', error);
-      res.status(500).json({ success: false, error: 'Failed to get safety settings' });
+      return res.status(500).json({ success: false, error: 'Failed to get safety settings' });
     }
   }
 );
@@ -858,10 +856,10 @@ router.put('/safety-settings',
   async (req: Request, res: Response) => {
     try {
       await patternSafetyService.updateSettings(req.body);
-      res.json({ success: true, message: 'Safety settings updated' });
+      return res.json({ success: true, message: 'Safety settings updated' });
     } catch (error) {
       logger.error('[Patterns API] Failed to update safety settings', error);
-      res.status(500).json({ success: false, error: 'Failed to update safety settings' });
+      return res.status(500).json({ success: false, error: 'Failed to update safety settings' });
     }
   }
 );
@@ -873,16 +871,16 @@ router.put('/safety-settings',
 router.get('/safety-thresholds',
   authenticate,
   roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       const thresholds = await patternSafetyService.getSafetyThresholds();
-      res.json({
+      return res.json({
         success: true,
         thresholds
       });
     } catch (error) {
       logger.error('[Patterns API] Failed to get safety thresholds', error);
-      res.status(500).json({ success: false, error: 'Failed to get safety thresholds' });
+      return res.status(500).json({ success: false, error: 'Failed to get safety thresholds' });
     }
   }
 );
@@ -901,14 +899,14 @@ router.put('/safety-thresholds',
       // Return updated thresholds
       const updatedThresholds = await patternSafetyService.getSafetyThresholds();
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Safety thresholds updated',
         thresholds: updatedThresholds
       });
     } catch (error) {
       logger.error('[Patterns API] Failed to update safety thresholds', error);
-      res.status(500).json({ success: false, error: 'Failed to update safety thresholds' });
+      return res.status(500).json({ success: false, error: 'Failed to update safety thresholds' });
     }
   }
 );
@@ -920,19 +918,19 @@ router.put('/safety-thresholds',
 router.post('/sentiment-patterns/reset',
   authenticate,
   roleGuard(['admin']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       await patternSafetyService.resetSentimentPatterns();
       const thresholds = await patternSafetyService.getSafetyThresholds();
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Sentiment patterns reset to defaults',
         patterns: thresholds.negativeSentimentPatterns
       });
     } catch (error) {
       logger.error('[Patterns API] Failed to reset sentiment patterns', error);
-      res.status(500).json({ success: false, error: 'Failed to reset sentiment patterns' });
+      return res.status(500).json({ success: false, error: 'Failed to reset sentiment patterns' });
     }
   }
 );
@@ -944,16 +942,16 @@ router.post('/sentiment-patterns/reset',
 router.get('/sentiment-patterns/defaults',
   authenticate,
   roleGuard(['admin', 'operator']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       const defaults = patternSafetyService.getDefaultSentimentPatterns();
-      res.json({
+      return res.json({
         success: true,
         patterns: defaults
       });
     } catch (error) {
       logger.error('[Patterns API] Failed to get default sentiment patterns', error);
-      res.status(500).json({ success: false, error: 'Failed to get default patterns' });
+      return res.status(500).json({ success: false, error: 'Failed to get default patterns' });
     }
   }
 );
@@ -1023,14 +1021,14 @@ router.get('/:id',
         LIMIT 20
       `, [id]);
 
-      res.json({
+      return res.json({
         success: true,
         pattern: patternResult.rows[0],
         recent_executions: historyResult.rows
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to get pattern', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to get pattern' 
       });
@@ -1049,14 +1047,14 @@ const csvImportLimiter = rateLimit({
   message: 'Too many import attempts. Please wait 1 hour before importing another CSV.',
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip, // Rate limit by user ID
+  keyGenerator: (req) => req.user?.id || req.ip || 'unknown', // Rate limit by user ID
 });
 
 // Configure multer for CSV uploads
 const csvUpload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (req: any, file: any, cb: any) => {
+  fileFilter: (_req: any, file: any, cb: any) => {
     // Accept CSV files
     if (file.mimetype === 'text/csv' || 
         file.mimetype === 'application/csv' ||
@@ -1114,7 +1112,7 @@ router.post('/import/csv',
         fileSize: req.file.size
       });
 
-      res.json({
+      return res.json({
         success: true,
         jobId: job.id,
         status: job.status,
@@ -1122,7 +1120,7 @@ router.post('/import/csv',
       });
     } catch (error: any) {
       logger.error('[CSV Import] Failed to start import', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: error.message || 'Failed to start CSV import'
       });
@@ -1185,13 +1183,13 @@ router.get('/import/status/:jobId',
         });
       }
       
-      res.json({
+      return res.json({
         success: true,
         job: job
       });
     } catch (error) {
       logger.error('[CSV Import] Failed to get job status', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to get import status'
       });
@@ -1229,13 +1227,13 @@ router.get('/import/history',
         [req.user!.id]
       );
       
-      res.json({
+      return res.json({
         success: true,
         imports: result.rows
       });
     } catch (error) {
       logger.error('[CSV Import] Failed to get import history', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to get import history'
       });
@@ -1311,7 +1309,7 @@ router.get('/import/staging/:jobId',
       
       const result = await db.query(query, params);
       
-      res.json({
+      return res.json({
         success: true,
         patterns: result.rows,
         pagination: {
@@ -1323,7 +1321,7 @@ router.get('/import/staging/:jobId',
       });
     } catch (error) {
       logger.error('[Pattern Staging] Failed to get staged patterns', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to get staged patterns'
       });
@@ -1385,7 +1383,7 @@ router.post('/import/approve',
       
       const { approved_count, failed_count } = result.rows[0];
       
-      res.json({
+      return res.json({
         success: true,
         approved: approved_count,
         failed: failed_count,
@@ -1393,7 +1391,7 @@ router.post('/import/approve',
       });
     } catch (error) {
       logger.error('[Pattern Approval] Failed to approve patterns', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to approve patterns'
       });
@@ -1462,14 +1460,14 @@ router.post('/import/reject',
       
       const rejectedCount = result.rows[0].rejected_count;
       
-      res.json({
+      return res.json({
         success: true,
         rejected: rejectedCount,
         message: `Successfully rejected ${rejectedCount} patterns`
       });
     } catch (error) {
       logger.error('[Pattern Rejection] Failed to reject patterns', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to reject patterns'
       });
@@ -1531,13 +1529,13 @@ router.put('/import/staging/:id',
         WHERE id = $5
       `, [sanitizedTrigger, sanitizedResponse, confidence_score, req.user!.id, validatedId]);
       
-      res.json({
+      return res.json({
         success: true,
         message: 'Pattern updated successfully'
       });
     } catch (error) {
       logger.error('[Pattern Edit] Failed to edit staged pattern', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to edit pattern'
       });
@@ -1719,13 +1717,13 @@ router.post('/',
         });
       }
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         pattern: createdPattern
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to create pattern', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to create pattern' 
       });
@@ -1817,13 +1815,13 @@ router.put('/:id',
         updatedBy: req.user?.email
       });
 
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: 'Pattern updated' 
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to update pattern', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to update pattern' 
       });
@@ -1867,13 +1865,13 @@ router.delete('/:id',
         deletedBy: req.user?.email
       });
 
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: 'Pattern deleted' 
       });
     } catch (error) {
       logger.error('[Enhanced Patterns API] Failed to delete pattern', error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         error: 'Failed to delete pattern' 
       });
@@ -1892,7 +1890,7 @@ router.delete('/:id',
 router.get('/queue',
   authenticate,
   roleGuard(['admin', 'operator', 'support']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       // Get pending suggestions from queue
       const result = await db.query(`
@@ -1917,16 +1915,16 @@ router.get('/queue',
         LIMIT 20
       `);
 
-      res.json({
+      return res.json({
         success: true,
-        queue: result.rows.map(row => ({
+        queue: result.rows.map((row: any) => ({
           ...row,
           reasoning: row.reasoning ? JSON.parse(row.reasoning) : null
         }))
       });
     } catch (error) {
       logger.error('[Patterns Queue] Failed to fetch queue', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to fetch pattern queue'
       });
@@ -1941,7 +1939,7 @@ router.get('/queue',
 router.get('/recent-activity',
   authenticate,
   roleGuard(['admin', 'operator', 'support']),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
       const result = await db.query(`
         SELECT
@@ -1961,13 +1959,13 @@ router.get('/recent-activity',
         LIMIT 50
       `);
 
-      res.json({
+      return res.json({
         success: true,
         activity: result.rows
       });
     } catch (error) {
       logger.error('[Patterns Activity] Failed to fetch recent activity', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to fetch recent activity'
       });
@@ -2144,7 +2142,7 @@ router.post('/queue/:id/respond',
         }
       }
 
-      res.json({
+      return res.json({
         success: true,
         message: `Suggestion ${action}ed successfully`,
         action,
@@ -2153,7 +2151,7 @@ router.post('/queue/:id/respond',
 
     } catch (error) {
       logger.error('[Pattern Queue] Failed to process operator action', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to process action'
       });
@@ -2167,7 +2165,7 @@ router.post('/queue/:id/respond',
  * GET /api/patterns/clubai-stats
  * Get ClubAI conversation statistics for today
  */
-router.get('/clubai-stats', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-stats', authenticate, async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT
@@ -2181,7 +2179,7 @@ router.get('/clubai-stats', authenticate, async (req: Request, res: Response) =>
 
     const stats = result.rows[0] || { conversations_today: 0, messages_sent: 0, escalated: 0, resolved: 0 };
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         conversationsToday: parseInt(stats.conversations_today) || 0,
@@ -2192,7 +2190,7 @@ router.get('/clubai-stats', authenticate, async (req: Request, res: Response) =>
     });
   } catch (error) {
     logger.error('[ClubAI Stats] Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch ClubAI stats' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch ClubAI stats' });
   }
 });
 
@@ -2200,7 +2198,7 @@ router.get('/clubai-stats', authenticate, async (req: Request, res: Response) =>
  * GET /api/patterns/clubai-knowledge
  * Get ClubAI system prompt and knowledge base content (read-only)
  */
-router.get('/clubai-knowledge', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-knowledge', authenticate, async (_req: Request, res: Response) => {
   try {
     const { readFileSync } = require('fs');
     const { join } = require('path');
@@ -2217,13 +2215,13 @@ router.get('/clubai-knowledge', authenticate, async (req: Request, res: Response
       knowledgeBase = readFileSync(join(basePath, 'clubai-knowledge-base.md'), 'utf-8');
     } catch { knowledgeBase = 'Knowledge base file not found'; }
 
-    res.json({
+    return res.json({
       success: true,
       data: { systemPrompt, knowledgeBase }
     });
   } catch (error) {
     logger.error('[ClubAI Knowledge] Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch knowledge base' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch knowledge base' });
   }
 });
 
@@ -2231,7 +2229,7 @@ router.get('/clubai-knowledge', authenticate, async (req: Request, res: Response
  * GET /api/patterns/clubai-config
  * Get ClubAI configuration from pattern_learning_config
  */
-router.get('/clubai-config', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-config', authenticate, async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT config_key, config_value FROM pattern_learning_config
@@ -2243,7 +2241,7 @@ router.get('/clubai-config', authenticate, async (req: Request, res: Response) =
       config[row.config_key] = row.config_value;
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         enabled: config.clubai_enabled === 'true',
@@ -2253,7 +2251,7 @@ router.get('/clubai-config', authenticate, async (req: Request, res: Response) =
     });
   } catch (error) {
     logger.error('[ClubAI Config] Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch ClubAI config' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch ClubAI config' });
   }
 });
 
@@ -2285,10 +2283,159 @@ router.put('/clubai-config', authenticate, async (req: Request, res: Response) =
 
     logger.info('[ClubAI Config] Updated by admin', { updates });
 
-    res.json({ success: true, message: 'ClubAI config updated' });
+    return res.json({ success: true, message: 'ClubAI config updated' });
   } catch (error) {
     logger.error('[ClubAI Config] Update error:', error);
-    res.status(500).json({ success: false, error: 'Failed to update ClubAI config' });
+    return res.status(500).json({ success: false, error: 'Failed to update ClubAI config' });
+  }
+});
+
+// ============================================
+// CLUBAI RAG KNOWLEDGE BASE ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/patterns/clubai-knowledge-stats
+ * Returns stats about the RAG knowledge base
+ */
+router.get('/clubai-knowledge-stats', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const { getKnowledgeStats } = await import('../services/clubaiKnowledgeService');
+    const stats = await getKnowledgeStats();
+    return res.json({ success: true, data: stats });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Stats error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get knowledge stats' });
+  }
+});
+
+/**
+ * GET /api/patterns/clubai-knowledge-entries
+ * Returns knowledge entries with optional filters
+ */
+router.get('/clubai-knowledge-entries', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { source_type, intent, limit = '50', offset = '0' } = req.query;
+
+    let query = `
+      SELECT id, source_type, intent, customer_message, team_response, source_url, page_section,
+             confidence_score, use_count, feedback_up, feedback_down, is_active, created_at
+      FROM clubai_knowledge
+      WHERE is_active = TRUE
+    `;
+    const params: (string | number)[] = [];
+    let paramIndex = 1;
+
+    if (source_type) {
+      query += ` AND source_type = $${paramIndex++}`;
+      params.push(source_type as string);
+    }
+    if (intent) {
+      query += ` AND intent = $${paramIndex++}`;
+      params.push(intent as string);
+    }
+
+    query += ` ORDER BY confidence_score DESC, use_count DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    params.push(parseInt(limit as string) || 50);
+    params.push(parseInt(offset as string) || 0);
+
+    const result = await db.query(query, params);
+
+    // Get total count
+    let countQuery = `SELECT COUNT(*) FROM clubai_knowledge WHERE is_active = TRUE`;
+    const countParams: string[] = [];
+    let countIdx = 1;
+    if (source_type) {
+      countQuery += ` AND source_type = $${countIdx++}`;
+      countParams.push(source_type as string);
+    }
+    if (intent) {
+      countQuery += ` AND intent = $${countIdx++}`;
+      countParams.push(intent as string);
+    }
+    const countResult = await db.query(countQuery, countParams);
+
+    return res.json({
+      success: true,
+      data: result.rows,
+      total: parseInt(countResult.rows[0].count),
+    });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Entries error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get knowledge entries' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-knowledge-search
+ * Test a RAG search against the knowledge base
+ */
+router.post('/clubai-knowledge-search', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { query: searchQuery } = req.body;
+    if (!searchQuery) {
+      return res.status(400).json({ success: false, error: 'Query is required' });
+    }
+
+    const { searchKnowledge } = await import('../services/clubaiKnowledgeService');
+    const results = await searchKnowledge(searchQuery, { limit: 10, threshold: 0.5 });
+
+    return res.json({ success: true, data: results });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Search error:', error);
+    return res.status(500).json({ success: false, error: 'Search failed' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-knowledge-manual
+ * Add a manual knowledge entry
+ */
+router.post('/clubai-knowledge-manual', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { intent, customerQuestion, teamResponse } = req.body;
+    if (!customerQuestion || !teamResponse) {
+      return res.status(400).json({ success: false, error: 'customerQuestion and teamResponse are required' });
+    }
+
+    const { addManualKnowledge } = await import('../services/clubaiKnowledgeService');
+    const id = await addManualKnowledge(intent || 'general_inquiry', customerQuestion, teamResponse);
+
+    if (!id) {
+      return res.status(500).json({ success: false, error: 'Failed to add knowledge entry' });
+    }
+
+    return res.json({ success: true, data: { id } });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Manual add error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to add knowledge entry' });
+  }
+});
+
+/**
+ * GET /api/patterns/clubai-search-log
+ * Get recent search logs to see what knowledge ClubAI used
+ */
+router.get('/clubai-search-log', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { limit = '20' } = req.query;
+
+    const result = await db.query(`
+      SELECT sl.*,
+        (SELECT json_agg(json_build_object(
+          'id', k.id, 'source_type', k.source_type, 'intent', k.intent,
+          'customer_message', k.customer_message, 'team_response', LEFT(k.team_response, 200)
+        ))
+        FROM clubai_knowledge k WHERE k.id = ANY(sl.knowledge_ids)) as matched_knowledge
+      FROM clubai_knowledge_search_log sl
+      ORDER BY sl.created_at DESC
+      LIMIT $1
+    `, [parseInt(limit as string) || 20]);
+
+    return res.json({ success: true, data: result.rows });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Search log error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get search log' });
   }
 });
 
