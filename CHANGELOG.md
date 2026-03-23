@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.1] - 2026-03-23
+
+### Changed
+- **Railway deployment: Python + pdfplumber** — nixpacks.toml now installs python3 and pip, then `pip install pdfplumber` during build. Bank statement parsing works on Railway out of the box.
+- **Build copies Python parsers to dist/** — Added `copy:bank-parser` script to package.json build pipeline. Python files (parse_statement.py, extract_chequing.py, extract_visa.py) are copied alongside compiled JS.
+
 ## [1.28.0] - 2026-03-23
 
 ### Added
