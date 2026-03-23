@@ -57,7 +57,8 @@ ClubOSV1/
 cd ClubOSV1-backend && npm run dev   # Terminal 1 (port 3000)
 cd ClubOSV1-frontend && npm run dev  # Terminal 2 (port 3001)
 
-# Deploy to Production (auto-deploys on push)
+# Deploy to Production (auto-deploys on push to both platforms)
+# Frontend → Vercel | Backend → Railway
 git add -A && git commit -m "feat: description" && git push
 ```
 

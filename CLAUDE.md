@@ -171,7 +171,16 @@ These files handle database access. Know which does what:
 5. Run `npx tsc --noEmit` to verify no TypeScript errors
 6. Update CHANGELOG.md with version bump
 7. Update README.md version number to match
-8. **Commit and push immediately** — do NOT wait for the user to ask. Once implementation is complete, TypeScript passes, and CHANGELOG/README are updated, commit with a descriptive message and `git push` right away. Every completed fix or feature must be deployed. Auto-deploys to production on push.
+8. **Commit and push immediately** — do NOT wait for the user to ask. Once implementation is complete, TypeScript passes, and CHANGELOG/README are updated, commit with a descriptive message and `git push` right away. Every completed fix or feature must be deployed.
+
+## DEPLOYMENT
+
+- **`git push` triggers auto-deploy to both platforms:**
+  - **Frontend** → Vercel (https://club-osv-2-owqx.vercel.app)
+  - **Backend** → Railway (`npm run start:prod` via Procfile)
+- Every commit to `main` goes live immediately. There is no staging environment.
+- After pushing, monitor Railway logs (`railway logs`) and Vercel dashboard for deploy errors.
+- Database migrations must be run separately: `railway run npm run db:migrate`
 
 ## COMMANDS
 
