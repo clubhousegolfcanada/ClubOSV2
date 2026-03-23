@@ -41,20 +41,13 @@ export async function processReceiptWithOCR(base64Image: string): Promise<Receip
 
     // Prepare the image for OpenAI (ensure it has the right format)
     let imageData = base64Image;
-    if (imageData.startsWith('data:application/pdf')) {
-      // GPT-4o supports PDF input — leave as-is
-    } else if (!imageData.startsWith('data:')) {
+    const isPdf = imageData.startsWith('data:application/pdf');
+    if (!isPdf && !imageData.startsWith('data:')) {
       // Add data URL prefix for raw base64 image data
       imageData = `data:image/jpeg;base64,${imageData}`;
     }
 
-    // Call OpenAI Vision API
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a Canadian receipt OCR specialist for a business in Nova Scotia.
+    const systemPrompt = `You are a Canadian receipt OCR specialist for a business in Nova Scotia.
 Extract transaction data from receipts with high accuracy.
 
 Return a JSON object with these fields:
@@ -75,23 +68,53 @@ RULES:
 - IGNORE: promotional text, survey codes, store hours, ads, cashier names
 - For vendor name: use the business name, not the address or franchise ID
 - For dates: prefer the transaction date over the print date
-- For HST reg number: this is critical for tax purposes — search carefully`
+- For HST reg number: this is critical for tax purposes — search carefully`;
+
+    // Build messages — PDFs use the file type input, images use image_url
+    let userContent: any[];
+    if (isPdf) {
+      // GPT-4o supports PDF via file input type (not image_url)
+      const base64Only = imageData.replace(/^data:application\/pdf;base64,/, '');
+      userContent = [
+        {
+          type: "text",
+          text: "Extract the transaction data from this receipt PDF. Return ONLY valid JSON."
+        },
+        {
+          type: "file",
+          file: {
+            filename: "receipt.pdf",
+            file_data: `data:application/pdf;base64,${base64Only}`,
+          }
+        }
+      ];
+    } else {
+      userContent = [
+        {
+          type: "text",
+          text: "Extract the transaction data from this receipt. Return ONLY valid JSON."
+        },
+        {
+          type: "image_url",
+          image_url: {
+            url: imageData,
+            detail: "high"
+          }
+        }
+      ];
+    }
+
+    // Call OpenAI Vision API
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
         },
         {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract the transaction data from this receipt. Return ONLY valid JSON."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageData,
-                detail: "high"
-              }
-            }
-          ]
+          content: userContent
         }
       ],
       max_tokens: 1000,
@@ -103,11 +126,23 @@ RULES:
     // Parse the JSON response
     let extractedData: any;
     try {
-      // Clean up the response (remove markdown code blocks if present)
-      const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      extractedData = JSON.parse(jsonStr);
+      // Detect refusal/inability responses before trying to parse
+      const contentLower = content.toLowerCase();
+      if (contentLower.includes("i'm unable to") || contentLower.includes("i cannot") ||
+          contentLower.includes("unable to extract") || contentLower.includes("please provide")) {
+        logger.warn('GPT-4o could not read the receipt image, returning empty result', {
+          response: content.slice(0, 200)
+        });
+        extractedData = {};
+      } else {
+        // Clean up the response (remove markdown code blocks if present)
+        const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        extractedData = JSON.parse(jsonStr);
+      }
     } catch (parseError) {
-      logger.error('Failed to parse OCR response as JSON:', content);
+      logger.warn('Failed to parse OCR response as JSON, falling back to regex extraction', {
+        responsePreview: content.slice(0, 200)
+      });
       // Try to extract key information using regex as fallback
       extractedData = extractBasicInfo(content);
     }

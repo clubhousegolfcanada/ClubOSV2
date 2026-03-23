@@ -15,6 +15,11 @@ import { ReceiptOCRResult, processReceiptWithOCR as gpt4oOCR } from './receiptOC
 
 const VERYFI_API_URL = 'https://api.veryfi.com/api/v8/partner/documents';
 
+// Cache Veryfi auth failures to avoid repeated 401s on every receipt
+let veryfiAuthFailed = false;
+let veryfiAuthFailedAt = 0;
+const VERYFI_AUTH_RETRY_MS = 60 * 60 * 1000; // Retry after 1 hour
+
 interface VeryfiConfig {
   clientId: string;
   clientSecret: string;
@@ -168,11 +173,26 @@ async function processWithVeryfi(
 export async function processReceiptSmart(base64Image: string): Promise<ReceiptOCRResult> {
   const veryfiConfig = getVeryfiConfig();
 
-  if (veryfiConfig) {
+  // Skip Veryfi if auth previously failed (retry after 1 hour)
+  if (veryfiAuthFailed && (Date.now() - veryfiAuthFailedAt) < VERYFI_AUTH_RETRY_MS) {
+    // Silently skip — already logged the initial failure
+  } else if (veryfiConfig) {
     try {
-      return await processWithVeryfi(base64Image, veryfiConfig);
-    } catch (error) {
-      logger.error('Veryfi OCR failed, falling back to GPT-4o:', error);
+      const result = await processWithVeryfi(base64Image, veryfiConfig);
+      // Reset auth failure flag on success
+      veryfiAuthFailed = false;
+      return result;
+    } catch (error: any) {
+      const isAuthError = error.message?.includes('401') || error.message?.includes('403');
+      if (isAuthError) {
+        veryfiAuthFailed = true;
+        veryfiAuthFailedAt = Date.now();
+        logger.error('Veryfi OCR auth failed (401/403), disabling for 1 hour. Falling back to GPT-4o.', {
+          error: error.message,
+        });
+      } else {
+        logger.error('Veryfi OCR failed, falling back to GPT-4o:', error);
+      }
       // Fall through to GPT-4o
     }
   }

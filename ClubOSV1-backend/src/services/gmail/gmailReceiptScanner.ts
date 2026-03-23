@@ -71,7 +71,15 @@ const KEYWORD_QUERIES = [
 ];
 
 // Skip attachments that are clearly not receipts
-const SKIP_EXTENSIONS = new Set(['.ics', '.vcf', '.sig', '.p7s', '.html', '.htm']);
+const SKIP_EXTENSIONS = new Set([
+  '.ics', '.vcf', '.sig', '.p7s', '.html', '.htm',
+  '.eml', '.msg', '.doc', '.docx', '.xls', '.xlsx',
+  '.ppt', '.pptx', '.zip', '.rar', '.7z', '.gz',
+  '.csv', '.txt', '.xml', '.json', '.mp3', '.mp4',
+  '.mov', '.avi', '.wav',
+]);
+// Only process these MIME types — everything else is skipped
+const PROCESSABLE_MIME_PREFIXES = ['image/', 'application/pdf'];
 const MIN_ATTACHMENT_SIZE = 5_000;     // 5KB — skip tiny files
 const MAX_ATTACHMENT_SIZE = 25_000_000; // 25MB — skip huge files
 
@@ -435,6 +443,13 @@ async function processMessage(
     const ext = path.extname(att.filename).toLowerCase();
     if (SKIP_EXTENSIONS.has(ext)) continue;
     if (att.size < MIN_ATTACHMENT_SIZE || att.size > MAX_ATTACHMENT_SIZE) continue;
+
+    // MIME type check — only process images and PDFs
+    const isProcessable = PROCESSABLE_MIME_PREFIXES.some(prefix => att.mimeType.startsWith(prefix));
+    if (!isProcessable) {
+      logger.info(`Skipping non-processable attachment: ${att.filename} (${att.mimeType})`);
+      continue;
+    }
 
     // Download attachment
     const attData = await gmail.users.messages.attachments.get({

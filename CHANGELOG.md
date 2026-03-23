@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.2] - 2026-03-23
+
+### Fixed
+- **Gmail receipt scanning broken** — `content_hash` column missing from production DB (migration 350 was archived but never applied). Created migration 359 to add the column and unique index.
+- **PDF OCR rejected by OpenAI** — PDFs were sent as `image_url` type which OpenAI Vision rejects. Now uses `file` input type for PDFs, keeping `image_url` for actual images.
+- **Veryfi 401 spam** — Veryfi auth failures now cached for 1 hour to avoid repeated 401 errors on every receipt. Silently falls back to GPT-4o after first failure.
+- **Non-processable attachments sent to OCR** — Added MIME type allowlist (images + PDFs only) and expanded skip extensions (.eml, .doc, .zip, etc.) to prevent unsupported formats from reaching OCR.
+- **OCR JSON parse error noise** — GPT-4o refusal responses ("I'm unable to extract...") now detected before JSON parse, logged cleanly instead of character-by-character error dump.
+
 ## [1.26.1] - 2026-03-23
 
 ### Changed
