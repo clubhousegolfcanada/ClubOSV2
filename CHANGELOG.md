@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.1] - 2026-03-23
+
+### Changed
+- **Operations tab renamed** — "V3-PLS" → "ClubAI" with new dashboard
+- **ClubAI Dashboard** — controls (enable/shadow/max messages), today's stats, safety settings, read-only knowledge base viewer
+- **Backend endpoints** — GET/PUT `/api/patterns/clubai-config`, GET `/api/patterns/clubai-stats`, GET `/api/patterns/clubai-knowledge`
+
 ## [1.26.0] - 2026-03-23
 
 ### Added

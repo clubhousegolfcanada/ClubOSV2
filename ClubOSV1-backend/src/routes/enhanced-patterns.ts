@@ -2161,5 +2161,136 @@ router.post('/queue/:id/respond',
   }
 );
 
+// ===== ClubAI Endpoints =====
+
+/**
+ * GET /api/patterns/clubai-stats
+ * Get ClubAI conversation statistics for today
+ */
+router.get('/clubai-stats', authenticate, async (req: Request, res: Response) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE clubai_messages_sent > 0) as conversations_today,
+        COALESCE(SUM(clubai_messages_sent), 0) as messages_sent,
+        COUNT(*) FILTER (WHERE clubai_escalated = true) as escalated,
+        COUNT(*) FILTER (WHERE clubai_messages_sent > 0 AND clubai_escalated = false) as resolved
+      FROM openphone_conversations
+      WHERE created_at >= CURRENT_DATE
+    `);
+
+    const stats = result.rows[0] || { conversations_today: 0, messages_sent: 0, escalated: 0, resolved: 0 };
+
+    res.json({
+      success: true,
+      data: {
+        conversationsToday: parseInt(stats.conversations_today) || 0,
+        messagesSent: parseInt(stats.messages_sent) || 0,
+        escalated: parseInt(stats.escalated) || 0,
+        resolved: parseInt(stats.resolved) || 0
+      }
+    });
+  } catch (error) {
+    logger.error('[ClubAI Stats] Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch ClubAI stats' });
+  }
+});
+
+/**
+ * GET /api/patterns/clubai-knowledge
+ * Get ClubAI system prompt and knowledge base content (read-only)
+ */
+router.get('/clubai-knowledge', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const basePath = join(__dirname, '..', 'knowledge-base');
+
+    let systemPrompt = '';
+    let knowledgeBase = '';
+
+    try {
+      systemPrompt = readFileSync(join(basePath, 'clubai-system-prompt.md'), 'utf-8');
+    } catch { systemPrompt = 'System prompt file not found'; }
+
+    try {
+      knowledgeBase = readFileSync(join(basePath, 'clubai-knowledge-base.md'), 'utf-8');
+    } catch { knowledgeBase = 'Knowledge base file not found'; }
+
+    res.json({
+      success: true,
+      data: { systemPrompt, knowledgeBase }
+    });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch knowledge base' });
+  }
+});
+
+/**
+ * GET /api/patterns/clubai-config
+ * Get ClubAI configuration from pattern_learning_config
+ */
+router.get('/clubai-config', authenticate, async (req: Request, res: Response) => {
+  try {
+    const result = await db.query(`
+      SELECT config_key, config_value FROM pattern_learning_config
+      WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_max_messages')
+    `);
+
+    const config: Record<string, string> = {};
+    for (const row of result.rows) {
+      config[row.config_key] = row.config_value;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        enabled: config.clubai_enabled === 'true',
+        shadowMode: config.clubai_shadow_mode !== 'false',
+        maxMessages: parseInt(config.clubai_max_messages || '5')
+      }
+    });
+  } catch (error) {
+    logger.error('[ClubAI Config] Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch ClubAI config' });
+  }
+});
+
+/**
+ * PUT /api/patterns/clubai-config
+ * Update ClubAI configuration
+ */
+router.put('/clubai-config', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { user } = req as any;
+    if (user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Admin only' });
+    }
+
+    const { enabled, shadowMode, maxMessages } = req.body;
+
+    const updates: Array<{ key: string; value: string }> = [];
+    if (enabled !== undefined) updates.push({ key: 'clubai_enabled', value: String(enabled) });
+    if (shadowMode !== undefined) updates.push({ key: 'clubai_shadow_mode', value: String(shadowMode) });
+    if (maxMessages !== undefined) updates.push({ key: 'clubai_max_messages', value: String(maxMessages) });
+
+    for (const { key, value } of updates) {
+      await db.query(`
+        INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (config_key) DO UPDATE SET config_value = $2, updated_at = NOW()
+      `, [key, value]);
+    }
+
+    logger.info('[ClubAI Config] Updated by admin', { updates });
+
+    res.json({ success: true, message: 'ClubAI config updated' });
+  } catch (error) {
+    logger.error('[ClubAI Config] Update error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update ClubAI config' });
+  }
+});
+
 // Export the router
 export default router;

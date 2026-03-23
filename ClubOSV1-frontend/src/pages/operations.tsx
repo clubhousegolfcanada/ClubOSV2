@@ -1,13 +1,13 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuthState } from '@/state/useStore';
-import { Users, Zap, Brain, ClipboardList, Layers, Receipt } from 'lucide-react';
+import { Users, Zap, Brain, MessageSquare, ClipboardList, Layers, Receipt } from 'lucide-react';
 import SubNavigation, { SubNavTab } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
 
 // Lazy load operation components for better performance
 const OperationsUsers = lazy(() => import('@/components/operations/users/OperationsUsers').then(m => ({ default: m.OperationsUsers })));
 const OperationsIntegrations = lazy(() => import('@/components/operations/integrations/OperationsIntegrations').then(m => ({ default: m.OperationsIntegrations })));
-const OperationsPatternsEnhanced = lazy(() => import('@/components/operations/patterns/OperationsPatternsEnhanced').then(m => ({ default: m.OperationsPatternsEnhanced })));
+const OperationsClubAI = lazy(() => import('@/components/operations/clubai/OperationsClubAI').then(m => ({ default: m.OperationsClubAI })));
 const WhiteLabelPlanner = lazy(() => import('@/components/operations/white-label/WhiteLabelPlanner').then(m => ({ default: m.WhiteLabelPlanner })));
 const ChecklistsAdminComponent = lazy(() => import('@/components/operations/checklists/ChecklistsAdminComponent').then(m => ({ default: m.ChecklistsAdminComponent })));
 const OperationsReceipts = lazy(() => import('@/components/operations/receipts/OperationsReceipts').then(m => ({ default: m.OperationsReceipts })));
@@ -77,7 +77,7 @@ export default function Operations() {
   const tabConfigs = [
     { id: 'users', label: 'Users', icon: Users, adminOnly: true },
     { id: 'integrations', label: 'Integrations & AI', icon: Zap, adminOnly: true },
-    { id: 'patterns', label: 'V3-PLS', icon: Brain, adminOnly: false },
+    { id: 'patterns', label: 'ClubAI', icon: MessageSquare, adminOnly: false },
     { id: 'checklists-admin', label: 'Checklists Admin', icon: ClipboardList, adminOnly: true },
     { id: 'white-label', label: 'White Label', icon: Layers, adminOnly: true },
     { id: 'receipts', label: 'Receipts', icon: Receipt, adminOnly: true }
@@ -99,7 +99,7 @@ export default function Operations() {
       case 'integrations':
         return 'Manage integrations, AI automations, and knowledge base';
       case 'patterns':
-        return 'V3 Pattern Learning System - AI-powered message automation';
+        return 'ClubAI - Conversational SMS support powered by GPT-4o';
       case 'checklists-admin':
         return 'Manage checklist templates and assignments for all locations';
       case 'white-label':
@@ -120,7 +120,7 @@ export default function Operations() {
         case 'integrations':
           return user.role === 'admin' ? <OperationsIntegrations /> : null;
         case 'patterns':
-          return <OperationsPatternsEnhanced />;
+          return <OperationsClubAI />;
         case 'checklists-admin':
           return user.role === 'admin' ? <ChecklistsAdminComponent /> : null;
         case 'white-label':
@@ -128,7 +128,7 @@ export default function Operations() {
         case 'receipts':
           return user.role === 'admin' ? <OperationsReceipts /> : null;
         default:
-          return user.role === 'admin' ? <OperationsUsers /> : <OperationsPatternsEnhanced />;
+          return user.role === 'admin' ? <OperationsUsers /> : <OperationsClubAI />;
       }
     })();
 
