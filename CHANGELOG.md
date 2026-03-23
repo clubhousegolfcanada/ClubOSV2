@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.0] - 2026-03-23
+
+### Added
+- **Smart Knowledge Input** — Paste any raw text (policy updates, new info, instructions) and GPT-4o parses it into structured Q&A pairs. Shows what was extracted before adding to the knowledge base.
+- **CAN/CANNOT section in system prompt** — Clear boundaries: ClubAI CAN walk through troubleshooting steps and answer info questions. ClubAI CANNOT unlock doors, reset TrackMan remotely, change bookings, or process refunds.
+
+### Fixed
+- **RAG search thresholds too high** — Website content was never matching because similarity scores are naturally lower for reference content vs conversational queries. Lowered website threshold from 0.6 to 0.3, conversations from 0.65 to 0.50.
+- **Website embeddings mismatched** — Entries were embedded using raw content text ("Standard Rate: $35/hr...") which doesn't match how customers ask ("how much does it cost"). Re-embedded all 18 website entries with question-oriented search text.
+- **ClubAI was asking for location/box unnecessarily** — Removed "collect location and box number" from escalation protocol. The fix steps are the same regardless of location. Human team can ask if they need it.
+- **Escalation protocol too slow** — Removed info-gathering requirements for door access, bookings, refunds, gift cards. AI now escalates immediately instead of interrogating the customer first.
+
 ## [1.27.9] - 2026-03-23
 
 ### Changed

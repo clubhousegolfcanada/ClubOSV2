@@ -2390,6 +2390,74 @@ router.post('/clubai-knowledge-search', authenticate, async (req: Request, res: 
 });
 
 /**
+ * POST /api/patterns/clubai-knowledge-parse
+ * Accept raw text (policy, info, instructions) and use GPT-4o to parse it
+ * into structured Q&A pairs for the knowledge base
+ */
+router.post('/clubai-knowledge-parse', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { rawText } = req.body;
+    if (!rawText?.trim()) {
+      return res.status(400).json({ success: false, error: 'rawText is required' });
+    }
+
+    const { getOpenAIClient } = await import('../utils/openaiClient');
+    const openai = getOpenAIClient();
+    if (!openai) {
+      return res.status(500).json({ success: false, error: 'OpenAI not available' });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a knowledge base parser for Clubhouse 24/7 Golf, a chain of self-service indoor golf simulator locations in Nova Scotia.
+
+Given raw text (policy updates, new info, instructions, etc.), extract structured Q&A pairs that a customer support AI would need.
+
+For each piece of information, create:
+1. "question" — How a customer would naturally ask about this (casual SMS style, e.g. "how much does it cost" not "What are your pricing tiers?")
+2. "answer" — The response the AI should give (friendly, brief, SMS-style)
+3. "intent" — Category: pricing, sim_frozen, door_access, booking_change, club_rental, wifi, general_inquiry, food_drink, how_long_18, refund_request, gift_card, login_qr_issue, side_screens, ball_not_registering, tech_support
+
+Respond with valid JSON only: { "entries": [{ "question": "...", "answer": "...", "intent": "..." }] }
+Extract as many distinct Q&A pairs as the text contains. If there are multiple facts, create separate entries for each.`
+        },
+        { role: 'user', content: rawText.trim() }
+      ],
+      temperature: 0.3,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' },
+    });
+
+    const parsed = JSON.parse(completion.choices[0]?.message?.content || '{"entries":[]}');
+    const entries = parsed.entries || [];
+
+    if (entries.length === 0) {
+      return res.json({ success: true, data: [], message: 'No Q&A pairs could be extracted' });
+    }
+
+    // Store each entry
+    const { addManualKnowledge } = await import('../services/clubaiKnowledgeService');
+    const results = [];
+    for (const entry of entries) {
+      const id = await addManualKnowledge(
+        entry.intent || 'general_inquiry',
+        entry.question,
+        entry.answer
+      );
+      results.push({ id, question: entry.question, answer: entry.answer, intent: entry.intent });
+    }
+
+    return res.json({ success: true, data: results, count: results.length });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Parse error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to parse knowledge' });
+  }
+});
+
+/**
  * POST /api/patterns/clubai-knowledge-manual
  * Add a manual knowledge entry
  */

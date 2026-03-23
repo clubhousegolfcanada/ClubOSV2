@@ -106,6 +106,10 @@ export const OperationsClubAI: React.FC = () => {
   const [newAnswer, setNewAnswer] = useState('');
   const [newIntent, setNewIntent] = useState('general_inquiry');
   const [addingKnowledge, setAddingKnowledge] = useState(false);
+  const [showSmartPaste, setShowSmartPaste] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [parsing, setParsing] = useState(false);
+  const [parsedEntries, setParsedEntries] = useState<Array<{ id: number; question: string; answer: string; intent: string }> | null>(null);
   const [testQuery, setTestQuery] = useState('');
   const [testResults, setTestResults] = useState<Array<{ knowledge_id: number; source_type: string; intent: string; customer_message: string; team_response: string; page_section: string; similarity: number }> | null>(null);
   const [testing, setTesting] = useState(false);
@@ -200,6 +204,23 @@ export const OperationsClubAI: React.FC = () => {
     try {
       await apiClient.post('/api/patterns/clubai-feedback', { searchLogId, quality });
     } catch { /* non-critical */ }
+  };
+
+  const parseKnowledge = async () => {
+    if (!pasteText.trim()) return;
+    setParsing(true);
+    setParsedEntries(null);
+    try {
+      const res = await apiClient.post('/api/patterns/clubai-knowledge-parse', { rawText: pasteText.trim() });
+      if (res.data?.data) {
+        setParsedEntries(res.data.data);
+        setPasteText('');
+        // Refresh stats
+        const kRes = await apiClient.get('/api/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
+        if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
+      }
+    } catch { setParsedEntries([]); }
+    setParsing(false);
   };
 
   const addKnowledgeEntry = async () => {
@@ -517,10 +538,16 @@ export const OperationsClubAI: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 mt-3">
             <button
-              onClick={() => setShowAddKnowledge(!showAddKnowledge)}
+              onClick={() => { setShowSmartPaste(!showSmartPaste); setShowAddKnowledge(false); }}
               className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
             >
-              <Plus className="w-3 h-3" /> Add Entry
+              <Plus className="w-3 h-3" /> Add Knowledge
+            </button>
+            <button
+              onClick={() => { setShowAddKnowledge(!showAddKnowledge); setShowSmartPaste(false); }}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
+            >
+              <Edit3 className="w-3 h-3" /> Manual Entry
             </button>
             <button
               onClick={() => setShowKnowledgePanel(!showKnowledgePanel)}
@@ -529,6 +556,46 @@ export const OperationsClubAI: React.FC = () => {
               <Search className="w-3 h-3" /> Test Search
             </button>
           </div>
+
+          {/* Smart Paste — paste any info and AI parses it */}
+          {showSmartPaste && (
+            <div className="mt-3 p-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] space-y-2">
+              <p className="text-xs font-medium text-[var(--text-primary)]">Add Knowledge</p>
+              <p className="text-[10px] text-[var(--text-secondary)]">
+                Paste any information — policy updates, new pricing, instructions, FAQ answers, etc. AI will parse it into Q&A pairs that ClubAI can use to answer customers.
+              </p>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                rows={5}
+                placeholder="e.g. 'We now offer a 10-pack of hours for $300. Valid at all locations. Must be used within 6 months.'"
+                className="w-full text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)] resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => { setShowSmartPaste(false); setPasteText(''); setParsedEntries(null); }}
+                  className="px-3 py-1.5 text-xs rounded border border-[var(--border-primary)] text-[var(--text-secondary)]">
+                  Cancel
+                </button>
+                <button onClick={parseKnowledge}
+                  disabled={parsing || !pasteText.trim()}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50">
+                  {parsing ? 'Parsing...' : 'Add to Knowledge Base'}
+                </button>
+              </div>
+              {parsedEntries && (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-xs font-medium text-green-600">{parsedEntries.length} entries added:</p>
+                  {parsedEntries.map((e, i) => (
+                    <div key={i} className="p-2 rounded bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 text-xs">
+                      <p className="text-[10px] text-green-600 font-medium">{e.intent}</p>
+                      <p className="text-[var(--text-secondary)]">Q: {e.question}</p>
+                      <p className="text-[var(--text-primary)]">A: {e.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Add Manual Knowledge Entry */}
           {showAddKnowledge && (

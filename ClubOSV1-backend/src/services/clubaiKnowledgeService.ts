@@ -155,10 +155,14 @@ export async function getRAGContext(customerMessage: string): Promise<{
   }
 
   // Run all three searches in parallel using the same embedding
+  // Thresholds calibrated against real queries (audit 2026-03-23):
+  //   - Conversations: 0.50 (customer Q&A pairs have moderate similarity to new questions)
+  //   - Website: 0.30 (reference content is semantically distant from conversational queries)
+  //   - Manual: 0.45 (manually entered, should be closer to expected questions)
   const [conversations, website, manual] = await Promise.all([
-    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.65, sourceType: 'conversation' }),
-    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 3, threshold: 0.6, sourceType: 'website' }),
-    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 2, threshold: 0.6, sourceType: 'manual' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.50, sourceType: 'conversation' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 3, threshold: 0.30, sourceType: 'website' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 2, threshold: 0.45, sourceType: 'manual' }),
   ]);
 
   // Format conversation examples
