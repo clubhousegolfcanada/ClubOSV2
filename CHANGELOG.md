@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.5] - 2026-03-23
+
+### Fixed
+- **ClubAI had no conversation memory** — `storeClubAIMessage` was inserting `ai_reasoning` as a plain string into a `jsonb` column, causing silent INSERT failure. AI messages were never stored, so the AI had zero context of what it already said and would repeat itself (e.g. customer says "thanks" → AI re-sends TrackMan instructions).
+- **"Thanks" triggered re-answer** — Added "Thank You / Conversation Closer" intent to system prompt. AI now responds warmly ("No problem! Enjoy your round!") instead of re-processing the previous topic.
+
 ## [1.28.4] - 2026-03-23
 
 ### Fixed

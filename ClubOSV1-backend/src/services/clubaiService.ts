@@ -242,8 +242,8 @@ export async function storeClubAIMessage(
   try {
     await db.query(`
       INSERT INTO conversation_messages (conversation_id, sender_type, message_text, pattern_confidence, ai_reasoning)
-      VALUES ($1, 'ai', $2, $3, 'ClubAI auto-response')
-    `, [conversationId, messageText, confidence]);
+      VALUES ($1, 'ai', $2, $3, $4)
+    `, [conversationId, messageText, confidence, JSON.stringify({ source: 'ClubAI', type: 'auto-response' })]);
   } catch (error) {
     logger.error('[ClubAI] Failed to store message:', error);
   }
