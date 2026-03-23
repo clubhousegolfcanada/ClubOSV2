@@ -974,7 +974,21 @@ async function startServer() {
     } catch (error) {
       logger.error('Failed to add updated_at column:', error);
     }
-    
+
+    // Add ClubAI columns to openphone_conversations if missing
+    try {
+      await db.query(`
+        ALTER TABLE openphone_conversations
+        ADD COLUMN IF NOT EXISTS clubai_active BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS clubai_messages_sent INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS clubai_escalated BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS clubai_escalation_reason TEXT
+      `);
+      logger.info('✅ ClubAI columns verified');
+    } catch (error) {
+      logger.error('Failed to add ClubAI columns:', error);
+    }
+
     // Run other migrations
     try {
       // First, try to create the table if it doesn't exist
