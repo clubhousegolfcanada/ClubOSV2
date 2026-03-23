@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Search, Filter, Plus, Send, Check, X, Edit3, Clock } from 'lucide-react';
+import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, RefreshCw, Search, Plus, Send, Check, X, Edit3, Clock } from 'lucide-react';
 import apiClient from '@/api/http';
 
 // ============================================
@@ -198,12 +198,6 @@ export const OperationsClubAI: React.FC = () => {
       await apiClient.put('/api/patterns/safety-thresholds', newSafety);
     } catch { setSafety(safety); }
     setSaving(false);
-  };
-
-  const submitFeedback = async (searchLogId: number, quality: 'good' | 'bad') => {
-    try {
-      await apiClient.post('/api/patterns/clubai-feedback', { searchLogId, quality });
-    } catch { /* non-critical */ }
   };
 
   const parseKnowledge = async () => {
@@ -426,7 +420,7 @@ export const OperationsClubAI: React.FC = () => {
       </div>
 
       {/* Draft Review Queue (approval mode) */}
-      {config.approvalMode && drafts.length > 0 && (
+      {config.approvalMode && (
         <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
@@ -438,6 +432,9 @@ export const OperationsClubAI: React.FC = () => {
             </button>
           </div>
           <div className="space-y-3">
+            {drafts.length === 0 && (
+              <p className="text-xs text-[var(--text-secondary)] text-center py-4">No pending drafts. When a customer texts, ClubAI will generate a draft here for your review.</p>
+            )}
             {drafts.map(draft => (
               <div key={draft.id} className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
                 <div className="flex items-center justify-between mb-2">
