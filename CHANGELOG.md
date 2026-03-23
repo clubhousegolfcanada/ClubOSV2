@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.1] - 2026-03-23
+
+### Added
+- **Multi-page PDF splitting** — Upload a 10-page PDF and each page becomes a separate receipt with its own OCR, date, vendor, and amount. Uses pdf-lib to split pages before processing.
+- **Multi-receipt image detection** — Upload a photo with multiple receipts and GPT-4o detects each one separately, creating individual database records per receipt found.
+- **Fuzzy duplicate detection** — After OCR, checks for existing receipts with same vendor (fuzzy match) + amount (within $0.50) + date (within 3 days). Flags potential duplicates without blocking the insert.
+- **Date-aware filing** — OCR extracts the actual purchase date from the receipt regardless of filename. Receipts from different months get filed to the correct date automatically (e.g., a January receipt uploaded in March shows under January).
+
+### Changed
+- **File size limit** — Increased from 5MB to 20MB to support multi-page scanned PDFs.
+- **Body parser limit** — Increased from 10MB to 25MB for multi-page PDF uploads.
+- **BulkUploadCard** — Now shows "3 receipts" when a multi-page PDF creates multiple records.
+
 ## [1.27.0] - 2026-03-23
 
 ### Added

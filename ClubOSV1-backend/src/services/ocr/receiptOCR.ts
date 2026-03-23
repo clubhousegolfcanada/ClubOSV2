@@ -339,3 +339,101 @@ export function formatOCRForDisplay(result: ReceiptOCRResult): string {
 
   return lines.join('\n');
 }
+
+/**
+ * Detect and extract multiple receipts from a single image.
+ * Returns array of ReceiptOCRResult (1 per receipt found).
+ * Falls back to single-receipt extraction if multi-detection fails.
+ */
+export async function processMultiReceiptImage(base64Image: string): Promise<ReceiptOCRResult[]> {
+  try {
+    let imageData = base64Image;
+    if (!imageData.startsWith('data:')) {
+      imageData = `data:image/jpeg;base64,${imageData}`;
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a Canadian receipt OCR specialist for a business in Nova Scotia.
+This image may contain MULTIPLE receipts (e.g., several receipts photographed together, or a collage).
+
+Count how many separate receipts are visible, then extract data from EACH one.
+
+Return a JSON ARRAY of objects. Each object has:
+- vendor, totalAmount, taxAmount, hstAmount, hstRegNumber, subtotal,
+  purchaseDate (YYYY-MM-DD), paymentMethod, category, lineItems[]
+
+Categories: Supplies, Equipment, Services, Food, Office, Utilities, Fuel, Software, Advertising, Insurance, Rent, Maintenance, Professional Fees, Shipping, Other
+
+RULES:
+- If only 1 receipt is visible, return an array with 1 object
+- Amounts in CAD, null if unknown
+- NS HST is 15%. Single "Tax" line = HST.
+- CRITICAL: purchaseDate must be the actual date on the receipt, not today's date
+- For dates that look like 2003 but context suggests 2023 (e.g., recent vendor, modern receipt format), use the more likely year`
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "How many receipts are in this image? Extract data from each one. Return ONLY a valid JSON array." },
+            { type: "image_url", image_url: { url: imageData, detail: "high" } }
+          ]
+        }
+      ],
+      max_tokens: 3000,
+      temperature: 0.1
+    }, { timeout: 90000 });
+
+    const content = response.choices[0]?.message?.content || '[]';
+    const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      logger.warn('Multi-receipt parse failed, falling back to single extraction');
+      const single = await processReceiptWithOCR(base64Image);
+      return [single];
+    }
+
+    // Normalize: if GPT returned a single object instead of array, wrap it
+    const receiptsArray = Array.isArray(parsed) ? parsed : [parsed];
+
+    if (receiptsArray.length === 0) {
+      const single = await processReceiptWithOCR(base64Image);
+      return [single];
+    }
+
+    const safeFloat = (val: any): number | null => {
+      if (val === null || val === undefined) return null;
+      const n = parseFloat(val);
+      return isNaN(n) || !isFinite(n) ? null : n;
+    };
+
+    const results: ReceiptOCRResult[] = receiptsArray.map((item: any) => ({
+      vendor: item.vendor || null,
+      totalAmount: safeFloat(item.totalAmount),
+      taxAmount: safeFloat(item.taxAmount),
+      hstAmount: safeFloat(item.hstAmount),
+      hstRegNumber: item.hstRegNumber || null,
+      subtotal: safeFloat(item.subtotal),
+      purchaseDate: item.purchaseDate || null,
+      paymentMethod: item.paymentMethod || null,
+      lineItems: Array.isArray(item.lineItems) ? item.lineItems : [],
+      rawText: content,
+      confidence: calculateConfidence(item),
+      category: item.category || categorizeByVendor(item.vendor)
+    }));
+
+    logger.info(`Multi-receipt detection: found ${results.length} receipt(s)`);
+    return results;
+
+  } catch (error: any) {
+    logger.error('Multi-receipt detection failed, falling back to single:', error);
+    const single = await processReceiptWithOCR(base64Image);
+    return [single];
+  }
+}

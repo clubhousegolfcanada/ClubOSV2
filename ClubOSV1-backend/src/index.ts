@@ -205,7 +205,7 @@ app.use('/api/openphone-v3/webhook-v3', express.raw({ type: 'application/json' }
   next();
 });
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '25mb' })); // Supports multi-page PDF receipt uploads
 app.use(cookieParser());
 app.use(sanitizeMiddleware);
 app.use(requestLogger);

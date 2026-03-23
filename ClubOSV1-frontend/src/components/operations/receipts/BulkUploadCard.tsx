@@ -20,7 +20,7 @@ interface FileItem {
 }
 
 const MAX_FILES = 50;
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB raw
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB raw (supports multi-page PDFs)
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 
 function formatBytes(bytes: number): string {
@@ -169,11 +169,16 @@ export default function BulkUploadCard({ onUploadComplete }: BulkUploadCardProps
         base64 = null;
 
         if (response.data.success) {
+          const d = response.data.data;
+          // Handle multi-receipt response (PDF pages or multi-receipt image)
+          const receiptCount = d.receiptsCreated || 1;
+          const displayVendor = d.vendor || (d.receipts?.[0]?.vendor) || null;
+          const displayAmount = d.amount ?? (d.receipts?.[0]?.amount) ?? null;
           setFiles(prev => prev.map((f, idx) => idx === i ? {
             ...f,
             status: 'success',
-            vendor: response.data.data.vendor,
-            amount: response.data.data.amount,
+            vendor: receiptCount > 1 ? `${receiptCount} receipts` : displayVendor,
+            amount: receiptCount > 1 ? null : displayAmount,
           } : f));
         } else {
           setFiles(prev => prev.map((f, idx) => idx === i ? {

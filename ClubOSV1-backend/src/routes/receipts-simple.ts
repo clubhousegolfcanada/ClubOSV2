@@ -4,9 +4,10 @@ import rateLimit from 'express-rate-limit';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
-import { processReceiptWithOCR, formatOCRForDisplay } from '../services/ocr/receiptOCR';
+import { formatOCRForDisplay, processMultiReceiptImage } from '../services/ocr/receiptOCR';
 import { processReceiptSmart } from '../services/ocr/veryfiOCR';
 import { convertImageToPdf } from '../services/receipt/imageToPdf';
+import { splitPdfPages } from '../services/receipt/pdfSplitter';
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
 import archiver from 'archiver';
@@ -273,14 +274,14 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
       const filename = `receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.csv`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(csv);
+      return res.send(csv);
 
     } else if (exportFormat === 'json') {
       // Return raw JSON data
       const filename = `receipts_${periodLabel}_${format(now, 'yyyyMMdd')}.json`;
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.json({
+      return res.json({
         exportDate: now.toISOString(),
         period: period,
         periodLabel: periodLabel,
@@ -448,16 +449,17 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
       archive.finalize();
 
       logger.info(`Created ZIP export with ${photoCount} photos out of ${receipts.length} receipts`);
+      return;
 
     } else if (exportFormat === 'pdf') {
       // PDF export will be implemented in the next phase
-      res.status(501).json({
+      return res.status(501).json({
         error: 'PDF export not yet implemented',
         message: 'Please use CSV, JSON, or ZIP format for now'
       });
 
     } else {
-      res.status(400).json({
+      return res.status(400).json({
         error: 'Invalid export format',
         message: 'Supported formats: csv, json, zip, pdf'
       });
@@ -465,7 +467,7 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
 
   } catch (error) {
     logger.error('Error exporting receipts:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to export receipts',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -521,147 +523,87 @@ router.post('/upload',
         is_personal_card
       } = req.body;
 
-      // Validate file size (5MB decoded limit — base64 inflates ~33%, so check at 7MB)
-      if (file_data && file_data.length > 7_000_000) {
+      // Validate file size (20MB decoded limit for multi-page PDFs — base64 inflates ~33%)
+      if (file_data && file_data.length > 28_000_000) {
         return res.status(400).json({
           success: false,
-          error: 'File size exceeds 5MB limit'
+          error: 'File size exceeds 20MB limit'
         });
       }
 
-      // Generate content hash for duplicate detection
-      const contentHash = hash(file_data);
-
-      // Check for existing receipt with same content
-      const existingReceipt = await db.query(
-        'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1',
-        [contentHash]
-      );
-
-      if (existingReceipt.rows.length > 0) {
-        const existing = existingReceipt.rows[0];
-        logger.warn('Duplicate receipt detected', {
-          existingId: existing.id,
-          vendor: existing.vendor,
-          uploadedAt: existing.created_at
-        });
-        return res.status(409).json({
-          success: false,
-          error: 'Duplicate receipt detected',
-          message: `This receipt was already uploaded on ${new Date(existing.created_at).toLocaleDateString()}`,
-          existingReceipt: {
-            id: existing.id,
-            vendor: existing.vendor,
-            uploadedAt: existing.created_at
-          }
-        });
-      }
-
-      logger.info(`Receipt upload started by user ${user.id}`, {
-        fileName: file_name,
-        vendor,
-        location: club_location
-      });
-
-      // Run OCR on images and PDFs
-      let ocrResult = null;
-      let ocrDisplayText = '';
       const isImage = mime_type && mime_type.startsWith('image/');
       const isPdf = mime_type === 'application/pdf' || file_name?.toLowerCase().endsWith('.pdf');
 
-      if (isImage || isPdf) {
-        logger.info(`Running OCR on receipt ${isPdf ? 'PDF' : 'image'}`);
+      logger.info(`Receipt upload started by user ${user.id}`, {
+        fileName: file_name, vendor, location: club_location, isPdf, isImage
+      });
 
-        // Use processReceiptSmart for PDFs (Veryfi/GPT-4o), processReceiptWithOCR for images
-        ocrResult = isPdf
-          ? await processReceiptSmart(file_data)
-          : await processReceiptWithOCR(file_data);
-        ocrDisplayText = formatOCRForDisplay(ocrResult);
-
-        // Use OCR data if manual data not provided
-        if (!vendor && ocrResult.vendor) {
-          vendor = ocrResult.vendor;
-        }
-        if (!amount_cents && ocrResult.totalAmount) {
-          amount_cents = Math.round(ocrResult.totalAmount * 100);
-        }
-        if (!purchase_date && ocrResult.purchaseDate) {
-          purchase_date = ocrResult.purchaseDate;
+      // --- Helper: insert one receipt into DB with fuzzy dedup check ---
+      const insertOneReceipt = async (
+        fileData: string, ocrResult: any, pageContentHash: string
+      ) => {
+        // Exact duplicate check
+        const existing = await db.query(
+          'SELECT id, vendor, created_at FROM receipts WHERE content_hash = $1', [pageContentHash]
+        );
+        if (existing.rows.length > 0) {
+          return { status: 'duplicate' as const, id: existing.rows[0].id, vendor: existing.rows[0].vendor };
         }
 
-        logger.info('OCR processing completed', {
-          vendor: ocrResult.vendor,
-          amount: ocrResult.totalAmount,
-          confidence: ocrResult.confidence
-        });
-      }
-
-      // Convert image to PDF for storage (OCR already ran on the original)
-      // Content hash was computed on the original file_data above — do not recompute
-      let storageData = file_data;
-      let storageMimeType = mime_type || 'application/pdf';
-      let storageFileName = file_name;
-
-      // Rename file to YYYY-MM-DD_Vendor.ext format for easy identification
-      const receiptDate = purchase_date || ocrResult?.purchaseDate || new Date().toISOString().slice(0, 10);
-      const receiptVendor = (vendor || ocrResult?.vendor || 'Unknown')
-        .replace(/[^a-zA-Z0-9\s]/g, '')
-        .replace(/\s+/g, '_')
-        .slice(0, 40);
-      const ext = isPdf ? '.pdf' : '.pdf'; // All stored as PDF
-      storageFileName = `${receiptDate}_${receiptVendor}${ext}`;
-
-      if (isImage) {
-        try {
-          logger.info('Converting receipt image to PDF for storage');
-          storageData = await convertImageToPdf(file_data);
-          storageMimeType = 'application/pdf';
-          logger.info('Image converted to PDF successfully');
-        } catch (convError) {
-          logger.warn('PDF conversion failed, storing as original image:', convError);
-          // Fall back to storing the original image — don't block the upload
+        // Fuzzy duplicate check (same vendor + amount within $0.50 + date within 3 days)
+        let fuzzyMatch = null;
+        if (ocrResult?.vendor && ocrResult?.totalAmount) {
+          const amountCents = Math.round(ocrResult.totalAmount * 100);
+          const fuzzy = await db.query(`
+            SELECT id, vendor, amount_cents, purchase_date FROM receipts
+            WHERE vendor ILIKE $1
+            AND amount_cents BETWEEN $2 AND $3
+            ${ocrResult.purchaseDate ? `AND purchase_date BETWEEN ($4::date - interval '3 days') AND ($4::date + interval '3 days')` : ''}
+            LIMIT 1
+          `, ocrResult.purchaseDate
+            ? [`%${ocrResult.vendor.slice(0, 20)}%`, amountCents - 50, amountCents + 50, ocrResult.purchaseDate]
+            : [`%${ocrResult.vendor.slice(0, 20)}%`, amountCents - 50, amountCents + 50]
+          );
+          if (fuzzy.rows.length > 0) {
+            fuzzyMatch = fuzzy.rows[0];
+            logger.info('Fuzzy duplicate detected', { existing: fuzzyMatch.id, vendor: fuzzyMatch.vendor });
+          }
         }
-      }
 
-      // Create database record with OCR data and content hash
-      const insertResult = await db.query(`
+        // Build storage data
+        let storageData = fileData;
+        let storageMimeType = 'application/pdf';
+        if (isImage && !fileData.startsWith('data:application/pdf')) {
+          try {
+            storageData = await convertImageToPdf(fileData);
+          } catch {
+            storageMimeType = mime_type || 'image/jpeg';
+          }
+        }
+
+        // Generate descriptive filename
+        const rDate = ocrResult?.purchaseDate || new Date().toISOString().slice(0, 10);
+        const rVendor = (ocrResult?.vendor || 'Unknown').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').slice(0, 40);
+        const storageFileName = `${rDate}_${rVendor}.pdf`;
+
+        const insertResult = await db.query(`
           INSERT INTO receipts (
-            file_data,
-            file_name,
-            file_size,
-            mime_type,
-            vendor,
-            amount_cents,
-            tax_cents,
-            hst_cents,
-            hst_reg_number,
-            purchase_date,
-            club_location,
-            category,
-            payment_method,
-            notes,
-            uploader_user_id,
-            ocr_status,
-            ocr_text,
-            ocr_json,
-            ocr_confidence,
-            line_items,
-            is_personal_card,
-            content_hash
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+            file_data, file_name, file_size, mime_type,
+            vendor, amount_cents, tax_cents, hst_cents, hst_reg_number,
+            purchase_date, club_location, category, payment_method, notes,
+            uploader_user_id, ocr_status, ocr_text, ocr_json, ocr_confidence,
+            line_items, is_personal_card, content_hash
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
           ON CONFLICT (content_hash) DO NOTHING
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
-          storageData,
-          storageFileName,
-          file_size || null,
-          storageMimeType,
-          vendor || null,
-          amount_cents ? parseInt(amount_cents.toString()) : null,
+          storageData, storageFileName, file_size || null, storageMimeType,
+          ocrResult?.vendor || vendor || null,
+          ocrResult?.totalAmount ? Math.round(ocrResult.totalAmount * 100) : (amount_cents ? parseInt(amount_cents.toString()) : null),
           ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
           ocrResult?.hstAmount ? Math.round(ocrResult.hstAmount * 100) : null,
           ocrResult?.hstRegNumber || null,
-          purchase_date || null,
+          ocrResult?.purchaseDate || purchase_date || null,
           club_location || null,
           ocrResult?.category || null,
           ocrResult?.paymentMethod || null,
@@ -673,40 +615,117 @@ router.post('/upload',
           ocrResult?.confidence || 0,
           ocrResult?.lineItems ? JSON.stringify(ocrResult.lineItems) : null,
           is_personal_card || false,
-          contentHash
+          pageContentHash
         ]);
 
-      const receipt = insertResult.rows[0];
+        const receipt = insertResult.rows[0];
+        if (!receipt) return { status: 'duplicate' as const, id: null, vendor: null };
 
-      // ON CONFLICT returns no rows if duplicate slipped past the SELECT check
-      if (!receipt) {
-        return res.status(409).json({
-          success: false,
-          error: 'Duplicate receipt detected',
-          message: 'This receipt was already uploaded'
-        });
-      }
-
-      logger.info(`Receipt uploaded successfully`, {
-        receiptId: receipt.id,
-        vendor: receipt.vendor
-      });
-
-      return res.json({
-        success: true,
-        data: {
+        return {
+          status: 'created' as const,
           id: receipt.id,
           vendor: receipt.vendor,
           amount: receipt.amount_cents ? receipt.amount_cents / 100 : null,
           purchase_date: receipt.purchase_date,
           location: receipt.club_location,
           created_at: receipt.created_at,
-          is_personal_card: receipt.is_personal_card || false,
-          status: 'uploaded',
-          // Include OCR results for frontend to display
-          ocrResult: ocrResult,
-          ocrDisplay: ocrDisplayText,
-          ocrConfidence: ocrResult?.confidence || 0
+          fuzzyDuplicate: fuzzyMatch ? { id: fuzzyMatch.id, vendor: fuzzyMatch.vendor } : null,
+          ocrConfidence: ocrResult?.confidence || 0,
+        };
+      };
+
+      // --- Process based on file type ---
+      const results: any[] = [];
+
+      if (isPdf) {
+        // Split multi-page PDFs — each page becomes a separate receipt
+        const pages = await splitPdfPages(file_data);
+        logger.info(`PDF has ${pages.length} page(s)`);
+
+        for (const page of pages) {
+          const pageHash = hash(page.base64DataUrl);
+          const ocrResult = await processReceiptSmart(page.base64DataUrl);
+          const result = await insertOneReceipt(page.base64DataUrl, ocrResult, pageHash);
+          results.push({ ...result, pageNumber: page.pageNumber, ocrResult });
+        }
+
+      } else if (isImage) {
+        // Check for multiple receipts in one image
+        const ocrResults = await processMultiReceiptImage(file_data);
+        logger.info(`Image contains ${ocrResults.length} receipt(s)`);
+
+        if (ocrResults.length === 1) {
+          // Single receipt — use original image
+          const pageHash = hash(file_data);
+          const result = await insertOneReceipt(file_data, ocrResults[0], pageHash);
+          results.push({ ...result, ocrResult: ocrResults[0] });
+        } else {
+          // Multiple receipts in one image — all get same image but different OCR data
+          for (let i = 0; i < ocrResults.length; i++) {
+            const pageHash = hash(file_data + `_receipt_${i}`);
+            const result = await insertOneReceipt(file_data, ocrResults[i], pageHash);
+            results.push({ ...result, receiptIndex: i + 1, ocrResult: ocrResults[i] });
+          }
+        }
+
+      } else {
+        // Non-image, non-PDF — store as-is without OCR
+        const pageHash = hash(file_data);
+        const result = await insertOneReceipt(file_data, null, pageHash);
+        results.push(result);
+      }
+
+      const created = results.filter(r => r.status === 'created');
+      const duplicates = results.filter(r => r.status === 'duplicate');
+
+      if (created.length === 0 && duplicates.length > 0) {
+        return res.status(409).json({
+          success: false,
+          error: 'Duplicate receipt detected',
+          message: duplicates.length === 1
+            ? 'This receipt was already uploaded'
+            : `All ${duplicates.length} receipts were already uploaded`
+        });
+      }
+
+      logger.info(`Receipt upload complete: ${created.length} created, ${duplicates.length} duplicates`);
+
+      // Return single receipt format for 1 result (backwards compatible), array for multi
+      if (created.length === 1 && results.length === 1) {
+        const r = created[0];
+        return res.json({
+          success: true,
+          data: {
+            id: r.id,
+            vendor: r.vendor,
+            amount: r.amount,
+            purchase_date: r.purchase_date,
+            location: r.location,
+            created_at: r.created_at,
+            is_personal_card: r.is_personal_card || false,
+            status: 'uploaded',
+            ocrResult: r.ocrResult,
+            ocrDisplay: r.ocrResult ? formatOCRForDisplay(r.ocrResult) : '',
+            ocrConfidence: r.ocrConfidence || 0,
+            fuzzyDuplicate: r.fuzzyDuplicate,
+          }
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          receiptsCreated: created.length,
+          duplicatesSkipped: duplicates.length,
+          receipts: created.map(r => ({
+            id: r.id,
+            vendor: r.vendor,
+            amount: r.amount,
+            purchase_date: r.purchase_date,
+            ocrConfidence: r.ocrConfidence || 0,
+            fuzzyDuplicate: r.fuzzyDuplicate,
+            pageNumber: r.pageNumber,
+          })),
         }
       });
 
