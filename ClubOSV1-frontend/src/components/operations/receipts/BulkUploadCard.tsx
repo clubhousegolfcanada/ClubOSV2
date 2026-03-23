@@ -21,7 +21,7 @@ interface FileItem {
 
 const MAX_FILES = 50;
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB raw (supports multi-page PDFs)
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -55,7 +55,7 @@ export default function BulkUploadCard({ onUploadComplete }: BulkUploadCardProps
       if (file.size > MAX_FILE_SIZE) {
         validFiles.push({
           file, name: file.name, size: file.size, type: file.type,
-          status: 'error', error: `File too large (${formatBytes(file.size)}, max 15MB)`
+          status: 'error', error: `File too large (${formatBytes(file.size)}, max 20MB)`
         });
         continue;
       }
@@ -258,7 +258,7 @@ export default function BulkUploadCard({ onUploadComplete }: BulkUploadCardProps
           Drop files here or <span className="text-blue-600 font-medium">browse</span>
         </p>
         <p className="text-xs text-gray-400 mt-1">
-          JPEG, PNG, WebP, PDF — up to {MAX_FILES} files, 15MB each
+          JPEG, PNG, WebP, PDF — up to {MAX_FILES} files, 20MB each
         </p>
       </div>
 
@@ -266,7 +266,7 @@ export default function BulkUploadCard({ onUploadComplete }: BulkUploadCardProps
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".jpg,.jpeg,.png,.webp,.pdf,.heic"
+        accept=".jpg,.jpeg,.png,.webp,.pdf"
         onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }}
         className="hidden"
       />

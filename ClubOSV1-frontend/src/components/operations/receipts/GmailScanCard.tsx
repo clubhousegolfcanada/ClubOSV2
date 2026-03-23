@@ -152,8 +152,8 @@ export const GmailScanCard: React.FC<GmailScanCardProps> = ({ year, month, onSca
                     setResult({ found: 0 });
                     setError(null);
                     // Auto-trigger scan after reset
-                    fetchStatus();
-                    handleScan();
+                    await fetchStatus();
+                    await handleScan();
                   } else {
                     setError('No stale records found to reset.');
                   }

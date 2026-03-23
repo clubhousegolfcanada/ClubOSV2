@@ -366,16 +366,33 @@ interface GmailReceiptInput {
 
 async function insertGmailReceipt(input: GmailReceiptInput): Promise<string | null> {
   try {
+    // Fuzzy duplicate check before insert
+    let fuzzyDuplicateId: string | null = null;
+    if (input.ocrResult?.vendor && input.ocrResult?.totalAmount) {
+      const amountCents = Math.round(input.ocrResult.totalAmount * 100);
+      const fuzzyParams: any[] = [`%${input.ocrResult.vendor.slice(0, 20)}%`, amountCents - 50, amountCents + 50];
+      let fuzzyQuery = `SELECT id FROM receipts WHERE vendor ILIKE $1 AND amount_cents BETWEEN $2 AND $3`;
+      if (input.ocrResult.purchaseDate) {
+        fuzzyQuery += ` AND purchase_date BETWEEN ($4::date - interval '3 days') AND ($4::date + interval '3 days')`;
+        fuzzyParams.push(input.ocrResult.purchaseDate);
+      }
+      fuzzyQuery += ` LIMIT 1`;
+      const fuzzy = await db.query(fuzzyQuery, fuzzyParams);
+      if (fuzzy.rows.length > 0) {
+        fuzzyDuplicateId = fuzzy.rows[0].id;
+      }
+    }
+
     const result = await db.query(`
       INSERT INTO receipts (
         file_data, file_name, mime_type, content_hash,
         vendor, amount_cents, tax_cents, hst_cents, hst_reg_number,
-        purchase_date, category, payment_method, notes,
+        subtotal_cents, purchase_date, category, payment_method, notes,
         ocr_status, ocr_text, ocr_json, ocr_confidence,
-        source, gmail_message_id, source_email
+        source, gmail_message_id, source_email, fuzzy_duplicate_of
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+        $15, $16, $17, $18, $19, $20, $21, $22
       )
       ON CONFLICT (content_hash) DO NOTHING
       RETURNING id
@@ -389,6 +406,7 @@ async function insertGmailReceipt(input: GmailReceiptInput): Promise<string | nu
       input.ocrResult?.taxAmount ? Math.round(input.ocrResult.taxAmount * 100) : null,
       input.ocrResult?.hstAmount ? Math.round(input.ocrResult.hstAmount * 100) : null,
       input.ocrResult?.hstRegNumber || null,
+      input.ocrResult?.subtotal ? Math.round(input.ocrResult.subtotal * 100) : null,
       input.ocrResult?.purchaseDate || input.emailDate.toISOString().slice(0, 10),
       input.ocrResult?.category || null,
       input.ocrResult?.paymentMethod || null,
@@ -400,6 +418,7 @@ async function insertGmailReceipt(input: GmailReceiptInput): Promise<string | nu
       input.source,
       input.gmailMessageId,
       input.sourceEmail,
+      fuzzyDuplicateId,
     ]);
 
     return result.rows[0]?.id || null;

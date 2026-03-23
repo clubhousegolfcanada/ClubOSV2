@@ -35,15 +35,7 @@ export const OperationsReceipts: React.FC = () => {
 
   const monthLabel = `${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
 
-  // Listen for openReceipt events from the detail modal "View Original" link
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const id = (e as CustomEvent).detail;
-      if (id) setSelectedReceiptId(id);
-    };
-    window.addEventListener('openReceipt', handler);
-    return () => window.removeEventListener('openReceipt', handler);
-  }, []);
+
 
   const fetchReceipts = useCallback(async () => {
     setLoadingReceipts(true);
@@ -155,15 +147,20 @@ export const OperationsReceipts: React.FC = () => {
     }
   };
 
+  const [reconcileError, setReconcileError] = useState<string | null>(null);
+
   const handleBulkReconcile = async () => {
     if (selectedIds.size === 0) return;
     setReconciling(true);
+    setReconcileError(null);
     try {
       await http.post('receipts/reconcile', { receiptIds: Array.from(selectedIds) });
       setSelectedIds(new Set());
       fetchReceipts();
       fetchSummary();
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Reconcile failed. Please try again.';
+      setReconcileError(msg);
       logger.error('Bulk reconcile failed:', err);
     } finally {
       setReconciling(false);
@@ -260,19 +257,25 @@ export const OperationsReceipts: React.FC = () => {
           receiptId={selectedReceiptId}
           onClose={() => setSelectedReceiptId(null)}
           onSaved={() => { fetchReceipts(); fetchSummary(); }}
+          onViewReceipt={(id) => setSelectedReceiptId(id)}
         />
       )}
 
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <button
-          onClick={handleBulkReconcile}
-          disabled={selectedIds.size === 0 || reconciling}
-          className="px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400"
-        >
-          <CheckSquare className="w-4 h-4" />
-          {reconciling ? 'Reconciling...' : `Reconcile (${selectedIds.size})`}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBulkReconcile}
+            disabled={selectedIds.size === 0 || reconciling}
+            className="px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400"
+          >
+            <CheckSquare className="w-4 h-4" />
+            {reconciling ? 'Reconciling...' : `Reconcile (${selectedIds.size})`}
+          </button>
+          {reconcileError && (
+            <span className="text-sm text-red-600">{reconcileError}</span>
+          )}
+        </div>
 
         <div className="flex gap-2">
           <button

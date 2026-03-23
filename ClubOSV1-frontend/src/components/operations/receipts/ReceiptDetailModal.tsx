@@ -7,6 +7,7 @@ interface ReceiptDetailModalProps {
   receiptId: string;
   onClose: () => void;
   onSaved: () => void;
+  onViewReceipt?: (id: string) => void;
 }
 
 const CATEGORIES = [
@@ -17,7 +18,7 @@ const CATEGORIES = [
 
 const LOCATIONS = ['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'Stratford', 'River Oaks'];
 
-export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptId, onClose, onSaved }) => {
+export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptId, onClose, onSaved, onViewReceipt }) => {
   const [receipt, setReceipt] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -143,19 +144,14 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptI
                     Possible duplicate of another receipt.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    onClose();
-                    // Small delay to allow modal to close, then open the original
-                    setTimeout(() => {
-                      const event = new CustomEvent('openReceipt', { detail: receipt.fuzzy_duplicate_of });
-                      window.dispatchEvent(event);
-                    }, 100);
-                  }}
-                  className="text-sm text-orange-700 font-medium hover:text-orange-900 underline whitespace-nowrap"
-                >
-                  View Original
-                </button>
+                {onViewReceipt && (
+                  <button
+                    onClick={() => onViewReceipt(receipt.fuzzy_duplicate_of)}
+                    className="text-sm text-orange-700 font-medium hover:text-orange-900 underline whitespace-nowrap"
+                  >
+                    View Original
+                  </button>
+                )}
               </div>
             )}
             <div className="flex flex-col lg:flex-row">
@@ -230,16 +226,12 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptI
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Tax ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={tax}
-                        onChange={e => setTax(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled
-                        title="Tax is calculated from HST"
-                      />
+                      <div
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500"
+                        title="Tax amount from OCR (read-only)"
+                      >
+                        {tax || '—'}
+                      </div>
                     </div>
                   </div>
 

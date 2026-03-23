@@ -118,10 +118,10 @@ router.get('/summary', authenticate, async (req: Request, res: Response) => {
     const categoryResult = await db.query(categoryQuery, queryParams);
 
     // Count receipts needing review (low confidence or fuzzy duplicate)
-    const reviewQuery = `
-      SELECT COUNT(*) as count FROM receipts
-      ${dateFilter ? dateFilter.replace('WHERE', 'WHERE (r.ocr_confidence < 0.7 OR r.fuzzy_duplicate_of IS NOT NULL) AND').replace(/\br\./g, '') : 'WHERE ocr_confidence < 0.7 OR fuzzy_duplicate_of IS NOT NULL'}
-    `;
+    const reviewCondition = '(ocr_confidence < 0.7 OR fuzzy_duplicate_of IS NOT NULL)';
+    const reviewQuery = dateFilter
+      ? `SELECT COUNT(*) as count FROM receipts ${dateFilter} AND ${reviewCondition}`
+      : `SELECT COUNT(*) as count FROM receipts WHERE ${reviewCondition}`;
     const reviewResult = await db.query(reviewQuery, queryParams);
 
     return res.json({
@@ -597,11 +597,11 @@ router.post('/upload',
         const insertResult = await db.query(`
           INSERT INTO receipts (
             file_data, file_name, file_size, mime_type,
-            vendor, amount_cents, tax_cents, hst_cents, hst_reg_number,
+            vendor, amount_cents, tax_cents, hst_cents, hst_reg_number, subtotal_cents,
             purchase_date, club_location, category, payment_method, notes,
             uploader_user_id, ocr_status, ocr_text, ocr_json, ocr_confidence,
             line_items, is_personal_card, content_hash, fuzzy_duplicate_of
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
           ON CONFLICT (content_hash) DO NOTHING
           RETURNING id, vendor, amount_cents, purchase_date, club_location, created_at, is_personal_card
         `, [
@@ -611,6 +611,7 @@ router.post('/upload',
           ocrResult?.taxAmount ? Math.round(ocrResult.taxAmount * 100) : null,
           ocrResult?.hstAmount ? Math.round(ocrResult.hstAmount * 100) : null,
           ocrResult?.hstRegNumber || null,
+          ocrResult?.subtotal ? Math.round(ocrResult.subtotal * 100) : null,
           ocrResult?.purchaseDate || purchase_date || null,
           club_location || null,
           ocrResult?.category || null,
@@ -700,7 +701,7 @@ router.post('/upload',
       logger.info(`Receipt upload complete: ${created.length} created, ${duplicates.length} duplicates`);
 
       // Return single receipt format for 1 result (backwards compatible), array for multi
-      if (created.length === 1 && results.length === 1) {
+      if (created.length === 1) {
         const r = created[0];
         return res.json({
           success: true,

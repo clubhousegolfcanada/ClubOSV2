@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.27.4] - 2026-03-23
+
+### Fixed
+- **Needs review count SQL was broken** — `dateFilter.replace()` chain mangled SQL, causing crashes. Rewrote as proper parameterized query.
+- **HEIC files accepted but not processable** — Removed HEIC from accepted types (browsers can't decode natively). Now accepts JPEG, PNG, WebP, PDF only.
+- **File size limits mismatched** — UI said 15MB, constant was 20MB, backend accepted 28MB. All now consistently say 20MB.
+- **Tax field in modal was editable but never saved** — Changed to read-only display div instead of disabled input.
+- **View Original race condition** — Replaced CustomEvent + setTimeout hack with proper callback prop (`onViewReceipt`). No more race between closing/opening modals.
+- **Backwards-compatible response too strict** — Single-receipt uploads with duplicate detection now correctly return single-object format.
+- **Gmail scanner didn't flag fuzzy duplicates** — Added fuzzy duplicate check + `fuzzy_duplicate_of` column to Gmail receipt INSERT. Also persists `subtotal_cents`.
+- **Subtotal never persisted** — Added `subtotal_cents` to upload INSERT. CSV exports now show actual subtotals.
+- **Bulk reconcile errors silent** — Now shows error message in action bar when reconcile fails.
+- **Gmail reset race condition** — Reset handler now awaits `fetchStatus()` before triggering `handleScan()`.
+
 ## [1.27.3] - 2026-03-23
 
 ### Added
