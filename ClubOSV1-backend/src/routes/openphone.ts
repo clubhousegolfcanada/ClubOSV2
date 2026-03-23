@@ -53,51 +53,43 @@ async function logSafetyTrigger(
 }
 
 // Verify OpenPhone webhook signature
-function verifyOpenPhoneSignature(payload: string, signature: string, secret: string): boolean {
+// Format: openphone-signature header = "hmac;1;timestamp;signature"
+// Signed data = timestamp + "." + payload
+// Key = base64-decoded signing secret as binary buffer
+function verifyOpenPhoneSignature(payload: string, signatureHeader: string, secret: string): boolean {
   try {
-    // CRITICAL FIX: The webhook secret from Railway is base64 encoded
-    // We need to decode it first before using it for HMAC
-    const decodedSecret = Buffer.from(secret, 'base64').toString('utf8');
-
-    // Generate expected signature with decoded secret
-    const expectedSignature = crypto
-      .createHmac('sha256', decodedSecret)
-      .update(payload)
-      .digest('hex');
-
-    // OpenPhone might send the signature in different formats
-    // Try hex comparison first
-    if (signature.toLowerCase() === expectedSignature.toLowerCase()) {
-      return true;
+    // Parse the signature header: hmac;version;timestamp;signature
+    const parts = signatureHeader.split(';');
+    if (parts.length < 4) {
+      logger.warn('OpenPhone signature header has unexpected format', { parts: parts.length });
+      return false;
     }
 
-    // Try base64 comparison
-    const expectedSignatureBase64 = crypto
-      .createHmac('sha256', decodedSecret)
-      .update(payload)
+    const timestamp = parts[2];
+    const receivedSignature = parts[3];
+
+    // Decode the base64 signing key to binary buffer
+    const keyBuffer = Buffer.from(secret, 'base64');
+
+    // Signed data = timestamp + "." + payload (no whitespace modification)
+    const signedData = `${timestamp}.${payload}`;
+
+    // Compute HMAC-SHA256
+    const expectedSignature = crypto
+      .createHmac('sha256', keyBuffer)
+      .update(signedData)
       .digest('base64');
 
-    if (signature === expectedSignatureBase64) {
-      return true;
-    }
-
-    // Also try with the raw secret (fallback for backward compatibility)
-    const fallbackSignature = crypto
-      .createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
-
-    if (signature.toLowerCase() === fallbackSignature.toLowerCase()) {
+    if (receivedSignature === expectedSignature) {
       return true;
     }
 
     // Log mismatch for debugging
     logger.warn('OpenPhone signature mismatch', {
-      receivedSignature: signature.substring(0, 20) + '...',
-      expectedHex: expectedSignature.substring(0, 20) + '...',
-      expectedBase64: expectedSignatureBase64.substring(0, 20) + '...',
-      fallbackHex: fallbackSignature.substring(0, 20) + '...',
-      secretIsBase64: secret.match(/^[A-Za-z0-9+/]+=*$/) !== null
+      receivedSig: receivedSignature.substring(0, 20) + '...',
+      expectedSig: expectedSignature.substring(0, 20) + '...',
+      timestamp,
+      payloadLength: payload.length
     });
 
     return false;
