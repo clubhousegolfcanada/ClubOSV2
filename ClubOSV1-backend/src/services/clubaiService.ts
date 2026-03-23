@@ -138,12 +138,14 @@ export async function generateResponse(
   }
 
   systemContent += '\n\n---\n\nIMPORTANT RESPONSE RULES:\n' +
+    '- ONLY use facts from the DYNAMIC CONTEXT above. If the context does not contain the answer, say "Let me check with the team" and escalate. NEVER guess or make up numbers, prices, hours, or steps.\n' +
     '- If you need to escalate to a human, include [ESCALATE TO HUMAN] at the END of your message, followed by a summary line.\n' +
-    '- Format: [ESCALATE TO HUMAN] Location: X, Box: Y, Issue: Z, Tried: W\n' +
+    '- Format: [ESCALATE TO HUMAN] Issue: Z, Priority: normal/high\n' +
     '- Do NOT include the escalation tag in the message the customer sees.\n' +
     '- Keep responses SHORT — this is SMS. 1-3 sentences max.\n' +
     '- Do NOT sign your messages with "- ClubAI" — that is added automatically.\n' +
-    '- Give the customer the actual information (pricing, steps, etc.) — do NOT send links instead of answering.';
+    '- Give the customer the actual information (pricing, steps, etc.) from the DYNAMIC CONTEXT — do NOT send links instead of answering.\n' +
+    '- Quote exact numbers from the knowledge base. For pricing: $35/hr standard, $25/hr mornings (5AM-1PM weekdays), $15/hr late night (midnight-5AM weekdays). If these don\'t match the DYNAMIC CONTEXT, use the DYNAMIC CONTEXT values.';
 
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: systemContent }

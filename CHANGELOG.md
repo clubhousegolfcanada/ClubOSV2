@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.4] - 2026-03-23
+
+### Fixed
+- **ClubAI hallucinating answers** — Added strict anti-hallucination rules: AI must ONLY use facts from DYNAMIC CONTEXT (RAG). If knowledge base doesn't have the answer, AI escalates instead of guessing. Prevents wrong pricing, wrong steps, wrong info.
+- **Pricing hardcoded as fallback in response rules** — Added exact pricing ($35/$25/$15) as safety net so even if RAG misses, AI quotes correct numbers.
+
 ## [1.28.3] - 2026-03-23
 
 ### Fixed
