@@ -9,20 +9,66 @@
 ## ARCHITECTURE
 
 ### Backend (ClubOSV1-backend/)
-- **Entry**: `src/index.ts` — server init, middleware setup, route registration
-- **Routes**: 50+ files in `src/routes/` (logic-heavy, legacy pattern)
-- **Services**: 50+ files in `src/services/` (business logic)
+- **Entry**: `src/index.ts` (1157 lines — 60+ route imports at top, require() calls at bottom ~line 377)
+- **Routes**: 88 top-level files in `src/routes/` + subdirectories (admin/, ai/, booking/, knowledge/, messaging/, operations/, system/, webhooks/) — logic-heavy legacy pattern
+- **Services**: 67 top-level files in `src/services/` + subdirectories (booking/, llm/, ocr/, unifi/, gmail/, gpt/, etc.)
 - **Middleware**: 17 files in `src/middleware/` (auth, rate limiting, validation, security)
-- **Migrations**: 355+ SQL files in `src/database/migrations/`
-- **Architecture transition**: Legacy = all logic in routes. New = Controller → Service → Repository (~20% migrated, auth/health/users first)
+- **Controllers**: 3 files in `src/controllers/` (AuthController, HealthController, UserController)
+- **Repositories**: 2 files in `src/repositories/` (BaseRepository, UserRepository)
+- **Migrations**: 179 SQL files in `src/database/migrations/`
+- **Architecture transition**: Legacy = all logic in routes (~95%). New = Controller → Service → Repository (~5% migrated — auth, health, users only)
 
 ### Frontend (ClubOSV1-frontend/)
 - **Entry**: `src/pages/_app.tsx` — app wrapper, auth init, service worker, PWA
-- **API client**: `src/api/http.ts` — Axios with auth interceptors, auto token refresh via `x-new-token` header
+- **API client**: `src/api/http.ts` — Axios with auth interceptors, auto token refresh via `x-new-token` header, CSRF protection, 120s timeout
 - **State**: Zustand (`src/state/useStore.ts`) persisted + React Context (messages, theme)
 - **Auth**: JWT in localStorage, managed by `src/utils/tokenManager.ts`, protected by `src/components/auth/AuthGuard.tsx`
 - **Styling**: Tailwind + CSS custom properties, dark mode via `src/contexts/ThemeContext.tsx`
 - **PWA**: Capacitor bridge, swipe gestures, bottom sheets, keyboard detection
+- **Components**: Feature-based organization under `src/components/` (operations/, booking/, customer/, dashboard/, ui/, messages/, tickets/, shared/)
+
+## NAMING CONVENTIONS
+- **Routes**: camelCase dominant (65% — `bookingConfig.ts`, `doorAccess.ts`). Newer files use kebab-case (35% — `ai-automations.ts`, `enhanced-patterns.ts`). Use camelCase for consistency with existing files.
+- **Services**: camelCase dominant (96% — `assistantService.ts`). Only `AuthService.ts` and `UserService.ts` use PascalCase (refactored pattern).
+- **Controllers**: PascalCase (`AuthController.ts`, `UserController.ts`, `HealthController.ts`)
+- **Repositories**: PascalCase (`BaseRepository.ts`, `UserRepository.ts`)
+- **Frontend components**: PascalCase (`TicketCenterOptimizedV3.tsx`, `BookingCalendar.tsx`)
+
+## ARCHITECTURE PATTERNS
+
+### Legacy Pattern (~95% of routes)
+Route file handles everything: request parsing, validation, business logic, DB queries, response formatting.
+```
+routes/tickets.ts → direct SQL queries + response
+```
+**When to use**: Bug fixes, small features in existing route files. Do NOT refactor existing routes unless explicitly asked.
+
+### Refactored Pattern (~5% — auth, health, users only)
+Controller → Service → Repository separation.
+```
+routes/auth-refactored.ts → AuthController.ts → AuthService.ts → UserRepository.ts
+```
+**When to use**: New major features if scope justifies it.
+
+**IMPORTANT**: The refactored routes (`auth-refactored.ts`, `users-refactored.ts`, `health-refactored.ts`) exist but are COMMENTED OUT in `index.ts` (~line 255). Legacy routes still serve ALL production traffic.
+
+## DATABASE LAYER
+
+These files handle database access. Know which does what:
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `utils/database.ts` | DB initializer, table creation, exports interfaces (DbUser, DbTicket, etc.) | **ACTIVE** (30+ imports) |
+| `utils/db.ts` | Facade — re-exports everything from `db-consolidated.ts` | **ACTIVE** (35+ imports) |
+| `utils/db-consolidated.ts` | THE actual connection pool. All queries flow through here. | **ACTIVE** (core) |
+| `utils/database-tables.ts` | SQL CREATE TABLE definitions | **ACTIVE** |
+| `utils/database-helpers.ts` | Column existence checks, OpenPhone-specific helpers | **ACTIVE** (4 imports) |
+| `utils/ticketDb.ts` | Ticket-specific query interfaces and wrapper | **ACTIVE** |
+| `utils/openphone-db-helpers.ts` | OpenPhone insert/update conversation helpers | **ACTIVE** (4 imports) |
+| `utils/db-pool.ts` | DEPRECATED — re-exports from db.ts | **DO NOT IMPORT** |
+| `utils/database-migrations.ts` | LEGACY — all migration code skipped at startup | **DO NOT USE** |
+
+**Active migrations** run via numbered SQL files in `src/database/migrations/`, NOT via the migration runner files.
 
 ## KEY FILE MAP
 
@@ -38,8 +84,25 @@
 | **Knowledge** | `services/unifiedKnowledgeService.ts`, `routes/knowledge.ts`, `routes/knowledge-store.ts` | — |
 | **Doors** | `services/unifi*.ts`, `routes/unifi-doors.ts` | — |
 | **Remote** | `services/ninjaone.ts`, `routes/ninjaone-*.ts`, `routes/remoteActions.ts` | `components/RemoteActionsBar.tsx` |
-| **Receipts** | `services/ocr/receiptOCR.ts`, `routes/receipts.ts` | `components/receipts/` |
+| **Receipts** | `services/ocr/receiptOCR.ts`, `routes/receipts-simple.ts` | `components/operations/receipts/` |
 | **Dashboard** | — | `components/dashboard/MessagesCardV3.tsx`, `components/dashboard/TaskList.tsx` |
+
+## DEAD CODE / DO NOT TOUCH
+
+- `ClubOSV1-backend/archive/` — Old scripts, docs, tests from prior refactors. Never imported by active code. Ignore entirely.
+- `utils/db-pool.ts` — Deprecated wrapper, do not import (use `db.ts` instead)
+- `utils/database-migrations.ts` — Legacy migration runner, all code skipped. Active migrations use SQL files in `src/database/migrations/`
+- `index.ts` lines ~255-265 — Commented-out v2 route mounts. Leave commented until full migration is ready.
+- `index.ts` lines ~377+ — `require()` style imports (mixed with ES imports at top). Do not "fix" without a plan.
+
+## COMMON PITFALLS
+
+1. **database-helpers.ts looks dead but ISN'T** — It's imported by 4 production files (openphone.ts, openphone-v3.ts, webhooks, openphone-db-helpers.ts). Do not delete.
+2. **index.ts has mixed import styles** — ES `import` at top (lines 1-100), `require()` at bottom (~line 377). Both are active. Do not consolidate without testing.
+3. **V2 refactored routes are NOT serving traffic** — `auth-refactored.ts`, `users-refactored.ts`, `health-refactored.ts` exist but are commented out in index.ts. Legacy routes handle everything.
+4. **Multiple route versions coexist** — `openphone.ts` + `openphone-v3.ts` + `openphone-processing.ts` all serve different endpoints. Check mount paths in index.ts before modifying.
+5. **Knowledge domain is sprawled** — 8 route files + 10 service files handle knowledge. `unifiedKnowledgeService.ts` is the primary entry point.
+6. **UniFi domain is sprawled** — 9 service files for door access. Multiple API approaches were tried. `unifi-doors.ts` route is the active entry point.
 
 ## DATABASE (54 tables — key ones)
 
@@ -105,10 +168,10 @@
 2. Search for existing similar implementations
 3. Create .md plan file before writing code
 4. Implement with mobile-first approach
-5. Test locally (frontend + backend if needed)
+5. Run `npx tsc --noEmit` to verify no TypeScript errors
 6. Update CHANGELOG.md with version bump
 7. Update README.md version number to match
-8. Commit with descriptive message and **always push** (auto-deploys to production)
+8. **Commit and push immediately** — do NOT wait for the user to ask. Once implementation is complete, TypeScript passes, and CHANGELOG/README are updated, commit with a descriptive message and `git push` right away. Every completed fix or feature must be deployed. Auto-deploys to production on push.
 
 ## COMMANDS
 
@@ -122,6 +185,19 @@ npm run db:rollback                  # Rollback last migration
 railway run npm run db:migrate       # Production migration
 railway logs                         # Production backend logs
 ```
+
+## TESTING
+
+```bash
+cd ClubOSV1-backend && npm test              # All backend tests
+cd ClubOSV1-backend && npm run test:unit     # Unit tests only
+cd ClubOSV1-backend && npm run test:watch    # Watch mode
+cd ClubOSV1-frontend && npm test             # Frontend tests
+```
+
+- **Backend tests**: `src/__tests__/unit/` (routes, services, middleware)
+- **Backend config**: `jest.config.json`
+- **Frontend config**: `jest.config.js`, `jest.setup.js`
 
 ## TROUBLESHOOTING
 

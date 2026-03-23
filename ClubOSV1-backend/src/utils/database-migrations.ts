@@ -1,3 +1,5 @@
+// LEGACY: Migration logic in this file is skipped at startup.
+// Active migrations run via numbered SQL files in src/database/migrations/
 import { query } from './db';
 import { logger } from './logger';
 

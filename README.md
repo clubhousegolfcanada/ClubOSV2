@@ -52,8 +52,6 @@ ClubOSV1/
 
 ## Quick Start
 
-See [QUICKSTART.md](./QUICKSTART.md) for detailed setup instructions.
-
 ```bash
 # Local Development
 cd ClubOSV1-backend && npm run dev   # Terminal 1 (port 3000)
@@ -82,10 +80,6 @@ railway run npm run db:migrate       # Production migration
 railway logs                         # Backend production logs
 ```
 
-## Environment Setup
-
-See [ENVIRONMENT.md](./ENVIRONMENT.md) for complete configuration guide.
-
 ## Security
 
 - **Authentication**: JWT-based with role permissions
@@ -97,8 +91,6 @@ See [ENVIRONMENT.md](./ENVIRONMENT.md) for complete configuration guide.
 
 ## Documentation
 
-- [QUICKSTART.md](./QUICKSTART.md) - Setup and deployment guide
-- [ENVIRONMENT.md](./ENVIRONMENT.md) - Environment variables reference
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture details
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
 - [CLAUDE.md](./CLAUDE.md) - AI assistant technical context
