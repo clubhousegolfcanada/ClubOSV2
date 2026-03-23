@@ -14,6 +14,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { db } from '../../utils/database';
 import { logger } from '../../utils/logger';
 import { processReceiptWithOCR } from '../ocr/receiptOCR';
+import { processReceiptSmart } from '../ocr/veryfiOCR';
 import { convertImageToPdf } from '../receipt/imageToPdf';
 import { hash } from '../../utils/encryption';
 import * as fs from 'fs';
@@ -22,22 +23,50 @@ import PDFDocument from 'pdfkit';
 
 // --- Configuration ---
 
+// Primary query: Gmail's built-in purchase category catches ~80% of receipts
+// This is the single most important query — Gmail internally tags all purchase emails
+const PRIMARY_QUERIES = [
+  'category:purchases',
+];
+
 const VENDOR_QUERIES = [
+  // Canadian retail & hardware
   'from:homedepot', 'from:bestbuy', 'from:amazon',
   'from:ikea', 'from:walmart', 'from:costco',
+  'from:kent.ca', 'from:canadiantire', 'from:rona',
+  'from:lowes', 'from:princessauto',
+  // Canadian utilities & telecom
   'from:nspower', 'from:bellaliant', 'from:bell.ca',
   'from:eastlink', 'from:rogers', 'from:telus',
+  'from:koodo', 'from:fido',
+  // SaaS & tech (business expenses)
   'from:shopify', 'from:stripe', 'from:square',
   'from:anthropic', 'from:openai', 'from:hubspot',
-  'from:vistaprint', 'from:kent.ca', 'from:canadiantire',
-  'from:staples', 'from:google subject:payment',
-  'from:petro-canada', 'from:ultramar',
+  'from:railway.app', 'from:vercel', 'from:github',
+  'from:digitalocean', 'from:godaddy', 'from:namecheap',
+  'from:cloudflare', 'from:slack', 'from:zoom',
+  'from:canva', 'from:adobe', 'from:microsoft',
+  'from:google subject:payment', 'from:apple subject:receipt',
+  'from:intuit', 'from:freshbooks', 'from:xero',
+  // Office & supplies
+  'from:staples', 'from:vistaprint',
+  // Fuel & auto
+  'from:petro-canada', 'from:ultramar', 'from:shell',
+  'from:esso', 'from:irving',
+  // Transport & delivery
+  'from:uber', 'from:lyft', 'from:doordash',
+  'from:skipthedishes', 'from:airbnb',
+  // Insurance & finance
+  'from:td.com', 'from:rbc.com', 'from:scotiabank',
+  'from:manulife', 'from:sunlife',
 ];
 
 const KEYWORD_QUERIES = [
   'subject:receipt', 'subject:invoice', 'subject:"order confirmation"',
   'subject:"payment confirmation"', 'subject:"your order"',
-  'subject:"purchase confirmation"', 'has:attachment filename:pdf subject:invoice',
+  'subject:"purchase confirmation"', 'subject:"billing statement"',
+  'subject:"payment received"', 'subject:"transaction"',
+  'has:attachment filename:pdf subject:invoice',
   'has:attachment filename:pdf subject:receipt',
 ];
 
@@ -432,8 +461,8 @@ async function processMessage(
       mimeType = 'application/pdf';
       fileName = att.filename;
 
-      // GPT-4o can read PDFs natively via base64
-      const ocrResult = await processReceiptWithOCR(fileData);
+      // Use Veryfi if configured, otherwise GPT-4o
+      const ocrResult = await processReceiptSmart(fileData);
 
       const receiptId = await insertGmailReceipt({
         fileData, fileName, mimeType, contentHash, ocrResult,
@@ -448,7 +477,7 @@ async function processMessage(
       // Image attachment — run OCR on image, then convert to PDF
       const imageDataUrl = `data:${att.mimeType};base64,${base64Data}`;
 
-      const ocrResult = await processReceiptWithOCR(imageDataUrl);
+      const ocrResult = await processReceiptSmart(imageDataUrl);
 
       // Convert to PDF for storage
       try {
@@ -472,8 +501,9 @@ async function processMessage(
   }
 
   // --- Process HTML body receipts ---
-  // Some vendors embed receipt data in the email body (no attachment)
-  if (receiptsCreated === 0 && attachments.length === 0) {
+  // Many vendors embed receipt data in the email body (Amazon, Uber, Stripe, etc.)
+  // Check body when: no receipts extracted yet (even if attachments existed but were skipped)
+  if (receiptsCreated === 0) {
     const htmlBody = extractHtmlBody(msg.data.payload);
     if (htmlBody && isLikelyReceiptEmail(subject, fromHeader)) {
       const textContent = htmlToText(htmlBody);
@@ -548,8 +578,21 @@ export async function runGmailScan(startDate?: string): Promise<{
   // Collect unique message IDs from all queries
   const allMessageIds = new Set<string>();
 
+  // Phase 1: Primary queries (category:purchases catches ~80% of receipts)
+  for (const query of PRIMARY_QUERIES) {
+    const fullQuery = `in:anywhere ${query} ${dateFilter}`;
+    try {
+      const ids = await searchMessages(gmail, fullQuery);
+      ids.forEach(id => allMessageIds.add(id));
+      logger.info(`Primary query "${query}": found ${ids.length} messages`);
+    } catch (err) {
+      logger.warn(`Primary Gmail query failed: ${query}`, err);
+    }
+  }
+
+  // Phase 2: Vendor-specific + keyword queries (catches edge cases category:purchases misses)
   for (const query of [...VENDOR_QUERIES, ...KEYWORD_QUERIES]) {
-    const fullQuery = `${query} ${dateFilter}`;
+    const fullQuery = `in:anywhere ${query} ${dateFilter}`;
     try {
       const ids = await searchMessages(gmail, fullQuery);
       ids.forEach(id => allMessageIds.add(id));

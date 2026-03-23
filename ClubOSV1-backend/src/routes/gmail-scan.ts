@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth';
 import { runGmailScan } from '../services/gmail/gmailReceiptScanner';
+import { isVeryfiConfigured } from '../services/ocr/veryfiOCR';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 
@@ -65,6 +66,8 @@ router.get('/status', authenticate, async (req, res) => {
         totalReceipts: parseInt(row.total_receipts_created || '0'),
         lastScanTime: row.last_scan_at,
         uniqueSenders: parseInt(row.unique_senders || '0'),
+        ocrProvider: isVeryfiConfigured() ? 'veryfi' : 'gpt-4o',
+        gmailEnabled: process.env.GMAIL_SCAN_ENABLED === 'true',
         // also keep raw for any other consumers
         ...row,
         topSenders: recentSenders.rows,
