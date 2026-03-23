@@ -136,7 +136,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
     
     // Get raw body for signature verification if available
     const rawBody = (req as any).rawBody || JSON.stringify(req.body);
-    const signature = req.headers['x-openphone-signature'] as string;
+    // OpenPhone sends signature as 'openphone-signature' (not x-openphone-signature)
+    const signature = (req.headers['openphone-signature'] || req.headers['x-openphone-signature']) as string;
     const webhookSecret = process.env.OPENPHONE_WEBHOOK_SECRET;
 
     // Verify signature if secret is configured

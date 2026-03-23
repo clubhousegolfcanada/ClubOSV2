@@ -56,10 +56,17 @@ router.get('/status', authenticate, async (req, res) => {
       LIMIT 20
     `);
 
+    const row = stats.rows[0];
     res.json({
       success: true,
       data: {
-        ...stats.rows[0],
+        // camelCase for frontend compatibility
+        totalScanned: parseInt(row.total_scanned || '0'),
+        totalReceipts: parseInt(row.total_receipts_created || '0'),
+        lastScanTime: row.last_scan_at,
+        uniqueSenders: parseInt(row.unique_senders || '0'),
+        // also keep raw for any other consumers
+        ...row,
         topSenders: recentSenders.rows,
       }
     });

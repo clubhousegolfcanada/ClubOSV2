@@ -49,11 +49,37 @@ const MAX_ATTACHMENT_SIZE = 25_000_000; // 25MB — skip huge files
 // --- OAuth2 Setup ---
 
 async function getGmailService(): Promise<gmail_v1.Gmail | null> {
+  // Support env-var-based credentials (Railway) or file-based credentials (local dev)
+  const clientId = process.env.GMAIL_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+
+  if (clientId && clientSecret && refreshToken) {
+    // Environment variable approach (Railway / production)
+    try {
+      const oauth2Client = new OAuth2Client(clientId, clientSecret);
+      oauth2Client.setCredentials({
+        refresh_token: refreshToken,
+      });
+
+      // Log token refreshes
+      oauth2Client.on('tokens', (newTokens) => {
+        logger.info('Gmail OAuth token refreshed via env-var flow');
+      });
+
+      return google.gmail({ version: 'v1', auth: oauth2Client });
+    } catch (error) {
+      logger.error('Failed to initialize Gmail service from env vars:', error);
+      return null;
+    }
+  }
+
+  // Fallback: file-based credentials (local development)
   const credentialsPath = process.env.GMAIL_CREDENTIALS_PATH;
   const tokenPath = process.env.GMAIL_TOKEN_PATH;
 
   if (!credentialsPath || !tokenPath) {
-    logger.warn('Gmail scanning disabled: credentials not configured');
+    logger.warn('Gmail scanning disabled: no credentials configured (set GMAIL_CLIENT_ID + GMAIL_CLIENT_SECRET + GMAIL_REFRESH_TOKEN, or GMAIL_CREDENTIALS_PATH + GMAIL_TOKEN_PATH)');
     return null;
   }
 

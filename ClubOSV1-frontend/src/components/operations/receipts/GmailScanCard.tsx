@@ -30,7 +30,7 @@ export const GmailScanCard: React.FC<GmailScanCardProps> = ({ year, month, onSca
     setStatusLoading(true);
     try {
       const response = await http.get('gmail/status');
-      setStatus(response.data);
+      setStatus(response.data?.data || response.data);
       setNotConfigured(false);
     } catch (err: any) {
       if (err.response?.status === 404 || err.response?.status === 500) {
@@ -50,7 +50,7 @@ export const GmailScanCard: React.FC<GmailScanCardProps> = ({ year, month, onSca
       const response = await http.post('gmail/scan', {
         startDate: `after:${year}/${String(month).padStart(2, '0')}/01 before:${month === 12 ? year + 1 : year}/${String(month === 12 ? 1 : month + 1).padStart(2, '0')}/01`
       });
-      const data = response.data;
+      const data = response.data?.data || response.data;
       setResult({ found: data.receiptsCreated || data.totalProcessed || 0 });
       onScanComplete();
       fetchStatus();

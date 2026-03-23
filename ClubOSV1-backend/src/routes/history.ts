@@ -284,7 +284,21 @@ router.get('/stats/overview', authenticate, async (req, res) => {
         startDate = new Date(end.getTime() - 24 * 60 * 60 * 1000);
     }
     
-    // Get statistics from various tables
+    // Helper: query a table safely (returns fallback if table doesn't exist)
+    const safeQuery = async (sql: string, params: any[], fallback: any = { rows: [{}] }) => {
+      try {
+        return await db.query(sql, params);
+      } catch (err: any) {
+        // Table doesn't exist (42P01) or column doesn't exist (42703) — return fallback
+        if (err.code === '42P01' || err.code === '42703') {
+          logger.debug(`Stats query skipped (table/column missing): ${err.message}`);
+          return fallback;
+        }
+        throw err;
+      }
+    };
+
+    // Get statistics from various tables (each query is resilient to missing tables)
     const [
       totalRequestsResult,
       uniqueUsersResult,
@@ -293,52 +307,52 @@ router.get('/stats/overview', authenticate, async (req, res) => {
       bookingStatsResult
     ] = await Promise.all([
       // Total requests
-      db.query(
-        `SELECT COUNT(*) as count FROM customer_interactions 
+      safeQuery(
+        `SELECT COUNT(*) as count FROM customer_interactions
          WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
-      
+
       // Unique users
-      db.query(
-        `SELECT COUNT(DISTINCT COALESCE(user_id::text, user_email)) as count 
-         FROM customer_interactions 
+      safeQuery(
+        `SELECT COUNT(DISTINCT COALESCE(user_id::text, user_email)) as count
+         FROM customer_interactions
          WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
-      
+
       // Feedback stats
-      db.query(
-        `SELECT 
+      safeQuery(
+        `SELECT
            COUNT(*) as total,
            SUM(CASE WHEN is_useful THEN 1 ELSE 0 END) as useful,
            AVG(confidence) as avg_confidence
-         FROM feedback 
+         FROM feedback
          WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
-      
+
       // Ticket stats
-      db.query(
-        `SELECT 
+      safeQuery(
+        `SELECT
            COUNT(*) as total,
            SUM(CASE WHEN status = 'resolved' OR status = 'closed' THEN 1 ELSE 0 END) as resolved
-         FROM tickets 
+         FROM tickets
          WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       ),
-      
+
       // Booking stats
-      db.query(
-        `SELECT 
+      safeQuery(
+        `SELECT
            COUNT(*) as total,
            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
-         FROM bookings 
+         FROM bookings
          WHERE "createdAt" >= $1 AND "createdAt" <= $2`,
         [startDate, end]
       )
     ]);
-    
+
     const totalRequests = parseInt(totalRequestsResult.rows[0]?.count || '0');
     const uniqueUsers = parseInt(uniqueUsersResult.rows[0]?.count || '0');
     const feedbackStats = feedbackStatsResult.rows[0];
