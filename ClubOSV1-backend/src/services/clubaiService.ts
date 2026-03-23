@@ -24,16 +24,33 @@ let knowledgeBase: string | null = null;
 function loadKnowledgeFiles(): void {
   if (systemPrompt && knowledgeBase) return;
 
-  try {
-    const basePath = join(__dirname, '..', 'knowledge-base');
-    systemPrompt = readFileSync(join(basePath, 'clubai-system-prompt.md'), 'utf-8');
-    knowledgeBase = readFileSync(join(basePath, 'clubai-knowledge-base.md'), 'utf-8');
-    logger.info('[ClubAI] Knowledge files loaded successfully');
-  } catch (error) {
-    logger.error('[ClubAI] Failed to load knowledge files:', error);
-    systemPrompt = null;
-    knowledgeBase = null;
+  // Try multiple paths — handles both dev (src/) and production (dist/)
+  const possiblePaths = [
+    join(__dirname, '..', 'knowledge-base'),
+    join(process.cwd(), 'src', 'knowledge-base'),
+    join(process.cwd(), 'dist', 'knowledge-base'),
+  ];
+
+  for (const basePath of possiblePaths) {
+    try {
+      const promptPath = join(basePath, 'clubai-system-prompt.md');
+      const kbPath = join(basePath, 'clubai-knowledge-base.md');
+      systemPrompt = readFileSync(promptPath, 'utf-8');
+      knowledgeBase = readFileSync(kbPath, 'utf-8');
+      logger.info('[ClubAI] Knowledge files loaded successfully from: ' + basePath);
+      return;
+    } catch {
+      // Try next path
+    }
   }
+
+  logger.error('[ClubAI] Failed to load knowledge files from any path', {
+    tried: possiblePaths,
+    cwd: process.cwd(),
+    dirname: __dirname
+  });
+  systemPrompt = null;
+  knowledgeBase = null;
 }
 
 /**
@@ -65,6 +82,8 @@ export async function generateResponse(
   messageText: string,
   conversationId: string
 ): Promise<ClubAIResponse> {
+  logger.info('[ClubAI] generateResponse called', { phoneNumber, messageText: messageText.substring(0, 50), conversationId });
+
   loadKnowledgeFiles();
 
   if (!systemPrompt || !knowledgeBase) {
