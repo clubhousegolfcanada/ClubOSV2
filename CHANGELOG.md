@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.3] - 2026-03-23
+
+### Fixed
+- **ClubAI was blocked by operator lockouts** — Operator responses locked ALL conversations for a phone number for 4 hours via `WHERE phone_number`. Now locks only the specific conversation via `WHERE id`. New conversations from the same customer always get ClubAI.
+- **Lockout was too aggressive** — Enabled topic-aware lockout (smarter than blanket lock), reduced global cooldown from 60→15 minutes, reduced lockout hours from 4→1.
+- **ClubAI nested inside push notification try block** — If push notifications failed, ClubAI was silently skipped for new conversations. Now runs independently.
+- **Cleared 950 stale conversation locks** — All conversations were stuck with `conversation_locked=true` and `operator_active=true`, preventing ClubAI from ever responding.
+
 ## [1.28.2] - 2026-03-23
 
 ### Fixed

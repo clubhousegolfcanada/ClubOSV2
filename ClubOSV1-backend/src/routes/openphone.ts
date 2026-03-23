@@ -529,33 +529,42 @@ router.post('/webhook', async (req: Request, res: Response) => {
             lockoutHours
           });
 
-          // Mark operator as active with topic-aware lockouts + deactivate ClubAI
-          if (topicLockoutEnabled) {
-            // Topic-aware mode: set global cooldown AND topic-specific lockout
-            await db.query(`
-              UPDATE openphone_conversations
-              SET operator_active = true,
-                  operator_last_message = NOW(),
-                  conversation_locked = false,
-                  clubai_active = false,
-                  last_operator_topic = $2,
-                  global_cooldown_until = NOW() + INTERVAL '${globalCooldownMinutes} minutes',
-                  topic_lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
-              WHERE phone_number = $1`,
-              [phoneNumber, operatorTopic]
-            );
-          } else {
-            // Legacy blanket lockout mode + deactivate ClubAI
-            await db.query(`
-              UPDATE openphone_conversations
-              SET operator_active = true,
-                  operator_last_message = NOW(),
-                  conversation_locked = true,
-                  clubai_active = false,
-                  lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
-              WHERE phone_number = $1`,
-              [phoneNumber]
-            );
+          // Mark operator as active — PER-CONVERSATION only (not all conversations for this phone)
+          // Find the most recent conversation for this phone number
+          const currentConvForLock = await db.query(
+            `SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY updated_at DESC LIMIT 1`,
+            [phoneNumber]
+          );
+          const lockConvId = currentConvForLock.rows[0]?.id;
+
+          if (lockConvId) {
+            if (topicLockoutEnabled) {
+              // Topic-aware mode: set global cooldown AND topic-specific lockout
+              await db.query(`
+                UPDATE openphone_conversations
+                SET operator_active = true,
+                    operator_last_message = NOW(),
+                    conversation_locked = false,
+                    clubai_active = false,
+                    last_operator_topic = $2,
+                    global_cooldown_until = NOW() + INTERVAL '${globalCooldownMinutes} minutes',
+                    topic_lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
+                WHERE id = $1`,
+                [lockConvId, operatorTopic]
+              );
+            } else {
+              // Legacy blanket lockout mode + deactivate ClubAI
+              await db.query(`
+                UPDATE openphone_conversations
+                SET operator_active = true,
+                    operator_last_message = NOW(),
+                    conversation_locked = true,
+                    clubai_active = false,
+                    lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
+                WHERE id = $1`,
+                [lockConvId]
+              );
+            }
           }
 
           // Track operator intervention (skip if table doesn't exist)
@@ -1181,89 +1190,90 @@ router.post('/webhook', async (req: Request, res: Response) => {
               phoneNumber,
               userCount: userIds.length
             });
-            
-            // ClubAI: Process the first message from a new conversation
-            const newMessageText = messageData.body || messageData.text || '';
-            if (newMessageText) {
-              try {
-                // Look up the conversation we just created to get its DB ID
-                const newConvLookup = await db.query(
-                  `SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY created_at DESC LIMIT 1`,
-                  [phoneNumber]
-                );
-                if (newConvLookup.rows.length > 0) {
-                  const newConvId = newConvLookup.rows[0].id;
-
-                  // Read ClubAI config from DB
-                  let newClubaiEnabled = false;
-                  let newClubaiShadow = false;
-                  let newClubaiApproval = false;
-                  try {
-                    const cfgResult = await db.query(`
-                      SELECT config_key, config_value FROM pattern_learning_config
-                      WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_approval_mode')
-                    `);
-                    for (const row of cfgResult.rows) {
-                      if (row.config_key === 'clubai_enabled') newClubaiEnabled = row.config_value === 'true';
-                      if (row.config_key === 'clubai_shadow_mode') newClubaiShadow = row.config_value === 'true';
-                      if (row.config_key === 'clubai_approval_mode') newClubaiApproval = row.config_value === 'true';
-                    }
-                  } catch {
-                    newClubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
-                    newClubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
-                  }
-
-                  if (newClubaiEnabled) {
-                    // Store customer message
-                    await db.query(`
-                      INSERT INTO conversation_messages (conversation_id, sender_type, message_text)
-                      VALUES ($1, 'customer', $2)
-                    `, [newConvId, newMessageText]);
-
-                    const clubaiResult = await clubaiService.generateResponse(phoneNumber, newMessageText, String(newConvId));
-
-                    if (newClubaiShadow) {
-                      logger.info('[ClubAI SHADOW] New conversation', { phoneNumber, wouldSend: clubaiResult.response });
-                    } else if (newClubaiApproval && clubaiResult.response) {
-                      await db.query(`
-                        INSERT INTO clubai_draft_responses
-                        (conversation_id, phone_number, customer_name, customer_message, ai_response, confidence, escalate, escalation_summary)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                      `, [String(newConvId), phoneNumber, customerName || null, newMessageText,
-                          clubaiResult.response, clubaiResult.confidence, clubaiResult.escalate, clubaiResult.escalationSummary || null]);
-                      logger.info('[ClubAI APPROVAL] New conversation draft stored', { phoneNumber });
-                    } else if (clubaiResult.response && !clubaiResult.escalate) {
-                      const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                      if (defaultNumber) {
-                        const responseWithSig = clubaiResult.response + ' - ClubAI';
-                        await openPhoneService.sendMessage(phoneNumber, defaultNumber, responseWithSig);
-                        await clubaiService.storeClubAIMessage(String(newConvId), responseWithSig, clubaiResult.confidence);
-                        try {
-                          await db.query(`UPDATE openphone_conversations SET clubai_active = true, clubai_messages_sent = 1 WHERE id = $1`, [newConvId]);
-                        } catch { /* */ }
-                      }
-                    } else if (clubaiResult.escalate) {
-                      if (clubaiResult.response) {
-                        const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-                        if (defaultNumber) {
-                          const escMsg = clubaiResult.response + ' - ClubAI';
-                          await openPhoneService.sendMessage(phoneNumber, defaultNumber, escMsg);
-                          await clubaiService.storeClubAIMessage(String(newConvId), escMsg, clubaiResult.confidence);
-                        }
-                      }
-                      try {
-                        await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, clubai_escalation_reason = $2, conversation_locked = true WHERE id = $1`,
-                          [newConvId, clubaiResult.escalationSummary || 'ClubAI escalated']);
-                      } catch { /* */ }
-                    }
-                  }
-                }
-              } catch (clubaiErr) {
-                logger.error('[ClubAI] Error processing new conversation:', clubaiErr);
-              }
-            }
           } catch (notifError) {
             logger.error('Failed to send push notification:', notifError);
+          }
+
+          // ClubAI: Process the first message from a new conversation
+          // (Separated from push notifications so ClubAI runs even if notifications fail)
+          const newMessageText = messageData.body || messageData.text || '';
+          if (newMessageText) {
+            try {
+              // Look up the conversation we just created to get its DB ID
+              const newConvLookup = await db.query(
+                `SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY created_at DESC LIMIT 1`,
+                [phoneNumber]
+              );
+              if (newConvLookup.rows.length > 0) {
+                const newConvId = newConvLookup.rows[0].id;
+
+                // Read ClubAI config from DB
+                let newClubaiEnabled = false;
+                let newClubaiShadow = false;
+                let newClubaiApproval = false;
+                try {
+                  const cfgResult = await db.query(`
+                    SELECT config_key, config_value FROM pattern_learning_config
+                    WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_approval_mode')
+                  `);
+                  for (const row of cfgResult.rows) {
+                    if (row.config_key === 'clubai_enabled') newClubaiEnabled = row.config_value === 'true';
+                    if (row.config_key === 'clubai_shadow_mode') newClubaiShadow = row.config_value === 'true';
+                    if (row.config_key === 'clubai_approval_mode') newClubaiApproval = row.config_value === 'true';
+                  }
+                } catch {
+                  newClubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
+                  newClubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
+                }
+
+                if (newClubaiEnabled) {
+                  // Store customer message
+                  await db.query(`
+                    INSERT INTO conversation_messages (conversation_id, sender_type, message_text)
+                    VALUES ($1, 'customer', $2)
+                  `, [newConvId, newMessageText]);
+
+                  const clubaiResult = await clubaiService.generateResponse(phoneNumber, newMessageText, String(newConvId));
+
+                  if (newClubaiShadow) {
+                    logger.info('[ClubAI SHADOW] New conversation', { phoneNumber, wouldSend: clubaiResult.response });
+                  } else if (newClubaiApproval && clubaiResult.response) {
+                    await db.query(`
+                      INSERT INTO clubai_draft_responses
+                      (conversation_id, phone_number, customer_name, customer_message, ai_response, confidence, escalate, escalation_summary)
+                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    `, [String(newConvId), phoneNumber, customerName || null, newMessageText,
+                        clubaiResult.response, clubaiResult.confidence, clubaiResult.escalate, clubaiResult.escalationSummary || null]);
+                    logger.info('[ClubAI APPROVAL] New conversation draft stored', { phoneNumber });
+                  } else if (clubaiResult.response && !clubaiResult.escalate) {
+                    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                    if (defaultNumber) {
+                      const responseWithSig = clubaiResult.response + ' - ClubAI';
+                      await openPhoneService.sendMessage(phoneNumber, defaultNumber, responseWithSig);
+                      await clubaiService.storeClubAIMessage(String(newConvId), responseWithSig, clubaiResult.confidence);
+                      try {
+                        await db.query(`UPDATE openphone_conversations SET clubai_active = true, clubai_messages_sent = 1 WHERE id = $1`, [newConvId]);
+                      } catch { /* */ }
+                    }
+                  } else if (clubaiResult.escalate) {
+                    if (clubaiResult.response) {
+                      const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                      if (defaultNumber) {
+                        const escMsg = clubaiResult.response + ' - ClubAI';
+                        await openPhoneService.sendMessage(phoneNumber, defaultNumber, escMsg);
+                        await clubaiService.storeClubAIMessage(String(newConvId), escMsg, clubaiResult.confidence);
+                      }
+                    }
+                    try {
+                      await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, clubai_escalation_reason = $2, conversation_locked = true WHERE id = $1`,
+                        [newConvId, clubaiResult.escalationSummary || 'ClubAI escalated']);
+                    } catch { /* */ }
+                  }
+                }
+              }
+            } catch (clubaiErr) {
+              logger.error('[ClubAI] Error processing new conversation:', clubaiErr);
+            }
           }
         }
 
