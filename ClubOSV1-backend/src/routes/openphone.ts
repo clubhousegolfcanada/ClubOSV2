@@ -1009,14 +1009,16 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     // Store AI message for operator visibility
                     await clubaiService.storeClubAIMessage(convId, responseWithSignature, clubaiResult.confidence);
 
-                    // Update conversation tracking
-                    await db.query(`
-                      UPDATE openphone_conversations SET
-                        clubai_active = true,
-                        clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1,
-                        ai_response_count = COALESCE(ai_response_count, 0) + 1
-                      WHERE id = $1
-                    `, [convId]);
+                    // Update conversation tracking (defensive — columns may not exist yet)
+                    try {
+                      await db.query(`
+                        UPDATE openphone_conversations SET
+                          clubai_active = true,
+                          clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1,
+                          ai_response_count = COALESCE(ai_response_count, 0) + 1
+                        WHERE id = $1
+                      `, [convId]);
+                    } catch { /* columns may not exist yet */ }
 
                     return res.json({ success: true, message: 'ClubAI responded' });
 
@@ -1028,15 +1030,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       await clubaiService.storeClubAIMessage(convId, escalateMsg, clubaiResult.confidence);
                     }
 
-                    // Lock conversation for operator
-                    await db.query(`
-                      UPDATE openphone_conversations SET
-                        clubai_escalated = true,
-                        clubai_escalation_reason = $2,
-                        conversation_locked = true,
-                        customer_sentiment = 'needs_attention'
-                      WHERE id = $1
-                    `, [convId, clubaiResult.escalationSummary || 'ClubAI escalated']);
+                    // Lock conversation for operator (defensive — ClubAI columns may not exist yet)
+                    try {
+                      await db.query(`
+                        UPDATE openphone_conversations SET
+                          clubai_escalated = true,
+                          clubai_escalation_reason = $2,
+                          conversation_locked = true,
+                          customer_sentiment = 'needs_attention'
+                        WHERE id = $1
+                      `, [convId, clubaiResult.escalationSummary || 'ClubAI escalated']);
+                    } catch {
+                      // Fallback: at least lock the conversation
+                      await db.query(`UPDATE openphone_conversations SET conversation_locked = true WHERE id = $1`, [convId]);
+                    }
 
                     logger.info('[ClubAI ESCALATED]', {
                       phoneNumber,
