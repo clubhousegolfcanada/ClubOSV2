@@ -14,6 +14,7 @@ import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { detectMessageTopic, getTopicLabel } from '../utils/topicDetection';
 import { clubaiService } from '../services/clubaiService';
+import { messageEvents } from './messages';
 
 const router = Router();
 
@@ -1181,16 +1182,108 @@ router.post('/webhook', async (req: Request, res: Response) => {
               userCount: userIds.length
             });
             
-            // V3-PLS and AI Automation Service are DISABLED for new conversations.
-            // ClubAI RAG handles conversations via the existing conversation path.
-            // For the very first message, the operator sees it in the inbox.
-            // On the next inbound message, it hits the existing-conversation ClubAI path.
-            void (messageData.body || messageData.text || ''); // messageText consumed by removed V3-PLS code
+            // ClubAI: Process the first message from a new conversation
+            const newMessageText = messageData.body || messageData.text || '';
+            if (newMessageText) {
+              try {
+                // Look up the conversation we just created to get its DB ID
+                const newConvLookup = await db.query(
+                  `SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY created_at DESC LIMIT 1`,
+                  [phoneNumber]
+                );
+                if (newConvLookup.rows.length > 0) {
+                  const newConvId = newConvLookup.rows[0].id;
+
+                  // Read ClubAI config from DB
+                  let newClubaiEnabled = false;
+                  let newClubaiShadow = false;
+                  let newClubaiApproval = false;
+                  try {
+                    const cfgResult = await db.query(`
+                      SELECT config_key, config_value FROM pattern_learning_config
+                      WHERE config_key IN ('clubai_enabled', 'clubai_shadow_mode', 'clubai_approval_mode')
+                    `);
+                    for (const row of cfgResult.rows) {
+                      if (row.config_key === 'clubai_enabled') newClubaiEnabled = row.config_value === 'true';
+                      if (row.config_key === 'clubai_shadow_mode') newClubaiShadow = row.config_value === 'true';
+                      if (row.config_key === 'clubai_approval_mode') newClubaiApproval = row.config_value === 'true';
+                    }
+                  } catch {
+                    newClubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
+                    newClubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
+                  }
+
+                  if (newClubaiEnabled) {
+                    // Store customer message
+                    await db.query(`
+                      INSERT INTO conversation_messages (conversation_id, sender_type, message_text)
+                      VALUES ($1, 'customer', $2)
+                    `, [newConvId, newMessageText]);
+
+                    const clubaiResult = await clubaiService.generateResponse(phoneNumber, newMessageText, String(newConvId));
+
+                    if (newClubaiShadow) {
+                      logger.info('[ClubAI SHADOW] New conversation', { phoneNumber, wouldSend: clubaiResult.response });
+                    } else if (newClubaiApproval && clubaiResult.response) {
+                      await db.query(`
+                        INSERT INTO clubai_draft_responses
+                        (conversation_id, phone_number, customer_name, customer_message, ai_response, confidence, escalate, escalation_summary)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                      `, [String(newConvId), phoneNumber, customerName || null, newMessageText,
+                          clubaiResult.response, clubaiResult.confidence, clubaiResult.escalate, clubaiResult.escalationSummary || null]);
+                      logger.info('[ClubAI APPROVAL] New conversation draft stored', { phoneNumber });
+                    } else if (clubaiResult.response && !clubaiResult.escalate) {
+                      const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                      if (defaultNumber) {
+                        const responseWithSig = clubaiResult.response + ' - ClubAI';
+                        await openPhoneService.sendMessage(phoneNumber, defaultNumber, responseWithSig);
+                        await clubaiService.storeClubAIMessage(String(newConvId), responseWithSig, clubaiResult.confidence);
+                        try {
+                          await db.query(`UPDATE openphone_conversations SET clubai_active = true, clubai_messages_sent = 1 WHERE id = $1`, [newConvId]);
+                        } catch { /* */ }
+                      }
+                    } else if (clubaiResult.escalate) {
+                      if (clubaiResult.response) {
+                        const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+                        if (defaultNumber) {
+                          const escMsg = clubaiResult.response + ' - ClubAI';
+                          await openPhoneService.sendMessage(phoneNumber, defaultNumber, escMsg);
+                          await clubaiService.storeClubAIMessage(String(newConvId), escMsg, clubaiResult.confidence);
+                        }
+                      }
+                      try {
+                        await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, clubai_escalation_reason = $2, conversation_locked = true WHERE id = $1`,
+                          [newConvId, clubaiResult.escalationSummary || 'ClubAI escalated']);
+                      } catch { /* */ }
+                    }
+                  }
+                }
+              } catch (clubaiErr) {
+                logger.error('[ClubAI] Error processing new conversation:', clubaiErr);
+              }
+            }
           } catch (notifError) {
             logger.error('Failed to send push notification:', notifError);
           }
         }
-        
+
+        // Emit SSE event for real-time frontend updates
+        try {
+          messageEvents.emit('new_message', {
+            phone_number: phoneNumber,
+            customer_name: customerName,
+            direction: messageDirection,
+            body: (messageData.body || messageData.text || '').substring(0, 200),
+            timestamp: new Date().toISOString()
+          });
+          messageEvents.emit('conversation_update', {
+            phone_number: phoneNumber,
+            updated_at: new Date().toISOString()
+          });
+        } catch (sseError) {
+          logger.debug('SSE emit error (non-critical):', sseError);
+        }
+
         break;
 
       case 'call.completed':

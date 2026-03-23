@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.2] - 2026-03-23
+
+### Fixed
+- **CRITICAL: All ClubAI page API calls were broken** — Every API call used `/api/patterns/...` but the HTTP client auto-prepends `/api`, causing all 26 calls to throw `"Do not include '/api' in request path"` and silently fail. Toggles, stats, conversations, knowledge — nothing was loading or saving. Fixed all paths to `/patterns/...`.
+- **CRITICAL: New customers got no response** — First message from a new customer was skipped when V3-PLS was disabled. Added ClubAI processing to the new-conversation path so first messages get AI responses.
+- **Shadow mode defaulted to true** — GET config endpoint used `!== 'false'` which is true when undefined (no DB rows). Changed to `=== 'true'` so default is correctly off.
+- **Seeded ClubAI config in production DB** — Inserted clubai_enabled=true, shadow_mode=false, approval_mode=false, max_messages=5 into pattern_learning_config table.
+
 ## [1.28.1] - 2026-03-23
 
 ### Changed

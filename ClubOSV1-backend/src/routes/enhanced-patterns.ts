@@ -2245,7 +2245,7 @@ router.get('/clubai-config', authenticate, async (_req: Request, res: Response) 
       success: true,
       data: {
         enabled: config.clubai_enabled === 'true',
-        shadowMode: config.clubai_shadow_mode !== 'false',
+        shadowMode: config.clubai_shadow_mode === 'true',
         approvalMode: config.clubai_approval_mode === 'true',
         maxMessages: parseInt(config.clubai_max_messages || '5')
       }

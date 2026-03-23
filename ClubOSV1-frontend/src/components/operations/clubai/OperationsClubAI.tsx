@@ -131,10 +131,10 @@ export const OperationsClubAI: React.FC = () => {
     setLoading(true);
     try {
       const [configRes, statsRes, safetyRes, kStatsRes] = await Promise.all([
-        apiClient.get('/api/patterns/clubai-config').catch(() => ({ data: { data: config } })),
-        apiClient.get('/api/patterns/clubai-stats').catch(() => ({ data: { data: stats } })),
-        apiClient.get('/api/patterns/safety-thresholds').catch(() => ({ data: { data: safety } })),
-        apiClient.get('/api/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } })),
+        apiClient.get('/patterns/clubai-config').catch(() => ({ data: { data: config } })),
+        apiClient.get('/patterns/clubai-stats').catch(() => ({ data: { data: stats } })),
+        apiClient.get('/patterns/safety-thresholds').catch(() => ({ data: { data: safety } })),
+        apiClient.get('/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } })),
       ]);
       if (configRes.data?.data) setConfig(configRes.data.data);
       if (statsRes.data?.data) setStats(statsRes.data.data);
@@ -147,7 +147,7 @@ export const OperationsClubAI: React.FC = () => {
   const fetchConversations = useCallback(async () => {
     setConvoLoading(true);
     try {
-      const res = await apiClient.get(`/api/patterns/clubai-conversations?filter=${convoFilter}&limit=20`);
+      const res = await apiClient.get(`/patterns/clubai-conversations?filter=${convoFilter}&limit=20`);
       if (res.data?.data) setConversations(res.data.data);
     } catch { /* empty */ }
     setConvoLoading(false);
@@ -156,7 +156,7 @@ export const OperationsClubAI: React.FC = () => {
   const fetchDrafts = useCallback(async () => {
     setDraftsLoading(true);
     try {
-      const res = await apiClient.get('/api/patterns/clubai-drafts?status=pending');
+      const res = await apiClient.get('/patterns/clubai-drafts?status=pending');
       if (res.data?.data) setDrafts(res.data.data);
     } catch { /* */ }
     setDraftsLoading(false);
@@ -175,7 +175,7 @@ export const OperationsClubAI: React.FC = () => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
     try {
-      await apiClient.put('/api/patterns/clubai-config', newConfig);
+      await apiClient.put('/patterns/clubai-config', newConfig);
     } catch { setConfig(config); }
     setSaving(false);
   };
@@ -185,7 +185,7 @@ export const OperationsClubAI: React.FC = () => {
     setConfig(newConfig);
     if (sliderTimeout.current) clearTimeout(sliderTimeout.current);
     sliderTimeout.current = setTimeout(async () => {
-      try { await apiClient.put('/api/patterns/clubai-config', newConfig); }
+      try { await apiClient.put('/patterns/clubai-config', newConfig); }
       catch { setConfig(config); }
     }, 500);
   };
@@ -195,7 +195,7 @@ export const OperationsClubAI: React.FC = () => {
     const newSafety = { ...safety, ...updates };
     setSafety(newSafety);
     try {
-      await apiClient.put('/api/patterns/safety-thresholds', newSafety);
+      await apiClient.put('/patterns/safety-thresholds', newSafety);
     } catch { setSafety(safety); }
     setSaving(false);
   };
@@ -205,12 +205,12 @@ export const OperationsClubAI: React.FC = () => {
     setParsing(true);
     setParsedEntries(null);
     try {
-      const res = await apiClient.post('/api/patterns/clubai-knowledge-parse', { rawText: pasteText.trim() });
+      const res = await apiClient.post('/patterns/clubai-knowledge-parse', { rawText: pasteText.trim() });
       if (res.data?.data) {
         setParsedEntries(res.data.data);
         setPasteText('');
         // Refresh stats
-        const kRes = await apiClient.get('/api/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
+        const kRes = await apiClient.get('/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
         if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
       }
     } catch { setParsedEntries([]); }
@@ -221,7 +221,7 @@ export const OperationsClubAI: React.FC = () => {
     if (!newQuestion.trim() || !newAnswer.trim()) return;
     setAddingKnowledge(true);
     try {
-      await apiClient.post('/api/patterns/clubai-knowledge-manual', {
+      await apiClient.post('/patterns/clubai-knowledge-manual', {
         intent: newIntent,
         customerQuestion: newQuestion.trim(),
         teamResponse: newAnswer.trim(),
@@ -230,7 +230,7 @@ export const OperationsClubAI: React.FC = () => {
       setNewAnswer('');
       setShowAddKnowledge(false);
       // Refresh stats
-      const kRes = await apiClient.get('/api/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
+      const kRes = await apiClient.get('/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
       if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
     } catch { /* */ }
     setAddingKnowledge(false);
@@ -238,14 +238,14 @@ export const OperationsClubAI: React.FC = () => {
 
   const approveDraft = async (id: number) => {
     try {
-      await apiClient.post(`/api/patterns/clubai-drafts/${id}/approve`);
+      await apiClient.post(`/patterns/clubai-drafts/${id}/approve`);
       setDrafts(prev => prev.filter(d => d.id !== id));
     } catch { /* */ }
   };
 
   const rejectDraft = async (id: number) => {
     try {
-      await apiClient.post(`/api/patterns/clubai-drafts/${id}/reject`);
+      await apiClient.post(`/patterns/clubai-drafts/${id}/reject`);
       setDrafts(prev => prev.filter(d => d.id !== id));
     } catch { /* */ }
   };
@@ -253,7 +253,7 @@ export const OperationsClubAI: React.FC = () => {
   const editDraft = async (id: number) => {
     if (!editText.trim()) return;
     try {
-      await apiClient.post(`/api/patterns/clubai-drafts/${id}/edit`, { editedResponse: editText.trim() });
+      await apiClient.post(`/patterns/clubai-drafts/${id}/edit`, { editedResponse: editText.trim() });
       setDrafts(prev => prev.filter(d => d.id !== id));
       setEditingDraft(null);
       setEditText('');
@@ -264,7 +264,7 @@ export const OperationsClubAI: React.FC = () => {
     if (!testQuery.trim()) return;
     setTesting(true);
     try {
-      const res = await apiClient.post('/api/patterns/clubai-knowledge-search', { query: testQuery.trim() });
+      const res = await apiClient.post('/patterns/clubai-knowledge-search', { query: testQuery.trim() });
       if (res.data?.data) setTestResults(res.data.data);
     } catch { setTestResults([]); }
     setTesting(false);
