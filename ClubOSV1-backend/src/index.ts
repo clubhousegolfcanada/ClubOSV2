@@ -99,7 +99,7 @@ export const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CRITICAL: Health check must be the VERY FIRST route for Railway deployment
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -177,14 +177,14 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Custom middleware to capture raw body for Slack signature verification
-app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, res, next) => {
+app.use('/api/slack/events', express.raw({ type: 'application/json' }), (req, _res, next) => {
   req.rawBody = req.body;
   req.body = JSON.parse(req.body.toString());
   next();
 });
 
 // Custom middleware to capture raw body for OpenPhone signature verification
-app.use('/api/openphone/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
+app.use('/api/openphone/webhook', express.raw({ type: 'application/json' }), (req, _res, next) => {
   // Skip raw body processing for GET requests
   if (req.method === 'GET') {
     return next();
@@ -199,7 +199,7 @@ app.use('/api/openphone/webhook', express.raw({ type: 'application/json' }), (re
 });
 
 // Also handle OpenPhone v3 webhook
-app.use('/api/openphone-v3/webhook-v3', express.raw({ type: 'application/json' }), (req, res, next) => {
+app.use('/api/openphone-v3/webhook-v3', express.raw({ type: 'application/json' }), (req, _res, next) => {
   req.rawBody = req.body;
   req.body = JSON.parse(req.body.toString());
   next();
@@ -227,7 +227,7 @@ app.use((req: any, res: any, next: any) => {
   
   // Intercept response to ensure headers are always set
   const oldSend = res.send;
-  res.send = function(data: any) {
+  res.send = function(_data: any) {
     // Ensure CORS headers are set even if response was already started
     if (origin && !res.headersSent) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -267,7 +267,7 @@ app.use('/api/auth', authGoogleRoutes); // Google OAuth routes
 // }
 
 // Version discovery endpoint
-app.get('/api/version', (req, res) => {
+app.get('/api/version', (_req, res) => {
   res.json({
     current: 'v1',
     available: ['v1'],
@@ -386,7 +386,7 @@ app.use('/api/webhooks/hubspot', hubspotBookingWebhook);
 app.use('/api/gmail', gmailScanRoutes);
 
 // Root endpoint
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     name: 'ClubOS API',
     version: process.env.npm_package_version || '1.0.0',
@@ -520,7 +520,8 @@ async function startServer() {
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_source ON receipts(source)`);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_gmail_msg ON receipts(gmail_message_id)`);
         await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64)`);
-        await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
+        await db.query(`DROP INDEX IF EXISTS idx_receipts_content_hash_unique`);
+        await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique ON receipts(content_hash)`);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_content_hash ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
         logger.info('✅ Gmail scanning tables ready');
       } catch (gmailError) {

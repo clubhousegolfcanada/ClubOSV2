@@ -5,10 +5,13 @@
 -- Add content_hash column to receipts table
 ALTER TABLE receipts ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64);
 
--- Create unique index on content_hash (allows NULL for legacy receipts)
--- This prevents duplicate receipts at the database level
+-- Drop partial unique index if it exists (partial index doesn't work with ON CONFLICT)
+DROP INDEX IF EXISTS idx_receipts_content_hash_unique;
+
+-- Create non-partial unique index (PostgreSQL allows multiple NULLs in unique indexes)
+-- This enables ON CONFLICT (content_hash) DO NOTHING for deduplication
 CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique
-ON receipts(content_hash) WHERE content_hash IS NOT NULL;
+ON receipts(content_hash);
 
 -- Add index for faster hash lookups
 CREATE INDEX IF NOT EXISTS idx_receipts_content_hash
