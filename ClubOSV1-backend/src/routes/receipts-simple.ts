@@ -1024,6 +1024,8 @@ router.patch('/:id',
       const allowedFields = [
         'vendor',
         'amount_cents',
+        'tax_cents',
+        'hst_cents',
         'purchase_date',
         'club_location',
         'notes',

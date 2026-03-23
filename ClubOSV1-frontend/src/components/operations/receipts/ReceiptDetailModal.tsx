@@ -76,9 +76,13 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptI
       const amountCents = amount ? Math.round(parseFloat(amount) * 100) : null;
       const hstCents = hst ? Math.round(parseFloat(hst) * 100) : null;
 
+      const taxCents = tax ? Math.round(parseFloat(tax) * 100) : null;
+
       await http.patch(`receipts/${receiptId}`, {
         vendor: vendor || null,
         amount_cents: amountCents,
+        tax_cents: taxCents,
+        hst_cents: hstCents,
         purchase_date: purchaseDate || null,
         category: category || null,
         club_location: location || null,
@@ -226,12 +230,14 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({ receiptI
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Tax ($)</label>
-                      <div
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500"
-                        title="Tax amount from OCR (read-only)"
-                      >
-                        {tax || '—'}
-                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={tax}
+                        onChange={e => setTax(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
                   </div>
 
