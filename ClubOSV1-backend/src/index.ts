@@ -3,12 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import { join } from 'path';
 
 // Load environment variables FIRST
 dotenv.config();
 
-import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler, setupSentryErrorHandler } from './utils/sentry';
+import { initSentry, sentryRequestHandler, sentryTracingHandler, setupSentryErrorHandler } from './utils/sentry';
 import { logger } from './utils/logger';
 import { db } from './utils/database';
 import { validateEnvironmentSecurity } from './utils/env-security';
@@ -520,6 +519,9 @@ async function startServer() {
         await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS source_email TEXT`);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_source ON receipts(source)`);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_gmail_msg ON receipts(gmail_message_id)`);
+        await db.query(`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64)`);
+        await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_receipts_content_hash_unique ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipts_content_hash ON receipts(content_hash) WHERE content_hash IS NOT NULL`);
         logger.info('✅ Gmail scanning tables ready');
       } catch (gmailError) {
         logger.debug('Gmail table migration:', gmailError);
