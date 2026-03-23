@@ -7,6 +7,7 @@ import { ReceiptTable } from './ReceiptTable';
 import { MonthlySummaryCard } from './MonthlySummaryCard';
 import { GmailScanCard } from './GmailScanCard';
 import BulkUploadCard from './BulkUploadCard';
+import { ReceiptDetailModal } from './ReceiptDetailModal';
 
 const MONTH_NAMES = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -30,6 +31,7 @@ export const OperationsReceipts: React.FC = () => {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [reconciling, setReconciling] = useState(false);
+  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
 
   const monthLabel = `${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
 
@@ -237,8 +239,18 @@ export const OperationsReceipts: React.FC = () => {
         onPageChange={setPage}
         onSelect={handleSelect}
         onSelectAll={handleSelectAll}
+        onRowClick={(id) => setSelectedReceiptId(id)}
         monthLabel={monthLabel}
       />
+
+      {/* Receipt Detail Modal */}
+      {selectedReceiptId && (
+        <ReceiptDetailModal
+          receiptId={selectedReceiptId}
+          onClose={() => setSelectedReceiptId(null)}
+          onSaved={() => { fetchReceipts(); fetchSummary(); }}
+        />
+      )}
 
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">

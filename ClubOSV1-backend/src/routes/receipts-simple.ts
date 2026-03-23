@@ -116,7 +116,7 @@ router.get('/summary', authenticate, async (req: Request, res: Response) => {
     `;
     const categoryResult = await db.query(categoryQuery, queryParams);
 
-    res.json({
+    return res.json({
       totalReceipts: parseInt(result.total_receipts) || 0,
       totalAmount: (parseInt(result.total_amount_cents) || 0) / 100,
       totalTax: (parseInt(result.total_tax_cents) || 0) / 100,
@@ -136,7 +136,7 @@ router.get('/summary', authenticate, async (req: Request, res: Response) => {
 
   } catch (error) {
     logger.error('Error fetching receipt summary:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to fetch receipt summary',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -602,15 +602,20 @@ router.post('/upload',
       let storageMimeType = mime_type || 'application/pdf';
       let storageFileName = file_name;
 
+      // Rename file to YYYY-MM-DD_Vendor.ext format for easy identification
+      const receiptDate = purchase_date || ocrResult?.purchaseDate || new Date().toISOString().slice(0, 10);
+      const receiptVendor = (vendor || ocrResult?.vendor || 'Unknown')
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .slice(0, 40);
+      const ext = isPdf ? '.pdf' : '.pdf'; // All stored as PDF
+      storageFileName = `${receiptDate}_${receiptVendor}${ext}`;
+
       if (isImage) {
         try {
           logger.info('Converting receipt image to PDF for storage');
           storageData = await convertImageToPdf(file_data);
           storageMimeType = 'application/pdf';
-          storageFileName = file_name.replace(/\.(jpe?g|png|heic|webp)$/i, '.pdf');
-          if (!storageFileName.endsWith('.pdf')) {
-            storageFileName += '.pdf';
-          }
           logger.info('Image converted to PDF successfully');
         } catch (convError) {
           logger.warn('PDF conversion failed, storing as original image:', convError);
@@ -687,7 +692,7 @@ router.post('/upload',
         vendor: receipt.vendor
       });
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           id: receipt.id,
@@ -707,7 +712,7 @@ router.post('/upload',
 
     } catch (error: any) {
       logger.error('Receipt upload error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to upload receipt'
       });
@@ -865,7 +870,7 @@ router.get('/search',
       const countQuery = `SELECT COUNT(*) as total FROM receipts r LEFT JOIN users u ON r.uploader_user_id = u.id ${whereClause}`;
       const countResult = await db.query(countQuery, countParams);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           receipts: result.rows.map((row: any) => ({
@@ -883,7 +888,7 @@ router.get('/search',
 
     } catch (error) {
       logger.error('Receipt search error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to search receipts'
       });
@@ -932,7 +937,7 @@ router.get('/:id',
 
       const receipt = result.rows[0];
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           ...receipt,
@@ -942,7 +947,7 @@ router.get('/:id',
 
     } catch (error) {
       logger.error('Get receipt error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to retrieve receipt'
       });
@@ -1043,7 +1048,7 @@ router.patch('/:id',
         VALUES ($1, 'update', $2, $3)
       `, [id, JSON.stringify(updates), user.id]);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           ...result.rows[0],
@@ -1053,7 +1058,7 @@ router.patch('/:id',
 
     } catch (error) {
       logger.error('Update receipt error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to update receipt'
       });
@@ -1103,14 +1108,14 @@ router.delete('/:id',
         VALUES ($1, 'delete', $2)
       `, [id, user.id]);
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Receipt deleted successfully'
       });
 
     } catch (error) {
       logger.error('Delete receipt error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to delete receipt'
       });
@@ -1181,7 +1186,7 @@ router.post('/reconcile',
         `, [receiptId.id, JSON.stringify({ reconciled: true }), user.id]);
       }
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           reconciledCount: result.rows.length,
@@ -1191,7 +1196,7 @@ router.post('/reconcile',
 
     } catch (error) {
       logger.error('Reconcile receipts error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to reconcile receipts'
       });

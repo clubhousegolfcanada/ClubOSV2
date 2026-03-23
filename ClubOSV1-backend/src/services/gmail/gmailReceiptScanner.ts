@@ -340,11 +340,14 @@ async function textToPdf(
   });
 }
 
-function sanitizeFilename(name: string): string {
-  return name
-    .replace(/[^a-z0-9\s-]/gi, '')
+/** Generate a descriptive filename: YYYY-MM-DD_Vendor.pdf */
+function generateReceiptFilename(ocrResult: any, emailDate: Date): string {
+  const date = ocrResult?.purchaseDate || emailDate.toISOString().slice(0, 10);
+  const vendor = (ocrResult?.vendor || 'Unknown')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
     .replace(/\s+/g, '_')
-    .slice(0, 60);
+    .slice(0, 40);
+  return `${date}_${vendor}.pdf`;
 }
 
 // --- Database Insert Helper ---
@@ -475,10 +478,10 @@ async function processMessage(
       // Already a PDF — store as-is
       fileData = `data:application/pdf;base64,${base64Data}`;
       mimeType = 'application/pdf';
-      fileName = att.filename;
 
       // Use Veryfi if configured, otherwise GPT-4o
       const ocrResult = await processReceiptSmart(fileData);
+      fileName = generateReceiptFilename(ocrResult, emailDate);
 
       insertsAttempted++;
       const receiptId = await insertGmailReceipt({
@@ -504,7 +507,7 @@ async function processMessage(
         fileData = imageDataUrl; // Fallback to original image
       }
       mimeType = 'application/pdf';
-      fileName = att.filename.replace(/\.[^.]+$/, '.pdf');
+      fileName = generateReceiptFilename(ocrResult, emailDate);
 
       insertsAttempted++;
       const receiptId = await insertGmailReceipt({
@@ -537,7 +540,7 @@ async function processMessage(
           insertsAttempted++;
           const receiptId = await insertGmailReceipt({
             fileData,
-            fileName: `${sanitizeFilename(subject)}.pdf`,
+            fileName: generateReceiptFilename(ocrResult, emailDate),
             mimeType: 'application/pdf',
             contentHash,
             ocrResult,

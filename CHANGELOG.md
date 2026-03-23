@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.26.7] - 2026-03-23
+
+### Added
+- **Receipt detail modal** — Click any receipt row to open full-screen modal with image/PDF viewer on left, editable form on right (vendor, amount, HST, date, category, location, notes). Save updates via PATCH endpoint.
+- **Low confidence indicators** — Yellow warning triangles on receipts with OCR confidence < 70% or dates before 2020. Row highlighted yellow. Date field shows "Date looks old — please verify" in modal.
+- **Smart file naming** — Receipts automatically renamed to `YYYY-MM-DD_Vendor.pdf` format on upload and Gmail import for easy identification in exports.
+
+### Changed
+- **Receipt table rows clickable** — Click any row to open detail modal. Checkbox clicks still work independently (don't open modal).
+- **File naming** — Both manual uploads and Gmail scanner now generate descriptive filenames from OCR-extracted date + vendor instead of original filenames.
+
 ## [1.26.6] - 2026-03-23
 
 ### Fixed

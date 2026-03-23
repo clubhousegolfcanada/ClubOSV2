@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronUp, ChevronDown, CheckCircle, Circle, Mail, Smartphone, Receipt } from 'lucide-react';
+import { ChevronUp, ChevronDown, CheckCircle, Circle, Mail, Smartphone, Receipt, AlertTriangle } from 'lucide-react';
 
 interface ReceiptTableProps {
   receipts: any[];
@@ -14,6 +14,7 @@ interface ReceiptTableProps {
   onPageChange: (page: number) => void;
   onSelect: (id: string) => void;
   onSelectAll: () => void;
+  onRowClick: (id: string) => void;
   monthLabel: string;
 }
 
@@ -70,6 +71,7 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
   onPageChange,
   onSelect,
   onSelectAll,
+  onRowClick,
   monthLabel,
 }) => {
   const allSelected = receipts.length > 0 && receipts.every(r => selectedIds.has(r.id));
@@ -122,12 +124,16 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {receipts.map((r) => (
+            {receipts.map((r) => {
+              const needsReview = r.ocr_confidence != null && r.ocr_confidence < 0.7;
+              const suspiciousDate = r.purchase_date && parseInt(r.purchase_date.slice(0, 4)) < 2020;
+              return (
               <tr
                 key={r.id}
-                className={`hover:bg-gray-50 transition-colors ${selectedIds.has(r.id) ? 'bg-blue-50' : ''}`}
+                onClick={() => onRowClick(r.id)}
+                className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.has(r.id) ? 'bg-blue-50' : ''} ${needsReview || suspiciousDate ? 'bg-yellow-50/50' : ''}`}
               >
-                <td className="px-3 py-2.5">
+                <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedIds.has(r.id)}
@@ -136,10 +142,16 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
                   />
                 </td>
                 <td className="px-3 py-2.5 text-sm whitespace-nowrap">
-                  {formatDate(r.purchase_date || r.created_at)}
+                  <span className="flex items-center gap-1">
+                    {formatDate(r.purchase_date || r.created_at)}
+                    {suspiciousDate && <span title="Date before 2020 — verify"><AlertTriangle className="w-3 h-3 text-yellow-500" /></span>}
+                  </span>
                 </td>
                 <td className="px-3 py-2.5 text-sm max-w-[200px] truncate" title={r.vendor || ''}>
-                  {r.vendor || <span className="text-gray-400 italic">Unknown</span>}
+                  <span className="flex items-center gap-1">
+                    {r.vendor || <span className="text-gray-400 italic">Unknown</span>}
+                    {needsReview && <span title="Low OCR confidence — click to review"><AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0" /></span>}
+                  </span>
                 </td>
                 <td className="px-3 py-2.5 text-sm font-medium whitespace-nowrap">
                   {formatCents(r.amount_cents)}
@@ -178,7 +190,8 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
                   </span>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
