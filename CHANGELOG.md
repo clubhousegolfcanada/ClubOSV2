@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.6] - 2026-03-23
+
+### Added
+- **Escalation Queue** — Orange-highlighted section on ClubAI page showing conversations where AI handed off to a human. Each entry shows customer name/phone, escalation reason, time waiting, and full message thread (expandable). "Mark Resolved" button clears the escalation and unlocks the conversation.
+- **Escalation API** — `GET /patterns/clubai-escalations` returns waiting vs resolved escalations. `POST /patterns/clubai-escalations/:id/resolve` clears escalation.
+
 ## [1.28.5] - 2026-03-23
 
 ### Fixed

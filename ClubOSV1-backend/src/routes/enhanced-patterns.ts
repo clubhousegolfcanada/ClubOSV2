@@ -2782,5 +2782,85 @@ router.post('/clubai-drafts/:id/reject', authenticate, async (req: Request, res:
   }
 });
 
+// ============================================
+// CLUBAI ESCALATION QUEUE
+// ============================================
+
+/**
+ * GET /api/patterns/clubai-escalations
+ * Returns conversations escalated by ClubAI that haven't been resolved by an operator yet
+ */
+router.get('/clubai-escalations', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        oc.id,
+        oc.phone_number,
+        oc.customer_name,
+        oc.clubai_escalation_reason,
+        oc.clubai_messages_sent,
+        oc.updated_at,
+        oc.created_at,
+        (
+          SELECT json_agg(sub ORDER BY sub.created_at ASC)
+          FROM (
+            SELECT cm.sender_type, cm.message_text, cm.created_at
+            FROM conversation_messages cm
+            WHERE cm.conversation_id = oc.id::text
+            ORDER BY cm.created_at ASC
+            LIMIT 20
+          ) sub
+        ) as messages,
+        -- Check if an operator has responded AFTER the escalation
+        EXISTS (
+          SELECT 1 FROM conversation_messages cm
+          WHERE cm.conversation_id = oc.id::text
+            AND cm.sender_type = 'operator'
+            AND cm.created_at > (
+              SELECT MAX(cm2.created_at) FROM conversation_messages cm2
+              WHERE cm2.conversation_id = oc.id::text AND cm2.sender_type = 'ai'
+            )
+        ) as operator_responded
+      FROM openphone_conversations oc
+      WHERE oc.clubai_escalated = true
+      ORDER BY oc.updated_at DESC
+      LIMIT 30
+    `);
+
+    // Split into waiting vs resolved
+    const waiting = result.rows.filter((r: any) => !r.operator_responded);
+    const resolved = result.rows.filter((r: any) => r.operator_responded);
+
+    return res.json({
+      success: true,
+      waiting,
+      resolved,
+      waitingCount: waiting.length,
+    });
+  } catch (error) {
+    logger.error('[ClubAI Escalations] Error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get escalations' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-escalations/:id/resolve
+ * Mark an escalation as resolved
+ */
+router.post('/clubai-escalations/:id/resolve', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await db.query(`
+      UPDATE openphone_conversations
+      SET clubai_escalated = false, conversation_locked = false
+      WHERE id = $1
+    `, [id]);
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error('[ClubAI Escalations] Resolve error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to resolve' });
+  }
+});
+
 // Export the router
 export default router;

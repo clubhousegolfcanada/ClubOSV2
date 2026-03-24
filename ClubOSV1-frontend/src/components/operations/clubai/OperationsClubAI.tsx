@@ -61,6 +61,17 @@ interface ConversationMessage {
   created_at: string;
 }
 
+interface Escalation {
+  id: string;
+  phone_number: string;
+  customer_name: string | null;
+  clubai_escalation_reason: string | null;
+  clubai_messages_sent: number;
+  updated_at: string;
+  messages: ConversationMessage[] | null;
+  operator_responded: boolean;
+}
+
 interface ClubAIConversation {
   id: string;
   phone_number: string;
@@ -80,6 +91,11 @@ interface ClubAIConversation {
 export const OperationsClubAI: React.FC = () => {
   // Config & stats
   const [config, setConfig] = useState<ClubAIConfig>({ enabled: false, shadowMode: true, approvalMode: false, maxMessages: 5 });
+
+  // Escalation queue
+  const [escalations, setEscalations] = useState<Escalation[]>([]);
+  const [escalationsLoading, setEscalationsLoading] = useState(false);
+  const [expandedEscalation, setExpandedEscalation] = useState<string | null>(null);
 
   // Drafts (approval mode)
   const [drafts, setDrafts] = useState<DraftResponse[]>([]);
@@ -153,6 +169,22 @@ export const OperationsClubAI: React.FC = () => {
     setConvoLoading(false);
   }, [convoFilter]);
 
+  const fetchEscalations = useCallback(async () => {
+    setEscalationsLoading(true);
+    try {
+      const res = await apiClient.get('/patterns/clubai-escalations');
+      if (res.data?.waiting) setEscalations(res.data.waiting);
+    } catch { /* */ }
+    setEscalationsLoading(false);
+  }, []);
+
+  const resolveEscalation = async (id: string) => {
+    try {
+      await apiClient.post(`/patterns/clubai-escalations/${id}/resolve`);
+      setEscalations(prev => prev.filter(e => e.id !== id));
+    } catch { /* */ }
+  };
+
   const fetchDrafts = useCallback(async () => {
     setDraftsLoading(true);
     try {
@@ -162,7 +194,7 @@ export const OperationsClubAI: React.FC = () => {
     setDraftsLoading(false);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { fetchAll(); fetchEscalations(); }, [fetchAll, fetchEscalations]);
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
   useEffect(() => { if (config.approvalMode) fetchDrafts(); }, [config.approvalMode, fetchDrafts]);
 
@@ -418,6 +450,69 @@ export const OperationsClubAI: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Escalation Queue */}
+      {escalations.length > 0 && (
+        <div className="bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Users className="w-4 h-4 text-orange-500" /> Waiting for Operator
+              <span className="px-2 py-0.5 rounded-full bg-orange-500 text-white text-[10px]">{escalations.length}</span>
+            </h3>
+            <button onClick={fetchEscalations} className="p-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
+              <RefreshCw className={`w-4 h-4 text-orange-500 ${escalationsLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {escalations.map(esc => (
+              <div key={esc.id} className="rounded-lg border border-orange-200 dark:border-orange-800 bg-[var(--bg-primary)]">
+                <button
+                  onClick={() => setExpandedEscalation(expandedEscalation === esc.id ? null : esc.id)}
+                  className="w-full flex items-center justify-between p-3 text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                      {esc.customer_name || formatPhone(esc.phone_number)}
+                    </p>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      {esc.clubai_escalation_reason || 'ClubAI escalated'} · {formatTime(esc.updated_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); resolveEscalation(esc.id); }}
+                      className="px-2 py-1 text-[10px] rounded bg-green-500 text-white hover:bg-green-600"
+                    >
+                      Mark Resolved
+                    </button>
+                    {expandedEscalation === esc.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
+                </button>
+                {expandedEscalation === esc.id && esc.messages && (
+                  <div className="px-3 pb-3 space-y-2 border-t border-[var(--border-primary)] pt-2">
+                    {esc.messages.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.sender_type === 'customer' ? 'justify-start' : 'justify-end'}`}>
+                        <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${
+                          msg.sender_type === 'customer'
+                            ? 'bg-gray-100 dark:bg-gray-800 text-[var(--text-primary)]'
+                            : msg.sender_type === 'ai'
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
+                            : 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-100'
+                        }`}>
+                          <span className="font-semibold text-[10px] uppercase opacity-60">
+                            {msg.sender_type === 'customer' ? 'Customer' : msg.sender_type === 'ai' ? 'ClubAI' : 'Operator'}
+                          </span>
+                          <p className="whitespace-pre-wrap mt-0.5">{msg.message_text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Draft Review Queue (approval mode) */}
       {config.approvalMode && (
