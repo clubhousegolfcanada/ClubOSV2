@@ -1,10 +1,9 @@
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "npm-9_x", "python3", "python3Packages.pip"]
+nixPkgs = ["nodejs-18_x", "npm-9_x", "python3", "python3Packages.pip", "python3Packages.pdfplumber"]
 
 [phases.install]
 cmds = [
-  "npm ci --production=false",
-  "pip install pdfplumber"
+  "npm ci --production=false"
 ]
 
 [phases.build]
