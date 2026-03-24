@@ -1,23 +1,26 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth';
+import { EventEmitter } from 'events';
+import { authenticate, verifyToken } from '../middleware/auth';
 import { roleGuard } from '../middleware/roleGuard';
 import { validate } from '../middleware/validation';
-import { body, query } from 'express-validator';
+import { body } from 'express-validator';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { openPhoneService } from '../services/openphoneService';
 import { messageSendLimiter } from '../middleware/rateLimiter';
 import { formatToE164, isValidE164 } from '../utils/phoneNumberFormatter';
-import axios from 'axios';
 import { messageAssistantService } from '../services/messageAssistantService';
 import { anonymizePhoneNumber } from '../utils/encryption';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
-import { patternLearningService } from '../services/patternLearningService';
-import { dbToApi, COMMON_DB_TO_API_OPTIONS } from '../utils/caseConverters';
 import { successResponse, errorResponse } from '../utils/responseHelpers';
 
 const router = Router();
+
+// SSE event emitter for real-time message push
+const messageEvents = new EventEmitter();
+messageEvents.setMaxListeners(50); // Support up to 50 concurrent operator connections
+export { messageEvents };
 
 // Simple in-memory cache for conversations
 const conversationCache = new Map<string, { data: any; timestamp: number }>();
@@ -31,8 +34,33 @@ const getCacheKey = (userId: string, limit: number, offset: number, search?: str
   return `${userId}-${limit}-${offset}-${search || ''}`;
 };
 
+// Schema check cache — avoids hitting information_schema on every request
+let schemaChecked = false;
+let schemaColumns = { hasUnreadCount: false, hasLastReadAt: false, hasUpdatedAt: false };
+
+async function ensureSchemaChecked(): Promise<typeof schemaColumns> {
+  if (schemaChecked) return schemaColumns;
+
+  const columnCheck = await db.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'openphone_conversations'
+    AND column_name IN ('unread_count', 'last_read_at', 'updated_at')
+  `);
+
+  const cols = columnCheck.rows.map((row: any) => row.column_name);
+  schemaColumns = {
+    hasUnreadCount: cols.includes('unread_count'),
+    hasLastReadAt: cols.includes('last_read_at'),
+    hasUpdatedAt: cols.includes('updated_at'),
+  };
+  schemaChecked = true;
+  logger.info('Schema check cached', { schemaColumns });
+  return schemaColumns;
+}
+
 // Health check endpoint
-router.get('/health', async (req, res) => {
+router.get('/health', async (_req, res) => {
   try {
     // Test OpenPhone connection
     const openPhoneConnected = await openPhoneService.testConnection();
@@ -59,6 +87,62 @@ router.get('/health', async (req, res) => {
       }
     });
   }
+});
+
+// SSE endpoint for real-time message updates
+router.get('/events', (req: Request, res: Response) => {
+  // Auth via query param (SSE doesn't support custom headers)
+  const token = req.query.token as string;
+  if (!token) {
+    res.status(401).json({ error: 'Token required' });
+    return;
+  }
+
+  let decoded;
+  try {
+    decoded = verifyToken(token);
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+    return;
+  }
+
+  if (!decoded.role || !['admin', 'operator', 'support'].includes(decoded.role)) {
+    res.status(403).json({ error: 'Insufficient permissions' });
+    return;
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no', // Disable nginx buffering
+  });
+
+  // Send initial connection event
+  res.write(`event: connected\ndata: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
+
+  // Heartbeat every 30s to keep connection alive through proxies
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  const onNewMessage = (data: any) => {
+    res.write(`event: new_message\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const onConversationUpdate = (data: any) => {
+    res.write(`event: conversation_update\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  messageEvents.on('new_message', onNewMessage);
+  messageEvents.on('conversation_update', onConversationUpdate);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    messageEvents.off('new_message', onNewMessage);
+    messageEvents.off('conversation_update', onConversationUpdate);
+    logger.debug('SSE client disconnected');
+  });
 });
 
 // Get all conversations
@@ -88,34 +172,11 @@ router.get('/conversations',
       // Create a promise for this request to enable deduplication
       const requestPromise = (async () => {
         try {
-          // First check if table exists
-          const tableExists = await db.query(`
-            SELECT EXISTS (
-              SELECT FROM information_schema.tables
-              WHERE table_name = 'openphone_conversations'
-            ) as exists
-          `);
+      // Use cached schema check instead of querying information_schema every time
+      const { hasUnreadCount, hasLastReadAt, hasUpdatedAt } = await ensureSchemaChecked();
 
-          if (!tableExists.rows[0].exists) {
-            logger.warn('openphone_conversations table does not exist');
-            return [];
-          }
-      
-      // Then check which columns exist
-      const columnCheck = await db.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'openphone_conversations' 
-        AND column_name IN ('unread_count', 'last_read_at', 'updated_at')
-      `);
-      
-      const existingColumns = columnCheck.rows.map(row => row.column_name);
-      const hasUnreadCount = existingColumns.includes('unread_count');
-      const hasLastReadAt = existingColumns.includes('last_read_at');
-      const hasUpdatedAt = existingColumns.includes('updated_at');
-      
-      // Simplified query - removed message limiting to fix production issues
-      // Will implement proper message pagination in a separate endpoint
+      // LIGHTWEIGHT QUERY: Only fetch metadata + last message + last 3 for preview
+      // No full messages array — saves ~95% bandwidth vs loading 30 msgs per conversation
       let query = `
         WITH ranked_conversations AS (
           SELECT
@@ -123,7 +184,15 @@ router.get('/conversations',
             phone_number,
             customer_name,
             employee_name,
-            messages,
+            jsonb_array_length(messages) as message_count,
+            messages->-1 as last_message,
+            CASE
+              WHEN jsonb_array_length(messages) >= 3
+              THEN jsonb_build_array(messages->-3, messages->-2, messages->-1)
+              WHEN jsonb_array_length(messages) >= 1
+              THEN messages
+              ELSE '[]'::jsonb
+            END as message_history,
             ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
             ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
             created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
@@ -133,15 +202,7 @@ router.get('/conversations',
             AND phone_number != ''
             AND phone_number != 'Unknown'
         )
-        SELECT
-          id,
-          phone_number,
-          customer_name,
-          employee_name,
-          messages,
-          unread_count,
-          last_read_at,
-          created_at${hasUpdatedAt ? ',\n          updated_at' : ''}
+        SELECT *
         FROM ranked_conversations
         WHERE rn = 1
       `;
@@ -149,7 +210,6 @@ router.get('/conversations',
       const params: any[] = [];
 
       if (search) {
-        // Add search condition inside the CTE
         query = query.replace(
           "AND phone_number != 'Unknown'",
           `AND phone_number != 'Unknown'
@@ -158,13 +218,12 @@ router.get('/conversations',
         params.push(`%${search}%`);
       }
 
-      // Add ordering and pagination
       query += `
         ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
       `;
       params.push(limit, offset);
-      
+
       let result;
       try {
         result = await db.query(query, params);
@@ -175,110 +234,48 @@ router.get('/conversations',
           detail: queryError.detail
         });
 
-        // If it's a column doesn't exist error, return empty array
         if (queryError.code === '42703') {
           return [];
         }
 
         throw queryError;
       }
-      
-      // TEMPORARILY DISABLED: Show ALL conversations for debugging
-      // TODO: Re-enable filtering once we fix phone number extraction
-      const validConversations = result.rows.map(row => {
-        const isValid = row.phone_number && 
-                       row.phone_number !== 'Unknown' && 
-                       row.phone_number.trim() !== '';
-        
-        if (!isValid) {
-          logger.warn('Found conversation with invalid phone number', {
-            id: row.id,
-            phone_number: row.phone_number,
-            customer_name: row.customer_name
-          });
-        }
-        
-        // Return all conversations, but mark invalid ones
-        return {
-          ...row,
-          _debug_invalid_phone: !isValid
-        };
-      });
-      
+
       logger.info('Returning conversations', {
-        total: result.rows.length,
-        valid: validConversations.length,
-        filtered: result.rows.length - validConversations.length
+        total: result.rows.length
       });
-      
-      // PERFORMANCE FIX: Skip HubSpot enrichment for now - it's causing 5-10 second delays
-      // TODO: Implement background job to enrich conversations asynchronously
-      const enrichedConversations = validConversations;
 
-      // OLD CODE (causing performance issues):
-      // const enrichedConversations = await Promise.all(validConversations.map(async (row) => {
-      //   try {
-      //     // Only lookup if we don't already have a good name
-      //     if (row.phone_number && row.phone_number !== 'Unknown' &&
-      //         (!row.customer_name || row.customer_name === 'Unknown' || row.customer_name === row.phone_number)) {
-      //       const hubspotContact = await hubspotService.searchByPhone(row.phone_number);
-      //       if (hubspotContact && hubspotContact.name && hubspotContact.name !== 'Unknown') {
-      //         // Update the customer name with HubSpot data
-      //         row.customer_name = hubspotContact.name;
-      //         row.hubspot_company = hubspotContact.company;
-      //         row.hubspot_enriched = true;
-      //       }
-      //     }
-      //   } catch (error) {
-      //     // Don't let HubSpot errors break the conversation list
-      //     logger.debug('HubSpot enrichment failed for phone:', row.phone_number);
-      //   }
-      //   return row;
-      // }));
-      
-      // Transform and limit messages in JavaScript (safer than SQL)
-      const transformedConversations = enrichedConversations.map(row => {
-        // Limit messages to last 30 for performance (done in JS to avoid SQL issues)
-        let limitedMessages = row.messages;
-        if (Array.isArray(row.messages) && row.messages.length > 30) {
-          // Get last 30 messages
-          limitedMessages = row.messages.slice(-30);
-        }
+      // Transform DB rows to API response — lightweight, no message arrays
+      const transformedConversations = result.rows.map((row: any) => {
+        // Parse message_history from SQL (last 3 messages for dashboard preview)
+        const rawHistory = Array.isArray(row.message_history) ? row.message_history : [];
+        const messageHistory = rawHistory.filter(Boolean).map((msg: any) => ({
+          id: msg.id || msg.openphone_id || Math.random().toString(),
+          body: msg.body || msg.text || '',
+          direction: msg.direction || 'inbound',
+          senderName: msg.direction === 'outbound'
+            ? (row.employee_name || 'Operator')
+            : (row.customer_name || 'Customer'),
+          createdAt: msg.createdAt || msg.created_at || msg.timestamp,
+          from: msg.from || msg.from_number,
+          to: msg.to || msg.to_number
+        }));
 
-        // Get last 3 messages for preview in dashboard
-        let messageHistory = [];
-        if (Array.isArray(limitedMessages) && limitedMessages.length > 0) {
-          // Take the last 3 messages and ensure they're in chronological order
-          const lastThree = limitedMessages.slice(-3);
-          messageHistory = lastThree.map(msg => ({
-            id: msg.id || msg.openphone_id || Math.random().toString(),
-            body: msg.body || msg.text || '',
-            direction: msg.direction || 'inbound',
-            senderName: msg.direction === 'outbound' ?
-              (row.employee_name || 'Operator') :
-              (row.customer_name || 'Customer'),
-            createdAt: msg.createdAt || msg.created_at || msg.timestamp,
-            from: msg.from || msg.from_number,
-            to: msg.to || msg.to_number
-          }));
-        }
+        // Parse last_message from SQL (single JSONB element)
+        const lastMsg = row.last_message;
 
         return {
           id: row.id,
           phone_number: row.phone_number,
           customer_name: row.customer_name,
           employee_name: row.employee_name,
-          messages: limitedMessages,
-          messageHistory: messageHistory, // Last 3 messages for dashboard display
+          messageHistory,
           unread_count: row.unread_count || 0,
           last_read_at: row.last_read_at,
           created_at: row.created_at,
           updated_at: row.updated_at,
-          lastMessage: limitedMessages?.[limitedMessages.length - 1] || null,
-          messageCount: row.messages?.length || 0, // Keep original count
-          hubspotCompany: row.hubspot_company,
-          hubspotEnriched: row.hubspot_enriched,
-          _debug_invalid_phone: row._debug_invalid_phone
+          lastMessage: lastMsg || null,
+          messageCount: row.message_count || 0,
         };
       });
       
@@ -313,14 +310,14 @@ router.get('/conversations',
 
       try {
         const result = await requestPromise;
-        res.json(successResponse(result));
+        return res.json(successResponse(result));
       } catch (error) {
         logger.error('Messages route error:', error);
-        next(error);
+        return next(error);
       }
     } catch (error) {
       logger.error('Messages route error:', error);
-      next(error);
+      return next(error);
     }
   }
 );
@@ -360,9 +357,9 @@ router.get('/conversations/:phoneNumber',
       
       // Don't transform - frontend expects snake_case
       const conversation = result.rows[0];
-      res.json(successResponse(conversation));
+      return res.json(successResponse(conversation));
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -374,63 +371,84 @@ router.get('/conversations/:phoneNumber/full-history',
   async (req, res, next) => {
     try {
       const { phoneNumber } = req.params;
-      
-      // Get ALL conversations for this phone number to merge messages
-      // Multiple conversations can exist due to webhook timing issues
+      const messageLimit = Math.min(Number(req.query.limit) || 100, 500);
+      const before = req.query.before as string | undefined;
+
+      // Use JSONB slicing in SQL to avoid loading full message arrays
+      // Only load the last N messages per conversation record
       const allConversations = await db.query(
-        `SELECT * FROM openphone_conversations 
-         WHERE phone_number = $1 
-         ORDER BY created_at ASC`,  // ASC to maintain chronological order
+        `SELECT id, phone_number, customer_name, employee_name,
+                CASE
+                  WHEN jsonb_array_length(messages) > 100
+                  THEN (SELECT jsonb_agg(elem) FROM (SELECT elem FROM jsonb_array_elements(messages) WITH ORDINALITY AS arr(elem, idx) ORDER BY idx DESC LIMIT 100) sub)
+                  ELSE messages
+                END as messages,
+                created_at, updated_at
+         FROM openphone_conversations
+         WHERE phone_number = $1
+         ORDER BY created_at ASC`,
         [phoneNumber]
       );
-      
+
       if (allConversations.rows.length === 0) {
         return res.status(404).json(errorResponse('No conversations found for this phone number', 404));
       }
-      
+
       // Merge all messages from all conversation records
-      const messageIds = new Set(); // Track unique message IDs
+      const messageIds = new Set();
       const allMessages: any[] = [];
-      
+
       for (const conv of allConversations.rows) {
         const messages = conv.messages || [];
         for (const msg of messages) {
-          // Avoid duplicates by tracking message IDs
           if (msg.id && !messageIds.has(msg.id)) {
             messageIds.add(msg.id);
             allMessages.push({
               ...msg,
               conversationId: conv.id,
-              conversationIndex: allConversations.rows.indexOf(conv)
             });
           } else if (!msg.id) {
-            // Include messages without IDs (shouldn't happen but be safe)
             allMessages.push({
               ...msg,
               conversationId: conv.id,
-              conversationIndex: allConversations.rows.indexOf(conv)
             });
           }
         }
       }
-      
+
       // Sort merged messages by timestamp
       allMessages.sort((a, b) => {
         const dateA = new Date(a.createdAt || a.timestamp || 0);
         const dateB = new Date(b.createdAt || b.timestamp || 0);
         return dateA.getTime() - dateB.getTime();
       });
-      
-      const totalMessageCount = allMessages.length;
-      
+
+      // Apply cursor-based pagination if `before` timestamp is provided
+      let paginatedMessages = allMessages;
+      if (before) {
+        const beforeTime = new Date(before).getTime();
+        paginatedMessages = allMessages.filter(m => {
+          const msgTime = new Date(m.createdAt || m.timestamp || 0).getTime();
+          return msgTime < beforeTime;
+        });
+      }
+
+      // Take the last N messages (most recent)
+      const totalMessageCount = paginatedMessages.length;
+      const limitedMessages = paginatedMessages.slice(-messageLimit);
+      const hasMore = totalMessageCount > messageLimit;
+      const oldestTimestamp = limitedMessages.length > 0
+        ? (limitedMessages[0].createdAt || limitedMessages[0].timestamp)
+        : null;
+
       // Use the most recent conversation for metadata
       const mostRecentConv = allConversations.rows[allConversations.rows.length - 1];
-      
+
       // Mark all conversations as read
       try {
         await db.query(
-          `UPDATE openphone_conversations 
-           SET unread_count = 0, last_read_at = NOW() 
+          `UPDATE openphone_conversations
+           SET unread_count = 0, last_read_at = NOW()
            WHERE phone_number = $1`,
           [phoneNumber]
         );
@@ -440,38 +458,41 @@ router.get('/conversations/:phoneNumber/full-history',
           phoneNumber
         });
       }
-      
-      // Don't transform - frontend expects snake_case
+
       const responseData = {
         phone_number: phoneNumber,
         customer_name: mostRecentConv.customer_name,
         employee_name: mostRecentConv.employee_name,
         total_conversations: allConversations.rows.length,
-        total_messages: totalMessageCount,
+        total_messages: allMessages.length,
         first_contact: allConversations.rows[0].created_at,
         last_contact: mostRecentConv.updated_at || mostRecentConv.created_at
       };
-      
-      res.json(successResponse({
+
+      logger.info('Fetched conversation history', {
+        phoneNumber: anonymizePhoneNumber(phoneNumber),
+        totalConversations: allConversations.rows.length,
+        totalMessages: allMessages.length,
+        returnedMessages: limitedMessages.length,
+        hasMore
+      });
+
+      return res.json(successResponse({
         ...responseData,
-        messages: allMessages,
-        conversations: allConversations.rows.map(conv => ({
+        messages: limitedMessages,
+        hasMore,
+        oldestTimestamp,
+        conversations: allConversations.rows.map((conv: any) => ({
           id: conv.id,
           created_at: conv.created_at,
           updated_at: conv.updated_at,
           message_count: conv.messages?.length || 0
         }))
       }));
-      
-      logger.info('Fetched full conversation history', {
-        phoneNumber: anonymizePhoneNumber(phoneNumber),
-        totalConversations: allConversations.rows.length,
-        totalMessages: totalMessageCount
-      });
-      
+
     } catch (error) {
       logger.error('Failed to fetch full conversation history:', error);
-      next(error);
+      return next(error);
     }
   }
 );
@@ -486,7 +507,7 @@ router.post('/send',
     body('text').notEmpty().withMessage('Message text is required'),
     body('from').optional().isMobilePhone('any')
   ]),
-  async (req, res, next) => {
+  async (req, res, _next) => {
     const { to, text, from, countryCode, skipPatternLearning } = req.body;
     const fromNumber = from || process.env.OPENPHONE_DEFAULT_NUMBER;
     
@@ -519,11 +540,14 @@ router.post('/send',
       }
       
       // Send via OpenPhone with optional userId
-      const result = await openPhoneService.sendMessage(formattedTo, formattedFrom, text, { 
+      const result = await openPhoneService.sendMessage(formattedTo, formattedFrom, text, {
         userId,
         setInboxStatus: 'done' // Mark conversation as done after sending
       });
-      
+
+      // Invalidate conversation cache so next poll returns fresh data
+      conversationCache.clear();
+
       // PATTERN LEARNING: Analyze full conversation when marked as done
       try {
         // Import services
@@ -541,7 +565,7 @@ router.post('/send',
           LIMIT 1
         `, [formattedTo]);
         
-        let conversationMessages = { rows: [] };
+        let conversationMessages: { rows: any[] } = { rows: [] };
         if (conversationResult.rows.length > 0 && conversationResult.rows[0].messages) {
           // Extract last 6 messages from JSON array
           const allMessages = conversationResult.rows[0].messages || [];
@@ -720,7 +744,7 @@ router.post('/send',
         messageId: result.id
       });
       
-      res.json(successResponse(result));
+      return res.json(successResponse(result));
     } catch (error: any) {
       logger.error('Failed to send message:', {
         error: error.message,
@@ -797,7 +821,7 @@ router.put('/conversations/:phoneNumber/read',
 router.get('/unread-count',
   authenticate,
   roleGuard(['admin', 'operator', 'support']),
-  async (req, res, next) => {
+  async (_req, res, next) => {
     try {
       // Check if unread_count column exists
       const columnExists = await db.query(`
@@ -874,10 +898,10 @@ router.post('/conversations/:phoneNumber/suggest-response',
         confidence: suggestion.confidence
       });
       
-      res.json(successResponse(suggestion));
+      return res.json(successResponse(suggestion));
     } catch (error) {
       logger.error('Failed to generate suggestion:', error);
-      next(error);
+      return next(error);
     }
   }
 );
@@ -935,7 +959,10 @@ router.post('/suggestions/:suggestionId/approve-and-send',
       const result = await openPhoneService.sendMessage(formattedTo, formattedFrom, textToSend, {
         setInboxStatus: 'done'
       });
-      
+
+      // Invalidate conversation cache so next poll returns fresh data
+      conversationCache.clear();
+
       // Track staff response for learning (even AI-assisted responses)
       await aiAutomationService.learnFromStaffResponse(
         formattedTo,
@@ -963,14 +990,14 @@ router.post('/suggestions/:suggestionId/approve-and-send',
         edited: !!editedText
       });
       
-      res.json(successResponse({
+      return res.json(successResponse({
         messageId: result.id,
         suggestionId,
         sent: true
       }));
     } catch (error) {
       logger.error('Failed to send suggested message:', error);
-      next(error);
+      return next(error);
     }
   }
 );
@@ -1212,7 +1239,7 @@ router.get('/conversation/:id', authenticate, async (req: Request, res: Response
 }); */
 
 // GET /api/messages/stats/today - Get today's message statistics
-router.get('/stats/today', authenticate, async (req, res) => {
+router.get('/stats/today', authenticate, async (_req, res) => {
   try {
     // Get today's messages count
     const todayStart = new Date();
