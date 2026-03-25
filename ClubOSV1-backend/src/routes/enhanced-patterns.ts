@@ -2732,45 +2732,46 @@ Return JSON only: {"type": "factual|tone|brevity|completeness|escalation", "summ
     let styleRuleId: number | null = null;
     let deactivatedCount = 0;
 
-    // Step 2: Route correction to the right storage
-    if (correctionType === 'factual' || correctionType === 'completeness') {
-      // Factual/completeness → knowledge base (existing flow)
-      const { addManualKnowledge, searchKnowledge } = await import('../services/clubaiKnowledgeService');
-      knowledgeEntryId = await addManualKnowledge(
-        resolvedIntent,
-        customerMessage.trim(),
-        correctedResponse.trim(),
-        {
-          source: 'operator_correction',
-          correction_type: correctionType,
-          original_response: originalResponse,
-          corrected_by: correctedBy,
-        }
-      );
-
-      // Deactivate conflicting entries
-      if (knowledgeEntryId) {
-        try {
-          const similar = await searchKnowledge(customerMessage.trim(), { limit: 5, threshold: 0.6 });
-          const toDeactivate = similar.filter(s =>
-            s.knowledge_id !== knowledgeEntryId &&
-            s.team_response !== correctedResponse.trim()
-          );
-          if (toDeactivate.length > 0) {
-            const ids = toDeactivate.map(s => s.knowledge_id);
-            await db.query(
-              `UPDATE clubai_knowledge SET is_active = FALSE, updated_at = NOW() WHERE id = ANY($1)`,
-              [ids]
-            );
-            deactivatedCount = ids.length;
-          }
-        } catch (conflictErr) {
-          logger.warn('[ClubAI Correct] Could not check/deactivate conflicts:', conflictErr);
-        }
+    // Step 2A: ALWAYS save the corrected response to the knowledge base.
+    // Every correction teaches ClubAI the right answer for this question,
+    // regardless of whether the fix was factual, tone, or brevity.
+    const { addManualKnowledge, searchKnowledge } = await import('../services/clubaiKnowledgeService');
+    knowledgeEntryId = await addManualKnowledge(
+      resolvedIntent,
+      customerMessage.trim(),
+      correctedResponse.trim(),
+      {
+        source: 'operator_correction',
+        correction_type: correctionType,
+        original_response: originalResponse || '',
+        corrected_by: correctedBy,
       }
-    } else if (correctionType === 'tone' || correctionType === 'brevity') {
-      // Tone/brevity → style rules (new flow)
-      // AI generates a reusable rule from the correction
+    );
+
+    // Deactivate conflicting entries
+    if (knowledgeEntryId) {
+      try {
+        const similar = await searchKnowledge(customerMessage.trim(), { limit: 5, threshold: 0.6 });
+        const toDeactivate = similar.filter(s =>
+          s.knowledge_id !== knowledgeEntryId &&
+          s.team_response !== correctedResponse.trim()
+        );
+        if (toDeactivate.length > 0) {
+          const ids = toDeactivate.map(s => s.knowledge_id);
+          await db.query(
+            `UPDATE clubai_knowledge SET is_active = FALSE, updated_at = NOW() WHERE id = ANY($1)`,
+            [ids]
+          );
+          deactivatedCount = ids.length;
+        }
+      } catch (conflictErr) {
+        logger.warn('[ClubAI Correct] Could not check/deactivate conflicts:', conflictErr);
+      }
+    }
+
+    // Step 2B: ADDITIONALLY create a style rule for tone/brevity corrections.
+    // This teaches ClubAI to adjust its style globally, not just for this question.
+    if (correctionType === 'tone' || correctionType === 'brevity') {
       let ruleText = correctionType === 'tone'
         ? `Adjust tone: ${correctionSummary}`
         : `Keep responses concise: ${correctionSummary}`;
@@ -2812,16 +2813,15 @@ Return ONLY the rule text, nothing else.`
         `, [
           correctionType,
           ruleText,
-          originalResponse,
+          originalResponse || '',
           correctedResponse.trim(),
-          resolvedIntent === 'general_inquiry' ? null : resolvedIntent, // null = applies to all
+          resolvedIntent === 'general_inquiry' ? null : resolvedIntent,
         ]);
         styleRuleId = ruleResult.rows[0]?.id || null;
       } catch (styleErr) {
         logger.warn('[ClubAI Correct] Failed to create style rule:', styleErr);
       }
     }
-    // escalation type: log only (no knowledge entry or style rule needed)
 
     // Step 3: Always create audit entry in clubai_corrections
     try {
@@ -2832,7 +2832,7 @@ Return ONLY the rule text, nothing else.`
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `, [
         customerMessage.trim(),
-        originalResponse,
+        originalResponse || '',
         correctedResponse.trim(),
         correctionType,
         correctionSummary,
@@ -2845,10 +2845,8 @@ Return ONLY the rule text, nothing else.`
       logger.warn('[ClubAI Correct] Failed to log correction audit:', auditErr);
     }
 
-    // Check if the save actually worked — don't report false success
-    const isFactualType = correctionType === 'factual' || correctionType === 'completeness';
-    const isStyleType = correctionType === 'tone' || correctionType === 'brevity';
-    const saveFailed = (isFactualType && !knowledgeEntryId) || (isStyleType && !styleRuleId);
+    // Check if the knowledge base save worked — this is the critical save
+    const saveFailed = !knowledgeEntryId;
 
     if (saveFailed) {
       logger.error(`[ClubAI Correct] Save failed — ${correctionType} correction by ${correctedBy}: knowledgeEntryId=${knowledgeEntryId}, styleRuleId=${styleRuleId}. Likely missing database tables (run migrations 360+364).`);
