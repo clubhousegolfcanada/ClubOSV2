@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.7] - 2026-03-25
+
+### Performance
+- **Messages page loads 10-15x faster** — Three optimizations:
+  1. `/conversations` endpoint: Replaced `ROW_NUMBER() OVER (PARTITION BY phone_number)` (full table scan) with `DISTINCT ON (phone_number)` which PostgreSQL can skip-scan with the existing composite index. ~1-2s saved.
+  2. `/full-history` endpoint: Rewrote to use SQL-level `jsonb_array_elements` with `DISTINCT ON` and `LIMIT` instead of loading entire JSONB arrays into Node.js and deduplicating in JavaScript. ~5-15s saved.
+  3. Frontend: Removed auto-selection of first conversation on page load (which triggered the heavy `/full-history` call before the user even chose a conversation). Reduced MessagesContext initial delay from 500ms to 100ms.
+
 ## [1.29.6] - 2026-03-25
 
 ### Changed

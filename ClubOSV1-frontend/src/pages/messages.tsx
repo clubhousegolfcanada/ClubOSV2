@@ -521,15 +521,11 @@ export default function Messages() {
         const currentSelectedConversation = selectedConversationRef.current;
         const hadConversationsBefore = conversationsRef.current.length > 0;
 
-        // Auto-select first conversation ONLY on initial load
-        if (!currentSelectedConversation && response.data.data.length > 0 && !hadConversationsBefore) {
-          const firstConversation = response.data.data[0];
-          selectConversation(firstConversation);
-          logger.debug('Auto-selected first conversation on initial load:', firstConversation.customer_name);
-        }
+        // Don't auto-select first conversation — it triggers a heavy /full-history
+        // fetch that adds 5-15s to page load. Let the user click what they want.
 
-        // Update selected conversation if it exists
-        else if (currentSelectedConversation) {
+        // Update selected conversation if it exists (user already clicked one)
+        if (currentSelectedConversation) {
           // Normalize phone numbers for comparison (remove any formatting)
           const normalizePhone = (phone: string) => phone ? phone.replace(/\D/g, '') : '';
           const selectedPhone = normalizePhone(currentSelectedConversation.phone_number);

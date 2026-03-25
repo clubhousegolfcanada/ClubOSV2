@@ -178,54 +178,48 @@ router.get('/conversations',
       // Use cached schema check instead of querying information_schema every time
       const { hasUnreadCount, hasLastReadAt, hasUpdatedAt, hasClubaiEscalated, hasCustomerSentiment, hasConversationLocked } = await ensureSchemaChecked();
 
-      // LIGHTWEIGHT QUERY: Only fetch metadata + last message + last 3 for preview
-      // No full messages array — saves ~95% bandwidth vs loading 30 msgs per conversation
-      let query = `
-        WITH ranked_conversations AS (
-          SELECT
-            id,
-            phone_number,
-            customer_name,
-            employee_name,
-            jsonb_array_length(messages) as message_count,
-            messages->-1 as last_message,
-            CASE
-              WHEN jsonb_array_length(messages) >= 3
-              THEN jsonb_build_array(messages->-3, messages->-2, messages->-1)
-              WHEN jsonb_array_length(messages) >= 1
-              THEN messages
-              ELSE '[]'::jsonb
-            END as message_history,
-            ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
-            ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
-            ${hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
-            ${hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
-            ${hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
-            created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
-            ROW_NUMBER() OVER (PARTITION BY phone_number ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC) as rn
-          FROM openphone_conversations
-          WHERE phone_number IS NOT NULL
-            AND phone_number != ''
-            AND phone_number != 'Unknown'
-        )
-        SELECT *
-        FROM ranked_conversations
-        WHERE rn = 1
-      `;
-
+      // OPTIMIZED: DISTINCT ON replaces ROW_NUMBER CTE — PostgreSQL uses the
+      // composite index (phone_number, updated_at DESC) to skip-scan, avoiding full table scan.
+      const orderCol = hasUpdatedAt ? 'updated_at' : 'created_at';
       const params: any[] = [];
 
+      let whereClause = `WHERE phone_number IS NOT NULL AND phone_number != '' AND phone_number != 'Unknown'`;
       if (search) {
-        query = query.replace(
-          "AND phone_number != 'Unknown'",
-          `AND phone_number != 'Unknown'
-            AND (phone_number LIKE $1 OR customer_name ILIKE $1)`
-        );
+        whereClause += ` AND (phone_number LIKE $1 OR customer_name ILIKE $1)`;
         params.push(`%${search}%`);
       }
 
-      query += `
-        ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC
+      let query = `
+        SELECT DISTINCT ON (phone_number)
+          id,
+          phone_number,
+          customer_name,
+          employee_name,
+          jsonb_array_length(messages) as message_count,
+          messages->-1 as last_message,
+          CASE
+            WHEN jsonb_array_length(messages) >= 3
+            THEN jsonb_build_array(messages->-3, messages->-2, messages->-1)
+            WHEN jsonb_array_length(messages) >= 1
+            THEN messages
+            ELSE '[]'::jsonb
+          END as message_history,
+          ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+          ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+          ${hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
+          ${hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
+          ${hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
+          created_at${hasUpdatedAt ? ', updated_at' : ''}
+        FROM openphone_conversations
+        ${whereClause}
+        ORDER BY phone_number, ${orderCol} DESC
+      `;
+
+      // Wrap in subquery to apply global ordering + pagination
+      // (DISTINCT ON requires ORDER BY phone_number first, but we want ORDER BY updated_at DESC)
+      query = `
+        SELECT * FROM (${query}) AS latest
+        ORDER BY ${orderCol} DESC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
       `;
       params.push(limit, offset);
@@ -245,12 +239,13 @@ router.get('/conversations',
           schemaChecked = false;
           logger.warn('Schema cache reset due to missing column error — will re-check on next request');
 
-          // Retry once with a fresh schema check
+          // Retry once with a fresh schema check using DISTINCT ON
           try {
             const freshSchema = await ensureSchemaChecked();
+            const retryOrderCol = freshSchema.hasUpdatedAt ? 'updated_at' : 'created_at';
             const safeQuery = `
-              WITH ranked_conversations AS (
-                SELECT
+              SELECT * FROM (
+                SELECT DISTINCT ON (phone_number)
                   id, phone_number, customer_name, employee_name,
                   jsonb_array_length(messages) as message_count,
                   messages->-1 as last_message,
@@ -265,13 +260,12 @@ router.get('/conversations',
                   ${freshSchema.hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
                   ${freshSchema.hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
                   ${freshSchema.hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
-                  created_at${freshSchema.hasUpdatedAt ? ', updated_at' : ''},
-                  ROW_NUMBER() OVER (PARTITION BY phone_number ORDER BY ${freshSchema.hasUpdatedAt ? 'updated_at' : 'created_at'} DESC) as rn
+                  created_at${freshSchema.hasUpdatedAt ? ', updated_at' : ''}
                 FROM openphone_conversations
                 WHERE phone_number IS NOT NULL AND phone_number != '' AND phone_number != 'Unknown'
-              )
-              SELECT * FROM ranked_conversations WHERE rn = 1
-              ORDER BY ${freshSchema.hasUpdatedAt ? 'updated_at' : 'created_at'} DESC
+                ORDER BY phone_number, ${retryOrderCol} DESC
+              ) AS latest
+              ORDER BY ${retryOrderCol} DESC
               LIMIT $1 OFFSET $2
             `;
             result = await db.query(safeQuery, [limit, offset]);
@@ -417,75 +411,64 @@ router.get('/conversations/:phoneNumber/full-history',
       const messageLimit = Math.min(Number(req.query.limit) || 100, 500);
       const before = req.query.before as string | undefined;
 
-      // Use JSONB slicing in SQL to avoid loading full message arrays
-      // Only load the last N messages per conversation record
-      const allConversations = await db.query(
-        `SELECT id, phone_number, customer_name, employee_name,
-                CASE
-                  WHEN jsonb_array_length(messages) > 100
-                  THEN (SELECT jsonb_agg(elem) FROM (SELECT elem FROM jsonb_array_elements(messages) WITH ORDINALITY AS arr(elem, idx) ORDER BY idx DESC LIMIT 100) sub)
-                  ELSE messages
-                END as messages,
-                created_at, updated_at
-         FROM openphone_conversations
-         WHERE phone_number = $1
-         ORDER BY created_at ASC`,
-        [phoneNumber]
-      );
+      // OPTIMIZED: Single SQL query that merges, deduplicates, and paginates messages
+      // across all conversation records for this phone number.
+      // Uses lateral unnest instead of loading full JSONB arrays into Node.js.
+      const params: any[] = [phoneNumber, messageLimit];
+      let beforeClause = '';
+      if (before) {
+        beforeClause = `AND COALESCE(msg->>'createdAt', msg->>'timestamp', '') < $3`;
+        params.push(before);
+      }
 
-      if (allConversations.rows.length === 0) {
+      const messagesResult = await db.query(`
+        WITH all_msgs AS (
+          SELECT DISTINCT ON (COALESCE(msg->>'id', msg::text))
+            c.id as conv_id,
+            msg,
+            COALESCE(msg->>'createdAt', msg->>'timestamp', c.created_at::text) as msg_time
+          FROM openphone_conversations c,
+               jsonb_array_elements(c.messages) AS msg
+          WHERE c.phone_number = $1
+            ${beforeClause}
+          ORDER BY COALESCE(msg->>'id', msg::text), msg_time DESC
+        ),
+        sorted AS (
+          SELECT * FROM all_msgs ORDER BY msg_time DESC LIMIT $2
+        )
+        SELECT msg, conv_id FROM sorted ORDER BY msg_time ASC
+      `, params);
+
+      // Get conversation metadata (lightweight — no messages loaded)
+      const metaResult = await db.query(`
+        SELECT id, phone_number, customer_name, employee_name, created_at, updated_at,
+               (SELECT COUNT(*) FROM openphone_conversations WHERE phone_number = $1) as total_conversations
+        FROM openphone_conversations
+        WHERE phone_number = $1
+        ORDER BY COALESCE(updated_at, created_at) DESC
+        LIMIT 1
+      `, [phoneNumber]);
+
+      if (metaResult.rows.length === 0) {
         return res.status(404).json(errorResponse('No conversations found for this phone number', 404));
       }
 
-      // Merge all messages from all conversation records
-      const messageIds = new Set();
-      const allMessages: any[] = [];
+      const mostRecentConv = metaResult.rows[0];
+      const firstContactResult = await db.query(`
+        SELECT created_at FROM openphone_conversations WHERE phone_number = $1 ORDER BY created_at ASC LIMIT 1
+      `, [phoneNumber]);
 
-      for (const conv of allConversations.rows) {
-        const messages = conv.messages || [];
-        for (const msg of messages) {
-          if (msg.id && !messageIds.has(msg.id)) {
-            messageIds.add(msg.id);
-            allMessages.push({
-              ...msg,
-              conversationId: conv.id,
-            });
-          } else if (!msg.id) {
-            allMessages.push({
-              ...msg,
-              conversationId: conv.id,
-            });
-          }
-        }
-      }
+      // Build messages array from SQL results
+      const limitedMessages = messagesResult.rows.map((row: any) => ({
+        ...row.msg,
+        conversationId: row.conv_id,
+      }));
 
-      // Sort merged messages by timestamp
-      allMessages.sort((a, b) => {
-        const dateA = new Date(a.createdAt || a.timestamp || 0);
-        const dateB = new Date(b.createdAt || b.timestamp || 0);
-        return dateA.getTime() - dateB.getTime();
-      });
-
-      // Apply cursor-based pagination if `before` timestamp is provided
-      let paginatedMessages = allMessages;
-      if (before) {
-        const beforeTime = new Date(before).getTime();
-        paginatedMessages = allMessages.filter(m => {
-          const msgTime = new Date(m.createdAt || m.timestamp || 0).getTime();
-          return msgTime < beforeTime;
-        });
-      }
-
-      // Take the last N messages (most recent)
-      const totalMessageCount = paginatedMessages.length;
-      const limitedMessages = paginatedMessages.slice(-messageLimit);
-      const hasMore = totalMessageCount > messageLimit;
+      const totalMessageCount = limitedMessages.length;
+      const hasMore = totalMessageCount >= messageLimit; // If we hit the limit, there are probably more
       const oldestTimestamp = limitedMessages.length > 0
         ? (limitedMessages[0].createdAt || limitedMessages[0].timestamp)
         : null;
-
-      // Use the most recent conversation for metadata
-      const mostRecentConv = allConversations.rows[allConversations.rows.length - 1];
 
       // Mark all conversations as read
       try {
@@ -506,16 +489,16 @@ router.get('/conversations/:phoneNumber/full-history',
         phone_number: phoneNumber,
         customer_name: mostRecentConv.customer_name,
         employee_name: mostRecentConv.employee_name,
-        total_conversations: allConversations.rows.length,
-        total_messages: allMessages.length,
-        first_contact: allConversations.rows[0].created_at,
+        total_conversations: parseInt(mostRecentConv.total_conversations) || 1,
+        total_messages: totalMessageCount,
+        first_contact: firstContactResult.rows[0]?.created_at || mostRecentConv.created_at,
         last_contact: mostRecentConv.updated_at || mostRecentConv.created_at
       };
 
       logger.info('Fetched conversation history', {
         phoneNumber: anonymizePhoneNumber(phoneNumber),
-        totalConversations: allConversations.rows.length,
-        totalMessages: allMessages.length,
+        totalConversations: responseData.total_conversations,
+        totalMessages: totalMessageCount,
         returnedMessages: limitedMessages.length,
         hasMore
       });
@@ -525,12 +508,6 @@ router.get('/conversations/:phoneNumber/full-history',
         messages: limitedMessages,
         hasMore,
         oldestTimestamp,
-        conversations: allConversations.rows.map((conv: any) => ({
-          id: conv.id,
-          created_at: conv.created_at,
-          updated_at: conv.updated_at,
-          message_count: conv.messages?.length || 0
-        }))
       }));
 
     } catch (error) {

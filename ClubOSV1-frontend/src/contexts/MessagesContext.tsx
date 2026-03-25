@@ -173,10 +173,10 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    // Add a small delay on initial check to ensure auth is fully settled
+    // Small delay to ensure auth is settled before first check
     const initialTimer = setTimeout(() => {
       refreshUnreadCount();
-    }, 500); // 500ms delay on first check
+    }, 100);
 
     // Check every 60 seconds (reduced frequency to prevent rate limiting)
     intervalRef.current = setInterval(() => {
