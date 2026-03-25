@@ -1313,7 +1313,7 @@ export default function Messages() {
         <div
           className="md:hidden flex flex-col bg-[var(--bg-primary)]"
           style={{
-            height: remoteActionsBar.isVisible ? 'calc(100vh - 48px)' : '100vh',
+            height: remoteActionsBar.isVisible ? 'calc(100dvh - 48px - 64px)' : 'calc(100dvh - 64px)',
             transition: 'height 150ms ease-out'
           }}
         >
@@ -1744,11 +1744,7 @@ export default function Messages() {
                   
                   {/* Message Input - Mobile optimized */}
                   <div 
-                    className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3" 
-                    style={{ 
-                      paddingBottom: `calc(${remoteActionsBar.isVisible ? '3.5rem' : '0.75rem'} + env(safe-area-inset-bottom, 0px))`,
-                      transition: 'padding-bottom 150ms ease-out'
-                    }}
+                    className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 pb-2"
                   >
                     <form
                       onSubmit={(e) => {

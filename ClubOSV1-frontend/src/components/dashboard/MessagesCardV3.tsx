@@ -446,7 +446,7 @@ export default function MessagesCardV3() {
                     {/* Message History Section */}
                     {conv.messageHistory && conv.messageHistory.length > 0 && (
                       <div className="mb-3">
-                        <div className="max-h-[200px] overflow-y-auto space-y-2 p-2 bg-[var(--bg-secondary)] rounded-lg">
+                        <div className="max-h-[120px] overflow-y-auto space-y-2 p-2 bg-[var(--bg-secondary)] rounded-lg">
                           {conv.messageHistory.map((msg, index) => {
                             const prevMsg = index > 0 ? conv.messageHistory![index - 1] : null;
                             const dateSeparator = getDateSeparator(msg, prevMsg);
