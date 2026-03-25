@@ -2177,7 +2177,7 @@ router.get('/clubai-stats', authenticate, async (_req: Request, res: Response) =
       // Columns haven't been added yet — return zeros
       return res.json({
         success: true,
-        data: { conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0 }
+        data: { conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0, correctionsToday: 0, accuracyRate: 100 }
       });
     }
 
@@ -2193,13 +2193,33 @@ router.get('/clubai-stats', authenticate, async (_req: Request, res: Response) =
 
     const stats = result.rows[0] || { conversations_today: 0, messages_sent: 0, escalated: 0, resolved: 0 };
 
+    // Fetch correction stats from clubai_corrections table
+    let correctionsToday = 0;
+    try {
+      const corrResult = await db.query(`
+        SELECT COUNT(*) as corrections_today
+        FROM clubai_corrections
+        WHERE created_at >= CURRENT_DATE
+      `);
+      correctionsToday = parseInt(corrResult.rows[0]?.corrections_today) || 0;
+    } catch {
+      // Table may not exist yet — return 0
+    }
+
+    const messagesSent = parseInt(stats.messages_sent) || 0;
+    const accuracyRate = messagesSent > 0
+      ? Math.round(((messagesSent - correctionsToday) / messagesSent) * 100)
+      : 100;
+
     return res.json({
       success: true,
       data: {
         conversationsToday: parseInt(stats.conversations_today) || 0,
-        messagesSent: parseInt(stats.messages_sent) || 0,
+        messagesSent,
         escalated: parseInt(stats.escalated) || 0,
-        resolved: parseInt(stats.resolved) || 0
+        resolved: parseInt(stats.resolved) || 0,
+        correctionsToday,
+        accuracyRate,
       }
     });
   } catch (error) {
@@ -2207,7 +2227,7 @@ router.get('/clubai-stats', authenticate, async (_req: Request, res: Response) =
     // Return empty data instead of 500 so the page still loads
     return res.json({
       success: true,
-      data: { conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0 }
+      data: { conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0, correctionsToday: 0, accuracyRate: 100 }
     });
   }
 });
@@ -2629,6 +2649,227 @@ router.get('/clubai-conversations', authenticate, async (req: Request, res: Resp
     logger.error('[ClubAI Conversations] Error:', error);
     // Return empty if clubai columns don't exist yet
     return res.json({ success: true, data: [], total: 0 });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-correct
+ * Operator corrects a ClubAI response from the conversation monitor.
+ * AI auto-classifies the correction type (factual/tone/brevity/completeness/escalation),
+ * routes factual corrections to knowledge base, style corrections to style rules,
+ * and always logs to clubai_corrections for stats.
+ */
+router.post('/clubai-correct', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userRole = (req as any).user?.role;
+    if (!userRole || !['admin', 'operator'].includes(userRole)) {
+      return res.status(403).json({ success: false, error: 'Admin or operator access required' });
+    }
+
+    const { customerMessage, originalResponse, correctedResponse, intent } = req.body;
+    if (!customerMessage || !correctedResponse) {
+      return res.status(400).json({ success: false, error: 'customerMessage and correctedResponse are required' });
+    }
+
+    const resolvedIntent = intent || 'general_inquiry';
+    const correctedBy = (req as any).user?.email || 'operator';
+
+    // Step 1: AI classifies what type of correction this is
+    let correctionType = 'factual';
+    let correctionSummary = 'Operator corrected response';
+
+    if (openai && originalResponse) {
+      try {
+        const classification = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You classify operator corrections to AI SMS responses. Compare the original and corrected response and determine:
+1. The correction type (exactly one of: factual, tone, brevity, completeness, escalation)
+2. A short summary of what was changed
+
+Definitions:
+- factual: Wrong information was corrected (wrong link, wrong price, wrong hours, wrong policy, wrong steps)
+- tone: The style/personality was adjusted (too formal, too casual, too nice, robotic language, wrong energy)
+- brevity: The response was shortened or made more concise (too long, too many sentences, unnecessary details removed)
+- completeness: Missing information was added (incomplete answer, missed part of the question)
+- escalation: Changed whether the response should escalate to human (should have escalated but didn't, or vice versa)
+
+If multiple types apply, pick the PRIMARY reason the operator made the change.
+
+Return JSON only: {"type": "factual|tone|brevity|completeness|escalation", "summary": "brief description of what changed"}`
+            },
+            {
+              role: 'user',
+              content: `Customer message: "${customerMessage}"\n\nOriginal AI response: "${originalResponse}"\n\nCorrected response: "${correctedResponse}"`
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 150,
+        });
+
+        const content = classification.choices[0]?.message?.content;
+        if (content) {
+          try {
+            const parsed = JSON.parse(content);
+            if (['factual', 'tone', 'brevity', 'completeness', 'escalation'].includes(parsed.type)) {
+              correctionType = parsed.type;
+            }
+            if (parsed.summary) {
+              correctionSummary = parsed.summary;
+            }
+          } catch {
+            logger.warn('[ClubAI Correct] Could not parse classification, defaulting to factual');
+          }
+        }
+      } catch (classifyErr) {
+        logger.warn('[ClubAI Correct] Classification failed, defaulting to factual:', classifyErr);
+      }
+    }
+
+    let knowledgeEntryId: number | null = null;
+    let styleRuleId: number | null = null;
+    let deactivatedCount = 0;
+
+    // Step 2: Route correction to the right storage
+    if (correctionType === 'factual' || correctionType === 'completeness') {
+      // Factual/completeness → knowledge base (existing flow)
+      const { addManualKnowledge, searchKnowledge } = await import('../services/clubaiKnowledgeService');
+      knowledgeEntryId = await addManualKnowledge(
+        resolvedIntent,
+        customerMessage.trim(),
+        correctedResponse.trim(),
+        {
+          source: 'operator_correction',
+          correction_type: correctionType,
+          original_response: originalResponse,
+          corrected_by: correctedBy,
+        }
+      );
+
+      // Deactivate conflicting entries
+      if (knowledgeEntryId) {
+        try {
+          const similar = await searchKnowledge(customerMessage.trim(), { limit: 5, threshold: 0.6 });
+          const toDeactivate = similar.filter(s =>
+            s.knowledge_id !== knowledgeEntryId &&
+            s.team_response !== correctedResponse.trim()
+          );
+          if (toDeactivate.length > 0) {
+            const ids = toDeactivate.map(s => s.knowledge_id);
+            await db.query(
+              `UPDATE clubai_knowledge SET is_active = FALSE, updated_at = NOW() WHERE id = ANY($1)`,
+              [ids]
+            );
+            deactivatedCount = ids.length;
+          }
+        } catch (conflictErr) {
+          logger.warn('[ClubAI Correct] Could not check/deactivate conflicts:', conflictErr);
+        }
+      }
+    } else if (correctionType === 'tone' || correctionType === 'brevity') {
+      // Tone/brevity → style rules (new flow)
+      // AI generates a reusable rule from the correction
+      let ruleText = correctionType === 'tone'
+        ? `Adjust tone: ${correctionSummary}`
+        : `Keep responses concise: ${correctionSummary}`;
+
+      if (openai) {
+        try {
+          const ruleGen = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: `You create reusable style rules for an SMS AI assistant based on operator corrections.
+The rule should be a clear, actionable instruction that applies broadly (not just to this one message).
+Keep the rule to 1-2 sentences. Be specific about what to do differently.
+Return ONLY the rule text, nothing else.`
+              },
+              {
+                role: 'user',
+                content: `Correction type: ${correctionType}\nIntent: ${resolvedIntent}\nOriginal: "${originalResponse}"\nCorrected: "${correctedResponse}"\nSummary: ${correctionSummary}`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 100,
+          });
+          const ruleContent = ruleGen.choices[0]?.message?.content?.trim();
+          if (ruleContent && ruleContent.length > 10) {
+            ruleText = ruleContent;
+          }
+        } catch (ruleErr) {
+          logger.warn('[ClubAI Correct] Rule generation failed, using default:', ruleErr);
+        }
+      }
+
+      try {
+        const ruleResult = await db.query(`
+          INSERT INTO clubai_style_rules (rule_type, rule_text, example_before, example_after, intent)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id
+        `, [
+          correctionType,
+          ruleText,
+          originalResponse,
+          correctedResponse.trim(),
+          resolvedIntent === 'general_inquiry' ? null : resolvedIntent, // null = applies to all
+        ]);
+        styleRuleId = ruleResult.rows[0]?.id || null;
+      } catch (styleErr) {
+        logger.warn('[ClubAI Correct] Failed to create style rule:', styleErr);
+      }
+    }
+    // escalation type: log only (no knowledge entry or style rule needed)
+
+    // Step 3: Always create audit entry in clubai_corrections
+    try {
+      await db.query(`
+        INSERT INTO clubai_corrections
+          (customer_message, original_response, corrected_response, correction_type, correction_summary,
+           intent, knowledge_entry_id, style_rule_id, corrected_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `, [
+        customerMessage.trim(),
+        originalResponse,
+        correctedResponse.trim(),
+        correctionType,
+        correctionSummary,
+        resolvedIntent,
+        knowledgeEntryId,
+        styleRuleId,
+        correctedBy,
+      ]);
+    } catch (auditErr) {
+      logger.warn('[ClubAI Correct] Failed to log correction audit:', auditErr);
+    }
+
+    // Build user-facing message based on correction type
+    const typeMessages: Record<string, string> = {
+      factual: `Factual correction saved to knowledge base${deactivatedCount > 0 ? ` (${deactivatedCount} conflicting entries deactivated)` : ''}`,
+      completeness: `Missing info added to knowledge base${deactivatedCount > 0 ? ` (${deactivatedCount} conflicting entries deactivated)` : ''}`,
+      tone: 'Tone correction saved — ClubAI will adjust its style for future responses',
+      brevity: 'Brevity correction saved — ClubAI will keep similar responses shorter',
+      escalation: 'Escalation correction logged — helps improve escalation decisions',
+    };
+
+    logger.info(`[ClubAI Correct] ${correctionType} correction by ${correctedBy}: ${correctionSummary}`);
+
+    return res.json({
+      success: true,
+      data: {
+        correctionType,
+        correctionSummary,
+        knowledgeEntryId,
+        styleRuleId,
+        deactivatedCount,
+      },
+      message: typeMessages[correctionType] || 'Correction saved',
+    });
+  } catch (error) {
+    logger.error('[ClubAI Correct] Error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to save correction' });
   }
 });
 

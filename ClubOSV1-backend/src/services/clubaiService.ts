@@ -119,8 +119,39 @@ export async function generateResponse(
     logger.warn('[ClubAI] RAG search failed, proceeding with system prompt only:', error);
   }
 
-  // Build the system message: tone/rules + dynamic RAG context
-  let systemContent = systemPrompt;
+  // Fetch active style rules learned from operator corrections
+  let styleRulesSection = '';
+  try {
+    const rulesResult = await db.query(`
+      SELECT id, rule_type, rule_text, intent
+      FROM clubai_style_rules
+      WHERE is_active = TRUE
+      ORDER BY created_at DESC
+      LIMIT 20
+    `);
+
+    if (rulesResult.rows.length > 0) {
+      // Filter to rules relevant to this conversation (global + intent-specific)
+      // We don't know the intent yet, so include all — the AI will apply what's relevant
+      const rules = rulesResult.rows;
+      styleRulesSection = '\n\n---\n\nSTYLE CORRECTIONS FROM THE TEAM (apply these to ALL responses):\n\n';
+      for (const rule of rules) {
+        const scope = rule.intent ? ` [${rule.intent}]` : '';
+        styleRulesSection += `• ${rule.rule_text}${scope}\n`;
+      }
+
+      // Increment use_count for retrieved rules
+      const ruleIds = rules.map((r: any) => r.id).filter(Boolean);
+      if (ruleIds.length > 0) {
+        db.query(`UPDATE clubai_style_rules SET use_count = use_count + 1, updated_at = NOW() WHERE id = ANY($1)`, [ruleIds]).catch(() => {});
+      }
+    }
+  } catch (styleErr) {
+    logger.warn('[ClubAI] Failed to fetch style rules:', styleErr);
+  }
+
+  // Build the system message: tone/rules + style corrections + dynamic RAG context
+  let systemContent = systemPrompt + styleRulesSection;
 
   // Inject RAG context (past conversations and website content)
   if (ragContext.conversationExamples || ragContext.websiteContent) {

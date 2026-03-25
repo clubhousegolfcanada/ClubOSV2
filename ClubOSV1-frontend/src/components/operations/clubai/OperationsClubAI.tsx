@@ -31,6 +31,8 @@ interface ClubAIStats {
   messagesSent: number;
   escalated: number;
   resolved: number;
+  correctionsToday: number;
+  accuracyRate: number;
 }
 
 interface SafetyThresholds {
@@ -124,7 +126,7 @@ export const OperationsClubAI: React.FC = () => {
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [editingDraft, setEditingDraft] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  const [stats, setStats] = useState<ClubAIStats>({ conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0 });
+  const [stats, setStats] = useState<ClubAIStats>({ conversationsToday: 0, messagesSent: 0, escalated: 0, resolved: 0, correctionsToday: 0, accuracyRate: 100 });
   const [safety, setSafety] = useState<SafetyThresholds>({
     rapidMessageThreshold: 3, rapidMessageWindowSeconds: 60, rapidMessageEnabled: true,
     aiResponseLimit: 3, aiResponseLimitEnabled: true, operatorLockoutHours: 4,
@@ -170,6 +172,13 @@ export const OperationsClubAI: React.FC = () => {
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [conflictEntries, setConflictEntries] = useState<KnowledgeEntry[] | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+
+  // Conversation correction
+  const [correctingMsg, setCorrectingMsg] = useState<{ convoId: string; msgIndex: number; customerMsg: string; originalResponse: string } | null>(null);
+  const [correctionText, setCorrectionText] = useState('');
+  const [correctionIntent, setCorrectionIntent] = useState('general_inquiry');
+  const [savingCorrection, setSavingCorrection] = useState(false);
+  const [correctionSuccess, setCorrectionSuccess] = useState<string | null>(null);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -438,6 +447,69 @@ export const OperationsClubAI: React.FC = () => {
   };
 
   // ============================================
+  // CONVERSATION CORRECTIONS
+  // ============================================
+
+  const startCorrection = (convoId: string, msgIndex: number, messages: ConversationMessage[]) => {
+    // Find the AI message and the preceding customer message
+    const aiMsg = messages[msgIndex];
+    if (!aiMsg || aiMsg.sender_type !== 'ai') return;
+
+    // Walk backwards to find the customer message this AI responded to
+    let customerMsg = '';
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (messages[i].sender_type === 'customer') {
+        customerMsg = messages[i].message_text;
+        break;
+      }
+    }
+
+    setCorrectingMsg({ convoId, msgIndex, customerMsg, originalResponse: aiMsg.message_text });
+    setCorrectionText(aiMsg.message_text);
+    setCorrectionIntent('general_inquiry');
+    setCorrectionSuccess(null);
+  };
+
+  const saveCorrection = async () => {
+    if (!correctingMsg || !correctionText.trim()) return;
+    setSavingCorrection(true);
+    try {
+      const res = await apiClient.post('/patterns/clubai-correct', {
+        customerMessage: correctingMsg.customerMsg,
+        originalResponse: correctingMsg.originalResponse,
+        correctedResponse: correctionText.trim(),
+        intent: correctionIntent,
+      });
+      const data = res.data?.data;
+      const corrType = data?.correctionType || 'factual';
+      const summary = data?.correctionSummary || '';
+      // Build a descriptive success message based on correction type
+      const typeLabels: Record<string, string> = {
+        factual: 'Factual correction saved to knowledge base',
+        completeness: 'Missing info added to knowledge base',
+        tone: 'Tone correction saved — ClubAI will adjust its style',
+        brevity: 'Brevity correction saved — ClubAI will keep it shorter',
+        escalation: 'Escalation correction logged',
+      };
+      const msg = (typeLabels[corrType] || res.data?.message || 'Correction saved')
+        + (summary ? ` (${summary})` : '');
+      setCorrectionSuccess(msg);
+      setCorrectingMsg(null);
+      setCorrectionText('');
+      // Refresh knowledge stats and main stats
+      const [kRes, sRes] = await Promise.all([
+        apiClient.get('/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } })),
+        apiClient.get('/patterns/clubai-stats').catch(() => ({ data: { data: null } })),
+      ]);
+      if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
+      if (sRes.data?.data) setStats(sRes.data.data);
+      // Clear success message after 6 seconds (longer to read the type + summary)
+      setTimeout(() => setCorrectionSuccess(null), 6000);
+    } catch { /* */ }
+    setSavingCorrection(false);
+  };
+
+  // ============================================
   // HELPERS
   // ============================================
 
@@ -569,12 +641,14 @@ export const OperationsClubAI: React.FC = () => {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: 'Conversations', value: stats.conversationsToday, icon: MessageSquare, color: 'text-blue-500' },
           { label: 'Messages Sent', value: stats.messagesSent, icon: Hash, color: 'text-green-500' },
           { label: 'Escalated', value: stats.escalated, icon: Users, color: 'text-orange-500' },
-          { label: 'Resolution Rate', value: `${resolutionRate}%`, icon: TrendingUp, color: 'text-green-500' },
+          { label: 'Corrections', value: stats.correctionsToday, icon: Edit3, color: 'text-purple-500' },
+          { label: 'Accuracy', value: `${stats.accuracyRate}%`, icon: TrendingUp, color: stats.accuracyRate >= 90 ? 'text-green-500' : stats.accuracyRate >= 70 ? 'text-yellow-500' : 'text-red-500' },
+          { label: 'Resolution', value: `${resolutionRate}%`, icon: Check, color: 'text-green-500' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -1290,6 +1364,11 @@ export const OperationsClubAI: React.FC = () => {
                 {/* Expanded: show messages */}
                 {expandedConvo === convo.id && convo.messages && (
                   <div className="px-3 pb-3 space-y-2 border-t border-[var(--border-primary)] pt-2">
+                    {correctionSuccess && correctingMsg === null && (
+                      <div className="p-2 rounded bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-xs text-green-700 dark:text-green-300 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> {correctionSuccess}
+                      </div>
+                    )}
                     {convo.messages.map((msg, i) => (
                       <div key={i} className={`flex ${msg.sender_type === 'customer' ? 'justify-start' : 'justify-end'}`}>
                         <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${
@@ -1309,8 +1388,63 @@ export const OperationsClubAI: React.FC = () => {
                               </span>
                             )}
                             <span className="text-[10px] opacity-40 ml-auto">{formatTime(msg.created_at)}</span>
+                            {msg.sender_type === 'ai' && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); startCorrection(convo.id, i, convo.messages!); }}
+                                className="ml-1 p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                                title="Correct this response — saves to knowledge base"
+                              >
+                                <Edit3 className="w-3 h-3 text-blue-500" />
+                              </button>
+                            )}
                           </div>
-                          <p className="whitespace-pre-wrap">{msg.message_text}</p>
+
+                          {/* Inline correction editor */}
+                          {correctingMsg && correctingMsg.convoId === convo.id && correctingMsg.msgIndex === i ? (
+                            <div className="mt-1 space-y-1.5">
+                              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                                Correct this response — saves as knowledge with embedding
+                              </p>
+                              {correctingMsg.customerMsg && (
+                                <p className="text-[10px] text-[var(--text-secondary)]">
+                                  Customer asked: &quot;{correctingMsg.customerMsg.substring(0, 100)}&quot;
+                                </p>
+                              )}
+                              <select
+                                value={correctionIntent}
+                                onChange={(e) => setCorrectionIntent(e.target.value)}
+                                className="w-full text-[10px] p-1 rounded border border-blue-300 bg-white dark:bg-gray-800 text-[var(--text-primary)]"
+                              >
+                                {INTENT_OPTIONS.map(opt => (
+                                  <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
+                                ))}
+                              </select>
+                              <textarea
+                                value={correctionText}
+                                onChange={(e) => setCorrectionText(e.target.value)}
+                                rows={3}
+                                className="w-full text-xs p-1.5 rounded border border-blue-300 bg-white dark:bg-gray-800 text-[var(--text-primary)] resize-none"
+                                autoFocus
+                              />
+                              <div className="flex gap-1.5 justify-end">
+                                <button
+                                  onClick={() => { setCorrectingMsg(null); setCorrectionText(''); }}
+                                  className="px-2 py-0.5 text-[10px] rounded border border-[var(--border-primary)] text-[var(--text-secondary)]"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={saveCorrection}
+                                  disabled={savingCorrection || !correctionText.trim()}
+                                  className="px-2 py-0.5 text-[10px] rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+                                >
+                                  {savingCorrection ? 'Saving...' : 'Save to Knowledge Base'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{msg.message_text}</p>
+                          )}
                         </div>
                       </div>
                     ))}

@@ -2,6 +2,27 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.0] - 2026-03-25
+
+### Added
+- **Smart Correction Classification** — When operators edit a ClubAI response in the conversation monitor, GPT-4o-mini auto-classifies the correction type: `factual` (wrong info/link/price), `tone` (too formal/casual/robotic), `brevity` (too long), `completeness` (missing info), or `escalation` (should/shouldn't have escalated). No extra dropdown needed — the AI figures it out from the diff.
+- **Style Rules System** — Tone and brevity corrections create reusable style rules in a new `clubai_style_rules` table. These rules are automatically injected into ClubAI's system prompt as "STYLE CORRECTIONS FROM THE TEAM", so the AI learns to adjust its personality and length across ALL future responses, not just for one specific question.
+- **Correction Audit Trail** — Every correction is logged in `clubai_corrections` with type, summary, who made it, and links to the knowledge entry or style rule it created. This powers the new accuracy stats.
+- **Accuracy Rate & Corrections Stats** — Dashboard now shows 6 stats: Conversations, Messages Sent, Escalated, Corrections, Accuracy Rate, and Resolution Rate. Accuracy = `(messages - corrections) / messages * 100`. Color-coded: green (90%+), yellow (70-89%), red (<70%).
+- **Smart Success Messages** — After saving a correction, the success banner shows what the AI detected: "Tone correction saved — ClubAI will adjust its style (Made response less formal and more casual)" instead of generic "Correction saved".
+
+### Database
+- Migration 364: `clubai_corrections` (audit log) and `clubai_style_rules` (learned style preferences) tables with indexes.
+
+## [1.28.9] - 2026-03-25
+
+### Added
+- **Correct ClubAI from Conversation Monitor** — Pencil icon on every ClubAI message opens inline editor. Edit the response, pick an intent, hit "Save to Knowledge Base" and it: (1) stores the correction as a 0.95-confidence manual entry with embedding, (2) automatically deactivates conflicting entries with similar embeddings, (3) the correction becomes the highest-priority knowledge for future questions on that topic.
+- **Manual corrections now override old conversations** — RAG context function puts operator corrections first with a "VERIFIED CORRECTIONS" label, so the AI knows to trust them over old conversation examples. Manual entries searched with limit 5 (was 2) and lower threshold for broader matching.
+
+### Fixed
+- **CRITICAL: Route collision broke ALL ClubAI endpoints** — `GET /:id` at line 963 in enhanced-patterns.ts was a greedy catch-all that intercepted every `clubai-*` request, trying to parse "clubai-stats" as an integer. Fixed with `/:id(\d+)` constraint on all 3 pattern CRUD routes.
+
 ## [1.28.8] - 2026-03-25
 
 ### Fixed
