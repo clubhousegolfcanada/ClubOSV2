@@ -635,6 +635,66 @@ async function startServer() {
       // Don't fail startup - log and continue
     }
 
+    // Ensure ClubAI tables exist — critical for corrections, knowledge, and style rules
+    try {
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS clubai_knowledge (
+          id SERIAL PRIMARY KEY,
+          source_type TEXT NOT NULL DEFAULT 'manual',
+          intent TEXT,
+          customer_message TEXT,
+          team_response TEXT NOT NULL,
+          source_id TEXT,
+          source_url TEXT,
+          page_section TEXT,
+          location TEXT,
+          embedding FLOAT8[],
+          confidence_score FLOAT DEFAULT 0.8,
+          use_count INTEGER DEFAULT 0,
+          feedback_up INTEGER DEFAULT 0,
+          feedback_down INTEGER DEFAULT 0,
+          is_active BOOLEAN DEFAULT TRUE,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS clubai_corrections (
+          id SERIAL PRIMARY KEY,
+          conversation_id TEXT,
+          phone_number TEXT,
+          customer_message TEXT,
+          original_response TEXT NOT NULL,
+          corrected_response TEXT NOT NULL,
+          correction_type TEXT NOT NULL DEFAULT 'factual',
+          correction_summary TEXT,
+          intent TEXT,
+          knowledge_entry_id INTEGER,
+          style_rule_id INTEGER,
+          corrected_by TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS clubai_style_rules (
+          id SERIAL PRIMARY KEY,
+          rule_type TEXT NOT NULL DEFAULT 'tone',
+          rule_text TEXT NOT NULL,
+          source_correction_id INTEGER,
+          example_before TEXT,
+          example_after TEXT,
+          intent TEXT,
+          is_active BOOLEAN DEFAULT TRUE,
+          use_count INTEGER DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_clubai_knowledge_active ON clubai_knowledge (is_active) WHERE is_active = TRUE;
+        CREATE INDEX IF NOT EXISTS idx_clubai_corrections_date ON clubai_corrections (created_at);
+        CREATE INDEX IF NOT EXISTS idx_clubai_style_rules_active ON clubai_style_rules (is_active) WHERE is_active = TRUE;
+      `);
+      logger.info('ClubAI tables ensured');
+    } catch (error) {
+      logger.warn('ClubAI table creation issue (may already exist with constraints):', error);
+    }
+
     // Run ticket photo migration - critical for ticket creation
     try {
       logger.info('🔄 Running ticket photo migration...');
@@ -876,15 +936,42 @@ async function startServer() {
       
       // Create indexes
       await db.query(`
-        CREATE INDEX IF NOT EXISTS idx_openphone_conversations_processed 
+        CREATE INDEX IF NOT EXISTS idx_openphone_conversations_processed
           ON openphone_conversations(processed);
-        CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_category 
+        CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_category
           ON extracted_knowledge(category);
-        CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_applied 
+        CREATE INDEX IF NOT EXISTS idx_extracted_knowledge_applied
           ON extracted_knowledge(applied_to_sop);
-        CREATE INDEX IF NOT EXISTS idx_sop_embeddings_assistant 
+        CREATE INDEX IF NOT EXISTS idx_sop_embeddings_assistant
           ON sop_embeddings(assistant);
       `);
+
+      // Performance indexes for conversation list queries (from archived migration 235)
+      // Each in its own try-catch so one failure doesn't block others
+      try {
+        await db.query(`
+          CREATE INDEX IF NOT EXISTS idx_openphone_phone_updated_composite
+            ON openphone_conversations(phone_number, updated_at DESC NULLS LAST)
+            WHERE phone_number IS NOT NULL
+        `);
+      } catch (e: any) { logger.debug('Index idx_openphone_phone_updated_composite already exists or failed:', e.message); }
+
+      try {
+        await db.query(`
+          CREATE INDEX IF NOT EXISTS idx_openphone_unread_phone
+            ON openphone_conversations(phone_number, unread_count)
+            WHERE unread_count > 0
+        `);
+      } catch (e: any) { logger.debug('Index idx_openphone_unread_phone already exists or failed:', e.message); }
+
+      try {
+        await db.query(`
+          CREATE INDEX IF NOT EXISTS idx_openphone_updated_at_desc
+            ON openphone_conversations(updated_at DESC NULLS LAST)
+        `);
+      } catch (e: any) { logger.debug('Index idx_openphone_updated_at_desc already exists or failed:', e.message); }
+
+      logger.info('✅ Conversation performance indexes created');
       
       logger.info('✅ SOP system migrations completed');
     } catch (migrationError) {

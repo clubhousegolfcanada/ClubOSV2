@@ -179,6 +179,7 @@ export const OperationsClubAI: React.FC = () => {
   const [correctionIntent, setCorrectionIntent] = useState('general_inquiry');
   const [savingCorrection, setSavingCorrection] = useState(false);
   const [correctionSuccess, setCorrectionSuccess] = useState<string | null>(null);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -505,7 +506,12 @@ export const OperationsClubAI: React.FC = () => {
       if (sRes.data?.data) setStats(sRes.data.data);
       // Clear success message after 6 seconds (longer to read the type + summary)
       setTimeout(() => setCorrectionSuccess(null), 6000);
-    } catch { /* */ }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.error || 'Failed to save correction — check backend logs';
+      setCorrectionSuccess(null);
+      setCorrectionError(errMsg);
+      setTimeout(() => setCorrectionError(null), 8000);
+    }
     setSavingCorrection(false);
   };
 
@@ -1367,6 +1373,11 @@ export const OperationsClubAI: React.FC = () => {
                     {correctionSuccess && correctingMsg === null && (
                       <div className="p-2 rounded bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-xs text-green-700 dark:text-green-300 flex items-center gap-1.5">
                         <Check className="w-3.5 h-3.5" /> {correctionSuccess}
+                      </div>
+                    )}
+                    {correctionError && correctingMsg === null && (
+                      <div className="p-2 rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300 flex items-center gap-1.5">
+                        <X className="w-3.5 h-3.5" /> {correctionError}
                       </div>
                     )}
                     {convo.messages.map((msg, i) => (

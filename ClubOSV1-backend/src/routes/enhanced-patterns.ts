@@ -2845,6 +2845,20 @@ Return ONLY the rule text, nothing else.`
       logger.warn('[ClubAI Correct] Failed to log correction audit:', auditErr);
     }
 
+    // Check if the save actually worked — don't report false success
+    const isFactualType = correctionType === 'factual' || correctionType === 'completeness';
+    const isStyleType = correctionType === 'tone' || correctionType === 'brevity';
+    const saveFailed = (isFactualType && !knowledgeEntryId) || (isStyleType && !styleRuleId);
+
+    if (saveFailed) {
+      logger.error(`[ClubAI Correct] Save failed — ${correctionType} correction by ${correctedBy}: knowledgeEntryId=${knowledgeEntryId}, styleRuleId=${styleRuleId}. Likely missing database tables (run migrations 360+364).`);
+      return res.status(500).json({
+        success: false,
+        error: `Failed to save ${correctionType} correction. Database tables may not exist — contact admin to run migrations.`,
+        data: { correctionType, correctionSummary },
+      });
+    }
+
     // Build user-facing message based on correction type
     const typeMessages: Record<string, string> = {
       factual: `Factual correction saved to knowledge base${deactivatedCount > 0 ? ` (${deactivatedCount} conflicting entries deactivated)` : ''}`,
