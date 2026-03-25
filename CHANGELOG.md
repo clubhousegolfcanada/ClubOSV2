@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.5] - 2026-03-25
+
+### Added
+- **Voicemail/call UI indicators in Messages page** — Calls, voicemail transcripts, and call summaries now render as distinct purple-tinted centered cards (not regular chat bubbles). Shows a phone icon with label: "Voicemail Transcript", "Missed Call", or "Call Summary". Transcript text shown in italics with quotes. Duration displayed when available.
+- **Conversation list voicemail preview** — When the last message in a conversation is a call/voicemail, the preview shows a purple phone icon with "Voicemail" / "Missed Call" label instead of empty text.
+
 ## [1.29.4] - 2026-03-25
 
 ### Added

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
-import { MessageCircle, Send, Search, Phone, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar, Ticket } from 'lucide-react';
+import { MessageCircle, Send, Search, Phone, PhoneOff, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar, Ticket } from 'lucide-react';
 import { http } from '@/api/http';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
@@ -22,8 +22,14 @@ interface Message {
   to: string;
   direction: 'inbound' | 'outbound';
   createdAt: string;
+  timestamp?: string;
   status?: string;
-  type?: 'conversation_separator';
+  type?: string; // 'conversation_separator' | 'call' | 'call_transcript' | 'call_summary' | 'call_recording' | message event types
+  duration?: number;
+  transcript?: string;
+  summary?: string;
+  recording?: string;
+  recordingUrl?: string;
   timeSinceLastMessage?: number;
 }
 
@@ -121,10 +127,21 @@ const ConversationItem = memo<ConversationItemProps>(({
         {!isClient ? '•' : conversation.updated_at ? formatDistance(new Date(conversation.updated_at)) : '•'}
       </span>
     </div>
-    {conversation.lastMessage && (conversation.lastMessage.text || conversation.lastMessage.body) && (
-      <p className="text-[11px] text-[var(--text-secondary)] truncate mt-1">
-        {conversation.lastMessage.direction === 'outbound' && '↗ '}
-        {conversation.lastMessage.text || conversation.lastMessage.body}
+    {conversation.lastMessage && (
+      <p className="text-[11px] text-[var(--text-secondary)] truncate mt-1 flex items-center gap-1">
+        {conversation.lastMessage.type === 'call' || conversation.lastMessage.type === 'call_transcript' || conversation.lastMessage.type === 'call_summary' ? (
+          <>
+            <PhoneOff className="w-3 h-3 text-purple-500 flex-shrink-0" />
+            <span className="text-purple-500 font-medium">
+              {conversation.lastMessage.type === 'call_transcript' ? 'Voicemail' : conversation.lastMessage.type === 'call_summary' ? 'Call Summary' : 'Missed Call'}
+            </span>
+          </>
+        ) : (
+          <>
+            {conversation.lastMessage.direction === 'outbound' && '↗ '}
+            {conversation.lastMessage.text || conversation.lastMessage.body || ''}
+          </>
+        )}
       </p>
     )}
   </div>
@@ -1102,6 +1119,44 @@ export default function Messages() {
                             );
                           }
                           
+                          // Call/voicemail rendering
+                          const isCall = message.type === 'call';
+                          const isVoicemail = message.type === 'call_transcript';
+                          const isCallSummary = message.type === 'call_summary';
+                          const isCallEvent = isCall || isVoicemail || isCallSummary;
+
+                          if (isCallEvent) {
+                            const callText = isVoicemail
+                              ? (message.transcript || message.text || message.body || '')
+                              : isCallSummary
+                                ? (message.summary || message.text || message.body || '')
+                                : '';
+                            const callDuration = message.duration ? `${Math.floor(message.duration / 60)}:${String(message.duration % 60).padStart(2, '0')}` : null;
+                            const callTime = message.createdAt || message.timestamp;
+
+                            return (
+                              <div key={message.id || index} className="flex justify-center">
+                                <div className="max-w-[80%] bg-purple-50 dark:bg-purple-900/15 border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2.5">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <PhoneOff className="w-3.5 h-3.5 text-purple-500" />
+                                    <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                                      {isVoicemail ? 'Voicemail Transcript' : isCallSummary ? 'Call Summary' : 'Missed Call'}
+                                    </span>
+                                    {callDuration && (
+                                      <span className="text-[10px] text-purple-400 dark:text-purple-500">{callDuration}</span>
+                                    )}
+                                  </div>
+                                  {callText && (
+                                    <p className="text-sm text-[var(--text-primary)] italic">&ldquo;{callText}&rdquo;</p>
+                                  )}
+                                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                                    {isClient && callTime ? format(new Date(callTime), 'h:mm a') : ''}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+
                           // Regular message rendering
                           return (
                             <div
@@ -1433,10 +1488,21 @@ export default function Messages() {
                             {isClient && conv.updated_at ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) : ''}
                           </span>
                         </div>
-                        {conv.lastMessage && (conv.lastMessage.text || conv.lastMessage.body) && (
-                          <p className="text-sm text-[var(--text-secondary)] truncate">
-                            {conv.lastMessage.direction === 'outbound' && <span className="text-[var(--text-muted)]">You: </span>}
-                            {conv.lastMessage.text || conv.lastMessage.body}
+                        {conv.lastMessage && (
+                          <p className="text-sm text-[var(--text-secondary)] truncate flex items-center gap-1">
+                            {conv.lastMessage.type === 'call' || conv.lastMessage.type === 'call_transcript' || conv.lastMessage.type === 'call_summary' ? (
+                              <>
+                                <PhoneOff className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                                <span className="text-purple-500 font-medium">
+                                  {conv.lastMessage.type === 'call_transcript' ? 'Voicemail' : conv.lastMessage.type === 'call_summary' ? 'Call Summary' : 'Missed Call'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {conv.lastMessage.direction === 'outbound' && <span className="text-[var(--text-muted)]">You: </span>}
+                                {conv.lastMessage.text || conv.lastMessage.body || ''}
+                              </>
+                            )}
                           </p>
                         )}
                       </div>
@@ -1539,6 +1605,44 @@ export default function Messages() {
                             );
                           }
                           
+                          // Call/voicemail rendering (mobile)
+                          const mIsCall = message.type === 'call';
+                          const mIsVoicemail = message.type === 'call_transcript';
+                          const mIsCallSummary = message.type === 'call_summary';
+                          const mIsCallEvent = mIsCall || mIsVoicemail || mIsCallSummary;
+
+                          if (mIsCallEvent) {
+                            const mCallText = mIsVoicemail
+                              ? (message.transcript || message.text || message.body || '')
+                              : mIsCallSummary
+                                ? (message.summary || message.text || message.body || '')
+                                : '';
+                            const mCallDuration = message.duration ? `${Math.floor(message.duration / 60)}:${String(message.duration % 60).padStart(2, '0')}` : null;
+                            const mCallTime = message.createdAt || message.timestamp;
+
+                            return (
+                              <div key={message.id || index} className="flex justify-center px-1">
+                                <div className="max-w-[85%] bg-purple-50 dark:bg-purple-900/15 border border-purple-200 dark:border-purple-800 rounded-2xl px-4 py-2.5">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <PhoneOff className="w-3.5 h-3.5 text-purple-500" />
+                                    <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                                      {mIsVoicemail ? 'Voicemail Transcript' : mIsCallSummary ? 'Call Summary' : 'Missed Call'}
+                                    </span>
+                                    {mCallDuration && (
+                                      <span className="text-[10px] text-purple-400 dark:text-purple-500">{mCallDuration}</span>
+                                    )}
+                                  </div>
+                                  {mCallText && (
+                                    <p className="text-sm text-[var(--text-primary)] italic">&ldquo;{mCallText}&rdquo;</p>
+                                  )}
+                                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                                    {isClient && mCallTime ? formatMessageDate(mCallTime) : ''}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+
                           // Regular message rendering
                           return (
                             <div
