@@ -31,16 +31,21 @@ interface Conversation {
   id: string;
   phone_number: string;
   customer_name: string;
-  messages: Message[];
+  messages?: Message[]; // Optional — not included in lightweight list response
   unread_count: number;
   updated_at: string;
   lastMessage?: Message;
+  messageHistory?: any[];
+  messageCount?: number;
   _debug_invalid_phone?: boolean;
   total_conversations?: number;
   first_contact?: string;
   last_contact?: string;
   location?: string;
   bay?: string;
+  clubai_escalated?: boolean;
+  customer_sentiment?: string;
+  conversation_locked?: boolean;
 }
 
 // Helper function to check if two conversations are effectively the same (for UI purposes)
@@ -53,7 +58,9 @@ const conversationsEqual = (conv1: Conversation | null, conv2: Conversation | nu
     conv1.phone_number === conv2.phone_number &&
     conv1.customer_name === conv2.customer_name &&
     conv1.unread_count === conv2.unread_count &&
-    conv1.updated_at === conv2.updated_at
+    conv1.updated_at === conv2.updated_at &&
+    conv1.clubai_escalated === conv2.clubai_escalated &&
+    conv1.customer_sentiment === conv2.customer_sentiment
   );
 };
 
@@ -72,24 +79,37 @@ const ConversationItem = memo<ConversationItemProps>(({
   onClick,
   formatDistance,
   isClient
-}) => (
+}) => {
+  const needsAttention = conversation.clubai_escalated || conversation.customer_sentiment === 'escalated' || conversation.customer_sentiment === 'needs_attention';
+  return (
   <div
     onClick={onClick}
     className={`p-2.5 cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all duration-200 ease-out transform hover:translate-x-0.5 ${
-      isSelected ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
+      needsAttention
+        ? 'bg-red-50 dark:bg-red-900/15 border-l-4 border-red-500'
+        : isSelected ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
     }`}
   >
     <div className="flex items-start justify-between">
       <div className="flex items-center gap-1.5 min-w-0">
-        <div className="px-1.5 py-0.5 border border-gray-300 rounded text-[10px] font-medium text-gray-600 flex-shrink-0">
+        <div className={`px-1.5 py-0.5 border rounded text-[10px] font-medium flex-shrink-0 ${
+          needsAttention ? 'border-red-400 text-red-600 dark:text-red-400' : 'border-gray-300 text-gray-600'
+        }`}>
           {conversation.bay ? `B${conversation.bay}` : conversation.location ? conversation.location.substring(0, 3).toUpperCase() : 'GEN'}
         </div>
         <span className="font-medium text-xs truncate">
           {conversation.customer_name || 'Unknown'}
         </span>
+        {needsAttention && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500 text-white font-semibold flex-shrink-0">
+            NEEDS HUMAN
+          </span>
+        )}
       </div>
       {conversation.unread_count > 0 && (
-        <span className="bg-[var(--accent)] text-white text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1">
+        <span className={`text-white text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 ${
+          needsAttention ? 'bg-red-500' : 'bg-[var(--accent)]'
+        }`}>
           {conversation.unread_count}
         </span>
       )}
@@ -108,7 +128,8 @@ const ConversationItem = memo<ConversationItemProps>(({
       </p>
     )}
   </div>
-), (prevProps, nextProps) => {
+  );
+}, (prevProps, nextProps) => {
   // Custom comparison function for memo
   return conversationsEqual(prevProps.conversation, nextProps.conversation) &&
          prevProps.isSelected === nextProps.isSelected &&
@@ -142,6 +163,8 @@ export default function Messages() {
   const selectedConversationRef = useRef<Conversation | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
   const loadConversationsRef = useRef<(showRefreshIndicator?: boolean) => Promise<void>>();
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const historyAbortRef = useRef<AbortController | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -249,47 +272,70 @@ export default function Messages() {
     let interval: NodeJS.Timeout | null = null;
     let isTabVisible = true;
     let isMounted = true;
+    let eventSource: EventSource | null = null;
 
     // Initial load
     if (loadConversationsRef.current) {
       loadConversationsRef.current();
     }
 
-    // Setup refresh interval with visibility check
+    // Connect to Server-Sent Events for real-time message updates
+    const connectSSE = () => {
+      const token = tokenManager.getToken();
+      if (!token) return;
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      eventSource = new EventSource(`${apiUrl}/api/messages/events?token=${token}`);
+
+      eventSource.addEventListener('new_message', () => {
+        if (isTabVisible && isMounted && loadConversationsRef.current) {
+          loadConversationsRef.current(false);
+        }
+      });
+
+      eventSource.addEventListener('conversation_update', () => {
+        if (isTabVisible && isMounted && loadConversationsRef.current) {
+          loadConversationsRef.current(false);
+        }
+      });
+
+      eventSource.onerror = () => {
+        // SSE disconnected — fallback polling will cover it
+        logger.debug('SSE connection error, relying on fallback polling');
+      };
+    };
+
+    connectSSE();
+
+    // Fallback polling every 30s (SSE handles real-time, this is safety net)
+    const FALLBACK_POLL_INTERVAL = 30000;
+
     const startRefresh = () => {
-      // Clear any existing interval first
       if (interval) {
         clearInterval(interval);
       }
 
-      // Set up auto-refresh every 10 seconds
       interval = setInterval(() => {
-        // Only refresh if tab is visible and component is mounted
         if (isTabVisible && isMounted && loadConversationsRef.current) {
           loadConversationsRef.current(false);
         }
-      }, 10000);
+      }, FALLBACK_POLL_INTERVAL);
 
-      // Only set state if component is mounted
       if (isMounted) {
         setRefreshInterval(interval);
       }
     };
 
-    // Handle visibility changes
     const handleVisibilityChange = () => {
       isTabVisible = !document.hidden;
 
       if (isTabVisible && isMounted && loadConversationsRef.current) {
-        // Reload when tab becomes visible
         loadConversationsRef.current(false);
       }
     };
 
-    // Start refresh
     startRefresh();
 
-    // Add visibility change listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
@@ -297,7 +343,12 @@ export default function Messages() {
       if (interval) {
         clearInterval(interval);
       }
+      if (eventSource) {
+        eventSource.close();
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      abortControllerRef.current?.abort();
+      historyAbortRef.current?.abort();
     };
   }, []); // Empty dependencies - we use the ref
 
@@ -397,8 +448,13 @@ export default function Messages() {
         return;
       }
 
+      // Abort any in-flight conversation request before starting new one
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
+
       const response = await http.get(`messages/conversations`, {
-        params: { limit: 15 }  // Optimized: reduced from 25 to 15 for faster initial load
+        params: { limit: 15 },
+        signal: abortControllerRef.current.signal
       });
 
       if (response.data.success) {
@@ -427,13 +483,14 @@ export default function Messages() {
           });
 
           // Check if conversations actually changed to prevent unnecessary re-renders
-          const hasChanged = JSON.stringify(prevConversations.map(c => ({
-            id: c.id,
-            updated_at: c.updated_at
-          }))) !== JSON.stringify(sortedConversations.map((c: Conversation) => ({
-            id: c.id,
-            updated_at: c.updated_at
-          })));
+          // Lightweight comparison — no JSON.stringify, just compare key fields
+          const hasChanged = prevConversations.length !== sortedConversations.length ||
+            prevConversations.some((prev: Conversation, i: number) => {
+              const next = sortedConversations[i];
+              return prev.id !== next.id ||
+                     prev.updated_at !== next.updated_at ||
+                     prev.unread_count !== next.unread_count;
+            });
 
           // Only return new array if actually changed
           if (!hasChanged) {
@@ -465,54 +522,14 @@ export default function Messages() {
           );
           
           if (updated) {
-            const updatedMessages = Array.isArray(updated.messages) ? updated.messages : [];
-            const currentMessageCount = messages.length;
-            const updatedMessageCount = updatedMessages.length;
-
-            // Only update selectedConversation if data has actually changed
-            // This prevents unnecessary re-renders and flashing
+            // Update selected conversation metadata (not messages — those come from full-history)
             setSelectedConversation(prevConversation => {
-              // Use efficient comparison instead of JSON.stringify
               if (!conversationsEqual(prevConversation, updated)) {
-                return updated;
+                // Preserve any full-history data already loaded
+                return { ...updated, messages: prevConversation?.messages };
               }
               return prevConversation;
             });
-
-            // Deduplicate messages by ID to prevent duplicates
-            const uniqueMessages = updatedMessages.reduce((acc: Message[], msg: Message) => {
-              if (!acc.find(m => m.id === msg.id)) {
-                acc.push(msg);
-              }
-              return acc;
-            }, []);
-
-            // Only update messages if they've actually changed
-            // This prevents unnecessary re-renders and flashing
-            setMessages(prevMessages => {
-              return messagesHaveChanged(prevMessages, uniqueMessages) ? uniqueMessages : prevMessages;
-            });
-            
-            // Check if there are new messages by comparing counts and checking the last message
-            if (updatedMessageCount > currentMessageCount) {
-              const newMessagesCount = updatedMessageCount - currentMessageCount;
-              const lastMessage = updatedMessages[updatedMessages.length - 1];
-              
-              // Show notification for new inbound messages
-              if (lastMessage && lastMessage.direction === 'inbound') {
-                toast.success(`New message from ${updated.customer_name || 'customer'}`, {
-                  duration: 3000,
-                  icon: '💬'
-                });
-              }
-              
-              // Scroll to bottom to show new messages
-              setTimeout(() => {
-                scrollToBottom('smooth');
-              }, 100);
-              
-              logger.debug(`Updated conversation with ${newMessagesCount} new message(s)`);
-            }
           } else {
             logger.warn('Could not find updated conversation for phone:', currentSelectedConversation.phone_number);
           }
@@ -577,13 +594,18 @@ export default function Messages() {
       try {
         const token = tokenManager.getToken();
         if (token) {
+          // Abort any in-flight history request before starting new one
+          historyAbortRef.current?.abort();
+          historyAbortRef.current = new AbortController();
+
           // Fetch complete history for this phone number
           const historyResponse = await http.get(
-            `messages/conversations/${conversation.phone_number}/full-history`
+            `messages/conversations/${conversation.phone_number}/full-history`,
+            { signal: historyAbortRef.current.signal }
           );
 
           if (historyResponse.data.success) {
-            const { messages, total_conversations, first_contact, last_contact } = historyResponse.data.data;
+            const { messages: fetchedMessages, total_conversations, first_contact, last_contact, hasMore, oldestTimestamp } = historyResponse.data.data;
 
             // Update selected conversation with full history info (single update)
             const conversationWithHistory = {
@@ -596,19 +618,18 @@ export default function Messages() {
             // Set conversation only once with all data
             setSelectedConversation(conversationWithHistory);
 
-            // For better UX, only show recent messages initially (last 30-50 messages)
-            // This prevents long scroll animations on conversations with extensive history
+            // Show all returned messages (backend now handles limiting to 100)
             const INITIAL_MESSAGE_COUNT = 30;
-            const recentMessages = messages.length > INITIAL_MESSAGE_COUNT
-              ? messages.slice(-INITIAL_MESSAGE_COUNT)
-              : messages;
+            const recentMessages = fetchedMessages.length > INITIAL_MESSAGE_COUNT
+              ? fetchedMessages.slice(-INITIAL_MESSAGE_COUNT)
+              : fetchedMessages;
 
             // Update messages smoothly - new data replaces old
             setMessages(recentMessages);
 
-            // Store full history and track if there are more messages
-            setFullMessageHistory(messages);
-            setHasMoreMessages(messages.length > INITIAL_MESSAGE_COUNT);
+            // Store fetched history and track if there are more messages on server
+            setFullMessageHistory(fetchedMessages);
+            setHasMoreMessages(fetchedMessages.length > INITIAL_MESSAGE_COUNT || hasMore);
 
             // Mark as read using shared context
             await markConversationAsRead(conversation.phone_number);
@@ -631,18 +652,8 @@ export default function Messages() {
         logger.error('Error fetching conversation history:', error);
         toast.error('Failed to load conversation history');
 
-        // Set conversation even on error
+        // Set conversation even on error — keep existing messages if any
         setSelectedConversation(conversation);
-
-        // Fallback to local messages if API fails
-        const conversationMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
-        const uniqueMessages = conversationMessages.reduce((acc: Message[], msg: Message) => {
-          if (!acc.find(m => m.id === msg.id)) {
-            acc.push(msg);
-          }
-          return acc;
-        }, []);
-        setMessages(uniqueMessages);
       }
     } else {
       // If no phone number, still set the conversation
@@ -1223,8 +1234,12 @@ export default function Messages() {
                             disabled={!newMessage.trim() || sending}
                             className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
                           >
-                            <Send className="w-4 h-4" />
-                            <span>Send</span>
+                            {sending ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                            <span>{sending ? 'Sending...' : 'Send'}</span>
                           </button>
                         </form>
                       </div>
@@ -1678,7 +1693,11 @@ export default function Messages() {
                         className="p-3 bg-[var(--accent)] text-white rounded-full disabled:opacity-50"
                         style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
-                        <Send className="w-5 h-5" />
+                        {sending ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Send className="w-5 h-5" />
+                        )}
                       </button>
                     </form>
                   </div>

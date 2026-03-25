@@ -126,6 +126,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         { href: '/bookings', label: 'Bookings', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/messages', label: 'Messages', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/tickets', label: 'Tickets', roles: ['admin', 'operator'] as UserRole[] },
+        { href: '/clubai', label: 'ClubAI', roles: ['admin', 'operator'] as UserRole[] },
         { href: '/checklists', label: 'Checklists', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/commands', label: 'Commands', roles: ['admin', 'operator', 'support'] as UserRole[] },
         { href: '/operations', label: 'Operations', roles: ['admin', 'operator'] as UserRole[] },
@@ -142,7 +143,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
         <nav className="fixed bottom-0 left-0 right-0 bg-[var(--bg-primary)] border-t border-[var(--border-primary)] lg:hidden z-30 shadow-lg pb-safe">
           <div className="flex items-center justify-around h-16">
             {navItems.slice(0, 5).map((item) => {
-              const isActive = router.pathname === item.href;
+              const isActive = router.pathname === item.href || (item.href === '/clubai' && router.pathname === '/operations');
               return (
                 <Link
                   key={item.href}
@@ -168,6 +169,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                   )}
                   {item.href === '/tickets' && <div className="w-6 h-6 flex items-center justify-center"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg></div>}
                   {item.href === '/commands' && <div className="w-6 h-6 flex items-center justify-center"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg></div>}
+                  {item.href === '/clubai' && <div className="w-6 h-6 flex items-center justify-center"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 01-1.59.659H9.06a2.25 2.25 0 01-1.591-.659L5 14.5m14 0V5a2 2 0 00-2-2H7a2 2 0 00-2 2v9.5" /></svg></div>}
                   {item.href === '/checklists' && <div className="w-6 h-6 flex items-center justify-center"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg></div>}
                   {item.href === '/operations' && <div className="w-6 h-6 flex items-center justify-center"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></div>}
                   <span className={`text-xs font-medium mt-0.5 ${isActive ? 'transform scale-110' : ''}`}>
@@ -311,7 +313,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
                     href={item.href}
                     className={`
                       px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2
-                      ${router.pathname === item.href
+                      ${(router.pathname === item.href || (item.href === '/clubai' && router.pathname === '/operations'))
                         ? 'bg-[var(--accent)] text-white'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                       }
@@ -537,7 +539,7 @@ const Navigation: React.FC<NavigationProps> = ({ unreadMessages = 0 }) => {
               href={item.href}
               className={`
                 flex items-center justify-between px-4 py-3 rounded-md text-base font-medium transition-all duration-200 touch-manipulation
-                ${router.pathname === item.href
+                ${(router.pathname === item.href || (item.href === '/clubai' && router.pathname === '/operations'))
                   ? 'bg-[var(--accent)] text-white'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                 }

@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.2] - 2026-03-25
+
+### Added
+- **Red highlight for escalated conversations** — On the Messages page, conversations where ClubAI has escalated or the customer needs human attention now show with a red left border, red-tinted background, and a "NEEDS HUMAN" badge. Unread count badge also turns red. Makes it instantly obvious which conversations need operator attention.
+- **ClubAI in main nav** — ClubAI now has its own spot in the navigation menu (between Tickets and Checklists) instead of being buried inside Operations. Clicking it goes straight to the ClubAI page. Active state highlights when on ClubAI/Operations.
+
+### Changed
+- Backend `/messages/conversations` endpoint now includes `clubai_escalated`, `customer_sentiment`, and `conversation_locked` fields for each conversation.
+- Navigation order: Dashboard | Bookings | Messages | Tickets | **ClubAI** | Checklists | Commands | Operations
+
 ## [1.29.1] - 2026-03-25
 
 ### Added

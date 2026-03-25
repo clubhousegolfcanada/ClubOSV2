@@ -195,6 +195,9 @@ router.get('/conversations',
             END as message_history,
             ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
             ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+            COALESCE(clubai_escalated, false) as clubai_escalated,
+            COALESCE(customer_sentiment, 'neutral') as customer_sentiment,
+            COALESCE(conversation_locked, false) as conversation_locked,
             created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
             ROW_NUMBER() OVER (PARTITION BY phone_number ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC) as rn
           FROM openphone_conversations
