@@ -5,6 +5,15 @@ All notable changes to the ClubOSV1 Backend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.18] - 2026-03-25
+
+### Fixed
+- Receipt HST/tax not displaying — backfill migration (363) populates `hst_cents` and `tax_cents` from stored `ocr_json`
+- Summary HST total now falls back to `tax_cents` when `hst_cents` is NULL
+- Receipt table HST column now shows tax when HST is missing (NS: Tax = HST)
+- CSV/ZIP exports now include tax fallback for HST column
+- Future uploads auto-copy `taxAmount` to `hst_cents` when `hstAmount` is not extracted
+
 ## [1.11.17] - 2025-01-09
 
 ### Added

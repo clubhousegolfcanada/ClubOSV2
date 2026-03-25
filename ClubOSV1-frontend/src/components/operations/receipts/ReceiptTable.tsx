@@ -163,7 +163,7 @@ export const ReceiptTable: React.FC<ReceiptTableProps> = ({
                   {formatCents(r.amount_cents)}
                 </td>
                 <td className="px-3 py-2.5 text-sm text-gray-500 whitespace-nowrap">
-                  {formatCents(r.hst_cents)}
+                  {formatCents(r.hst_cents ?? r.tax_cents)}
                 </td>
                 <td className="px-3 py-2.5">
                   {r.category ? (
