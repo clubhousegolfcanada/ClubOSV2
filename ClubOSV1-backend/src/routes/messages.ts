@@ -36,7 +36,7 @@ const getCacheKey = (userId: string, limit: number, offset: number, search?: str
 
 // Schema check cache — avoids hitting information_schema on every request
 let schemaChecked = false;
-let schemaColumns = { hasUnreadCount: false, hasLastReadAt: false, hasUpdatedAt: false };
+let schemaColumns = { hasUnreadCount: false, hasLastReadAt: false, hasUpdatedAt: false, hasClubaiEscalated: false, hasCustomerSentiment: false, hasConversationLocked: false };
 
 async function ensureSchemaChecked(): Promise<typeof schemaColumns> {
   if (schemaChecked) return schemaColumns;
@@ -45,7 +45,7 @@ async function ensureSchemaChecked(): Promise<typeof schemaColumns> {
     SELECT column_name
     FROM information_schema.columns
     WHERE table_name = 'openphone_conversations'
-    AND column_name IN ('unread_count', 'last_read_at', 'updated_at')
+    AND column_name IN ('unread_count', 'last_read_at', 'updated_at', 'clubai_escalated', 'customer_sentiment', 'conversation_locked')
   `);
 
   const cols = columnCheck.rows.map((row: any) => row.column_name);
@@ -53,6 +53,9 @@ async function ensureSchemaChecked(): Promise<typeof schemaColumns> {
     hasUnreadCount: cols.includes('unread_count'),
     hasLastReadAt: cols.includes('last_read_at'),
     hasUpdatedAt: cols.includes('updated_at'),
+    hasClubaiEscalated: cols.includes('clubai_escalated'),
+    hasCustomerSentiment: cols.includes('customer_sentiment'),
+    hasConversationLocked: cols.includes('conversation_locked'),
   };
   schemaChecked = true;
   logger.info('Schema check cached', { schemaColumns });
@@ -173,7 +176,7 @@ router.get('/conversations',
       const requestPromise = (async () => {
         try {
       // Use cached schema check instead of querying information_schema every time
-      const { hasUnreadCount, hasLastReadAt, hasUpdatedAt } = await ensureSchemaChecked();
+      const { hasUnreadCount, hasLastReadAt, hasUpdatedAt, hasClubaiEscalated, hasCustomerSentiment, hasConversationLocked } = await ensureSchemaChecked();
 
       // LIGHTWEIGHT QUERY: Only fetch metadata + last message + last 3 for preview
       // No full messages array — saves ~95% bandwidth vs loading 30 msgs per conversation
@@ -195,9 +198,9 @@ router.get('/conversations',
             END as message_history,
             ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
             ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
-            COALESCE(clubai_escalated, false) as clubai_escalated,
-            COALESCE(customer_sentiment, 'neutral') as customer_sentiment,
-            COALESCE(conversation_locked, false) as conversation_locked,
+            ${hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
+            ${hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
+            ${hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
             created_at${hasUpdatedAt ? ',\n            updated_at' : ''},
             ROW_NUMBER() OVER (PARTITION BY phone_number ORDER BY ${hasUpdatedAt ? 'updated_at' : 'created_at'} DESC) as rn
           FROM openphone_conversations
