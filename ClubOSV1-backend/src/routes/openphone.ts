@@ -1353,11 +1353,115 @@ router.post('/webhook', async (req: Request, res: Response) => {
         
         }
         
-        logger.info('OpenPhone call stored', { 
+        logger.info('OpenPhone call stored', {
           conversationId: callConversationId,
-          phoneNumber: callPhoneNumber, 
-          duration: data.duration 
+          phoneNumber: callPhoneNumber,
+          duration: data.duration,
+          status: data.status,
+          direction: data.direction,
+          answeredAt: data.answeredAt
         });
+
+        // --- MISSED CALL AUTO-TEXT ---
+        // Detect missed inbound calls and send a friendly text so ClubAI can help over SMS
+        const isMissedCall = (
+          (data.direction === 'incoming' || data.direction === 'inbound') &&
+          (data.status === 'missed' || data.status === 'no-answer' || data.status === 'abandoned' || data.answeredAt === null) &&
+          data.status !== 'completed' && data.status !== 'answered'
+        );
+
+        if (isMissedCall) {
+          logger.info('[ClubAI MissedCall] Missed inbound call detected', {
+            phoneNumber: callPhoneNumber,
+            status: data.status,
+            duration: data.duration,
+            hasVoicemail: !!data.voicemail
+          });
+
+          // Check if ClubAI is enabled (bypass approval mode — this is a static message)
+          let missedCallEnabled = false;
+          try {
+            const mcConfig = await db.query(`
+              SELECT config_value FROM pattern_learning_config
+              WHERE config_key = 'clubai_enabled'
+            `);
+            missedCallEnabled = mcConfig.rows[0]?.config_value === 'true';
+          } catch {
+            missedCallEnabled = process.env.CLUBAI_ENABLED === 'true';
+          }
+
+          const missedCallDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+
+          if (missedCallEnabled && missedCallDefaultNumber) {
+            // 1-hour cooldown: check if we already texted this customer recently
+            try {
+              const cooldownCheck = await db.query(`
+                SELECT missed_call_text_sent_at
+                FROM openphone_conversations
+                WHERE phone_number = $1
+                  AND missed_call_text_sent_at > NOW() - INTERVAL '1 hour'
+                LIMIT 1
+              `, [callPhoneNumber]);
+
+              if (cooldownCheck.rows.length === 0 || !cooldownCheck.rows[0].missed_call_text_sent_at) {
+                // Pick the right message based on time of day (Atlantic Time = UTC-4 / UTC-3 DST)
+                const now = new Date();
+                const atlanticOffset = -4; // AST (adjust to -3 for ADT if needed)
+                const atlanticHour = (now.getUTCHours() + atlanticOffset + 24) % 24;
+                const isAfterHours = atlanticHour >= 21 || atlanticHour < 9; // 9PM-9AM
+
+                const missedCallMsg = isAfterHours
+                  ? 'After 9PM phone support is no longer available, is there anything we can help with over text? - ClubAI'
+                  : 'Sorry we missed your call, we are currently helping another golfer. Is there anything we can help with over text? - ClubAI';
+
+                await openPhoneService.sendMessage(callPhoneNumber, missedCallDefaultNumber, missedCallMsg);
+
+                // Get the conversation ID for storing the AI message
+                const convForMsg = existingCallConv.rows.length > 0
+                  ? existingCallConv.rows[0].id
+                  : (await db.query(`SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY created_at DESC LIMIT 1`, [callPhoneNumber])).rows[0]?.id;
+
+                if (convForMsg) {
+                  // Mark cooldown so we don't double-text
+                  await db.query(`
+                    UPDATE openphone_conversations
+                    SET missed_call_text_sent_at = NOW(), clubai_active = true
+                    WHERE id = $1
+                  `, [convForMsg]);
+
+                  // Store in conversation_messages so ClubAI has context for follow-up
+                  try {
+                    await db.query(`
+                      INSERT INTO conversation_messages (conversation_id, sender_type, message_text, ai_reasoning)
+                      VALUES ($1, 'ai', $2, $3)
+                    `, [
+                      String(convForMsg),
+                      missedCallMsg,
+                      JSON.stringify({ source: 'ClubAI', type: 'missed-call-auto-text', callStatus: data.status })
+                    ]);
+                  } catch (msgErr) {
+                    logger.warn('[ClubAI MissedCall] Failed to store message in conversation_messages:', msgErr);
+                  }
+                }
+
+                logger.info('[ClubAI MissedCall] Auto-text sent', {
+                  phoneNumber: callPhoneNumber,
+                  isAfterHours,
+                  atlanticHour,
+                  callStatus: data.status
+                });
+              } else {
+                logger.info('[ClubAI MissedCall] Skipped — cooldown active (already texted within 1 hour)', {
+                  phoneNumber: callPhoneNumber,
+                  lastSentAt: cooldownCheck.rows[0].missed_call_text_sent_at
+                });
+              }
+            } catch (missedCallErr) {
+              logger.error('[ClubAI MissedCall] Error processing missed call auto-text:', missedCallErr);
+            }
+          }
+        }
+
         break;
 
       case 'call.summary.completed':

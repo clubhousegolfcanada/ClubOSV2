@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.1] - 2026-03-25
+
+### Added
+- **Missed Call Auto-Text** — When a customer calls and nobody answers, ClubAI automatically sends a text: "Sorry we missed your call, we are currently helping another golfer. Is there anything we can help with over text?" After 9PM Atlantic: "After 9PM phone support is no longer available, is there anything we can help with over text?" This sparks a text conversation where ClubAI can handle simple questions immediately.
+- **1-hour cooldown** — Same customer won't get a second missed-call text within 1 hour, even if they call multiple times. Answered calls never trigger the text.
+- **Bypasses approval mode** — The missed-call text is a static message (not AI-generated), so it sends immediately even when ClubAI is in approval mode.
+- **Conversation context** — The auto-text is stored in `conversation_messages` so when the customer replies, ClubAI has context that this started from a missed call.
+
+### Database
+- Migration 365: `missed_call_text_sent_at` column on `openphone_conversations` for cooldown tracking.
+
 ## [1.29.0] - 2026-03-25
 
 ### Added
