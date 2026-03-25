@@ -194,7 +194,8 @@ export const OperationsClubAI: React.FC = () => {
       ]);
       if (configRes.data?.data) setConfig(configRes.data.data);
       if (statsRes.data?.data) setStats(statsRes.data.data);
-      if (safetyRes.data?.data) setSafety(prev => ({ ...prev, ...safetyRes.data.data }));
+      const safetyData = safetyRes.data?.data || safetyRes.data?.thresholds;
+      if (safetyData) setSafety(prev => ({ ...prev, ...safetyData }));
       if (kStatsRes.data?.data) setKnowledgeStats(kStatsRes.data.data);
     } catch { /* defaults fine */ }
     setLoading(false);

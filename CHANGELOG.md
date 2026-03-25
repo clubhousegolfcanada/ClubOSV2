@@ -4,6 +4,10 @@ All notable changes to ClubOS will be documented in this file.
 
 ## [1.28.8] - 2026-03-25
 
+### Fixed
+- **CRITICAL: ClubAI page showed "Disabled" and all buttons were non-functional** — The `pattern_learning_config` database table was never seeded with ClubAI config keys (`clubai_enabled`, `clubai_shadow_mode`, `clubai_approval_mode`, `clubai_max_messages`). The GET endpoint returned empty defaults (`enabled: false`) even though ClubAI was active via env vars. Config endpoint now falls back to `CLUBAI_ENABLED` env var and auto-seeds missing DB rows on first load.
+- **Safety thresholds never loaded** — Backend returned `{ thresholds: {...} }` but frontend expected `{ data: {...} }`. Frontend now reads both keys.
+
 ### Added
 - **Knowledge Entry Browser** — New "Browse Entries" panel on ClubAI page lets operators view all knowledge base entries with filters by source type (conversation/website/manual) and intent category (club_rental, pricing, etc.). Paginated, shows confidence scores, usage counts, and feedback stats.
 - **Edit Knowledge Entries** — Inline edit mode for any knowledge entry. Change the intent, question, answer, or confidence score. Embedding is automatically regenerated when text changes.

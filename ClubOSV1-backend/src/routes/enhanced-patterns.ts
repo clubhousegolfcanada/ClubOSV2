@@ -2227,7 +2227,7 @@ router.get('/clubai-knowledge', authenticate, async (_req: Request, res: Respons
 
 /**
  * GET /api/patterns/clubai-config
- * Get ClubAI configuration from pattern_learning_config
+ * Get ClubAI configuration from pattern_learning_config, with env var fallbacks
  */
 router.get('/clubai-config', authenticate, async (_req: Request, res: Response) => {
   try {
@@ -2241,13 +2241,46 @@ router.get('/clubai-config', authenticate, async (_req: Request, res: Response) 
       config[row.config_key] = row.config_value;
     }
 
+    // If no DB rows exist yet, seed them from env vars / sensible defaults
+    // This ensures the UI reflects reality on first load
+    const enabled = config.clubai_enabled !== undefined
+      ? config.clubai_enabled === 'true'
+      : process.env.CLUBAI_ENABLED === 'true';
+    const shadowMode = config.clubai_shadow_mode !== undefined
+      ? config.clubai_shadow_mode === 'true'
+      : process.env.CLUBAI_SHADOW_MODE === 'true';
+    const approvalMode = config.clubai_approval_mode !== undefined
+      ? config.clubai_approval_mode === 'true'
+      : false;
+    const maxMessages = config.clubai_max_messages !== undefined
+      ? parseInt(config.clubai_max_messages)
+      : parseInt(process.env.CLUBAI_MAX_MESSAGES || '5');
+
+    // If DB was empty, seed it so future reads and writes are consistent
+    if (result.rows.length === 0) {
+      const defaults = [
+        { key: 'clubai_enabled', value: String(enabled) },
+        { key: 'clubai_shadow_mode', value: String(shadowMode) },
+        { key: 'clubai_approval_mode', value: String(approvalMode) },
+        { key: 'clubai_max_messages', value: String(maxMessages) },
+      ];
+      for (const { key, value } of defaults) {
+        await db.query(`
+          INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+          VALUES ($1, $2, NOW())
+          ON CONFLICT (config_key) DO NOTHING
+        `, [key, value]);
+      }
+      logger.info('[ClubAI Config] Seeded missing config keys from env vars', { enabled, shadowMode, approvalMode, maxMessages });
+    }
+
     return res.json({
       success: true,
       data: {
-        enabled: config.clubai_enabled === 'true',
-        shadowMode: config.clubai_shadow_mode === 'true',
-        approvalMode: config.clubai_approval_mode === 'true',
-        maxMessages: parseInt(config.clubai_max_messages || '5')
+        enabled,
+        shadowMode,
+        approvalMode,
+        maxMessages
       }
     });
   } catch (error) {
