@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.7] - 2026-03-24
+
+### Fixed
+- **ClubAI hallucinated gift card URL** — AI sent customers to `/giftcards` (non-existent) instead of `/giftcard/purchase`. Added `correctKnownUrls()` sanitizer that catches and replaces hallucinated clubhouse247golf.com URLs with canonical ones before any response is sent. Applied to both `checkGiftCardAutomation` and `handleGiftCardWithLLM` paths. Also hardcoded the correct gift card URL in `knowledgeSearchService` instead of extracting it from potentially-stale knowledge store data.
+
 ## [1.28.6] - 2026-03-23
 
 ### Added

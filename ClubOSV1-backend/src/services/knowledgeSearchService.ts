@@ -320,7 +320,7 @@ export class KnowledgeSearchService {
    * Search for VERY RECENT uploads in audit log (last 10 minutes)
    * This ensures freshly added knowledge is immediately available
    */
-  private async searchRecentAuditLog(query: string, assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
+  private async searchRecentAuditLog(query: string, _assistantType: string | undefined, limit: number): Promise<SearchResult[]> {
     try {
       const searchTerms = query.toLowerCase()
         .replace(/[?!.,;:]/g, '')
@@ -562,85 +562,6 @@ export class KnowledgeSearchService {
   }
 
   /**
-   * Search the extracted_knowledge table
-   */
-  private async searchExtractedKnowledge(query: string, limit: number): Promise<SearchResult[]> {
-    // Don't check db.initialized here - just try the query
-    try {
-      // First check if the table exists and what columns it has
-      const tableCheck = await db.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'extracted_knowledge'
-        LIMIT 1
-      `);
-
-      if (tableCheck.rows.length === 0) {
-        // Table doesn't exist
-        return [];
-      }
-
-      // Use same stop word filtering
-      const stopWords = new Set(['does', 'do', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'again', 'further', 'then', 'once', 'we', 'you', 'your', 'them', 'their', 'what', 'which', 'who', 'when', 'where', 'why', 'how', 'all', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just', 'should', 'now', 'offer', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'would', 'could', 'ought', 'may', 'might', 'must', 'shall', 'should', 'would', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being']);
-      const businessStopWords = new Set(['clubhouse', 'club', 'house', 'golf', 'simulator']);
-      
-      const searchTerms = query.toLowerCase()
-        .replace(/[?!.,;:]/g, '')
-        .split(' ')
-        .filter(term => term.length > 2 && !stopWords.has(term) && !businessStopWords.has(term));
-      
-      // Use simpler query that works with actual table structure
-      let sql = `
-        SELECT 
-          problem,
-          solution,
-          confidence,
-          category
-        FROM extracted_knowledge
-        WHERE applied_to_sop = false
-      `;
-
-      const params: any[] = [];
-
-      // Add search conditions
-      if (searchTerms.length > 0) {
-        const searchConditions = searchTerms.map((_, index) => {
-          params.push(`%${searchTerms[index]}%`);
-          return `(LOWER(problem) LIKE $${params.length} OR LOWER(solution) LIKE $${params.length})`;
-        });
-        sql += ` AND (${searchConditions.join(' OR ')})`;
-      }
-
-      sql += ` ORDER BY confidence DESC, created_at DESC LIMIT $${params.length + 1}`;
-      params.push(limit);
-
-      const result = await db.query(sql, params);
-
-      return result.rows.map((row: any) => {
-        // Calculate relevance
-        const contentLower = `${row.problem} ${row.solution}`.toLowerCase();
-        const matchCount = searchTerms.filter(term => contentLower.includes(term)).length;
-        const relevance = searchTerms.length > 0 ? matchCount / searchTerms.length : 0.3;
-
-        return {
-          key: `extracted.${row.category || 'general'}`,
-          value: {
-            problem: row.problem,
-            solution: row.solution,
-            content: row.solution
-          },
-          confidence: row.confidence || 0.5,
-          relevance,
-          source: 'extracted_knowledge'
-        };
-      });
-    } catch (error) {
-      logger.error('Error searching extracted_knowledge:', error);
-      return [];
-    }
-  }
-
-  /**
    * Get knowledge by exact key
    */
   async getKnowledgeByKey(key: string): Promise<SearchResult | null> {
@@ -739,13 +660,9 @@ export class KnowledgeSearchService {
 
     if (uniqueResults.length === 0) return '';
 
-    // Special handling for gift cards
+    // Special handling for gift cards — always use the canonical URL to prevent hallucinated links
     if (uniqueResults.some(r => r.content.toLowerCase().includes('gift'))) {
-      // Find the result with the URL (most actionable)
-      const withUrl = uniqueResults.find(r => r.content.includes('clubhouse247golf.com'));
-      if (withUrl) {
-        return `Yes, we offer gift cards! You can purchase them online at ${this.extractUrl(withUrl.content)}`;
-      }
+      return 'Yes, we offer gift cards! You can purchase them online at www.clubhouse247golf.com/giftcard/purchase';
     }
 
     // Return the HIGHEST SCORING result, not the longest!
@@ -763,93 +680,9 @@ export class KnowledgeSearchService {
   }
   
   /**
-   * Calculate string similarity (simple Levenshtein-based)
-   */
-  private calculateStringSimilarity(str1: string, str2: string): number {
-    const longer = str1.length > str2.length ? str1 : str2;
-    const shorter = str1.length > str2.length ? str2 : str1;
-    
-    if (longer.length === 0) return 1.0;
-    
-    const editDistance = this.levenshteinDistance(longer, shorter);
-    return (longer.length - editDistance) / longer.length;
-  }
-  
-  /**
-   * Calculate Levenshtein distance between two strings
-   */
-  private levenshteinDistance(str1: string, str2: string): number {
-    const matrix: number[][] = [];
-    
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-    
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-    
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
-          );
-        }
-      }
-    }
-    
-    return matrix[str2.length][str1.length];
-  }
-  
-  /**
-   * Extract URL from text
-   */
-  private extractUrl(text: string): string {
-    const urlMatch = text.match(/(?:www\.|https?:\/\/)?clubhouse247golf\.com[^\s]*/i);
-    if (urlMatch) {
-      let url = urlMatch[0];
-      // Ensure it starts with https://
-      if (!url.startsWith('http')) {
-        url = 'https://' + url;
-      }
-      return url;
-    }
-    return 'https://clubhouse247golf.com/giftcard/purchase';
-  }
-  
-  /**
-   * Extract unique information from a result that's not in the primary result
-   */
-  private extractUniqueInfo(result: string, primary: string): string {
-    const primaryLower = primary.toLowerCase();
-    const words = result.split(/\s+/);
-    
-    // Look for unique facts not in primary
-    const uniqueFacts: string[] = [];
-    
-    // Check for expiry information
-    if (result.toLowerCase().includes('expir') && !primaryLower.includes('expir')) {
-      const expiryMatch = result.match(/[^.]*expir[^.]*/i);
-      if (expiryMatch) uniqueFacts.push(expiryMatch[0].trim());
-    }
-    
-    // Check for digital/physical distinction
-    if (result.toLowerCase().includes('digital') && !primaryLower.includes('digital')) {
-      uniqueFacts.push('Digital gift cards available');
-    }
-    
-    return uniqueFacts.join('. ');
-  }
-
-  /**
    * Log search for analytics
    */
-  private async logSearch(query: string, found: boolean): Promise<void> {
+  private async logSearch(query: string, _found: boolean): Promise<void> {
     try {
       // Check if knowledge_patterns table exists
       const tableExists = await db.query(`

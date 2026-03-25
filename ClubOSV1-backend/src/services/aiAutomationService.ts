@@ -4,7 +4,7 @@ import { openPhoneService } from './openphoneService';
 import ninjaoneService from './ninjaone';
 import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automations';
 import { assistantService } from './assistantService';
-import { calculateConfidence, findBestAutomation } from './aiAutomationPatterns';
+import { calculateConfidence } from './aiAutomationPatterns';
 import { patternSafetyService } from './patternSafetyService';
 import { cacheService } from './cacheService';
 import OpenAI from 'openai';
@@ -15,13 +15,6 @@ interface AutomationResponse {
   requiresConfirmation?: boolean;
   confirmationKey?: string;
   assistantType?: string;
-}
-
-interface PendingConfirmation {
-  featureKey: string;
-  phoneNumber: string;
-  action: () => Promise<void>;
-  expiresAt: Date;
 }
 
 // REMOVED: In-memory confirmations map that caused memory leak
@@ -120,88 +113,6 @@ export class AIAutomationService {
       return true;
     } catch (error) {
       logger.error('Failed to send automatic response:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Execute an action (like resetting trackman or unlocking door)
-   */
-  private async executeAction(
-    action: any,
-    phoneNumber: string,
-    conversationId: string,
-    featureKey: string
-  ): Promise<boolean> {
-    try {
-      // Check if we can execute actions for this feature
-      const feature = await db.query(
-        'SELECT can_execute_actions, enabled FROM ai_automation_features WHERE feature_key = $1',
-        [featureKey]
-      );
-      
-      if (!feature.rows[0]?.can_execute_actions || !feature.rows[0]?.enabled) {
-        logger.info('Automatic action execution disabled for feature', { featureKey });
-        return false;
-      }
-      
-      let success = false;
-      let responseText = '';
-      
-      // Execute the action based on type
-      switch (action.type) {
-        case 'trackman_reset':
-          if (action.bayNumber) {
-            // NinjaOne service method needs to be implemented or use existing method
-            try {
-              // For now, log the intent - actual implementation depends on NinjaOne service
-              logger.info('Trackman reset requested', { bayNumber: action.bayNumber });
-              success = false; // Set to false until NinjaOne method is available
-              responseText = `I've noted the Trackman issue in Bay ${action.bayNumber}. A staff member will assist you shortly.`;
-            } catch (err) {
-              success = false;
-              responseText = `I couldn't reset the Trackman automatically. A staff member has been notified and will help you shortly.`;
-            }
-          }
-          break;
-          
-        case 'door_unlock':
-          // Future implementation for door unlocking
-          logger.info('Door unlock requested but not yet implemented');
-          break;
-          
-        default:
-          logger.warn('Unknown action type:', action.type);
-      }
-      
-      // Send response to customer if we have one
-      if (responseText && success) {
-        await this.sendAutomaticResponse(phoneNumber, responseText, conversationId, featureKey);
-      }
-      
-      // Log the action
-      await db.query(`
-        INSERT INTO ai_automation_actions (
-          feature_id,
-          conversation_id,
-          phone_number,
-          action_type,
-          action_details,
-          status,
-          executed_at,
-          executed_by,
-          response_text
-        ) VALUES (
-          (SELECT id FROM ai_automation_features WHERE feature_key = $1),
-          $2, $3, $4, $5, $6, NOW(), 'ai_auto', $7
-        )`,
-        [featureKey, conversationId, phoneNumber, action.type, action, 
-         success ? 'completed' : 'failed', responseText]
-      );
-      
-      return success;
-    } catch (error) {
-      logger.error('Failed to execute action:', error);
       return false;
     }
   }
@@ -319,8 +230,8 @@ export class AIAutomationService {
    * Analyze message with LLM to determine if it needs an automated response
    */
   private async analyzewithLLM(
-    message: string, 
-    phoneNumber: string, 
+    message: string,
+    _phoneNumber: string,
     conversationId: string | undefined,
     route: string
   ): Promise<AutomationResponse> {
@@ -410,11 +321,11 @@ export class AIAutomationService {
         
         return {
           handled: true,
-          response: this.ensureCustomerFacingResponse(assistantResponse.response),
+          response: this.ensureCustomerFacingResponse(this.correctKnownUrls(assistantResponse.response)),
           assistantType: route
         };
       }
-      
+
       return { handled: false, assistantType: route };
     } catch (error) {
       logger.error('Failed to handle gift card with LLM:', error);
@@ -615,9 +526,12 @@ export class AIAutomationService {
         }
       }
       
+      // Correct any hallucinated URLs before sending
+      responseText = this.correctKnownUrls(responseText);
+
       // Transform response to be direct to customer
       responseText = this.ensureCustomerFacingResponse(responseText);
-      
+
       // Log successful automation and increment response count
       await logAutomationUsage('gift_cards', {
         conversationId,
@@ -807,214 +721,6 @@ export class AIAutomationService {
   // REMOVED: Simulator/TV automations - not needed per requirements
   
   /**
-   * [REMOVED - Keeping only gift cards and trackman]
-   */
-  private async checkHoursAutomationREMOVED(message: string, conversationId?: string): Promise<AutomationResponse> {
-    const startTime = Date.now();
-    
-    try {
-      if (!await isAutomationEnabled('hours_of_operation')) {
-        return { handled: false };
-      }
-      
-      // Check response limit
-      const responseCount = await this.getResponseCount(conversationId || '', 'hours_of_operation');
-      const maxResponses = await this.getMaxResponses('hours_of_operation');
-      
-      if (responseCount >= maxResponses) {
-        logger.info('Response limit reached for hours_of_operation', { conversationId, responseCount, maxResponses });
-        return { handled: false };
-      }
-      
-      const featureResult = await db.query(
-        'SELECT config FROM ai_automation_features WHERE feature_key = $1',
-        ['hours_of_operation']
-      );
-      
-      if (featureResult.rows.length === 0) {
-        return { handled: false };
-      }
-      
-      const config = featureResult.rows[0].config;
-      
-      // Use pattern matching from aiAutomationPatterns
-      // COMMENTED OUT - hours_of_operation no longer exists in patterns
-      // const { confidence, matches, negatives } = calculateConfidence(message, 'hours_of_operation');
-      const confidence = 0;
-      const matches: string[] = [];
-      const negatives: string[] = [];
-      
-      // Log the analysis for learning
-      await this.logPatternAnalysis('hours_of_operation', message, matches, confidence);
-      
-      // Only respond if confidence is high enough
-      const minConfidence = config.minConfidence || 0.6;
-      if (confidence < minConfidence) {
-        logger.info('Hours automation confidence too low', { confidence, minConfidence, matches, negatives });
-        return { handled: false };
-      }
-      
-      // Get response based on configured source
-      let responseText: string;
-      const responseSource = config.responseSource || 'database';
-      
-      if (responseSource === 'hardcoded' && config.hardcodedResponse) {
-        responseText = config.hardcodedResponse;
-        logger.info('Using hardcoded response for hours_of_operation');
-      } else {
-        try {
-          const assistantResponse = await assistantService.getAssistantResponse(
-            'BrandTone',  // Hours info is handled by BrandTone assistant
-            message,
-            { isCustomerFacing: true, conversationId }
-          );
-          
-          responseText = assistantResponse.response;
-          
-          if (!responseText || responseText.length < 10) {
-            logger.warn('Assistant returned empty response for hours query');
-            return { handled: false };
-          }
-        } catch (assistantError) {
-          logger.error('Failed to get assistant response for hours:', assistantError);
-          return { handled: false };
-        }
-      }
-      
-      // Transform response to be direct to customer
-      responseText = this.ensureCustomerFacingResponse(responseText);
-      
-      await logAutomationUsage('hours_of_operation', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message },
-        outputData: { response: responseText },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      await this.incrementResponseCount(conversationId || '', 'hours_of_operation');
-      
-      if (responseSource !== 'hardcoded') {
-        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'hours_of_operation');
-      }
-      
-      return {
-        handled: true,
-        response: responseText,
-        assistantType: 'BrandTone'
-      };
-    } catch (error) {
-      logger.error('Hours automation error:', error);
-      return { handled: false };
-    }
-  }
-  
-  /**
-   * Check if message is asking about membership
-   */
-  private async checkMembershipAutomation(message: string, conversationId?: string): Promise<AutomationResponse> {
-    const startTime = Date.now();
-    
-    try {
-      if (!await isAutomationEnabled('membership_info')) {
-        return { handled: false };
-      }
-      
-      // Check response limit
-      const responseCount = await this.getResponseCount(conversationId || '', 'membership_info');
-      const maxResponses = await this.getMaxResponses('membership_info');
-      
-      if (responseCount >= maxResponses) {
-        logger.info('Response limit reached for membership_info', { conversationId, responseCount, maxResponses });
-        return { handled: false };
-      }
-      
-      const featureResult = await db.query(
-        'SELECT config FROM ai_automation_features WHERE feature_key = $1',
-        ['membership_info']
-      );
-      
-      if (featureResult.rows.length === 0) {
-        return { handled: false };
-      }
-      
-      const config = featureResult.rows[0].config;
-      
-      // Use pattern matching from aiAutomationPatterns
-      // COMMENTED OUT - membership_info no longer exists in patterns
-      // const { confidence, matches, negatives } = calculateConfidence(message, 'membership_info');
-      const confidence = 0;
-      const matches: string[] = [];
-      const negatives: string[] = [];
-      
-      // Log the analysis for learning
-      await this.logPatternAnalysis('membership_info', message, matches, confidence);
-      
-      // Only respond if confidence is high enough
-      const minConfidence = config.minConfidence || 0.6;
-      if (confidence < minConfidence) {
-        logger.info('Membership automation confidence too low', { confidence, minConfidence, matches, negatives });
-        return { handled: false };
-      }
-      
-      // Get response based on configured source
-      let responseText: string;
-      const responseSource = config.responseSource || 'database';
-      
-      if (responseSource === 'hardcoded' && config.hardcodedResponse) {
-        responseText = config.hardcodedResponse;
-        logger.info('Using hardcoded response for membership_info');
-      } else {
-        try {
-          const assistantResponse = await assistantService.getAssistantResponse(
-            'BrandTone',  // Hours info is handled by BrandTone assistant
-            message,
-            { isCustomerFacing: true, conversationId }
-          );
-          
-          responseText = assistantResponse.response;
-          
-          if (!responseText || responseText.length < 10) {
-            logger.warn('Assistant returned empty response for membership query');
-            return { handled: false };
-          }
-        } catch (assistantError) {
-          logger.error('Failed to get assistant response for membership:', assistantError);
-          return { handled: false };
-        }
-      }
-      
-      // Transform response to be direct to customer
-      responseText = this.ensureCustomerFacingResponse(responseText);
-      
-      await logAutomationUsage('membership_info', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message },
-        outputData: { response: responseText },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      await this.incrementResponseCount(conversationId || '', 'membership_info');
-      
-      if (responseSource !== 'hardcoded') {
-        await this.storeInAssistantKnowledge('BrandTone', message, responseText, 'membership_info');
-      }
-      
-      return {
-        handled: true,
-        response: responseText,
-        assistantType: 'BrandTone'
-      };
-    } catch (error) {
-      logger.error('Membership automation error:', error);
-      return { handled: false };
-    }
-  }
-  
-  /**
    * Check if message is about Trackman issues
    */
   private async checkTrackmanResetAutomation(message: string, phoneNumber: string, conversationId?: string): Promise<AutomationResponse> {
@@ -1061,16 +767,12 @@ export class AIAutomationService {
       // Check confidence based on pattern matches
       let confidenceScore = 0;
       let matchedPatterns = [];
-      let isTrackmanIssue = false;
-      
+
       // Check for system mentions
       for (const pattern of systemPatterns) {
         if (pattern.test(message)) {
           confidenceScore += 0.4;
           matchedPatterns.push(pattern.source);
-          if (/track\s*man/i.test(pattern.source)) {
-            isTrackmanIssue = true;
-          }
         }
       }
       
@@ -1085,14 +787,12 @@ export class AIAutomationService {
       // Boost confidence for very clear indicators
       if (/track\s*man\s+(?:is\s+)?(?:frozen|stuck|not\s+working)/i.test(message)) {
         confidenceScore = 1.0;
-        isTrackmanIssue = true;
       }
       if (/(?:simulator|sim|screen)\s+(?:is\s+)?frozen/i.test(message)) {
         confidenceScore = 0.9;
       }
       if (/not\s+(?:tracking|picking\s+up|detecting)\s+(?:my\s+)?balls?/i.test(message)) {
         confidenceScore = 0.9;
-        isTrackmanIssue = true;
       }
       
       // Log the analysis for learning
@@ -1159,138 +859,6 @@ export class AIAutomationService {
       };
     } catch (error) {
       logger.error('Trackman automation error:', error);
-      return { handled: false };
-    }
-  }
-  
-  /**
-   * Check if message is about simulator PC issues
-   */
-  private async checkSimulatorRebootAutomation(message: string, phoneNumber: string, conversationId?: string): Promise<AutomationResponse> {
-    const startTime = Date.now();
-    
-    try {
-      if (!await isAutomationEnabled('simulator_reboot')) {
-        return { handled: false };
-      }
-      
-      const simulatorKeywords = ['simulator', 'sim', 'pc', 'computer'];
-      const issueKeywords = ['frozen', 'stuck', 'not working', 'broken', 'reset', 'restart', 'reboot', 'crash'];
-      
-      const hasSimulator = simulatorKeywords.some(keyword => message.includes(keyword));
-      const hasIssue = issueKeywords.some(keyword => message.includes(keyword));
-      
-      if (!hasSimulator || !hasIssue) {
-        return { handled: false };
-      }
-      
-      const bayMatch = message.match(/bay\s*(\d+)|sim\s*(\d+)|simulator\s*(\d+)/i);
-      const bayNumber = bayMatch ? (bayMatch[1] || bayMatch[2] || bayMatch[3]) : null;
-      
-      const featureResult = await db.query(
-        'SELECT config FROM ai_automation_features WHERE feature_key = $1',
-        ['simulator_reboot']
-      );
-      
-      const config = featureResult.rows[0].config;
-      
-      const confirmationKey = `${phoneNumber}_simulator_${Date.now()}`;
-      await cacheService.setConfirmation(phoneNumber, {
-        key: confirmationKey,
-        featureKey: 'simulator_reboot',
-        phoneNumber,
-        bayNumber,
-        conversationId,
-        actionType: 'simulator_reboot',
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-      }, 300); // 5 minute TTL
-      
-      this.cleanupExpiredConfirmations();
-      
-      await logAutomationUsage('simulator_reboot', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message, bayNumber },
-        outputData: { requiresConfirmation: true },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      const bayInfo = bayNumber ? ` on bay ${bayNumber}` : '';
-      return {
-        handled: true,
-        response: config.confirmation_message || `I can reboot the simulator PC${bayInfo}. This will take 5-7 minutes and the bay will be unavailable during this time. Reply YES to proceed.`,
-        requiresConfirmation: true,
-        confirmationKey
-      };
-    } catch (error) {
-      logger.error('Simulator automation error:', error);
-      return { handled: false };
-    }
-  }
-  
-  /**
-   * Check if message is about TV/display issues
-   */
-  private async checkTVRestartAutomation(message: string, phoneNumber: string, conversationId?: string): Promise<AutomationResponse> {
-    const startTime = Date.now();
-    
-    try {
-      if (!await isAutomationEnabled('tv_restart')) {
-        return { handled: false };
-      }
-      
-      const tvKeywords = ['tv', 'screen', 'display', 'monitor'];
-      const issueKeywords = ['frozen', 'black', 'blank', 'not working', 'no signal', 'restart'];
-      
-      const hasTV = tvKeywords.some(keyword => message.includes(keyword));
-      const hasIssue = issueKeywords.some(keyword => message.includes(keyword));
-      
-      if (!hasTV || !hasIssue) {
-        return { handled: false };
-      }
-      
-      const bayMatch = message.match(/bay\s*(\d+)|sim\s*(\d+)|simulator\s*(\d+)/i);
-      const bayNumber = bayMatch ? (bayMatch[1] || bayMatch[2] || bayMatch[3]) : null;
-      
-      const featureResult = await db.query(
-        'SELECT config FROM ai_automation_features WHERE feature_key = $1',
-        ['tv_restart']
-      );
-      
-      const config = featureResult.rows[0].config;
-      
-      const confirmationKey = `${phoneNumber}_tv_${Date.now()}`;
-      await cacheService.setConfirmation(phoneNumber, {
-        key: confirmationKey,
-        featureKey: 'tv_restart',
-        phoneNumber,
-        bayNumber,
-        conversationId,
-        actionType: 'tv_restart',
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-      }, 300); // 5 minute TTL
-      
-      this.cleanupExpiredConfirmations();
-      
-      await logAutomationUsage('tv_restart', {
-        conversationId,
-        triggerType: 'automatic',
-        inputData: { message, bayNumber },
-        outputData: { requiresConfirmation: true },
-        success: true,
-        executionTimeMs: Date.now() - startTime
-      });
-      
-      const bayInfo = bayNumber ? ` on bay ${bayNumber}` : '';
-      return {
-        handled: true,
-        response: config.confirmation_message || `I can restart the TV system${bayInfo}. This will briefly interrupt the display. Reply YES to proceed.`,
-        requiresConfirmation: true,
-        confirmationKey
-      };
-    } catch (error) {
-      logger.error('TV automation error:', error);
       return { handled: false };
     }
   }
@@ -1464,79 +1032,9 @@ export class AIAutomationService {
   }
 
   /**
-   * Original handleConfirmation content moved here
-   */
-  private async handleConfirmationLegacy(phoneNumber: string): Promise<AutomationResponse> {
-    // Find pending confirmations for this phone number
-    const confirmations = await cacheService.getConfirmations(phoneNumber);
-
-    if (confirmations.length === 0) {
-      return { handled: false };
-    }
-
-    // Use the most recent confirmation
-    const confirmationData = confirmations[confirmations.length - 1];
-    const keyToDelete = confirmationData.key;
-
-    if (!confirmationData || !keyToDelete) {
-      return { handled: false };
-    }
-
-    // Remove from pending
-    await cacheService.deleteConfirmation(keyToDelete);
-    
-    try {
-      // Execute the action based on type
-      if (confirmationData.actionType === 'trackman_reset') {
-        await this.executeTrackmanReset(confirmationData.bayNumber, confirmationData.conversationId);
-      } else if (confirmationData.actionType === 'simulator_reboot') {
-        await this.executeSimulatorReboot(confirmationData.bayNumber, confirmationData.conversationId);
-      } else if (confirmationData.actionType === 'tv_restart') {
-        await this.executeTVRestart(confirmationData.bayNumber, confirmationData.conversationId);
-      }
-      
-      await logAutomationUsage(confirmationData.featureKey, {
-        triggerType: 'automatic',
-        success: true,
-        userConfirmed: true
-      });
-      
-      // Customize confirmation response based on the action type
-      let confirmationResponse = 'Action confirmed and initiated. I\'ll send you an update once it\'s complete.';
-      
-      if (confirmationData.featureKey === 'trackman_reset') {
-        confirmationResponse = "Great! I'm resetting the Trackman system now. This should take about 2 minutes. Once it's back up, you can sign back in and use the 'My Activities' button to continue where you left off.";
-      } else if (confirmationData.featureKey === 'simulator_reboot') {
-        confirmationResponse = "I'm rebooting the simulator PC now. This will take 5-7 minutes. I'll let you know when it's ready to use again.";
-      } else if (confirmationData.featureKey === 'tv_restart') {
-        confirmationResponse = "I'm restarting the TV system now. The display should be back up in just a moment.";
-      }
-      
-      return {
-        handled: true,
-        response: confirmationResponse
-      };
-    } catch (error) {
-      logger.error('Failed to execute confirmed action:', error);
-      
-      await logAutomationUsage(confirmationData.featureKey, {
-        triggerType: 'automatic',
-        success: false,
-        userConfirmed: true,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      });
-      
-      return {
-        handled: true,
-        response: 'I encountered an error while executing that action. Our team has been notified.'
-      };
-    }
-  }
-  
-  /**
    * Execute Trackman reset via NinjaOne
    */
-  private async executeTrackmanReset(bayNumber: string | null, conversationId?: string) {
+  private async executeTrackmanReset(bayNumber: string | null, _conversationId?: string) {
     try {
       // TODO: Get device ID from bay number mapping
       const deviceId = 'TRACKMAN_DEVICE_ID'; // This should be mapped from config
@@ -1556,7 +1054,7 @@ export class AIAutomationService {
   /**
    * Execute Simulator reboot via NinjaOne
    */
-  private async executeSimulatorReboot(bayNumber: string | null, conversationId?: string) {
+  private async executeSimulatorReboot(bayNumber: string | null, _conversationId?: string) {
     try {
       const deviceId = 'SIMULATOR_DEVICE_ID';
       const scriptId = 'SIMULATOR_REBOOT_SCRIPT_ID';
@@ -1573,7 +1071,7 @@ export class AIAutomationService {
   /**
    * Execute TV restart via NinjaOne
    */
-  private async executeTVRestart(bayNumber: string | null, conversationId?: string) {
+  private async executeTVRestart(bayNumber: string | null, _conversationId?: string) {
     try {
       const deviceId = 'TV_DEVICE_ID';
       const scriptId = 'TV_RESTART_SCRIPT_ID';
@@ -1680,7 +1178,7 @@ export class AIAutomationService {
   async learnFromStaffResponse(
     phoneNumber: string,
     staffResponse: string,
-    staffUserId?: string
+    _staffUserId?: string
   ): Promise<void> {
     try {
       // Find recent unanswered queries from this phone number
@@ -1789,11 +1287,11 @@ export class AIAutomationService {
       }
       
       // Extract common phrases from customer messages
-      const allCustomerMessages = config.learnedConversations.map(c => c.customerMessage.toLowerCase());
+      const allCustomerMessages = config.learnedConversations.map((c: any) => c.customerMessage.toLowerCase());
       const phraseFrequency = new Map<string, number>();
       
       // Count 2-3 word phrases
-      allCustomerMessages.forEach(msg => {
+      allCustomerMessages.forEach((msg: any) => {
         const words = msg.split(/\s+/);
         for (let i = 0; i < words.length - 1; i++) {
           const phrase2 = words.slice(i, i + 2).join(' ');
@@ -2025,6 +1523,31 @@ export class AIAutomationService {
     return transformed;
   }
   
+  /**
+   * Correct known URLs in AI responses to prevent hallucinated links.
+   * The AI sometimes generates plausible-but-wrong URLs (e.g. /giftcards instead of /giftcard/purchase).
+   * This method enforces the canonical URLs for known resources.
+   */
+  private correctKnownUrls(response: string): string {
+    if (!response) return response;
+
+    // Map of URL path patterns to their correct canonical URLs
+    // Matches any clubhouse247golf.com URL with a gift-card-like path and replaces with the correct one
+    const urlCorrections: Array<[RegExp, string]> = [
+      // Gift card URLs: catch variations like /giftcards, /gift-cards, /gift-card, /giftcard but NOT the correct /giftcard/purchase
+      [/(?:https?:\/\/)?(?:www\.)?clubhouse247golf\.com\/gift[-\s]?cards?(?!\/purchase)\b[^\s)"]*/gi, 'www.clubhouse247golf.com/giftcard/purchase'],
+      // Catch /giftcard without /purchase suffix
+      [/(?:https?:\/\/)?(?:www\.)?clubhouse247golf\.com\/giftcard(?!\/purchase)\b[^\s)"]*/gi, 'www.clubhouse247golf.com/giftcard/purchase'],
+    ];
+
+    let corrected = response;
+    for (const [pattern, correctUrl] of urlCorrections) {
+      corrected = corrected.replace(pattern, correctUrl);
+    }
+
+    return corrected;
+  }
+
   /**
    * Get response count for a conversation and feature
    */
