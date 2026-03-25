@@ -107,7 +107,7 @@ export default function MessagesCardV3() {
       // Check if we have an abort signal to use
       const signal = abortControllerRef.current?.signal;
 
-      const response = await http.get(`messages/conversations?limit=3`, {
+      const response = await http.get(`messages/conversations?limit=6`, {
         signal: signal // Pass the abort signal to the request
       });
 
@@ -353,7 +353,7 @@ export default function MessagesCardV3() {
       </div>
 
       {/* Content - Collapsible */}
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0' : 'max-h-[600px]'}`}>
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0' : 'max-h-[900px]'}`}>
         {isLoading ? (
         <div className="divide-y divide-[var(--border-secondary)]">
           {/* Loading skeletons for 3 conversations */}

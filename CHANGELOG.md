@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.6] - 2026-03-25
+
+### Changed
+- **Dashboard messages card** — Now shows 6 recent conversations (was 3) and has a taller max height (900px, was 600px) so more conversations are visible without scrolling.
+
 ## [1.29.5] - 2026-03-25
 
 ### Added
