@@ -958,9 +958,9 @@ router.get('/sentiment-patterns/defaults',
 
 /**
  * GET /api/patterns/:id
- * Get a specific pattern with full details
+ * Get a specific pattern with full details (numeric IDs only)
  */
-router.get('/:id',
+router.get('/:id(\\d+)',
   authenticate,
   roleGuard(['admin', 'operator']),
   [param('id').isInt()],
@@ -1736,7 +1736,7 @@ router.post('/',
  * Update a pattern (response, confidence, active status)
  * CRITICAL: This endpoint was missing, causing toggle issues
  */
-router.put('/:id',
+router.put('/:id(\\d+)',
   authenticate,
   roleGuard(['admin', 'operator']),
   [
@@ -1833,7 +1833,7 @@ router.put('/:id',
  * DELETE /api/patterns/:id
  * Soft delete a pattern (sets is_deleted = true, is_active = false)
  */
-router.delete('/:id',
+router.delete('/:id(\\d+)',
   authenticate,
   roleGuard(['admin', 'operator']),
   [param('id').isInt()],
