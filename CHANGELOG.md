@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.3] - 2026-03-25
+
+### Fixed
+- **Unread message badge not clearing** — When reading a conversation in ClubOS, the nav dot/badge would sometimes persist because: (1) `markConversationAsRead` shared an AbortController with the polling system, so it could get silently cancelled on navigation/re-render, and (2) it relied on a second API call (`refreshUnreadCount`) to update the badge, which could also fail. Now uses optimistic local update — badge decrements immediately when you open a conversation, and the server reconciles on the next poll.
+
 ## [1.29.2] - 2026-03-25
 
 ### Added

@@ -631,8 +631,8 @@ export default function Messages() {
             setFullMessageHistory(fetchedMessages);
             setHasMoreMessages(fetchedMessages.length > INITIAL_MESSAGE_COUNT || hasMore);
 
-            // Mark as read using shared context
-            await markConversationAsRead(conversation.phone_number);
+            // Mark as read using shared context — pass unread count for instant badge update
+            await markConversationAsRead(conversation.phone_number, conversation.unread_count);
 
             // Update local state
             setConversations(prev => prev.map(c =>

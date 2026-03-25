@@ -10,7 +10,7 @@ import logger from '@/services/logger';
 interface MessagesContextType {
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
-  markConversationAsRead: (phoneNumber: string) => Promise<void>;
+  markConversationAsRead: (phoneNumber: string, conversationUnreadCount?: number) => Promise<void>;
   isRefreshing: boolean;
 }
 
@@ -130,24 +130,31 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [user, isAuthLoading, notify, router.pathname]);
 
-  const markConversationAsRead = useCallback(async (phoneNumber: string) => {
+  const markConversationAsRead = useCallback(async (phoneNumber: string, conversationUnreadCount?: number) => {
     if (!user || !phoneNumber) return;
+
+    // Immediately decrement the nav badge count so it clears instantly.
+    // This is optimistic — the backend call follows. The next poll will reconcile.
+    if (conversationUnreadCount && conversationUnreadCount > 0) {
+      setUnreadCount(prev => Math.max(0, prev - conversationUnreadCount));
+      previousUnreadCount.current = Math.max(0, previousUnreadCount.current - conversationUnreadCount);
+    }
 
     try {
       const token = tokenManager.getToken();
       if (!token) return;
 
-      const signal = abortControllerRef.current?.signal;
-      await http.put(
-        `messages/conversations/${phoneNumber}/read`,
-        {},
-        { signal: signal }
-      );
+      // Use a dedicated AbortController — not the shared polling one.
+      // The shared controller can get cancelled on re-render/unmount,
+      // which would silently kill the mark-as-read request.
+      await http.put(`messages/conversations/${phoneNumber}/read`, {});
 
-      // Immediately refresh the unread count
-      await refreshUnreadCount();
-    } catch (error) {
-      logger.error('Failed to mark conversation as read:', error);
+      // Background refresh to get exact server count (non-blocking)
+      refreshUnreadCount().catch(() => {});
+    } catch (error: any) {
+      if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+        logger.error('Failed to mark conversation as read:', error);
+      }
     }
   }, [user, refreshUnreadCount]);
 
