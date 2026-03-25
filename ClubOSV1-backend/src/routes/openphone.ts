@@ -1487,28 +1487,149 @@ router.post('/webhook', async (req: Request, res: Response) => {
         logger.info('OpenPhone AI call summary stored', { phoneNumber: data.phoneNumber });
         break;
 
-      case 'call.transcript.completed':
+      case 'call.transcript.completed': {
         // Store call transcript
+        const transcriptPhone = data.phoneNumber || data.from || data.to;
+        const transcriptText = data.transcript;
+
         await insertOpenPhoneConversation({
-          phoneNumber: data.phoneNumber || data.to || data.from,
+          phoneNumber: transcriptPhone,
           customerName: data.contactName || 'Unknown',
           employeeName: data.userName || 'Unknown',
           messages: [{
             type: 'call_transcript',
-            transcript: data.transcript,
+            transcript: transcriptText,
             timestamp: data.timestamp || new Date().toISOString()
           }],
-          metadata: { 
+          metadata: {
             openPhoneId: data.id,
             callId: data.callId,
             type,
             transcriptUrl: data.transcriptUrl
           },
-          unreadCount: 0 // Transcripts don't affect unread count
+          unreadCount: 0
         });
-        
-        logger.info('OpenPhone call transcript stored', { phoneNumber: data.phoneNumber });
+
+        logger.info('OpenPhone call transcript stored', { phoneNumber: transcriptPhone, hasTranscript: !!transcriptText });
+
+        // --- VOICEMAIL → ClubAI RESPONSE ---
+        // If this transcript is from a missed call voicemail, feed it to ClubAI
+        // so it can respond intelligently to what the customer actually said.
+        if (transcriptText && transcriptPhone) {
+          try {
+            // Check if this was a recent missed call (sent a missed-call text within last hour)
+            const recentMissed = await db.query(`
+              SELECT id, missed_call_text_sent_at, clubai_active
+              FROM openphone_conversations
+              WHERE phone_number = $1
+                AND missed_call_text_sent_at > NOW() - INTERVAL '1 hour'
+              ORDER BY updated_at DESC
+              LIMIT 1
+            `, [transcriptPhone]);
+
+            if (recentMissed.rows.length > 0) {
+              const convRow = recentMissed.rows[0];
+              const convId = String(convRow.id);
+
+              // Check if ClubAI is enabled
+              let transcriptClubaiEnabled = false;
+              try {
+                const tcConfig = await db.query(`
+                  SELECT config_value FROM pattern_learning_config
+                  WHERE config_key = 'clubai_enabled'
+                `);
+                transcriptClubaiEnabled = tcConfig.rows[0]?.config_value === 'true';
+              } catch {
+                transcriptClubaiEnabled = process.env.CLUBAI_ENABLED === 'true';
+              }
+
+              const transcriptDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+
+              if (transcriptClubaiEnabled && transcriptDefaultNumber) {
+                logger.info('[ClubAI Voicemail] Processing voicemail transcript for missed call', {
+                  phoneNumber: transcriptPhone,
+                  transcriptLength: transcriptText.length,
+                  convId
+                });
+
+                // Store the voicemail transcript as a customer message so ClubAI has context
+                try {
+                  await db.query(`
+                    INSERT INTO conversation_messages (conversation_id, sender_type, message_text, ai_reasoning)
+                    VALUES ($1, 'customer', $2, $3)
+                  `, [
+                    convId,
+                    transcriptText,
+                    JSON.stringify({ source: 'voicemail_transcript', callId: data.callId })
+                  ]);
+                } catch (msgErr) {
+                  logger.warn('[ClubAI Voicemail] Failed to store transcript as message:', msgErr);
+                }
+
+                // Generate a ClubAI response to the voicemail content
+                try {
+                  const vmResult = await clubaiService.generateResponse(
+                    transcriptPhone,
+                    transcriptText,
+                    convId
+                  );
+
+                  if (vmResult.response && !vmResult.escalate) {
+                    const vmResponse = vmResult.response + ' - ClubAI';
+                    await openPhoneService.sendMessage(transcriptPhone, transcriptDefaultNumber, vmResponse);
+                    await clubaiService.storeClubAIMessage(convId, vmResponse, vmResult.confidence);
+
+                    // Update conversation tracking
+                    await db.query(`
+                      UPDATE openphone_conversations
+                      SET clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1,
+                          ai_response_count = COALESCE(ai_response_count, 0) + 1,
+                          updated_at = NOW()
+                      WHERE id = $1
+                    `, [convRow.id]);
+
+                    logger.info('[ClubAI Voicemail] Responded to voicemail', {
+                      phoneNumber: transcriptPhone,
+                      confidence: vmResult.confidence,
+                      responseLength: vmResult.response.length
+                    });
+                  } else if (vmResult.escalate) {
+                    // Send escalation message if ClubAI can't handle it
+                    const escMsg = (vmResult.response || "I got your voicemail! Let me get a team member to help — they'll text you shortly.") + ' - ClubAI';
+                    await openPhoneService.sendMessage(transcriptPhone, transcriptDefaultNumber, escMsg);
+                    await clubaiService.storeClubAIMessage(convId, escMsg, vmResult.confidence);
+
+                    await db.query(`
+                      UPDATE openphone_conversations
+                      SET clubai_escalated = true,
+                          clubai_escalation_reason = $2,
+                          conversation_locked = true,
+                          customer_sentiment = 'needs_attention',
+                          updated_at = NOW()
+                      WHERE id = $1
+                    `, [convRow.id, vmResult.escalationSummary || 'Voicemail requires human attention']);
+
+                    logger.info('[ClubAI Voicemail] Escalated voicemail', {
+                      phoneNumber: transcriptPhone,
+                      reason: vmResult.escalationSummary
+                    });
+                  }
+                } catch (aiErr) {
+                  logger.error('[ClubAI Voicemail] Failed to generate response:', aiErr);
+                }
+              }
+            } else {
+              logger.debug('[ClubAI Voicemail] No recent missed call for this transcript, skipping AI response', {
+                phoneNumber: transcriptPhone
+              });
+            }
+          } catch (vmErr) {
+            logger.error('[ClubAI Voicemail] Error processing voicemail transcript:', vmErr);
+          }
+        }
+
         break;
+      }
 
       case 'call.recording.completed':
         // Store call recording URL

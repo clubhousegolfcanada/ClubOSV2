@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.4] - 2026-03-25
+
+### Added
+- **Voicemail → ClubAI intelligent response** — When a customer leaves a voicemail on a missed call, Quo transcribes it and sends a `call.transcript.completed` webhook. ClubAI now reads the transcript, treats it as if the customer texted, and responds via SMS with an actual answer. Example: customer voicemails "our sim is frozen on box 3" → ClubAI texts back the TrackMan restart steps. If ClubAI can't handle it, escalates to operator with "NEEDS HUMAN" flag.
+- **Voicemail transcript stored as conversation message** — The transcript is saved in `conversation_messages` with `sender_type: 'customer'` so ClubAI has full context for follow-up replies.
+
 ## [1.29.3] - 2026-03-25
 
 ### Fixed
