@@ -241,10 +241,47 @@ router.get('/conversations',
         });
 
         if (queryError.code === '42703') {
-          return [];
-        }
+          // Column doesn't exist — reset schema cache so next request re-checks
+          schemaChecked = false;
+          logger.warn('Schema cache reset due to missing column error — will re-check on next request');
 
-        throw queryError;
+          // Retry once with a fresh schema check
+          try {
+            const freshSchema = await ensureSchemaChecked();
+            const safeQuery = `
+              WITH ranked_conversations AS (
+                SELECT
+                  id, phone_number, customer_name, employee_name,
+                  jsonb_array_length(messages) as message_count,
+                  messages->-1 as last_message,
+                  CASE
+                    WHEN jsonb_array_length(messages) >= 3
+                    THEN jsonb_build_array(messages->-3, messages->-2, messages->-1)
+                    WHEN jsonb_array_length(messages) >= 1 THEN messages
+                    ELSE '[]'::jsonb
+                  END as message_history,
+                  ${freshSchema.hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+                  ${freshSchema.hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+                  ${freshSchema.hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
+                  ${freshSchema.hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
+                  ${freshSchema.hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
+                  created_at${freshSchema.hasUpdatedAt ? ', updated_at' : ''},
+                  ROW_NUMBER() OVER (PARTITION BY phone_number ORDER BY ${freshSchema.hasUpdatedAt ? 'updated_at' : 'created_at'} DESC) as rn
+                FROM openphone_conversations
+                WHERE phone_number IS NOT NULL AND phone_number != '' AND phone_number != 'Unknown'
+              )
+              SELECT * FROM ranked_conversations WHERE rn = 1
+              ORDER BY ${freshSchema.hasUpdatedAt ? 'updated_at' : 'created_at'} DESC
+              LIMIT $1 OFFSET $2
+            `;
+            result = await db.query(safeQuery, [limit, offset]);
+          } catch (retryErr) {
+            logger.error('Retry query also failed:', retryErr);
+            return [];
+          }
+        } else {
+          throw queryError;
+        }
       }
 
       logger.info('Returning conversations', {
