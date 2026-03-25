@@ -2862,5 +2862,218 @@ router.post('/clubai-escalations/:id/resolve', authenticate, async (req: Request
   }
 });
 
+// ============================================
+// CLUBAI KNOWLEDGE MANAGEMENT ENDPOINTS
+// ============================================
+
+/**
+ * PUT /api/patterns/clubai-knowledge/:id
+ * Edit an existing knowledge entry (updates text + regenerates embedding)
+ */
+router.put('/clubai-knowledge/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userRole = (req as any).user?.role;
+    if (!userRole || !['admin', 'operator'].includes(userRole)) {
+      return res.status(403).json({ success: false, error: 'Admin or operator access required' });
+    }
+
+    const { id } = req.params;
+    const { intent, customerQuestion, teamResponse, confidenceScore } = req.body;
+
+    // Verify entry exists
+    const existing = await db.query(`SELECT id, source_type FROM clubai_knowledge WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Knowledge entry not found' });
+    }
+
+    // Build update fields
+    const updates: string[] = [];
+    const params: (string | number | null)[] = [];
+    let paramIndex = 1;
+
+    if (intent !== undefined) {
+      updates.push(`intent = $${paramIndex++}`);
+      params.push(intent);
+    }
+    if (customerQuestion !== undefined) {
+      updates.push(`customer_message = $${paramIndex++}`);
+      params.push(customerQuestion);
+    }
+    if (teamResponse !== undefined) {
+      updates.push(`team_response = $${paramIndex++}`);
+      params.push(teamResponse);
+    }
+    if (confidenceScore !== undefined) {
+      updates.push(`confidence_score = $${paramIndex++}`);
+      params.push(confidenceScore);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    params.push(parseInt(id));
+
+    await db.query(
+      `UPDATE clubai_knowledge SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      params
+    );
+
+    // Regenerate embedding if text fields changed
+    if (customerQuestion !== undefined || teamResponse !== undefined) {
+      const updated = await db.query(
+        `SELECT customer_message, team_response FROM clubai_knowledge WHERE id = $1`,
+        [id]
+      );
+      if (updated.rows.length > 0) {
+        const { generateEmbedding } = await import('../services/clubaiKnowledgeService');
+        const row = updated.rows[0];
+        const embeddingText = row.customer_message
+          ? `Customer: ${row.customer_message}\nResponse: ${row.team_response}`
+          : row.team_response;
+        const embedding = await generateEmbedding(embeddingText);
+        if (embedding) {
+          await db.query(
+            `UPDATE clubai_knowledge SET embedding = $1, embedding_generated_at = NOW() WHERE id = $2`,
+            [embedding, id]
+          );
+        }
+      }
+    }
+
+    logger.info(`[ClubAI Knowledge] Entry ${id} updated by ${userRole}`);
+    return res.json({ success: true, message: 'Knowledge entry updated' });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Update error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update knowledge entry' });
+  }
+});
+
+/**
+ * PATCH /api/patterns/clubai-knowledge/:id/toggle
+ * Activate or deactivate a knowledge entry (soft delete)
+ */
+router.patch('/clubai-knowledge/:id/toggle', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userRole = (req as any).user?.role;
+    if (!userRole || !['admin', 'operator'].includes(userRole)) {
+      return res.status(403).json({ success: false, error: 'Admin or operator access required' });
+    }
+
+    const { id } = req.params;
+    const { active } = req.body;
+
+    if (typeof active !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'active (boolean) is required' });
+    }
+
+    const result = await db.query(
+      `UPDATE clubai_knowledge SET is_active = $1, updated_at = NOW() WHERE id = $2 RETURNING id, is_active`,
+      [active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Knowledge entry not found' });
+    }
+
+    logger.info(`[ClubAI Knowledge] Entry ${id} ${active ? 'activated' : 'deactivated'} by ${userRole}`);
+    return res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Toggle error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to toggle knowledge entry' });
+  }
+});
+
+/**
+ * GET /api/patterns/clubai-knowledge-conflicts
+ * Find existing entries for a given intent to detect potential conflicts
+ */
+router.get('/clubai-knowledge-conflicts', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { intent, query: searchQuery } = req.query;
+
+    if (!intent && !searchQuery) {
+      return res.status(400).json({ success: false, error: 'intent or query parameter required' });
+    }
+
+    let result;
+    if (searchQuery) {
+      // Search by semantic similarity to find potentially conflicting entries
+      const { searchKnowledge } = await import('../services/clubaiKnowledgeService');
+      const matches = await searchKnowledge(searchQuery as string, { limit: 10, threshold: 0.4 });
+      // Also get inactive entries that match the intent
+      const intentMatches = intent ? await db.query(`
+        SELECT id, source_type, intent, customer_message, team_response,
+               confidence_score, is_active, use_count, feedback_up, feedback_down, created_at
+        FROM clubai_knowledge
+        WHERE intent = $1
+        ORDER BY is_active DESC, confidence_score DESC, created_at DESC
+        LIMIT 20
+      `, [intent]) : { rows: [] };
+
+      // Merge results, deduplicating by id
+      const seenIds = new Set<number>();
+      const merged: any[] = [];
+      for (const m of matches) {
+        if (!seenIds.has(m.knowledge_id)) {
+          seenIds.add(m.knowledge_id);
+          merged.push({ ...m, id: m.knowledge_id, similarity: m.similarity });
+        }
+      }
+      for (const row of intentMatches.rows) {
+        if (!seenIds.has(row.id)) {
+          seenIds.add(row.id);
+          merged.push(row);
+        }
+      }
+
+      result = merged;
+    } else {
+      // Search by intent only
+      const dbResult = await db.query(`
+        SELECT id, source_type, intent, customer_message, team_response,
+               confidence_score, is_active, use_count, feedback_up, feedback_down, created_at
+        FROM clubai_knowledge
+        WHERE intent = $1
+        ORDER BY is_active DESC, confidence_score DESC, created_at DESC
+        LIMIT 20
+      `, [intent]);
+      result = dbResult.rows;
+    }
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Conflicts check error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to check conflicts' });
+  }
+});
+
+/**
+ * DELETE /api/patterns/clubai-knowledge/:id
+ * Permanently delete a knowledge entry (admin only)
+ */
+router.delete('/clubai-knowledge/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userRole = (req as any).user?.role;
+    if (userRole !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+    const result = await db.query(`DELETE FROM clubai_knowledge WHERE id = $1 RETURNING id`, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Knowledge entry not found' });
+    }
+
+    logger.info(`[ClubAI Knowledge] Entry ${id} permanently deleted by admin`);
+    return res.json({ success: true, message: 'Knowledge entry deleted' });
+  } catch (error) {
+    logger.error('[ClubAI Knowledge] Delete error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to delete knowledge entry' });
+  }
+});
+
 // Export the router
 export default router;

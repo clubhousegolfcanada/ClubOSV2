@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, RefreshCw, Search, Plus, Send, Check, X, Edit3, Clock } from 'lucide-react';
+import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, RefreshCw, Search, Plus, Send, Check, X, Edit3, Clock, Eye, EyeOff, AlertTriangle, Trash2, BookOpen, Filter } from 'lucide-react';
 import apiClient from '@/api/http';
 
 // ============================================
@@ -84,6 +84,28 @@ interface ClubAIConversation {
   messages: ConversationMessage[] | null;
 }
 
+interface KnowledgeEntry {
+  id: number;
+  source_type: 'conversation' | 'website' | 'manual';
+  intent: string | null;
+  customer_message: string | null;
+  team_response: string;
+  source_url: string | null;
+  page_section: string | null;
+  confidence_score: number;
+  use_count: number;
+  feedback_up: number;
+  feedback_down: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+const INTENT_OPTIONS = [
+  'general_inquiry', 'sim_frozen', 'pricing', 'door_access', 'booking_change',
+  'club_rental', 'wifi', 'side_screens', 'ball_not_registering', 'login_qr_issue',
+  'refund_request', 'gift_card', 'food_drink', 'how_long_18', 'tech_support',
+];
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -130,6 +152,24 @@ export const OperationsClubAI: React.FC = () => {
   const [testResults, setTestResults] = useState<Array<{ knowledge_id: number; source_type: string; intent: string; customer_message: string; team_response: string; page_section: string; similarity: number }> | null>(null);
   const [testing, setTesting] = useState(false);
   const [showKnowledgePanel, setShowKnowledgePanel] = useState(false);
+
+  // Knowledge browser
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [browserEntries, setBrowserEntries] = useState<KnowledgeEntry[]>([]);
+  const [browserTotal, setBrowserTotal] = useState(0);
+  const [browserLoading, setBrowserLoading] = useState(false);
+  const [browserSourceFilter, setBrowserSourceFilter] = useState<string>('');
+  const [browserIntentFilter, setBrowserIntentFilter] = useState<string>('');
+  const [browserPage, setBrowserPage] = useState(0);
+  const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null);
+  const [editEntryIntent, setEditEntryIntent] = useState('');
+  const [editEntryQuestion, setEditEntryQuestion] = useState('');
+  const [editEntryAnswer, setEditEntryAnswer] = useState('');
+  const [editEntryConfidence, setEditEntryConfidence] = useState(0.95);
+  const [savingEntry, setSavingEntry] = useState(false);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [conflictEntries, setConflictEntries] = useState<KnowledgeEntry[] | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -300,6 +340,100 @@ export const OperationsClubAI: React.FC = () => {
       if (res.data?.data) setTestResults(res.data.data);
     } catch { setTestResults([]); }
     setTesting(false);
+  };
+
+  // ============================================
+  // KNOWLEDGE BROWSER
+  // ============================================
+
+  const BROWSER_PAGE_SIZE = 25;
+
+  const fetchBrowserEntries = useCallback(async (page = 0) => {
+    setBrowserLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: String(BROWSER_PAGE_SIZE),
+        offset: String(page * BROWSER_PAGE_SIZE),
+      });
+      if (browserSourceFilter) params.set('source_type', browserSourceFilter);
+      if (browserIntentFilter) params.set('intent', browserIntentFilter);
+      const res = await apiClient.get(`/patterns/clubai-knowledge-entries?${params}`);
+      if (res.data?.data) {
+        setBrowserEntries(res.data.data);
+        setBrowserTotal(res.data.total || 0);
+      }
+    } catch { setBrowserEntries([]); }
+    setBrowserLoading(false);
+  }, [browserSourceFilter, browserIntentFilter]);
+
+  useEffect(() => {
+    if (showBrowser) {
+      setBrowserPage(0);
+      fetchBrowserEntries(0);
+    }
+  }, [showBrowser, fetchBrowserEntries]);
+
+  const handleBrowserPageChange = (newPage: number) => {
+    setBrowserPage(newPage);
+    fetchBrowserEntries(newPage);
+  };
+
+  const startEditEntry = (entry: KnowledgeEntry) => {
+    setEditingEntry(entry);
+    setEditEntryIntent(entry.intent || 'general_inquiry');
+    setEditEntryQuestion(entry.customer_message || '');
+    setEditEntryAnswer(entry.team_response);
+    setEditEntryConfidence(entry.confidence_score);
+  };
+
+  const saveEditEntry = async () => {
+    if (!editingEntry) return;
+    setSavingEntry(true);
+    try {
+      await apiClient.put(`/patterns/clubai-knowledge/${editingEntry.id}`, {
+        intent: editEntryIntent,
+        customerQuestion: editEntryQuestion || undefined,
+        teamResponse: editEntryAnswer,
+        confidenceScore: editEntryConfidence,
+      });
+      // Refresh the list
+      await fetchBrowserEntries(browserPage);
+      setEditingEntry(null);
+      // Refresh stats too
+      const kRes = await apiClient.get('/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
+      if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
+    } catch { /* */ }
+    setSavingEntry(false);
+  };
+
+  const toggleEntryActive = async (id: number, currentlyActive: boolean) => {
+    setTogglingId(id);
+    try {
+      await apiClient.patch(`/patterns/clubai-knowledge/${id}/toggle`, { active: !currentlyActive });
+      setBrowserEntries(prev => prev.map(e =>
+        e.id === id ? { ...e, is_active: !currentlyActive } : e
+      ));
+    } catch { /* */ }
+    setTogglingId(null);
+  };
+
+  const deleteEntry = async (id: number) => {
+    if (!confirm('Permanently delete this entry? This cannot be undone.')) return;
+    try {
+      await apiClient.delete(`/patterns/clubai-knowledge/${id}`);
+      setBrowserEntries(prev => prev.filter(e => e.id !== id));
+      setBrowserTotal(prev => prev - 1);
+      const kRes = await apiClient.get('/patterns/clubai-knowledge-stats').catch(() => ({ data: { data: null } }));
+      if (kRes.data?.data) setKnowledgeStats(kRes.data.data);
+    } catch { /* */ }
+  };
+
+  const checkConflicts = async (intent: string) => {
+    if (!intent) { setConflictEntries(null); return; }
+    try {
+      const res = await apiClient.get(`/patterns/clubai-knowledge-conflicts?intent=${intent}`);
+      if (res.data?.data) setConflictEntries(res.data.data);
+    } catch { setConflictEntries(null); }
   };
 
   // ============================================
@@ -628,22 +762,44 @@ export const OperationsClubAI: React.FC = () => {
               <p className="text-lg font-bold text-[var(--text-primary)]">{(knowledgeStats.avgConfidence * 100).toFixed(0)}%</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex flex-wrap items-center gap-2 mt-3">
             <button
-              onClick={() => { setShowSmartPaste(!showSmartPaste); setShowAddKnowledge(false); }}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
+              onClick={() => { setShowBrowser(!showBrowser); setShowSmartPaste(false); setShowAddKnowledge(false); setShowKnowledgePanel(false); }}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                showBrowser
+                  ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                  : 'border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'
+              }`}
+            >
+              <BookOpen className="w-3 h-3" /> Browse Entries
+            </button>
+            <button
+              onClick={() => { setShowSmartPaste(!showSmartPaste); setShowAddKnowledge(false); setShowBrowser(false); setShowKnowledgePanel(false); }}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                showSmartPaste
+                  ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                  : 'border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'
+              }`}
             >
               <Plus className="w-3 h-3" /> Add Knowledge
             </button>
             <button
-              onClick={() => { setShowAddKnowledge(!showAddKnowledge); setShowSmartPaste(false); }}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
+              onClick={() => { setShowAddKnowledge(!showAddKnowledge); setShowSmartPaste(false); setShowBrowser(false); setShowKnowledgePanel(false); }}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                showAddKnowledge
+                  ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                  : 'border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'
+              }`}
             >
               <Edit3 className="w-3 h-3" /> Manual Entry
             </button>
             <button
-              onClick={() => setShowKnowledgePanel(!showKnowledgePanel)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] transition-colors"
+              onClick={() => { setShowKnowledgePanel(!showKnowledgePanel); setShowSmartPaste(false); setShowAddKnowledge(false); setShowBrowser(false); }}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                showKnowledgePanel
+                  ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                  : 'border-[var(--border-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'
+              }`}
             >
               <Search className="w-3 h-3" /> Test Search
             </button>
@@ -695,13 +851,51 @@ export const OperationsClubAI: React.FC = () => {
               <p className="text-xs font-medium text-[var(--text-primary)]">Add Knowledge Entry</p>
               <select
                 value={newIntent}
-                onChange={(e) => setNewIntent(e.target.value)}
+                onChange={(e) => { setNewIntent(e.target.value); checkConflicts(e.target.value); }}
                 className="w-full text-xs p-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
               >
-                {['general_inquiry', 'sim_frozen', 'pricing', 'door_access', 'booking_change', 'club_rental', 'wifi', 'side_screens', 'ball_not_registering', 'login_qr_issue', 'refund_request', 'gift_card', 'food_drink', 'how_long_18'].map(i => (
+                {INTENT_OPTIONS.map(i => (
                   <option key={i} value={i}>{i.replace(/_/g, ' ')}</option>
                 ))}
               </select>
+
+              {/* Conflict detection */}
+              {conflictEntries && conflictEntries.length > 0 && (
+                <div className="p-2 rounded border border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/10">
+                  <p className="text-[10px] font-medium text-yellow-700 dark:text-yellow-400 flex items-center gap-1 mb-1.5">
+                    <AlertTriangle className="w-3 h-3" />
+                    {conflictEntries.length} existing {newIntent.replace(/_/g, ' ')} entries — review for conflicts
+                  </p>
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {conflictEntries.slice(0, 5).map(ce => (
+                      <div key={ce.id} className="flex items-start justify-between gap-2 p-1.5 rounded bg-[var(--bg-primary)] text-[10px]">
+                        <div className="min-w-0">
+                          {ce.customer_message && (
+                            <p className="text-[var(--text-secondary)] truncate">Q: {ce.customer_message}</p>
+                          )}
+                          <p className="text-[var(--text-primary)] truncate">A: {ce.team_response.substring(0, 120)}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`px-1 py-0.5 rounded ${ce.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                              {ce.is_active ? 'active' : 'inactive'}
+                            </span>
+                            <span className="text-[var(--text-secondary)]">{ce.source_type} · {(ce.confidence_score * 100).toFixed(0)}%</span>
+                          </div>
+                        </div>
+                        {ce.is_active && (
+                          <button
+                            onClick={() => toggleEntryActive(ce.id, true)}
+                            className="flex-shrink-0 px-1.5 py-0.5 text-[10px] rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                            title="Deactivate this conflicting entry"
+                          >
+                            Deactivate
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <input
                 value={newQuestion}
                 onChange={(e) => setNewQuestion(e.target.value)}
@@ -717,7 +911,7 @@ export const OperationsClubAI: React.FC = () => {
               />
               <div className="flex justify-end gap-2">
                 <button
-                  onClick={() => setShowAddKnowledge(false)}
+                  onClick={() => { setShowAddKnowledge(false); setConflictEntries(null); }}
                   className="px-3 py-1.5 text-xs rounded border border-[var(--border-primary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 >
                   Cancel
@@ -759,7 +953,7 @@ export const OperationsClubAI: React.FC = () => {
                   {testResults.length === 0 ? (
                     <p className="text-xs text-[var(--text-secondary)] py-2 text-center">No matches found</p>
                   ) : (
-                    testResults.map((r, i) => (
+                    testResults.map((r) => (
                       <div key={r.knowledge_id} className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
@@ -783,6 +977,231 @@ export const OperationsClubAI: React.FC = () => {
                       </div>
                     ))
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Knowledge Browser */}
+          {showBrowser && (
+            <div className="mt-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)]">
+              {/* Browser header with filters */}
+              <div className="p-3 border-b border-[var(--border-primary)]">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-[var(--text-primary)] flex items-center gap-1.5">
+                    <Filter className="w-3 h-3" /> Browse Knowledge Entries
+                    <span className="text-[var(--text-secondary)] font-normal">({browserTotal} total)</span>
+                  </p>
+                  <button
+                    onClick={() => fetchBrowserEntries(browserPage)}
+                    className="p-1 rounded hover:bg-[var(--bg-hover)] transition-colors"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[var(--text-secondary)] ${browserLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={browserSourceFilter}
+                    onChange={(e) => { setBrowserSourceFilter(e.target.value); setBrowserPage(0); }}
+                    className="text-xs p-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                  >
+                    <option value="">All Sources</option>
+                    <option value="conversation">Conversations</option>
+                    <option value="website">Website</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                  <select
+                    value={browserIntentFilter}
+                    onChange={(e) => { setBrowserIntentFilter(e.target.value); setBrowserPage(0); }}
+                    className="text-xs p-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                  >
+                    <option value="">All Intents</option>
+                    {INTENT_OPTIONS.map(i => (
+                      <option key={i} value={i}>{i.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Entry list */}
+              <div className="divide-y divide-[var(--border-primary)] max-h-[500px] overflow-y-auto">
+                {browserLoading ? (
+                  <div className="p-6 text-center text-xs text-[var(--text-secondary)]">Loading entries...</div>
+                ) : browserEntries.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-[var(--text-secondary)]">No entries found</div>
+                ) : (
+                  browserEntries.map(entry => (
+                    <div
+                      key={entry.id}
+                      className={`p-3 transition-colors ${
+                        !entry.is_active ? 'opacity-50 bg-gray-50 dark:bg-gray-900/20' : ''
+                      } ${editingEntry?.id === entry.id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                    >
+                      {/* Entry in edit mode */}
+                      {editingEntry?.id === entry.id ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium text-blue-600">Editing Entry #{entry.id}</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setEditingEntry(null)}
+                                className="text-xs px-2 py-1 rounded border border-[var(--border-primary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={saveEditEntry}
+                                disabled={savingEntry || !editEntryAnswer.trim()}
+                                className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+                              >
+                                {savingEntry ? 'Saving...' : 'Save Changes'}
+                              </button>
+                            </div>
+                          </div>
+                          <select
+                            value={editEntryIntent}
+                            onChange={(e) => setEditEntryIntent(e.target.value)}
+                            className="w-full text-xs p-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                          >
+                            {INTENT_OPTIONS.map(i => (
+                              <option key={i} value={i}>{i.replace(/_/g, ' ')}</option>
+                            ))}
+                          </select>
+                          {entry.source_type !== 'website' && (
+                            <input
+                              value={editEntryQuestion}
+                              onChange={(e) => setEditEntryQuestion(e.target.value)}
+                              placeholder="Customer question"
+                              className="w-full text-xs p-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                            />
+                          )}
+                          <textarea
+                            value={editEntryAnswer}
+                            onChange={(e) => setEditEntryAnswer(e.target.value)}
+                            placeholder="Team response / content"
+                            rows={3}
+                            className="w-full text-xs p-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)] resize-none"
+                          />
+                          <div className="flex items-center gap-2">
+                            <label className="text-[10px] text-[var(--text-secondary)]">Confidence:</label>
+                            <input
+                              type="range" min="0" max="1" step="0.05"
+                              value={editEntryConfidence}
+                              onChange={(e) => setEditEntryConfidence(parseFloat(e.target.value))}
+                              className="w-24"
+                            />
+                            <span className="text-[10px] font-mono text-[var(--text-primary)]">{(editEntryConfidence * 100).toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Entry in view mode */
+                        <>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                entry.source_type === 'conversation' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                                entry.source_type === 'website' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                              }`}>
+                                {entry.source_type}
+                              </span>
+                              {entry.intent && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)] font-medium">
+                                  {entry.intent.replace(/_/g, ' ')}
+                                </span>
+                              )}
+                              {!entry.is_active && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-600 font-medium">
+                                  INACTIVE
+                                </span>
+                              )}
+                              <span className="text-[10px] text-[var(--text-secondary)]">
+                                {(entry.confidence_score * 100).toFixed(0)}% conf
+                              </span>
+                              {entry.use_count > 0 && (
+                                <span className="text-[10px] text-[var(--text-secondary)]">
+                                  used {entry.use_count}x
+                                </span>
+                              )}
+                              {(entry.feedback_up > 0 || entry.feedback_down > 0) && (
+                                <span className="text-[10px] text-[var(--text-secondary)]">
+                                  +{entry.feedback_up} / -{entry.feedback_down}
+                                </span>
+                              )}
+                            </div>
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                onClick={() => startEditEntry(entry)}
+                                className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                title="Edit entry"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                              </button>
+                              <button
+                                onClick={() => toggleEntryActive(entry.id, entry.is_active)}
+                                disabled={togglingId === entry.id}
+                                className={`p-1 rounded transition-colors ${
+                                  entry.is_active
+                                    ? 'hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                                    : 'hover:bg-green-100 dark:hover:bg-green-900/30'
+                                }`}
+                                title={entry.is_active ? 'Deactivate (hide from AI)' : 'Reactivate'}
+                              >
+                                {entry.is_active
+                                  ? <EyeOff className="w-3.5 h-3.5 text-yellow-600" />
+                                  : <Eye className="w-3.5 h-3.5 text-green-500" />
+                                }
+                              </button>
+                              <button
+                                onClick={() => deleteEntry(entry.id)}
+                                className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                title="Delete permanently"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              </button>
+                            </div>
+                          </div>
+                          {entry.customer_message && (
+                            <p className="text-[11px] text-[var(--text-secondary)] mb-0.5">
+                              <span className="font-medium">Q:</span> {entry.customer_message.substring(0, 150)}{entry.customer_message.length > 150 ? '...' : ''}
+                            </p>
+                          )}
+                          {entry.page_section && (
+                            <p className="text-[10px] text-[var(--text-secondary)] mb-0.5">[{entry.page_section}]</p>
+                          )}
+                          <p className="text-xs text-[var(--text-primary)]">
+                            <span className="font-medium">A:</span> {entry.team_response.substring(0, 250)}{entry.team_response.length > 250 ? '...' : ''}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {browserTotal > BROWSER_PAGE_SIZE && (
+                <div className="p-3 border-t border-[var(--border-primary)] flex items-center justify-between">
+                  <p className="text-[10px] text-[var(--text-secondary)]">
+                    Showing {browserPage * BROWSER_PAGE_SIZE + 1}–{Math.min((browserPage + 1) * BROWSER_PAGE_SIZE, browserTotal)} of {browserTotal}
+                  </p>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleBrowserPageChange(browserPage - 1)}
+                      disabled={browserPage === 0}
+                      className="px-2 py-1 text-xs rounded border border-[var(--border-primary)] disabled:opacity-30 hover:bg-[var(--bg-hover)]"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      onClick={() => handleBrowserPageChange(browserPage + 1)}
+                      disabled={(browserPage + 1) * BROWSER_PAGE_SIZE >= browserTotal}
+                      className="px-2 py-1 text-xs rounded border border-[var(--border-primary)] disabled:opacity-30 hover:bg-[var(--bg-hover)]"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

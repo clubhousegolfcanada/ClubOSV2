@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.28.8] - 2026-03-25
+
+### Added
+- **Knowledge Entry Browser** — New "Browse Entries" panel on ClubAI page lets operators view all knowledge base entries with filters by source type (conversation/website/manual) and intent category (club_rental, pricing, etc.). Paginated, shows confidence scores, usage counts, and feedback stats.
+- **Edit Knowledge Entries** — Inline edit mode for any knowledge entry. Change the intent, question, answer, or confidence score. Embedding is automatically regenerated when text changes.
+- **Deactivate/Reactivate Entries** — Eye toggle to soft-delete outdated or wrong entries without permanently removing them. Deactivated entries are hidden from ClubAI searches but can be reactivated.
+- **Delete Knowledge Entries** — Admin-only permanent delete for entries that shouldn't exist at all.
+- **Conflict Detection** — When adding a manual knowledge entry, selecting an intent now shows existing entries for that intent so operators can spot and deactivate conflicting information before adding new knowledge (e.g. old "we don't rent clubs" vs new "we rent clubs").
+- **Backend endpoints** — `PUT /patterns/clubai-knowledge/:id` (edit + re-embed), `PATCH /patterns/clubai-knowledge/:id/toggle` (activate/deactivate), `GET /patterns/clubai-knowledge-conflicts` (conflict check), `DELETE /patterns/clubai-knowledge/:id` (permanent delete).
+
 ## [1.28.7] - 2026-03-24
 
 ### Fixed
