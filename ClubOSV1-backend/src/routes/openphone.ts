@@ -18,6 +18,32 @@ import { messageEvents } from './messages';
 
 const router = Router();
 
+// ============================================
+// WEBHOOK DEDUP: Prevent processing the same message twice
+// OpenPhone fires multiple events per message (message.received + message.created).
+// Without this, ClubAI generates and sends two separate responses.
+// ============================================
+const processedMessageIds = new Map<string, number>(); // messageId -> timestamp
+
+function isMessageAlreadyProcessed(messageId: string): boolean {
+  if (!messageId) return false;
+  if (processedMessageIds.has(messageId)) {
+    return true;
+  }
+  processedMessageIds.set(messageId, Date.now());
+  return false;
+}
+
+// Clean up old entries every 5 minutes to prevent memory leak
+setInterval(() => {
+  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+  for (const [id, timestamp] of processedMessageIds) {
+    if (timestamp < fiveMinutesAgo) {
+      processedMessageIds.delete(id);
+    }
+  }
+}, 5 * 60 * 1000);
+
 // Test phone numbers that bypass ALL safeguards (for testing AI responses)
 // These numbers skip: conversation locking, operator_active, rapid message escalation, AI response limits
 // SECURITY: Moved to environment variable - set V3PLS_TEST_PHONES as comma-separated phone numbers
@@ -269,7 +295,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
         if (data && data.object && (data.object.from || data.object.to || data.object.body)) {
           messageData = data.object;
         }
-        
+
+        // DEDUP: Skip if we've already processed this exact message ID.
+        // OpenPhone fires multiple events per message (message.received + message.created),
+        // which caused ClubAI to send duplicate responses.
+        const webhookMessageId = messageData.id || data.id;
+        if (webhookMessageId && isMessageAlreadyProcessed(webhookMessageId)) {
+          logger.info('[Dedup] Skipping already-processed message', {
+            messageId: webhookMessageId,
+            eventType: type,
+            phoneFrom: messageData.from,
+          });
+          return res.json({ success: true, message: 'Duplicate webhook event ignored' });
+        }
+
         // Debug log the entire messageData structure
         logger.info('Message data structure:', {
           hasDirection: !!messageData.direction,
@@ -1297,6 +1336,19 @@ router.post('/webhook', async (req: Request, res: Response) => {
         break;
 
       case 'call.completed':
+        // Log raw call data for debugging missed call detection
+        logger.info('[OpenPhone Call] call.completed webhook received', {
+          status: data.status,
+          direction: data.direction,
+          answeredAt: data.answeredAt,
+          duration: data.duration,
+          from: data.from,
+          to: data.to,
+          phoneNumber: data.phoneNumber,
+          hasVoicemail: !!data.voicemail,
+          completedAt: data.completedAt
+        });
+
         // Store call information - append to existing conversation if exists
         const callPhoneNumber = data.phoneNumber || data.from || data.to;
         const callConversationId = `conv_${callPhoneNumber.replace(/[^0-9]/g, '')}`;
@@ -1364,18 +1416,28 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
         // --- MISSED CALL AUTO-TEXT ---
         // Detect missed inbound calls and send a friendly text so ClubAI can help over SMS
-        const isMissedCall = (
-          (data.direction === 'incoming' || data.direction === 'inbound') &&
-          (data.status === 'missed' || data.status === 'no-answer' || data.status === 'abandoned' || data.answeredAt === null) &&
-          data.status !== 'completed' && data.status !== 'answered'
-        );
+        // OpenPhone may report "hung up before voicemail" as status:'completed' with answeredAt:null and short duration
+        const isInbound = data.direction === 'incoming' || data.direction === 'inbound';
+        const wasNotAnswered = data.answeredAt === null || data.answeredAt === undefined;
+        const hasExplicitMissedStatus = data.status === 'missed' || data.status === 'no-answer' || data.status === 'abandoned';
+        const wasHungUpBeforeAnswer = data.status === 'completed' && wasNotAnswered && (data.duration === 0 || data.duration === null || data.duration === undefined || data.duration < 3);
+        const isMissedCall = isInbound && (hasExplicitMissedStatus || wasHungUpBeforeAnswer || (wasNotAnswered && data.status !== 'answered'));
+
+        if (!isMissedCall) {
+          logger.info('[OpenPhone Call] Not a missed call — no auto-text', {
+            isInbound, status: data.status, answeredAt: data.answeredAt, duration: data.duration
+          });
+        }
 
         if (isMissedCall) {
           logger.info('[ClubAI MissedCall] Missed inbound call detected', {
             phoneNumber: callPhoneNumber,
             status: data.status,
+            direction: data.direction,
+            answeredAt: data.answeredAt,
             duration: data.duration,
-            hasVoicemail: !!data.voicemail
+            hasVoicemail: !!data.voicemail,
+            detectionReason: hasExplicitMissedStatus ? 'explicit_missed_status' : wasHungUpBeforeAnswer ? 'hung_up_before_answer' : 'not_answered'
           });
 
           // Check if ClubAI is enabled (bypass approval mode — this is a static message)
@@ -1386,11 +1448,19 @@ router.post('/webhook', async (req: Request, res: Response) => {
               WHERE config_key = 'clubai_enabled'
             `);
             missedCallEnabled = mcConfig.rows[0]?.config_value === 'true';
-          } catch {
+            logger.info('[ClubAI MissedCall] ClubAI enabled check (DB)', { enabled: missedCallEnabled, dbValue: mcConfig.rows[0]?.config_value });
+          } catch (configErr) {
             missedCallEnabled = process.env.CLUBAI_ENABLED === 'true';
+            logger.info('[ClubAI MissedCall] ClubAI enabled check (env fallback)', { enabled: missedCallEnabled, envValue: process.env.CLUBAI_ENABLED });
           }
 
           const missedCallDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+
+          if (!missedCallEnabled) {
+            logger.warn('[ClubAI MissedCall] SKIPPED — ClubAI is not enabled. Set clubai_enabled=true in pattern_learning_config or CLUBAI_ENABLED=true env var');
+          } else if (!missedCallDefaultNumber) {
+            logger.warn('[ClubAI MissedCall] SKIPPED — OPENPHONE_DEFAULT_NUMBER env var is not set. Cannot send auto-text without a sending number.');
+          }
 
           if (missedCallEnabled && missedCallDefaultNumber) {
             // 1-hour cooldown: check if we already texted this customer recently

@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.10] - 2026-03-25
+
+### Fixed
+- **ClubAI sending duplicate messages to customers** — OpenPhone fires multiple webhook events per inbound message (`message.received` + `message.created`). Both events hit the same code path, causing ClubAI to generate and send two separate responses. Added in-memory message ID dedup at the webhook entry point so only the first event for each message ID is processed. Cache auto-cleans every 5 minutes.
+
 ## [1.29.9] - 2026-03-25
 
 ### Fixed
