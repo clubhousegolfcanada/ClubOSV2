@@ -109,19 +109,21 @@ export async function generateResponse(
 
   // Check if the conversation is already closed (customer acknowledged our closer)
   // If the last AI/operator message was a closer and the customer is just saying thanks/bye, stop.
+  // Only suppresses short acknowledgments (under 40 chars) to avoid silencing real follow-up questions.
   if (history.length >= 2) {
     const lastAiMsg = [...history].reverse().find(m => m.sender_type === 'ai' || m.sender_type === 'operator');
     if (lastAiMsg) {
-      const closerPatterns = /\b(enjoy your round|have (a )?great time|have fun|anytime!|glad .* help|no problem|you're (all )?set|good to go)\b/i;
-      const customerCloserPatterns = /^(thanks|thank you|thx|ty|ok|okay|cool|perfect|awesome|great|will do|sounds good|appreciate it|cheers|bye|see ya|have a good|good night)\b/i;
+      const closerPatterns = /\b(enjoy your round|have (a )?great time|have fun|anytime|glad .* help|no problem|you'?re (all )?set|good to go)\b/i;
+      const customerCloserPatterns = /^(thanks|thank you|thx|ty|ok!?|okay|cool|perfect|awesome|great!?|will do|sounds good|appreciate it|cheers|bye|see ya|have a good|good night)[\s!.]*$/i;
+      const trimmedMessage = messageText.trim();
       const lastAiWasCloser = closerPatterns.test(lastAiMsg.message_text);
-      const customerIsAcknowledging = customerCloserPatterns.test(messageText.trim());
+      const customerIsAcknowledging = trimmedMessage.length < 40 && customerCloserPatterns.test(trimmedMessage);
 
       if (lastAiWasCloser && customerIsAcknowledging) {
         logger.info('[ClubAI] Conversation already closed, not responding to acknowledgment', {
           phoneNumber,
           lastAiMessage: lastAiMsg.message_text.substring(0, 50),
-          customerMessage: messageText.substring(0, 50),
+          customerMessage: trimmedMessage,
         });
         return { response: null, escalate: false, confidence: 0 };
       }
@@ -258,14 +260,22 @@ export async function generateResponse(
     }
 
     // Post-generation hallucination check: if the response contains specific numbers
-    // (prices, hours, phone numbers) that aren't in the RAG context, flag it
+    // (prices, hours, phone numbers) that aren't in the RAG context, flag it.
+    // Catches: $35, $25/hr, 5:00 AM, 902-707-3748, (902) 707-3748
     const hasRAGContext = ragContext.conversationExamples.length > 0 || ragContext.websiteContent.length > 0;
-    const numberPattern = /\$\d+|\d+(?::\d{2})?\s*(?:am|pm|AM|PM)|(?:\d{3}[-.]){2}\d{4}/g;
+    const numberPattern = /\$\d+(?:\.\d{2})?|\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM)|\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
     const responseNumbers = cleanResponse.match(numberPattern) || [];
+    // Strip formatting from both response numbers and context for comparison
     const contextText = ragContext.conversationExamples + ragContext.websiteContent;
+    const normalizeNum = (n: string) => n.replace(/[\s().-]/g, '');
 
     if (responseNumbers.length > 0 && hasRAGContext) {
-      const ungroundedNumbers = responseNumbers.filter(num => !contextText.includes(num));
+      const normalizedContext = normalizeNum(contextText);
+      const ungroundedNumbers = responseNumbers.filter(num => {
+        const norm = normalizeNum(num);
+        // Check both raw and normalized forms against context
+        return !contextText.includes(num) && !normalizedContext.includes(norm);
+      });
       if (ungroundedNumbers.length > 0) {
         logger.warn('[ClubAI] Hallucination detected: response contains numbers not in context', {
           ungroundedNumbers,

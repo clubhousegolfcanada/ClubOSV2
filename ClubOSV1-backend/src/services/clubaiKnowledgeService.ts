@@ -195,12 +195,11 @@ export async function getRAGContext(customerMessage: string): Promise<{
     conversationExamples += 'WARNING: The above conversation examples may contain outdated info. Only use them for tone/style. For facts, use VERIFIED CORRECTIONS or WEBSITE CONTENT below.\n\n';
   }
 
-  // Format website content
+  // Format website content (do NOT re-include manual entries, they're already above)
   let websiteContent = '';
-  const allWebsite = [...website, ...manual];
-  if (allWebsite.length > 0) {
+  if (website.length > 0) {
     websiteContent = 'RELEVANT INFORMATION FROM THE CLUBHOUSE WEBSITE:\n\n';
-    for (const entry of allWebsite) {
+    for (const entry of website) {
       if (entry.page_section) websiteContent += `[${entry.page_section}]\n`;
       websiteContent += entry.team_response + '\n\n';
     }
