@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import { logger } from '../utils/logger';
-import { config } from '../utils/envValidator';
 import { db } from '../utils/database';
 import { assistantFileManager } from './assistantFileManager';
 import { knowledgeSearchService } from './knowledgeSearchService';
@@ -403,13 +402,15 @@ Please provide a helpful response to the customer's current message based on the
       const runStartTime = Date.now();
       const run = await this.openai.beta.threads.runs.create(thread.id, {
         assistant_id: assistantId,
+        max_completion_tokens: isCustomerFacing ? 300 : 1000,
         // ONLY add customer instructions for customer-facing messages
         ...(isCustomerFacing ? {
           additional_instructions: `CRITICAL: This response is for a CUSTOMER via SMS/text message.
 - Only provide public information
 - Do not mention ClubOS, internal systems, databases, or technical details
 - Do not mention employee names or internal procedures
-- Keep responses friendly and professional
+- Keep responses short (1-3 sentences). This is SMS.
+- Do NOT add long sign-offs, follow-up questions, or filler after answering the question
 - If asked about something confidential, politely redirect to email booking@clubhouse247golf.com`
         } : {})
       });
@@ -641,7 +642,7 @@ Please provide a helpful response to the customer's current message based on the
     }
   }
 
-  private async getFallbackResponse(route: string, userMessage: string): Promise<string> {
+  private async getFallbackResponse(route: string, _userMessage: string): Promise<string> {
     try {
       // Try to get configurable fallback from database
       const result = await db.query(`
@@ -673,24 +674,6 @@ Please provide a helpful response to the customer's current message based on the
       // Return empty string on error to avoid sending incorrect messages
       return '';
     }
-  }
-
-  private formatDatabaseResponse(data: any, route: string): string {
-    const routeTemplates: Record<string, string> = {
-      'Booking & Access': `Based on our records: ${data.answer}`,
-      'Emergency': `Emergency Protocol: ${data.answer}`,
-      'TechSupport': `Technical Solution: ${data.answer}`,
-      'BrandTone': `Brand Information: ${data.answer}`
-    };
-
-    const template = routeTemplates[route] || `Information: ${data.answer}`;
-    
-    if (data.lastUpdated) {
-      const updateDate = new Date(data.lastUpdated).toLocaleDateString();
-      return `${template}\n\n*Last updated: ${updateDate}*`;
-    }
-    
-    return template;
   }
 
   /**
@@ -839,7 +822,7 @@ let initializationAttempted = false;
 
 // Create a proxy that initializes the service on first use
 export const assistantService = new Proxy({} as AssistantService, {
-  get(target, prop, receiver) {
+  get(_target, prop, receiver) {
     // Initialize on first access
     if (!initializationAttempted) {
       initializationAttempted = true;

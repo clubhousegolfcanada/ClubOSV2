@@ -155,26 +155,44 @@ export async function getRAGContext(customerMessage: string): Promise<{
   }
 
   // Run all three searches in parallel using the same embedding
-  // Thresholds calibrated against real queries (audit 2026-03-23):
-  //   - Conversations: 0.50 (customer Q&A pairs have moderate similarity to new questions)
-  //   - Website: 0.30 (reference content is semantically distant from conversational queries)
-  //   - Manual: 0.45 (manually entered, should be closer to expected questions)
+  // Manual entries (operator corrections) are searched FIRST and with a lower threshold
+  // because they represent verified, corrected information that should override old conversations.
+  // Thresholds raised 2026-03-25 to reduce weak matches causing hallucination:
+  //   - Manual: 0.45 (operator corrections, highest priority)
+  //   - Conversations: 0.55 (must be a solid match to avoid stale info)
+  //   - Website: 0.50 (was 0.30, raised to prevent tangential content injection)
   const [conversations, website, manual] = await Promise.all([
-    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.50, sourceType: 'conversation' }),
-    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 3, threshold: 0.30, sourceType: 'website' }),
-    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 2, threshold: 0.45, sourceType: 'manual' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.55, sourceType: 'conversation' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 3, threshold: 0.50, sourceType: 'website' }),
+    searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.45, sourceType: 'manual' }),
   ]);
 
-  // Format conversation examples
+  // Format manual corrections FIRST. These override everything else.
+  // They go into conversationExamples with a PRIORITY label so the AI knows to trust them.
   let conversationExamples = '';
+  if (manual.length > 0) {
+    conversationExamples += 'VERIFIED CORRECTIONS FROM THE TEAM (USE THESE OVER ANY OTHER INFORMATION):\n\n';
+    for (const entry of manual) {
+      if (entry.customer_message) {
+        conversationExamples += `Customer: "${entry.customer_message}"\n`;
+      }
+      conversationExamples += `Correct response: "${entry.team_response}"\n`;
+      if (entry.intent) conversationExamples += `(Intent: ${entry.intent})\n`;
+      conversationExamples += '\n';
+    }
+  }
+
+  // Then add conversation examples (lower priority).
+  // These are TONE REFERENCES ONLY, not factual sources.
   if (conversations.length > 0) {
-    conversationExamples = 'REAL EXAMPLES OF HOW THE TEAM HAS HANDLED SIMILAR MESSAGES:\n\n';
+    conversationExamples += 'TONE REFERENCE EXAMPLES (for style only, NOT for facts like pricing or hours):\n\n';
     for (const conv of conversations) {
       conversationExamples += `Customer: "${conv.customer_message}"\n`;
       conversationExamples += `Team response: "${conv.team_response}"\n`;
       if (conv.intent) conversationExamples += `(Intent: ${conv.intent})\n`;
       conversationExamples += '\n';
     }
+    conversationExamples += 'WARNING: The above conversation examples may contain outdated info. Only use them for tone/style. For facts, use VERIFIED CORRECTIONS or WEBSITE CONTENT below.\n\n';
   }
 
   // Format website content

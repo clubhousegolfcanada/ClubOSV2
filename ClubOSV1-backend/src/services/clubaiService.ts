@@ -107,6 +107,27 @@ export async function generateResponse(
     };
   }
 
+  // Check if the conversation is already closed (customer acknowledged our closer)
+  // If the last AI/operator message was a closer and the customer is just saying thanks/bye, stop.
+  if (history.length >= 2) {
+    const lastAiMsg = [...history].reverse().find(m => m.sender_type === 'ai' || m.sender_type === 'operator');
+    if (lastAiMsg) {
+      const closerPatterns = /\b(enjoy your round|have (a )?great time|have fun|anytime!|glad .* help|no problem|you're (all )?set|good to go)\b/i;
+      const customerCloserPatterns = /^(thanks|thank you|thx|ty|ok|okay|cool|perfect|awesome|great|will do|sounds good|appreciate it|cheers|bye|see ya|have a good|good night)\b/i;
+      const lastAiWasCloser = closerPatterns.test(lastAiMsg.message_text);
+      const customerIsAcknowledging = customerCloserPatterns.test(messageText.trim());
+
+      if (lastAiWasCloser && customerIsAcknowledging) {
+        logger.info('[ClubAI] Conversation already closed, not responding to acknowledgment', {
+          phoneNumber,
+          lastAiMessage: lastAiMsg.message_text.substring(0, 50),
+          customerMessage: messageText.substring(0, 50),
+        });
+        return { response: null, escalate: false, confidence: 0 };
+      }
+    }
+  }
+
   // RAG: Search for relevant past conversations and website content
   let ragContext = { conversationExamples: '', websiteContent: '', knowledgeIds: [] as number[], similarityScores: [] as number[] };
   try {
@@ -126,8 +147,8 @@ export async function generateResponse(
       SELECT id, rule_type, rule_text, intent
       FROM clubai_style_rules
       WHERE is_active = TRUE
-      ORDER BY created_at DESC
-      LIMIT 20
+      ORDER BY use_count DESC, created_at DESC
+      LIMIT 10
     `);
 
     if (rulesResult.rows.length > 0) {
@@ -173,10 +194,11 @@ export async function generateResponse(
     '- If you need to escalate to a human, include [ESCALATE TO HUMAN] at the END of your message, followed by a summary line.\n' +
     '- Format: [ESCALATE TO HUMAN] Issue: Z, Priority: normal/high\n' +
     '- Do NOT include the escalation tag in the message the customer sees.\n' +
-    '- Keep responses SHORT — this is SMS. 1-3 sentences max.\n' +
+    '- Keep responses SHORT. This is SMS. 1-3 sentences max. No long sign-offs or follow-up questions after resolving the issue.\n' +
     '- Do NOT sign your messages with "- ClubAI" — that is added automatically.\n' +
-    '- Give the customer the actual information (pricing, steps, etc.) from the DYNAMIC CONTEXT — do NOT send links instead of answering.\n' +
-    '- Quote exact numbers from the knowledge base. For pricing: $35/hr standard, $25/hr mornings (5AM-1PM weekdays), $15/hr late night (midnight-5AM weekdays). If these don\'t match the DYNAMIC CONTEXT, use the DYNAMIC CONTEXT values.';
+    '- Give the customer the actual information (pricing, steps, etc.) from the DYNAMIC CONTEXT. Do NOT send links instead of answering.\n' +
+    '- Quote exact numbers from the DYNAMIC CONTEXT only. Do NOT use any pricing, hours, or other numbers unless they appear in the DYNAMIC CONTEXT above. If no pricing info is in the context, escalate instead of guessing.\n' +
+    '- When the customer says thanks, bye, or similar closers, reply ONCE with a short friendly closer (e.g. "No problem! Enjoy your round!") and STOP. Do NOT reply to their acknowledgment of your closer.';
 
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: systemContent }
@@ -199,7 +221,7 @@ export async function generateResponse(
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages,
-      temperature: 0.7,
+      temperature: 0.4,
       max_tokens: 300,
     });
 
@@ -233,6 +255,42 @@ export async function generateResponse(
     if (cleanResponse.length < 3) {
       logger.warn('[ClubAI] Response too short, skipping', { response: cleanResponse });
       return { response: null, escalate: false, confidence: 0 };
+    }
+
+    // Post-generation hallucination check: if the response contains specific numbers
+    // (prices, hours, phone numbers) that aren't in the RAG context, flag it
+    const hasRAGContext = ragContext.conversationExamples.length > 0 || ragContext.websiteContent.length > 0;
+    const numberPattern = /\$\d+|\d+(?::\d{2})?\s*(?:am|pm|AM|PM)|(?:\d{3}[-.]){2}\d{4}/g;
+    const responseNumbers = cleanResponse.match(numberPattern) || [];
+    const contextText = ragContext.conversationExamples + ragContext.websiteContent;
+
+    if (responseNumbers.length > 0 && hasRAGContext) {
+      const ungroundedNumbers = responseNumbers.filter(num => !contextText.includes(num));
+      if (ungroundedNumbers.length > 0) {
+        logger.warn('[ClubAI] Hallucination detected: response contains numbers not in context', {
+          ungroundedNumbers,
+          responsePreview: cleanResponse.substring(0, 100),
+        });
+        // Replace with escalation instead of sending potentially wrong info
+        return {
+          response: "Let me check with the team on that and get back to you!",
+          escalate: true,
+          escalationSummary: `ClubAI blocked: response contained ungrounded numbers (${ungroundedNumbers.join(', ')}). Original: ${cleanResponse.substring(0, 200)}`,
+          confidence: 0.2
+        };
+      }
+    } else if (!hasRAGContext && responseNumbers.length > 0) {
+      // No RAG context at all but response has specific numbers. Very likely hallucinated.
+      logger.warn('[ClubAI] No RAG context but response contains numbers, escalating', {
+        numbers: responseNumbers,
+        responsePreview: cleanResponse.substring(0, 100),
+      });
+      return {
+        response: "Let me check with the team on that and get back to you!",
+        escalate: true,
+        escalationSummary: `ClubAI blocked: no knowledge context but response contained specific numbers (${responseNumbers.join(', ')}). Original: ${cleanResponse.substring(0, 200)}`,
+        confidence: 0.2
+      };
     }
 
     // Dynamic confidence scoring based on RAG quality

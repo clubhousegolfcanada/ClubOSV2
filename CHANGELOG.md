@@ -2,6 +2,28 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.29.9] - 2026-03-25
+
+### Fixed
+- **ClubAI hallucinating prices, hours, and other facts** — Removed hardcoded pricing from the system prompt that conflicted with dynamic knowledge base content. Now only uses facts from RAG context. If no context available, escalates to human instead of guessing.
+- **ClubAI responses too long and verbose** — Added `max_completion_tokens: 300` to the OpenAI Assistant path (previously unlimited). Added explicit short-response instructions for customer-facing SMS.
+- **ClubAI keeps replying after conversation is done** — Added conversation-end detection: if ClubAI already sent a closer ("Enjoy your round!") and the customer just says "thanks" or "will do", ClubAI stays silent instead of starting another round of pleasantries.
+- **ClubAI fabricating numbers not in knowledge base** — Added post-generation hallucination check that catches specific numbers (prices, times, phone numbers) in the AI response that don't appear in the RAG context. Blocked responses escalate to a human with the original AI response logged for review.
+- **Weak RAG matches causing bad context injection** — Raised similarity thresholds across all knowledge types: website 0.30 to 0.50, conversations 0.50 to 0.55, manual corrections 0.40 to 0.45. Prevents tangentially related content from being treated as authoritative.
+- **Old conversations treated as factual sources** — Conversation examples in RAG context are now labeled "TONE REFERENCE EXAMPLES (for style only, NOT for facts)" with explicit warnings. Only verified corrections and website content are treated as factual.
+
+### Changed
+- **ClubAI temperature lowered from 0.7 to 0.4** — Reduces creative embellishment of facts. 0.4 is more appropriate for a factual support bot quoting specific pricing and troubleshooting steps.
+- **Style rules limited to 10 (was 20)** — Reduces prompt confusion from too many potentially conflicting learned style rules. Now prioritizes most-used rules.
+- **System prompt strengthened** — Added explicit rule against inventing prices, URLs, phone numbers, or hours. Reinforced that conversation examples are tone references only, not fact sources.
+
+## [1.29.8] - 2026-03-25
+
+### Fixed
+- **Missed call auto-text not sending when caller hangs up before voicemail** — Broadened missed call detection to catch calls where OpenPhone reports `status: 'completed'` with `answeredAt: null` and zero/short duration (caller rang and hung up). Previously only explicit `missed`/`no-answer`/`abandoned` statuses triggered the "Sorry we missed your call" auto-text.
+- **Silent failures in missed call auto-text pipeline** — Added diagnostic logging when ClubAI is disabled or `OPENPHONE_DEFAULT_NUMBER` is not set. Previously these gates failed with zero logging, making it impossible to diagnose why auto-texts weren't sending.
+- **Raw call webhook logging** — All `call.completed` webhooks now log status, direction, answeredAt, and duration so future call handling issues can be diagnosed from Railway logs.
+
 ## [1.29.7] - 2026-03-25
 
 ### Performance
