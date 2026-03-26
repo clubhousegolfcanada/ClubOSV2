@@ -181,6 +181,15 @@ export const OperationsClubAI: React.FC = () => {
   const [correctionSuccess, setCorrectionSuccess] = useState<string | null>(null);
   const [correctionError, setCorrectionError] = useState<string | null>(null);
 
+  // System prompt
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [systemPromptSource, setSystemPromptSource] = useState<'database' | 'default'>('default');
+  const [systemPromptLoading, setSystemPromptLoading] = useState(false);
+  const [systemPromptSaving, setSystemPromptSaving] = useState(false);
+  const [systemPromptDirty, setSystemPromptDirty] = useState(false);
+  const [systemPromptSuccess, setSystemPromptSuccess] = useState<string | null>(null);
+
   // UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -281,6 +290,44 @@ export const OperationsClubAI: React.FC = () => {
       await apiClient.put('/patterns/safety-thresholds', newSafety);
     } catch { setSafety(safety); }
     setSaving(false);
+  };
+
+  const fetchSystemPrompt = async () => {
+    setSystemPromptLoading(true);
+    try {
+      const res = await apiClient.get('/patterns/clubai-system-prompt');
+      if (res.data?.data) {
+        setSystemPrompt(res.data.data.prompt);
+        setSystemPromptSource(res.data.data.source);
+        setSystemPromptDirty(false);
+      }
+    } catch { /* defaults fine */ }
+    setSystemPromptLoading(false);
+  };
+
+  const saveSystemPrompt = async () => {
+    if (!systemPrompt.trim() || systemPrompt.trim().length < 50) return;
+    setSystemPromptSaving(true);
+    try {
+      await apiClient.put('/patterns/clubai-system-prompt', { prompt: systemPrompt });
+      setSystemPromptSource('database');
+      setSystemPromptDirty(false);
+      setSystemPromptSuccess('System prompt saved. Changes take effect on the next ClubAI response.');
+      setTimeout(() => setSystemPromptSuccess(null), 5000);
+    } catch { /* */ }
+    setSystemPromptSaving(false);
+  };
+
+  const resetSystemPrompt = async () => {
+    if (!confirm('Reset the system prompt to the original default? Your customizations will be lost.')) return;
+    setSystemPromptSaving(true);
+    try {
+      await apiClient.post('/patterns/clubai-system-prompt/reset');
+      await fetchSystemPrompt();
+      setSystemPromptSuccess('System prompt reset to default.');
+      setTimeout(() => setSystemPromptSuccess(null), 5000);
+    } catch { /* */ }
+    setSystemPromptSaving(false);
   };
 
   const parseKnowledge = async () => {
@@ -644,6 +691,74 @@ export const OperationsClubAI: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* System Prompt (collapsible) */}
+      <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)]">
+        <button
+          onClick={() => { setShowSystemPrompt(!showSystemPrompt); if (!showSystemPrompt && !systemPrompt) fetchSystemPrompt(); }}
+          className="w-full flex items-center justify-between p-4 text-left hover:bg-[var(--bg-tertiary)] transition-colors rounded-lg"
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-purple-500" />
+            <span className="text-sm font-medium text-[var(--text-primary)]">System Prompt</span>
+            {systemPromptSource === 'database' && (
+              <span className="text-xs px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">Customized</span>
+            )}
+          </div>
+          {showSystemPrompt ? <ChevronUp className="w-4 h-4 text-[var(--text-secondary)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />}
+        </button>
+        {showSystemPrompt && (
+          <div className="px-4 pb-4 space-y-3">
+            <p className="text-xs text-[var(--text-secondary)]">
+              This is the full instruction set sent to ClubAI. Edit personality, tone rules, response templates, grounding rules -- everything ClubAI follows.
+            </p>
+            {systemPromptLoading ? (
+              <div className="flex items-center gap-2 py-8 justify-center text-[var(--text-secondary)]">
+                <RefreshCw className="w-4 h-4 animate-spin" /> Loading...
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={systemPrompt}
+                  onChange={(e) => { setSystemPrompt(e.target.value); setSystemPromptDirty(true); }}
+                  className="w-full h-96 p-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Loading system prompt..."
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-secondary)]">{systemPrompt.length.toLocaleString()} chars</span>
+                    {systemPromptDirty && <span className="text-xs text-yellow-500">Unsaved changes</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {systemPromptSource === 'database' && (
+                      <button
+                        onClick={resetSystemPrompt}
+                        disabled={systemPromptSaving}
+                        className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border-primary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50"
+                      >
+                        Reset to Default
+                      </button>
+                    )}
+                    <button
+                      onClick={saveSystemPrompt}
+                      disabled={systemPromptSaving || !systemPromptDirty || systemPrompt.trim().length < 50}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {systemPromptSaving ? 'Saving...' : 'Save Prompt'}
+                    </button>
+                  </div>
+                </div>
+                {systemPromptSuccess && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <Check className="w-3 h-3 text-green-500" />
+                    <span className="text-xs text-green-500">{systemPromptSuccess}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats Row */}

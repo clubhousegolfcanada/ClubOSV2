@@ -20,10 +20,35 @@ interface ConversationMessage {
 
 // Cache the system prompt (tone/rules only — knowledge comes from RAG now)
 let systemPrompt: string | null = null;
+let systemPromptLoaded = false;
 
-function loadSystemPrompt(): void {
-  if (systemPrompt) return;
+/**
+ * Load system prompt from DB (pattern_learning_config) with file fallback.
+ * Cached in memory until clearSystemPromptCache() is called.
+ */
+async function loadSystemPromptAsync(): Promise<void> {
+  if (systemPromptLoaded && systemPrompt) return;
 
+  // Try DB first
+  try {
+    const result = await db.query(
+      `SELECT config_value FROM pattern_learning_config WHERE config_key = 'clubai_system_prompt'`
+    );
+    if (result.rows.length > 0 && result.rows[0].config_value) {
+      systemPrompt = result.rows[0].config_value;
+      systemPromptLoaded = true;
+      logger.info('[ClubAI] System prompt loaded from database');
+      return;
+    }
+  } catch (err) {
+    logger.warn('[ClubAI] DB system prompt fetch failed, falling back to file:', err);
+  }
+
+  // Fallback to markdown file
+  loadSystemPromptFromFile();
+}
+
+function loadSystemPromptFromFile(): void {
   const possiblePaths = [
     join(__dirname, '..', 'knowledge-base'),
     join(process.cwd(), 'src', 'knowledge-base'),
@@ -34,7 +59,8 @@ function loadSystemPrompt(): void {
     try {
       const promptPath = join(basePath, 'clubai-system-prompt.md');
       systemPrompt = readFileSync(promptPath, 'utf-8');
-      logger.info('[ClubAI] System prompt loaded from: ' + basePath);
+      systemPromptLoaded = true;
+      logger.info('[ClubAI] System prompt loaded from file: ' + basePath);
       return;
     } catch {
       // Try next path
@@ -43,6 +69,42 @@ function loadSystemPrompt(): void {
 
   logger.error('[ClubAI] Failed to load system prompt from any path');
   systemPrompt = null;
+}
+
+// Synchronous fallback for first call (keeps generateResponse signature simple)
+function loadSystemPrompt(): void {
+  if (systemPromptLoaded && systemPrompt) return;
+  loadSystemPromptFromFile();
+}
+
+/**
+ * Clear the cached system prompt so the next generateResponse() reloads from DB.
+ * Called after saving a new system prompt via the API.
+ */
+export function clearSystemPromptCache(): void {
+  systemPrompt = null;
+  systemPromptLoaded = false;
+  logger.info('[ClubAI] System prompt cache cleared');
+}
+
+/**
+ * Get the default system prompt from the markdown file (for reset functionality).
+ */
+export function getDefaultSystemPrompt(): string | null {
+  const possiblePaths = [
+    join(__dirname, '..', 'knowledge-base'),
+    join(process.cwd(), 'src', 'knowledge-base'),
+    join(process.cwd(), 'dist', 'knowledge-base'),
+  ];
+
+  for (const basePath of possiblePaths) {
+    try {
+      return readFileSync(join(basePath, 'clubai-system-prompt.md'), 'utf-8');
+    } catch {
+      // Try next path
+    }
+  }
+  return null;
 }
 
 /**
@@ -78,7 +140,9 @@ export async function generateResponse(
 ): Promise<ClubAIResponse> {
   logger.info('[ClubAI] generateResponse called', { phoneNumber, messageText: messageText.substring(0, 50), conversationId });
 
-  loadSystemPrompt();
+  // Try async DB load first, fall back to sync file load
+  await loadSystemPromptAsync();
+  if (!systemPrompt) loadSystemPrompt();
 
   if (!systemPrompt) {
     logger.error('[ClubAI] System prompt not loaded, cannot generate response');
@@ -191,16 +255,8 @@ export async function generateResponse(
     }
   }
 
-  systemContent += '\n\n---\n\nIMPORTANT RESPONSE RULES:\n' +
-    '- ONLY use facts from the DYNAMIC CONTEXT above. If the context does not contain the answer, say "Let me check with the team" and escalate. NEVER guess or make up numbers, prices, hours, or steps.\n' +
-    '- If you need to escalate to a human, include [ESCALATE TO HUMAN] at the END of your message, followed by a summary line.\n' +
-    '- Format: [ESCALATE TO HUMAN] Issue: Z, Priority: normal/high\n' +
-    '- Do NOT include the escalation tag in the message the customer sees.\n' +
-    '- Keep responses SHORT. This is SMS. 1-3 sentences max. No long sign-offs or follow-up questions after resolving the issue.\n' +
-    '- Do NOT sign your messages with "- ClubAI" — that is added automatically.\n' +
-    '- Give the customer the actual information (pricing, steps, etc.) from the DYNAMIC CONTEXT. Do NOT send links instead of answering.\n' +
-    '- Quote exact numbers from the DYNAMIC CONTEXT only. Do NOT use any pricing, hours, or other numbers unless they appear in the DYNAMIC CONTEXT above. If no pricing info is in the context, escalate instead of guessing.\n' +
-    '- When the customer says thanks, bye, or similar closers, reply ONCE with a short friendly closer (e.g. "No problem! Enjoy your round!") and STOP. Do NOT reply to their acknowledgment of your closer.';
+  // Note: IMPORTANT RESPONSE RULES are now part of the editable system prompt (end of the prompt text).
+  // They are no longer hardcoded here, so changes from the ClubAI Settings UI take effect immediately.
 
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: systemContent }
@@ -254,8 +310,21 @@ export async function generateResponse(
     // Clean up the response
     let cleanResponse = rawResponse.replace(/\s*-\s*ClubAI\s*$/i, '').trim();
 
+    // Strip internal reasoning that GPT sometimes includes instead of staying silent.
+    // Examples: "(stopping here as the conversation is closed.)", "(No response needed.)"
+    // This catches meta-commentary that should never reach the customer.
+    cleanResponse = cleanResponse
+      .replace(/\((?:stopping|not responding|no response|conversation (?:is )?(?:closed|ended|over|done|complete)|I (?:will|should|won't|shouldn't) (?:not )?respond)[^)]*\)/gi, '')
+      .replace(/^(?:I (?:will|should|won't|shouldn't) (?:not )?respond|no response needed|stopping here|conversation (?:is )?(?:closed|ended|over|done))\.?\s*/gim, '')
+      .trim();
+
+    // If after stripping internal reasoning the response is empty or too short, stay silent
     if (cleanResponse.length < 3) {
-      logger.warn('[ClubAI] Response too short, skipping', { response: cleanResponse });
+      if (rawResponse.length >= 3) {
+        logger.info('[ClubAI] Response was internal reasoning only, suppressing', { rawResponse: rawResponse.substring(0, 100) });
+      } else {
+        logger.warn('[ClubAI] Response too short, skipping', { response: cleanResponse });
+      }
       return { response: null, escalate: false, confidence: 0 };
     }
 
@@ -367,4 +436,6 @@ export const clubaiService = {
   generateResponse,
   storeClubAIMessage,
   deactivateForConversation,
+  clearSystemPromptCache,
+  getDefaultSystemPrompt,
 };

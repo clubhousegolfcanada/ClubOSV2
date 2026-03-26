@@ -2359,6 +2359,106 @@ router.put('/clubai-config', authenticate, async (req: Request, res: Response) =
 });
 
 // ============================================
+// CLUBAI SYSTEM PROMPT ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/patterns/clubai-system-prompt
+ * Returns the current system prompt (from DB or default file)
+ */
+router.get('/clubai-system-prompt', authenticate, async (_req: Request, res: Response) => {
+  try {
+    // Check DB first
+    const result = await db.query(
+      `SELECT config_value FROM pattern_learning_config WHERE config_key = 'clubai_system_prompt'`
+    );
+
+    if (result.rows.length > 0 && result.rows[0].config_value) {
+      return res.json({
+        success: true,
+        data: { prompt: result.rows[0].config_value, source: 'database' }
+      });
+    }
+
+    // Fall back to file
+    const { getDefaultSystemPrompt } = await import('../services/clubaiService');
+    const defaultPrompt = getDefaultSystemPrompt();
+    if (defaultPrompt) {
+      return res.json({
+        success: true,
+        data: { prompt: defaultPrompt, source: 'default' }
+      });
+    }
+
+    return res.status(404).json({ success: false, error: 'System prompt not found' });
+  } catch (error) {
+    logger.error('[ClubAI System Prompt] Fetch error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch system prompt' });
+  }
+});
+
+/**
+ * PUT /api/patterns/clubai-system-prompt
+ * Save the system prompt to DB. Admin only. Clears the in-memory cache.
+ */
+router.put('/clubai-system-prompt', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { user } = req as any;
+    if (user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Admin only' });
+    }
+
+    const { prompt } = req.body;
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 50) {
+      return res.status(400).json({ success: false, error: 'Prompt must be at least 50 characters' });
+    }
+
+    await db.query(`
+      INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+      VALUES ('clubai_system_prompt', $1, NOW())
+      ON CONFLICT (config_key) DO UPDATE SET config_value = $1, updated_at = NOW()
+    `, [prompt.trim()]);
+
+    // Clear the in-memory cache so the next generateResponse() picks up the new prompt
+    const { clearSystemPromptCache } = await import('../services/clubaiService');
+    clearSystemPromptCache();
+
+    logger.info('[ClubAI System Prompt] Updated by admin', { userId: user.id, promptLength: prompt.trim().length });
+
+    return res.json({ success: true, message: 'System prompt updated' });
+  } catch (error) {
+    logger.error('[ClubAI System Prompt] Update error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update system prompt' });
+  }
+});
+
+/**
+ * POST /api/patterns/clubai-system-prompt/reset
+ * Reset the system prompt to the default from the markdown file. Admin only.
+ */
+router.post('/clubai-system-prompt/reset', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { user } = req as any;
+    if (user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Admin only' });
+    }
+
+    // Delete the DB override so it falls back to the file
+    await db.query(`DELETE FROM pattern_learning_config WHERE config_key = 'clubai_system_prompt'`);
+
+    const { clearSystemPromptCache } = await import('../services/clubaiService');
+    clearSystemPromptCache();
+
+    logger.info('[ClubAI System Prompt] Reset to default by admin', { userId: (req as any).user?.id });
+
+    return res.json({ success: true, message: 'System prompt reset to default' });
+  } catch (error) {
+    logger.error('[ClubAI System Prompt] Reset error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reset system prompt' });
+  }
+});
+
+// ============================================
 // CLUBAI RAG KNOWLEDGE BASE ENDPOINTS
 // ============================================
 

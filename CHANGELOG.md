@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.0] - 2026-03-26
+
+### Fixed
+- **ClubAI sending internal reasoning to customers** — When conversation-end detection missed an edge case, GPT-4o would output meta-commentary like "(stopping here as the conversation is closed.)" which passed through the only sanitization filter (which only stripped "- ClubAI" suffixes). Added response sanitization that strips parenthetical reasoning and internal meta-commentary before sending. If the response is nothing but internal reasoning, ClubAI stays silent instead of sending garbage.
+
+### Added
+- **Editable System Prompt on ClubAI page** — New collapsible "System Prompt" section between Controls and Stats. Shows the full instruction set ClubAI follows (personality, tone rules, intent handlers, response rules, grounding rules). Edit directly in the UI and save -- changes take effect on the next ClubAI response without a code deploy. "Reset to Default" button restores the original prompt.
+- **System prompt stored in database** — The prompt is saved to `pattern_learning_config` so edits persist across deploys. Falls back to the markdown file if no DB override exists. The previously hardcoded "IMPORTANT RESPONSE RULES" block is now part of the editable prompt text.
+
+### Changed
+- **System prompt response rules consolidated** — The "IMPORTANT RESPONSE RULES" section (grounding rules, escalation format, SMS length limits) was previously hardcoded in `clubaiService.ts` and invisible to operators. Now part of the editable system prompt so operators can see and tune exactly what ClubAI is told to do.
+
 ## [1.29.10] - 2026-03-25
 
 ### Fixed
