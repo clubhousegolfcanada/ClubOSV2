@@ -771,82 +771,51 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 `, [phoneNumber]);
               }
 
-              // SAFEGUARD: Topic-aware operator lockout check (v1.25.38)
-              // Load safety thresholds to check if topic lockout is enabled
-              const safetyThresholdsForCheck = await patternSafetyService.getSafetyThresholds();
-              const topicLockoutEnabledForCheck = safetyThresholdsForCheck.topicLockoutEnabled !== false;
+              // SAFEGUARD: Operator lockout check (blanket mode — no topic bypass)
+              // If an operator has responded, block ALL AI until the lockout expires.
+              // Topic-aware bypass is disabled: when you're texting a customer, ClubAI stays out completely.
+              if (!isTestNumber) {
+                const conv = existingConv.rows[0];
 
-              if (!isTestNumber && topicLockoutEnabledForCheck) {
-                // TOPIC-AWARE MODE: Check global cooldown, then topic-specific lockout
-                const messageTextForTopic = messageData.body || messageData.text || '';
-                const incomingTopic = detectMessageTopic(messageTextForTopic);
+                // Check 1: clubai_active explicitly set to false (set by /messages/send and webhook handler)
+                if (conv.clubai_active === false) {
+                  logger.info('[Safeguard] ClubAI deactivated for this conversation - skipping AI', {
+                    phoneNumber,
+                    operatorActive: conv.operator_active,
+                  });
+                  await logSafetyTrigger('clubai_deactivated', 'blocked', phoneNumber, conv.id);
+                  return res.json({ success: true, message: 'ClubAI deactivated by operator' });
+                }
 
-                // Check 1: Global cooldown (no AI at all for X minutes after operator)
-                if (existingConv.rows[0].global_cooldown_until &&
-                    new Date(existingConv.rows[0].global_cooldown_until) > new Date()) {
+                // Check 2: Global cooldown (no AI for X minutes after operator message)
+                if (conv.global_cooldown_until &&
+                    new Date(conv.global_cooldown_until) > new Date()) {
                   logger.info('[Safeguard] Global cooldown active - skipping AI', {
                     phoneNumber,
-                    cooldownUntil: existingConv.rows[0].global_cooldown_until,
-                    incomingTopic,
-                    topicLabel: getTopicLabel(incomingTopic)
+                    cooldownUntil: conv.global_cooldown_until,
                   });
-                  await logSafetyTrigger('global_cooldown', 'blocked', phoneNumber, existingConv.rows[0].id, messageTextForTopic, {
-                    cooldownUntil: existingConv.rows[0].global_cooldown_until,
-                    incomingTopic
-                  });
+                  await logSafetyTrigger('global_cooldown', 'blocked', phoneNumber, conv.id);
                   return res.json({ success: true, message: 'Global cooldown active' });
                 }
 
-                // Check 2: Same topic as operator - still locked
-                if (existingConv.rows[0].last_operator_topic === incomingTopic &&
-                    existingConv.rows[0].topic_lockout_until &&
-                    new Date(existingConv.rows[0].topic_lockout_until) > new Date()) {
-                  logger.info('[Safeguard] Same topic as operator - skipping AI', {
+                // Check 3: Operator active or conversation locked (blanket lockout)
+                if (conv.operator_active ||
+                    conv.conversation_locked ||
+                    (conv.lockout_until && new Date(conv.lockout_until) > new Date()) ||
+                    (conv.topic_lockout_until && new Date(conv.topic_lockout_until) > new Date())) {
+                  logger.info('[Safeguard] Skipping AI - operator is active or conversation locked', {
                     phoneNumber,
-                    topic: incomingTopic,
-                    topicLabel: getTopicLabel(incomingTopic),
-                    lockoutUntil: existingConv.rows[0].topic_lockout_until
+                    operatorActive: conv.operator_active,
+                    conversationLocked: conv.conversation_locked,
+                    lockoutUntil: conv.lockout_until,
+                    topicLockoutUntil: conv.topic_lockout_until
                   });
-                  await logSafetyTrigger('topic_lockout', 'blocked', phoneNumber, existingConv.rows[0].id, messageTextForTopic, {
-                    topic: incomingTopic,
-                    operatorTopic: existingConv.rows[0].last_operator_topic,
-                    lockoutUntil: existingConv.rows[0].topic_lockout_until
+                  await logSafetyTrigger('operator_lockout', 'blocked', phoneNumber, conv.id, undefined, {
+                    operatorActive: conv.operator_active,
+                    conversationLocked: conv.conversation_locked,
+                    lockoutUntil: conv.lockout_until,
+                    topicLockoutUntil: conv.topic_lockout_until
                   });
-                  return res.json({ success: true, message: 'Topic locked by operator' });
-                }
-
-                // Check 3: Different topic AND past cooldown - AI CAN respond!
-                if (existingConv.rows[0].operator_active &&
-                    incomingTopic !== existingConv.rows[0].last_operator_topic) {
-                  logger.info('[AI] Different topic from operator - AI can respond', {
-                    phoneNumber,
-                    incomingTopic,
-                    incomingTopicLabel: getTopicLabel(incomingTopic),
-                    operatorTopic: existingConv.rows[0].last_operator_topic,
-                    operatorTopicLabel: existingConv.rows[0].last_operator_topic
-                      ? getTopicLabel(existingConv.rows[0].last_operator_topic)
-                      : 'none'
-                  });
-                  // Continue to AI processing - different topic is allowed!
-                }
-              } else if (!isTestNumber) {
-                // LEGACY MODE: Blanket lockout check
-                if (existingConv.rows[0].operator_active ||
-                    existingConv.rows[0].conversation_locked ||
-                    (existingConv.rows[0].lockout_until && new Date(existingConv.rows[0].lockout_until) > new Date())) {
-
-                  logger.info('[Safeguard] Skipping AI - operator is active or conversation locked (legacy mode)', {
-                    phoneNumber,
-                    operatorActive: existingConv.rows[0].operator_active,
-                    conversationLocked: existingConv.rows[0].conversation_locked,
-                    lockoutUntil: existingConv.rows[0].lockout_until
-                  });
-                  await logSafetyTrigger('legacy_lock', 'blocked', phoneNumber, existingConv.rows[0].id, undefined, {
-                    operatorActive: existingConv.rows[0].operator_active,
-                    conversationLocked: existingConv.rows[0].conversation_locked,
-                    lockoutUntil: existingConv.rows[0].lockout_until
-                  });
-
                   return res.json({ success: true, message: 'Operator handling conversation' });
                 }
               }
@@ -995,9 +964,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 clubaiShadow,
                 convId,
                 phoneNumber,
+                clubaiActive: existingConv.rows[0].clubai_active,
+                operatorActive: existingConv.rows[0].operator_active,
                 messageText: messageText?.substring(0, 50),
                 hasDefaultNumber: !!process.env.OPENPHONE_DEFAULT_NUMBER
               });
+
+              // DEFENSIVE: Double-check clubai_active flag (may have been set by /messages/send
+              // between the earlier lockout check and now)
+              if (existingConv.rows[0].clubai_active === false) {
+                logger.info('[ClubAI] Skipping - clubai_active is false (operator took over)', { phoneNumber, convId });
+                return res.json({ success: true, message: 'ClubAI deactivated' });
+              }
 
               if (clubaiEnabled) {
                 const clubaiDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
@@ -1265,7 +1243,36 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   newClubaiShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
                 }
 
-                if (newClubaiEnabled) {
+                // LOCKOUT CHECK: Even for new conversations, check if the operator
+                // was recently active with this phone number (e.g. operator sent a message
+                // that created a new conversation window, or lockout was set via /messages/send)
+                let newConvLockoutActive = false;
+                try {
+                  const recentLockout = await db.query(`
+                    SELECT operator_active, clubai_active, global_cooldown_until, topic_lockout_until
+                    FROM openphone_conversations
+                    WHERE phone_number = $1
+                      AND (operator_active = true OR clubai_active = false
+                           OR global_cooldown_until > NOW() OR topic_lockout_until > NOW())
+                    ORDER BY updated_at DESC LIMIT 1
+                  `, [phoneNumber]);
+
+                  if (recentLockout.rows.length > 0) {
+                    newConvLockoutActive = true;
+                    logger.info('[ClubAI] New conversation but operator lockout active - skipping AI', {
+                      phoneNumber,
+                      operatorActive: recentLockout.rows[0].operator_active,
+                      clubaiActive: recentLockout.rows[0].clubai_active,
+                      globalCooldown: recentLockout.rows[0].global_cooldown_until,
+                      topicLockout: recentLockout.rows[0].topic_lockout_until
+                    });
+                  }
+                } catch (lockoutCheckErr) {
+                  logger.error('[ClubAI] Lockout check failed for new conversation:', lockoutCheckErr);
+                }
+
+                if (newClubaiEnabled && !newConvLockoutActive) {
+
                   // Store customer message
                   await db.query(`
                     INSERT INTO conversation_messages (conversation_id, sender_type, message_text)

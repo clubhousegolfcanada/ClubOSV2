@@ -14,6 +14,8 @@ import { anonymizePhoneNumber } from '../utils/encryption';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
 import { successResponse, errorResponse } from '../utils/responseHelpers';
+import { clubaiService } from '../services/clubaiService';
+import { patternSafetyService } from '../services/patternSafetyService';
 
 const router = Router();
 
@@ -568,6 +570,42 @@ router.post('/send',
       // Invalidate conversation cache so next poll returns fresh data
       conversationCache.clear();
 
+      // OPERATOR LOCKOUT: Immediately deactivate ClubAI for this conversation.
+      // Don't wait for the OpenPhone webhook -- by then the customer may have already
+      // replied and ClubAI would respond before the lockout is set.
+      try {
+        const safetyThresholds = await patternSafetyService.getSafetyThresholds();
+        const lockoutHours = safetyThresholds.operatorLockoutHours || 4;
+        const globalCooldownMinutes = safetyThresholds.globalCooldownMinutes || 60;
+
+        const convForLockout = await db.query(
+          `SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY updated_at DESC LIMIT 1`,
+          [formattedTo]
+        );
+        if (convForLockout.rows.length > 0) {
+          const lockConvId = convForLockout.rows[0].id;
+          await db.query(`
+            UPDATE openphone_conversations
+            SET operator_active = true,
+                operator_last_message = NOW(),
+                clubai_active = false,
+                conversation_locked = false,
+                global_cooldown_until = NOW() + INTERVAL '${globalCooldownMinutes} minutes',
+                topic_lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
+            WHERE id = $1`,
+            [lockConvId]
+          );
+          logger.info('[Operator Lockout] Set via /messages/send', {
+            phoneNumber: formattedTo,
+            conversationId: lockConvId,
+            globalCooldownMinutes,
+            lockoutHours
+          });
+        }
+      } catch (lockoutErr) {
+        logger.error('[Operator Lockout] Failed to set lockout in /messages/send:', lockoutErr);
+      }
+
       // PATTERN LEARNING: Analyze full conversation when marked as done
       try {
         // Import services
@@ -982,6 +1020,33 @@ router.post('/suggestions/:suggestionId/approve-and-send',
 
       // Invalidate conversation cache so next poll returns fresh data
       conversationCache.clear();
+
+      // OPERATOR LOCKOUT: Immediately deactivate ClubAI when operator approves/sends
+      try {
+        const safetyThresholds = await patternSafetyService.getSafetyThresholds();
+        const lockoutHours = safetyThresholds.operatorLockoutHours || 4;
+        const globalCooldownMinutes = safetyThresholds.globalCooldownMinutes || 60;
+
+        await db.query(`
+          UPDATE openphone_conversations
+          SET operator_active = true,
+              operator_last_message = NOW(),
+              clubai_active = false,
+              conversation_locked = false,
+              global_cooldown_until = NOW() + INTERVAL '${globalCooldownMinutes} minutes',
+              topic_lockout_until = NOW() + INTERVAL '${lockoutHours} hours'
+          WHERE id = $1`,
+          [suggestion.conversationId]
+        );
+        logger.info('[Operator Lockout] Set via approve-and-send', {
+          phoneNumber: formattedTo,
+          conversationId: suggestion.conversationId,
+          globalCooldownMinutes,
+          lockoutHours
+        });
+      } catch (lockoutErr) {
+        logger.error('[Operator Lockout] Failed to set lockout in approve-and-send:', lockoutErr);
+      }
 
       // Track staff response for learning (even AI-assisted responses)
       await aiAutomationService.learnFromStaffResponse(

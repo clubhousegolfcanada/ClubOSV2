@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.1] - 2026-03-27
+
+### Fixed
+- **ClubAI not deactivating when operator texts a customer** — The `/messages/send` route (used when operators reply through ClubOS) did not set any operator lockout flags. It relied on the OpenPhone webhook arriving later, but if the customer replied before that webhook, ClubAI would respond anyway. Now sets `operator_active`, `clubai_active=false`, and `global_cooldown_until` immediately when an operator sends a message.
+- **ClubAI ignoring per-conversation `clubai_active` flag** — The `clubai_active` field was correctly set to `false` when operators took over, but the ClubAI response code never checked it. Added defensive `clubai_active` check at the ClubAI checkpoint.
+- **Topic-aware bypass letting ClubAI respond during operator conversations** — The topic-aware lockout system allowed ClubAI to respond if the customer asked about a "different topic" than the operator was handling. Replaced with blanket lockout: when an operator is active, ClubAI stays out completely regardless of topic.
+- **New conversations skipping all lockout checks** — When a customer texted after a >1 hour gap, a new conversation was created with no lockout flags. ClubAI would respond even if the operator had just been messaging that customer. Now checks for active lockouts across all recent conversations for the phone number.
+- **Approve-and-send route missing operator lockout** — The `/suggestions/:id/approve-and-send` route also sends operator messages but didn't set lockout flags. Fixed.
+
 ## [1.30.0] - 2026-03-26
 
 ### Fixed
