@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.2] - 2026-03-27
+
+### Fixed
+- **ClubAI saying "Enjoy your round!" on non-golf conversations** — System prompt closer examples were all golf-themed, causing ClubAI to say "Enjoy your round!" even for gift card, pricing, and booking inquiries. Updated prompt to use context-appropriate closers: golf closers only when customer is actually playing, generic closers ("No problem!", "Anytime!") for everything else.
+
 ## [1.30.1] - 2026-03-27
 
 ### Fixed
