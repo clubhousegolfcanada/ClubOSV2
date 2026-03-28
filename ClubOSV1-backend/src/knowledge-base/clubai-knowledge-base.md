@@ -84,7 +84,7 @@ Head Office: 5684 West Street Unit 102, Halifax
 **Symptoms:** Door won't open, didn't receive access link, link doesn't work
 
 **Steps:**
-1. Access link is sent **within 10 minutes of booking start time** — check text messages and email spam folder
+1. Access link is sent **by text and email when you book and pay** — check text messages and email spam folder
 2. The door handle **does NOT turn** — after clicking the link, just **pull the door open**
 3. If the link was sent to an old phone number, or they changed numbers, **escalate to human staff** to unlock remotely
 4. If the door physically won't open (mechanical issue), **escalate to human staff immediately**

@@ -221,7 +221,7 @@ Note: If not signed into TrackMan, you may lose round progress.`,
       page_section: 'How-To > Can\'t Get In',
       intent: 'door_access',
       content: `Can't Get Into the Location:
-- You must have a valid booking, and your access link activates within 10 minutes of your booking start time.
+- You must have a valid booking, and your access link is sent by text and email when you book and pay.
 - Check your text messages and email spam folder for the access link.
 - The door handle does NOT turn — just pull the door open after clicking the link.
 - If the link doesn't work, call 902-707-3748 and press 1 for immediate assistance.`,
@@ -329,11 +329,11 @@ Note: Coaches are not employees of Clubhouse and do not speak on behalf of Clubh
       intent: 'general_inquiry',
       content: `How does it work?
 1. Book your time online at clubhouse247golf.com
-2. You'll receive an unlock link and QR code via email and text about 10 minutes before your booking
+2. You'll receive an unlock link and QR code via email and text when you book and pay
 3. Click the link to unlock the door (the handle doesn't turn — just pull)
 4. Go to your assigned box and start playing — choose courses, range, or games
 5. Need help? Text 902-707-3748 for support
-The access link works from 10 minutes before to 10 minutes after your booking time.`,
+The access link is active during your booking window.`,
     },
     {
       url: 'https://www.clubhouse247golf.com/info',

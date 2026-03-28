@@ -14280,7 +14280,7 @@
           "direction": "outgoing",
           "sender": "clubhouse",
           "is_auto_response": false,
-          "body": "The text will get you into the building. Then at your sim you start playing or sign into your trackman account and start playing. The unlock link is active 10 minutes before the booking and stays active 10 minutes after."
+          "body": "The text will get you into the building. Then at your sim you start playing or sign into your trackman account and start playing. The unlock link is sent when you book and pay, and stays active during your booking window."
         },
         {
           "timestamp": "2025-01-06T16:18:10.306000+00:00",
@@ -18654,7 +18654,7 @@
           "direction": "outgoing",
           "sender": "clubhouse",
           "is_auto_response": false,
-          "body": "You'll receive a door access code by email and text that's active 10 minutes before your booking. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
+          "body": "You'll receive a door access code by email and text when you book and pay. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
         },
         {
           "timestamp": "2025-11-12T23:04:23.302000+00:00",
@@ -25021,7 +25021,7 @@
           "direction": "outgoing",
           "sender": "clubhouse",
           "is_auto_response": false,
-          "body": "You'll receive a door access code by email and text that's active 10 minutes before your booking. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
+          "body": "You'll receive a door access code by email and text when you book and pay. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
         },
         {
           "timestamp": "2025-10-29T13:26:11.537000+00:00",
@@ -25070,7 +25070,7 @@
           "direction": "outgoing",
           "sender": "clubhouse",
           "is_auto_response": false,
-          "body": "You'll receive a door access code by email and text that's active 10 minutes before your booking. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
+          "body": "You'll receive a door access code by email and text when you book and pay. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
         },
         {
           "timestamp": "2025-10-30T16:46:11.967000+00:00",
@@ -31810,7 +31810,7 @@
           "direction": "outgoing",
           "sender": "clubhouse",
           "is_auto_response": false,
-          "body": "You'll receive a door access code by email and text that's active 10 minutes before your booking. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
+          "body": "You'll receive a door access code by email and text when you book and pay. If you haven't received it or need help getting in, please let me know your booking details.\n\n- ClubAI"
         },
         {
           "timestamp": "2025-10-30T14:12:22.325000+00:00",

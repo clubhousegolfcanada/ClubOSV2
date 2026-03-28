@@ -5,6 +5,13 @@ All notable changes to the ClubOSV1 Backend will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.19] - 2026-03-28
+
+### Fixed
+- ClubAI incorrectly telling customers their access link is sent "10 minutes before your booking" — access links are actually sent when you book and pay
+- Corrected all 6 knowledge sources: system prompt (2 places), knowledge base, import script (3 places), and training examples (5 entries)
+- Note: DB system prompt in `pattern_learning_config` and DB embeddings in `clubai_knowledge` may also need updating via production SQL or re-running the import script
+
 ## [1.11.18] - 2026-03-25
 
 ### Fixed
