@@ -262,8 +262,15 @@ export async function generateResponse(
     { role: 'system', content: systemContent }
   ];
 
-  // Add conversation history
+  // Add conversation history (skip the current message — it was already inserted
+  // into conversation_messages before generateResponse was called, so it would
+  // appear twice if we don't filter it out)
   for (const msg of history) {
+    // Skip the current message from history — we add it explicitly below
+    if (msg.sender_type === 'customer' && msg.message_text === messageText &&
+        msg === history[history.length - 1]) {
+      continue;
+    }
     if (msg.sender_type === 'customer') {
       messages.push({ role: 'user', content: msg.message_text });
     } else if (msg.sender_type === 'ai' || msg.sender_type === 'operator') {

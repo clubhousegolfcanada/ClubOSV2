@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.4] - 2026-03-28
+
+### Fixed
+- **ClubAI asking for location/box when customer already provided it** — System prompt had contradictory rules: per-intent escalation templates said "ask for location and box" but escalation protocol said "don't interrogate." Removed all "ask for location/box" from escalation templates. Added rule: never ask a question the customer already answered. Updated all conversation examples to model the correct behavior.
+- **Duplicate customer message in GPT context** — The current message was inserted into `conversation_messages` before calling `generateResponse()`, so it appeared in both the history AND as the explicit user message. GPT saw it twice. Fixed by skipping the current message when loading history.
+
 ## [1.30.3] - 2026-03-28
 
 ### Fixed
