@@ -1118,7 +1118,7 @@ async function startServer() {
 
     // Add ClubAI columns to openphone_conversations if missing (each separately to avoid lock issues)
     try {
-      await db.query(`ALTER TABLE openphone_conversations ADD COLUMN IF NOT EXISTS clubai_active BOOLEAN DEFAULT FALSE`);
+      await db.query(`ALTER TABLE openphone_conversations ADD COLUMN IF NOT EXISTS clubai_active BOOLEAN DEFAULT NULL`);
       await db.query(`ALTER TABLE openphone_conversations ADD COLUMN IF NOT EXISTS clubai_messages_sent INTEGER DEFAULT 0`);
       await db.query(`ALTER TABLE openphone_conversations ADD COLUMN IF NOT EXISTS clubai_escalated BOOLEAN DEFAULT FALSE`);
       await db.query(`ALTER TABLE openphone_conversations ADD COLUMN IF NOT EXISTS clubai_escalation_reason TEXT`);

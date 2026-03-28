@@ -706,18 +706,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
             WHERE id = $5
           `, [JSON.stringify(updatedMessages), newUnreadCount, customerName, employeeName, existingConv.rows[0].id]);
           
-          logger.info('OpenPhone message appended to existing conversation', { 
+          logger.info('OpenPhone message appended to existing conversation', {
             conversationId,
             phoneNumber,
             messageCount: updatedMessages.length,
             direction: messageData.direction,
             minutesSinceLastMessage: Math.round(existingConv.rows[0].minutes_since_last_message)
           });
-          
+
           // Send push notification for inbound messages
           // FIX: Use our determined direction, not the raw webhook data
           if (messageDirection === 'inbound') {
-            try {
+            // CRITICAL: Respond 200 to OpenPhone IMMEDIATELY.
+            // OpenPhone has a 10-second timeout and retries on failure, which caused
+            // duplicate ClubAI responses. The message is already safely stored above.
+            // Everything below (notifications, safety checks, ClubAI) runs async.
+            res.json({ success: true, message: 'Message received' });
+
+            // Process notifications + ClubAI in background (no await)
+            processExistingConversationInbound(
+              phoneNumber, customerName, messageData, existingConv,
+              updatedMessages, conversationId
+            ).catch(err => logger.error('[Async] Inbound processing error:', err));
+
+            break; // Exit the switch
+          } else if (messageDirection === 'outbound') {
               // Get all users with admin, operator, or support roles
               const users = await db.query(
                 `SELECT id FROM users
@@ -777,8 +790,11 @@ router.post('/webhook', async (req: Request, res: Response) => {
               if (!isTestNumber) {
                 const conv = existingConv.rows[0];
 
-                // Check 1: clubai_active explicitly set to false (set by /messages/send and webhook handler)
-                if (conv.clubai_active === false) {
+                // Check 1: clubai_active explicitly set to false BY AN OPERATOR
+                // NOTE: clubai_active defaults to FALSE in the DB, so we can only treat it as
+                // "deactivated" if an operator actually took over (operator_active=true).
+                // Without the operator_active check, ALL conversations would be blocked.
+                if (conv.clubai_active === false && conv.operator_active === true) {
                   logger.info('[Safeguard] ClubAI deactivated for this conversation - skipping AI', {
                     phoneNumber,
                     operatorActive: conv.operator_active,
@@ -972,7 +988,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
               // DEFENSIVE: Double-check clubai_active flag (may have been set by /messages/send
               // between the earlier lockout check and now)
-              if (existingConv.rows[0].clubai_active === false) {
+              if (existingConv.rows[0].clubai_active === false && existingConv.rows[0].operator_active === true) {
                 logger.info('[ClubAI] Skipping - clubai_active is false (operator took over)', { phoneNumber, convId });
                 return res.json({ success: true, message: 'ClubAI deactivated' });
               }
@@ -1252,7 +1268,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     SELECT operator_active, clubai_active, global_cooldown_until, topic_lockout_until
                     FROM openphone_conversations
                     WHERE phone_number = $1
-                      AND (operator_active = true OR clubai_active = false
+                      AND (operator_active = true
                            OR global_cooldown_until > NOW() OR topic_lockout_until > NOW())
                     ORDER BY updated_at DESC LIMIT 1
                   `, [phoneNumber]);

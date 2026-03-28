@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.3] - 2026-03-28
+
+### Fixed
+- **HOTFIX: ClubAI not responding to any customers** — The `clubai_active` column defaults to `FALSE` in the database, so the new lockout check added in v1.30.1 was treating every conversation as "operator deactivated." Fixed to only block when `clubai_active=false` AND `operator_active=true` (meaning an operator actually took over). Changed column default to `NULL` so "never set" is distinguishable from "explicitly deactivated."
+
 ## [1.30.2] - 2026-03-27
 
 ### Changed
