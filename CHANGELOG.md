@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.5] - 2026-03-30
+
+### Fixed
+- **ClubAI permanently blocked for returning customers** — The new-conversation lockout query checked ALL historical conversations for a phone number with no time bound. If an operator ever responded to a customer (even days ago), `operator_active=true` on that old conversation permanently blocked ClubAI for all future conversations from that customer. Fixed by: (1) adding a 2-hour time bound to the query, (2) removing `operator_active` from the lockout conditions (only time-based cooldowns should gate new conversations), (3) adding JavaScript-side verification as belt-and-suspenders.
+
 ## [1.30.4] - 2026-03-28
 
 ### Fixed

@@ -1262,26 +1262,33 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 // LOCKOUT CHECK: Even for new conversations, check if the operator
                 // was recently active with this phone number (e.g. operator sent a message
                 // that created a new conversation window, or lockout was set via /messages/send)
+                // Time-bounded to 2 hours to prevent stale old conversations from permanently blocking AI.
                 let newConvLockoutActive = false;
                 try {
                   const recentLockout = await db.query(`
                     SELECT operator_active, clubai_active, global_cooldown_until, topic_lockout_until
                     FROM openphone_conversations
                     WHERE phone_number = $1
-                      AND (operator_active = true
-                           OR global_cooldown_until > NOW() OR topic_lockout_until > NOW())
+                      AND updated_at > NOW() - INTERVAL '2 hours'
+                      AND (global_cooldown_until > NOW() OR topic_lockout_until > NOW())
                     ORDER BY updated_at DESC LIMIT 1
                   `, [phoneNumber]);
 
                   if (recentLockout.rows.length > 0) {
-                    newConvLockoutActive = true;
-                    logger.info('[ClubAI] New conversation but operator lockout active - skipping AI', {
-                      phoneNumber,
-                      operatorActive: recentLockout.rows[0].operator_active,
-                      clubaiActive: recentLockout.rows[0].clubai_active,
-                      globalCooldown: recentLockout.rows[0].global_cooldown_until,
-                      topicLockout: recentLockout.rows[0].topic_lockout_until
-                    });
+                    const lockRow = recentLockout.rows[0];
+                    // Belt and suspenders: verify the lockout is actually active in JS too
+                    const cooldownActive = lockRow.global_cooldown_until && new Date(lockRow.global_cooldown_until) > new Date();
+                    const topicActive = lockRow.topic_lockout_until && new Date(lockRow.topic_lockout_until) > new Date();
+                    if (cooldownActive || topicActive) {
+                      newConvLockoutActive = true;
+                      logger.info('[ClubAI] New conversation but active lockout found - skipping AI', {
+                        phoneNumber,
+                        globalCooldown: lockRow.global_cooldown_until,
+                        topicLockout: lockRow.topic_lockout_until,
+                        cooldownActive,
+                        topicActive
+                      });
+                    }
                   }
                 } catch (lockoutCheckErr) {
                   logger.error('[ClubAI] Lockout check failed for new conversation:', lockoutCheckErr);
