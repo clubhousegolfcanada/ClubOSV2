@@ -717,20 +717,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
           // Send push notification for inbound messages
           // FIX: Use our determined direction, not the raw webhook data
           if (messageDirection === 'inbound') {
-            // CRITICAL: Respond 200 to OpenPhone IMMEDIATELY.
-            // OpenPhone has a 10-second timeout and retries on failure, which caused
-            // duplicate ClubAI responses. The message is already safely stored above.
-            // Everything below (notifications, safety checks, ClubAI) runs async.
-            res.json({ success: true, message: 'Message received' });
-
-            // Process notifications + ClubAI in background (no await)
-            processExistingConversationInbound(
-              phoneNumber, customerName, messageData, existingConv,
-              updatedMessages, conversationId
-            ).catch(err => logger.error('[Async] Inbound processing error:', err));
-
-            break; // Exit the switch
-          } else if (messageDirection === 'outbound') {
+            try {
               // Get all users with admin, operator, or support roles
               const users = await db.query(
                 `SELECT id FROM users
