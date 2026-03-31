@@ -1385,6 +1385,89 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
         break;
 
+      case 'call.ringing': {
+        // Send auto-text immediately when an inbound call starts ringing.
+        // Since Clubhouse is self-service with no front desk, every call gets this text.
+        const ringingPhone = data.phoneNumber || data.from || data.to;
+        const ringingDirection = data.direction;
+
+        logger.info('[OpenPhone Call] call.ringing webhook received', {
+          direction: ringingDirection,
+          from: data.from,
+          to: data.to,
+          phoneNumber: ringingPhone,
+          callId: data.id
+        });
+
+        // Only auto-text inbound calls
+        if (ringingDirection === 'incoming' || ringingDirection === 'inbound') {
+          // Check if ClubAI is enabled
+          let ringingAutoTextEnabled = false;
+          try {
+            const rCfg = await db.query(`
+              SELECT config_value FROM pattern_learning_config
+              WHERE config_key = 'clubai_enabled'
+            `);
+            ringingAutoTextEnabled = rCfg.rows[0]?.config_value === 'true';
+          } catch {
+            ringingAutoTextEnabled = process.env.CLUBAI_ENABLED === 'true';
+          }
+
+          const ringingDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+
+          if (ringingAutoTextEnabled && ringingDefaultNumber && ringingPhone) {
+            // 1-hour cooldown: don't spam the same customer
+            try {
+              const ringingCooldown = await db.query(`
+                SELECT missed_call_text_sent_at
+                FROM openphone_conversations
+                WHERE phone_number = $1
+                  AND missed_call_text_sent_at > NOW() - INTERVAL '1 hour'
+                LIMIT 1
+              `, [ringingPhone]);
+
+              if (ringingCooldown.rows.length === 0 || !ringingCooldown.rows[0].missed_call_text_sent_at) {
+                const ringingMsg = 'Sorry we missed your call, we are currently helping another golfer. Is there anything we can help with over text? - ClubAI';
+                await openPhoneService.sendMessage(ringingPhone, ringingDefaultNumber, ringingMsg);
+
+                // Mark cooldown + store message for ClubAI context
+                const ringingConv = await db.query(
+                  `SELECT id FROM openphone_conversations WHERE phone_number = $1 ORDER BY created_at DESC LIMIT 1`,
+                  [ringingPhone]
+                );
+
+                if (ringingConv.rows.length > 0) {
+                  await db.query(`
+                    UPDATE openphone_conversations
+                    SET missed_call_text_sent_at = NOW(), clubai_active = true
+                    WHERE id = $1
+                  `, [ringingConv.rows[0].id]);
+
+                  try {
+                    await db.query(`
+                      INSERT INTO conversation_messages (conversation_id, sender_type, message_text, ai_reasoning)
+                      VALUES ($1, 'ai', $2, $3)
+                    `, [
+                      String(ringingConv.rows[0].id),
+                      ringingMsg,
+                      JSON.stringify({ source: 'ClubAI', type: 'call-ringing-auto-text', callId: data.id })
+                    ]);
+                  } catch { /* non-critical */ }
+                }
+
+                logger.info('[ClubAI CallRinging] Auto-text sent', { phoneNumber: ringingPhone, callId: data.id });
+              } else {
+                logger.info('[ClubAI CallRinging] Skipped — cooldown active', { phoneNumber: ringingPhone });
+              }
+            } catch (ringingErr) {
+              logger.error('[ClubAI CallRinging] Error sending auto-text:', ringingErr);
+            }
+          }
+        }
+
+        return res.json({ received: true });
+      }
+
       case 'call.completed':
         // Log raw call data for debugging missed call detection
         logger.info('[OpenPhone Call] call.completed webhook received', {

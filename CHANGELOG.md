@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.7] - 2026-03-31
+
+### Added
+- **Instant auto-text on incoming calls** — New `call.ringing` webhook handler sends "Sorry we missed your call, we are currently helping another golfer. Is there anything we can help with over text?" immediately when a call starts ringing, instead of waiting for `call.completed`. Uses the existing 1-hour cooldown per phone number to prevent spam. Only triggers for inbound calls.
+
 ## [1.30.6] - 2026-03-31
 
 ### Fixed
