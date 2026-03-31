@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.6] - 2026-03-31
+
+### Fixed
+- **ClubAI sending markdown links in SMS** — GPT was generating `[text](url)` markdown syntax which doesn't render in SMS, showing customers raw brackets. Added "no markdown" rule to system prompt + post-processing regex to strip markdown links, bold, and italics as a safety net.
+- **ClubAI sending duplicate responses** — OpenPhone fires multiple webhook events per message (`message.received` + `message.created`) and the ID-based dedup failed when IDs differed between event types. Added a second dedup layer matching on phone number + message content within a 5-minute window.
+
 ## [1.30.5] - 2026-03-30
 
 ### Fixed

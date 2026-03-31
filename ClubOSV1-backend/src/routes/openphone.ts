@@ -22,8 +22,11 @@ const router = Router();
 // WEBHOOK DEDUP: Prevent processing the same message twice
 // OpenPhone fires multiple events per message (message.received + message.created).
 // Without this, ClubAI generates and sends two separate responses.
+// Two layers: (1) message ID dedup, (2) phone+text content dedup as fallback
+// when message IDs differ between event types or are missing.
 // ============================================
 const processedMessageIds = new Map<string, number>(); // messageId -> timestamp
+const processedContentHashes = new Map<string, number>(); // phone+textHash -> timestamp
 
 function isMessageAlreadyProcessed(messageId: string): boolean {
   if (!messageId) return false;
@@ -34,12 +37,27 @@ function isMessageAlreadyProcessed(messageId: string): boolean {
   return false;
 }
 
+function isContentAlreadyProcessed(phoneNumber: string, messageText: string): boolean {
+  if (!phoneNumber || !messageText) return false;
+  const contentKey = `${phoneNumber}:${messageText.substring(0, 100).trim().toLowerCase()}`;
+  if (processedContentHashes.has(contentKey)) {
+    return true;
+  }
+  processedContentHashes.set(contentKey, Date.now());
+  return false;
+}
+
 // Clean up old entries every 5 minutes to prevent memory leak
 setInterval(() => {
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
   for (const [id, timestamp] of processedMessageIds) {
     if (timestamp < fiveMinutesAgo) {
       processedMessageIds.delete(id);
+    }
+  }
+  for (const [key, timestamp] of processedContentHashes) {
+    if (timestamp < fiveMinutesAgo) {
+      processedContentHashes.delete(key);
     }
   }
 }, 5 * 60 * 1000);
@@ -296,17 +314,32 @@ router.post('/webhook', async (req: Request, res: Response) => {
           messageData = data.object;
         }
 
-        // DEDUP: Skip if we've already processed this exact message ID.
+        // DEDUP LAYER 1: Skip if we've already processed this exact message ID.
         // OpenPhone fires multiple events per message (message.received + message.created),
         // which caused ClubAI to send duplicate responses.
         const webhookMessageId = messageData.id || data.id;
         if (webhookMessageId && isMessageAlreadyProcessed(webhookMessageId)) {
-          logger.info('[Dedup] Skipping already-processed message', {
+          logger.info('[Dedup] Skipping already-processed message (ID match)', {
             messageId: webhookMessageId,
             eventType: type,
             phoneFrom: messageData.from,
           });
           return res.json({ success: true, message: 'Duplicate webhook event ignored' });
+        }
+
+        // DEDUP LAYER 2: Fallback content-based dedup.
+        // If message IDs differ between event types (or are missing), catch duplicates
+        // by matching phone number + message text within a 5-minute window.
+        const dedupPhone = messageData.from || '';
+        const dedupText = messageData.body || messageData.text || '';
+        if (dedupPhone && dedupText && isContentAlreadyProcessed(dedupPhone, dedupText)) {
+          logger.info('[Dedup] Skipping already-processed message (content match)', {
+            messageId: webhookMessageId,
+            eventType: type,
+            phoneFrom: dedupPhone,
+            textPreview: dedupText.substring(0, 50),
+          });
+          return res.json({ success: true, message: 'Duplicate content ignored' });
         }
 
         // Debug log the entire messageData structure

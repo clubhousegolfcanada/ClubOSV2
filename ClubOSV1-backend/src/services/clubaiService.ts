@@ -317,6 +317,14 @@ export async function generateResponse(
     // Clean up the response
     let cleanResponse = rawResponse.replace(/\s*-\s*ClubAI\s*$/i, '').trim();
 
+    // Strip markdown formatting — SMS doesn't render it, customers see raw brackets/asterisks.
+    // Convert markdown links [text](url) → just the URL (prefer the actual URL over display text)
+    cleanResponse = cleanResponse.replace(/\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g, '$2');
+    // Strip any remaining markdown bold/italic
+    cleanResponse = cleanResponse.replace(/\*\*([^*]+)\*\*/g, '$1');
+    cleanResponse = cleanResponse.replace(/\*([^*]+)\*/g, '$1');
+    cleanResponse = cleanResponse.replace(/_([^_]+)_/g, '$1');
+
     // Strip internal reasoning that GPT sometimes includes instead of staying silent.
     // Examples: "(stopping here as the conversation is closed.)", "(No response needed.)"
     // This catches meta-commentary that should never reach the customer.
