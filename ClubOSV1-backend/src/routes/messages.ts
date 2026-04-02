@@ -64,6 +64,23 @@ async function ensureSchemaChecked(): Promise<typeof schemaColumns> {
   return schemaColumns;
 }
 
+// Cached column existence check for denormalized columns
+const columnExistsCache = new Map<string, boolean>();
+async function columnExistsCached(table: string, column: string): Promise<boolean> {
+  const key = `${table}.${column}`;
+  if (columnExistsCache.has(key)) return columnExistsCache.get(key)!;
+
+  const result = await db.query(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = $1 AND column_name = $2
+    )
+  `, [table, column]);
+  const exists = result.rows[0]?.exists ?? false;
+  columnExistsCache.set(key, exists);
+  return exists;
+}
+
 // Health check endpoint
 router.get('/health', async (_req, res) => {
   try {
@@ -180,8 +197,8 @@ router.get('/conversations',
       // Use cached schema check instead of querying information_schema every time
       const { hasUnreadCount, hasLastReadAt, hasUpdatedAt, hasClubaiEscalated, hasCustomerSentiment, hasConversationLocked } = await ensureSchemaChecked();
 
-      // OPTIMIZED: DISTINCT ON replaces ROW_NUMBER CTE — PostgreSQL uses the
-      // composite index (phone_number, updated_at DESC) to skip-scan, avoiding full table scan.
+      // OPTIMIZED v2: Use denormalized last_message columns to avoid JSONB operations.
+      // Falls back to JSONB ops if columns don't exist yet (pre-migration 366).
       const orderCol = hasUpdatedAt ? 'updated_at' : 'created_at';
       const params: any[] = [];
 
@@ -191,31 +208,55 @@ router.get('/conversations',
         params.push(`%${search}%`);
       }
 
-      let query = `
-        SELECT DISTINCT ON (phone_number)
-          id,
-          phone_number,
-          customer_name,
-          employee_name,
-          jsonb_array_length(messages) as message_count,
-          messages->-1 as last_message,
-          CASE
-            WHEN jsonb_array_length(messages) >= 3
-            THEN jsonb_build_array(messages->-3, messages->-2, messages->-1)
-            WHEN jsonb_array_length(messages) >= 1
-            THEN messages
-            ELSE '[]'::jsonb
-          END as message_history,
-          ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
-          ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
-          ${hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
-          ${hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
-          ${hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
-          created_at${hasUpdatedAt ? ', updated_at' : ''}
-        FROM openphone_conversations
-        ${whereClause}
-        ORDER BY phone_number, ${orderCol} DESC
-      `;
+      // Check if denormalized columns exist (cached after first check)
+      const hasDenormalized = await columnExistsCached('openphone_conversations', 'last_message_text');
+
+      let query: string;
+      if (hasDenormalized) {
+        // Fast path: use denormalized columns, no JSONB ops
+        query = `
+          SELECT DISTINCT ON (phone_number)
+            id,
+            phone_number,
+            customer_name,
+            employee_name,
+            COALESCE(message_count, 0) as message_count,
+            last_message_text,
+            last_message_direction,
+            last_message_at,
+            ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+            ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+            ${hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
+            ${hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
+            ${hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
+            created_at${hasUpdatedAt ? ', updated_at' : ''}
+          FROM openphone_conversations
+          ${whereClause}
+          ORDER BY phone_number, ${orderCol} DESC
+        `;
+      } else {
+        // Legacy fallback: use JSONB operations
+        query = `
+          SELECT DISTINCT ON (phone_number)
+            id,
+            phone_number,
+            customer_name,
+            employee_name,
+            jsonb_array_length(messages) as message_count,
+            messages->-1->>'body' as last_message_text,
+            messages->-1->>'direction' as last_message_direction,
+            NULL::timestamptz as last_message_at,
+            ${hasUnreadCount ? 'unread_count,' : '0 as unread_count,'}
+            ${hasLastReadAt ? 'last_read_at,' : 'NULL as last_read_at,'}
+            ${hasClubaiEscalated ? 'COALESCE(clubai_escalated, false) as clubai_escalated,' : 'false as clubai_escalated,'}
+            ${hasCustomerSentiment ? "COALESCE(customer_sentiment, 'neutral') as customer_sentiment," : "'neutral' as customer_sentiment,"}
+            ${hasConversationLocked ? 'COALESCE(conversation_locked, false) as conversation_locked,' : 'false as conversation_locked,'}
+            created_at${hasUpdatedAt ? ', updated_at' : ''}
+          FROM openphone_conversations
+          ${whereClause}
+          ORDER BY phone_number, ${orderCol} DESC
+        `;
+      }
 
       // Wrap in subquery to apply global ordering + pagination
       // (DISTINCT ON requires ORDER BY phone_number first, but we want ORDER BY updated_at DESC)
@@ -286,34 +327,32 @@ router.get('/conversations',
 
       // Transform DB rows to API response — lightweight, no message arrays
       const transformedConversations = result.rows.map((row: any) => {
-        // Parse message_history from SQL (last 3 messages for dashboard preview)
-        const rawHistory = Array.isArray(row.message_history) ? row.message_history : [];
-        const messageHistory = rawHistory.filter(Boolean).map((msg: any) => ({
-          id: msg.id || msg.openphone_id || Math.random().toString(),
-          body: msg.body || msg.text || '',
-          direction: msg.direction || 'inbound',
-          senderName: msg.direction === 'outbound'
-            ? (row.employee_name || 'Operator')
-            : (row.customer_name || 'Customer'),
-          createdAt: msg.createdAt || msg.created_at || msg.timestamp,
-          from: msg.from || msg.from_number,
-          to: msg.to || msg.to_number
-        }));
-
-        // Parse last_message from SQL (single JSONB element)
-        const lastMsg = row.last_message;
+        // Build lastMessage from denormalized columns (or JSONB fallback)
+        let lastMessage: any = null;
+        if (row.last_message_text !== undefined && row.last_message_text !== null) {
+          // New denormalized path
+          lastMessage = {
+            body: row.last_message_text,
+            text: row.last_message_text,
+            direction: row.last_message_direction || 'unknown',
+            createdAt: row.last_message_at || row.updated_at,
+          };
+        } else if (row.last_message) {
+          // Legacy JSONB fallback
+          lastMessage = row.last_message;
+        }
 
         return {
           id: row.id,
           phone_number: row.phone_number,
           customer_name: row.customer_name,
           employee_name: row.employee_name,
-          messageHistory,
+          messageHistory: [],  // No longer sent in list — full history loaded on conversation select
           unread_count: row.unread_count || 0,
           last_read_at: row.last_read_at,
           created_at: row.created_at,
           updated_at: row.updated_at,
-          lastMessage: lastMsg || null,
+          lastMessage,
           messageCount: row.message_count || 0,
         };
       });
@@ -753,8 +792,13 @@ router.post('/send',
             messages.push(tempMessage);
 
             await db.query(
-              'UPDATE openphone_conversations SET messages = $1, updated_at = NOW() WHERE id = $2',
-              [JSON.stringify(messages), existing.rows[0].id]
+              `UPDATE openphone_conversations
+               SET messages = $1, updated_at = NOW(),
+                   last_message_text = $3, last_message_direction = 'outbound',
+                   last_message_at = NOW(), message_count = $4
+               WHERE id = $2`,
+              [JSON.stringify(messages), existing.rows[0].id,
+               (tempMessage.body || tempMessage.text || '').substring(0, 500), messages.length]
             );
 
             logger.info('Message stored immediately as fallback', {
@@ -765,10 +809,12 @@ router.post('/send',
           }
         } else {
           // Create new conversation
+          const msgBody = (tempMessage.body || tempMessage.text || '').substring(0, 500);
           await db.query(
-            `INSERT INTO openphone_conversations (phone_number, messages, customer_name, employee_name, conversation_id, created_at, updated_at, unread_count)
-             VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), 0)`,
-            [formattedTo, JSON.stringify([tempMessage]), 'Customer', req.user?.name || 'Operator', result.conversationId || `conv_${formattedTo.replace(/\D/g, '')}`]
+            `INSERT INTO openphone_conversations (phone_number, messages, customer_name, employee_name, conversation_id, created_at, updated_at, unread_count,
+             last_message_text, last_message_direction, last_message_at, message_count)
+             VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), 0, $6, 'outbound', NOW(), 1)`,
+            [formattedTo, JSON.stringify([tempMessage]), 'Customer', req.user?.name || 'Operator', result.conversationId || `conv_${formattedTo.replace(/\D/g, '')}`, msgBody]
           );
 
           logger.info('New conversation created with message', {

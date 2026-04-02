@@ -182,6 +182,8 @@ export default function Messages() {
   const loadConversationsRef = useRef<(showRefreshIndicator?: boolean) => Promise<void>>();
   const abortControllerRef = useRef<AbortController | null>(null);
   const historyAbortRef = useRef<AbortController | null>(null);
+  // Cache: phone -> { messages, updatedAt, fetchedAt } to skip re-fetching unchanged conversations
+  const historyCache = useRef<Map<string, { messages: Message[]; meta: any; updatedAt: string; fetchedAt: number }>>(new Map());
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -602,23 +604,59 @@ export default function Messages() {
       setHasMoreMessages(false); // Reset load more state
     }
 
-    // Fetch conversation history
+    // Fetch conversation history (with client-side cache)
     if (conversation.phone_number) {
       try {
         const token = tokenManager.getToken();
         if (token) {
-          // Abort any in-flight history request before starting new one
-          historyAbortRef.current?.abort();
-          historyAbortRef.current = new AbortController();
+          const phone = conversation.phone_number;
+          const cached = historyCache.current.get(phone);
+          const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 min hard expiry
+          const cacheValid = cached
+            && cached.updatedAt === conversation.updated_at
+            && (Date.now() - cached.fetchedAt) < CACHE_MAX_AGE_MS;
 
-          // Fetch complete history for this phone number
-          const historyResponse = await http.get(
-            `messages/conversations/${conversation.phone_number}/full-history`,
-            { signal: historyAbortRef.current.signal }
-          );
+          let fetchedMessages: Message[];
+          let meta: any;
 
-          if (historyResponse.data.success) {
-            const { messages: fetchedMessages, total_conversations, first_contact, last_contact, hasMore, oldestTimestamp } = historyResponse.data.data;
+          if (cacheValid && cached) {
+            // Cache hit -- conversation unchanged since last fetch
+            fetchedMessages = cached.messages;
+            meta = cached.meta;
+          } else {
+            // Cache miss -- fetch from server
+            historyAbortRef.current?.abort();
+            historyAbortRef.current = new AbortController();
+
+            const historyResponse = await http.get(
+              `messages/conversations/${phone}/full-history`,
+              { signal: historyAbortRef.current.signal }
+            );
+
+            if (!historyResponse.data.success) {
+              setSelectedConversation(conversation);
+              return;
+            }
+
+            fetchedMessages = historyResponse.data.data.messages;
+            meta = {
+              total_conversations: historyResponse.data.data.total_conversations,
+              first_contact: historyResponse.data.data.first_contact,
+              last_contact: historyResponse.data.data.last_contact,
+              hasMore: historyResponse.data.data.hasMore,
+            };
+
+            // Store in cache
+            historyCache.current.set(phone, {
+              messages: fetchedMessages,
+              meta,
+              updatedAt: conversation.updated_at,
+              fetchedAt: Date.now(),
+            });
+          }
+
+          if (true) {
+            const { total_conversations, first_contact, last_contact, hasMore } = meta;
 
             // Update selected conversation with full history info (single update)
             const conversationWithHistory = {
@@ -656,9 +694,6 @@ export default function Messages() {
             setTimeout(() => {
               scrollToBottom('instant');
             }, 50);
-          } else {
-            // If API fails but we still need to set the conversation
-            setSelectedConversation(conversation);
           }
         }
       } catch (error) {
@@ -750,9 +785,12 @@ export default function Messages() {
         // Add message to local state only once
         setMessages(prev => [...prev, sentMessage]);
         
+        // Invalidate history cache so next select refetches
+        historyCache.current.delete(selectedConversation.phone_number);
+
         // Scroll to bottom after sending
         setTimeout(scrollToBottom, 100);
-        
+
         // Delay refresh to allow backend to process
         // Only refresh conversations list, not individual messages (they're already updated locally)
         setTimeout(async () => {
@@ -841,10 +879,15 @@ export default function Messages() {
         
         // Add message to local state only once
         setMessages(prev => [...prev, sentMessage]);
-        
+
+        // Invalidate history cache so next select refetches
+        if (selectedConversation?.phone_number) {
+          historyCache.current.delete(selectedConversation.phone_number);
+        }
+
         // Scroll to bottom
         setTimeout(scrollToBottom, 100);
-        
+
         // Delay refresh to allow backend to process
         // Only refresh conversations list, not individual messages (they're already updated locally)
         setTimeout(async () => {
@@ -1100,7 +1143,7 @@ export default function Messages() {
                         
                         {/* Spacer to push messages to bottom when few messages */}
                         <div className="flex-1 min-h-0" />
-                        <div className="space-y-4">
+                        <div className="space-y-4" style={{ contentVisibility: 'auto' } as React.CSSProperties}>
                         {messages && messages.length > 0 ? messages.map((message, index) => {
                           // Handle conversation separators
                           if (message.type === 'conversation_separator') {
@@ -1586,7 +1629,7 @@ export default function Messages() {
                     {/* Spacer to push messages to bottom when few messages */}
                     <div className="flex-1 min-h-0" />
                     {messages && messages.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-3" style={{ contentVisibility: 'auto' } as React.CSSProperties}>
                         {messages.map((message, index) => {
                           // Handle conversation separators
                           if (message.type === 'conversation_separator') {

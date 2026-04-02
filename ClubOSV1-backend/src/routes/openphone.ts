@@ -754,15 +754,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
           const newUnreadCount = currentUnreadCount + unreadIncrement;
           
           // Update using the actual database ID
+          const lastMsgBody = newMessage.body || newMessage.text || '';
           await db.query(`
             UPDATE openphone_conversations
             SET messages = $1,
                 unread_count = $2,
                 customer_name = $3,
                 employee_name = $4,
-                updated_at = NOW()
+                updated_at = NOW(),
+                last_message_text = $6,
+                last_message_direction = $7,
+                last_message_at = NOW(),
+                message_count = $8
             WHERE id = $5
-          `, [JSON.stringify(updatedMessages), newUnreadCount, customerName, employeeName, existingConv.rows[0].id]);
+          `, [JSON.stringify(updatedMessages), newUnreadCount, customerName, employeeName, existingConv.rows[0].id,
+              lastMsgBody.substring(0, 500), messageDirection || 'unknown', updatedMessages.length]);
           
           logger.info('OpenPhone message appended to existing conversation', {
             conversationId,

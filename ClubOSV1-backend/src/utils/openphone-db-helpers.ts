@@ -49,10 +49,12 @@ export async function insertOpenPhoneConversation(data: {
         if (lastTime) updatedAt = new Date(lastTime);
       }
       
+      const lastMsg = data.messages && data.messages.length > 0 ? data.messages[data.messages.length - 1] : null;
       await db.query(`
-        INSERT INTO openphone_conversations 
-        (phone_number, customer_name, employee_name, messages, metadata, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO openphone_conversations
+        (phone_number, customer_name, employee_name, messages, metadata, created_at, updated_at,
+         last_message_text, last_message_direction, last_message_at, message_count)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $7, $10)
       `, [
         data.phoneNumber,
         data.customerName,
@@ -60,7 +62,10 @@ export async function insertOpenPhoneConversation(data: {
         JSON.stringify(data.messages),
         JSON.stringify(data.metadata),
         createdAt,
-        updatedAt
+        updatedAt,
+        lastMsg ? (lastMsg.body || lastMsg.text || '').substring(0, 500) : null,
+        lastMsg ? (lastMsg.direction || 'unknown') : null,
+        data.messages ? data.messages.length : 0
       ]);
       
       logger.info('OpenPhone conversation inserted with minimal columns');

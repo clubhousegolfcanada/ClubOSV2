@@ -375,17 +375,24 @@ export class OpenPhoneService {
     
     if (existingConv.rows.length > 0) {
       const messages = [...(existingConv.rows[0].messages || []), outboundMessage];
+      const msgBody = (outboundMessage.body || outboundMessage.text || '').substring(0, 500);
       await db.query(
-        'UPDATE openphone_conversations SET messages = $1, updated_at = NOW() WHERE id = $2',
-        [JSON.stringify(messages), existingConv.rows[0].id]
+        `UPDATE openphone_conversations
+         SET messages = $1, updated_at = NOW(),
+             last_message_text = $3, last_message_direction = 'outbound',
+             last_message_at = NOW(), message_count = $4
+         WHERE id = $2`,
+        [JSON.stringify(messages), existingConv.rows[0].id, msgBody, messages.length]
       );
     } else {
       // Create new conversation with phone number as customer name
+      const msgBody = (outboundMessage.body || outboundMessage.text || '').substring(0, 500);
       await db.query(
-        `INSERT INTO openphone_conversations 
-         (phone_number, customer_name, messages, created_at, updated_at) 
-         VALUES ($1, $2, $3, NOW(), NOW())`,
-        [phoneNumber, phoneNumber, JSON.stringify([outboundMessage])]
+        `INSERT INTO openphone_conversations
+         (phone_number, customer_name, messages, created_at, updated_at,
+          last_message_text, last_message_direction, last_message_at, message_count)
+         VALUES ($1, $2, $3, NOW(), NOW(), $4, 'outbound', NOW(), 1)`,
+        [phoneNumber, phoneNumber, JSON.stringify([outboundMessage]), msgBody]
       );
     }
   }

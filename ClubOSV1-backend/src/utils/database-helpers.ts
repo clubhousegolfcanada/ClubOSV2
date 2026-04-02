@@ -39,7 +39,7 @@ export async function columnExists(tableName: string, columnName: string): Promi
  * Get safe INSERT query for openphone_conversations table
  * that handles missing columns gracefully
  */
-export async function getSafeOpenPhoneInsertQuery(messageTimestamp?: Date): Promise<{
+export async function getSafeOpenPhoneInsertQuery(_messageTimestamp?: Date): Promise<{
   query: string;
   hasUnreadCount: boolean;
   hasConversationId: boolean;
@@ -53,12 +53,10 @@ export async function getSafeOpenPhoneInsertQuery(messageTimestamp?: Date): Prom
   
   let columns = ['phone_number', 'customer_name', 'employee_name', 'messages', 'metadata', 'created_at', 'updated_at'];
   let placeholders = ['$1', '$2', '$3', '$4', '$5', '$6', '$7'];
-  let paramOffset = 7;
-  
   if (hasConversationId) {
     columns.unshift('conversation_id');
     placeholders.unshift('$1');
-    placeholders = placeholders.map((p, i) => `$${i + 1}`);
+    placeholders = placeholders.map((_p, i) => `$${i + 1}`);
   }
   
   if (hasUnreadCount) {
@@ -75,13 +73,17 @@ export async function getSafeOpenPhoneInsertQuery(messageTimestamp?: Date): Prom
     columns.push('last_assistant_type');
     placeholders.push(`$${columns.length}`);
   }
-  
+
+  // Denormalized last-message columns for fast conversation listing
+  columns.push('last_message_text', 'last_message_direction', 'last_message_at', 'message_count');
+  placeholders.push(`$${columns.length - 3}`, `$${columns.length - 2}`, `$${columns.length - 1}`, `$${columns.length}`);
+
   const query = `
-    INSERT INTO openphone_conversations 
+    INSERT INTO openphone_conversations
     (${columns.join(', ')})
     VALUES (${placeholders.join(', ')})
   `;
-  
+
   return { query, hasUnreadCount, hasConversationId, hasAssistantType, hasLastAssistantType };
 }
 
@@ -158,7 +160,18 @@ export function buildOpenPhoneInsertParams(
   if (hasLastAssistantType) {
     params.push(data.lastAssistantType || 'BrandTone');
   }
-  
+
+  // Denormalized last-message fields
+  const lastMsg = data.messages && data.messages.length > 0
+    ? data.messages[data.messages.length - 1]
+    : null;
+  params.push(
+    lastMsg ? (lastMsg.body || lastMsg.text || '').substring(0, 500) : null,  // last_message_text
+    lastMsg ? (lastMsg.direction || 'unknown') : null,                         // last_message_direction
+    updatedAt,                                                                  // last_message_at
+    data.messages ? data.messages.length : 0                                    // message_count
+  );
+
   return params;
 }
 

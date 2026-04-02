@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.31.1] - 2026-04-02
+
+### Performance
+- **Messages page loads significantly faster** — Denormalized `last_message_text`, `last_message_direction`, `last_message_at`, and `message_count` columns on `openphone_conversations` table. Conversation list query no longer runs expensive JSONB operations (`jsonb_array_length`, `jsonb_build_array`, `messages->-1`) on every row. Falls back to JSONB ops if migration hasn't run yet.
+- **Client-side conversation history cache** — Clicking between conversations no longer re-fetches full history from the server if `updated_at` hasn't changed. Cache has 5-minute hard expiry and auto-invalidates on message send.
+- **Browser-native render optimization** — Added `content-visibility: auto` to message lists (both mobile and desktop) so the browser skips rendering off-screen message bubbles.
+- **All 4 message write paths updated** — Webhook append, webhook new conversation, manual send, and openphoneService sync all populate the new denormalized columns on every write.
+
+### Fixed
+- **`safety_trigger_analytics` INSERT failing with 22P02** — `conversation_id` column is INTEGER but some code paths passed string values. Added `Number()` cast with null fallback.
+- **Duplicate auto-correction GPT calls** — Both operator detection handlers fired `detectAndLearnCorrection` for the same outbound message. Removed the redundant second call, saving one GPT-4o-mini invocation per operator response.
+
 ## [1.31.0] - 2026-04-02
 
 ### Removed (Audit Phase 1: Dead Code Cleanup)
