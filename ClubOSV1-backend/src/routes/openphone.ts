@@ -60,6 +60,15 @@ function isContentAlreadyProcessed(phoneNumber: string, messageText: string): bo
   return false;
 }
 
+// ============================================
+// CLUBAI RESPONSE DEBOUNCE
+// Customers often split thoughts across rapid texts ("Yes" + "Please").
+// Without debounce, each message independently triggers ClubAI, producing
+// duplicate responses. We sleep briefly after storing the message, then
+// verify this is still the latest customer message before responding.
+// ============================================
+const CLUBAI_DEBOUNCE_MS = 3000; // Wait 3s for additional messages
+
 // Clean up old entries every 5 minutes to prevent memory leak
 setInterval(() => {
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
@@ -1048,11 +1057,49 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 const clubaiDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
                 try {
                   // Store customer message first
-                  await db.query(`
+                  const msgInsert = await db.query(`
                     INSERT INTO conversation_messages
                     (conversation_id, sender_type, message_text)
                     VALUES ($1, 'customer', $2)
+                    RETURNING id
                   `, [convId, messageText]);
+                  const insertedMsgId = msgInsert.rows[0]?.id;
+
+                  // DEBOUNCE: Customers often split thoughts across rapid texts
+                  // ("Yes" + "Please"). Wait briefly, then check if this is still
+                  // the latest customer message. If not, skip — the newer message's
+                  // webhook will handle the response.
+                  await new Promise(resolve => setTimeout(resolve, CLUBAI_DEBOUNCE_MS));
+
+                  const latestMsgCheck = await db.query(`
+                    SELECT id FROM conversation_messages
+                    WHERE conversation_id = $1 AND sender_type = 'customer'
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                  `, [convId]);
+
+                  if (latestMsgCheck.rows[0]?.id !== insertedMsgId) {
+                    logger.info('[ClubAI Debounce] Newer message arrived, deferring response', {
+                      phoneNumber,
+                      thisMessageId: insertedMsgId,
+                      latestMessageId: latestMsgCheck.rows[0]?.id,
+                      thisText: messageText.substring(0, 50),
+                    });
+                    return res.json({ success: true, message: 'Deferred to newer message' });
+                  }
+
+                  // Re-check conversation state — operator may have taken over during debounce
+                  const convRecheck = await db.query(
+                    `SELECT clubai_active, operator_active, conversation_locked FROM openphone_conversations WHERE id = $1`,
+                    [convId]
+                  );
+                  if (convRecheck.rows[0]?.operator_active === true && convRecheck.rows[0]?.clubai_active === false) {
+                    logger.info('[ClubAI Debounce] Operator took over during debounce', { phoneNumber, convId });
+                    return res.json({ success: true, message: 'Operator active during debounce' });
+                  }
+                  if (convRecheck.rows[0]?.conversation_locked) {
+                    logger.info('[ClubAI Debounce] Conversation locked during debounce', { phoneNumber, convId });
+                    return res.json({ success: true, message: 'Conversation locked during debounce' });
+                  }
 
                   const clubaiResult = await clubaiService.generateResponse(
                     phoneNumber, messageText, convId
@@ -1350,10 +1397,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 if (newClubaiEnabled && !newConvLockoutActive) {
 
                   // Store customer message
-                  await db.query(`
+                  const newMsgInsert = await db.query(`
                     INSERT INTO conversation_messages (conversation_id, sender_type, message_text)
                     VALUES ($1, 'customer', $2)
+                    RETURNING id
                   `, [newConvId, newMessageText]);
+                  const newInsertedMsgId = newMsgInsert.rows[0]?.id;
+
+                  // DEBOUNCE: Same rapid-message protection as existing conversation path.
+                  // Wait briefly, then check if this is still the latest customer message.
+                  await new Promise(resolve => setTimeout(resolve, CLUBAI_DEBOUNCE_MS));
+
+                  const newLatestCheck = await db.query(`
+                    SELECT id FROM conversation_messages
+                    WHERE conversation_id = $1 AND sender_type = 'customer'
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                  `, [String(newConvId)]);
+
+                  if (newLatestCheck.rows[0]?.id !== newInsertedMsgId) {
+                    logger.info('[ClubAI Debounce] Newer message arrived (new conv), deferring response', {
+                      phoneNumber,
+                      thisMessageId: newInsertedMsgId,
+                      latestMessageId: newLatestCheck.rows[0]?.id,
+                    });
+                    return res.json({ success: true, message: 'Deferred to newer message' });
+                  }
 
                   const clubaiResult = await clubaiService.generateResponse(phoneNumber, newMessageText, String(newConvId));
 

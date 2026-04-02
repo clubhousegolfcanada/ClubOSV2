@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.31.3] - 2026-04-02
+
+### Fixed
+- **ClubAI duplicate responses on rapid messages** — When a customer sends multiple quick messages (e.g. "Yes" + "Please"), ClubAI was responding to each independently, producing two similar but separate responses. Added a 3-second debounce: after storing each message, the webhook waits briefly then checks if a newer message arrived. Only the last message in a rapid burst triggers a ClubAI response. Includes safety re-checks during the debounce window (operator takeover, conversation lock).
+
 ## [1.31.2] - 2026-04-02
 
 ### Performance — Dashboard & App Load Optimization
