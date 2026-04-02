@@ -99,7 +99,7 @@ async function logSafetyTrigger(
       triggerType,
       actionTaken,
       phoneNumber || null,
-      conversationId || null,
+      conversationId != null ? (Number(conversationId) || null) : null,
       messagePreview ? messagePreview.substring(0, 100) : null,
       details ? JSON.stringify(details) : '{}'
     ]);
@@ -1166,17 +1166,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
               try {
                 await clubaiService.deactivateForConversation(existingConv.rows[0].id);
               } catch { /* non-critical */ }
-
-              // Auto-correction learning: detect if operator is correcting a recent AI response
-              if (existingConv.rows[0]?.id && operatorResponse.length > 5) {
-                clubaiService.detectAndLearnCorrection(
-                  existingConv.rows[0].id,
-                  operatorResponse,
-                  phoneNumber
-                ).catch(err => {
-                  logger.warn('[ClubAI Auto-Correct] Background detection failed (existingConv handler):', err);
-                });
-              }
+              // Note: Auto-correction learning already fires from the primary operator detection
+              // block (~line 670). No need to call it again here.
             }
           }
           
