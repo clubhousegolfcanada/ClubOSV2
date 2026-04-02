@@ -4,7 +4,6 @@ import ninjaOneService from '../services/ninjaone';
 import { pool } from '../utils/db';  // Fixed import path
 import { slackFallback } from '../services/slackFallback';
 import { logger } from '../utils/logger';
-import { UserRole } from '../types';
 
 const router = express.Router();
 
@@ -56,10 +55,10 @@ const SCRIPT_MAP: Record<string, string> = {
 };
 
 // Get available scripts from database
-router.get('/scripts', authenticate, authorize(['operator', 'admin']), async (req, res) => {
+router.get('/scripts', authenticate, authorize(['operator', 'admin']), async (_req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM ninjaone_scripts WHERE is_active = true ORDER BY category, name`
+      `SELECT * FROM ninjaone_scripts WHERE is_active = true ORDER BY category, name LIMIT 500`
     );
     res.json({ success: true, scripts: result.rows });
   } catch (error: any) {
@@ -70,8 +69,6 @@ router.get('/scripts', authenticate, authorize(['operator', 'admin']), async (re
 
 // Execute remote action
 router.post('/execute', authenticate, authorize(['operator', 'admin']), async (req, res) => {
-  const startTime = Date.now();
-  
   try {
     const { action, location, bayNumber } = req.body;
     
@@ -155,7 +152,7 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
           `INSERT INTO remote_actions_log 
            (action_type, location, device_name, device_id, initiated_by, ninja_job_id, status, metadata)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [action, location, deviceName, device.deviceId, req.user.email, simulatedJobId, 'simulated', 
+          [action, location, deviceName, device.deviceId, req.user!.email, simulatedJobId, 'simulated', 
            JSON.stringify({ simulated: true, timestamp: new Date().toISOString(), demoMode: true })]
         );
       } catch (dbError: any) {
@@ -184,7 +181,7 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
             text: '',
             color: 'good',
             fields: [
-              { title: 'User', value: req.user.email, short: true },
+              { title: 'User', value: req.user!.email, short: true },
               { title: 'Action', value: actionDescriptions[action] || action, short: true },
               { title: 'Device', value: deviceName, short: true },
               { title: 'Note', value: 'This is a demo - no actual restart occurred', short: false }
@@ -222,7 +219,7 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
       device.deviceId,
       scriptId,
       {
-        initiatedBy: req.user.email,
+        initiatedBy: req.user!.email,
         timestamp: new Date().toISOString(),
         reason: 'Manual trigger from ClubOS Remote Actions',
         action: action
@@ -235,7 +232,7 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
         `INSERT INTO remote_actions_log 
          (action_type, location, device_name, device_id, initiated_by, ninja_job_id, status, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [action, location, deviceName, device.deviceId, req.user.email, job.jobId, 'initiated', 
+        [action, location, deviceName, device.deviceId, req.user!.email, job.jobId, 'initiated', 
          JSON.stringify({ timestamp: new Date().toISOString(), action: action })]
       );
     } catch (dbError) {
@@ -253,7 +250,7 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
           text: '',
           color: 'warning',
           fields: [
-            { title: 'User', value: req.user.email, short: true },
+            { title: 'User', value: req.user!.email, short: true },
             { title: 'Device', value: deviceName, short: true },
             { title: 'Expected Downtime', value: '3-5 minutes', short: true },
             { title: 'Job ID', value: job.jobId, short: true }
@@ -270,14 +267,14 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
           text: '',
           color: 'good',
           fields: [
-            { title: 'User', value: req.user.email, short: true },
+            { title: 'User', value: req.user!.email, short: true },
             { title: 'Device', value: deviceName, short: true }
           ]
         }]
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: `${action} initiated on ${deviceName}`,
       jobId: job.jobId,
@@ -287,8 +284,8 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
 
   } catch (error: any) {
     logger.error('Remote action error:', error);
-    
-    res.status(500).json({ 
+
+    return res.status(500).json({
       error: 'Failed to execute remote action',
       message: error.message || 'An unexpected error occurred'
     });
@@ -326,13 +323,13 @@ router.get('/status/:jobId', authenticate, async (req, res) => {
       logger.error('Could not update job status in database:', dbError);
     }
     
-    res.json({
+    return res.json({
       jobId: job.jobId,
       status: job.status,
       result: job.result
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to check job status' });
+    return res.status(500).json({ error: 'Failed to check job status' });
   }
 });
 
@@ -387,14 +384,14 @@ router.get('/devices/:location', authenticate, authorize(['operator', 'admin']),
       })
     );
     
-    res.json({ devices: deviceStatus });
+    return res.json({ devices: deviceStatus });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get device status' });
+    return res.status(500).json({ error: 'Failed to get device status' });
   }
 });
 
 // Get recent actions (for monitoring)
-router.get('/recent', authenticate, authorize(['operator', 'admin']), async (req, res) => {
+router.get('/recent', authenticate, authorize(['operator', 'admin']), async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT action_type, location, device_name, initiated_by, status, created_at

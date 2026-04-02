@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import { db } from '../utils/database';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
@@ -71,7 +71,7 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
       WHERE table_name = 'bookings'
     `);
 
-    const columns = checkColumns.rows.map(row => row.column_name);
+    const columns = checkColumns.rows.map((row: any) => row.column_name);
 
     // Log detected columns for debugging
     logger.info('Bookings table columns detected:', {
@@ -253,16 +253,16 @@ router.get('/day', authenticate, async (req: Request, res: Response) => {
       duration: row.duration_minutes || Math.floor((new Date(row.end_at).getTime() - new Date(row.start_at).getTime()) / 60000)
     }));
 
-    res.json({
+    return res.json({
       success: true,
       data: transformedData
     });
   } catch (error) {
     logger.error('Error fetching day bookings:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch bookings',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 });
@@ -301,13 +301,13 @@ router.get('/availability', authenticate, async (req: Request, res: Response) =>
       customerTierId
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: availability
     });
   } catch (error) {
     logger.error('Error checking availability:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to check availability'
     });
@@ -348,13 +348,13 @@ router.get('/validate-duration', authenticate, async (req: Request, res: Respons
       customerTierId
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: validation
     });
   } catch (error) {
     logger.error('Error validating duration:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to validate duration'
     });
@@ -381,7 +381,7 @@ router.post('/check-conflicts', authenticate, async (req: Request, res: Response
       new Date(endTime)
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         canBook: conflictCheck.allAvailable,
@@ -396,7 +396,7 @@ router.post('/check-conflicts', authenticate, async (req: Request, res: Response
     });
   } catch (error) {
     logger.error('Error checking conflicts:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to check conflicts'
     });
@@ -568,13 +568,13 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: result.data
     });
   } catch (error) {
     logger.error('Error creating booking:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to create booking'
     });
@@ -670,13 +670,13 @@ router.patch('/:id', authenticate, async (req: Request, res: Response) => {
       values
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: updateResult.rows[0]
     });
   } catch (error) {
     logger.error('Error updating booking:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to update booking'
     });
@@ -722,13 +722,13 @@ router.delete('/:id', authenticate, async (req: Request, res: Response) => {
       [id]
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: updateResult.rows[0]
     });
   } catch (error) {
     logger.error('Error cancelling booking:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to cancel booking'
     });
@@ -760,13 +760,13 @@ router.get('/spaces', authenticate, async (req: Request, res: Response) => {
 
     const result = await db.query(query, params);
 
-    res.json({
+    return res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     logger.error('Error fetching spaces:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch spaces'
     });
@@ -774,19 +774,19 @@ router.get('/spaces', authenticate, async (req: Request, res: Response) => {
 });
 
 // GET /api/bookings/customer-tiers - Get customer tiers
-router.get('/customer-tiers', authenticate, async (req: Request, res: Response) => {
+router.get('/customer-tiers', authenticate, async (_req: Request, res: Response) => {
   try {
     const result = await db.query(
       'SELECT * FROM customer_tiers ORDER BY hourly_rate DESC'
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     logger.error('Error fetching customer tiers:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch customer tiers'
     });
@@ -794,19 +794,19 @@ router.get('/customer-tiers', authenticate, async (req: Request, res: Response) 
 });
 
 // GET /api/bookings/locations - Get all locations
-router.get('/locations', authenticate, async (req: Request, res: Response) => {
+router.get('/locations', authenticate, async (_req: Request, res: Response) => {
   try {
     const result = await db.query(
-      'SELECT * FROM booking_locations WHERE is_active = true ORDER BY name'
+      'SELECT * FROM booking_locations WHERE is_active = true ORDER BY name LIMIT 100'
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     logger.error('Error fetching locations:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch locations'
     });
@@ -867,7 +867,7 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
       ? Math.round((bookedSlots / totalSlots) * 100)
       : 0;
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         todayCount: parseInt(bookingStats.rows[0]?.today_count || '0'),
@@ -880,7 +880,7 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Error fetching booking stats:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to fetch booking statistics'
     });

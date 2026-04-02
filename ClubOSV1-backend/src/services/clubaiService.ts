@@ -230,7 +230,7 @@ export async function generateResponse(
       // Increment use_count for retrieved rules
       const ruleIds = rules.map((r: any) => r.id).filter(Boolean);
       if (ruleIds.length > 0) {
-        db.query(`UPDATE clubai_style_rules SET use_count = use_count + 1, updated_at = NOW() WHERE id = ANY($1)`, [ruleIds]).catch(() => {});
+        db.query(`UPDATE clubai_style_rules SET use_count = use_count + 1, updated_at = NOW() WHERE id = ANY($1)`, [ruleIds]).catch(err => logger.warn('[ClubAI] Non-critical operation failed:', err));
       }
     }
   } catch (styleErr) {
@@ -326,7 +326,7 @@ export async function generateResponse(
       const escalationSummary = escalationMatch[1]?.trim() || 'AI requested escalation';
 
       // Log the search context for this escalation
-      logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, customerMessage || '[escalated]').catch(() => {});
+      logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, customerMessage || '[escalated]').catch(err => logger.warn('[ClubAI] Non-critical operation failed:', err));
 
       return {
         response: customerMessage || null,
@@ -422,7 +422,7 @@ export async function generateResponse(
     if (cleanResponse.includes('?') && !history.length) confidence += 0.05;
 
     // Log what knowledge was used for this response
-    logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, cleanResponse).catch(() => {});
+    logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, cleanResponse).catch(err => logger.warn('[ClubAI] Non-critical operation failed:', err));
 
     return {
       response: cleanResponse,

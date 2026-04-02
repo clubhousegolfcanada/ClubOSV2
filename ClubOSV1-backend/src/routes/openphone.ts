@@ -27,12 +27,24 @@ const router = Router();
 // ============================================
 const processedMessageIds = new Map<string, number>(); // messageId -> timestamp
 const processedContentHashes = new Map<string, number>(); // phone+textHash -> timestamp
+const DEDUP_MAX_SIZE = 10000; // Cap to prevent unbounded memory growth
+
+// Evict oldest 20% when a dedup map exceeds max size
+function evictOldest(map: Map<string, number>): void {
+  if (map.size <= DEDUP_MAX_SIZE) return;
+  const entries = [...map.entries()].sort((a, b) => a[1] - b[1]);
+  const toRemove = Math.floor(map.size * 0.2);
+  for (let i = 0; i < toRemove; i++) {
+    map.delete(entries[i][0]);
+  }
+}
 
 function isMessageAlreadyProcessed(messageId: string): boolean {
   if (!messageId) return false;
   if (processedMessageIds.has(messageId)) {
     return true;
   }
+  evictOldest(processedMessageIds);
   processedMessageIds.set(messageId, Date.now());
   return false;
 }
@@ -43,6 +55,7 @@ function isContentAlreadyProcessed(phoneNumber: string, messageText: string): bo
   if (processedContentHashes.has(contentKey)) {
     return true;
   }
+  evictOldest(processedContentHashes);
   processedContentHashes.set(contentKey, Date.now());
   return false;
 }

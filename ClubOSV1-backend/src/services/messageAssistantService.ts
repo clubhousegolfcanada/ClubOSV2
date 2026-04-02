@@ -2,7 +2,6 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { encrypt, decrypt } from '../utils/encryption';
 import { assistantService } from './assistantService';
-import { promptTemplateService } from './promptTemplateService';
 
 interface Message {
   id: string;
@@ -67,53 +66,6 @@ export class MessageAssistantService {
         phoneNumber: phoneNumber.slice(-4) // Log only last 4 digits
       });
       
-      // Get the prompt template from database
-      const template = await promptTemplateService.getTemplate('customer_message_response');
-      
-      let customerContext: string;
-      
-      if (template) {
-        // Use the template from database
-        customerContext = promptTemplateService.applyTemplate(template.template, {
-          conversation_history: conversationHistory,
-          relevant_knowledge: relevantKnowledge ? `RELEVANT PUBLIC KNOWLEDGE:\n${relevantKnowledge}\n\n` : '',
-          customer_message: customerMessage
-        });
-      } else {
-        // Fallback to hardcoded prompt if template not found
-        customerContext = `CRITICAL INSTRUCTIONS - YOU ARE RESPONDING TO A CUSTOMER:
-
-1. You are generating a suggested response to a CUSTOMER text message
-2. NEVER mention:
-   - Internal systems (ClubOS, databases, etc.)
-   - Employee names or personal information
-   - Business operations details
-   - Pricing structures or discounts not publicly advertised
-   - Security procedures or access codes
-   - Any confidential business information
-
-3. AVOID generic responses like:
-   - "How can I assist you today?"
-   - "Thank you for reaching out"
-   - "Feel free to let me know"
-   - "For detailed inquiries..."
-
-4. BE SPECIFIC and helpful:
-   - Answer their actual question directly
-   - If you don't know, say "I'll need to check on that for you"
-   - Never tell them to call or visit - this IS the way they're contacting us
-   - If unsure, indicate a human will follow up
-
-5. IMPORTANT: This text conversation IS their primary way to reach us. Do NOT suggest calling or visiting.
-
-CONVERSATION HISTORY:
-${conversationHistory}
-
-${relevantKnowledge ? `RELEVANT PUBLIC KNOWLEDGE:\n${relevantKnowledge}\n\n` : ''}CUSTOMER'S CURRENT MESSAGE: ${customerMessage}
-
-Generate a specific, helpful response. If you cannot provide a useful answer, respond with: "I'll need to check on that and get back to you shortly."`;
-      }
-
       // Use the assistant service with the appropriate route
       // Pass the actual customer message to the assistant, not the full prompt
       const assistantResponse = await assistantService.getAssistantResponse(
@@ -248,7 +200,7 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
         conversationId,
         suggestedText,
         confidence,
-        context: relevantKnowledge,
+        context: relevantKnowledge ?? undefined,
         createdBy: userId,
         approved: false,
         sent: false,
@@ -291,7 +243,7 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
         return null;
       }
       
-      return result.rows.map(row => 
+      return result.rows.map((row: any) =>
         `Problem: ${row.problem}\nSolution: ${row.solution}`
       ).join('\n\n');
     } catch (error) {
@@ -376,7 +328,7 @@ Generate a specific, helpful response. If you cannot provide a useful answer, re
       
       CREATE INDEX IF NOT EXISTS idx_message_suggestions_phone_hash 
       ON message_suggestions(phone_number_hash);
-    `).catch(() => {}); // Ignore if already exists
+    `).catch(err => logger.warn('[MessageAssistant] Index creation failed (may already exist):', err));
     
     // Encrypt sensitive data
     const encryptedText = encrypt(data.suggestedText);

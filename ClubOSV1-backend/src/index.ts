@@ -206,39 +206,11 @@ app.use('/api/openphone-v3/webhook-v3', express.raw({ type: 'application/json' }
   next();
 });
 
-app.use(express.json({ limit: '25mb' })); // Supports multi-page PDF receipt uploads
+app.use(express.json({ limit: '1mb' })); // Default 1MB; routes that need more override below
 app.use(cookieParser());
 app.use(sanitizeMiddleware);
 app.use(requestLogger);
 app.use(performanceLogger);
-
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
-
-// Ensure CORS headers are added even on errors
-app.use((req: any, res: any, next: any) => {
-  // Set CORS headers on all responses
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, x-csrf-token');
-  }
-  
-  // Intercept response to ensure headers are always set
-  const oldSend = res.send;
-  res.send = function(_data: any) {
-    // Ensure CORS headers are set even if response was already started
-    if (origin && !res.headersSent) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-    }
-    return oldSend.apply(res, arguments);
-  };
-  
-  next();
-});
 
 // Rate limiting
 app.use('/api/', rateLimiter);
@@ -264,7 +236,7 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/booking/locations', require('./routes/booking/locations').default);
 app.use('/api/hubspot', require('./routes/hubspot').default);
 app.use('/api/tickets', ticketsRoutes);
-app.use('/api/receipts', require('./routes/receipts-simple').default);
+app.use('/api/receipts', express.json({ limit: '25mb' }), require('./routes/receipts-simple').default);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
@@ -346,7 +318,7 @@ app.use('/api/integrations', integrationsRoutes);
 app.use('/api/patterns', enhancedPatternsRouter);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
 app.use('/api/white-label-planner', whiteLabelPlannerRoutes);
-app.use('/api/white-label-scanner', whiteLabelScannerRoutes);
+app.use('/api/white-label-scanner', express.json({ limit: '25mb' }), whiteLabelScannerRoutes);
 app.use('/api/system-status', require('./routes/system-status').default);
 app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api/settings', bookingConfigRoutes);
