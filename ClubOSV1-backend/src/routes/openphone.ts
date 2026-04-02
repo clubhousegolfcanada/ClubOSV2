@@ -1388,19 +1388,30 @@ router.post('/webhook', async (req: Request, res: Response) => {
       case 'call.ringing': {
         // Send auto-text immediately when an inbound call starts ringing.
         // Since Clubhouse is self-service with no front desk, every call gets this text.
-        const ringingPhone = data.phoneNumber || data.from || data.to;
-        const ringingDirection = data.direction;
+        // Unwrap v3 nested structure: data may be { object: { direction, from, to, ... } }
+        const callRingingData = (data && data.object && typeof data.object === 'object' && (data.object.from || data.object.to || data.object.direction))
+          ? data.object
+          : data;
+        const ringingPhone = callRingingData.phoneNumber || callRingingData.from || callRingingData.to;
+        const ringingDirection = callRingingData.direction;
 
         logger.info('[OpenPhone Call] call.ringing webhook received', {
           direction: ringingDirection,
-          from: data.from,
-          to: data.to,
+          from: callRingingData.from,
+          to: callRingingData.to,
           phoneNumber: ringingPhone,
-          callId: data.id
+          callId: callRingingData.id,
+          unwrapped: callRingingData !== data,
+          rawDataKeys: Object.keys(data || {}),
         });
 
         // Only auto-text inbound calls
-        if (ringingDirection === 'incoming' || ringingDirection === 'inbound') {
+        if (ringingDirection !== 'incoming' && ringingDirection !== 'inbound') {
+          logger.info('[ClubAI CallRinging] Skipped — not an inbound call', { direction: ringingDirection, from: data.from, to: data.to });
+          return res.json({ received: true });
+        }
+
+        {
           // Check if ClubAI is enabled
           let ringingAutoTextEnabled = false;
           try {
@@ -1409,14 +1420,30 @@ router.post('/webhook', async (req: Request, res: Response) => {
               WHERE config_key = 'clubai_enabled'
             `);
             ringingAutoTextEnabled = rCfg.rows[0]?.config_value === 'true';
-          } catch {
+            logger.info('[ClubAI CallRinging] DB clubai_enabled check', { raw: rCfg.rows[0]?.config_value, resolved: ringingAutoTextEnabled });
+          } catch (cfgErr) {
             ringingAutoTextEnabled = process.env.CLUBAI_ENABLED === 'true';
+            logger.warn('[ClubAI CallRinging] DB config check failed, fell back to env var', { envValue: process.env.CLUBAI_ENABLED, resolved: ringingAutoTextEnabled, error: String(cfgErr) });
+          }
+
+          if (!ringingAutoTextEnabled) {
+            logger.warn('[ClubAI CallRinging] Skipped — ClubAI not enabled', { dbOrEnv: ringingAutoTextEnabled });
+            return res.json({ received: true });
           }
 
           const ringingDefaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+          if (!ringingDefaultNumber) {
+            logger.warn('[ClubAI CallRinging] Skipped — OPENPHONE_DEFAULT_NUMBER not configured');
+            return res.json({ received: true });
+          }
 
-          if (ringingAutoTextEnabled && ringingDefaultNumber && ringingPhone) {
-            // 1-hour cooldown: don't spam the same customer
+          if (!ringingPhone) {
+            logger.warn('[ClubAI CallRinging] Skipped — could not extract phone number', { phoneNumber: data.phoneNumber, from: data.from, to: data.to });
+            return res.json({ received: true });
+          }
+
+          // 1-hour cooldown: don't spam the same customer
+          {
             try {
               const ringingCooldown = await db.query(`
                 SELECT missed_call_text_sent_at
@@ -1468,31 +1495,38 @@ router.post('/webhook', async (req: Request, res: Response) => {
         return res.json({ received: true });
       }
 
-      case 'call.completed':
+      case 'call.completed': {
+        // Unwrap v3 nested structure: data may be { object: { status, direction, from, ... } }
+        const callData = (data && data.object && typeof data.object === 'object' && (data.object.from || data.object.to || data.object.direction))
+          ? data.object
+          : data;
+
         // Log raw call data for debugging missed call detection
         logger.info('[OpenPhone Call] call.completed webhook received', {
-          status: data.status,
-          direction: data.direction,
-          answeredAt: data.answeredAt,
-          duration: data.duration,
-          from: data.from,
-          to: data.to,
-          phoneNumber: data.phoneNumber,
-          hasVoicemail: !!data.voicemail,
-          completedAt: data.completedAt
+          status: callData.status,
+          direction: callData.direction,
+          answeredAt: callData.answeredAt,
+          duration: callData.duration,
+          from: callData.from,
+          to: callData.to,
+          phoneNumber: callData.phoneNumber,
+          hasVoicemail: !!callData.voicemail,
+          completedAt: callData.completedAt,
+          unwrapped: callData !== data,
+          rawDataKeys: Object.keys(data || {}),
         });
 
         // Store call information - append to existing conversation if exists
-        const callPhoneNumber = data.phoneNumber || data.from || data.to;
+        const callPhoneNumber = callData.phoneNumber || callData.from || callData.to;
         const callConversationId = `conv_${callPhoneNumber.replace(/[^0-9]/g, '')}`;
         
         const callMessage = {
-          id: data.id,
+          id: callData.id,
           type: 'call',
-          timestamp: data.timestamp || new Date().toISOString(),
-          duration: data.duration,
-          direction: data.direction,
-          recording: data.recordingUrl
+          timestamp: callData.timestamp || new Date().toISOString(),
+          duration: callData.duration,
+          direction: callData.direction,
+          recording: callData.recordingUrl
         };
         
         // Check for existing conversation
@@ -1515,22 +1549,22 @@ router.post('/webhook', async (req: Request, res: Response) => {
                 employee_name = $3,
                 updated_at = NOW()
             WHERE id = $4
-          `, [JSON.stringify(messages), data.contactName || callPhoneNumber, data.userName || 'Unknown', existingCallConv.rows[0].id]);
+          `, [JSON.stringify(messages), callData.contactName || callPhoneNumber, callData.userName || 'Unknown', existingCallConv.rows[0].id]);
         } else {
           // Create new
           await insertOpenPhoneConversation({
             conversationId: callConversationId,
             phoneNumber: callPhoneNumber,
-            customerName: data.contactName || callPhoneNumber,
-            employeeName: data.userName || 'Unknown',
+            customerName: callData.contactName || callPhoneNumber,
+            employeeName: callData.userName || 'Unknown',
             messages: [callMessage],
-            metadata: { 
-              openPhoneId: data.id,
+            metadata: {
+              openPhoneId: callData.id,
               type,
               callDetails: {
-                duration: data.duration,
-                direction: data.direction,
-                recording: data.recordingUrl
+                duration: callData.duration,
+                direction: callData.direction,
+                recording: callData.recordingUrl
               }
             },
             unreadCount: 0 // Calls start with 0 unread count
@@ -1541,35 +1575,35 @@ router.post('/webhook', async (req: Request, res: Response) => {
         logger.info('OpenPhone call stored', {
           conversationId: callConversationId,
           phoneNumber: callPhoneNumber,
-          duration: data.duration,
-          status: data.status,
-          direction: data.direction,
-          answeredAt: data.answeredAt
+          duration: callData.duration,
+          status: callData.status,
+          direction: callData.direction,
+          answeredAt: callData.answeredAt
         });
 
         // --- MISSED CALL AUTO-TEXT ---
         // Detect missed inbound calls and send a friendly text so ClubAI can help over SMS
         // OpenPhone may report "hung up before voicemail" as status:'completed' with answeredAt:null and short duration
-        const isInbound = data.direction === 'incoming' || data.direction === 'inbound';
-        const wasNotAnswered = data.answeredAt === null || data.answeredAt === undefined;
-        const hasExplicitMissedStatus = data.status === 'missed' || data.status === 'no-answer' || data.status === 'abandoned';
-        const wasHungUpBeforeAnswer = data.status === 'completed' && wasNotAnswered && (data.duration === 0 || data.duration === null || data.duration === undefined || data.duration < 3);
-        const isMissedCall = isInbound && (hasExplicitMissedStatus || wasHungUpBeforeAnswer || (wasNotAnswered && data.status !== 'answered'));
+        const isInbound = callData.direction === 'incoming' || callData.direction === 'inbound';
+        const wasNotAnswered = callData.answeredAt === null || callData.answeredAt === undefined;
+        const hasExplicitMissedStatus = callData.status === 'missed' || callData.status === 'no-answer' || callData.status === 'abandoned';
+        const wasHungUpBeforeAnswer = callData.status === 'completed' && wasNotAnswered && (callData.duration === 0 || callData.duration === null || callData.duration === undefined || callData.duration < 3);
+        const isMissedCall = isInbound && (hasExplicitMissedStatus || wasHungUpBeforeAnswer || (wasNotAnswered && callData.status !== 'answered'));
 
         if (!isMissedCall) {
           logger.info('[OpenPhone Call] Not a missed call — no auto-text', {
-            isInbound, status: data.status, answeredAt: data.answeredAt, duration: data.duration
+            isInbound, status: callData.status, answeredAt: callData.answeredAt, duration: callData.duration
           });
         }
 
         if (isMissedCall) {
           logger.info('[ClubAI MissedCall] Missed inbound call detected', {
             phoneNumber: callPhoneNumber,
-            status: data.status,
-            direction: data.direction,
-            answeredAt: data.answeredAt,
-            duration: data.duration,
-            hasVoicemail: !!data.voicemail,
+            status: callData.status,
+            direction: callData.direction,
+            answeredAt: callData.answeredAt,
+            duration: callData.duration,
+            hasVoicemail: !!callData.voicemail,
             detectionReason: hasExplicitMissedStatus ? 'explicit_missed_status' : wasHungUpBeforeAnswer ? 'hung_up_before_answer' : 'not_answered'
           });
 
@@ -1640,7 +1674,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     `, [
                       String(convForMsg),
                       missedCallMsg,
-                      JSON.stringify({ source: 'ClubAI', type: 'missed-call-auto-text', callStatus: data.status })
+                      JSON.stringify({ source: 'ClubAI', type: 'missed-call-auto-text', callStatus: callData.status })
                     ]);
                   } catch (msgErr) {
                     logger.warn('[ClubAI MissedCall] Failed to store message in conversation_messages:', msgErr);
@@ -1651,7 +1685,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   phoneNumber: callPhoneNumber,
                   isAfterHours,
                   atlanticHour,
-                  callStatus: data.status
+                  callStatus: callData.status
                 });
               } else {
                 logger.info('[ClubAI MissedCall] Skipped — cooldown active (already texted within 1 hour)', {
@@ -1666,6 +1700,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         }
 
         break;
+      }
 
       case 'call.summary.completed':
         // Store AI-generated call summary

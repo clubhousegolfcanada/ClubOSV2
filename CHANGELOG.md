@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.8] - 2026-04-01
+
+### Fixed
+- **Call auto-text never sending (call.ringing + call.completed)** — OpenPhone v3 API wraps call data inside `data.object`, but both call webhook handlers read fields directly from `data` (e.g., `data.direction`, `data.from`). These were always `undefined`, so the direction check silently failed and no auto-text was ever sent. Added v3 unwrapping to both `call.ringing` and `call.completed` handlers, matching the pattern the message handler already uses.
+- **Silent failures in call.ringing handler** — Added diagnostic logging to every gate (direction check, ClubAI enabled, default number, phone extraction) so failures are visible in Railway logs instead of silently skipping.
+
 ## [1.30.7] - 2026-03-31
 
 ### Added
