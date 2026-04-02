@@ -2,6 +2,20 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.31.2] - 2026-04-02
+
+### Performance — Dashboard & App Load Optimization
+- **Added 6 composite database indexes** — `tickets(created_by_id, createdAt DESC)`, `tickets(createdAt DESC)`, `tickets(status, createdAt DESC)`, `bookings(createdAt DESC)`, `bookings(status, createdAt DESC)`. Eliminates full table scans on app load that were taking 2-7s each.
+- **Rewrote `/tickets/stats` endpoint** — Uses SQL `COUNT/GROUP BY` instead of loading all tickets + comments into memory via `json_agg LEFT JOIN`. Added `openByCategory` field so dashboard gets open ticket counts per category in one call.
+- **Rewrote `/tickets/active-count` endpoint** — Single `SELECT COUNT(*)` instead of loading all open + in-progress tickets into memory.
+- **Added 30s in-memory cache for `/stats/overview`** — Prevents DB pool saturation when multiple dashboard components request stats simultaneously.
+- **Eliminated 2 redundant ticket API calls on dashboard load** — `index.tsx` no longer fetches `tickets?status=open` separately (uses `openByCategory` from stats). `MiniInsightsPanel` uses `tickets/stats` instead of loading 100 tickets to find most common category.
+- **Fixed SSE double-prefix bug** — Messages SSE endpoint was hitting `/api/api/messages/events` (404) because `messages.tsx` read `NEXT_PUBLIC_API_URL` directly instead of using `getBaseUrl()` which strips trailing `/api`. Real-time message updates now connect correctly.
+
+### Fixed
+- **`safety_trigger_analytics` INSERT failing with 22P02** — `conversation_id` column is INTEGER but some code paths passed string values. Added `Number()` cast with null fallback.
+- **Duplicate auto-correction GPT calls** — Both operator detection handlers fired `detectAndLearnCorrection` for the same outbound message. Removed the redundant second call, saving one GPT-4o-mini invocation per operator response.
+
 ## [1.31.1] - 2026-04-02
 
 ### Performance
@@ -9,10 +23,6 @@ All notable changes to ClubOS will be documented in this file.
 - **Client-side conversation history cache** — Clicking between conversations no longer re-fetches full history from the server if `updated_at` hasn't changed. Cache has 5-minute hard expiry and auto-invalidates on message send.
 - **Browser-native render optimization** — Added `content-visibility: auto` to message lists (both mobile and desktop) so the browser skips rendering off-screen message bubbles.
 - **All 4 message write paths updated** — Webhook append, webhook new conversation, manual send, and openphoneService sync all populate the new denormalized columns on every write.
-
-### Fixed
-- **`safety_trigger_analytics` INSERT failing with 22P02** — `conversation_id` column is INTEGER but some code paths passed string values. Added `Number()` cast with null fallback.
-- **Duplicate auto-correction GPT calls** — Both operator detection handlers fired `detectAndLearnCorrection` for the same outbound message. Removed the redundant second call, saving one GPT-4o-mini invocation per operator response.
 
 ## [1.31.0] - 2026-04-02
 

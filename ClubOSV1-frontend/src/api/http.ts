@@ -16,7 +16,7 @@ export type ApiError = AxiosError<{
 }>;
 
 // Get base URL and ensure no double /api
-const getBaseUrl = () => {
+export const getBaseUrl = () => {
   /* eslint-disable no-restricted-syntax */
   const raw = process.env.NEXT_PUBLIC_API_URL || '';
   /* eslint-enable no-restricted-syntax */

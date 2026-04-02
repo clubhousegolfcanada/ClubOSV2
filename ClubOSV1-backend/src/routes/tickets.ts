@@ -4,7 +4,6 @@ import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { ticketDb } from '../utils/ticketDb';
 import { slackFallback } from '../services/slackFallback';
-import { v4 as uuidv4 } from 'uuid';
 import { transformTicket } from '../utils/transformers';
 import { actionEventService } from '../services/actionEventService';
 
@@ -36,11 +35,13 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // GET /api/tickets/active-count - Get active ticket count (must be before /:id)
-router.get('/active-count', authenticate, async (req, res) => {
+// Optimized: uses SQL COUNT instead of loading all tickets into memory
+router.get('/active-count', authenticate, async (_req, res) => {
   try {
-    const tickets = await db.getTickets({ status: 'open' });
-    const inProgressTickets = await db.getTickets({ status: 'in-progress' });
-    const activeCount = tickets.length + inProgressTickets.length;
+    const result = await db.query(
+      `SELECT COUNT(*) as count FROM tickets WHERE status IN ('open', 'in-progress')`
+    );
+    const activeCount = parseInt(result.rows[0]?.count || '0');
 
     res.json({
       success: true,
@@ -57,35 +58,80 @@ router.get('/active-count', authenticate, async (req, res) => {
 });
 
 // GET /api/tickets/stats - Get ticket statistics (must be before /:id)
-router.get('/stats', authenticate, async (req, res) => {
+// Optimized: uses SQL aggregation instead of loading all tickets into memory
+router.get('/stats', authenticate, async (_req, res) => {
   try {
-    const tickets = await db.getTickets();
+    const [statusResult, categoryResult, priorityResult, openByCategoryResult] = await Promise.all([
+      db.query(`
+        SELECT status, COUNT(*) as count FROM tickets
+        GROUP BY status
+      `),
+      db.query(`
+        SELECT category, COUNT(*) as count FROM tickets
+        GROUP BY category
+      `),
+      db.query(`
+        SELECT priority, COUNT(*) as count FROM tickets
+        GROUP BY priority
+      `),
+      // Open tickets grouped by category (used by dashboard QuickStats)
+      db.query(`
+        SELECT category, COUNT(*) as count FROM tickets
+        WHERE status = 'open'
+        GROUP BY category
+      `)
+    ]);
 
-    const stats = {
-      total: tickets.length,
-      byStatus: {
-        open: tickets.filter(t => t.status === 'open').length,
-        'in-progress': tickets.filter(t => t.status === 'in-progress').length,
-        resolved: tickets.filter(t => t.status === 'resolved').length,
-        closed: tickets.filter(t => t.status === 'closed').length,
-        archived: tickets.filter(t => t.status === 'archived').length
-      },
-      byCategory: {
-        facilities: tickets.filter(t => t.category === 'facilities').length,
-        tech: tickets.filter(t => t.category === 'tech').length,
-        orders: tickets.filter(t => t.category === 'orders').length
-      },
-      byPriority: {
-        low: tickets.filter(t => t.priority === 'low').length,
-        medium: tickets.filter(t => t.priority === 'medium').length,
-        high: tickets.filter(t => t.priority === 'high').length,
-        urgent: tickets.filter(t => t.priority === 'urgent').length
-      }
-    };
+    const byStatus: Record<string, number> = {};
+    for (const row of statusResult.rows) {
+      byStatus[row.status] = parseInt(row.count);
+    }
+
+    const byCategory: Record<string, number> = {};
+    for (const row of categoryResult.rows) {
+      byCategory[row.category || 'other'] = parseInt(row.count);
+    }
+
+    const byPriority: Record<string, number> = {};
+    for (const row of priorityResult.rows) {
+      byPriority[row.priority || 'medium'] = parseInt(row.count);
+    }
+
+    const openByCategory: Record<string, number> = {};
+    for (const row of openByCategoryResult.rows) {
+      openByCategory[row.category || 'other'] = parseInt(row.count);
+    }
+
+    const total = Object.values(byStatus).reduce((sum, c) => sum + c, 0);
 
     res.json({
       success: true,
-      data: stats
+      data: {
+        total,
+        byStatus: {
+          open: byStatus['open'] || 0,
+          'in-progress': byStatus['in-progress'] || 0,
+          resolved: byStatus['resolved'] || 0,
+          closed: byStatus['closed'] || 0,
+          archived: byStatus['archived'] || 0
+        },
+        byCategory: {
+          facilities: byCategory['facilities'] || 0,
+          tech: byCategory['tech'] || 0,
+          orders: byCategory['orders'] || 0
+        },
+        byPriority: {
+          low: byPriority['low'] || 0,
+          medium: byPriority['medium'] || 0,
+          high: byPriority['high'] || 0,
+          urgent: byPriority['urgent'] || 0
+        },
+        openByCategory: {
+          facilities: openByCategory['facilities'] || 0,
+          tech: openByCategory['tech'] || 0,
+          orders: openByCategory['orders'] || 0
+        }
+      }
     });
   } catch (error) {
     logger.error('Failed to get ticket stats:', error);
@@ -110,13 +156,13 @@ router.get('/:id', authenticate, async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: transformTicket(ticket)
     });
   } catch (error) {
     logger.error('Failed to get ticket:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to retrieve ticket'
     });
@@ -252,7 +298,7 @@ router.post('/', authenticate, async (req, res) => {
       logger.error('Failed to send Slack notification for ticket:', slackError);
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         ...transformTicket(newTicket),
@@ -261,7 +307,7 @@ router.post('/', authenticate, async (req, res) => {
     });
   } catch (error) {
     logger.error('Failed to create ticket:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to create ticket'
     });
@@ -312,7 +358,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
       success: true
     }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         ...transformTicket(updatedTicket),
@@ -321,7 +367,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     });
   } catch (error) {
     logger.error('Failed to update ticket status:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to update ticket status'
     });
@@ -387,7 +433,7 @@ router.patch('/:id', authenticate, async (req, res) => {
     // Case-insensitive location validation
     if (updates.location) {
       const normalizedLocation = validLocations.find(
-        loc => loc.toLowerCase() === updates.location.toLowerCase()
+        loc => loc.toLowerCase() === updates.location!.toLowerCase()
       );
 
       if (!normalizedLocation) {
@@ -433,7 +479,7 @@ router.patch('/:id', authenticate, async (req, res) => {
       success: true
     }).catch(err => logger.debug('[ActionEvent] Non-blocking emit failed', err));
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         ...transformTicket(updatedTicket),
@@ -442,7 +488,7 @@ router.patch('/:id', authenticate, async (req, res) => {
     });
   } catch (error) {
     logger.error('Failed to update ticket:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to update ticket'
     });
@@ -468,13 +514,13 @@ router.delete('/:id', authenticate, authorize(['admin', 'operator']), async (req
       deletedBy: req.user!.email
     });
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Ticket deleted successfully'
     });
   } catch (error) {
     logger.error('Failed to delete ticket:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to delete ticket'
     });
@@ -532,13 +578,13 @@ router.post('/:id/comments', authenticate, async (req, res) => {
       createdAt: comment.created_at
     };
 
-    res.json({
+    return res.json({
       success: true,
       data: formattedComment
     });
   } catch (error) {
     logger.error('Failed to add comment:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to add comment'
     });

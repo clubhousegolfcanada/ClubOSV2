@@ -184,6 +184,9 @@ export const createIndexesSQL = [
   'CREATE INDEX IF NOT EXISTS idx_tickets_created_by_id ON tickets(created_by_id);',
   'CREATE INDEX IF NOT EXISTS idx_tickets_location ON tickets(location);',
   'CREATE INDEX IF NOT EXISTS idx_tickets_archived_at ON tickets(archived_at) WHERE archived_at IS NOT NULL;',
+  'CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets("createdAt" DESC);',
+  'CREATE INDEX IF NOT EXISTS idx_tickets_created_by_created_at ON tickets(created_by_id, "createdAt" DESC);',
+  'CREATE INDEX IF NOT EXISTS idx_tickets_status_created_at ON tickets(status, "createdAt" DESC);',
 
   // Ticket comments indexes
   'CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);',
@@ -194,6 +197,8 @@ export const createIndexesSQL = [
   'CREATE INDEX IF NOT EXISTS idx_bookings_simulator_id ON bookings(simulator_id);',
   'CREATE INDEX IF NOT EXISTS idx_bookings_start_time ON bookings(start_time);',
   'CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);',
+  'CREATE INDEX IF NOT EXISTS idx_bookings_created_at ON bookings("createdAt" DESC);',
+  'CREATE INDEX IF NOT EXISTS idx_bookings_status_created_at ON bookings(status, "createdAt" DESC);',
   
   // Access log indexes
   'CREATE INDEX IF NOT EXISTS idx_access_logs_user_id ON access_logs(user_id);',

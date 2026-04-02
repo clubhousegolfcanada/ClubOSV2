@@ -182,30 +182,13 @@ export default function Home() {
           return;
         }
         
-        const response = await http.get(`tickets/stats`, {
+        const response = await http.get(`tickets/stats`);
 
-        });
-        
         if (response.data.success && response.data.data) {
           const stats = response.data.data;
-          // Get open tickets by category
-          const techOpen = stats.byCategory.tech - 
-            (stats.byStatus.resolved || 0) - 
-            (stats.byStatus.closed || 0);
-          const facilitiesOpen = stats.byCategory.facilities - 
-            (stats.byStatus.resolved || 0) - 
-            (stats.byStatus.closed || 0);
-          
-          // Actually, let's get the correct open counts
-          const tickets = await http.get(`tickets?status=open`, {
-
-          });
-          
-          if (tickets.data.success && tickets.data.data) {
-            const openTickets = tickets.data.data;
-            setTechTicketsOpen(openTickets.filter((t: any) => t.category === 'tech').length);
-            setFacilitiesTicketsOpen(openTickets.filter((t: any) => t.category === 'facilities').length);
-          }
+          // Use openByCategory from the optimized stats endpoint (single SQL query)
+          setTechTicketsOpen(stats.openByCategory?.tech || 0);
+          setFacilitiesTicketsOpen(stats.openByCategory?.facilities || 0);
         }
       } catch (error: any) {
         logger.error('Failed to fetch ticket stats:', error);

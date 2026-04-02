@@ -5,6 +5,10 @@ import { db } from '../utils/database';
 
 const router = Router();
 
+// Simple in-memory cache for stats overview (prevents pool saturation from parallel calls)
+const statsCache: { data: any; timestamp: number } = { data: null, timestamp: 0 };
+const STATS_CACHE_TTL = 30_000; // 30 seconds
+
 // GET /api/history - Get combined history (for backward compatibility)
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -42,7 +46,7 @@ router.get('/', authenticate, async (req, res) => {
     
     // Combine and sort by date
     const combined = [
-      ...feedback.rows.map(f => ({
+      ...feedback.rows.map((f: any) => ({
         type: 'feedback',
         id: f.id,
         timestamp: f.createdAt,
@@ -56,7 +60,7 @@ router.get('/', authenticate, async (req, res) => {
           feedbackType: f.feedback_type
         }
       })),
-      ...interactions.rows.map(i => ({
+      ...interactions.rows.map((i: any) => ({
         type: 'interaction',
         id: i.id,
         timestamp: i.createdAt,
@@ -66,7 +70,7 @@ router.get('/', authenticate, async (req, res) => {
         confidence: i.confidence,
         metadata: i.metadata
       })),
-      ...tickets.rows.map(t => ({
+      ...tickets.rows.map((t: any) => ({
         type: 'ticket',
         id: t.id,
         timestamp: t.createdAt,
@@ -126,7 +130,7 @@ router.get('/interactions', authenticate, async (req, res) => {
     
     // Combine and sort by date
     const combined = [
-      ...feedback.rows.map(f => ({
+      ...feedback.rows.map((f: any) => ({
         type: 'feedback',
         id: f.id,
         timestamp: f.createdAt,
@@ -140,7 +144,7 @@ router.get('/interactions', authenticate, async (req, res) => {
           feedbackType: f.feedback_type
         }
       })),
-      ...interactions.rows.map(i => ({
+      ...interactions.rows.map((i: any) => ({
         type: 'interaction',
         id: i.id,
         timestamp: i.createdAt,
@@ -173,7 +177,7 @@ router.get('/interactions', authenticate, async (req, res) => {
 // GET /api/history/bookings - Get user's booking history
 router.get('/bookings', authenticate, async (req, res) => {
   try {
-    const { limit = 50, offset = 0, includeRecurring = 'true' } = req.query;
+    const { limit = 50, offset = 0, includeRecurring: _includeRecurring = 'true' } = req.query;
     
     const bookings = await db.getBookings({
       user_id: req.user!.id
@@ -195,7 +199,7 @@ router.get('/bookings', authenticate, async (req, res) => {
         startTime: b.start_at,
         duration: Math.floor((new Date(b.end_at).getTime() - new Date(b.start_at).getTime()) / 60000), // calculate duration
         type: 'regular', // default type
-        recurringDays: null, // no recurring days in new schema
+        recurringDays: null as null, // no recurring days in new schema
         status: b.status,
         createdAt: b.created_at,
         cancelledAt: b.cancelled_at
@@ -262,10 +266,20 @@ router.get('/tickets', authenticate, async (req, res) => {
 });
 
 // GET /api/history/stats/overview - Get statistics overview
+// Cached for 30s to prevent pool saturation when multiple dashboard components call simultaneously
 router.get('/stats/overview', authenticate, async (req, res) => {
   try {
     const { period = '24h', endDate } = req.query;
-    
+
+    // Return cached result if fresh (same period + no custom endDate)
+    const cacheKey = `${period}_${endDate || 'now'}`;
+    if (statsCache.data &&
+        statsCache.data._cacheKey === cacheKey &&
+        Date.now() - statsCache.timestamp < STATS_CACHE_TTL) {
+      res.json(statsCache.data);
+      return;
+    }
+
     // Calculate date range based on period
     let startDate: Date;
     const end = endDate ? new Date(endDate as string) : new Date();
@@ -359,7 +373,7 @@ router.get('/stats/overview', authenticate, async (req, res) => {
     const ticketStats = ticketStatsResult.rows[0];
     const bookingStats = bookingStatsResult.rows[0];
     
-    res.json({
+    const responseData = {
       success: true,
       data: {
         totalRequests,
@@ -376,8 +390,15 @@ router.get('/stats/overview', authenticate, async (req, res) => {
           start: startDate.toISOString(),
           end: end.toISOString()
         }
-      }
-    });
+      },
+      _cacheKey: `${period}_${endDate || 'now'}`
+    };
+
+    // Cache the result for 30s
+    statsCache.data = responseData;
+    statsCache.timestamp = Date.now();
+
+    res.json(responseData);
   } catch (error) {
     logger.error('Failed to get stats overview:', error);
     res.status(500).json({

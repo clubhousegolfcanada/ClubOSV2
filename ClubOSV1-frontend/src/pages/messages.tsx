@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAuthState } from '@/state/useStore';
 import { useRouter } from 'next/router';
 import { MessageCircle, Send, Search, Phone, PhoneOff, Clock, ArrowLeft, Bell, BellOff, Sparkles, Check, X, Edit2, ChevronLeft, RefreshCw, ExternalLink, Plus, Monitor, Calendar, Ticket } from 'lucide-react';
-import { http } from '@/api/http';
+import { http, getBaseUrl } from '@/api/http';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -303,7 +303,7 @@ export default function Messages() {
       const token = tokenManager.getToken();
       if (!token) return;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      const apiUrl = getBaseUrl();
       eventSource = new EventSource(`${apiUrl}/api/messages/events?token=${token}`);
 
       eventSource.addEventListener('new_message', () => {

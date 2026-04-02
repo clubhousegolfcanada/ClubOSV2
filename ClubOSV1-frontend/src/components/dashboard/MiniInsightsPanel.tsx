@@ -27,19 +27,15 @@ export const MiniInsightsPanel: React.FC = () => {
         const token = tokenManager.getToken();
         const headers = token ? { } : {};
 
-        // Fetch various metrics in parallel
-        const [bookingsRes, ticketsRes, historyRes] = await Promise.all([
-          // Bookings today (mock for now - would come from booking system)
+        // Fetch metrics in parallel (uses lightweight stats endpoints, no full ticket loads)
+        const [bookingsRes, ticketStatsRes] = await Promise.all([
           http.get(`history/stats/overview?period=24h`, { headers }),
-          // Tickets for common issues
-          http.get(`tickets?limit=100`, { headers }),
-          // History for no-show and refund data
-          http.get(`history?limit=100`, { headers })
+          // Use stats endpoint (SQL COUNT) instead of loading all tickets
+          http.get(`tickets/stats`, { headers })
         ]);
 
         // Calculate metrics
-        const today = new Date().toDateString();
-        const bookingsToday = bookingsRes.data?.data?.totalBookings || 12; // Mock value
+        const bookingsToday = bookingsRes.data?.data?.totalBookings || 0;
 
         // Calculate no-show rate (mock calculation)
         const noShowRate = 8.5; // Would calculate from actual booking data
@@ -47,17 +43,11 @@ export const MiniInsightsPanel: React.FC = () => {
         // Calculate refunds (mock)
         const refundsCount = 3;
 
-        // Find most common issue from tickets
-        const tickets = ticketsRes.data?.data || [];
-        const issueCounts: Record<string, number> = {};
-        tickets.forEach((ticket: any) => {
-          const category = ticket.category || 'other';
-          issueCounts[category] = (issueCounts[category] || 0) + 1;
-        });
-        
-        const mostCommonIssue = Object.entries(issueCounts)
-          .sort(([, a], [, b]) => b - a)[0];
-        const commonIssueText = mostCommonIssue 
+        // Find most common issue from ticket stats (no full ticket load needed)
+        const byCategory = ticketStatsRes.data?.data?.byCategory || {};
+        const mostCommonIssue = Object.entries(byCategory)
+          .sort(([, a], [, b]) => (b as number) - (a as number))[0];
+        const commonIssueText = mostCommonIssue
           ? `${mostCommonIssue[0] === 'tech' ? 'TrackMan reset' : 'Door access'}`
           : 'None today';
 
