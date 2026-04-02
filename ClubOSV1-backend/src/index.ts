@@ -251,28 +251,11 @@ app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', authGoogleRoutes); // Google OAuth routes
 
-// V2 Routes - Parallel deployment for gradual migration
-// TODO: Uncomment when refactored routes are ready
-// if (ROUTE_CONFIG.parallelMode) {
-//   app.use('/api/v2/auth', authRefactoredRoutes);
-//   app.use('/api/v2/health', healthRefactoredRoutes);
-//   app.use('/api/v2/users', authenticate, usersRefactoredRoutes);
-  
-//   logger.info('🚀 Refactored routes mounted on /api/v2/* in parallel mode');
-//   logger.info(`Migration config:`, {
-//     parallelMode: ROUTE_CONFIG.parallelMode,
-//     useRefactoredAuth: ROUTE_CONFIG.useRefactoredAuth,
-//     useRefactoredHealth: ROUTE_CONFIG.useRefactoredHealth,
-//     useRefactoredUsers: ROUTE_CONFIG.useRefactoredUsers
-//   });
-// }
-
 // Version discovery endpoint
 app.get('/api/version', (_req, res) => {
   res.json({
     current: 'v1',
     available: ['v1'],
-    message: 'V2 routes preparation in progress'
   });
 });
 
@@ -286,10 +269,7 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
 app.use('/api/slack', slackRoutes);
-// Legacy customer routes (if any)
-// app.use('/api/customer', customerRoutes);
-
-// New Clubhouse customer app API v2
+// Customer app API
 app.use('/api/v2/customer', customerRoutes);
 app.use('/api/customer-profile', customerProfileRoutes);
 app.use('/api/profile', require('./routes/profileStats').default);
@@ -372,13 +352,6 @@ app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api/settings', bookingConfigRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/process-knowledge', processKnowledgeRoutes);
-
-// Architecture v2 routes (testing)
-// TODO: Move these imports to top of file
-// import authRefactoredRoutes from './routes/auth-refactored';
-// import usersRefactoredRoutes from './routes/users-refactored';
-// app.use('/api/v2/auth', authRefactoredRoutes);
-// app.use('/api/v2/users', usersRefactoredRoutes);
 
 // HubSpot webhook routes
 app.use('/api/webhooks/hubspot', hubspotBookingWebhook);

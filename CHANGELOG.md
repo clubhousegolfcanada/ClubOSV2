@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.31.0] - 2026-04-02
+
+### Removed (Audit Phase 1: Dead Code Cleanup)
+- **Deleted dead backend route files**: `auth-refactored.ts`, `users-refactored.ts`, `health-refactored.ts` (abandoned v2 migration), `gptWebhook.ts`, `tone.ts` (never mounted)
+- **Deleted dead middleware**: `errorHandling.ts` (duplicate of active `errorHandler.ts`, 0 imports)
+- **Deleted dead frontend components**: `EditableExternalTools.tsx`, `StructuredResponseIntegration.tsx` (never imported)
+- **Cleaned up index.ts**: Removed ~25 lines of commented-out v2 route mounts and stale TODO blocks
+
 ## [1.30.9] - 2026-04-01
 
 ### Added
