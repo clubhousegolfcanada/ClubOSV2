@@ -659,6 +659,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
           // V3-PLS pattern learning is DISABLED.
           // Operator responses are still stored in conversation_messages by the
           // existing message storage code above — available for ClubAI continuous learning later.
+
+          // ClubAI Auto-Correction Learning: detect if operator is correcting a recent AI response.
+          // Fire-and-forget — must NOT delay the webhook response.
+          if (lockConvId && newMessage.text.length > 5) {
+            clubaiService.detectAndLearnCorrection(
+              lockConvId,
+              newMessage.text,
+              phoneNumber
+            ).catch(err => {
+              logger.warn('[ClubAI Auto-Correct] Background detection failed:', err);
+            });
+          }
         }
 
         // Check if we have an existing conversation for this phone number
@@ -1141,6 +1153,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
               try {
                 await clubaiService.deactivateForConversation(existingConv.rows[0].id);
               } catch { /* non-critical */ }
+
+              // Auto-correction learning: detect if operator is correcting a recent AI response
+              if (existingConv.rows[0]?.id && operatorResponse.length > 5) {
+                clubaiService.detectAndLearnCorrection(
+                  existingConv.rows[0].id,
+                  operatorResponse,
+                  phoneNumber
+                ).catch(err => {
+                  logger.warn('[ClubAI Auto-Correct] Background detection failed (existingConv handler):', err);
+                });
+              }
             }
           }
           

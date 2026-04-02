@@ -3,7 +3,7 @@ import { join } from 'path';
 import { getOpenAIClient } from '../utils/openaiClient';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
-import { getRAGContext, logSearch } from './clubaiKnowledgeService';
+import { getRAGContext, logSearch, addManualKnowledge, searchKnowledge } from './clubaiKnowledgeService';
 
 interface ClubAIResponse {
   response: string | null;
@@ -195,7 +195,7 @@ export async function generateResponse(
   }
 
   // RAG: Search for relevant past conversations and website content
-  let ragContext = { conversationExamples: '', websiteContent: '', knowledgeIds: [] as number[], similarityScores: [] as number[] };
+  let ragContext = { conversationExamples: '', websiteContent: '', knowledgeIds: [] as number[], similarityScores: [] as number[], hasManualMatches: false, hasWebsiteMatches: false };
   try {
     ragContext = await getRAGContext(messageText);
     logger.info('[ClubAI] RAG context retrieved', {
@@ -253,6 +253,28 @@ export async function generateResponse(
       systemContent += ragContext.websiteContent;
       systemContent += 'Use this information to answer the customer directly. Do NOT send them a link — give them the actual info.\n\n';
     }
+  }
+
+  // Soft warning: when RAG only found conversation examples (no manual/website) AND
+  // the top match is weak (< 0.75), nudge GPT to be extra cautious.
+  // Strong conversation matches (0.75+) pass through normally — they often contain good info.
+  const topSimilarity = ragContext.similarityScores[0] || 0;
+  if (!ragContext.hasManualMatches && !ragContext.hasWebsiteMatches
+      && ragContext.knowledgeIds.length > 0 && topSimilarity < 0.75) {
+    systemContent += '\n\n---\n\n';
+    systemContent += 'CAUTION FOR THIS MESSAGE: No verified information (team corrections or website content) was found for this question. ';
+    systemContent += 'Only past conversation examples matched, and the match confidence is low. ';
+    systemContent += 'These examples may contain outdated or incorrect information. ';
+    systemContent += 'Be extra cautious — do NOT use conversation examples as factual sources. ';
+    systemContent += 'If the answer is not already in your core instructions above, ';
+    systemContent += 'respond with "Let me check with the team on that and get back to you!" and add [ESCALATE TO HUMAN] with Tier: SOFT HOLD.\n';
+
+    logger.info('[ClubAI] Low-confidence unverified match, injecting caution warning', {
+      phoneNumber,
+      conversationId,
+      topSimilarity,
+      matchCount: ragContext.knowledgeIds.length,
+    });
   }
 
   // Note: IMPORTANT RESPONSE RULES are now part of the editable system prompt (end of the prompt text).
@@ -447,10 +469,221 @@ export async function deactivateForConversation(conversationId: string): Promise
   }
 }
 
+/**
+ * Detect if an operator outbound message is correcting a recent ClubAI response.
+ * If so, auto-save the correction to the knowledge base for future use.
+ *
+ * Called asynchronously (fire-and-forget) from the webhook handler.
+ * Uses GPT-4o-mini to classify: correction vs. continuation.
+ * Must never throw — all errors are caught and logged silently.
+ */
+export async function detectAndLearnCorrection(
+  convDbId: number | string,
+  operatorMessage: string,
+  phoneNumber: string
+): Promise<void> {
+  const convId = String(convDbId);
+
+  try {
+    // Step 1: Find the last ClubAI message in this conversation (within last 30 minutes)
+    const aiMsgResult = await db.query(`
+      SELECT message_text, created_at
+      FROM conversation_messages
+      WHERE conversation_id = $1
+        AND sender_type = 'ai'
+        AND created_at > NOW() - INTERVAL '30 minutes'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [convId]);
+
+    if (aiMsgResult.rows.length === 0) {
+      // No recent ClubAI message — operator is responding directly, nothing to correct
+      return;
+    }
+
+    const clubaiMessage = aiMsgResult.rows[0].message_text;
+    const cleanAiMessage = clubaiMessage.replace(/\s*-\s*ClubAI\s*$/i, '').trim();
+
+    // Step 2: Find the customer message that preceded the ClubAI response
+    const customerMsgResult = await db.query(`
+      SELECT message_text
+      FROM conversation_messages
+      WHERE conversation_id = $1
+        AND sender_type = 'customer'
+        AND created_at <= $2
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [convId, aiMsgResult.rows[0].created_at]);
+
+    const customerMessage = customerMsgResult.rows[0]?.message_text || '';
+    if (!customerMessage) {
+      logger.warn('[ClubAI Auto-Correct] No customer message found before AI response, skipping', { convId });
+      return;
+    }
+
+    // Step 3: Dedup — skip if we already auto-corrected for this conversation recently
+    const recentAutoCorrection = await db.query(`
+      SELECT id FROM clubai_corrections
+      WHERE conversation_id = $1
+        AND corrected_by = 'auto-detection'
+        AND created_at > NOW() - INTERVAL '10 minutes'
+      LIMIT 1
+    `, [convId]);
+
+    if (recentAutoCorrection.rows.length > 0) {
+      logger.info('[ClubAI Auto-Correct] Already auto-corrected recently for this conversation, skipping', { convId });
+      return;
+    }
+
+    // Step 4: Use GPT-4o-mini to determine if operator is correcting ClubAI
+    const openai = getOpenAIClient();
+    if (!openai) {
+      logger.warn('[ClubAI Auto-Correct] OpenAI client not available');
+      return;
+    }
+
+    const classification = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You analyze SMS conversations between an AI assistant ("ClubAI") and a human operator at a golf/entertainment facility. An operator just sent a message after ClubAI responded to a customer. Determine if the operator is CORRECTING the AI (providing different/better information) or just CONTINUING the conversation (adding context, following up, or handling something unrelated).
+
+A CORRECTION means:
+- The operator provides different factual information than ClubAI gave
+- The operator contradicts what ClubAI said
+- The operator answers the same question but with different/better info
+- The operator explicitly says ClubAI was wrong ("that was incorrect", "actually", "no we don't have that")
+
+NOT a correction:
+- Operator says "thanks", "ok", "got it", "no worries" (acknowledgment)
+- Operator asks the customer a follow-up question
+- Operator discusses something different from what ClubAI addressed
+- Operator adds complementary info that doesn't contradict ClubAI
+- Operator is sending a greeting or closing message
+- Operator is handling the situation ClubAI correctly escalated
+
+Return JSON only: {"isCorrection": true/false, "correctedInfo": "brief description of what was corrected (empty string if not correction)", "intent": "topic category: booking, pricing, hours, access, tech_support, music, equipment, general_inquiry"}`
+        },
+        {
+          role: 'user',
+          content: `Customer asked: "${customerMessage}"\n\nClubAI responded: "${cleanAiMessage}"\n\nOperator then said: "${operatorMessage}"`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 150,
+    });
+
+    const content = classification.choices[0]?.message?.content;
+    if (!content) {
+      logger.warn('[ClubAI Auto-Correct] Empty classification response');
+      return;
+    }
+
+    let parsed: { isCorrection: boolean; correctedInfo: string; intent: string };
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      logger.warn('[ClubAI Auto-Correct] Could not parse classification JSON', { content: content.substring(0, 200) });
+      return;
+    }
+
+    if (!parsed.isCorrection) {
+      logger.info('[ClubAI Auto-Correct] Operator message is NOT a correction, no learning needed', {
+        phoneNumber,
+        operatorPreview: operatorMessage.substring(0, 50),
+      });
+      return;
+    }
+
+    // Step 5: It IS a correction — save to knowledge base
+    logger.info('[ClubAI Auto-Correct] Correction detected! Learning from operator', {
+      phoneNumber,
+      intent: parsed.intent,
+      correctedInfo: parsed.correctedInfo,
+      customerMessage: customerMessage.substring(0, 80),
+      aiResponse: cleanAiMessage.substring(0, 80),
+      operatorResponse: operatorMessage.substring(0, 80),
+    });
+
+    const resolvedIntent = parsed.intent || 'general_inquiry';
+
+    // 5a: Add to knowledge base
+    const knowledgeEntryId = await addManualKnowledge(
+      resolvedIntent,
+      customerMessage.trim(),
+      operatorMessage.trim(),
+      {
+        source: 'auto_correction',
+        original_ai_response: cleanAiMessage,
+        corrected_info: parsed.correctedInfo,
+        phone_number: phoneNumber,
+      }
+    );
+
+    // 5b: Deactivate conflicting knowledge entries
+    let deactivatedCount = 0;
+    if (knowledgeEntryId) {
+      try {
+        const similar = await searchKnowledge(customerMessage.trim(), { limit: 5, threshold: 0.6 });
+        const toDeactivate = similar.filter(s =>
+          s.knowledge_id !== knowledgeEntryId &&
+          s.team_response !== operatorMessage.trim()
+        );
+        if (toDeactivate.length > 0) {
+          const ids = toDeactivate.map(s => s.knowledge_id);
+          await db.query(
+            `UPDATE clubai_knowledge SET is_active = FALSE, updated_at = NOW() WHERE id = ANY($1)`,
+            [ids]
+          );
+          deactivatedCount = ids.length;
+        }
+      } catch (conflictErr) {
+        logger.warn('[ClubAI Auto-Correct] Could not check/deactivate conflicts:', conflictErr);
+      }
+    }
+
+    // 5c: Log to clubai_corrections audit table
+    try {
+      await db.query(`
+        INSERT INTO clubai_corrections
+          (conversation_id, phone_number, customer_message, original_response, corrected_response,
+           correction_type, correction_summary, intent, knowledge_entry_id, corrected_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `, [
+        convId,
+        phoneNumber,
+        customerMessage.trim(),
+        cleanAiMessage,
+        operatorMessage.trim(),
+        'factual',
+        parsed.correctedInfo || 'Auto-detected operator correction',
+        resolvedIntent,
+        knowledgeEntryId,
+        'auto-detection',
+      ]);
+    } catch (auditErr) {
+      logger.warn('[ClubAI Auto-Correct] Failed to log correction audit:', auditErr);
+    }
+
+    logger.info('[ClubAI Auto-Correct] Successfully learned correction', {
+      phoneNumber,
+      knowledgeEntryId,
+      deactivatedCount,
+      intent: resolvedIntent,
+    });
+
+  } catch (error) {
+    // Silently fail — this is fire-and-forget, must never affect webhook response
+    logger.error('[ClubAI Auto-Correct] Error in correction detection:', error);
+  }
+}
+
 export const clubaiService = {
   generateResponse,
   storeClubAIMessage,
   deactivateForConversation,
+  detectAndLearnCorrection,
   clearSystemPromptCache,
   getDefaultSystemPrompt,
 };

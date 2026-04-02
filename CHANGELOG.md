@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.30.9] - 2026-04-01
+
+### Added
+- **ClubAI auto-learns from operator corrections** — When an operator responds after ClubAI in a conversation, the system uses GPT-4o-mini to detect if the operator is correcting the AI. If so, it automatically saves the correction to the knowledge base (same as the manual "Correct" button), deactivates conflicting entries, and logs an audit trail. Runs async so webhook response time is unaffected.
+
+### Fixed
+- **ClubAI hallucinating answers for undocumented topics** — When RAG only finds weak conversation-source matches (no verified corrections or website content, similarity < 0.75), ClubAI now receives a caution warning nudging it to escalate instead of guessing. Strong conversation matches (0.75+) pass through normally. Prevents scenarios where GPT fabricated instructions from tone-only examples.
+
 ## [1.30.8] - 2026-04-01
 
 ### Fixed

@@ -146,12 +146,14 @@ export async function getRAGContext(customerMessage: string): Promise<{
   websiteContent: string;
   knowledgeIds: number[];
   similarityScores: number[];
+  hasManualMatches: boolean;
+  hasWebsiteMatches: boolean;
 }> {
   // Generate embedding ONCE for all searches
   const queryEmbedding = await generateEmbedding(customerMessage);
   if (!queryEmbedding) {
     logger.warn('[ClubAI-Knowledge] Could not generate query embedding for RAG context');
-    return { conversationExamples: '', websiteContent: '', knowledgeIds: [], similarityScores: [] };
+    return { conversationExamples: '', websiteContent: '', knowledgeIds: [], similarityScores: [], hasManualMatches: false, hasWebsiteMatches: false };
   }
 
   // Run all three searches in parallel using the same embedding
@@ -223,7 +225,7 @@ export async function getRAGContext(customerMessage: string): Promise<{
     }
   }
 
-  return { conversationExamples, websiteContent, knowledgeIds, similarityScores };
+  return { conversationExamples, websiteContent, knowledgeIds, similarityScores, hasManualMatches: manual.length > 0, hasWebsiteMatches: website.length > 0 };
 }
 
 // ============================================
