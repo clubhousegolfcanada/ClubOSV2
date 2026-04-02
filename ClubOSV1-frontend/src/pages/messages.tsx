@@ -171,7 +171,12 @@ const messagesHaveChanged = (oldMessages: Message[], newMessages: Message[]): bo
 export default function Messages() {
   const { user } = useAuthState();
   const router = useRouter();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  // Pull context cache early so we can initialize state from it (avoids loading spinner)
+  const { markConversationAsRead, refreshUnreadCount, cachedConversations, setCachedConversations, conversationsCacheTime } = useMessages();
+  // Initialize from context cache — shows conversations instantly on return visits
+  const [conversations, setConversations] = useState<Conversation[]>(
+    cachedConversations.length > 0 ? cachedConversations as unknown as Conversation[] : []
+  );
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -209,7 +214,8 @@ export default function Messages() {
     }
   }, [user, router]);
   const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Skip loading spinner if we have cached conversations from context
+  const [loading, setLoading] = useState(cachedConversations.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -263,7 +269,6 @@ export default function Messages() {
       };
     }
   }, []);
-  const { markConversationAsRead, refreshUnreadCount } = useMessages();
 
   // Check auth
   useEffect(() => {
@@ -516,6 +521,8 @@ export default function Messages() {
             return prevConversations;
           }
 
+          // Update context cache so next page visit shows data instantly
+          setCachedConversations(sortedConversations);
           return sortedConversations;
         });
 
@@ -585,7 +592,7 @@ export default function Messages() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isRateLimited, router, messages.length, backoffDelay]);
+  }, [isRateLimited, router, messages.length, backoffDelay, setCachedConversations]);
 
   // Keep the ref updated with the latest function
   useEffect(() => {

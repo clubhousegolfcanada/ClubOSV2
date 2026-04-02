@@ -70,7 +70,7 @@ export async function processChallengeAgreements() {
   }
 }
 
-// Run every minute
+// Run every 5 minutes (reduced from 60s to minimize DB pool contention)
 export function startChallengeAgreementProcessor() {
   setInterval(async () => {
     try {
@@ -81,7 +81,7 @@ export function startChallengeAgreementProcessor() {
     } catch (error) {
       logger.error('Challenge agreement processor error:', error);
     }
-  }, 60000); // Run every minute
+  }, 300000); // Run every 5 minutes
   
   // Run once on startup
   processChallengeAgreements().catch(error => {

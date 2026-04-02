@@ -84,11 +84,6 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
       }, AUTH_CHECK_TIMEOUT);
       
       try {
-        // Add small delay to allow state to settle after login
-        if (window.location.pathname !== '/login') {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
         // Check if user is stored in storage
         const storedUser = getStorageItem('clubos_user');
         const storedToken = tokenManager.getToken();

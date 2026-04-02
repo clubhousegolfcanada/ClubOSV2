@@ -8,7 +8,6 @@ import { Request, Response } from 'express';
 import { db } from '../../../utils/database';
 import { logger } from '../../../utils/logger';
 import { AppError } from '../../../middleware/errorHandler';
-import { openPhoneService } from '../../../services/openphoneService';
 
 /**
  * List all conversations with pagination and filters
@@ -57,26 +56,30 @@ export async function listConversations(req: Request, res: Response) {
     query += ` AND oc.updated_at > COALESCE(ms.last_read_at, '1970-01-01'::timestamp)`;
   }
 
-  // Add sorting and pagination
+  // Add window function for total count (single query instead of two)
+  query = query.replace(
+    'SELECT \n      oc.*,',
+    'SELECT \n      oc.*, COUNT(*) OVER() as _total_count,'
+  );
   query += ` ORDER BY oc.updated_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(Number(limit), offset);
 
   try {
-    // Get conversations
+    // Single query with COUNT(*) OVER() window function — replaces the old 2-query pattern
     const result = await db.query(query, params);
-    
-    // Get total count
-    const countQuery = query.replace(/SELECT.*FROM/, 'SELECT COUNT(*) FROM').replace(/ORDER BY.*$/, '');
-    const countParams = params.slice(0, -2); // Remove limit and offset
-    const countResult = await db.query(countQuery, countParams);
-    
+
+    const total = result.rows.length > 0 ? parseInt(result.rows[0]._total_count) : 0;
+
+    // Strip the internal _total_count from response rows
+    const conversations = result.rows.map(({ _total_count, ...row }: any) => row);
+
     res.json({
-      conversations: result.rows,
+      conversations,
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total: parseInt(countResult.rows[0].count),
-        totalPages: Math.ceil(parseInt(countResult.rows[0].count) / Number(limit))
+        total,
+        totalPages: Math.ceil(total / Number(limit))
       }
     });
   } catch (error) {

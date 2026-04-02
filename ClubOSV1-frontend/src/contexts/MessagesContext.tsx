@@ -7,18 +7,38 @@ import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
 
 
+interface CachedConversation {
+  id: string | number;
+  phone_number: string;
+  customer_name: string;
+  updated_at: string;
+  unread_count?: number;
+  last_message_text?: string;
+  last_message_direction?: string;
+  last_message_at?: string;
+  message_count?: number;
+  [key: string]: any;
+}
+
 interface MessagesContextType {
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
   markConversationAsRead: (phoneNumber: string, conversationUnreadCount?: number) => Promise<void>;
   isRefreshing: boolean;
+  // Conversation cache — persists across page navigations
+  cachedConversations: CachedConversation[];
+  setCachedConversations: (convos: CachedConversation[]) => void;
+  conversationsCacheTime: number;
 }
 
 const MessagesContext = createContext<MessagesContextType>({
   unreadCount: 0,
   refreshUnreadCount: async () => {},
   markConversationAsRead: async () => {},
-  isRefreshing: false
+  isRefreshing: false,
+  cachedConversations: [],
+  setCachedConversations: () => {},
+  conversationsCacheTime: 0
 });
 
 export const useMessages = () => useContext(MessagesContext);
@@ -29,6 +49,12 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cachedConversations, setCachedConversationsRaw] = useState<CachedConversation[]>([]);
+  const [conversationsCacheTime, setConversationsCacheTime] = useState(0);
+  const setCachedConversations = useCallback((convos: CachedConversation[]) => {
+    setCachedConversationsRaw(convos);
+    setConversationsCacheTime(Date.now());
+  }, []);
   const previousUnreadCount = useRef(0);
   const isFirstLoad = useRef(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -208,11 +234,14 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <MessagesContext.Provider 
-      value={{ 
-        unreadCount, 
+      value={{
+        unreadCount,
         refreshUnreadCount,
         markConversationAsRead,
-        isRefreshing 
+        isRefreshing,
+        cachedConversations,
+        setCachedConversations,
+        conversationsCacheTime
       }}
     >
       {children}

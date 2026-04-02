@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.31.4] - 2026-04-02
+
+### Performance — Messages Page Instant Navigation
+- **Conversation cache persists across page navigations** — Conversations are now stored in `MessagesContext` (which lives in the React tree above individual pages). When navigating away from messages and back, conversations appear instantly from cache while fresh data loads in the background. No more spinner on return visits.
+- **Removed AuthGuard 100ms artificial delay** — Every page load had a `setTimeout(100ms)` before checking localStorage auth. Removed -- auth validation is already synchronous.
+- **Single conversations query via window function** — Backend `/conversations` endpoint was running two separate DB queries (main + COUNT). Replaced with `COUNT(*) OVER()` window function -- one query, one DB connection.
+- **Challenge agreement processor reduced from 60s to 5min** — Was consuming a dedicated pool connection every 60s (1,440/day). Now runs every 5min (288/day), freeing pool capacity for user-facing queries.
+
 ## [1.31.3] - 2026-04-02
 
 ### Fixed
