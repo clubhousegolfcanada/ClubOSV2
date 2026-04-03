@@ -1809,9 +1809,9 @@ export default function Messages() {
                     </div>
                   )}
                   
-                  {/* Message Input - Mobile optimized, pb-[76px] clears the fixed bottom nav bar */}
+                  {/* Message Input - pb-[76px] clears the bottom nav bar, removed when keyboard is open */}
                   <div
-                    className="flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 pb-[76px]"
+                    className={`flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 ${keyboardVisible ? 'pb-3' : 'pb-[76px]'}`}
                   >
                     <form
                       onSubmit={(e) => {
