@@ -298,10 +298,27 @@ export default function Messages() {
     let isMounted = true;
     let eventSource: EventSource | null = null;
 
-    // Initial load
-    if (loadConversationsRef.current) {
-      loadConversationsRef.current();
-    }
+    // Initial load — call directly via http instead of ref, because
+    // loadConversationsRef isn't populated yet on first render (ref-setting
+    // useEffect hasn't fired). This prevents a 30s wait for the fallback poll.
+    (async () => {
+      try {
+        const token = tokenManager.getToken();
+        if (!token) return;
+        const response = await http.get('messages/conversations', { params: { limit: 15 } });
+        if (response.data.success && isMounted) {
+          const sorted = response.data.data.sort((a: any, b: any) =>
+            new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+          );
+          setConversations(sorted);
+          setCachedConversations(sorted);
+          setLoading(false);
+        }
+      } catch (err: any) {
+        if (isMounted) setLoading(false);
+        logger.error('Initial conversation load failed:', err);
+      }
+    })();
 
     // Connect to Server-Sent Events for real-time message updates
     const connectSSE = () => {
