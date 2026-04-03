@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useRouter } from 'next/router';
 import { useAuthState } from '@/state/useStore';
-import { Users, Zap, Brain, MessageSquare, ClipboardList, Layers, Receipt } from 'lucide-react';
+import { Users, Zap, Brain, MessageSquare, ClipboardList, Layers, Receipt, Monitor } from 'lucide-react';
 import SubNavigation, { SubNavTab } from '@/components/SubNavigation';
 import OperatorLayout from '@/components/OperatorLayout';
 
@@ -11,6 +12,7 @@ const OperationsClubAI = lazy(() => import('@/components/operations/clubai/Opera
 const WhiteLabelPlanner = lazy(() => import('@/components/operations/white-label/WhiteLabelPlanner').then(m => ({ default: m.WhiteLabelPlanner })));
 const ChecklistsAdminComponent = lazy(() => import('@/components/operations/checklists/ChecklistsAdminComponent').then(m => ({ default: m.ChecklistsAdminComponent })));
 const OperationsReceipts = lazy(() => import('@/components/operations/receipts/OperationsReceipts').then(m => ({ default: m.OperationsReceipts })));
+const TrackManPanel = lazy(() => import('@/components/operations/trackman/TrackManPanel').then(m => ({ default: m.TrackManPanel })));
 
 // Loading component
 const TabLoading = () => (
@@ -19,12 +21,21 @@ const TabLoading = () => (
   </div>
 );
 
-type TabType = 'users' | 'integrations' | 'patterns' | 'checklists-admin' | 'white-label' | 'receipts';
+type TabType = 'users' | 'integrations' | 'patterns' | 'checklists-admin' | 'white-label' | 'receipts' | 'trackman';
 
 export default function Operations() {
   const { user } = useAuthState();
+  const router = useRouter();
   // Default to patterns for operators, users for admins
   const [activeTab, setActiveTab] = useState<TabType>('patterns');
+
+  // Handle ?tab= URL parameter
+  useEffect(() => {
+    const tab = router.query.tab as string;
+    if (tab && ['users', 'integrations', 'patterns', 'checklists-admin', 'white-label', 'receipts', 'trackman'].includes(tab)) {
+      setActiveTab(tab as TabType);
+    }
+  }, [router.query.tab]);
 
   // SECURITY: Block customer role from accessing operations
   useEffect(() => {
@@ -51,7 +62,7 @@ export default function Operations() {
   useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail as TabType;
-      if (tab && ['users', 'integrations', 'patterns', 'checklists-admin', 'white-label', 'receipts'].includes(tab)) {
+      if (tab && ['users', 'integrations', 'patterns', 'checklists-admin', 'white-label', 'receipts', 'trackman'].includes(tab)) {
         setActiveTab(tab);
       }
     };
@@ -80,7 +91,8 @@ export default function Operations() {
     { id: 'patterns', label: 'ClubAI', icon: MessageSquare, adminOnly: false },
     { id: 'checklists-admin', label: 'Checklists Admin', icon: ClipboardList, adminOnly: true },
     { id: 'white-label', label: 'White Label', icon: Layers, adminOnly: true },
-    { id: 'receipts', label: 'Receipts', icon: Receipt, adminOnly: true }
+    { id: 'receipts', label: 'Receipts', icon: Receipt, adminOnly: true },
+    { id: 'trackman', label: 'TrackMan', icon: Monitor, adminOnly: true }
   ];
 
   const visibleTabConfigs = tabConfigs.filter(tab => !tab.adminOnly || user.role === 'admin');
@@ -106,6 +118,8 @@ export default function Operations() {
         return 'White Label Planning Tool - Document and plan platform transformation';
       case 'receipts':
         return 'Export and manage uploaded receipts for accounting';
+      case 'trackman':
+        return 'Remote TrackMan TPS restart and monitoring across all locations';
       default:
         return '';
     }
@@ -127,6 +141,8 @@ export default function Operations() {
           return user.role === 'admin' ? <WhiteLabelPlanner /> : null;
         case 'receipts':
           return user.role === 'admin' ? <OperationsReceipts /> : null;
+        case 'trackman':
+          return user.role === 'admin' ? <TrackManPanel /> : null;
         default:
           return user.role === 'admin' ? <OperationsUsers /> : <OperationsClubAI />;
       }

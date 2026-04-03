@@ -10,6 +10,7 @@ import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
 import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
+import { TrackManStatusCard } from '@/components/dashboard/TrackManStatusCard';
 import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
@@ -329,6 +330,9 @@ export default function Home() {
                   <OccupancyMap compact />
                 </SectionErrorBoundary>
               </div>
+              <SectionErrorBoundary section="TrackMan Status" compact>
+                <TrackManStatusCard />
+              </SectionErrorBoundary>
               <SectionErrorBoundary section="Suggested Actions">
                 <SuggestedActions />
               </SectionErrorBoundary>

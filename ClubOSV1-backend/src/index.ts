@@ -255,6 +255,7 @@ app.use('/api/seasons', require('./routes/seasons').default);
 app.use('/api/badges', require('./routes/badges').default);
 app.use('/api/achievements', require('./routes/achievements').default);
 app.use('/api/trackman', require('./routes/trackman').default);
+app.use('/api/trackman-remote', require('./routes/trackman-remote').default);
 app.use('/api/golf', golfTourRoutes); // NS Senior Golf Tour scoring system
 app.use('/api/admin/cc-adjustments', require('./routes/admin/ccAdjustments').default);
 app.use('/api/admin/contractors', require('./routes/admin/contractors').default);
@@ -805,6 +806,11 @@ async function startServer() {
     const gmailScanJob = await import('./jobs/gmailScan');
     gmailScanJob.default.start();
     
+    // Start TrackMan auto-restart job
+    const { trackmanRestartJob } = await import('./jobs/trackmanRestart');
+    trackmanRestartJob.start();
+    logger.info('✅ TrackMan auto-restart job started');
+
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
     

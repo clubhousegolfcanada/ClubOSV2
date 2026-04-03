@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.32.0] - 2026-04-03
+
+### Feature — TrackMan Remote Restart
+- **Dashboard integration** — New "TrackMan" card on dashboard sidebar shows online PC count with one-click "Restart All" button. Links to full management panel.
+- **Operations > TrackMan tab** — Full device management: register PCs, view online status by location, restart individual/location/all, view restart history, configure auto-restart schedule.
+- **3AM auto-restart cron job** — Configurable scheduled restart of all TrackMan PCs. Default: daily at 3:00 AM. Adjustable from the dashboard settings panel.
+- **Polling agent architecture** — Each TrackMan PC runs a lightweight PowerShell agent (installed via .exe) that polls the ClubOS API every 60 seconds for restart commands. No inbound connections, no VPN needed. Works across all locations through NAT.
+- **Per-device API keys** — Each PC gets a unique 64-character key for secure, revocable authentication. Keys only grant poll/heartbeat/report access.
+- **Version-resilient restart** — Agent auto-detects TrackMan.Gui.Shell.exe path from the running process or by searching install directories. Survives TrackMan version updates without reconfiguration.
+- **Windows .exe installer** — Professional GUI installer for each PC: test connection, install agent, create scheduled task. Run as Administrator via Splashtop.
+
 ## [1.31.4] - 2026-04-02
 
 ### Performance — Messages Page Instant Navigation
