@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import ninjaOneService from '../services/ninjaone';
-import { pool, query } from '../utils/db';
+import { pool } from '../utils/db';
 import { slackFallback } from '../services/slackFallback';
 import { logger } from '../utils/logger';
 
@@ -134,22 +134,10 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
     // This creates a real command that the PC agent will pick up within 60 seconds
     if (action === 'restart-trackman' && bayNumber) {
       try {
-        // Find the device in trackman_devices by location + bay_number
-        const deviceResult = await query(
-          'SELECT id, display_name FROM trackman_devices WHERE location = $1 AND bay_number = $2',
-          [location, parseInt(bayNumber)]
-        );
+        const { triggerRestart } = await import('../services/trackmanRestartService');
+        const result = await triggerRestart(location, parseInt(bayNumber), 'dashboard', req.user!.id);
 
-        if (deviceResult.rows.length > 0) {
-          const tmDevice = deviceResult.rows[0];
-          await query(
-            `INSERT INTO trackman_restart_commands (device_id, source, requested_by)
-             VALUES ($1, 'dashboard', $2)`,
-            [tmDevice.id, req.user!.id]
-          );
-
-          logger.info(`TrackMan restart command created for ${tmDevice.display_name} at ${location} by ${req.user!.email}`);
-
+        if (result.success) {
           try {
             await slackFallback.sendMessage({
               channel: '#tech-alerts',
@@ -162,8 +150,8 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
                 fields: [
                   { title: 'User', value: req.user!.email, short: true },
                   { title: 'Action', value: 'TrackMan restart', short: true },
-                  { title: 'Device', value: `${tmDevice.display_name} (${location} Bay ${bayNumber})`, short: true },
-                  { title: 'Method', value: 'Polling agent - will execute within 60s', short: false }
+                  { title: 'Device', value: `${result.deviceName} (${location} Bay ${bayNumber})`, short: true },
+                  { title: 'Method', value: 'Polling agent - will execute within 30s', short: false }
                 ]
               }]
             });
@@ -173,16 +161,16 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
 
           return res.json({
             success: true,
-            message: `TrackMan restart sent to ${tmDevice.display_name}. Will execute within 60 seconds.`,
+            message: `TrackMan restart sent to ${result.deviceName}. Will execute within 30 seconds.`,
             jobId: `TM-${Date.now()}`,
-            device: tmDevice.display_name,
+            device: result.deviceName,
             estimatedTime: '30-60 seconds'
           });
         }
-        // If device not registered in trackman_devices, fall through to demo mode
-        logger.info(`TrackMan device not registered for ${location} Bay ${bayNumber} - falling through to demo mode`);
+        // Device not registered or cooldown — fall through to demo mode
+        logger.info(`TrackMan restart not available for ${location} Bay ${bayNumber}: ${result.error}`);
       } catch (tmError: any) {
-        logger.warn('TrackMan polling system error, falling through to demo:', tmError.message);
+        logger.warn('TrackMan restart service error, falling through to demo:', tmError.message);
       }
     }
 

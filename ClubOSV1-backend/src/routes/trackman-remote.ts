@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { query } from '../utils/db';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { TRACKMAN_LOCATIONS } from '../services/trackmanRestartService';
 
 const router = Router();
 
@@ -44,16 +45,8 @@ async function authenticateDevice(req: DeviceRequest, res: Response, next: NextF
  * GET /locations - Canonical list of locations and bay counts
  * No auth required so the installer exe can fetch this
  */
-const LOCATION_CONFIG = [
-  { name: 'Bedford', bays: 2 },
-  { name: 'Dartmouth', bays: 4 },
-  { name: 'Bayers Lake', bays: 4 },
-  { name: 'Truro', bays: 3 },
-  { name: 'River Oaks', bays: 2 },
-];
-
 router.get('/locations', (_req: Request, res: Response) => {
-  res.json({ success: true, data: LOCATION_CONFIG });
+  res.json({ success: true, data: TRACKMAN_LOCATIONS });
 });
 
 // ============================================
@@ -318,7 +311,7 @@ router.post('/self-register', async (req: Request, res: Response) => {
     }
 
     const bayNum = parseInt(bay_number);
-    const validLocation = LOCATION_CONFIG.find(l => l.name === location);
+    const validLocation = TRACKMAN_LOCATIONS.find(l => l.name === location);
     if (!validLocation) {
       return res.status(400).json({ success: false, error: `Invalid location: ${location}` });
     }
