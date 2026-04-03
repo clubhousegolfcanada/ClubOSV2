@@ -80,12 +80,12 @@ export const systemStatusAPI = {
 
 // Mock data for development
 function getMockStatus(): LocationStatus[] {
-  const locations = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake'];
+  const locations = ['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'River Oaks'];
   const now = new Date();
   
   return locations.map(location => ({
     location,
-    bays: Array.from({ length: location === 'Dartmouth' ? 4 : location === 'Bayers Lake' ? 4 : location === 'Stratford' ? 3 : 2 }, (_, i) => {
+    bays: Array.from({ length: location === 'Dartmouth' ? 4 : location === 'Bayers Lake' ? 4 : location === 'Truro' ? 3 : 2 }, (_, i) => {
       const isOccupied = Math.random() > 0.4;
       const hasNinjaAlert = Math.random() > 0.85; // 15% chance
       const hasIssue = hasNinjaAlert || Math.random() > 0.9;
@@ -123,7 +123,7 @@ function getMockStatus(): LocationStatus[] {
 
 function getMockLocationStatus(location: string): LocationStatus {
   const now = new Date();
-  const bayCount = location === 'Dartmouth' ? 4 : location === 'Bayers Lake' ? 4 : location === 'Stratford' ? 3 : 2;
+  const bayCount = location === 'Dartmouth' ? 4 : location === 'Bayers Lake' ? 4 : location === 'Truro' ? 3 : 2;
   
   return {
     location,

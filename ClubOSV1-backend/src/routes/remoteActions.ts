@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import ninjaOneService from '../services/ninjaone';
-import { pool } from '../utils/db';  // Fixed import path
+import { pool, query } from '../utils/db';
 import { slackFallback } from '../services/slackFallback';
 import { logger } from '../utils/logger';
 
@@ -20,11 +20,6 @@ const DEVICE_MAP: Record<string, Record<string, { deviceId: string; name: string
     'bay-3': { deviceId: 'DEMO-DART-SIM3-PC', name: 'Dartmouth Bay 3 PC' },
     'bay-4': { deviceId: 'DEMO-DART-SIM4-PC', name: 'Dartmouth Bay 4 PC' }
   },
-  'Stratford': {
-    'bay-1': { deviceId: 'DEMO-STRAT-SIM1-PC', name: 'Stratford Bay 1 PC' },
-    'bay-2': { deviceId: 'DEMO-STRAT-SIM2-PC', name: 'Stratford Bay 2 PC' },
-    'bay-3': { deviceId: 'DEMO-STRAT-SIM3-PC', name: 'Stratford Bay 3 PC' }
-  },
   'Bayers Lake': {
     'bay-1': { deviceId: 'DEMO-BAYERS-SIM1-PC', name: 'Bayers Lake Bay 1 PC' },
     'bay-2': { deviceId: 'DEMO-BAYERS-SIM2-PC', name: 'Bayers Lake Bay 2 PC' },
@@ -36,6 +31,10 @@ const DEVICE_MAP: Record<string, Record<string, { deviceId: string; name: string
     'bay-1': { deviceId: 'DEMO-TRURO-SIM1-PC', name: 'Truro Bay 1 PC' },
     'bay-2': { deviceId: 'DEMO-TRURO-SIM2-PC', name: 'Truro Bay 2 PC' },
     'bay-3': { deviceId: 'DEMO-TRURO-SIM3-PC', name: 'Truro Bay 3 PC' }
+  },
+  'River Oaks': {
+    'bay-1': { deviceId: 'DEMO-RIVEROAKS-SIM1-PC', name: 'River Oaks Bay 1 PC' },
+    'bay-2': { deviceId: 'DEMO-RIVEROAKS-SIM2-PC', name: 'River Oaks Bay 2 PC' }
   }
 };
 
@@ -134,8 +133,64 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
       deviceName = device.name;
     }
 
+    // Route restart-trackman through the polling system (trackman_restart_commands)
+    // This creates a real command that the PC agent will pick up within 60 seconds
+    if (action === 'restart-trackman' && bayNumber) {
+      try {
+        // Find the device in trackman_devices by location + bay_number
+        const deviceResult = await query(
+          'SELECT id, display_name FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+          [location, parseInt(bayNumber)]
+        );
+
+        if (deviceResult.rows.length > 0) {
+          const tmDevice = deviceResult.rows[0];
+          await query(
+            `INSERT INTO trackman_restart_commands (device_id, source, requested_by)
+             VALUES ($1, 'dashboard', $2)`,
+            [tmDevice.id, req.user!.id]
+          );
+
+          logger.info(`TrackMan restart command created for ${tmDevice.display_name} at ${location} by ${req.user!.email}`);
+
+          try {
+            await slackFallback.sendMessage({
+              channel: '#tech-alerts',
+              username: 'ClubOS Remote Actions',
+              text: '🎮 TrackMan Restart Triggered',
+              attachments: [{
+                title: 'Remote Action',
+                text: '',
+                color: 'good',
+                fields: [
+                  { title: 'User', value: req.user!.email, short: true },
+                  { title: 'Action', value: 'TrackMan restart', short: true },
+                  { title: 'Device', value: `${tmDevice.display_name} (${location} Bay ${bayNumber})`, short: true },
+                  { title: 'Method', value: 'Polling agent - will execute within 60s', short: false }
+                ]
+              }]
+            });
+          } catch (slackError) {
+            logger.warn('Could not send Slack notification:', slackError);
+          }
+
+          return res.json({
+            success: true,
+            message: `TrackMan restart sent to ${tmDevice.display_name}. Will execute within 60 seconds.`,
+            jobId: `TM-${Date.now()}`,
+            device: tmDevice.display_name,
+            estimatedTime: '30-60 seconds'
+          });
+        }
+        // If device not registered in trackman_devices, fall through to demo mode
+        logger.info(`TrackMan device not registered for ${location} Bay ${bayNumber} - falling through to demo mode`);
+      } catch (tmError: any) {
+        logger.warn('TrackMan polling system error, falling through to demo:', tmError.message);
+      }
+    }
+
     // Check if NinjaOne is configured (use demo credentials to check)
-    const isDemoMode = !process.env.NINJAONE_CLIENT_ID || 
+    const isDemoMode = !process.env.NINJAONE_CLIENT_ID ||
                       process.env.NINJAONE_CLIENT_ID === 'demo_client_id' ||
                       !process.env.NINJAONE_CLIENT_SECRET ||
                       process.env.NINJAONE_CLIENT_SECRET === 'demo_client_secret';

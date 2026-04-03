@@ -123,8 +123,9 @@ const RemoteActionsBar: React.FC = () => {
       return [
         { name: 'Bedford', bays: [1, 2], hasMusic: true, hasTv: true },
         { name: 'Dartmouth', bays: [1, 2, 3, 4], hasMusic: true, hasTv: true },
-        { name: 'Stratford', bays: [1, 2, 3], hasMusic: true, hasTv: false },
-        { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false }
+        { name: 'Truro', bays: [1, 2, 3], hasMusic: true, hasTv: true },
+        { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false },
+        { name: 'River Oaks', bays: [1, 2], hasMusic: true, hasTv: false }
       ];
     }
     

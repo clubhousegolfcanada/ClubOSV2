@@ -325,62 +325,8 @@ const commands: Command[] = [
     systemType: 'tv'
   },
   
-  // Automated Simulator Resets - Stratford
-  {
-    id: 'reset-stratford-bay1',
-    name: 'Stratford Bay 1',
-    description: 'Reset TrackMan at Stratford location',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'stratford', 'bay 1'],
-    action: 'ninjaone',
-    location: 'Stratford',
-    bayNumber: '1'
-  },
-  {
-    id: 'reset-stratford-bay2',
-    name: 'Stratford Bay 2',
-    description: 'Reset TrackMan at Stratford location',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'stratford', 'bay 2'],
-    action: 'ninjaone',
-    location: 'Stratford',
-    bayNumber: '2'
-  },
-  {
-    id: 'reset-stratford-bay3',
-    name: 'Stratford Bay 3',
-    description: 'Reset TrackMan at Stratford location',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'stratford', 'bay 3'],
-    action: 'ninjaone',
-    location: 'Stratford',
-    bayNumber: '3'
-  },
-  {
-    id: 'reset-stratford-music',
-    name: 'Stratford Music',
-    description: 'Reset music system at Stratford location',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'music', 'stratford', 'audio'],
-    action: 'ninjaone',
-    location: 'Stratford',
-    systemType: 'music'
-  },
-  {
-    id: 'reset-stratford-tv',
-    name: 'Stratford Tournament TV',
-    description: 'Reset tournament TV at Stratford location',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'tv', 'tournament', 'stratford'],
-    action: 'ninjaone',
-    location: 'Stratford',
-    systemType: 'tv'
-  },
+  // Automated Simulator Resets - Truro (formerly Stratford)
+  // (Truro commands defined later in the file)
   
   // Automated Simulator Resets - Bayers Lake
   {
@@ -516,6 +462,41 @@ const commands: Command[] = [
     action: 'ninjaone',
     location: 'Truro',
     systemType: 'tv'
+  },
+
+  // Automated Simulator Resets - River Oaks
+  {
+    id: 'reset-riveroaks-bay1',
+    name: 'River Oaks Bay 1',
+    description: 'Reset TrackMan at River Oaks location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'river oaks', 'bay 1'],
+    action: 'ninjaone',
+    location: 'River Oaks',
+    bayNumber: '1'
+  },
+  {
+    id: 'reset-riveroaks-bay2',
+    name: 'River Oaks Bay 2',
+    description: 'Reset TrackMan at River Oaks location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'trackman', 'river oaks', 'bay 2'],
+    action: 'ninjaone',
+    location: 'River Oaks',
+    bayNumber: '2'
+  },
+  {
+    id: 'reset-riveroaks-music',
+    name: 'River Oaks Music',
+    description: 'Reset music system at River Oaks location',
+    category: 'resets',
+    type: 'action',
+    keywords: ['reset', 'restart', 'music', 'river oaks', 'audio'],
+    action: 'ninjaone',
+    location: 'River Oaks',
+    systemType: 'music'
   },
   {
     id: 'reset-all-trackman',
@@ -858,7 +839,7 @@ export default function CommandsRedesigned() {
                       return acc;
                     }, {} as Record<string, { bays: Command[], music: Command | null, tv: Command | null }>);
                   
-                  const locationOrder = ['Bedford', 'Dartmouth', 'Stratford', 'Bayers Lake', 'Truro'];
+                  const locationOrder = ['Bedford', 'Dartmouth', 'Bayers Lake', 'Truro', 'River Oaks'];
                   
                   return (
                     <>

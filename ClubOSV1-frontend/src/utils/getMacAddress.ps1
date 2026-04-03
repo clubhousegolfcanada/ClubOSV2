@@ -28,7 +28,7 @@ if ($primaryAdapter) {
 
 Write-Host ""
 Write-Host "Location: " -NoNewline -ForegroundColor Yellow
-$location = Read-Host "Enter location (Bedford/Dartmouth/Stratford/BayersLake/Truro)"
+$location = Read-Host "Enter location (Bedford/Dartmouth/BayersLake/Truro/RiverOaks)"
 
 Write-Host "Bay Number: " -NoNewline -ForegroundColor Yellow
 $bayNumber = Read-Host "Enter bay number (1/2/3/4/5)"

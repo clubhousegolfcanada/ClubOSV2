@@ -66,33 +66,6 @@ export const DEVICE_REGISTRY: Record<string, LocationDevices> = {
       type: 'tv'
     }
   },
-  'Stratford': {
-    'bay-1': { 
-      deviceId: 'STRATFORD_BAY1_DEVICE_ID', 
-      name: 'STRAT-BAY1-PC',
-      type: 'trackman'
-    },
-    'bay-2': { 
-      deviceId: 'STRATFORD_BAY2_DEVICE_ID', 
-      name: 'STRAT-BAY2-PC',
-      type: 'trackman'
-    },
-    'bay-3': { 
-      deviceId: 'STRATFORD_BAY3_DEVICE_ID', 
-      name: 'STRAT-BAY3-PC',
-      type: 'trackman'
-    },
-    'music': { 
-      deviceId: 'STRATFORD_MUSIC_DEVICE_ID', 
-      name: 'STRAT-MUSIC-PC',
-      type: 'music'
-    },
-    'tv': { 
-      deviceId: 'STRATFORD_TV_DEVICE_ID', 
-      name: 'STRAT-TV-PC',
-      type: 'tv'
-    }
-  },
   'Bayers Lake': {
     'bay-1': { 
       deviceId: 'BAYERSLAKE_BAY1_DEVICE_ID', 
@@ -151,10 +124,27 @@ export const DEVICE_REGISTRY: Record<string, LocationDevices> = {
       name: 'TRURO-MUSIC-PC',
       type: 'music'
     },
-    'tv': { 
-      deviceId: 'TRURO_TV_DEVICE_ID', 
+    'tv': {
+      deviceId: 'TRURO_TV_DEVICE_ID',
       name: 'TRURO-TV-PC',
       type: 'tv'
+    }
+  },
+  'River Oaks': {
+    'bay-1': {
+      deviceId: 'RIVEROAKS_BAY1_DEVICE_ID',
+      name: 'RIVEROAKS-BAY1-PC',
+      type: 'trackman'
+    },
+    'bay-2': {
+      deviceId: 'RIVEROAKS_BAY2_DEVICE_ID',
+      name: 'RIVEROAKS-BAY2-PC',
+      type: 'trackman'
+    },
+    'music': {
+      deviceId: 'RIVEROAKS_MUSIC_DEVICE_ID',
+      name: 'RIVEROAKS-MUSIC-PC',
+      type: 'music'
     }
   }
 };
@@ -190,7 +180,7 @@ export function getDevicesByType(type: 'trackman' | 'music' | 'tv'): Array<{loca
   const devices: Array<{location: string, device: DeviceInfo}> = [];
   
   Object.entries(DEVICE_REGISTRY).forEach(([location, locationDevices]) => {
-    Object.entries(locationDevices).forEach(([key, device]) => {
+    Object.entries(locationDevices).forEach(([_key, device]) => {
       if (device.type === type) {
         devices.push({ location, device });
       }

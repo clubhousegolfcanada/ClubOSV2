@@ -57,20 +57,6 @@ export const BAY_COMPUTERS: Record<string, Record<string, BayComputer>> = {
       name: 'Dartmouth Bay 4 PC' 
     }
   },
-  'Stratford': {
-    '1': { 
-      mac: process.env.NEXT_PUBLIC_STRATFORD_BAY1_MAC || '', 
-      name: 'Stratford Bay 1 PC' 
-    },
-    '2': { 
-      mac: process.env.NEXT_PUBLIC_STRATFORD_BAY2_MAC || '', 
-      name: 'Stratford Bay 2 PC' 
-    },
-    '3': { 
-      mac: process.env.NEXT_PUBLIC_STRATFORD_BAY3_MAC || '', 
-      name: 'Stratford Bay 3 PC' 
-    }
-  },
   'Bayers Lake': {
     '1': { 
       mac: process.env.NEXT_PUBLIC_BAYERSLAKE_BAY1_MAC || '', 
@@ -94,17 +80,27 @@ export const BAY_COMPUTERS: Record<string, Record<string, BayComputer>> = {
     }
   },
   'Truro': {
-    '1': { 
-      mac: process.env.NEXT_PUBLIC_TRURO_BAY1_MAC || '', 
-      name: 'Truro Bay 1 PC' 
+    '1': {
+      mac: process.env.NEXT_PUBLIC_TRURO_BAY1_MAC || '',
+      name: 'Truro Bay 1 PC'
     },
-    '2': { 
-      mac: process.env.NEXT_PUBLIC_TRURO_BAY2_MAC || '', 
-      name: 'Truro Bay 2 PC' 
+    '2': {
+      mac: process.env.NEXT_PUBLIC_TRURO_BAY2_MAC || '',
+      name: 'Truro Bay 2 PC'
     },
-    '3': { 
-      mac: process.env.NEXT_PUBLIC_TRURO_BAY3_MAC || '', 
-      name: 'Truro Bay 3 PC' 
+    '3': {
+      mac: process.env.NEXT_PUBLIC_TRURO_BAY3_MAC || '',
+      name: 'Truro Bay 3 PC'
+    }
+  },
+  'River Oaks': {
+    '1': {
+      mac: process.env.NEXT_PUBLIC_RIVEROAKS_BAY1_MAC || '',
+      name: 'River Oaks Bay 1 PC'
+    },
+    '2': {
+      mac: process.env.NEXT_PUBLIC_RIVEROAKS_BAY2_MAC || '',
+      name: 'River Oaks Bay 2 PC'
     }
   }
 };
