@@ -47,10 +47,7 @@ const SCRIPT_MAP: Record<string, string> = {
   'restart-all': 'DEMO-SCRIPT-RESTART-ALL-SOFTWARE',
   'restart-music': 'DEMO-SCRIPT-RESTART-MUSIC',
   'restart-tv': 'DEMO-SCRIPT-RESTART-TV',
-  'other': 'DEMO-SCRIPT-OTHER-ACTIONS',
-  'projector-power': 'DEMO-SCRIPT-PROJECTOR-POWER',
-  'projector-input': 'DEMO-SCRIPT-PROJECTOR-INPUT',
-  'projector-autosize': 'DEMO-SCRIPT-PROJECTOR-AUTOSIZE'
+  'other': 'DEMO-SCRIPT-OTHER-ACTIONS'
 };
 
 // Get available scripts from database

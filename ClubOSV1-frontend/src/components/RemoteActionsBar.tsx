@@ -23,7 +23,7 @@ const RemoteActionsBar: React.FC = () => {
   const [executingActions, setExecutingActions] = useState<Set<string>>(new Set());
   const [doorStatuses, setDoorStatuses] = useState<Record<string, DoorStatus[]>>({});
   const [loadingDoors, setLoadingDoors] = useState<Set<string>>(new Set());
-  const [locationStatuses, setLocationStatuses] = useState<LocationStatus[]>([]);
+  // locationStatuses removed - was showing demo/mock data
   const [availableScripts, setAvailableScripts] = useState<any[]>([]);
   const [availableDevices, setAvailableDevices] = useState<any[]>([]);
   const { notify } = useNotifications();
@@ -99,14 +99,9 @@ const RemoteActionsBar: React.FC = () => {
     }
   };
   
-  // Load system statuses
+  // System statuses disabled - was using demo/mock data
   const loadSystemStatuses = async () => {
-    try {
-      const statuses = await systemStatusAPI.getAllStatus();
-      setLocationStatuses(statuses);
-    } catch (error) {
-      logger.error('Failed to load system statuses:', error);
-    }
+    // No-op: status dots removed, was showing fake demo data
   };
 
   // Save state to localStorage
@@ -295,21 +290,9 @@ const RemoteActionsBar: React.FC = () => {
             <Zap className="w-4 h-4 text-[var(--accent)]" />
             <span className="text-sm font-medium">Remote Actions</span>
             {!isExpanded && (
-              <>
-                <span className="text-xs text-[var(--text-muted)] ml-2 hidden sm:inline">
-                  {locations.map(l => l.name).join(' • ')}
-                </span>
-                {(() => {
-                  const criticalCount = locationStatuses.reduce((acc, loc) => 
-                    acc + loc.bays.filter(b => b.criticalError).length, 0
-                  );
-                  return criticalCount > 0 ? (
-                    <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full animate-pulse">
-                      {criticalCount} Critical {criticalCount === 1 ? 'Error' : 'Errors'}
-                    </span>
-                  ) : null;
-                })()}
-              </>
+              <span className="text-xs text-[var(--text-muted)] ml-2 hidden sm:inline">
+                {locations.map(l => l.name).join(' • ')}
+              </span>
             )}
           </div>
           <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
@@ -338,33 +321,10 @@ const RemoteActionsBar: React.FC = () => {
                     <div className="space-y-1.5">
                       {location.bays.map((bay) => {
                         const isExecuting = executingActions.has(`${location.name}-restart-trackman-${bay}`);
-                        const locationStatus = locationStatuses.find(ls => ls.location === location.name);
-                        const bayStatus = locationStatus?.bays.find(b => b.bayNumber === bay);
-                        const isOnline = bayStatus?.isOnline ?? true;
-                        const isOccupied = bayStatus?.isOccupied ?? false;
-                        const hasIssue = bayStatus?.hasIssue ?? false;
-                        
-                        // Simplified status logic:
-                        // Green = working (online, no issues)
-                        // Red = not working + occupied
-                        // Yellow = not working + empty
-                        let statusColor = 'bg-green-500'; // Default: working
-                        let statusTitle = 'Working';
-                        
-                        if (!isOnline || hasIssue) {
-                          // Not working
-                          if (isOccupied) {
-                            statusColor = 'bg-red-500';
-                            statusTitle = 'Issue - Customer in bay';
-                          } else {
-                            statusColor = 'bg-yellow-500';
-                            statusTitle = 'Issue - Bay empty';
-                          }
-                        }
-                        
+
                         return (
-                          <div 
-                            key={bay} 
+                          <div
+                            key={bay}
                             className="flex items-center gap-2 p-1"
                           >
                             <span className="text-xs text-[var(--text-muted)] w-12 flex-shrink-0">Bay {bay}:</span>
@@ -394,13 +354,6 @@ const RemoteActionsBar: React.FC = () => {
                                 <MonitorSmartphone className="w-3 h-3" />
                                 <span className="hidden sm:inline">Remote</span>
                               </button>
-                            </div>
-                            {/* Status indicator - simplified */}
-                            <div className="flex-shrink-0">
-                              <span 
-                                title={statusTitle} 
-                                className={`block w-2 h-2 ${statusColor} rounded-full`} 
-                              />
                             </div>
                           </div>
                         );
