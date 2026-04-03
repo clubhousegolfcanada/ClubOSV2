@@ -1,6 +1,7 @@
 import { get, post, put, del } from './http';
 
 export const trackmanRemoteAPI = {
+  getLocations: () => get('/trackman-remote/locations'),
   getDevices: () => get('/trackman-remote/devices'),
   registerDevice: (data: { hostname: string; display_name: string; location: string; bay_number?: number }) =>
     post('/trackman-remote/devices', data),

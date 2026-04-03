@@ -37,6 +37,26 @@ async function authenticateDevice(req: DeviceRequest, res: Response, next: NextF
 }
 
 // ============================================
+// PUBLIC ENDPOINTS (no auth — used by PC installer exe)
+// ============================================
+
+/**
+ * GET /locations - Canonical list of locations and bay counts
+ * No auth required so the installer exe can fetch this
+ */
+const LOCATION_CONFIG = [
+  { name: 'Bedford', bays: 2 },
+  { name: 'Dartmouth', bays: 4 },
+  { name: 'Bayers Lake', bays: 4 },
+  { name: 'Truro', bays: 3 },
+  { name: 'River Oaks', bays: 2 },
+];
+
+router.get('/locations', (_req: Request, res: Response) => {
+  res.json({ success: true, data: LOCATION_CONFIG });
+});
+
+// ============================================
 // DASHBOARD ENDPOINTS (JWT auth)
 // ============================================
 
@@ -272,6 +292,77 @@ router.put('/settings', authenticate, async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Error updating trackman settings:', error);
     return res.status(500).json({ success: false, error: 'Failed to update settings' });
+  }
+});
+
+// ============================================
+// SELF-REGISTRATION (setup secret auth — used by PC installer exe)
+// ============================================
+
+const SETUP_SECRET = process.env.TRACKMAN_SETUP_SECRET || 'clubhouse247-trackman-setup';
+
+/**
+ * POST /self-register - PC registers itself, receives its API key
+ * Auth: X-Setup-Secret header (shared secret baked into the exe)
+ */
+router.post('/self-register', async (req: Request, res: Response) => {
+  try {
+    const secret = req.headers['x-setup-secret'] as string;
+    if (!secret || secret !== SETUP_SECRET) {
+      return res.status(401).json({ success: false, error: 'Invalid setup secret' });
+    }
+
+    const { location, bay_number } = req.body;
+    if (!location || !bay_number) {
+      return res.status(400).json({ success: false, error: 'location and bay_number required' });
+    }
+
+    const bayNum = parseInt(bay_number);
+    const validLocation = LOCATION_CONFIG.find(l => l.name === location);
+    if (!validLocation) {
+      return res.status(400).json({ success: false, error: `Invalid location: ${location}` });
+    }
+    if (bayNum < 1 || bayNum > validLocation.bays) {
+      return res.status(400).json({ success: false, error: `Bay ${bayNum} out of range for ${location} (1-${validLocation.bays})` });
+    }
+
+    const hostname = `${location.toUpperCase().replace(/\s+/g, '-')}-BOX${bayNum}`;
+    const displayName = `Box ${bayNum}`;
+    const deviceApiKey = crypto.randomBytes(32).toString('hex');
+
+    // Upsert: if this location+bay already exists, regenerate its key
+    const existing = await query(
+      'SELECT id FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+      [location, bayNum]
+    );
+
+    let result;
+    if (existing.rows.length > 0) {
+      result = await query(
+        `UPDATE trackman_devices
+         SET hostname = $1, display_name = $2, api_key = $3, status = 'unknown', updated_at = NOW()
+         WHERE location = $4 AND bay_number = $5
+         RETURNING id, hostname, display_name, location, bay_number, api_key`,
+        [hostname, displayName, deviceApiKey, location, bayNum]
+      );
+      logger.info(`TrackMan device re-registered: ${hostname} (replaced existing)`);
+    } else {
+      result = await query(
+        `INSERT INTO trackman_devices (hostname, display_name, location, bay_number, api_key)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, hostname, display_name, location, bay_number, api_key`,
+        [hostname, displayName, location, bayNum, deviceApiKey]
+      );
+      logger.info(`TrackMan device self-registered: ${hostname}`);
+    }
+
+    return res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error: any) {
+    logger.error('Error in self-registration:', error);
+    return res.status(500).json({ success: false, error: 'Registration failed' });
   }
 });
 

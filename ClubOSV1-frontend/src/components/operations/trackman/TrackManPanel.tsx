@@ -48,8 +48,14 @@ export function TrackManPanel() {
   const [newDevice, setNewDevice] = useState({ hostname: '', display_name: '', location: 'Bedford', bay_number: '' });
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'devices' | 'history'>('devices');
+  const [locationConfigs, setLocationConfigs] = useState<{ name: string; bays: number }[]>([]);
 
-  const locations = ['Bedford', 'Bayers Lake', 'Dartmouth', 'Truro', 'River Oaks'];
+  const fetchLocations = useCallback(async () => {
+    try {
+      const res = await trackmanRemoteAPI.getLocations();
+      if (res.data?.success) setLocationConfigs(res.data.data || []);
+    } catch { /* silent */ }
+  }, []);
 
   const fetchDevices = useCallback(async () => {
     try {
@@ -77,7 +83,7 @@ export function TrackManPanel() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchDevices(), fetchHistory(), fetchSettings()]).finally(() => setLoading(false));
+    Promise.all([fetchDevices(), fetchHistory(), fetchSettings(), fetchLocations()]).finally(() => setLoading(false));
     const interval = setInterval(fetchDevices, 30000);
     return () => clearInterval(interval);
   }, [fetchDevices, fetchHistory, fetchSettings]);
@@ -281,23 +287,43 @@ export function TrackManPanel() {
         <div className="p-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg space-y-3">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Register New Device</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <input type="text" placeholder="Hostname" value={newDevice.hostname}
-              onChange={(e) => setNewDevice({ ...newDevice, hostname: e.target.value })}
-              className="px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]" />
-            <input type="text" placeholder="Display Name (e.g. Box 1)" value={newDevice.display_name}
-              onChange={(e) => setNewDevice({ ...newDevice, display_name: e.target.value })}
-              className="px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]" />
-            <select value={newDevice.location}
-              onChange={(e) => setNewDevice({ ...newDevice, location: e.target.value })}
-              className="px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]">
-              {locations.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <div className="flex gap-2">
-              <input type="number" placeholder="Bay #" value={newDevice.bay_number}
-                onChange={(e) => setNewDevice({ ...newDevice, bay_number: e.target.value })}
-                className="px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] w-20" />
+            <div>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1">Location</label>
+              <select value={newDevice.location}
+                onChange={(e) => {
+                  const loc = e.target.value;
+                  setNewDevice({ ...newDevice, location: loc, bay_number: '1',
+                    hostname: `${loc.toUpperCase().replace(/\s+/g, '-')}-BOX1`,
+                    display_name: 'Box 1' });
+                }}
+                className="w-full px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]">
+                {locationConfigs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1">Bay / Box</label>
+              <select value={newDevice.bay_number}
+                onChange={(e) => {
+                  const bay = e.target.value;
+                  setNewDevice({ ...newDevice, bay_number: bay,
+                    hostname: `${newDevice.location.toUpperCase().replace(/\s+/g, '-')}-BOX${bay}`,
+                    display_name: `Box ${bay}` });
+                }}
+                className="w-full px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]">
+                {Array.from({ length: (locationConfigs.find(l => l.name === newDevice.location)?.bays || 2) }, (_, i) => (
+                  <option key={i + 1} value={String(i + 1)}>Bay {i + 1}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1">Display Name</label>
+              <input type="text" value={newDevice.display_name}
+                onChange={(e) => setNewDevice({ ...newDevice, display_name: e.target.value })}
+                className="w-full px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]" />
+            </div>
+            <div className="flex items-end">
               <button onClick={handleAddDevice}
-                className="flex-1 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all">
+                className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all">
                 Register
               </button>
             </div>
