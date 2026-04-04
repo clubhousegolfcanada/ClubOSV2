@@ -83,10 +83,10 @@ export const SubNavigation: React.FC<SubNavigationProps> = ({
         <div className="max-w-7xl mx-auto">
           <nav className={`flex justify-between items-center ${compactMode && isMobile ? 'h-10' : ''}`}>
             {/* Left: Tabs and Primary Actions */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 min-w-0 flex-1 overflow-hidden">
               {/* Tab Navigation */}
               {tabs.length > 0 && (
-                <div className="flex space-x-1 sm:space-x-4 pb-px">
+                <div className="flex space-x-1 sm:space-x-4 pb-px overflow-x-auto scrollbar-hide">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
