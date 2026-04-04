@@ -217,9 +217,6 @@ function AppContent({ Component, pageProps }: AppContentProps) {
           <div className={viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' ? 'md:pb-14' : ''}>
             <Component {...pageProps} />
           </div>
-          {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && (
-            <RemoteActionsBar />
-          )}
         </AuthGuard>
       )}
       <Notifications />
