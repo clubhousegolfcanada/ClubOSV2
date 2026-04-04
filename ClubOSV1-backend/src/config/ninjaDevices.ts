@@ -87,12 +87,7 @@ export const DEVICE_REGISTRY: Record<string, LocationDevices> = {
       name: 'BAYERS-BAY4-PC',
       type: 'trackman'
     },
-    'bay-5': { 
-      deviceId: 'BAYERSLAKE_BAY5_DEVICE_ID', 
-      name: 'BAYERS-BAY5-PC',
-      type: 'trackman'
-    },
-    'music': { 
+    'music': {
       deviceId: 'BAYERSLAKE_MUSIC_DEVICE_ID', 
       name: 'BAYERS-MUSIC-PC',
       type: 'music'

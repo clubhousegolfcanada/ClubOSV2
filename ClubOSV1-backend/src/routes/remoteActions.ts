@@ -24,8 +24,7 @@ const DEVICE_MAP: Record<string, Record<string, { deviceId: string; name: string
     'bay-1': { deviceId: 'DEMO-BAYERS-SIM1-PC', name: 'Bayers Lake Bay 1 PC' },
     'bay-2': { deviceId: 'DEMO-BAYERS-SIM2-PC', name: 'Bayers Lake Bay 2 PC' },
     'bay-3': { deviceId: 'DEMO-BAYERS-SIM3-PC', name: 'Bayers Lake Bay 3 PC' },
-    'bay-4': { deviceId: 'DEMO-BAYERS-SIM4-PC', name: 'Bayers Lake Bay 4 PC' },
-    'bay-5': { deviceId: 'DEMO-BAYERS-SIM5-PC', name: 'Bayers Lake Bay 5 PC' }
+    'bay-4': { deviceId: 'DEMO-BAYERS-SIM4-PC', name: 'Bayers Lake Bay 4 PC' }
   },
   'Truro': {
     'bay-1': { deviceId: 'DEMO-TRURO-SIM1-PC', name: 'Truro Bay 1 PC' },

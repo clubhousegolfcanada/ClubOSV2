@@ -70,13 +70,9 @@ export const BAY_COMPUTERS: Record<string, Record<string, BayComputer>> = {
       mac: process.env.NEXT_PUBLIC_BAYERSLAKE_BAY3_MAC || '', 
       name: 'Bayers Lake Bay 3 PC' 
     },
-    '4': { 
+    '4': {
       mac: process.env.NEXT_PUBLIC_BAYERSLAKE_BAY4_MAC || '', 
-      name: 'Bayers Lake Bay 4 PC' 
-    },
-    '5': { 
-      mac: process.env.NEXT_PUBLIC_BAYERSLAKE_BAY5_MAC || '', 
-      name: 'Bayers Lake Bay 5 PC' 
+      name: 'Bayers Lake Bay 4 PC'
     }
   },
   'Truro': {
