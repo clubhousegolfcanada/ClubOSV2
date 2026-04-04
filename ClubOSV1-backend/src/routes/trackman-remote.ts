@@ -380,7 +380,7 @@ router.get('/poll', authenticateDevice as any, async (req: DeviceRequest, res: R
          ORDER BY requested_at ASC
          LIMIT 1
        )
-       RETURNING id, source, requested_at`,
+       RETURNING id, source, requested_at, COALESCE(command_type, 'restart') as command_type`,
       [deviceId]
     );
 
@@ -390,7 +390,7 @@ router.get('/poll', authenticateDevice as any, async (req: DeviceRequest, res: R
 
     return res.json({
       success: true,
-      command: { id: result.rows[0].id, action: 'restart', source: result.rows[0].source }
+      command: { id: result.rows[0].id, action: result.rows[0].command_type, source: result.rows[0].source }
     });
   } catch (error: any) {
     logger.error('Error polling trackman commands:', error);

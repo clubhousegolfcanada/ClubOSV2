@@ -30,7 +30,8 @@ export async function triggerRestart(
   location: string,
   bayNumber: number,
   source: 'dashboard' | 'cron' | 'clubai' | 'api',
-  requestedBy?: string | null
+  requestedBy?: string | null,
+  commandType: 'restart' | 'reboot' = 'restart'
 ): Promise<RestartResult> {
   try {
     // Validate location
@@ -63,16 +64,16 @@ export async function triggerRestart(
       }
     }
 
-    // Create restart command
+    // Create command
     const result = await query(
-      `INSERT INTO trackman_restart_commands (device_id, source, requested_by)
-       VALUES ($1, $2, $3)
+      `INSERT INTO trackman_restart_commands (device_id, source, requested_by, command_type)
+       VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      [device.id, source, requestedBy || null]
+      [device.id, source, requestedBy || null, commandType]
     );
 
     const commandId = result.rows[0].id;
-    logger.info(`TrackMan restart triggered: ${device.display_name} at ${location} Bay ${bayNumber} (source: ${source}, command: ${commandId})`);
+    logger.info(`TrackMan ${commandType} triggered: ${device.display_name} at ${location} Bay ${bayNumber} (source: ${source}, command: ${commandId})`);
 
     return {
       success: true,

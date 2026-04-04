@@ -173,6 +173,48 @@ router.post('/execute', authenticate, authorize(['operator', 'admin']), async (r
       }
     }
 
+    // Route reboot-pc through the polling system
+    if (action === 'reboot-pc' && bayNumber) {
+      try {
+        const { triggerRestart } = await import('../services/trackmanRestartService');
+        const result = await triggerRestart(location, parseInt(bayNumber), 'dashboard', req.user!.id, 'reboot');
+
+        if (result.success) {
+          try {
+            await slackFallback.sendMessage({
+              channel: '#tech-alerts',
+              username: 'ClubOS Remote Actions',
+              text: '🔄 PC Reboot Triggered',
+              attachments: [{
+                title: 'Remote Action',
+                text: '',
+                color: 'warning',
+                fields: [
+                  { title: 'User', value: req.user!.email, short: true },
+                  { title: 'Action', value: 'PC Reboot', short: true },
+                  { title: 'Device', value: `${result.deviceName} (${location} Bay ${bayNumber})`, short: true },
+                  { title: 'Method', value: 'Polling agent - will execute within 30s', short: false }
+                ]
+              }]
+            });
+          } catch (slackError) {
+            logger.warn('Could not send Slack notification:', slackError);
+          }
+
+          return res.json({
+            success: true,
+            message: `PC reboot sent to ${result.deviceName}. Will reboot within 30 seconds. Full restart takes 2-3 minutes.`,
+            jobId: `TM-${Date.now()}`,
+            device: result.deviceName,
+            estimatedTime: '2-3 minutes'
+          });
+        }
+        logger.info(`PC reboot not available for ${location} Bay ${bayNumber}: ${result.error}`);
+      } catch (tmError: any) {
+        logger.warn('PC reboot service error, falling through to demo:', tmError.message);
+      }
+    }
+
     // Check if NinjaOne is configured (use demo credentials to check)
     const isDemoMode = !process.env.NINJAONE_CLIENT_ID ||
                       process.env.NINJAONE_CLIENT_ID === 'demo_client_id' ||
