@@ -218,9 +218,7 @@ function AppContent({ Component, pageProps }: AppContentProps) {
             <Component {...pageProps} />
           </div>
           {isAuthenticated && viewMode !== 'customer' && user?.role !== 'customer' && user?.role !== 'kiosk' && (
-            <div className="hidden md:block">
-              <RemoteActionsBar />
-            </div>
+            <RemoteActionsBar />
           )}
         </AuthGuard>
       )}
