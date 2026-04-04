@@ -204,12 +204,12 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshUnreadCount();
     }, 100);
 
-    // Check every 60 seconds (reduced frequency to prevent rate limiting)
+    // Check every 15 seconds for faster notification of new messages
     intervalRef.current = setInterval(() => {
       if (!abortController.signal.aborted) {
         refreshUnreadCount();
       }
-    }, 60000);
+    }, 15000);
 
     return () => {
       clearTimeout(initialTimer);
