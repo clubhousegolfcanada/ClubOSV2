@@ -4,12 +4,19 @@ import { getOpenAIClient } from '../utils/openaiClient';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { getRAGContext, logSearch, addManualKnowledge, searchKnowledge } from './clubaiKnowledgeService';
+import { isClubAIRestartEnabled, TRACKMAN_LOCATIONS } from './trackmanRestartService';
+
+interface ClubAIFunctionCall {
+  name: string;
+  arguments: Record<string, any>;
+}
 
 interface ClubAIResponse {
   response: string | null;
   escalate: boolean;
   escalationSummary?: string;
   confidence: number;
+  functionCall?: ClubAIFunctionCall;
 }
 
 interface ConversationMessage {
@@ -305,14 +312,72 @@ export async function generateResponse(
   messages.push({ role: 'user', content: messageText });
 
   try {
+    // Check if remote restart feature is enabled — if so, give GPT the restart tool
+    const restartEnabled = await isClubAIRestartEnabled();
+    const tools = restartEnabled ? [{
+      type: 'function' as const,
+      function: {
+        name: 'restart_trackman',
+        description: 'Trigger a remote restart of a TrackMan simulator. Only call this AFTER the customer has confirmed they want a restart AND provided their location and box number. Do NOT call for PC reboot — only TrackMan software restart.',
+        parameters: {
+          type: 'object' as const,
+          properties: {
+            location: {
+              type: 'string' as const,
+              enum: TRACKMAN_LOCATIONS.map(l => l.name),
+              description: 'The location name'
+            },
+            bay_number: {
+              type: 'integer' as const,
+              description: 'The box/bay number (1-based)'
+            },
+            customer_confirmed: {
+              type: 'boolean' as const,
+              description: 'Whether the customer explicitly said yes/confirmed the restart'
+            }
+          },
+          required: ['location', 'bay_number', 'customer_confirmed']
+        }
+      }
+    }] : undefined;
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages,
       temperature: 0.4,
       max_tokens: 300,
+      ...(tools ? { tools, tool_choice: 'auto' } : {}),
     });
 
-    const rawResponse = completion.choices[0]?.message?.content?.trim();
+    const choice = completion.choices[0]?.message;
+
+    // Check for function call (tool use)
+    if (choice?.tool_calls && choice.tool_calls.length > 0) {
+      const toolCall = choice.tool_calls[0];
+      if (toolCall.function?.name === 'restart_trackman') {
+        let args: Record<string, any>;
+        try {
+          args = JSON.parse(toolCall.function.arguments);
+        } catch {
+          args = {};
+        }
+
+        logger.info('[ClubAI] GPT requested restart_trackman function call', { args, phoneNumber, conversationId });
+
+        const textResponse = choice.content?.trim() || null;
+        return {
+          response: textResponse,
+          escalate: false,
+          confidence: 0.9,
+          functionCall: {
+            name: 'restart_trackman',
+            arguments: args
+          }
+        };
+      }
+    }
+
+    const rawResponse = choice?.content?.trim();
 
     if (!rawResponse) {
       logger.warn('[ClubAI] Empty response from GPT-4o');
