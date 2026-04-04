@@ -1109,87 +1109,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     hasResponse: !!clubaiResult.response,
                     responsePreview: clubaiResult.response?.substring(0, 80),
                     escalate: clubaiResult.escalate,
-                    confidence: clubaiResult.confidence,
-                    hasFunctionCall: !!clubaiResult.functionCall
+                    confidence: clubaiResult.confidence
                   });
-
-                  // Handle function calls (e.g. restart_trackman)
-                  if (clubaiResult.functionCall?.name === 'restart_trackman') {
-                    const { triggerRestart, checkRestartStatus } = await import('../services/trackmanRestartService');
-                    const args = clubaiResult.functionCall.arguments;
-
-                    if (!args.customer_confirmed) {
-                      // GPT called the function without confirmation — send the text response instead
-                      // (GPT should be asking for confirmation, not triggering yet)
-                      logger.info('[ClubAI] restart_trackman called without confirmation, sending text only', { args });
-                    } else {
-                      // Customer confirmed — trigger the restart
-                      const restartResult = await triggerRestart(
-                        args.location, args.bay_number, 'clubai'
-                      );
-
-                      if (restartResult.success) {
-                        // Send confirmation to customer
-                        const restartMsg = `Restarting now. Should be back up in about 60 seconds. If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
-                        await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, restartMsg);
-                        await clubaiService.storeClubAIMessage(convId, restartMsg, 0.95);
-
-                        // Store restart state on conversation
-                        try {
-                          await db.query(`
-                            UPDATE openphone_conversations SET
-                              clubai_restart_state = 'restart_triggered',
-                              clubai_restart_location = $2,
-                              clubai_restart_bay = $3,
-                              clubai_restart_command_id = $4
-                            WHERE id = $1
-                          `, [convId, args.location, args.bay_number, restartResult.commandId]);
-                        } catch { /* columns may not exist yet */ }
-
-                        logger.info('[ClubAI] TrackMan restart triggered via SMS', {
-                          phoneNumber, location: args.location, bay: args.bay_number,
-                          commandId: restartResult.commandId
-                        });
-
-                        // Schedule follow-up check in 90 seconds
-                        setTimeout(async () => {
-                          try {
-                            const status = await checkRestartStatus(restartResult.commandId!);
-                            if (status.status === 'completed') {
-                              const followUp = `Should be back online now. Let me know if you need anything else! - ClubAI`;
-                              await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, followUp);
-                              await clubaiService.storeClubAIMessage(convId, followUp, 0.9);
-                            } else if (status.status === 'failed') {
-                              const failMsg = `The restart didn't go through. Let me connect you with the team. - ClubAI`;
-                              await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, failMsg);
-                              await clubaiService.storeClubAIMessage(convId, failMsg, 0.9);
-                              try {
-                                await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, conversation_locked = true WHERE id = $1`, [convId]);
-                              } catch { /* ignore */ }
-                            }
-                            // Clear restart state
-                            try {
-                              await db.query(`UPDATE openphone_conversations SET clubai_restart_state = NULL WHERE id = $1`, [convId]);
-                            } catch { /* ignore */ }
-                          } catch (followUpErr) {
-                            logger.error('[ClubAI] Restart follow-up error:', followUpErr);
-                          }
-                        }, 90000);
-
-                        return res.json({ success: true, message: 'ClubAI triggered TrackMan restart' });
-                      } else {
-                        // Restart failed (device not registered, cooldown, etc.)
-                        logger.warn('[ClubAI] restart_trackman failed:', restartResult.error);
-                        const fallbackMsg = `Couldn't trigger the remote restart right now. Let me connect you with the team — they'll sort it out. - ClubAI`;
-                        await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, fallbackMsg);
-                        await clubaiService.storeClubAIMessage(convId, fallbackMsg, 0.7);
-                        try {
-                          await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, conversation_locked = true WHERE id = $1`, [convId]);
-                        } catch { /* ignore */ }
-                        return res.json({ success: true, message: 'ClubAI restart failed, escalated' });
-                      }
-                    }
-                  }
 
                   if (clubaiShadow) {
                     logger.info('[ClubAI SHADOW]', {

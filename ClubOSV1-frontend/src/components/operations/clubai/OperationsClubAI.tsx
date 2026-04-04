@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, RefreshCw, Search, Plus, Send, Check, X, Edit3, Clock, Eye, EyeOff, AlertTriangle, Trash2, BookOpen, Filter, Monitor } from 'lucide-react';
+import { MessageSquare, Shield, Database, Power, Hash, Users, TrendingUp, ChevronDown, ChevronUp, RefreshCw, Search, Plus, Send, Check, X, Edit3, Clock, Eye, EyeOff, AlertTriangle, Trash2, BookOpen, Filter } from 'lucide-react';
 import apiClient from '@/api/http';
 
 // ============================================
@@ -190,10 +190,6 @@ export const OperationsClubAI: React.FC = () => {
   const [systemPromptDirty, setSystemPromptDirty] = useState(false);
   const [systemPromptSuccess, setSystemPromptSuccess] = useState<string | null>(null);
 
-  // Remote restart toggle
-  const [remoteRestartEnabled, setRemoteRestartEnabled] = useState(false);
-  const [remoteRestartSaving, setRemoteRestartSaving] = useState(false);
-
   // UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -221,14 +217,6 @@ export const OperationsClubAI: React.FC = () => {
       if (safetyData) setSafety(prev => ({ ...prev, ...safetyData }));
       if (kStatsRes.data?.data) setKnowledgeStats(kStatsRes.data.data);
 
-      // Fetch remote restart toggle
-      try {
-        const restartRes = await apiClient.get('/system-settings/clubai_remote_restart_enabled');
-        if (restartRes.data?.data?.value) {
-          const val = restartRes.data.data.value;
-          setRemoteRestartEnabled(val === true || val === 'true');
-        }
-      } catch { /* setting may not exist yet */ }
     } catch { /* defaults fine */ }
     setLoading(false);
   }, []);
@@ -274,21 +262,6 @@ export const OperationsClubAI: React.FC = () => {
   // ============================================
   // ACTIONS
   // ============================================
-
-  const toggleRemoteRestart = async () => {
-    setRemoteRestartSaving(true);
-    const newVal = !remoteRestartEnabled;
-    setRemoteRestartEnabled(newVal);
-    try {
-      await apiClient.put('/system-settings/clubai_remote_restart_enabled', {
-        value: newVal,
-        description: 'When enabled, ClubAI can trigger TrackMan restarts via SMS conversation'
-      });
-    } catch {
-      setRemoteRestartEnabled(!newVal); // revert on failure
-    }
-    setRemoteRestartSaving(false);
-  };
 
   const saveConfig = async (updates: Partial<ClubAIConfig>) => {
     setSaving(true);
@@ -719,25 +692,6 @@ export const OperationsClubAI: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--border-primary)]">
-            <div>
-              <p className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-1.5">
-                <Monitor className="w-4 h-4 text-blue-400" /> Remote Restart via SMS
-              </p>
-              <p className="text-xs text-[var(--text-secondary)]">
-                {remoteRestartEnabled
-                  ? 'ClubAI will offer to remotely restart TrackMan when customers report issues'
-                  : 'ClubAI will give customers self-service restart steps instead'}
-              </p>
-            </div>
-            <button
-              onClick={toggleRemoteRestart}
-              className={`relative w-11 h-6 rounded-full transition-colors ${remoteRestartEnabled ? 'bg-blue-500' : 'bg-gray-300'}`}
-              disabled={remoteRestartSaving}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${remoteRestartEnabled ? 'translate-x-5' : ''}`} />
-            </button>
-          </div>
         </div>
       </div>
 
