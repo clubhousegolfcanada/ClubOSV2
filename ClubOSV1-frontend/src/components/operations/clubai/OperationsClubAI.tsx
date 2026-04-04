@@ -268,8 +268,15 @@ export const OperationsClubAI: React.FC = () => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
     try {
-      await apiClient.put('/patterns/clubai-config', newConfig);
-    } catch { setConfig(config); }
+      const res = await apiClient.put('/patterns/clubai-config', newConfig);
+      if (!res.data?.success) {
+        console.error('[ClubAI Config] Save failed:', res.data);
+        setConfig(config);
+      }
+    } catch (err: any) {
+      console.error('[ClubAI Config] Save error:', err.response?.status, err.response?.data || err.message);
+      setConfig(config);
+    }
     setSaving(false);
   };
 
@@ -764,14 +771,13 @@ export const OperationsClubAI: React.FC = () => {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: 'Conversations', value: stats.conversationsToday, icon: MessageSquare, color: 'text-blue-500' },
           { label: 'Messages Sent', value: stats.messagesSent, icon: Hash, color: 'text-green-500' },
           { label: 'Escalated', value: stats.escalated, icon: Users, color: 'text-orange-500' },
           { label: 'Corrections', value: stats.correctionsToday, icon: Edit3, color: 'text-purple-500' },
           { label: 'Accuracy', value: `${stats.accuracyRate}%`, icon: TrendingUp, color: stats.accuracyRate >= 90 ? 'text-green-500' : stats.accuracyRate >= 70 ? 'text-yellow-500' : 'text-red-500' },
-          { label: 'Resolution', value: `${resolutionRate}%`, icon: Check, color: 'text-green-500' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -782,69 +788,6 @@ export const OperationsClubAI: React.FC = () => {
           </div>
         ))}
       </div>
-
-      {/* Escalation Queue */}
-      {escalations.length > 0 && (
-        <div className="bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
-              <Users className="w-4 h-4 text-orange-500" /> Waiting for Operator
-              <span className="px-2 py-0.5 rounded-full bg-orange-500 text-white text-[10px]">{escalations.length}</span>
-            </h3>
-            <button onClick={fetchEscalations} className="p-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
-              <RefreshCw className={`w-4 h-4 text-orange-500 ${escalationsLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          <div className="space-y-2">
-            {escalations.map(esc => (
-              <div key={esc.id} className="rounded-lg border border-orange-200 dark:border-orange-800 bg-[var(--bg-primary)]">
-                <button
-                  onClick={() => setExpandedEscalation(expandedEscalation === esc.id ? null : esc.id)}
-                  className="w-full flex items-center justify-between p-3 text-left"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                      {esc.customer_name || formatPhone(esc.phone_number)}
-                    </p>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {esc.clubai_escalation_reason || 'ClubAI escalated'} · {formatTime(esc.updated_at)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); resolveEscalation(esc.id); }}
-                      className="px-2 py-1 text-[10px] rounded bg-green-500 text-white hover:bg-green-600"
-                    >
-                      Mark Resolved
-                    </button>
-                    {expandedEscalation === esc.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </div>
-                </button>
-                {expandedEscalation === esc.id && esc.messages && (
-                  <div className="px-3 pb-3 space-y-2 border-t border-[var(--border-primary)] pt-2">
-                    {esc.messages.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.sender_type === 'customer' ? 'justify-start' : 'justify-end'}`}>
-                        <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${
-                          msg.sender_type === 'customer'
-                            ? 'bg-gray-100 dark:bg-gray-800 text-[var(--text-primary)]'
-                            : msg.sender_type === 'ai'
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
-                            : 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-100'
-                        }`}>
-                          <span className="font-semibold text-[10px] uppercase opacity-60">
-                            {msg.sender_type === 'customer' ? 'Customer' : msg.sender_type === 'ai' ? 'ClubAI' : 'Operator'}
-                          </span>
-                          <p className="whitespace-pre-wrap mt-0.5">{msg.message_text}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Draft Review Queue (approval mode) */}
       {config.approvalMode && (
